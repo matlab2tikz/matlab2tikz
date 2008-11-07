@@ -1,0 +1,24 @@
+This is matlab2tikz, a MATLAB script for converting MATLAB figures into native
+TikZ figures. matlab2tikz is based on Paul Wagenaars' matfig2pgf but tries to
+be shorter, cleaner, more robust and more powerful.
+
+As of now, matlab2tikz is still in the early stages and does by far not
+support the conversion of all possible MATLAB figures. In particular, 3D plots
+are not yet supported. However, the if you have a nice 2D plot, matlab2tikz
+might just do what you want it to.
+
+matlab2tikz' capabilties include, but are not limited to
+
+The workflow is as follows.
+
+  0.) Place the matlab2tikz script in a directory where MATLAB can find it
+      (the current directory, for example).
+  1.) Generate your plot in MATLAB.
+  2.) Invoke matlab2tikz by
+
+        >> matlab2tikz( 'myfile.tikz' );
+
+If you experience bugs, have nice examples of what matlab2tikz can do, or if
+you are just looking for more information, please visit the web page of
+matlab2tikz.
+The URL is <http://www.win.ua.ac.be/~nschloe/matlab2tikz/>.
