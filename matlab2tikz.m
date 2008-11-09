@@ -296,8 +296,14 @@ function draw_axes( handle, fid )
   if strcmp( get( handle, 'XGrid'), 'on' );
       pgfplot_options = [ pgfplot_options, 'xmajorgrids' ];
   end
-  if strcmp( get( handle, 'YGrid'), 'on' )
+  if strcmp( get( handle, 'XMinorGrid'), 'on' );
+      pgfplot_options = [ pgfplot_options, 'xminorgrids' ];
+  end
+  if strcmp( get( handle, 'YGrid'), 'on' ) && 
       pgfplot_options = [ pgfplot_options, 'ymajorgrids' ];
+  end
+  if strcmp( get( handle, 'YMinorGrid'), 'on' );
+      pgfplot_options = [ pgfplot_options, 'yminorgrids' ];
   end
 
   % set the linestyle
@@ -941,11 +947,11 @@ function [ ticks, ticklabels ] = get_ticks( handle )
 
   global tol
 
-  xtick      = get( handle, 'XTick');
-  xticklabel = get( handle, 'XTickLabel');
+  xtick      = get( handle, 'XTick' );
+  xticklabel = get( handle, 'XTickLabel' );
 
-  ytick      = get( handle, 'YTick');
-  yticklabel = get( handle, 'YTickLabel');
+  ytick      = get( handle, 'YTick' );
+  yticklabel = get( handle, 'YTickLabel' );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set xticks + labels
