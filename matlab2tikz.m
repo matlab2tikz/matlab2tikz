@@ -299,7 +299,7 @@ function draw_axes( handle, fid )
   if strcmp( get( handle, 'XMinorGrid'), 'on' );
       pgfplot_options = [ pgfplot_options, 'xminorgrids' ];
   end
-  if strcmp( get( handle, 'YGrid'), 'on' ) && 
+  if strcmp( get( handle, 'YGrid'), 'on' )
       pgfplot_options = [ pgfplot_options, 'ymajorgrids' ];
   end
   if strcmp( get( handle, 'YMinorGrid'), 'on' );
