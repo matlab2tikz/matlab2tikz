@@ -183,8 +183,6 @@ end
 % ============================================================================
 function draw_axes( handle, fid )
 
-%    global matlab2tikz_opts;
-
   if ~strcmp( get(handle,'Visible'), 'on' )
       return
   end
@@ -192,6 +190,15 @@ function draw_axes( handle, fid )
   if strcmp( get(handle,'Tag'), 'Colorbar' )
       % handle a colorbar separately
       draw_colorbar( handle, fid );
+      return
+  end
+
+  if strcmp( get(handle,'Tag'), 'legend' )
+      % Don't handle the legend here, but further below in the 'axis'
+      % environment.
+      % In MATLAB, an axes environment and it's corresponding legend are
+      % children of the same figure (siblings), while in pgfplots, the \legend
+      % (or \addlegendentry) command must appear within the axis environment.
       return
   end
 
@@ -305,6 +312,25 @@ function draw_axes( handle, fid )
   gridlinestyle = get( handle, 'GridLineStyle' );
   gls           = translate_linestyle( gridlinestyle );
   fprintf( fid, '\\pgfplotsset{every axis grid/.style={style=%s}}\n', gls );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % See if there are any legends that need to be plotted.
+  c = get( get(handle,'Parent'), 'Children' ); % siblings of this handle
+  leghandle = 0;
+  for k=1:size(c)
+      if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
+          strcmp( get(c(k),'Tag' ), 'legend' )
+          leghandle = c(k);
+          break
+      end
+  end
+
+  if leghandle
+      pgfplot_options = [ pgfplot_options,                                 ...
+                          get_legend_opts( leghandle, fid ) ];
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -756,6 +782,76 @@ end
 
 
 
+% ============================================================================
+% *** FUNCTION get_legend_opts
+% ============================================================================
+function lopts = get_legend_opts( handle, fid )
+
+  if ~strcmp( get(handle,'Visible'), 'on' )
+      return
+  end
+
+  entries = get( handle, 'String' );
+
+  n = length( entries );
+
+  l = 1;
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % handle legend entries
+  if n
+      for k=1:n
+          % escape all lenged entries to math mode for now
+          % -- this is later to be removed
+          entries{k} = [ '$', entries{k}, '$' ];
+      end
+
+      lopts{l} = [ 'legend entries={', collapse(entries,','), '}' ];
+      l = l+1;
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % handle legend location
+  loc = get( handle, 'Location' );
+  switch loc
+      case 'NorthEast'
+          % don't append any options in this (default) case
+      case 'NorthWest'
+          lopts{l} = 'legend style={at={(0.03,0.97)},anchor=north west}'; 
+          l = l+1;
+      case 'SouthWest'
+          lopts{l} = 'legend style={at={(0.03,0.03)},anchor=south west}';
+          l = l+1;
+      case 'SouthEast'
+          lopts{l} = 'legend style={at={(0.97,0.03)},anchor=south east}';
+          l = l+1;
+      case 'North'
+          lopts{l} = 'legend style={at={(0.5,0.97)},anchor=north}';
+          l = l+1;
+      case 'East'
+          lopts{l} = 'legend style={at={(0.97,0.5)},anchor=east}';
+          l = l+1;
+      case 'South'
+          lopts{l} = 'legend style={at={(0.5,0.03)},anchor=south}';
+          l = l+1;
+      case 'West'
+          lopts{l} = 'legend style={at={(0.03,0.5)},anchor=west}';
+          l = l+1;
+      otherwise
+	  warning( [ ' Function get_legend_opts:',                         ...
+		     ' Unknown legend location ''',loc,''                  ...
+                     '. Choosing default.' ] );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+end
+% ============================================================================
+% *** FUNCTION get_legend_opts
+% ============================================================================
+
+
 
 % ============================================================================
 % *** FUNCTION anycolor2rgb
@@ -1141,7 +1237,11 @@ function [ tikz_marker, mark_options ] =                                   ...
       case '+'
           tikz_marker = '+';
       case 'o'
-          tikz_marker = '*';
+	  if facecolor_toggle
+	      tikz_marker = '*';
+	  else
+	      tikz_marker = 'o';
+	  end
       case '.'
 	  tikz_marker = '*';
       case 'x'
