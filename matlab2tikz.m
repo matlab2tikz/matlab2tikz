@@ -221,44 +221,39 @@ function draw_axes( handle, fid )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  l = 1;
 
-  pgfplot_options{l} = 'name=main plot';
-  l = l+1;
+  pgfplot_options{1} = 'name=main plot';
 
   % the following is general MATLAB behavior
-  pgfplot_options{l} = 'axis on top';
-  l = l+1;
+  pgfplot_options = [ pgfplot_options, 'axis on top' ];
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
   dim = get_axes_dimensions( handle );
-  pgfplot_options{l} = sprintf( 'width=%gmm', dim.x );
-  l = l+1;
-  pgfplot_options{l} = sprintf( 'height=%gmm', dim.y );
-  l = l+1;
-  pgfplot_options{l} = 'scale only axis';
-  l = l+1;
+  pgfplot_options = [ pgfplot_options,                                     ...
+                      sprintf( 'width=%gmm' , dim.x ),                     ...
+                      sprintf( 'height=%gmm', dim.y ),                     ...
+                      'scale only axis' ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
   [ ticks, ticklabels ] = get_ticks( handle );
   if ~isempty( ticks.x )
-      pgfplot_options{l} = sprintf( 'xtick={%s}', ticks.x );
-      l = l+1;
+      pgfplot_options = [ pgfplot_options,                                 ...
+                          sprintf( 'xtick={%s}', ticks.x ) ];
   end
   if ~isempty( ticklabels.x )
-      pgfplot_options{l} = sprintf( 'xticklabels={%s}', ticklabels.x );
-      l = l+1;
+      pgfplot_options = [ pgfplot_options,                                 ...
+                          sprintf( 'xticklabels={%s}', ticklabels.x ) ];
   end
   if ~isempty( ticks.y )
-      pgfplot_options{l} = sprintf( 'ytick={%s}', ticks.y );
-      l = l+1;
+      pgfplot_options = [ pgfplot_options,                                 ...
+                          sprintf( 'ytick={%s}', ticks.y ) ];
   end
   if ~isempty( ticklabels.y )
-      pgfplot_options{l} = sprintf( 'yticklabels={%s}', ticklabels.y );
-      l = l+1;
+      pgfplot_options = [ pgfplot_options,                                 ...
+                          sprintf( 'yticklabels={%s}', ticklabels.y ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -266,12 +261,12 @@ function draw_axes( handle, fid )
   % get axis labels
   axislabels = get_axislabels( handle );
   if ~isempty( axislabels.x )
-      pgfplot_options{l} = sprintf( 'xlabel={$%s$}', escape_characters(axislabels.x) );
-      l = l+1;
+      pgfplot_options = [ pgfplot_options,                                 ...
+                          sprintf( 'xlabel={$%s$}', escape_characters(axislabels.x) ) ];
   end
   if ~isempty( axislabels.y )
-      pgfplot_options{l} = sprintf( 'ylabel={$%s$}', escape_characters(axislabels.y) );
-      l = l+1;
+      pgfplot_options = [ pgfplot_options,                                 ...
+                         sprintf( 'ylabel={$%s$}', escape_characters(axislabels.y) ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -280,8 +275,8 @@ function draw_axes( handle, fid )
   % get title
   title = get( get( handle, 'Title' ), 'String' );
   if ~isempty(title)
-      pgfplot_options{l} = sprintf( 'title={$%s$}', escape_characters(title) );
-      l = l+1;
+      pgfplot_options = [ pgfplot_options,                                 ...
+                          sprintf( 'title={$%s$}', escape_characters(title) ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -289,23 +284,20 @@ function draw_axes( handle, fid )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
   xlim = get( handle, 'XLim');
-  pgfplot_options{l} = sprintf('xmin=%g, xmax=%g', xlim );
-  l = l+1;
   ylim = get( handle, 'YLim');
-  pgfplot_options{l} = sprintf('ymin=%g, ymax=%g', ylim );
-  l = l+1;
+  pgfplot_options = [ pgfplot_options,                                     ...
+                      sprintf('xmin=%g, xmax=%g', xlim ),                  ...
+                      sprintf('ymin=%g, ymax=%g', ylim ) ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids
   if strcmp( get( handle, 'XGrid'), 'on' );
-      pgfplot_options{l} = 'xmajorgrids';
-      l = l+1;
+      pgfplot_options = [ pgfplot_options, 'xmajorgrids' ];
   end
   if strcmp( get( handle, 'YGrid'), 'on' )
-      pgfplot_options{l} = 'ymajorgrids';
-      l = l+1;
+      pgfplot_options = [ pgfplot_options, 'ymajorgrids' ];
   end
 
   % set the linestyle
@@ -408,15 +400,13 @@ function draw_line( handle, fid )
                                                color(1), color(2), color(3) );
       plotcolor = 'plotcolor';
   end
-  l = 1;
-  draw_options{l} = sprintf( 'color=%s', plotcolor );
-  l = l+1;
+
+  draw_options{1} = sprintf( 'color=%s', plotcolor );
 
   if ~strcmp(linestyle,'none') && linewidth~=0
-      draw_options{l} = sprintf('%s', translate_linestyle(linestyle) );
-      l = l+1;
-      draw_options{l} = sprintf('line width=%.1fpt', linewidth );
-      l = l+1;
+      draw_options = [ draw_options,                                       ...
+                       sprintf('%s', translate_linestyle(linestyle) ),     ...
+                       sprintf('line width=%.1fpt', linewidth ) ];
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -429,20 +419,18 @@ function draw_line( handle, fid )
       % example) (~diameter), whereas in TikZ the distance of an edge to the
       % center is the measure (~radius). Hence divide by 2.
       tikz_marker_size = translate_markersize( marker, marker_size );
-      draw_options{l} = sprintf( 'mark size=%.1fpt', tikz_marker_size );
-      l = l+1;
+      draw_options = [ draw_options,                                       ...
+                       sprintf( 'mark size=%.1fpt', tikz_marker_size ) ];
       
-      ll = 1;
+      mark_options = cell( 0 );
       % make sure that the markers get painted in solid (and not dashed)
       if ~strcmp( linestyle, 'solid' )
-          mark_options{ll} = 'solid';
-          ll = ll+1;
+          mark_options = [ mark_options, 'solid' ];
       end
 
       % print no lines
       if strcmp(linestyle,'none') || linewidth==0
-	  draw_options{l} = 'only marks';
-	  l = l+1;
+          draw_options = [ draw_options, 'only marks' ] ;
       end
 
       % get the marker color right
@@ -457,8 +445,7 @@ function draw_line( handle, fid )
                                                             markerfacecolor );
 	      xcolor = 'markerfacecolor';
 	  end
-          mark_options{ll} = sprintf( 'fill=%s', xcolor );
-          ll = ll+1;
+          mark_options = [ mark_options,  sprintf( 'fill=%s', xcolor ) ];
       end
       if ~strcmp(markeredgecolor,'none') && ~strcmp(markeredgecolor,'auto')
 	  xcolor = rgb2xcolor( markeredgecolor );
@@ -467,17 +454,15 @@ function draw_line( handle, fid )
                                                             markeredgecolor );
 	      xcolor = 'markeredgecolor';
 	  end
-          mark_options{ll} = sprintf( 'draw=%s', xcolor );
-          ll = ll+1;
+          mark_options = [ mark_options, sprintf( 'draw=%s', xcolor ) ];
       end
 
       % add it all to draw_options
-      draw_options{l} = sprintf( 'mark=%s', tikz_marker );
-      l = l+1;
+      draw_options = [ draw_options, sprintf( 'mark=%s', tikz_marker ) ];
+
       if ~isempty( mark_options )
           mo = collapse( mark_options, ',' );
-	  draw_options{l} = [ 'mark options={', mo, '}' ];
-	  l = l+1;
+	  draw_options = [ draw_options, [ 'mark options={', mo, '}' ] ];
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -630,11 +615,10 @@ function draw_colorbar( handle, fid );
   clim = caxis;
 
   % begin collecting axes options
-  l = 1;
-  cbar_options{l} = 'at={(colorbar anchor)}';
-  l = l+1;
-  cbar_options{l} = 'axis on top';
-  l = l+1;
+  cbar_options = cell( 0 );
+  cbar_options = [ cbar_options,                                           ...
+                   'at={(colorbar anchor)}',                               ...
+                   'axis on top' ];
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set position, ticks etc. of the colorbar
@@ -647,54 +631,49 @@ function draw_colorbar( handle, fid );
 
       case {'NorthOutside','SouthOutside'}
           dim.y = dim.x / ratio;
-	  cbar_options{l} = sprintf( 'width=%gmm, height=%gmm, scale only axis',   ...
-							       dim.x, dim.y );
-          l = l+1;
-          cbar_options{l} = sprintf( 'xmin=%g, xmax=%g', clim );
-          l = l+1;
-          cbar_options{l} = sprintf( 'ymin=%g, ymax=%g', [0,1] );
-          l = l+1;
+          cbar_options = [ cbar_options,                                   ...
+	                   sprintf('width=%gmm, height=%gmm',dim.x,dim.y), ...
+                           'scale only axis',                              ...
+                           sprintf( 'xmin=%g, xmax=%g', clim ),            ...
+                           sprintf( 'ymin=%g, ymax=%g', [0,1] )            ...
+                         ];
 
           if strcmp( loc, 'NorthOutside' )
               anchorparent = 'above north west';
-              cbar_options{l} = 'anchor=south west';
-              l = l+1;
-              % we actually want to set pos=top here, but pgfplots doesn't support
-              % that yet. pos=right does the same thing, really.
-              cbar_options{l} = 'xticklabel pos=right, ytick=\\empty';
-              l = l+1;
-           else
-               anchorparent = 'below south west';
-               cbar_options{l} = 'anchor=north west';
-               l = l+1;
-               % we actually want to set pos=bottom here, but pgfplots doesn't support
-               % that yet. pos=left does the same thing, really.
-               cbar_options{l} = 'xticklabel pos=left, ytick=\\empty';
-               l = l+1;
-           end
+              cbar_options = [ cbar_options,                                ...
+                               'anchor=south west',                         ...
+                               'xticklabel pos=right, ytick=\\empty' ];
+                               % we actually wanted to set pos=top here, but
+                               % pgfplots doesn't support that yet.
+                               % pos=right does the same thing, really.
+          else
+              anchorparent = 'below south west';
+              cbar_options = [ cbar_options,                               ...
+                               'anchor=north west',                        ...
+                               'xticklabel pos=left, ytick=\\empty' ];
+                               % we actually wanted to set pos=bottom here, but
+                               % pgfplots doesn't support that yet. 
+                               % pos=left does the same thing, really.
+          end
 
       case {'EastOutside','WestOutside'}
           dim.x = dim.y / ratio;
-	  cbar_options{l} = sprintf( 'width=%gmm, height=%gmm, scale only axis',   ...
-							       dim.x, dim.y );
-          l = l+1;
-          cbar_options{l} = sprintf( 'xmin=%g, xmax=%g', [0,1] );
-          l = l+1;
-          cbar_options{l} = sprintf( 'ymin=%g, ymax=%g', clim );
-          l = l+1;
-
+          cbar_options = [ cbar_options,                                   ...
+	                   sprintf( 'width=%gmm, height=%gmm',dim.x,dim.y),...
+                           'scale only axis',                              ...
+                           sprintf( 'xmin=%g, xmax=%g', [0,1] ),           ...
+                           sprintf( 'ymin=%g, ymax=%g', clim )             ...
+                         ];
           if strcmp( loc, 'EastOutside' )
                anchorparent = 'right of south east';
-               cbar_options{l} = 'anchor=south west';
-               l = l+1;
-               cbar_options{l} = 'xtick=\\empty, yticklabel pos=right';
-               l = l+1;
+               cbar_options = [ cbar_options,                              ...
+                                'anchor=south west',                       ...
+                                'xtick=\\empty, yticklabel pos=right' ];
            else
                anchorparent = 'left of south west';
-               cbar_options{l} = 'anchor=south east';
-               l = l+1;
-               cbar_options{l} = 'xtick=\\empty, yticklabel pos=left';
-               l = l+1;
+               cbar_options = [ cbar_options,                              ...
+                                'anchor=south east',                       ...
+                                'xtick=\\empty, yticklabel pos=left' ];
            end
 
       otherwise
@@ -706,20 +685,20 @@ function draw_colorbar( handle, fid );
   % get ticks along with the labels
   [ ticks, ticklabels ] = get_ticks( handle );
   if ~isempty( ticks.x )
-      cbar_options{l} = sprintf( 'xtick={%s}', ticks.x );
-      l = l+1;
+      cbar_options = [ cbar_options,                                       ...
+                       sprintf( 'xtick={%s}', ticks.x ) ];
   end
   if ~isempty( ticklabels.x )
-      cbar_options{l} = sprintf( 'xticklabels={%s}', ticklabels.x );
-      l = l+1;
+      cbar_options = [ cbar_options,                                       ...
+                       sprintf( 'xticklabels={%s}', ticklabels.x ) ];
   end
   if ~isempty( ticks.y )
-      cbar_options{l} = sprintf( 'ytick={%s}', ticks.y );
-      l = l+1;
+      cbar_options = [ cbar_options,                                       ...
+                       sprintf( 'ytick={%s}', ticks.y ) ];
   end
   if ~isempty( ticklabels.y )
-      cbar_options{l} = sprintf( 'yticklabels={%s}', ticklabels.y );
-      l = l+1;
+      cbar_options = [ cbar_options,                                       ...
+                       sprintf( 'yticklabels={%s}', ticklabels.y ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -795,7 +774,7 @@ function lopts = get_legend_opts( handle, fid )
 
   n = length( entries );
 
-  l = 1;
+  lopts = cell( 0 );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle legend entries
@@ -806,8 +785,8 @@ function lopts = get_legend_opts( handle, fid )
           entries{k} = [ '$', entries{k}, '$' ];
       end
 
-      lopts{l} = [ 'legend entries={', collapse(entries,','), '}' ];
-      l = l+1;
+      lopts = [ lopts,                                                     ...
+                [ 'legend entries={', collapse(entries,','), '}' ] ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -819,26 +798,26 @@ function lopts = get_legend_opts( handle, fid )
       case 'NorthEast'
           % don't append any options in this (default) case
       case 'NorthWest'
-          lopts{l} = 'legend style={at={(0.03,0.97)},anchor=north west}'; 
-          l = l+1;
+          lopts = [ lopts,                                                 ...
+                    'legend style={at={(0.03,0.97)},anchor=north west}' ]; 
       case 'SouthWest'
-          lopts{l} = 'legend style={at={(0.03,0.03)},anchor=south west}';
-          l = l+1;
+          lopts = [ lopts,                                                 ...
+                    'legend style={at={(0.03,0.03)},anchor=south west}' ];
       case 'SouthEast'
-          lopts{l} = 'legend style={at={(0.97,0.03)},anchor=south east}';
-          l = l+1;
+          lopts = [ lopts,                                                 ...
+                    'legend style={at={(0.97,0.03)},anchor=south east}' ];
       case 'North'
-          lopts{l} = 'legend style={at={(0.5,0.97)},anchor=north}';
-          l = l+1;
+          lopts = [ lopts,                                                 ...
+                    'legend style={at={(0.5,0.97)},anchor=north}' ];
       case 'East'
-          lopts{l} = 'legend style={at={(0.97,0.5)},anchor=east}';
-          l = l+1;
+          lopts = [ lopts,                                                 ...
+                    'legend style={at={(0.97,0.5)},anchor=east}' ];
       case 'South'
-          lopts{l} = 'legend style={at={(0.5,0.03)},anchor=south}';
-          l = l+1;
+          lopts = [ lopts,                                                 ...
+                    'legend style={at={(0.5,0.03)},anchor=south}' ];
       case 'West'
-          lopts{l} = 'legend style={at={(0.03,0.5)},anchor=west}';
-          l = l+1;
+          lopts = [ lopts,                                                 ...
+                    'legend style={at={(0.03,0.5)},anchor=west}' ];
       otherwise
 	  warning( [ ' Function get_legend_opts:',                         ...
 		     ' Unknown legend location ''',loc,''                  ...
