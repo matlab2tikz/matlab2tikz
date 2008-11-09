@@ -889,15 +889,13 @@ end
 % ============================================================================
 function draw_grid( handle, fid )
 
-% global matfig2pgf_opt;
-
   xgrid = get( handle, 'XGrid' );
   ygrid = get( handle, 'YGrid' );
 
   % plot x-grid
   if strcmp(xgrid,'on')
-      ylim  = get( handle, 'YLim');
-      xtick = get( handle, 'XTick');
+      ylim  = get( handle, 'YLim'  );
+      xtick = get( handle, 'XTick' );
 
       fprintf( fid, '%% MY y-grid\n');
       fprintf( fid, '\\foreach \\x in {');
@@ -1094,13 +1092,44 @@ function draw_text( handle, fid )
 	  warning( 'Don''t know what HorizontalAlignment %s means.', halign );
   end
 
-  fprintf( fid, '\\draw (%f,%f) node[%s] {$%s$};\n\n', position(1), position(2), node_options, text );
+  fprintf( fid, '\\draw (%f,%f) node[%s] {$%s$};\n\n',                     ...
+                               position(1), position(2), node_options, text );
 
   handle_all_children( handle, fid);
 
 end
 % ============================================================================
 % *** END OF FUNCTION draw_text
+% ============================================================================
+
+
+
+% ============================================================================
+% *** FUNCTION translate_text
+% ***
+% *** This function converts MATLAB text strings to valid LaTeX ones.
+% ***
+% ============================================================================
+function newstr = translate_text( handle )
+
+  str = get( handle, 'String' );
+
+  int = get( handle, 'Interpreter' );
+  switch int
+      case 'none'
+          newstr = str;
+          newstr = strrep( newstr, '''', '\''''' );
+          newstr = strrep( newstr, '%' , '%%'    );
+          newstr = strrep( newstr, '\' , '\\'    );
+      case {'tex','latex'}
+          newstr = str;
+      otherwise
+          error( [ 'translate_text: Unknown text interpreter ''',int,'''.' ] )
+  end
+
+end
+% ============================================================================
+% *** FUNCTION translate_text
 % ============================================================================
 
 
