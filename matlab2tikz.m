@@ -1201,43 +1201,43 @@ end
 % =========================================================================
 function xcolor_literal = rgb2xcolor( rgb )
 
-  if rgb==[1,0,0]
+  if isequal( rgb, [1,0,0] )
       xcolor_literal = 'red';
-  elseif rgb==[0,1,0]
+  elseif isequal( rgb, [0,1,0] )
       xcolor_literal = 'green';
-  elseif rgb==[0,0,1]
+  elseif isequal( rgb, [0,0,1] )
       xcolor_literal = 'blue';
-  elseif rgb==[0.75,0.5,0.25]
+  elseif isequal( rgb, [0.75,0.5,0.25] )
       xcolor_literal = 'brown';
-  elseif rgb==[0.75,1,0]
+  elseif isequal( rgb, [0.75,1,0] )
       xcolor_literal = 'lime';
-  elseif rgb==[1,0.5,0]
+  elseif isequal( rgb, [1,0.5,0] )
       xcolor_literal = 'orange';
-  elseif rgb==[1,0.75,0.75]
+  elseif isequal( rgb, [1,0.75,0.75] )
       xcolor_literal = 'pink';
-  elseif rgb==[0.75,0,0.25]
+  elseif isequal( rgb, [0.75,0,0.25] )
       xcolor_literal = 'pink';
-  elseif rgb==[0.75,0,0.25]
+  elseif isequal( rgb, [0.75,0,0.25] )
       xcolor_literal = 'purple';
-  elseif rgb==[0,0.5,0.5]
+  elseif isequal( rgb, [0,0.5,0.5] )
       xcolor_literal = 'teal';
-  elseif rgb==[0.5,0,0.5]
+  elseif isequal( rgb, [0.5,0,0.5] )
       xcolor_literal = 'violet';
-  elseif rgb==[0,1,1]
+  elseif isequal( rgb, [0,1,1] )
       xcolor_literal = 'cyan';
-  elseif rgb==[1,0,1]
+  elseif isequal( rgb, [1,0,1] )
       xcolor_literal = 'magenta';
-  elseif rgb==[1,1,0]
+  elseif isequal( rgb, [1,1,0] )
       xcolor_literal = 'yellow';
-  elseif rgb==[0.5,0.5,0]
+  elseif isequal( rgb, [0.5,0.5,0] )
       xcolor_literal = 'olive';
-  elseif rgb==[0,0,0]
+  elseif isequal( rgb, [0,0,0] )
       xcolor_literal = 'black';
-  elseif rgb==[0.5,0.5,0.5]
+  elseif isequal( rgb, [0.5,0.5,0.5] )
       xcolor_literal = 'gray';
-  elseif rgb==[0.75,0.75,0.75]
+  elseif isequal( rgb, [0.75,0.75,0.75] )
       xcolor_literal = 'lightgray';
-  elseif rgb==[1,1,1]
+  elseif isequal( rgb, [1,1,1] )
       xcolor_literal = 'white';
   else
       xcolor_literal = '';
