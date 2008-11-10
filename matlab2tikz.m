@@ -106,7 +106,8 @@ function save_to_file()
 
   fid = fopen( matlab2tikz_opts.filename, 'w' );
   if fid == -1
-      error( 'save_to_file', 'Unable to open %s for writing', filename );
+      error( 'matlab2tikz:save_to_file', ...
+             'Unable to open %s for writing', filename );
   end
 
   % --------------------------------------------------------------------------
@@ -309,7 +310,7 @@ function draw_axes( handle, fid )
   % set the linestyle
   gridlinestyle = get( handle, 'GridLineStyle' );
   gls           = translate_linestyle( gridlinestyle );
-  fprintf( fid, '\\pgfplotsset{every axis grid/.style={style=%s}}\n', gls );
+  fprintf( fid, '\n\\pgfplotsset{every axis grid/.style={style=%s}}\n\n', gls );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -326,8 +327,7 @@ function draw_axes( handle, fid )
   end
 
   if leghandle
-      pgfplot_options = [ pgfplot_options,                                 ...
-                          get_legend_opts( leghandle, fid ) ];
+      pgfplot_options = [ pgfplot_options, get_legend_opts( leghandle ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -507,20 +507,20 @@ function draw_patch( handle, fid )
   % colors subsequently (such as 'facecolor1', 'facecolor2', ...)
   persistent colorcount
 
-  if ~strcmp(get( handle, 'Visible'), 'on')
+  if ~strcmp( get(handle,'Visible'), 'on' )
       return
   end
 
   %  linewidth = get( handle, 'LineWidth');
-  linestyle = get( handle, 'LineStyle');
+  linestyle = get( handle, 'LineStyle' );
 
-  fprintf( fid, '% patch object\n');
+  fprintf( fid, '%% patch object\n' );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define edge color
-  edgecolor = get( handle, 'EdgeColor');
+  edgecolor = get( handle, 'EdgeColor' );
   edgecolor = anycolor2rgb ( edgecolor, handle, matlab2tikz_opts.gcf,      ...
-					               matlab2tikz_opts.gca );
+					                                matlab2tikz_opts.gca );
   xedgecolor = rgb2xcolor( edgecolor );
   if isempty( xedgecolor )
       fprintf( fid, '\\definecolor{edgecolor}{rgb}{%g,%g,%g}\n', edgecolor );
@@ -579,7 +579,7 @@ end
 % ============================================================================
 % *** FUNCTION draw_colorbar
 % ============================================================================
-function draw_colorbar( handle, fid );
+function draw_colorbar( handle, fid )
 
   if ~strcmp( get(handle,'Visible'), 'on' )
       return
@@ -602,7 +602,8 @@ function draw_colorbar( handle, fid );
   end
 
   if ~parent
-      warning( 'Unable to find the colorbar''s parental axes. Skip.' );
+      warning( 'matlab2tikz;draw_colorbar',                             ...
+               'Unable to find the colorbar''s parental axes. Skip.' );
       return;
   end
 
@@ -628,11 +629,11 @@ function draw_colorbar( handle, fid );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set position, ticks etc. of the colorbar
-  [ ticks, ticklabels ] = get_ticks( handle );
   loc = get( handle, 'Location' );
   switch loc
       case { 'North', 'South', 'East', 'West' }
-          warning( 'Don''t know how to deal with inner colorbars yet.' );
+          warning( 'matlab2tikz;draw_colorbar',                         ...
+                   'Don''t know how to deal with inner colorbars yet.' );
           return;
 
       case {'NorthOutside','SouthOutside'}
@@ -770,7 +771,7 @@ end
 % ============================================================================
 % *** FUNCTION get_legend_opts
 % ============================================================================
-function lopts = get_legend_opts( handle, fid )
+function lopts = get_legend_opts( handle )
 
   if ~strcmp( get(handle,'Visible'), 'on' )
       return
@@ -825,7 +826,8 @@ function lopts = get_legend_opts( handle, fid )
           lopts = [ lopts,                                                 ...
                     'legend style={at={(0.03,0.5)},anchor=west}' ];
       otherwise
-	  warning( [ ' Function get_legend_opts:',                         ...
+	  warning( 'matlab2tikz:get_legend_opts',                          ...
+                   [ ' Function get_legend_opts:',                         ...
 		     ' Unknown legend location ''',loc,''                  ...
                      '. Choosing default.' ] );
   end
@@ -885,54 +887,54 @@ end
 
 
 
-% ============================================================================
-% *** FUNCTION draw_grid
-% ***
-% *** Draw the grid, if the XGrid and/or YGrid property are set 'on'
-% ***
-% *** draw_grid( handle, fid )
-% ***
-% ============================================================================
-function draw_grid( handle, fid )
-
-  xgrid = get( handle, 'XGrid' );
-  ygrid = get( handle, 'YGrid' );
-
-  % plot x-grid
-  if strcmp(xgrid,'on')
-      ylim  = get( handle, 'YLim'  );
-      xtick = get( handle, 'XTick' );
-
-      fprintf( fid, '%% MY y-grid\n');
-      fprintf( fid, '\\foreach \\x in {');
-      fprintf( fid, '%f', xtick(1) );
-      for i=2:length(xtick)
-          fprintf( fid, ',%f', xtick(i) );
-      end
-      fprintf( fid, '}\n');
-      fprintf( fid, '	\\draw [dotted] ( \\x, %f ) -- ( \\x, %f );\n', ylim(1), ylim(2) );
-  end
-
-  % plot y-grid
-  if strcmp(ygrid,'on')
-      xlim       = get( handle, 'XLim');
-      ytick      = get( handle, 'YTick');
-
-      fprintf( fid, '%% x-grid\n');
-      fprintf( fid, '\\foreach \\y in {');
-      fprintf( fid, '%f', ytick(1) );
-      for i=2:length(ytick)
-          fprintf( fid, ',%f', ytick(i) );
-      end
-      fprintf( fid, '}\n');
-      fprintf( fid, '    \\draw [dotted] ( %f, \\y ) -- ( %f, \\y );\n',    ...
-                                                           xlim(1), xlim(2) );
-  end
-
-end
-% ============================================================================
-% *** END OF FUNCTION draw_grid
-% ============================================================================
+% % ============================================================================
+% % *** FUNCTION draw_grid
+% % ***
+% % *** Draw the grid, if the XGrid and/or YGrid property are set 'on'
+% % ***
+% % *** draw_grid( handle, fid )
+% % ***
+% % ============================================================================
+% function draw_grid( handle, fid )
+% 
+%   xgrid = get( handle, 'XGrid' );
+%   ygrid = get( handle, 'YGrid' );
+% 
+%   % plot x-grid
+%   if strcmp(xgrid,'on')
+%       ylim  = get( handle, 'YLim'  );
+%       xtick = get( handle, 'XTick' );
+% 
+%       fprintf( fid, '%% MY y-grid\n');
+%       fprintf( fid, '\\foreach \\x in {');
+%       fprintf( fid, '%f', xtick(1) );
+%       for i=2:length(xtick)
+%           fprintf( fid, ',%f', xtick(i) );
+%       end
+%       fprintf( fid, '}\n');
+%       fprintf( fid, '	\\draw [dotted] ( \\x, %f ) -- ( \\x, %f );\n', ylim(1), ylim(2) );
+%   end
+% 
+%   % plot y-grid
+%   if strcmp(ygrid,'on')
+%       xlim       = get( handle, 'XLim');
+%       ytick      = get( handle, 'YTick');
+% 
+%       fprintf( fid, '%% x-grid\n');
+%       fprintf( fid, '\\foreach \\y in {');
+%       fprintf( fid, '%f', ytick(1) );
+%       for i=2:length(ytick)
+%           fprintf( fid, ',%f', ytick(i) );
+%       end
+%       fprintf( fid, '}\n');
+%       fprintf( fid, '    \\draw [dotted] ( %f, \\y ) -- ( %f, \\y );\n',    ...
+%                                                            xlim(1), xlim(2) );
+%   end
+% 
+% end
+% % ============================================================================
+% % *** END OF FUNCTION draw_grid
+% % ============================================================================
 
 
 
@@ -1063,7 +1065,7 @@ function draw_text( handle, fid )
       return
   end
 
-  fprintf( fid, '% Draw a text handle\n' );
+  fprintf( fid, '%% Draw a text handle\n' );
   text = regexprep( text, '\', '\\' );
 
   position = get( handle, 'Position' );
@@ -1079,30 +1081,32 @@ function draw_text( handle, fid )
   valign = get( handle, 'VerticalAlignment' );
   switch valign
       case {'bottom','baseline'}
-	  node_options = [node_options, sprintf(',anchor=south') ];
+	      node_options = [node_options, sprintf(',anchor=south') ];
       case {'top','cap'}
-	  node_options = [node_options, sprintf(',anchor=north') ];
+	      node_options = [node_options, sprintf(',anchor=north') ];
       case 'middle'
       otherwise
-	  warning( 'Don''t know what VerticalAlignment %s means.', valign );
+	      warning( 'matlab2tikz;draw_text',                             ...
+                   'Don''t know what VerticalAlignment %s means.', valign );
   end
-
+  
   halign = get( handle, 'HorizontalAlignment' );
   switch halign
       case 'left'
-	  node_options = [node_options, sprintf(',anchor=west') ];
+	      node_options = [node_options, sprintf(',anchor=west') ];
       case 'right'
-	  node_options = [node_options, sprintf(',anchor=east') ];
+	      node_options = [node_options, sprintf(',anchor=east') ];
       case 'center'
       otherwise
-	  warning( 'Don''t know what HorizontalAlignment %s means.', halign );
+          warning( 'matlab2tikz;draw_text',                             ...
+	               'Don''t know what HorizontalAlignment %s means.', halign );
   end
 
   fprintf( fid, '\\draw (%f,%f) node[%s] {$%s$};\n\n',                     ...
                                position(1), position(2), node_options, text );
 
   handle_all_children( handle, fid);
-
+  
 end
 % ============================================================================
 % *** END OF FUNCTION draw_text
@@ -1262,69 +1266,79 @@ function [ tikz_marker, mark_options ] =                                   ...
 	  tikz_marker = 'x';
       otherwise  % the following markers are only available with PGF's
                  % plotmarks library
-          disp( sprintf( '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' ) );
+          fprintf( '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
           switch ( matlab_marker )
-	      case '*'
-		  tikz_marker = 'asterisk';
-	      case {'s','square'}
+              
+	          case '*'
+		          tikz_marker = 'asterisk';
+              
+	          case {'s','square'}
                   if facecolor_toggle
-		      tikz_marker = 'square*';
+		              tikz_marker = 'square*';
                   else
-		      tikz_marker = 'square';
+                      tikz_marker = 'square';
                   end
-	      case {'d','diamond'}
+
+	          case {'d','diamond'}
                   if facecolor_toggle
-		      tikz_marker = 'diamond*';
+		              tikz_marker = 'diamond*';
                   else
-		      tikz_marker = 'diamond';
+		              tikz_marker = 'diamond';
                   end
-	      case '^'
+                  
+              case '^'
                   if facecolor_toggle
-		      tikz_marker = 'triangle*';
+		              tikz_marker = 'triangle*';
                   else
-		      tikz_marker = 'triangle';
+		              tikz_marker = 'triangle';
                   end
-	      case 'v'
+
+	          case 'v'
                   if facecolor_toggle
-		      tikz_marker = 'triangle*';
+                      tikz_marker = 'triangle*';
                   else
-		      tikz_marker = 'triangle';
+		              tikz_marker = 'triangle';
                   end
                   mark_options = [ mark_options, ',rotate=180' ];
-	      case '<'
+
+	          case '<'
                   if facecolor_toggle
-		      tikz_marker = 'triangle*';
+                      tikz_marker = 'triangle*';
                   else
-		      tikz_marker = 'triangle';
+		              tikz_marker = 'triangle';
                   end
                   mark_options = [ mark_options, ',rotate=270' ];
-	      case '>'
+
+              case '>'
                   if facecolor_toggle
-		      tikz_marker = 'triangle*';
+		              tikz_marker = 'triangle*';
                   else
-		      tikz_marker = 'triangle';
+		              tikz_marker = 'triangle';
                   end
                   mark_options = [ mark_options, ',rotate=90' ];
-	      case {'p','pentagram'}
+
+              case {'p','pentagram'}
                   if facecolor_toggle
-		      tikz_marker = 'star*';
+		              tikz_marker = 'star*';
                   else
-		      tikz_marker = 'star';
+		              tikz_marker = 'star';
                   end
-		  tikz_marker = 'star';
-	      case {'h','hexagram'}
-                  warning( 'Matlab''s marker ''hexagram'' not available in TikZ. Replacing by ''star''' );
+                  
+	          case {'h','hexagram'}
+                  warning( 'matlab2tikz;translate_marker',              ...
+                           'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
                   if facecolor_toggle
-		      tikz_marker = 'star*';
+		              tikz_marker = 'star*';
                   else
-		      tikz_marker = 'star';
+		              tikz_marker = 'star';
                   end
-		  tikz_marker = 'star';
-	      otherwise
-		  error( [ ' Function translate_marker:',                       ...
-			   ' Unknown matlab_marker ''',matlab_marker,'''.' ] );
+
+              otherwise
+ 		          error( [ ' Function translate_marker:',               ...
+			               ' Unknown matlab_marker ''',matlab_marker,'''.' ] );
           end
   end
+  
 end
 % ============================================================================
 % *** END OF FUNCTION translate_marker
@@ -1388,7 +1402,7 @@ function tikz_markersize =                                                 ...
       otherwise
 	  error( [ ' Function translate_markersize:',                      ...
 		   ' Unknown matlab_marker ''',matlab_marker,'''.' ] );
-      end
+  end
 
 end
 % ============================================================================
@@ -1408,23 +1422,14 @@ end
 % ***
 % ============================================================================
 function newstr = collapse( cellstr, delimiter )
+  
+  newstr = [];
 
-  if length(cellstr)<1
-     newstr = [];
-     return
-  end
-
-  if isnumeric( cellstr{1} )
-      newstr = my_num2str( cellstr{1} );
-  else
-      newstr = cellstr{1};
-  end
-
-  for k = 2:length( cellstr )
+  for k = 1:length( cellstr )
       if isnumeric( cellstr{k} )
-	  str = my_num2str( cellstr{k} );
+	      str = my_num2str( cellstr{k} );
       else
-	  str = cellstr{k};
+	      str = cellstr{k};
       end
       newstr = [ newstr, delimiter, str ];
   end
@@ -1470,6 +1475,7 @@ end
 % ============================================================================
 % *** END FUNCTION my_num2str
 % ============================================================================
+
 
 
 % ============================================================================
