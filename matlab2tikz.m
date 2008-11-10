@@ -79,6 +79,8 @@ function matlab2tikz( fn )
   save_to_file();
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  fprintf( '\nRemember to load \\usepackage{tikz} and \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
+
   % clean up
   clear global matlab2tikz_name;
   clear global matlab2tikz_version;
@@ -158,15 +160,15 @@ function handle_all_children( handle, fid )
 	  case { 'hggroup', 'hgtransform' }
               % don't handle those directly but descend to its children
               % (which could for example be patch handles)
-%                disp( sprintf( '\n *** Not handling %s. ***\n',           ...
-%                                                get(child_handle,'Type') ) );
+%                fprintf( '\n *** Not handling %s. ***\n',                 ...
+%                                                  get(child_handle,'Type') );
               handle_all_children( child, fid );
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent',  ...
                  'image', 'text', 'surface' }
               % don't to anything for these handles and its children
-%                disp( sprintf( '\n *** Not handling %s. ***\n',           ...
-%                                                get(child_handle,'Type') ) );
+%                fprintf( '\n *** Not handling %s. ***\n',                 ...
+%                                                  get(child_handle,'Type') );
 	  otherwise
 	      error( 'matfig2tikz:handle_all_children',                 ...
                      'I don''t know how to handle this object: %s\n',   ...
@@ -224,7 +226,6 @@ function draw_axes( handle, fid )
       env = 'loglogaxis';
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 
   pgfplot_options{1} = 'name=main plot';
 
