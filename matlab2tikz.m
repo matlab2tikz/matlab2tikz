@@ -291,8 +291,8 @@ function draw_axes( handle, fid )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
-  xlim = get( handle, 'XLim');
-  ylim = get( handle, 'YLim');
+  xlim = get( handle, 'XLim' );
+  ylim = get( handle, 'YLim' );
   pgfplot_options = [ pgfplot_options,                                  ...
                       sprintf('xmin=%g, xmax=%g', xlim ),               ...
                       sprintf('ymin=%g, ymax=%g', ylim ) ];
@@ -486,10 +486,37 @@ function draw_line( handle, fid )
   fprintf( fid, ['\\addplot [',opts,'] coordinates{\n' ] );
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-  for i=1:length(xdata)
-      fprintf( fid, ' (%g,%g)', xdata(i), ydata(i) );
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % plot the actual line data
+  % -- Check for any node if it needs to be included at all. For zoomed
+  %    plots, lots can be omitted.
+
+  % get parent axes
+  p = get( handle, 'Parent' );
+
+  xlim = get( p, 'XLim' );
+  ylim = get( p, 'YLim' );
+
+  n = length(xdata);
+
+  % check which nodes lie inside the axes
+  inside = is_inside_box( [xdata', ydata'], xlim, ylim );
+
+  if inside(1) || inside(2)
+      fprintf( fid, ' (%g,%g)', xdata(1), ydata(1) );
   end
+  for k=2:n-1
+      if inside(k-1) || inside(k) || inside(k+1)
+          fprintf( fid, ' (%g,%g)', xdata(k), ydata(k) );
+      end
+  end
+  if inside(n-1) || inside(n)
+      fprintf( fid, ' (%g,%g)', xdata(n), ydata(n) );
+  end
+
   fprintf( fid, '\n};\n\n' );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   handle_all_children( handle, fid );
 
@@ -1687,4 +1714,27 @@ function newstr = escape_characters( str )
 end
 % =========================================================================
 % *** END FUNCTION escape_characters
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION is_inside_box
+% ***
+% *** Determines whether the point(s) 'p' is (are) inside the rectangular
+% *** box defined by xlim, ylim.
+% ***
+% =========================================================================
+function l = is_inside_box( p, xlim, ylim );
+
+  n = size(p,1);
+
+  l = zeros(n,1);
+  for k=1:n
+      l(k) =    p(k,1)>=xlim(1) && p(k,1)<=xlim(2) ...
+             && p(k,2)>=ylim(1) && p(k,2)<=ylim(2);
+  end
+
+end
+% =========================================================================
+% *** END FUNCTION is_inside_box
 % =========================================================================
