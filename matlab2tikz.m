@@ -594,13 +594,33 @@ function draw_patch( handle, fid )
       draw_options{2} = sprintf( 'draw=%s', xedgecolor );
   end
   draw_opts = collapse( draw_options, ',' );
-  fprintf( fid, [ '\\addplot [',draw_opts,'] coordinates{\n'] );
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-  for k=1:length(xdata)
-      fprintf( fid, ' (%f,%f)', xdata(k), ydata(k) );
+  if size(xdata,2)==1
+
+      % This is standard: the x- and y-data are given as an ordinary vector
+      % which describes the curve.
+      fprintf( fid, [ '\\addplot [',draw_opts,'] coordinates{\n'] );
+      for k=1:length(xdata)
+          fprintf( fid, ' (%f,%f)', xdata(k), ydata(k) );
+      end
+      fprintf( fid, '\n};\n\n' );
+  else
+
+      % Sometimes (such as with its hist plots), MATLAB has multiple
+      % distinct areas (such as bars in hist plots) described as one patch
+      % element. Then, draw each column separetely.
+      m = size(xdata,1);
+      n = size(xdata,2);
+      for j=1:n
+          fprintf( fid, [ '\\addplot [',draw_opts,'] coordinates{'] );
+	  for i=1:m
+	      fprintf( fid, ' (%f,%f)', xdata(i,j), ydata(i,j) );
+          end
+          fprintf( fid, '};\n' );
+      end
+
   end
-  fprintf( fid, '\n};\n\n' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   handle_all_children( handle, fid );
