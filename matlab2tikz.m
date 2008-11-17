@@ -585,10 +585,7 @@ function draw_patch( handle, fid )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % plot the thing!
-  xdata = get( handle, 'XData' );
-  ydata = get( handle, 'YData' );
-
+  % gather the draw options
   draw_options{1} = sprintf( 'fill=%s', xfacecolor );
   if strcmp( linestyle, 'none' )
       draw_options{2} = 'draw=none';
@@ -602,6 +599,8 @@ function draw_patch( handle, fid )
   % MATLAB's patch elements are matrices in which each column represents a
   % a distinct graphical object. Usually there is only one column, but
   % there may be more (-->hist plots).
+  xdata = get( handle, 'XData' );
+  ydata = get( handle, 'YData' );
   m = size(xdata,1);
   n = size(xdata,2);
   for j=1:n
@@ -631,11 +630,11 @@ function draw_hggroup( h, fid );
   cl = class( handle(h) );
 
   switch( cl )
-      case 'specgraph.contourgroup'
-	  % MATLAB's contour plots
-          handle_all_children( h, fid );
       case 'specgraph.barseries'
 	  % hist plots and friends
+          draw_barseries( h, fid );
+      case {'specgraph.contourgroup'}
+	  % handle all those the usual way
           handle_all_children( h, fid );
       otherwise
 	  warning( 'matlab2tikz:draw_hggroup',                          ...
@@ -646,6 +645,86 @@ function draw_hggroup( h, fid );
 end
 % =========================================================================
 % *** END FUNCTION draw_hggroup
+% =========================================================================
+
+
+
+% =========================================================================
+% *** FUNCTION draw_barseries
+% ***
+% *** Takes care of plots like the ones produced by MATLAB's hist.
+% *** The main pillar is pgfplots's '{x,y}bar' plot.
+% ***
+% *** NOTE: There is code duplication with 'draw_axes'. Try to get rid of
+% ***       that!
+% ***
+% =========================================================================
+function draw_barseries( h, fid );
+
+  global matlab2tikz_opts;
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % define edge color
+  edgecolor = get( h, 'EdgeColor' );
+  edgecolor = anycolor2rgb ( edgecolor, h, matlab2tikz_opts.gcf,   ...
+					            matlab2tikz_opts.gca );
+  xedgecolor = rgb2xcolor( edgecolor );
+  if isempty( xedgecolor )
+      fprintf( fid, '\\definecolor{edgecolor}{rgb}{%g,%g,%g}\n',        ...
+                                                               edgecolor );
+      xedgecolor = 'edgecolor';
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % define face color
+  facecolor = get( h, 'FaceColor');
+  facecolor = anycolor2rgb ( facecolor, h, matlab2tikz_opts.gcf,   ...
+					            matlab2tikz_opts.gca );
+  xfacecolor = rgb2xcolor( facecolor );
+  if isempty( xfacecolor )
+      if isempty(colorcount)
+          colorcount = 0;
+      end
+      colorcount = colorcount + 1;
+      fprintf( fid, '\\definecolor{facecolor%d}{rgb}{%g,%g,%g}\n',      ...
+                                                   colorcount, facecolor );
+      xfacecolor = sprintf( 'facecolor%d', colorcount );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % gather the draw options
+  linestyle = get( h, 'LineStyle' );
+
+  draw_options{1} = 'ybar';
+  draw_options{2} = sprintf( 'fill=%s', xfacecolor );
+  if strcmp( linestyle, 'none' )
+      draw_options{3} = 'draw=none';
+  else
+      draw_options{3} = sprintf( 'draw=%s', xedgecolor );
+  end
+  draw_opts = collapse( draw_options, ',' );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % plot the thing
+  fprintf( fid, '\\addplot[%s] plot coordinates{', draw_opts );
+
+  xdata = get( h, 'XData' );
+  ydata = get( h, 'YData' );
+
+  for k=1:length(xdata)
+      fprintf( fid, ' (%f,%f)', xdata(k), ydata(k) );
+  end
+
+  fprintf( fid, ' };\n\n' );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+end
+% =========================================================================
+% *** END FUNCTION draw_barseries
 % =========================================================================
 
 
