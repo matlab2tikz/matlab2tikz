@@ -157,7 +157,9 @@ function handle_all_children( handle, fid )
 	      draw_line ( child, fid );
 	  case 'patch'
 	      draw_patch( child, fid );
-	  case { 'hggroup', 'hgtransform' }
+	  case 'hggroup'
+	      draw_hggroup( child, fid );
+	  case { 'hgtransform' }
               % don't handle those directly but descend to its children
               % (which could for example be patch handles)
 %                fprintf( '\n *** Not handling %s. ***\n',                 ...
@@ -596,31 +598,20 @@ function draw_patch( handle, fid )
   draw_opts = collapse( draw_options, ',' );
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-  if size(xdata,2)==1
 
-      % This is standard: the x- and y-data are given as an ordinary vector
-      % which describes the curve.
-      fprintf( fid, [ '\\addplot [',draw_opts,'] coordinates{\n'] );
-      for k=1:length(xdata)
-          fprintf( fid, ' (%f,%f)', xdata(k), ydata(k) );
+  % MATLAB's patch elements are matrices in which each column represents a
+  % a distinct graphical object. Usually there is only one column, but
+  % there may be more (-->hist plots).
+  m = size(xdata,1);
+  n = size(xdata,2);
+  for j=1:n
+      fprintf( fid, [ '\\addplot [',draw_opts,'] coordinates{'] );
+      for i=1:m
+	  fprintf( fid, ' (%f,%f)', xdata(i,j), ydata(i,j) );
       end
-      fprintf( fid, '\n};\n\n' );
-  else
-
-      % Sometimes (such as with its hist plots), MATLAB has multiple
-      % distinct areas (such as bars in hist plots) described as one patch
-      % element. Then, draw each column separetely.
-      m = size(xdata,1);
-      n = size(xdata,2);
-      for j=1:n
-          fprintf( fid, [ '\\addplot [',draw_opts,'] coordinates{'] );
-	  for i=1:m
-	      fprintf( fid, ' (%f,%f)', xdata(i,j), ydata(i,j) );
-          end
-          fprintf( fid, '};\n' );
-      end
-
+      fprintf( fid, '};\n' );
   end
+  fprintf( fid, '\n' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   handle_all_children( handle, fid );
@@ -630,6 +621,32 @@ end
 % *** END OF FUNCTION draw_patch
 % =========================================================================
 
+
+
+% =========================================================================
+% *** FUNCTION draw_hggroup
+% =========================================================================
+function draw_hggroup( h, fid );
+
+  cl = class( handle(h) );
+
+  switch( cl )
+      case 'specgraph.contourgroup'
+	  % MATLAB's contour plots
+          handle_all_children( h, fid );
+      case 'specgraph.barseries'
+	  % hist plots and friends
+          handle_all_children( h, fid );
+      otherwise
+	  warning( 'matlab2tikz:draw_hggroup',                          ...
+                       'Don''t know class ''%s''. Default handling.', cl );
+          handle_all_children( h, fid );
+  end
+
+end
+% =========================================================================
+% *** END FUNCTION draw_hggroup
+% =========================================================================
 
 
 
@@ -660,7 +677,7 @@ function draw_colorbar( handle, fid )
   end
 
   if ~parent
-      warning( 'matlab2tikz;draw_colorbar',                             ...
+      warning( 'matlab2tikz:draw_colorbar',                             ...
                'Unable to find the colorbar''s parental axes. Skip.' );
       return;
   end
@@ -690,7 +707,7 @@ function draw_colorbar( handle, fid )
   loc = get( handle, 'Location' );
   switch loc
       case { 'North', 'South', 'East', 'West' }
-          warning( 'matlab2tikz;draw_colorbar',                         ...
+          warning( 'matlab2tikz:draw_colorbar',                         ...
                    'Don''t know how to deal with inner colorbars yet.' );
           return;
 
@@ -1145,7 +1162,7 @@ function draw_text( handle, fid )
 	      node_options = [node_options, sprintf(',anchor=north') ];
       case 'middle'
       otherwise
-	      warning( 'matlab2tikz;draw_text',                         ...
+	      warning( 'matlab2tikz:draw_text',                         ...
                   'Don''t know what VerticalAlignment %s means.', valign );
   end
   
@@ -1157,7 +1174,7 @@ function draw_text( handle, fid )
 	      node_options = [node_options, sprintf(',anchor=east') ];
       case 'center'
       otherwise
-          warning( 'matlab2tikz;draw_text',                             ...
+          warning( 'matlab2tikz:draw_text',                             ...
 	        'Don''t know what HorizontalAlignment %s means.', halign );
   end
 
@@ -1385,7 +1402,7 @@ function [ tikz_marker, mark_options ] =                                ...
                   end
                   
 	          case {'h','hexagram'}
-                  warning( 'matlab2tikz;translate_marker',              ...
+                  warning( 'matlab2tikz:translate_marker',              ...
                            'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
                   if facecolor_toggle
 		              tikz_marker = 'star*';
