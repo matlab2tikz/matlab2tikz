@@ -151,28 +151,36 @@ function handle_all_children( handle, fid )
       child = children(i);
 
       switch get( child, 'Type' )
+
 	  case 'axes'
 	      draw_axes ( child, fid );
+
 	  case 'line'
 	      draw_line ( child, fid );
+
 	  case 'patch'
 	      draw_patch( child, fid );
+
 	  case 'hggroup'
 	      draw_hggroup( child, fid );
+
 	  case { 'hgtransform' }
               % don't handle those directly but descend to its children
               % (which could for example be patch handles)
               handle_all_children( child, fid );
+
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent',  ...
                  'image', 'text', 'surface' }
               % don't to anything for these handles and its children
 %                fprintf( '\n *** Not handling %s. ***\n',                 ...
 %                                                  get(child_handle,'Type') );
+
 	  otherwise
 	      error( 'matfig2tikz:handle_all_children',                 ...
                      'I don''t know how to handle this object: %s\n',   ...
                                                        get(child,'Type') );
+
       end
   end
 
@@ -536,63 +544,34 @@ end
 % =========================================================================
 function draw_patch( handle, fid )
 
-  global matlab2tikz_opts;
-
-  % the colorcount counter is a workaround for a missing feature in
-  % pgfplots:
-  % redefining a color (such as 'facecolor') doesn't work, hence define
-  % colors subsequently (such as 'facecolor1', 'facecolor2', ...)
-  persistent colorcount
-
   if ~strcmp( get(handle,'Visible'), 'on' )
       return
   end
 
-  %  linewidth = get( handle, 'LineWidth');
-  linestyle = get( handle, 'LineStyle' );
-
-  fprintf( fid, '%% patch object\n' );
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % define edge color
-  edgecolor = get( handle, 'EdgeColor' );
-  edgecolor = anycolor2rgb ( edgecolor, handle, matlab2tikz_opts.gcf,   ...
-					            matlab2tikz_opts.gca );
-  xedgecolor = rgb2xcolor( edgecolor );
-  if isempty( xedgecolor )
-      fprintf( fid, '\\definecolor{edgecolor}{rgb}{%g,%g,%g}\n',        ...
-                                                               edgecolor );
-      xedgecolor = 'edgecolor';
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % define face color
-  facecolor = get( handle, 'FaceColor');
-  facecolor = anycolor2rgb ( facecolor, handle, matlab2tikz_opts.gcf,   ...
-					            matlab2tikz_opts.gca );
-  xfacecolor = rgb2xcolor( facecolor );
-  if isempty( xfacecolor )
-      if isempty(colorcount)
-          colorcount = 0;
-      end
-      colorcount = colorcount + 1;
-      fprintf( fid, '\\definecolor{facecolor%d}{rgb}{%g,%g,%g}\n',      ...
-                                                   colorcount, facecolor );
-      xfacecolor = sprintf( 'facecolor%d', colorcount );
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % -----------------------------------------------------------------------
   % gather the draw options
-  draw_options{1} = sprintf( 'fill=%s', xfacecolor );
-  if strcmp( linestyle, 'none' )
-      draw_options{2} = 'draw=none';
-  else
-      draw_options{2} = sprintf( 'draw=%s', xedgecolor );
+  draw_options = cell(0);
+
+  % fill color
+  facecolor  = get( handle, 'FaceColor');
+  if ~strcmp( facecolor, 'none' )
+      xfacecolor = get_color( fid, handle, facecolor );
+      draw_options = [ draw_options,                                    ...
+                       sprintf( 'fill=%s', xfacecolor ) ];
   end
+
+  % draw color
+  edgecolor  = get( handle, 'EdgeColor' );
+  linestyle = get( handle, 'LineStyle' );
+  if strcmp( linestyle, 'none' ) || strcmp( edgecolor, 'none' )
+      draw_options = [ draw_options, 'draw=none' ];
+  else
+      xedgecolor = get_color( fid, handle, edgecolor );
+      draw_options = [ draw_options, sprintf( 'draw=%s', xedgecolor ) ];
+  end
+
   draw_opts = collapse( draw_options, ',' );
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+  % -----------------------------------------------------------------------
 
 
   % MATLAB's patch elements are matrices in which each column represents a
@@ -605,7 +584,10 @@ function draw_patch( handle, fid )
   for j=1:n
       fprintf( fid, [ '\\addplot [',draw_opts,'] coordinates{'] );
       for i=1:m
-	  fprintf( fid, ' (%f,%f)', xdata(i,j), ydata(i,j) );
+          if ~isnan(xdata(i,j)) && ~isnan(ydata(i,j))
+              % don't print NaNs
+	      fprintf( fid, ' (%f,%f)', xdata(i,j), ydata(i,j) );
+          end
       end
       fprintf( fid, '};\n' );
   end
@@ -644,6 +626,9 @@ function draw_hggroup( h, fid );
       case {'specgraph.contourgroup'}
 	  % handle all those the usual way
           handle_all_children( h, fid );
+
+      case {'specgraph.quivergroup'}
+	  % don't handle those at all
 
       otherwise
 	  warning( 'matlab2tikz:draw_hggroup',                          ...
@@ -1194,6 +1179,43 @@ end
 
 
 % =========================================================================
+% *** FUNCTION get_color
+% ***
+% *** Handles MATLAB colors and makes them available to TikZ.
+% *** This includes translation of the color value as well as explicit
+% *** definition of the color if it is not available in TikZ by default.
+% ***
+% =========================================================================
+function xcolor = get_color( fid, handle, color )
+
+  global matlab2tikz_opts;
+
+  % colorcount keeps track of the number of self-defined colors to avoid
+  % unpurposed redefinition
+  persistent colorcount
+
+  col = anycolor2rgb ( color, handle, matlab2tikz_opts.gcf,             ...
+					            matlab2tikz_opts.gca );
+  xcolor = rgb2xcolor( col );
+
+  if isempty( xcolor )
+      if isempty(colorcount)
+          colorcount = 0;
+      end
+      colorcount = colorcount + 1;
+      fprintf( fid, '\\definecolor{mycolor%d}{rgb}{%g,%g,%g}\n',        ...
+                                                         colorcount, col );
+      xcolor = sprintf( 'mycolor%d', colorcount );
+  end
+
+end
+% =========================================================================
+% *** END FUNCTION get_color
+% =========================================================================
+
+
+
+% =========================================================================
 % *** FUNCTION get_legend_opts
 % =========================================================================
 function lopts = get_legend_opts( handle )
@@ -1280,30 +1302,46 @@ function rgbcolor = anycolor2rgb ( color, imagehandle, fighandle,       ...
       return
   end
 
-  if strcmp( color, 'flat')
-      colormap = get( fighandle  , 'ColorMap' );
-      cdata    = get( imagehandle, 'CData'    );
-      if strcmp( get( imagehandle, 'CDataMapping'), 'scaled' )
-          % need to scale within clim
-          % see MATLAB's manual page for caxis for details
-          clim = get( axeshandle, 'clim' );
-          m = size( colormap, 1 );
-          if cdata<=clim(1)
-              colorindex = 1;
-          elseif cdata>=clim(2)
-              colorindex = m;
-          else
-              colorindex = fix((cdata-clim(1))/(clim(2)-clim(1))*m)+1;
-          end
-      else
-          % direct index
-          colorindex = cdata(1, 1);
-      end
-      rgbcolor = colormap( colorindex, : );
-  else
-      error( [ 'Function color2index: ',                                ...
-               'I don''t know how to handle the color value of %s .' ], ...
-                color );
+
+  switch color
+
+      case 'flat'
+	  % ---------------------------------------------------------------
+	  colormap = get( fighandle  , 'ColorMap' );
+	  cdata    = get( imagehandle, 'CData'    );
+
+	  % QUIRK: With contour plots (not contourf), cdata will be a
+          %        vector of equal values, except the last one which is a
+          %        NaN. To work around this oddity, just take the first
+          %        entry.
+	  cdata = cdata( 1 );
+
+	  if strcmp( get(imagehandle,'CDataMapping'), 'scaled' )
+	      % need to scale within clim
+	      % see MATLAB's manual page for caxis for details
+	      clim = get( axeshandle, 'clim' );
+	      m = size( colormap, 1 );
+	      if cdata<=clim(1)
+		  colorindex = 1;
+	      elseif cdata>=clim(2)
+		  colorindex = m;
+	      else
+		  colorindex = fix( (cdata-clim(1))/(clim(2)-clim(1)) *m ) + 1;
+	      end
+	  else
+	      % direct index
+	      colorindex = cdata(1, 1);
+	  end
+	  rgbcolor = colormap( colorindex, : );
+	  % ---------------------------------------------------------------
+
+      case 'none'
+          rgbcolor = [];
+
+      otherwise
+          error( [ 'matlab2tikz:anycolor2rgb',                          ...
+                   'Don''t know how to handle the color model ''%s''.' ],  ...
+                   color );
   end
 
 end
