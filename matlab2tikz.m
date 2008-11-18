@@ -162,8 +162,6 @@ function handle_all_children( handle, fid )
 	  case { 'hgtransform' }
               % don't handle those directly but descend to its children
               % (which could for example be patch handles)
-%                fprintf( '\n *** Not handling %s. ***\n',                 ...
-%                                                  get(child_handle,'Type') );
               handle_all_children( child, fid );
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent',  ...
@@ -397,7 +395,8 @@ function draw_line( handle, fid )
   linewidth = get( handle, 'LineWidth');
   marker    = get( handle, 'Marker');
 
-  if ( (strcmp(linestyle,'none')||linewidth==0) && strcmp(marker,'none') )
+  if (    ( strcmp(linestyle,'none') || linewidth==0 )                  ...
+       && strcmp(marker,'none') )
       return
   end
 
@@ -633,9 +632,15 @@ function draw_hggroup( h, fid );
       case 'specgraph.barseries'
 	  % hist plots and friends
           draw_barseries( h, fid );
+
+      case 'specgraph.stemseries'
+	  % stem plots
+          draw_stemseries( h, fid );
+
       case {'specgraph.contourgroup'}
 	  % handle all those the usual way
           handle_all_children( h, fid );
+
       otherwise
 	  warning( 'matlab2tikz:draw_hggroup',                          ...
                        'Don''t know class ''%s''. Default handling.', cl );
@@ -725,6 +730,137 @@ function draw_barseries( h, fid );
 end
 % =========================================================================
 % *** END FUNCTION draw_barseries
+% =========================================================================
+
+
+
+% =========================================================================
+% *** FUNCTION draw_stemseries
+% ***
+% *** Takes care of MATLAB's stem plots.
+% ***
+% *** NOTE: There is code duplication with 'draw_axes'. Try to get rid of
+% ***       that!
+% ***
+% =========================================================================
+function draw_stemseries( h, fid );
+
+  global matlab2tikz_opts;
+
+
+  linestyle = get( h, 'LineStyle');
+  linewidth = get( h, 'LineWidth');
+  marker    = get( h, 'Marker');
+
+  if (    ( strcmp(linestyle,'none') || linewidth==0 )                  ...
+       && strcmp(marker,'none') )
+      return
+  end
+
+  xdata = get( h, 'XData' );
+  ydata = get( h, 'YData' );
+
+  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+  % deal with draw options
+  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+  color     = get( h, 'Color' );
+  plotcolor = rgb2xcolor( color );
+  if isempty( plotcolor )
+      fprintf( fid, '\\definecolor{plotcolor}{rgb}{%6f,%6f,%6f}\n',     ...
+                                            color(1), color(2), color(3) );
+      plotcolor = 'plotcolor';
+  end
+
+  draw_options{1} = 'ycomb';
+  draw_options = [draw_options, sprintf( 'color=%s', plotcolor ) ];
+
+  if ~strcmp(linestyle,'none') && linewidth~=0
+      draw_options = [ draw_options,                                    ...
+                       sprintf('%s', translate_linestyle(linestyle) ),  ...
+                       sprintf('line width=%.1fpt', linewidth ) ];
+  end
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % marker (with its own options)
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  if ~strcmp( marker, 'none' )
+      marker_size = get( h, 'MarkerSize');
+
+      % In MATLAB, the marker size refers to the edge length of a square
+      % (for example) (~diameter), whereas in TikZ the distance of an edge
+      % to the center is the measure (~radius). Hence divide by 2.
+      tikz_marker_size = translate_markersize( marker, marker_size );
+      draw_options = [ draw_options,                                    ...
+                       sprintf( 'mark size=%.1fpt', tikz_marker_size ) ];
+      
+      mark_options = cell( 0 );
+      % make sure that the markers get painted in solid (and not dashed)
+      if ~strcmp( linestyle, 'solid' )
+          mark_options = [ mark_options, 'solid' ];
+      end
+
+      % print no lines
+      if strcmp(linestyle,'none') || linewidth==0
+          draw_options = [ draw_options, 'only marks' ] ;
+      end
+
+      % get the marker color right
+      markerfacecolor = get( h, 'MarkerFaceColor' );
+      markeredgecolor = get( h, 'MarkerEdgeColor' );
+      [ tikz_marker, mark_options ] = translate_marker( marker,         ...
+                           mark_options, ~strcmp(markerfacecolor,'none') );
+      if ~strcmp(markerfacecolor,'none')
+	  xcolor = rgb2xcolor( markerfacecolor );
+	  if isempty( xcolor )
+              fprintf( fid, '\\definecolor{markerfacecolor}{rgb}{%.2f,%.2f,%.2f}\n',...
+                                                         markerfacecolor );
+	      xcolor = 'markerfacecolor';
+	  end
+          mark_options = [ mark_options,  sprintf( 'fill=%s', xcolor ) ];
+      end
+      if ~strcmp(markeredgecolor,'none') && ~strcmp(markeredgecolor,'auto')
+	  xcolor = rgb2xcolor( markeredgecolor );
+	  if isempty( xcolor )
+              fprintf( fid, '\\definecolor{markeredgecolor}{rgb}{%.2f,%.2f,%.2f}\n',...
+                                                         markeredgecolor );
+	      xcolor = 'markeredgecolor';
+	  end
+          mark_options = [ mark_options, sprintf( 'draw=%s', xcolor ) ];
+      end
+
+      % add it all to draw_options
+      draw_options = [ draw_options, sprintf( 'mark=%s', tikz_marker ) ];
+
+      if ~isempty( mark_options )
+          mo = collapse( mark_options, ',' );
+	  draw_options = [ draw_options, [ 'mark options={', mo, '}' ] ];
+      end
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  % insert draw options
+  draw_opts =  collapse( draw_options, ',' );
+  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
+
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % plot the thing
+  fprintf( fid, '\\addplot[%s] plot coordinates{', draw_opts );
+
+  xdata = get( h, 'XData' );
+  ydata = get( h, 'YData' );
+
+  for k=1:length(xdata)
+      fprintf( fid, ' (%f,%f)', xdata(k), ydata(k) );
+  end
+
+  fprintf( fid, ' };\n\n' );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+end
+% =========================================================================
+% *** END FUNCTION draw_stemseries
 % =========================================================================
 
 
