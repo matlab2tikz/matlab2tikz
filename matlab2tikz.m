@@ -628,7 +628,8 @@ function draw_hggroup( h, fid );
           handle_all_children( h, fid );
 
       case {'specgraph.quivergroup'}
-	  % don't handle those at all
+	  % quiver arrows
+	  draw_quivergroup( h, fid );
 
       otherwise
 	  warning( 'matlab2tikz:draw_hggroup',                          ...
@@ -982,6 +983,74 @@ end
 % *** END FUNCTION draw_stairseries
 % =========================================================================
 
+
+
+% =========================================================================
+% *** FUNCTION draw_quivergroup
+% ***
+% *** Takes care of MATLAB's quiver plots.
+% ***
+% =========================================================================
+function draw_quivergroup( h, fid );
+
+  global matlab2tikz_opts;
+
+  xdata = get( h, 'XData' );
+  ydata = get( h, 'YData' );
+  udata = get( h, 'UData' );
+  vdata = get( h, 'VData' );
+
+  m = size( xdata, 1 );
+  n = size( xdata, 2 );
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % Do autoscaling. The following procedure can be found in MATLAB's
+  % quiver.m
+  autoscale = get( h, 'AutoScale' );
+  if strcmp( autoscale, 'on' )
+
+      scalefactor = get( h, 'AutoScaleFactor' );
+      
+      % Get average spacing in x- and y-direction.
+      % -- This assumes that when xdata, ydata are indeed 2d entities, they
+      %    really repeat the same row (column) m (n) times. Hence take only
+      %    the first.
+      avx = diff([min(xdata(1,:)) max(xdata(1,:))])/m;
+      avy = diff([min(ydata(:,1)) max(ydata(:,1))])/n;
+      av  = avx.^2 + avy.^2; % length of the average box diagonal
+
+      % get the maximal length of a scaled arrow
+      if av>0
+	  len = sqrt( (udata.^2 + vdata.^2)/av );
+	  maxlen = max(len(:));
+      else
+	  maxlen = 0;
+      end
+
+      if maxlen>0
+	  scalefactor = scalefactor*0.9 / maxlen;
+      else
+	  scalefactor = scalefactor*0.9;
+      end
+      udata = udata*scalefactor;
+      vdata = vdata*scalefactor;      
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  for i=1:m
+      for j=1:n
+          fprintf( fid, '\\addplot [draw=black] coordinates{ (%g,%g) (%g,%g) };\n',  ...
+                            xdata(i,j)           , ydata(i,j)        ,  ...
+                            xdata(i,j)+udata(i,j), ydata(i,j)+vdata(i,j) );
+      end
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+end
+% =========================================================================
+% *** END FUNCTION draw_quivergroup
+% =========================================================================
 
 
 
