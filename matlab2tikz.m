@@ -419,7 +419,7 @@ function draw_line( handle, fid )
   color     = get( handle, 'Color');
   plotcolor = rgb2xcolor( color );
   if isempty( plotcolor )
-      fprintf( fid, '\\definecolor{plotcolor}{rgb}{%6f,%6f,%6f}\n',     ...
+      fprintf( fid, '\\definecolor{plotcolor}{rgb}{%g,%g,%g}\n',     ...
                                             color(1), color(2), color(3) );
       plotcolor = 'plotcolor';
   end
@@ -586,7 +586,7 @@ function draw_patch( handle, fid )
       for i=1:m
           if ~isnan(xdata(i,j)) && ~isnan(ydata(i,j))
               % don't print NaNs
-	      fprintf( fid, ' (%f,%f)', xdata(i,j), ydata(i,j) );
+	      fprintf( fid, ' (%g,%g)', xdata(i,j), ydata(i,j) );
           end
       end
       fprintf( fid, '};\n' );
@@ -711,7 +711,7 @@ function draw_barseries( h, fid );
   ydata = get( h, 'YData' );
 
   for k=1:length(xdata)
-      fprintf( fid, ' (%f,%f)', xdata(k), ydata(k) );
+      fprintf( fid, ' (%g,%g)', xdata(k), ydata(k) );
   end
 
   fprintf( fid, ' };\n\n' );
@@ -756,7 +756,7 @@ function draw_stemseries( h, fid );
   color     = get( h, 'Color' );
   plotcolor = rgb2xcolor( color );
   if isempty( plotcolor )
-      fprintf( fid, '\\definecolor{plotcolor}{rgb}{%6f,%6f,%6f}\n',     ...
+      fprintf( fid, '\\definecolor{plotcolor}{rgb}{%g,%g,%g}\n',     ...
                                             color(1), color(2), color(3) );
       plotcolor = 'plotcolor';
   end
@@ -842,7 +842,7 @@ function draw_stemseries( h, fid );
   ydata = get( h, 'YData' );
 
   for k=1:length(xdata)
-      fprintf( fid, ' (%f,%f)', xdata(k), ydata(k) );
+      fprintf( fid, ' (%g,%g)', xdata(k), ydata(k) );
   end
 
   fprintf( fid, ' };\n\n' );
@@ -886,7 +886,7 @@ function draw_stairseries( h, fid );
   color     = get( h, 'Color' );
   plotcolor = rgb2xcolor( color );
   if isempty( plotcolor )
-      fprintf( fid, '\\definecolor{plotcolor}{rgb}{%6f,%6f,%6f}\n',     ...
+      fprintf( fid, '\\definecolor{plotcolor}{rgb}{%g,%g,%g}\n',     ...
                                             color(1), color(2), color(3) );
       plotcolor = 'plotcolor';
   end
@@ -972,7 +972,7 @@ function draw_stairseries( h, fid );
   ydata = get( h, 'YData' );
 
   for k=1:length(xdata)
-      fprintf( fid, ' (%f,%f)', xdata(k), ydata(k) );
+      fprintf( fid, ' (%g,%g)', xdata(k), ydata(k) );
   end
 
   fprintf( fid, ' };\n\n' );
@@ -1003,7 +1003,7 @@ function draw_quivergroup( h, fid );
   m = size( xdata, 1 );
   n = size( xdata, 2 );
 
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Do autoscaling. The following procedure can be found in MATLAB's
   % quiver.m
   autoscale = get( h, 'AutoScale' );
@@ -1035,17 +1035,56 @@ function draw_quivergroup( h, fid );
       udata = udata*scalefactor;
       vdata = vdata*scalefactor;      
   end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % gather the arrow options
+  arrow_opts = cell(0);
+
+  showarrowhead = get( h, 'ShowArrowHead' );
+  linestyle     = get( h, 'LineStyle' );
+  linewidth     = get( h, 'LineWidth' );
+
+  if ( strcmp(linestyle,'none') || linewidth==0 )  && ~showarrowhead
+      return
+  end
+
+  if showarrowhead
+      arrow_opts = [ arrow_opts, '->' ];
+  else
+      arrow_opts = [ arrow_opts, '-' ];
+  end
+
+  color      = get( h, 'Color');
+  arrowcolor = rgb2xcolor( color );
+  if isempty( arrowcolor )
+      fprintf( fid, '\\definecolor{arrowcolor}{rgb}{%g,%g,%g}\n',    ...
+                                                                   color );
+      arrowcolor = 'arrowcolor';
+  end
+  arrow_opts = [ arrow_opts, sprintf( 'color=%s', arrowcolor ) ];
+
+  if ~strcmp(linestyle,'none') && linewidth~=0
+      arrow_opts = [ arrow_opts,                                        ...
+                     translate_linestyle(linestyle),                    ...
+                     sprintf('line width=%.1fpt', linewidth ) ];
+  end
+
+  arrow_options = collapse( arrow_opts, ',' );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   for i=1:m
       for j=1:n
-          fprintf( fid, '\\addplot [draw=black] coordinates{ (%g,%g) (%g,%g) };\n',  ...
+          fprintf( fid, '\\addplot [%s] coordinates{ (%g,%g) (%g,%g) };\n',...
+                            arrow_options,                              ...
                             xdata(i,j)           , ydata(i,j)        ,  ...
                             xdata(i,j)+udata(i,j), ydata(i,j)+vdata(i,j) );
       end
   end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
@@ -1635,7 +1674,7 @@ function draw_text( handle, fid )
 	        'Don''t know what HorizontalAlignment %s means.', halign );
   end
 
-  fprintf( fid, '\\draw (%f,%f) node[%s] {$%s$};\n\n',                  ...
+  fprintf( fid, '\\draw (%g,%g) node[%s] {$%s$};\n\n',                  ...
                             position(1), position(2), node_options, text );
 
   handle_all_children( handle, fid);
