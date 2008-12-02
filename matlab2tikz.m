@@ -122,8 +122,10 @@ function save_to_file()
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % enter plot recursion
+  set( 0, 'ShowHiddenHandles', 'on' );
   fh = gcf;
   handle_all_children( fh, fid );
+  set( 0, 'ShowHiddenHandles', 'off' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   fprintf( fid, '\\end{tikzpicture}');
@@ -151,7 +153,6 @@ function handle_all_children( handle, fid )
       child = children(i);
 
       switch get( child, 'Type' )
-
 	  case 'axes'
 	      draw_axes ( child, fid );
 
@@ -197,6 +198,13 @@ end
 function draw_axes( handle, fid )
 
   if ~strcmp( get(handle,'Visible'), 'on' )
+      % An invisible axis container *can* have visible children, so don't
+      % immediately bail out here.
+      if length(get(handle,'Children')) > 0
+          env  = 'axis';
+          opts = 'hide x axis, hide y axis';
+          plot_axis_environment( fid, handle, opts, env );
+      end
       return
   end
 
@@ -281,7 +289,7 @@ function draw_axes( handle, fid )
   if ~isempty( axislabels.y )
       pgfplot_options = [ pgfplot_options,                              ...
                           sprintf( 'ylabel={$%s$}',                     ...
-                                  escape_characters(axislabels.y) ) ];
+                                   escape_characters(axislabels.y) ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -355,7 +363,6 @@ function draw_axes( handle, fid )
   % -- put 'opts' directly in the format string to have escape characters
   %    correctly identified
   opts = [ '%%\n', collapse( pgfplot_options, ',%%\n' ), '%%\n' ];
-  fprintf( fid, ['\\begin{%s}[',opts,']\n'], env );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 % don't use background yet as it interferes with the grid and the axes
@@ -376,12 +383,23 @@ function draw_axes( handle, fid )
 %    end
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  % handle all children
-  matfig2pgf_opt.CurrentAxesHandle = handle;
-  handle_all_children( handle, fid );
+  % actually begin drawing
+  plot_axis_environment( fid, handle, opts, env );
 
-  % finally close this axis' scope
-  fprintf( fid, '\\end{%s}\n', env );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  function plot_axis_environment( fid, handle, opts, env )
+
+      % open axis environment
+      fprintf( fid, ['\n\\begin{%s}[',opts,']\n'], env );
+
+      % handle all children
+      matfig2pgf_opt.CurrentAxesHandle = handle;
+      handle_all_children( handle, fid );
+
+      % finally close this axis' scope
+      fprintf( fid, '\\end{%s}\n\n', env );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
@@ -658,6 +676,97 @@ function draw_barseries( h, fid );
 
   global matlab2tikz_opts;
 
+  persistent colorcount
+
+  % 'barplot_id' rovides a consecutively numbered ID for each
+  % barseries plot. This allows for properly handling multiple bars.
+  persistent barplot_id
+  persistent barplot_total_number
+  persistent barwidth
+  persistent barshifts
+
+  xdata = get( h, 'XData' );
+  ydata = get( h, 'YData' );
+
+  % init draw_options
+  draw_options = cell(0);
+
+  barlayout = get( h, 'BarLayout' );
+  if strcmp( barlayout, 'grouped' )
+
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      % grouped plots
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      groupwidth = 0.8; % MATLAB's default value, see makebars.m
+      
+      % initialize the values
+      if isempty(barplot_total_number)
+          % count all the other brother & sister barseries plots
+          parent = get( h, 'Parent' );
+          barplot_total_number = 0;
+          siblings = get( parent, 'Children' );
+          for k = 1:length(siblings)
+              if strcmp( class(handle(siblings(k))), 'specgraph.barseries' )
+                  barplot_total_number = barplot_total_number + 1;
+              end
+          end
+      end
+
+      % set ID
+      if isempty(barplot_id)
+          barplot_id = 1;
+      else
+          barplot_id = barplot_id + 1;
+      end
+
+      % -------------------------------------------------------------------
+      % Calculate the width of each bar and the center point shift.
+      % The following is taken from MATLAB (see makebars.m) without the
+      % special handling for hist plots or other fancy options.
+      % -------------------------------------------------------------------
+      if isempty( barwidth ) || isempty(barshifts)
+	  dx = min( diff(xdata) );
+	  groupwidth = dx * groupwidth;
+
+	  % this is the barwidth with no interbar spacing yet
+	  barwidth = groupwidth / barplot_total_number;
+
+          barshifts = -0.5* groupwidth                                  ...
+                    + ( (0:barplot_total_number-1)+0.5) * barwidth;
+
+	  bw_factor = get( h, 'BarWidth' );
+	  barwidth  = bw_factor* barwidth;
+      end
+      % -------------------------------------------------------------------
+
+      draw_options = [ draw_options, 'ybar' ];
+
+      % this is rather ugly:
+      % MATLAB treats shift and width in normalized coordinate units, whereas
+      % pgfplots requires physical units (pt,cm,...). As there is no means
+      % of connecting them yet, just take 'cm' (this assumes that the length
+      % of one unit in the x-direction has the physical length 1cm.
+      draw_options = [ draw_options,                                    ...
+                       sprintf( 'bar interval width=1, bar interval shift=%g',       ...
+                                        barwidth, barshifts(barplot_id)) ];
+
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      % end grouped plots
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  elseif strcmp( barlayout, 'stacked' )
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      % stacked plots
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      draw_options = [ draw_options, 'ybar stacked' ];
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      % end stacked plots
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  else
+      error( 'matlab2tikz:draw_barseries',                              ...
+             'Don''t know how to handle BarLayout ''%s''.', barlayout );
+  end
+
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define edge color
   edgecolor = get( h, 'EdgeColor' );
@@ -672,9 +781,12 @@ function draw_barseries( h, fid );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % define face color
-  facecolor = get( h, 'FaceColor');
-  facecolor = anycolor2rgb ( facecolor, h, matlab2tikz_opts.gcf,   ...
+  % define face color;
+  % quite oddly, this value is not coded in the handle itself, but in its
+  % child patch.
+  child = get( h, 'Children' );
+  facecolor = get( child, 'FaceColor');
+  facecolor = anycolor2rgb ( facecolor, child, matlab2tikz_opts.gcf,   ...
 					            matlab2tikz_opts.gca );
   xfacecolor = rgb2xcolor( facecolor );
   if isempty( xfacecolor )
@@ -692,12 +804,11 @@ function draw_barseries( h, fid );
   % gather the draw options
   linestyle = get( h, 'LineStyle' );
 
-  draw_options{1} = 'ybar';
-  draw_options{2} = sprintf( 'fill=%s', xfacecolor );
+  draw_options = [ draw_options, sprintf( 'fill=%s', xfacecolor ) ];
   if strcmp( linestyle, 'none' )
-      draw_options{3} = 'draw=none';
+      draw_options = [ draw_options, 'draw=none' ];
   else
-      draw_options{3} = sprintf( 'draw=%s', xedgecolor );
+      draw_options = [ draw_options, sprintf( 'draw=%s', xedgecolor ) ];
   end
   draw_opts = collapse( draw_options, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -706,9 +817,6 @@ function draw_barseries( h, fid );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   fprintf( fid, '\\addplot[%s] plot coordinates{', draw_opts );
-
-  xdata = get( h, 'XData' );
-  ydata = get( h, 'YData' );
 
   for k=1:length(xdata)
       fprintf( fid, ' (%g,%g)', xdata(k), ydata(k) );
@@ -1418,11 +1526,18 @@ function rgbcolor = anycolor2rgb ( color, imagehandle, fighandle,       ...
 	  colormap = get( fighandle  , 'ColorMap' );
 	  cdata    = get( imagehandle, 'CData'    );
 
+          if ~isnumeric(cdata)
+              error( 'matlab2tikz:anycolor2rbg',                        ...
+                     [ 'Don''t know how to handle cdata ''',cdata,'''.' ] )
+          end
+
 	  % QUIRK: With contour plots (not contourf), cdata will be a
           %        vector of equal values, except the last one which is a
           %        NaN. To work around this oddity, just take the first
           %        entry.
-	  cdata = cdata( 1 );
+          %        With barseries plots, data has been observed to return
+          %        a *matrix* with all equal entries.
+	  cdata = cdata( 1, 1 );
 
 	  if strcmp( get(imagehandle,'CDataMapping'), 'scaled' )
 	      % need to scale within clim
