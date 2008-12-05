@@ -121,7 +121,11 @@ function save_to_file()
   fprintf( fid, '\\begin{tikzpicture}[scale=0.5]\n' );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % enter plot recursion
+  % enter plot recursion --
+  % It is important to turn hidden handles on, as visible lines (such as the
+  % axes in polar plots, for example), are otherwise hidden from their
+  % parental handles (and can hence not be discovered by matlab2tikz).
+  % With ShowHiddenHandles 'on', there is no escape. :)
   set( 0, 'ShowHiddenHandles', 'on' );
   fh = gcf;
   handle_all_children( fh, fid );
@@ -252,8 +256,8 @@ function draw_axes( handle, fid )
   % get the axes dimensions
   dim = get_axes_dimensions( handle );
   pgfplot_options = [ pgfplot_options,                                  ...
-                      sprintf( 'width=%gmm' , dim.x ),                  ...
-                      sprintf( 'height=%gmm', dim.y ),                  ...
+                      sprintf( 'width=%g%s' , dim.x, dim.unit ),        ...
+                      sprintf( 'height=%g%s', dim.y, dim.unit ),        ...
                       'scale only axis' ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -530,15 +534,15 @@ function draw_line( handle, fid )
   % check which nodes lie inside the axes
   inside = is_inside_box( [xdata', ydata'], xlim, ylim );
 
-  if inside(1) || inside(2)
+  if any( inside(1:2) )
       fprintf( fid, ' (%g,%g)', xdata(1), ydata(1) );
   end
   for k=2:n-1
-      if inside(k-1) || inside(k) || inside(k+1)
+      if any( inside(k-1:k+1) )
           fprintf( fid, ' (%g,%g)', xdata(k), ydata(k) );
       end
   end
-  if inside(n-1) || inside(n)
+  if any( inside(n-1:n) )
       fprintf( fid, ' (%g,%g)', xdata(n), ydata(n) );
   end
 
@@ -1265,7 +1269,8 @@ function draw_colorbar( handle, fid )
       case {'NorthOutside','SouthOutside'}
           dim.y = dim.x / ratio;
           cbar_options = [ cbar_options,                                ...
-	                   sprintf('width=%gmm, height=%gmm',dim.x,dim.y), ...
+	                   sprintf( 'width=%g%s, height=%g%s',          ...
+                                     dim.x, dim.unit, dim.y, dim.unit ),...
                            'scale only axis',                           ...
                            sprintf( 'xmin=%g, xmax=%g', clim ),         ...
                            sprintf( 'ymin=%g, ymax=%g', [0,1] )         ...
@@ -1292,7 +1297,8 @@ function draw_colorbar( handle, fid )
       case {'EastOutside','WestOutside'}
           dim.x = dim.y / ratio;
           cbar_options = [ cbar_options,                                ...
-	                   sprintf( 'width=%gmm, height=%gmm',dim.x,dim.y),...
+	                   sprintf( 'width=%g%s, height=%g%s',          ...
+                                     dim.x, dim.unit, dim.y, dim.unit ),...
                            'scale only axis',                           ...
                            sprintf( 'xmin=%g, xmax=%g', [0,1] ),        ...
                            sprintf( 'ymin=%g, ymax=%g', clim )          ...
@@ -2175,86 +2181,86 @@ end
 
 
 
-% =========================================================================
-% *** FUNCTION get_axes_scaling
-% ***
-% *** Returns the scaling of the axes.
-% ***
-% =========================================================================
-function scaling = get_axes_scaling( handle )
-
-  % arbitrarily chosen: the longer edge of the plot has length 50(mm)
-  % (the other is calculated according to the aspect ratio)
-  longer_edge = 50;
-
-  xyscaling = daspect;
-
-  xlim = get( handle, 'XLim' );
-  ylim = get( handle, 'YLim' );
-
-  % [x,y]length are the actual lengths of the axes in some obscure unit
-  xlength = (xlim(2)-xlim(1)) / xyscaling(1);
-  ylength = (ylim(2)-ylim(1)) / xyscaling(2);
-
-  if ( xlength>=ylength )
-      baselength = xlength;
-  else
-      baselength = ylength;
-  end
-  
-  % one of the quotients cancels to longer_edge
-  physical_length.x = longer_edge * xlength / baselength;
-  physical_length.y = longer_edge * ylength / baselength;
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % For log-scaled axes, the pgfplot scaling means scaling powers of exp(1)
-  % (see pgfplot manual p. 55). Hence, take the natural logarithm in those
-  % cases.
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  xscale  = get( handle, 'XScale' );
-  yscale  = get( handle, 'YScale' );
-  is_xlog = strcmp( xscale, 'log' );
-  is_ylog = strcmp( yscale, 'log' );
-  if is_xlog
-      q.x = log( xlim(2)/xlim(1) );
-  else
-      q.x = xlim(2) - xlim(1);
-  end
-
-  if is_ylog
-      q.y = log( ylim(2)/ylim(1) );
-  else
-      q.y = ylim(2) - ylim(1);
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  % finally, set the scaling
-  scaling.x = sprintf( '%gmm', physical_length.x / q.x );
-  scaling.y = sprintf( '%gmm', physical_length.y / q.y );
-
-
-  % The only way to reliably get the aspect ratio of the axes is
-  % the 'Position' property. Neither 'DataAspectRatio' nor
-  % 'PlotBoxAspectRatio' seem to always  yield the correct ratio.
-  % Critital are for example figures with subplots.
-%    position = get( handle, 'Position' )
+%  % =========================================================================
+%  % *** FUNCTION get_axes_scaling
+%  % ***
+%  % *** Returns the scaling of the axes.
+%  % ***
+%  % =========================================================================
+%  function scaling = get_axes_scaling( handle )
 %  
-%    xscaling = 1;
-%    yscaling = position(4)/position(3) * (xlim(2)-xlim(1))/(ylim(2)-ylim(1));
+%    % arbitrarily chosen: the longer edge of the plot has length 50(mm)
+%    % (the other is calculated according to the aspect ratio)
+%    longer_edge = 50;
 %  
-%    % normalize: make sure the smaller side is always 1(cm)
-%    xscaling = xscaling/min(xscaling,yscaling);
-%    yscaling = yscaling/min(xscaling,yscaling);
-
-  % well, it seems that MATLAB's very own print functions doesn't preserve
-  % aspect ratio when printing -- we do! hence the difference in the output
-%    dar = get( handle, 'DataAspectRatio' );
-%    xyscaling = 1 ./ dar;
-
-end
-% =========================================================================
-% *** END FUNCTION get_axes_scaling
-% =========================================================================
+%    xyscaling = daspect;
+%  
+%    xlim = get( handle, 'XLim' );
+%    ylim = get( handle, 'YLim' );
+%  
+%    % [x,y]length are the actual lengths of the axes in some obscure unit
+%    xlength = (xlim(2)-xlim(1)) / xyscaling(1);
+%    ylength = (ylim(2)-ylim(1)) / xyscaling(2);
+%  
+%    if ( xlength>=ylength )
+%        baselength = xlength;
+%    else
+%        baselength = ylength;
+%    end
+%    
+%    % one of the quotients cancels to longer_edge
+%    physical_length.x = longer_edge * xlength / baselength;
+%    physical_length.y = longer_edge * ylength / baselength;
+%  
+%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%    % For log-scaled axes, the pgfplot scaling means scaling powers of exp(1)
+%    % (see pgfplot manual p. 55). Hence, take the natural logarithm in those
+%    % cases.
+%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%    xscale  = get( handle, 'XScale' );
+%    yscale  = get( handle, 'YScale' );
+%    is_xlog = strcmp( xscale, 'log' );
+%    is_ylog = strcmp( yscale, 'log' );
+%    if is_xlog
+%        q.x = log( xlim(2)/xlim(1) );
+%    else
+%        q.x = xlim(2) - xlim(1);
+%    end
+%  
+%    if is_ylog
+%        q.y = log( ylim(2)/ylim(1) );
+%    else
+%        q.y = ylim(2) - ylim(1);
+%    end
+%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%  
+%    % finally, set the scaling
+%    scaling.x = sprintf( '%gmm', physical_length.x / q.x );
+%    scaling.y = sprintf( '%gmm', physical_length.y / q.y );
+%  
+%  
+%    % The only way to reliably get the aspect ratio of the axes is
+%    % the 'Position' property. Neither 'DataAspectRatio' nor
+%    % 'PlotBoxAspectRatio' seem to always  yield the correct ratio.
+%    % Critital are for example figures with subplots.
+%  %    position = get( handle, 'Position' )
+%  %  
+%  %    xscaling = 1;
+%  %    yscaling = position(4)/position(3) * (xlim(2)-xlim(1))/(ylim(2)-ylim(1));
+%  %  
+%  %    % normalize: make sure the smaller side is always 1(cm)
+%  %    xscaling = xscaling/min(xscaling,yscaling);
+%  %    yscaling = yscaling/min(xscaling,yscaling);
+%  
+%    % well, it seems that MATLAB's very own print functions doesn't preserve
+%    % aspect ratio when printing -- we do! hence the difference in the output
+%  %    dar = get( handle, 'DataAspectRatio' );
+%  %    xyscaling = 1 ./ dar;
+%  
+%  end
+%  % =========================================================================
+%  % *** END FUNCTION get_axes_scaling
+%  % =========================================================================
 
 
 
@@ -2266,32 +2272,102 @@ end
 % =========================================================================
 function dimension = get_axes_dimensions( handle )
 
-  % arbitrarily chosen: maximal width and height (in mm)
-  % this seems to be pretty much what the PDF/EPS print functions in MATLAB
-  % do
-  maxwidth  = 150;
-  maxheight = 120;
+  daspectmode = get( handle, 'DataAspectRatioMode' );
+  position    = get( handle, 'Position' );
+  units       = get( handle, 'Units' );
 
-  xyscaling = daspect;
-%    xyscaling = get( handle, 'DataAspectRatio' )
+  if strcmp( daspectmode, 'auto' )
+      % The plot will use the full size of the current figure.,
 
-  xlim = get( handle, 'XLim' );
-  ylim = get( handle, 'YLim' );
+      if strcmp( units, 'normalized' )
 
-  % {x,y}length are the actual lengths of the axes in some obscure unit
-  xlength = (xlim(2)-xlim(1)) / xyscaling(1);
-  ylength = (ylim(2)-ylim(1)) / xyscaling(2);
+	  % The dpi is needed to associate the size on the screen (in pixels)
+          % to the physical size of the plot (on a pdf, for example).
+	  % Unfortunately, MATLAB doesn't seem to be able to always make a
+          % good guess about the current DPI (a bug is filed for this on
+          % mathworks.com).
+	  dpi = get( 0, 'ScreenPixelsPerInch');
 
-  if ( xlength/ylength >= maxwidth/maxheight )
-      dim.x = maxwidth;
-      dim.y = maxwidth * ylength / xlength;
-  else
-      dim.x = maxheight * xlength / ylength;
-      dim.y = maxheight;
+          dimension.unit = 'in';
+          figuresize = get( gcf, 'Position' );
+
+          dimension.x = (position(3)-position(1)) * figuresize(3) / dpi;
+          dimension.y = (position(4)-position(2)) * figuresize(4) / dpi;
+
+      else % assume that TikZ knows the unit
+          dimension.unit = units;
+          dimension.x    = position(3) - position(1);
+          dimension.y    = position(4) - position(2);
+      end
+
+  else % strcmp( daspectmode, 'manual' )
+
+      % When daspect was manually set, stick to it.
+      % This is achieved here by explicitly determining the x-axis size
+      % and adjusting the y-axis size based on this length.
+
+      if strcmp( units, 'normalized' )
+	  % The dpi is needed to associate the size on the screen (in pixels)
+          % to the physical size of the plot (on a pdf, for example).
+	  % Unfortunately, MATLAB doesn't seem to be able to always make a
+          % good guess about the current DPI (a bug is filed for this on
+          % mathworks.com).
+	  dpi = get( 0, 'ScreenPixelsPerInch');
+
+          dimension.unit = 'in';
+          figuresize = get( gcf, 'Position' );
+
+          dimension.x = (position(3)-position(1)) * figuresize(3) / dpi;
+
+      else % assume that TikZ knows the unit
+          dimension.unit = units;
+          dimension.x    = position(3) - position(1);
+      end
+
+      % set y-axis length
+      xlim        = get ( handle, 'XLim' );
+      ylim        = get ( handle, 'YLim' );
+      aspectRatio = get ( handle, 'DataAspectRatio' ); % = daspect
+
+      % Actually, we'd have
+      %
+      %    xlength = (xlim(2)-xlim(1)) / aspectRatio(1);
+      %    ylength = (ylim(2)-ylim(1)) / aspectRatio(2);
+      %
+      % but as xlength is scaled to a fixed 'dimension.x', 'dimension.y'
+      % needs to be rescaled accordingly.
+      dimension.y = dimension.x                                          ...
+                  * aspectRatio(1)    / aspectRatio(2)                   ...
+                  * (ylim(2)-ylim(1)) / (xlim(2)-xlim(1));
+
   end
 
-  dimension.x = dim.x;
-  dimension.y = dim.y;
+%    % arbitrarily chosen: maximal width and height (in mm)
+%    % this seems to be pretty much what the PDF/EPS print functions in MATLAB
+%    % do
+%    maxwidth  = 150;
+%    maxheight = 120;
+%  
+%    xyscaling = daspect;
+%  %    xyscaling = get( handle, 'DataAspectRatio' )
+%  
+%    xlim = get( handle, 'XLim' );
+%    ylim = get( handle, 'YLim' );
+%  
+%    % {x,y}length are the actual lengths of the axes in some obscure unit
+%    xlength = (xlim(2)-xlim(1)) / xyscaling(1);
+%    ylength = (ylim(2)-ylim(1)) / xyscaling(2);
+%  
+%    if ( xlength/ylength >= maxwidth/maxheight )
+%        dim.x = maxwidth;
+%        dim.y = maxwidth * ylength / xlength;
+%    else
+%        dim.x = maxheight * xlength / ylength;
+%        dim.y = maxheight;
+%    end
+%  
+%    dimension.x = dim.x;
+%    dimension.y = dim.y;
 
 
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
