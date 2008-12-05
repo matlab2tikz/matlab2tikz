@@ -2286,18 +2286,18 @@ function dimension = get_axes_dimensions( handle )
 	  % Unfortunately, MATLAB doesn't seem to be able to always make a
           % good guess about the current DPI (a bug is filed for this on
           % mathworks.com).
-	  dpi = get( 0, 'ScreenPixelsPerInch');
+	  dpi = get( 0, 'ScreenPixelsPerInch' );
 
           dimension.unit = 'in';
           figuresize = get( gcf, 'Position' );
 
-          dimension.x = (position(3)-position(1)) * figuresize(3) / dpi;
-          dimension.y = (position(4)-position(2)) * figuresize(4) / dpi;
+          dimension.x = position(3) * figuresize(3) / dpi;
+          dimension.y = position(4) * figuresize(4) / dpi;
 
       else % assume that TikZ knows the unit
           dimension.unit = units;
-          dimension.x    = position(3) - position(1);
-          dimension.y    = position(4) - position(2);
+          dimension.x    = position(3);
+          dimension.y    = position(4);
       end
 
   else % strcmp( daspectmode, 'manual' )
@@ -2317,11 +2317,11 @@ function dimension = get_axes_dimensions( handle )
           dimension.unit = 'in';
           figuresize = get( gcf, 'Position' );
 
-          dimension.x = (position(3)-position(1)) * figuresize(3) / dpi;
+          dimension.x = position(3) * figuresize(3) / dpi;
 
       else % assume that TikZ knows the unit
           dimension.unit = units;
-          dimension.x    = position(3) - position(1);
+          dimension.x    = position(3);
       end
 
       % set y-axis length
