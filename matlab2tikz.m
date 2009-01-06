@@ -858,6 +858,7 @@ function str = draw_barseries( h );
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	  % end grouped plots
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
       case 'stacked'
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	  % Stacked plots --
@@ -866,12 +867,16 @@ function str = draw_barseries( h );
           % plots).
           % Make sure this happens exactly *once*.
           if isempty(added_axis_option) || ~added_axis_option
-              axis_opts         = [ axis_opts,      ...
-                                    'ybar stacked', ...
-                                    'bar width=2cm' ];
+	      bw_factor = get( h, 'BarWidth' );
+              ulength   = normalized2physical( h );
+              axis_opts = [ axis_opts,                          ...
+                            'ybar stacked',                     ...
+                            sprintf( 'bar width=%g%s',          ...
+                                     ulength.value*bw_factor, ulength.unit ) ];
               added_axis_option = 1;
           end
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
       otherwise
           error( 'matlab2tikz:draw_barseries',                          ...
                  'Don''t know how to handle BarLayout ''%s''.', barlayout );
@@ -889,8 +894,8 @@ function str = draw_barseries( h );
   % define face color;
   % quite oddly, this value is not coded in the handle itself, but in its
   % child patch.
-  child = get( h, 'Children' );
-  facecolor  = get( child, 'FaceColor');
+  child               = get( h, 'Children' );
+  facecolor           = get( child, 'FaceColor');
   [xfacecolor,addstr] = get_color( h, facecolor, 'patch' );
   str = [ str, addstr ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2589,4 +2594,42 @@ function out = is_visible( handle );
 end
 % =========================================================================
 % *** END FUNCTION is_visible
+% =========================================================================
+
+
+
+% =========================================================================
+% *** FUNCTION normalized2physical
+% ***
+% *** Determines the physical width of one unit on the x-axis.
+% ***
+% =========================================================================
+function out = normalized2physical( handle );
+
+  global matlab2tikz_opts
+
+  fig  = matlab2tikz_opts.gcf;
+  axes = matlab2tikz_opts.gca;
+
+  % width of the full window
+  fpos = get( fig, 'Position' );
+
+  % width of the axes inside the window
+  apos = get( axes, 'Position' );
+
+  % width of the x-axis in pixels
+  pwidth = fpos(3) * apos(3);
+
+  % width of one unit on the x-axis on pixels
+  xlim = get( axes, 'XLim' );
+  unitpwidth = pwidth / (xlim(2)-xlim(1));
+
+  dpi = get( 0, 'ScreenPixelsPerInch' );
+
+  out.unit  = 'in';
+  out.value = unitpwidth / dpi;
+
+end
+% =========================================================================
+% *** END FUNCTION normalized2physical
 % =========================================================================
