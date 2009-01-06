@@ -443,20 +443,14 @@ function str = draw_line( handle )
       return
   end
 
-  linestyle = get( handle, 'LineStyle');
-  linewidth = get( handle, 'LineWidth');
-  marker    = get( handle, 'Marker');
+  linestyle = get( handle, 'LineStyle' );
+  linewidth = get( handle, 'LineWidth' );
+  marker    = get( handle, 'Marker' );
 
   if (    ( strcmp(linestyle,'none') || linewidth==0 )                  ...
        && strcmp(marker,'none') )
       return
   end
-
-  str = [ str, ...
-          sprintf( '%% Line plot\n' ) ];
-
-  xdata = get( handle, 'XData' );
-  ydata = get( handle, 'YData' );
 
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
   % deal with draw options
@@ -525,8 +519,6 @@ function str = draw_line( handle )
 
   % insert draw options
   opts = [ '%%\n', collapse( draw_options, ',%%\n' ), '%%\n' ];
-  str = [ str, ...
-          sprintf( ['\\addplot [',opts,'] coordinates{\n' ] ) ];
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 
@@ -534,34 +526,126 @@ function str = draw_line( handle )
   % plot the actual line data
   % -- Check for any node if it needs to be included at all. For zoomed
   %    plots, lots can be omitted.
-
-  % get parent axes
-  p = get( handle, 'Parent' );
-
-  xlim = get( p, 'XLim' );
-  ylim = get( p, 'YLim' );
+  p      = get( handle, 'Parent' );
+  xlim   = get( p, 'XLim' );
+  ylim   = get( p, 'YLim' );
+  xdata  = get( handle, 'XData' );
+  ydata  = get( handle, 'YData' );
+  segvis = segment_visible( [xdata', ydata'], xlim, ylim );
 
   n = length(xdata);
 
-  % check which nodes lie inside the axes
-  inside = is_inside_box( [xdata', ydata'], xlim, ylim );
-
-  if any( inside(1:2) )
-      str = [ str, sprintf( ' (%g,%g)', xdata(1), ydata(1) ) ];
-  end
-  for k=2:n-1
-      if any( inside(k-1:k+1) )
-          str = [ str, sprintf( ' (%g,%g)', xdata(k), ydata(k) ) ];
+  % The line gets actually broken up into several as some parts of it may
+  % be outside the visible area (the plot box).
+  % 'segvis' tells us which segment are actually visible, and the
+  % following construction loops throught it and makes sure that each
+  % point that is necessary gets actually printed.
+  % 'print_previous' tells whether or not the previous segment is visible;
+  % this information is used for determining when a new 'addplot' needs
+  % to be opened.
+  print_previous = 0;
+  for k = 1:n-1
+      if segvis(k) % segment is visible
+          if ~print_previous % .. the previous wasn't, hence start a plot
+              str = [ str, ...
+                      sprintf( ['\\addplot [',opts,'] coordinates{\n' ] ), ...;
+                      sprintf( ' (%g,%g)', xdata(k), ydata(k) ) ];
+              print_previous = 1;
+          end
+          str = [ str, sprintf( ' (%g,%g)', xdata(k+1), ydata(k+1) ) ];
+      else
+          if print_previous  % that was the last entry for now
+              str = [ str, sprintf('\n};\n\n') ];
+              print_previous = 0;
+          end
       end
   end
-  if any( inside(n-1:n) )
-      str = [ str, sprintf( ' (%g,%g)', xdata(n), ydata(n) ) ];
+  if print_previous % don't forget to print the closing bracket
+      str = [ str, sprintf('\n};\n\n') ];
   end
-
-  str = [ str, sprintf('\n};\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+
   str = [ str, handle_all_children( handle ) ];
+
+
+  % -----------------------------------------------------------------------
+  % FUNCTION segment_visible
+  %
+  % Given a series of points 'p', this routines determines which inter-'p'
+  % connections are visible in the box given by 'xlim', 'ylim'.
+  %
+  % -----------------------------------------------------------------------
+  function out = segment_visible( p, xlim, ylim )
+
+      n   = size( p, 1 ); % number of points
+      out = zeros( n-1, 1 );
+
+      % Find out where (with respect the the box) the points 'p' sit.
+      % Consider the documentation for 'boxwhere' to find out about
+      % the meaning of the return values.
+      boxpos = boxwhere( p, xlim, ylim );
+
+      for k = 1:n-1
+          if any(boxpos{k}==1) || any(boxpos{k+1}==1) % one of the two is strictly inside the box
+              out(k) = 1;
+          elseif any(boxpos{k}==2) || any(boxpos{k+1}==2) % one of the two is strictly outside the box
+              % does the segment intersect with any of the four boundaries?
+              out(k) =  segments_intersect( [p(k:k+1,1)',xlim(1),xlim(1)], ...   % with the left?
+                                            [p(k:k+1,2)',ylim] ) ...
+                     || segments_intersect( [p(k:k+1,1)',xlim],  ...             % with the bottom?
+                                            [p(k:k+1,2)',ylim(1),ylim(1)] ) ...
+                     || segments_intersect( [p(k:k+1,1)',xlim(2),xlim(2)],  ...  % with the right?
+                                            [p(k:k+1,2)',ylim] ) ...
+                     || segments_intersect( [p(k:k+1,1)',xlim],  ...             % with the top?
+                                            [p(k:k+1,2)',ylim(2),ylim(2)] );
+          else % both neighboring points lie on the boundary
+              out(k) =  ~common_entry( boxpos{k},boxpos{k+1} );
+              % NOTE:
+              % This is not technically complete. What if one of the two
+              % sits exactly on a corner of the box? Sheesh... Ignore that
+              % for now.
+          end
+      end
+
+  end
+  % -----------------------------------------------------------------------
+  % END FUNCTION segment_visible
+  % -----------------------------------------------------------------------
+
+  % -----------------------------------------------------------------------
+  % *** FUNCTION segments_intersect
+  % ***
+  % *** Checks whether the segments P1--P2 and P3--P4 intersect.
+  % *** The x- and y- coordinates of Pi are in x(i), y(i), respectively.
+  % ***
+  % -----------------------------------------------------------------------
+  function out = segments_intersect( x, y );
+
+    % Technically, one writes down the 2x2 equation system to solve the
+    %
+    %   x1 + lambda (x2-x1)  =  x3 + mu (x4-x3)
+    %   y1 + lambda (y2-y1)  =  y3 + mu (y4-y3)
+    %
+    % for lambda and mu. If a solution exists, check if   0 < lambda,mu < 1.
+
+    det = (x(4)-x(3))*(y(2)-y(1)) - (y(4)-y(3))*(x(2)-x(1));
+
+    out = det;
+
+    if det % otherwise the segments are parallel
+	rhs1   = x(3) - x(1);
+	rhs2   = y(3) - y(1);
+	lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
+	mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
+	out    =   0<lambda && lambda<1 ...
+	       &&  0<mu     && mu    <1;
+    end
+
+  end
+  % -----------------------------------------------------------------------
+  % *** END FUNCTION segments_intersect
+  % -----------------------------------------------------------------------
 
 end
 % =========================================================================
@@ -753,6 +837,7 @@ function str = draw_barseries( h );
   persistent barshifts
 
   persistent added_axis_option
+  persistent nonbar_plot_present
 
   str = [];
 
@@ -763,10 +848,12 @@ function str = draw_barseries( h );
   % The following checks if this is the case and cowardly bails out if so.
   % On top of that, the number of bar plots is counted.
   if isempty(barplot_total_number)
+      nonbar_plot_present  = 0;
       barplot_total_number = 0;
       parent               = get( h, 'Parent' );
       siblings             = get( parent, 'Children' );
       for k = 1:length(siblings)
+
           % skip invisible objects
           if ~is_visible(siblings(k))
               continue
@@ -775,8 +862,9 @@ function str = draw_barseries( h );
           t = get( siblings(k), 'Type' );
           switch t
               case {'line','patch'}
-                  error( 'matlab2tikz:draw_barseries',                  ...
-                         'Pgfplots can''t deal with bar plots and non-bar plots in one axis environment.' );
+                  nonbar_plot_present = 1;
+              case 'text'
+                  % this is pretty harmless: don't complain about ordinary text
               case 'hggroup'
                   cl = class(handle(siblings(k)));
 	          if strcmp( cl , 'specgraph.barseries' )
@@ -806,17 +894,6 @@ function str = draw_barseries( h );
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	  % grouped plots
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-	  % Stacked plots --
-          % Add option 'ybar stacked' to the options of the surrounding
-          % axis environment (and disallow anything else but stacked
-          % plots).
-          % Make sure this happens exactly *once*.
-          if isempty(added_axis_option) || ~added_axis_option
-              axis_opts         = [ axis_opts, 'ybar' ] ;
-              added_axis_option = 1;
-          end
-
 	  groupwidth = 0.8; % MATLAB's default value, see makebars.m
 
 	  % set ID
@@ -846,15 +923,15 @@ function str = draw_barseries( h );
 	  end
 	  % ---------------------------------------------------------------
 
-	  % This is rather *ugly*:
 	  % MATLAB treats shift and width in normalized coordinate units,
-          % whereas pgfplots requires physical units (pt,cm,...). As there
-          % is no means of connecting them yet, just take 'cm' (this
-          % assumes that the length of one unit in the x-direction has the
-          % physical length 1cm).
-	  draw_options = [ draw_options,                                           ...
-			   sprintf( 'bar interval width=%gcm, bar interval shift=%gcm', ...
-                                    barwidth, barshifts(barplot_id) ) ];
+          % whereas pgfplots requires physical units (pt,cm,...); hence
+          % have the units converted.
+          ulength = normalized2physical();
+	  draw_options = [ draw_options,                                                ...
+                           'ybar',                                                      ...
+			   sprintf( 'bar width=%g%s, bar shift=%g%s',                   ...
+                                    barwidth             *ulength.value, ulength.unit , ...
+                                    barshifts(barplot_id)*ulength.value, ulength.unit  ) ];
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	  % end grouped plots
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -867,8 +944,14 @@ function str = draw_barseries( h );
           % plots).
           % Make sure this happens exactly *once*.
           if isempty(added_axis_option) || ~added_axis_option
+	      if nonbar_plot_present
+		  warning( 'matlab2tikz:draw_barseries',                    ...
+			  [ 'Pgfplots can''t deal with stacked bar plots', ...
+			    ' and non-bar plots in one axis environment.', ...
+			    ' There may be unexpected results.'            ] );
+	      end
 	      bw_factor = get( h, 'BarWidth' );
-              ulength   = normalized2physical( h );
+              ulength   = normalized2physical();
               axis_opts = [ axis_opts,                          ...
                             'ybar stacked',                     ...
                             sprintf( 'bar width=%g%s',          ...
@@ -2557,25 +2640,99 @@ end
 
 
 % =========================================================================
-% *** FUNCTION is_inside_box
+% *** FUNCTION boxwhere
 % ***
-% *** Determines whether the point(s) 'p' is (are) inside the rectangular
-% *** box defined by xlim, ylim.
+% *** Given one or more points in 2D space 'p' and a retangular box given
+% *** by 'xlim', 'ylim', this routine determines where the point sits with
+% *** respect to the box.
+% ***
+% *** Possibilities:
+% ***      1 ...... inside
+% ***      2 ...... outside
+% ***     -1 ...... left boundary
+% ***     -2 ...... lower boundary
+% ***     -3 ...... right boundary
+% ***     -4 ...... top boundary
+% ***
+% *** If a node happens to sit in the corner of a box, return *two* values.
 % ***
 % =========================================================================
-function l = is_inside_box( p, xlim, ylim );
+function l = boxwhere( p, xlim, ylim );
+
+  global tol
 
   n = size(p,1);
 
-  l = zeros(n,1);
-  for k=1:n
-      l(k) =    p(k,1)>=xlim(1) && p(k,1)<=xlim(2) ...
-             && p(k,2)>=ylim(1) && p(k,2)<=ylim(2);
+  l = cell(n,1);
+  for k = 1:n
+
+      if    p(k,1)>xlim(1) && p(k,1)<xlim(2) ...   % inside
+         && p(k,2)>ylim(1) && p(k,2)<ylim(2);
+          l{k} = 1;
+      elseif    p(k,1)<xlim(1) || p(k,1)>xlim(2) ...  % outside
+             || p(k,2)<ylim(1) || p(k,2)>ylim(2);
+          l{k} = 2;
+      else % is on boundary -- but which?
+
+          if abs(p(k,1)-xlim(1)) < tol
+              l{k} = [ l{k}, -1 ];
+          end
+          if abs(p(k,2)-ylim(1)) < tol
+              l{k} = [ l{k}, -2 ];
+          end
+          if abs(p(k,1)-xlim(2)) < tol
+              l{k} = [ l{k}, -3 ];
+          end
+          if abs(p(k,2)-ylim(2)) < tol
+              l{k} = [ l{k}, -4 ];
+          end
+
+          if isempty(l{k})
+              error( 'matlab2tikz:boxwhere',                    ...
+                     [ 'Point appears to neither sit inside, ', ...
+                       'nor outsize, nor on the boundary of the box.' ] );
+          end
+      end
+
   end
 
 end
 % =========================================================================
-% *** END FUNCTION is_inside_box
+% *** END FUNCTION boxwhere
+% =========================================================================
+
+
+
+% =========================================================================
+% *** FUNCTION common_entry
+% ***
+% *** Returns TRUE if and only if the two vectors u, v have at least one
+% *** common entry.
+% ***
+% =========================================================================
+function out = common_entry( u, v );
+
+  out = 0;
+
+  usort = sort(u);
+  vsort = sort(v);
+
+  k = 1;
+  l = 1;
+  while k<=length(u) && l<=length(v)
+      if usort(k) < vsort(l)
+          k = k+1;
+      elseif usort(k) > vsort(l)
+          l = l+1;
+      else
+          out = 1;
+          return
+      end
+  end
+
+end
+% =========================================================================
+% *** END FUNCTION common_entry
 % =========================================================================
 
 
@@ -2588,8 +2745,7 @@ end
 % =========================================================================
 function out = is_visible( handle );
 
-  out =   strcmp( get(handle,'Visible'), 'on' ) ...
-      && ~strcmp( get(handle,'HandleVisibility'),'off');
+  out = strcmp( get(handle,'Visible'), 'on' );
 
 end
 % =========================================================================
@@ -2604,7 +2760,7 @@ end
 % *** Determines the physical width of one unit on the x-axis.
 % ***
 % =========================================================================
-function out = normalized2physical( handle );
+function out = normalized2physical();
 
   global matlab2tikz_opts
 
