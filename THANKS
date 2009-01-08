@@ -4,6 +4,6 @@ matlab2tikz has greatly profited from its ancestor, Matfig2PGF.
 
 Matfig2PGF is written by Paul Wagenaars.
 
-Also, the author would like to thank Christian Feuers"anger package pgfplots
+Also, the author would like to thank Christian Feuersänger package pgfplots
 without which the structure of matlab2tikz would need to be a lot more
 complicated.

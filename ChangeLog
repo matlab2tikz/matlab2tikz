@@ -1,3 +1,22 @@
-2008-11-07  Nico Schl"omer  <nico.schloemer@ua.ac.be>
+2009-01-08  Nico Schlömer  <nico.schloemer@ua.ac.be>
+
+        * Version 0.0.2.
+        * Added support for:
+          - quiver (arrow) plots
+          - bar plots
+          - stem plots
+          - stairs plots
+        * Added preliminary support for:
+          - images
+          - rose plots
+          - compass plots
+          - polar plots
+        * Moreover, large code improvement have been introduced, notably:
+          - aspect ratio handling
+          - color handling
+          - plot options handling
+
+
+2008-11-07  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
         * Initial version 0.0.1.

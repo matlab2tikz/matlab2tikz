@@ -2,12 +2,27 @@ This is matlab2tikz, a MATLAB script for converting MATLAB figures into native
 TikZ figures. matlab2tikz is based on Paul Wagenaars' matfig2pgf but tries to
 be shorter, cleaner, more robust and more powerful.
 
-As of now, matlab2tikz is still in the early stages and does by far not
-support the conversion of all possible MATLAB figures. In particular, 3D plots
-are not yet supported. However, the if you have a nice 2D plot, matlab2tikz
-might just do what you want it to.
+As of now, matlab2tikz does by far not support the conversion of all possible
+MATLAB figures. In particular, 3D plots are not yet supported. However, the if
+you have a nice 2D plot, matlab2tikz might just do what you want it to.
 
-matlab2tikz' capabilties include, but are not limited to
+The plots that matlab2tikz handles properly are, but are not limited to
+
+  * most axes properties (including logarithmic scaling),
+  * grids,
+  * line plots (including markers line styles),
+  * contour(f) plots,
+  * bar plots (stacked, grouped, histgrams),
+  * stem plots,
+  * stairs plots,
+  * quiver (arrow) plots,
+  * colorbars,
+  * legends,
+  * (images),
+  * (rose plots),
+  * (compass plots),
+  * (polar plots).
+
 
 The workflow is as follows.
 
@@ -27,8 +42,8 @@ The workflow is as follows.
 
         >> matlab2tikz( 'myfile.tikz' );
 
-  3.) Add the contents of myfile.tikz into your LaTeX source code; a convenient
-      way of doing so is to use \input{/path/to/myfile.tikz}.
+  3.) Add the contents of myfile.tikz into your LaTeX source code; a
+      convenient way of doing so is to use \input{/path/to/myfile.tikz}.
       Also make sure that at the header of your document the packages tikz and
       pgfplots are included:
 
