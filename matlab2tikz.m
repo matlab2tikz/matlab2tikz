@@ -59,7 +59,7 @@ function matlab2tikz( fn )
   matlab2tikz_name = 'matlab2tikz';
 
   global matlab2tikz_version;
-  matlab2tikz_version = '0.0.1';
+  matlab2tikz_version = '0.0.2';
 
   global tol;
   tol = 1e-15; % global round-off tolerance;
@@ -103,23 +103,18 @@ end
 % =========================================================================
 function save_to_file()
 
-  global filename;
-  global matlab2tikz_name;
-  global matlab2tikz_version;
+  global filename
+  global matlab2tikz_name
+  global matlab2tikz_version
   global matlab2tikz_opts
+
+  global neededRGBColors
 
   fid = fopen( matlab2tikz_opts.filename, 'w' );
   if fid == -1
       error( 'matlab2tikz:save_to_file', ...
              'Unable to open %s for writing', filename );
   end
-
-  % -----------------------------------------------------------------------
-  % start writing the file
-  fprintf( fid, '% This file was created by %s v%s.\n\n',               ...
-                                   matlab2tikz_name, matlab2tikz_version );
-
-  fprintf( fid, '\\begin{tikzpicture}[scale=0.55]\n' );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % enter plot recursion --
@@ -130,12 +125,30 @@ function save_to_file()
   set( 0, 'ShowHiddenHandles', 'on' );
   fh = gcf;
   str = handle_all_children( fh );
-  fprintf( fid, '%s', str );
   set( 0, 'ShowHiddenHandles', 'off' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % actually print the stuff
+  fprintf( fid, '% This file was created by %s v%s.\n\n',               ...
+                                   matlab2tikz_name, matlab2tikz_version );
+
+  fprintf( fid, '\\begin{tikzpicture}[scale=0.55]\n' );
+
+  % don't forget to define the colors
+  if size(neededRGBColors,1)
+      fprintf( fid, '\n%% defining custom colors' );
+  end
+  for k = 1:size(neededRGBColors,1)
+      fprintf( fid, '\\definecolor{mycolor%d}{rgb}{%g,%g,%g}\n', k,     ...
+                                                    neededRGBColors(k,:) );
+  end
+
+  % print the content
+  fprintf( fid, '%s', str );
+
   fprintf( fid, '\\end{tikzpicture}');
-  % -----------------------------------------------------------------------
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   fclose( fid );
 end
@@ -157,6 +170,9 @@ function str = handle_all_children( handle )
 
   children = get( handle, 'Children' );
 
+  % It's important that we go from back to front here, as this is
+  % how MATLAB does it, too. Significant for patch (contour) plots,
+  % and the order of plotting the colored patches.
   for i = length(children):-1:1
       child = children(i);
 
@@ -185,8 +201,6 @@ function str = handle_all_children( handle )
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent',  ...
                  'text', 'surface' }
               % don't to anything for these handles and its children
-%                fprintf( '\n *** Not handling %s. ***\n',                 ...
-%                                                  get(child_handle,'Type') );
 
 	  otherwise
 	      error( 'matfig2tikz:handle_all_children',                 ...
@@ -225,8 +239,9 @@ function str = draw_axes( handle )
           dim = get_axes_dimensions( handle );
           axis_opts = [ axis_opts, ...
                         'hide x axis, hide y axis', ...
-                        sprintf('width=%g%s, height=%g%s', dim.x, dim.unit, dim.y, dim.unit ), ...
-                        'scale only axis' ];
+                        sprintf('width=%g%s, height=%g%s', dim.x, dim.unit,   ...
+                                                           dim.y, dim.unit ), ...
+                                'scale only axis' ];
           str = plot_axis_environment( handle, env );
       end
       return
@@ -380,29 +395,11 @@ function str = draw_axes( handle )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-% don't use background yet as it interferes with the grid and the axes
-%
-%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%    % fill background
-%    bgcolor = get( handle, 'Color' );
-%    if any( bgcolor~=[1,1,1] )
-%        xcolor = rgb2xcolor( bgcolor );
-%        if isempty(xcolor)
-%  	  fprintf( fid, '\\definecolor{bgcolor}{rgb}{%.2f,%.2f,%.2f}\n',    ...
-%  								    bgcolor );
-%  	  xcolor = 'bgcolor';
-%        end
-%        fprintf( fid, '\\addplot [fill=%s] coordinates{ (%e,%e) (%e,%e) (%e,%e) (%e,%e) (%e,%e) };\n', xcolor,     ...
-%  							 xlim(1), ylim(1), xlim(2), ylim(1), xlim(2), ylim(2), ...
-%  							 xlim(1), ylim(2), xlim(1), ylim(1)  );
-%    end
-%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   % actually begin drawing
   str = [ str, ...
           plot_axis_environment( handle, env ) ];
 
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % -----------------------------------------------------------------------
   function str = plot_axis_environment( handle, env )
 
       str = [];
@@ -423,7 +420,7 @@ function str = draw_axes( handle )
               children_str, ...
               sprintf( '\\end{%s}\n\n', env ) ];
   end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % -----------------------------------------------------------------------
 
 end
 % =========================================================================
@@ -452,74 +449,19 @@ function str = draw_line( handle )
       return
   end
 
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % deal with draw options
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-  color     = get( handle, 'Color' );
-  [ plotcolor, addstr ] = get_color( handle, color, 'patch' );
-  str = [ str, addstr ];
-
-  draw_options{1} = sprintf( 'color=%s', plotcolor );
-
-  if ~strcmp(linestyle,'none') && linewidth~=0
-      draw_options = [ draw_options,                                    ...
-                       sprintf('%s', translate_linestyle(linestyle) ),  ...
-                       sprintf('line width=%.1fpt', linewidth ) ];
-  end
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % marker (with its own options)
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  if ~strcmp( marker, 'none' )
-      marker_size = get( handle, 'MarkerSize');
-
-      % In MATLAB, the marker size refers to the edge length of a square
-      % (for example) (~diameter), whereas in TikZ the distance of an edge
-      % to the center is the measure (~radius). Hence divide by 2.
-      tikz_marker_size = translate_markersize( marker, marker_size );
-      draw_options = [ draw_options,                                    ...
-                       sprintf( 'mark size=%.1fpt', tikz_marker_size ) ];
-      
-      mark_options = cell( 0 );
-      % make sure that the markers get painted in solid (and not dashed)
-      if ~strcmp( linestyle, 'solid' )
-          mark_options = [ mark_options, 'solid' ];
-      end
-
-      % print no lines
-      if strcmp(linestyle,'none') || linewidth==0
-          draw_options = [ draw_options, 'only marks' ] ;
-      end
-
-      % get the marker color right
-      markerfacecolor = get( handle, 'MarkerFaceColor' );
-      markeredgecolor = get( handle, 'MarkerEdgeColor' );
-      [ tikz_marker, mark_options ] = translate_marker( marker,         ...
-                           mark_options, ~strcmp(markerfacecolor,'none') );
-      if ~strcmp(markerfacecolor,'none')
-          [xcolor, addstr] = get_color( handle, markerfacecolor, 'patch' );
-          str = [ str, addstr ];
-          mark_options = [ mark_options,  sprintf( 'fill=%s', xcolor ) ];
-      end
-      if ~strcmp(markeredgecolor,'none') && ~strcmp(markeredgecolor,'auto')
-          [xcolor,addstr] = get_color( handle, markeredgecolor, 'patch' );
-          str = [ str, addstr ];
-          mark_options = [ mark_options, sprintf( 'draw=%s', xcolor ) ];
-      end
-
-      % add it all to draw_options
-      draw_options = [ draw_options, sprintf( 'mark=%s', tikz_marker ) ];
-
-      if ~isempty( mark_options )
-          mo = collapse( mark_options, ',' );
-	  draw_options = [ draw_options, [ 'mark options={', mo, '}' ] ];
-      end
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  color  = get( handle, 'Color' );
+  xcolor = get_color( handle, color, 'patch' );
+  draw_options = [ sprintf( 'color=%s', xcolor ),            ... % color
+                   get_line_options( linestyle, linewidth ), ... % line options
+                   get_marker_options( handle )              ... % marker options
+                 ];
 
   % insert draw options
   opts = [ '%%\n', collapse( draw_options, ',%%\n' ), '%%\n' ];
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -600,11 +542,10 @@ function str = draw_line( handle )
                      || segments_intersect( [p(k:k+1,1)',xlim],  ...             % with the top?
                                             [p(k:k+1,2)',ylim(2),ylim(2)] );
           else % both neighboring points lie on the boundary
+              % This is kind of tricky as there may be nodes *exactly*
+              % in a corner of the domain. boxpos & common_entry handle
+              % this, though.
               out(k) =  ~common_entry( boxpos{k},boxpos{k+1} );
-              % NOTE:
-              % This is not technically complete. What if one of the two
-              % sits exactly on a corner of the box? Sheesh... Ignore that
-              % for now.
           end
       end
 
@@ -655,6 +596,266 @@ end
 
 
 % =========================================================================
+% *** FUNCTION get_line_options
+% ***
+% *** Gathers the line options.
+% ***
+% =========================================================================
+function line_opts = get_line_options( linestyle, linewidth )
+
+  line_opts = cell(0);
+
+  if ~strcmp(linestyle,'none') && linewidth~=0
+      line_opts = [ line_opts,                                      ...
+                    sprintf('%s', translate_linestyle(linestyle) ), ...
+                    sprintf('line width=%.1fpt', linewidth ) ];
+  end
+
+end
+% =========================================================================
+% *** END FUNCTION get_line_options
+% =========================================================================
+
+
+
+% =========================================================================
+% *** FUNCTION get_marker_options
+% ***
+% *** Handles the marker properties of a line (or any other) plot.
+% ***
+% =========================================================================
+function draw_options = get_marker_options( h )
+
+  draw_options = cell(0);
+
+  marker = get( h, 'Marker' );
+
+  if ~strcmp( marker, 'none' )
+      marker_size = get( h, 'MarkerSize' );
+      linestyle   = get( h, 'LineStyle' );
+      linewidth   = get( h, 'LineWidth' );
+
+      % In MATLAB, the marker size refers to the edge length of a square
+      % (for example) (~diameter), whereas in TikZ the distance of an edge
+      % to the center is the measure (~radius). Hence divide by 2.
+      tikz_marker_size = translate_markersize( marker, marker_size );
+      draw_options = [ draw_options,                                    ...
+                       sprintf( 'mark size=%.1fpt', tikz_marker_size ) ];
+
+      mark_options = cell( 0 );
+      % make sure that the markers get painted in solid (and not dashed)
+      % if the 'linestyle' is not solid (otherwise there is no problem)
+      if ~strcmp( linestyle, 'solid' )
+          mark_options = [ mark_options, 'solid' ];
+      end
+
+      % print no lines
+      if strcmp(linestyle,'none') || linewidth==0
+          draw_options = [ draw_options, 'only marks' ] ;
+      end
+
+      % get the marker color right
+      markerfacecolor = get( h, 'MarkerFaceColor' );
+      markeredgecolor = get( h, 'MarkerEdgeColor' );
+      [ tikz_marker, mark_options ] = translate_marker( marker,         ...
+                           mark_options, ~strcmp(markerfacecolor,'none') );
+      if ~strcmp(markerfacecolor,'none')
+          xcolor = get_color( h, markerfacecolor, 'patch' );
+          mark_options = [ mark_options,  sprintf( 'fill=%s', xcolor ) ];
+      end
+      if ~strcmp(markeredgecolor,'none') && ~strcmp(markeredgecolor,'auto')
+          xcolor = get_color( h, markeredgecolor, 'patch' );
+          mark_options = [ mark_options, sprintf( 'draw=%s', xcolor ) ];
+      end
+
+      % add it all to draw_options
+      draw_options = [ draw_options, sprintf( 'mark=%s', tikz_marker ) ];
+
+      if ~isempty( mark_options )
+          mo = collapse( mark_options, ',' );
+	  draw_options = [ draw_options, [ 'mark options={', mo, '}' ] ];
+      end
+  end
+
+
+  % -----------------------------------------------------------------------
+  % *** FUNCTION translate_marker
+  % -----------------------------------------------------------------------
+  function [ tikz_marker, mark_options ] =                                ...
+	    translate_marker( matlab_marker, mark_options, facecolor_toggle )
+
+    if( ~ischar(matlab_marker) )
+	error( [ ' Function translate_marker:',                           ...
+		' Variable matlab_marker is not a string.' ] );
+    end
+
+    switch ( matlab_marker )
+	case 'none'
+	    tikz_marker = '';
+	case '+'
+	    tikz_marker = '+';
+	case 'o'
+	    if facecolor_toggle
+		tikz_marker = '*';
+	    else
+		tikz_marker = 'o';
+	    end
+	case '.'
+	    tikz_marker = '*';
+	case 'x'
+	    tikz_marker = 'x';
+	otherwise  % the following markers are only available with PGF's
+                   % plotmarks library
+	    fprintf( '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
+	    switch ( matlab_marker )
+
+		    case '*'
+			    tikz_marker = 'asterisk';
+
+		    case {'s','square'}
+		    if facecolor_toggle
+				tikz_marker = 'square*';
+		    else
+			tikz_marker = 'square';
+		    end
+
+		    case {'d','diamond'}
+		    if facecolor_toggle
+				tikz_marker = 'diamond*';
+		    else
+				tikz_marker = 'diamond';
+		    end
+
+		case '^'
+		    if facecolor_toggle
+				tikz_marker = 'triangle*';
+		    else
+				tikz_marker = 'triangle';
+		    end
+
+		    case 'v'
+		    if facecolor_toggle
+			tikz_marker = 'triangle*';
+		    else
+				tikz_marker = 'triangle';
+		    end
+		    mark_options = [ mark_options, ',rotate=180' ];
+
+		    case '<'
+		    if facecolor_toggle
+			tikz_marker = 'triangle*';
+		    else
+				tikz_marker = 'triangle';
+		    end
+		    mark_options = [ mark_options, ',rotate=270' ];
+
+		case '>'
+		    if facecolor_toggle
+				tikz_marker = 'triangle*';
+		    else
+				tikz_marker = 'triangle';
+		    end
+		    mark_options = [ mark_options, ',rotate=90' ];
+
+		case {'p','pentagram'}
+		    if facecolor_toggle
+				tikz_marker = 'star*';
+		    else
+				tikz_marker = 'star';
+		    end
+
+		    case {'h','hexagram'}
+		    warning( 'matlab2tikz:translate_marker',              ...
+			    'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
+		    if facecolor_toggle
+				tikz_marker = 'star*';
+		    else
+				tikz_marker = 'star';
+		    end
+
+		otherwise
+		    error( [ ' Function translate_marker:',               ...
+			    ' Unknown matlab_marker ''',matlab_marker,'''.' ] );
+	    end
+    end
+
+  end
+  % -----------------------------------------------------------------------
+  % *** END OF FUNCTION translate_marker
+  % -----------------------------------------------------------------------
+
+
+  % -----------------------------------------------------------------------
+  % *** FUNCTION translate_markersize
+  % ***
+  % *** The markersizes of Matlab and TikZ are related, but not equal. This
+  % *** is because
+  % ***
+  % ***  1.) MATLAB uses the MarkerSize property to describe something like
+  % ***      the diameter of the mark, while TikZ refers to the 'radius',
+  % ***  2.) MATLAB and TikZ take different measures (, e.g., the
+  % ***      edgelength of a square vs. the diagonal length of it).
+  % ***
+  % -----------------------------------------------------------------------
+  function tikz_markersize =                                              ...
+		    translate_markersize( matlab_marker, matlab_markersize )
+
+    if( ~ischar(matlab_marker) )
+	error( 'matlab2tikz:translate_markersize',                        ...
+	      'Variable matlab_marker is not a string.' );
+    end
+
+    if( ~isnumeric(matlab_markersize) )
+	error( 'matlab2tikz:translate_markersize',                        ...
+	      'Variable matlab_markersize is not a numeral.' );
+    end
+
+    switch ( matlab_marker )
+	case 'none'
+	    tikz_markersize = [];
+	case {'+','o','x','*','p','pentagram','h','hexagram'}
+	    tikz_markersize = matlab_markersize / 2;
+	case '.'
+	    % as documented on the Matlab help pages:
+	    %
+	    % Note that MATLAB draws the point marker (specified by the '.'
+	    % symbol) at one-third the specified size.
+	    % The point (.) marker type does not change size when the
+	    % specified value is less than 5.
+	    %
+	    tikz_markersize = matlab_markersize / 2 / 3;
+	case {'s','square'}
+	    % Matlab measures the diameter, TikZ half the edge length
+	    tikz_markersize = matlab_markersize / 2 / sqrt(2);
+	case {'d','diamond'}
+	    % Matlab measures the width, TikZ the height of the diamond;
+	    % the acute angle (top and bottom) is a manually measured
+	    % 75 degrees (in TikZ, and Matlab probably very similar);
+	    % use this as a base for calculations
+	    tikz_markersize = matlab_markersize / 2 / atan( 75/2 *pi/180 );
+	case {'^','v','<','>'}
+	    % for triangles, matlab takes the height
+	    % and tikz the circumcircle radius;
+	    % the triangles are always equiangular
+	    tikz_markersize = matlab_markersize / 2 * (2/3);
+	otherwise
+	    error( 'matlab2tikz:translate_markersize',                    ...
+		  'Unknown matlab_marker ''%s''.', matlab_marker  );
+    end
+
+  end
+  % -----------------------------------------------------------------------
+  % *** END OF FUNCTION translate_markersize
+  % -----------------------------------------------------------------------
+
+end
+% =========================================================================
+% *** END FUNCTION get_marker_options
+% =========================================================================
+
+
+
+% =========================================================================
 % *** FUNCTION draw_patch
 % ***
 % *** Draws a 'patch' graphic object.
@@ -673,22 +874,20 @@ function str = draw_patch( handle )
   draw_options = cell(0);
 
   % fill color
-  facecolor  = get( handle, 'FaceColor');
+  facecolor  = get( handle, 'FaceColor' );
   if ~strcmp( facecolor, 'none' )
-      [xfacecolor,addstr] = get_color( handle, facecolor, 'patch' );
-      str = [ str, addstr ];
+      xfacecolor = get_color( handle, facecolor, 'patch' );
       draw_options = [ draw_options,                                    ...
                        sprintf( 'fill=%s', xfacecolor ) ];
   end
 
   % draw color
-  edgecolor  = get( handle, 'EdgeColor' );
+  edgecolor = get( handle, 'EdgeColor' );
   linestyle = get( handle, 'LineStyle' );
   if strcmp( linestyle, 'none' ) || strcmp( edgecolor, 'none' )
       draw_options = [ draw_options, 'draw=none' ];
   else
-      [xedgecolor,addstr] = get_color( handle, edgecolor, 'patch' );
-      str = [ str, addstr ];
+      xedgecolor = get_color( handle, edgecolor, 'patch' );
       draw_options = [ draw_options, sprintf( 'draw=%s', xedgecolor ) ];
   end
 
@@ -698,7 +897,8 @@ function str = draw_patch( handle )
 
   % MATLAB's patch elements are matrices in which each column represents a
   % a distinct graphical object. Usually there is only one column, but
-  % there may be more (-->hist plots).
+  % there may be more (-->hist plots, although they are now handled
+  % within the barplot framework).
   xdata = get( handle, 'XData' );
   ydata = get( handle, 'YData' );
   m = size(xdata,1);
@@ -744,7 +944,11 @@ function str = draw_image( handle )
 
   warning( [ 'matlab2tikz:drawimage',                                   ...
              'Image data will be plotted upside down as pgfplots does ',...
-             'not yet have reverse axes.' ] );
+             'not yet have reverse axes. This functionality is likely ',...
+             'to be added in future versions, though.\nIf you are '    ,...
+             'feeling adventerous, you can go ahead and get the ',      ...
+             'latest CVS version of pgfplots (from sourceforge) and ',  ...
+             'insert y={(0,-1cm)} in the axis options.' ] );
 
   % read x- and y-data
   xlimits = get( handle, 'XData' );
@@ -758,8 +962,7 @@ function str = draw_image( handle )
   % draw the thing
   for i = 1:length(Y)
       for j = 1:length(X)
-          [xcolor,addstr] = get_color( handle, cdata(i,j,:), 'image' );
-          str = [ str, addstr ];
+          xcolor = get_color( handle, cdata(i,j,:), 'image' );
           str = [ str, ...
                   sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
                            xcolor,  X(j)-0.5, Y(i)-0.5, X(j)+0.5, Y(i)+0.5  ) ];
@@ -969,18 +1172,16 @@ function str = draw_barseries( h );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define edge color
   edgecolor  = get( h, 'EdgeColor' );
-  [xedgecolor,addstr] = get_color( h, edgecolor, 'patch' );
-  str = [ str, addstr ];
+  xedgecolor = get_color( h, edgecolor, 'patch' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define face color;
   % quite oddly, this value is not coded in the handle itself, but in its
   % child patch.
-  child               = get( h, 'Children' );
-  facecolor           = get( child, 'FaceColor');
-  [xfacecolor,addstr] = get_color( h, facecolor, 'patch' );
-  str = [ str, addstr ];
+  child      = get( h, 'Children' );
+  facecolor  = get( child, 'FaceColor');
+  xfacecolor = get_color( h, facecolor, 'patch' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1031,12 +1232,13 @@ function str = draw_stemseries( h );
 
   str = [];
 
-  linestyle = get( h, 'LineStyle');
-  linewidth = get( h, 'LineWidth');
-  marker    = get( h, 'Marker');
+  linestyle = get( h, 'LineStyle' );
+  linewidth = get( h, 'LineWidth' );
+  marker    = get( h, 'Marker' );
 
   if (    ( strcmp(linestyle,'none') || linewidth==0 )                  ...
        && strcmp(marker,'none') )
+      % nothing to plot!
       return
   end
 
@@ -1047,67 +1249,13 @@ function str = draw_stemseries( h );
   % deal with draw options
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
   color     = get( h, 'Color' );
-  [plotcolor,addstr] = get_color( h, color, 'patch' );
-  str = [ str, addstr ];
+  plotcolor = get_color( h, color, 'patch' );
 
-  draw_options{1} = 'ycomb';
-  draw_options = [draw_options, sprintf( 'color=%s', plotcolor ) ];
-
-  if ~strcmp(linestyle,'none') && linewidth~=0
-      draw_options = [ draw_options,                                    ...
-                       sprintf('%s', translate_linestyle(linestyle) ),  ...
-                       sprintf('line width=%.1fpt', linewidth ) ];
-  end
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % marker (with its own options)
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  if ~strcmp( marker, 'none' )
-      marker_size = get( h, 'MarkerSize');
-
-      % In MATLAB, the marker size refers to the edge length of a square
-      % (for example) (~diameter), whereas in TikZ the distance of an edge
-      % to the center is the measure (~radius). Hence divide by 2.
-      tikz_marker_size = translate_markersize( marker, marker_size );
-      draw_options = [ draw_options,                                    ...
-                       sprintf( 'mark size=%.1fpt', tikz_marker_size ) ];
-      
-      mark_options = cell( 0 );
-      % make sure that the markers get painted in solid (and not dashed)
-      if ~strcmp( linestyle, 'solid' )
-          mark_options = [ mark_options, 'solid' ];
-      end
-
-      % print no lines
-      if strcmp(linestyle,'none') || linewidth==0
-          draw_options = [ draw_options, 'only marks' ] ;
-      end
-
-      % get the marker color right
-      markerfacecolor = get( h, 'MarkerFaceColor' );
-      markeredgecolor = get( h, 'MarkerEdgeColor' );
-      [ tikz_marker, mark_options ] = translate_marker( marker,         ...
-                           mark_options, ~strcmp(markerfacecolor,'none') );
-      if ~strcmp(markerfacecolor,'none')
-          [xcolor,addstr] = get_color( h, markerfacecolor, 'patch' );
-          str = [ str, addstr ];
-          mark_options = [ mark_options,  sprintf( 'fill=%s', xcolor ) ];
-      end
-      if ~strcmp(markeredgecolor,'none') && ~strcmp(markeredgecolor,'auto')
-          [xcolor,addstr] = get_color( h, markeredgecolor, 'patch' );
-          str = [ str, addstr ];
-          mark_options = [ mark_options, sprintf( 'draw=%s', xcolor ) ];
-      end
-
-      % add it all to draw_options
-      draw_options = [ draw_options, sprintf( 'mark=%s', tikz_marker ) ];
-
-      if ~isempty( mark_options )
-          mo = collapse( mark_options, ',' );
-	  draw_options = [ draw_options, [ 'mark options={', mo, '}' ] ];
-      end
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  draw_options = [ 'ycomb',                                  ...
+                   sprintf( 'color=%s', plotcolor ),         ... % color
+                   get_line_options( linestyle, linewidth ), ... % line options
+                   get_marker_options( h )                   ... % marker options
+                 ];
 
   % insert draw options
   draw_opts =  collapse( draw_options, ',' );
@@ -1161,79 +1309,21 @@ function str = draw_stairseries( h );
       return
   end
 
-  xdata = get( h, 'XData' );
-  ydata = get( h, 'YData' );
-
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % deal with draw options
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   color     = get( h, 'Color' );
-  [plotcolor,addstr] = get_color( h, color, 'patch' );
-  str = [ str, addstr ];
+  plotcolor = get_color( h, color, 'patch' );
 
-  draw_options{1} = 'const plot';
-  draw_options = [draw_options, sprintf( 'color=%s', plotcolor ) ];
-
-  if ~strcmp(linestyle,'none') && linewidth~=0
-      draw_options = [ draw_options,                                    ...
-                       sprintf('%s', translate_linestyle(linestyle) ),  ...
-                       sprintf('line width=%.1fpt', linewidth ) ];
-  end
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % marker (with its own options)
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  if ~strcmp( marker, 'none' )
-      marker_size = get( h, 'MarkerSize');
-
-      % In MATLAB, the marker size refers to the edge length of a square
-      % (for example) (~diameter), whereas in TikZ the distance of an edge
-      % to the center is the measure (~radius). Hence divide by 2.
-      tikz_marker_size = translate_markersize( marker, marker_size );
-      draw_options = [ draw_options,                                    ...
-                       sprintf( 'mark size=%.1fpt', tikz_marker_size ) ];
-      
-      mark_options = cell( 0 );
-      % make sure that the markers get painted in solid (and not dashed)
-      if ~strcmp( linestyle, 'solid' )
-          mark_options = [ mark_options, 'solid' ];
-      end
-
-      % print no lines
-      if strcmp(linestyle,'none') || linewidth==0
-          draw_options = [ draw_options, 'only marks' ] ;
-      end
-
-      % get the marker color right
-      markerfacecolor = get( h, 'MarkerFaceColor' );
-      markeredgecolor = get( h, 'MarkerEdgeColor' );
-      [ tikz_marker, mark_options ] = translate_marker( marker,         ...
-                           mark_options, ~strcmp(markerfacecolor,'none') );
-      if ~strcmp(markerfacecolor,'none')
-          [xcolor,addstr] = get_color( handle, markerfacecolor, 'patch' );
-          str = [ str, addstr ];
-          mark_options = [ mark_options,  sprintf( 'fill=%s', xcolor ) ];
-      end
-      if ~strcmp(markeredgecolor,'none') && ~strcmp(markeredgecolor,'auto')
-          [xcolor,addstr] = get_color( handle, markeredgecolor, 'patch' );
-          str = [ str, addstr ];
-          mark_options = [ mark_options, sprintf( 'draw=%s', xcolor ) ];
-      end
-
-      % add it all to draw_options
-      draw_options = [ draw_options, sprintf( 'mark=%s', tikz_marker ) ];
-
-      if ~isempty( mark_options )
-          mo = collapse( mark_options, ',' );
-	  draw_options = [ draw_options, [ 'mark options={', mo, '}' ] ];
-      end
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  draw_options = [ 'const plot',                             ...
+                   sprintf( 'color=%s', plotcolor ),         ... % color
+                   get_line_options( linestyle, linewidth ), ... % line options
+                   get_marker_options( h )                   ... % marker options
+                 ];
 
   % insert draw options
   draw_opts =  collapse( draw_options, ',' );
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1285,9 +1375,9 @@ function str = draw_quivergroup( h );
   if strcmp( autoscale, 'on' )
 
       scalefactor = get( h, 'AutoScaleFactor' );
-      
+
       % Get average spacing in x- and y-direction.
-      % -- This assumes that when xdata, ydata are indeed 2d entities, they
+      % -- This assumes that when xdata, ydata are indeed 2D entities, they
       %    really repeat the same row (column) m (n) times. Hence take only
       %    the first.
       avx = diff([min(xdata(1,:)) max(xdata(1,:))])/m;
@@ -1315,8 +1405,6 @@ function str = draw_quivergroup( h );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % gather the arrow options
-  arrow_opts = cell(0);
-
   showarrowhead = get( h, 'ShowArrowHead' );
   linestyle     = get( h, 'LineStyle' );
   linewidth     = get( h, 'LineWidth' );
@@ -1325,22 +1413,19 @@ function str = draw_quivergroup( h );
       return
   end
 
+  arrow_opts = cell(0);
   if showarrowhead
       arrow_opts = [ arrow_opts, '->' ];
   else
       arrow_opts = [ arrow_opts, '-' ];
   end
 
-  color               = get( h, 'Color');
-  [arrowcolor,addstr] = get_color( h, color, 'patch' );
-  str = [ str, addstr ];
-  arrow_opts = [ arrow_opts, sprintf( 'color=%s', arrowcolor ) ];
-
-  if ~strcmp(linestyle,'none') && linewidth~=0
-      arrow_opts = [ arrow_opts,                                        ...
-                     translate_linestyle(linestyle),                    ...
-                     sprintf('line width=%.1fpt', linewidth ) ];
-  end
+  color      = get( h, 'Color');
+  arrowcolor = get_color( h, color, 'patch' );
+  arrow_opts = [ arrow_opts,                               ...
+                 sprintf( 'color=%s', arrowcolor ),        ... % color
+                 get_line_options( linestyle, linewidth ), ... % line options
+               ];
 
   arrow_options = collapse( arrow_opts, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1576,16 +1661,18 @@ end
 % *** have. Possible values are (as strings) 'patch' and 'image'.
 % ***
 % =========================================================================
-function [ xcolor, str ] = get_color( handle, color, mode )
+function xcolor = get_color( handle, color, mode )
 
-  global matlab2tikz_opts;
+  global matlab2tikz_opts
+  global tol
 
-  str = [];
+  % Remember the color rbgvalues which will need to be redefined.
+  % Each row of 'neededRGBColors' contains the RGB values of a needed
+  % color.
+  global neededRGBColors
 
-  % colorcount keeps track of the number of self-defined colors to avoid
-  % unpurposed redefinition
-  persistent colorcount;
-
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % first get the rgb value
   switch mode
       case 'patch'
           rgbcol = patchcolor2rgb ( color, handle );
@@ -1596,18 +1683,41 @@ function [ xcolor, str ] = get_color( handle, color, mode )
                    'Argument ''mode'' has illegal value ''%s''' ], ...
                  mode );
   end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % make sure a xcolor value is returned
   xcolor = rgb2xcolor( rgbcol );
-
   if isempty( xcolor )
-      if isempty(colorcount)
-          colorcount = 0;
+      if isempty(neededRGBColors) || length(neededRGBColors)==0
+          % initialize the matrix
+          neededRGBColors = rgbcol;
+          xcolor          = 'mycolor1';
+      else
+
+          % check if the color has appeared before
+          k0 = 0;
+          n  = size(neededRGBColors,1);
+          for k = 1:size(neededRGBColors,1)
+              if norm(neededRGBColors(k,:)-rgbcol)<tol
+                  k0 = k;
+                  break
+              end
+          end
+
+          if k0
+              % take that former color
+              xcolor = sprintf( 'mycolor%d', k0 );
+          else
+              % otherwise have a new one defined
+              neededRGBColors = [neededRGBColors; rgbcol];
+              xcolor = sprintf( 'mycolor%d', n+1 );
+          end
+
       end
-      colorcount = colorcount + 1;
-      str = sprintf( '\\definecolor{mycolor%d}{rgb}{%g,%g,%g}\n',       ...
-                                                      colorcount, rgbcol );
-      xcolor = sprintf( 'mycolor%d', colorcount );
+
   end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
@@ -2126,179 +2236,6 @@ function xcolor_literal = rgb2xcolor( rgb )
 end
 % =========================================================================
 % *** FUNCTION rgb2xcolor
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION translate_marker
-% =========================================================================
-function [ tikz_marker, mark_options ] =                                ...
-          translate_marker( matlab_marker, mark_options, facecolor_toggle )
-  
-  if( ~ischar(matlab_marker) )
-      error( [ ' Function translate_marker:',                           ...
-               ' Variable matlab_marker is not a string.' ] );
-  end
-
-  switch ( matlab_marker )
-      case 'none'
-          tikz_marker = '';
-      case '+'
-          tikz_marker = '+';
-      case 'o'
-	  if facecolor_toggle
-	      tikz_marker = '*';
-	  else
-	      tikz_marker = 'o';
-	  end
-      case '.'
-	  tikz_marker = '*';
-      case 'x'
-	  tikz_marker = 'x';
-      otherwise  % the following markers are only available with PGF's
-                 % plotmarks library
-          fprintf( '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
-          switch ( matlab_marker )
-              
-	          case '*'
-		          tikz_marker = 'asterisk';
-              
-	          case {'s','square'}
-                  if facecolor_toggle
-		              tikz_marker = 'square*';
-                  else
-                      tikz_marker = 'square';
-                  end
-
-	          case {'d','diamond'}
-                  if facecolor_toggle
-		              tikz_marker = 'diamond*';
-                  else
-		              tikz_marker = 'diamond';
-                  end
-                  
-              case '^'
-                  if facecolor_toggle
-		              tikz_marker = 'triangle*';
-                  else
-		              tikz_marker = 'triangle';
-                  end
-
-	          case 'v'
-                  if facecolor_toggle
-                      tikz_marker = 'triangle*';
-                  else
-		              tikz_marker = 'triangle';
-                  end
-                  mark_options = [ mark_options, ',rotate=180' ];
-
-	          case '<'
-                  if facecolor_toggle
-                      tikz_marker = 'triangle*';
-                  else
-		              tikz_marker = 'triangle';
-                  end
-                  mark_options = [ mark_options, ',rotate=270' ];
-
-              case '>'
-                  if facecolor_toggle
-		              tikz_marker = 'triangle*';
-                  else
-		              tikz_marker = 'triangle';
-                  end
-                  mark_options = [ mark_options, ',rotate=90' ];
-
-              case {'p','pentagram'}
-                  if facecolor_toggle
-		              tikz_marker = 'star*';
-                  else
-		              tikz_marker = 'star';
-                  end
-                  
-	          case {'h','hexagram'}
-                  warning( 'matlab2tikz:translate_marker',              ...
-                           'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
-                  if facecolor_toggle
-		              tikz_marker = 'star*';
-                  else
-		              tikz_marker = 'star';
-                  end
-
-              otherwise
-                  error( [ ' Function translate_marker:',               ...
-                           ' Unknown matlab_marker ''',matlab_marker,'''.' ] );
-          end
-  end
-  
-end
-% =========================================================================
-% *** END OF FUNCTION translate_marker
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION translate_markersize
-% ***
-% *** The markersizes of Matlab and TikZ are related, but not equal. This is
-% *** because
-% ***
-% ***  1.) MATLAB uses the MarkerSize property to describe something like the
-% ***      diameter of the mark, while TikZ refers to the 'radius',
-% ***  2.) MATLAB and TikZ take different measures (, e.g., the edgelength of
-% ***      a square vs. the diagonal length of it).
-% ***
-% =========================================================================
-function tikz_markersize =                                              ...
-                   translate_markersize( matlab_marker, matlab_markersize )
-  
-  if( ~ischar(matlab_marker) )
-      error( 'matlab2tikz:translate_markersize',                        ...
-             'Variable matlab_marker is not a string.' );
-  end
-
-  if( ~isnumeric(matlab_markersize) )
-      error( 'matlab2tikz:translate_markersize',                        ...
-             'Variable matlab_markersize is not a numeral.' );
-  end
-
-  switch ( matlab_marker )
-      case 'none'
-          tikz_markersize = [];
-      case {'+','o','x','*','p','pentagram','h','hexagram'}
-          tikz_markersize = matlab_markersize / 2;
-      case '.'
-          % as documented on the Matlab help pages:
-          %
-          % Note that MATLAB draws the point marker (specified by the '.'
-          % symbol) at one-third the specified size.
-          % The point (.) marker type does not change size when the
-          % specified value is less than 5. 
-          % 
-	  tikz_markersize = matlab_markersize / 2 / 3;
-      case {'s','square'}
-          % Matlab measures the diameter, TikZ half the edge length
-          tikz_markersize = matlab_markersize / 2 / sqrt(2);
-      case {'d','diamond'}
-          % Matlab measures the width, TikZ the height of the diamond;
-          % the acute angle (top and bottom) is a manually measured
-          % 75 degrees (in TikZ, and Matlab probably very similar);
-          % use this as a base for calculations
-	  tikz_markersize = matlab_markersize / 2 / atan( 75/2 *pi/180 );
-      case {'^','v','<','>'}
-          % for triangles, matlab takes the height
-          % and tikz the circumcircle radius;
-          % the triangles are always equiangular
-          tikz_markersize = matlab_markersize / 2 * (2/3);
-      otherwise
-	  error( 'matlab2tikz:translate_markersize',                    ...
-                 'Unknown matlab_marker ''%s''.', matlab_marker  );
-  end
-
-end
-% =========================================================================
-% *** END OF FUNCTION translate_markersize
 % =========================================================================
 
 
