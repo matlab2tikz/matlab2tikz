@@ -137,7 +137,7 @@ function save_to_file()
 
   % don't forget to define the colors
   if size(neededRGBColors,1)
-      fprintf( fid, '\n%% defining custom colors' );
+      fprintf( fid, '\n%% defining custom colors\n' );
   end
   for k = 1:size(neededRGBColors,1)
       fprintf( fid, '\\definecolor{mycolor%d}{rgb}{%g,%g,%g}\n', k,     ...
@@ -1616,9 +1616,7 @@ function str = draw_colorbar( handle )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot tiny little badges for the respective colors
   for i=1:m
-      str = [ str, ...
-              sprintf( '\\definecolor{ccolor%d}{rgb}{%g,%g,%g}\n',         ...
-                                                            i, cmap(i,:) ) ];
+      badgecolor = rgb2tikzcol( cmap(i,:) );
 
       switch loc
           case {'NorthOutside','SouthOutside'}
@@ -1633,8 +1631,8 @@ function str = draw_colorbar( handle )
               y2 = clim(1) + cbar_length/m *i; 
       end
       str = [ str, ...
-              sprintf( '\\addplot [fill=ccolor%d,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', i,    ...
-                                          x1, y1, x2, y1, x2, y2, x1, y2    ) ]; 
+              sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
+                         badgecolor, x1, y1, x2, y1, x2, y2, x1, y2    ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1663,16 +1661,8 @@ end
 % =========================================================================
 function xcolor = get_color( handle, color, mode )
 
-  global matlab2tikz_opts
-  global tol
-
-  % Remember the color rbgvalues which will need to be redefined.
-  % Each row of 'neededRGBColors' contains the RGB values of a needed
-  % color.
-  global neededRGBColors
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % first get the rgb value
+  % grab rgb value
   switch mode
       case 'patch'
           rgbcol = patchcolor2rgb ( color, handle );
@@ -1685,8 +1675,34 @@ function xcolor = get_color( handle, color, mode )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % make sure a xcolor value is returned
+  % ... and make sure a xcolor value is returned
+  xcolor = rgb2tikzcol( rgbcol );
+
+end
+% =========================================================================
+% *** END FUNCTION get_color
+% =========================================================================
+
+
+
+% =========================================================================
+% *** FUNCTION rgb2tikzcol
+% ***
+% *** This function takes and RGB coded color as input and returns a string
+% *** describing the color that can be used in the TikZ file.
+% *** It checks if the color is predefined (by xcolor.sty) or if it needs
+% *** to be custom defined. It keeps all the self-defined colors in
+% *** 'neededRGBColors' to avoid redundant definitions.
+% ***
+% =========================================================================
+function xcolor = rgb2tikzcol( rgbcol )
+
+  global tol
+  % Remember the color rbgvalues which will need to be redefined.
+  % Each row of 'neededRGBColors' contains the RGB values of a needed
+  % color.
+  global neededRGBColors
+
   xcolor = rgb2xcolor( rgbcol );
   if isempty( xcolor )
       if isempty(neededRGBColors) || length(neededRGBColors)==0
@@ -1717,11 +1733,10 @@ function xcolor = get_color( handle, color, mode )
       end
 
   end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
-% *** END FUNCTION get_color
+% *** FUNCTION rgb2tikzcol
 % =========================================================================
 
 
