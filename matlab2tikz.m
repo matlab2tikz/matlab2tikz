@@ -28,7 +28,8 @@
 % ***
 % =========================================================================
 % ***
-% ***    Copyright (c) 2008  by Nico Schl"omer <nico.schloemer@ua.ac.be>
+% ***    Copyright (c) 2008, 2009 by
+% ***    Nico Schlömer <nico.schloemer@ua.ac.be>
 % ***    All rights reserved.
 % ***
 % ***    This program is free software: you can redistribute it and/or
@@ -99,6 +100,7 @@ end
 % *** FUNCTION save_to_file
 % ***
 % *** Save the figure as TikZ to a file.
+% *** All other routines are called from here.
 % ***
 % =========================================================================
 function save_to_file()
@@ -356,24 +358,31 @@ function str = draw_axes( handle )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids
+  is_grid = 0;
   if strcmp( get( handle, 'XGrid'), 'on' );
       axis_opts = [ axis_opts, 'xmajorgrids' ];
+      is_grid = 1;
   end
   if strcmp( get( handle, 'XMinorGrid'), 'on' );
       axis_opts = [ axis_opts, 'xminorgrids' ];
+      is_grid = 1;
   end
   if strcmp( get( handle, 'YGrid'), 'on' )
       axis_opts = [ axis_opts, 'ymajorgrids' ];
+      is_grid = 1;
   end
   if strcmp( get( handle, 'YMinorGrid'), 'on' );
       axis_opts = [ axis_opts, 'yminorgrids' ];
+      is_grid = 1;
   end
 
   % set the linestyle
-  gridlinestyle = get( handle, 'GridLineStyle' );
-  gls           = translate_linestyle( gridlinestyle );
-  str = [ str, ...
-          sprintf( '\n\\pgfplotsset{every axis grid/.style={style=%s}}\n\n', gls ) ];
+  if is_grid
+      gridlinestyle = get( handle, 'GridLineStyle' );
+      gls           = translate_linestyle( gridlinestyle );
+      str = [ str, ...
+              sprintf( '\n\\pgfplotsset{every axis grid/.style={style=%s}}\n\n', gls ) ];
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -797,16 +806,16 @@ function draw_options = get_marker_options( h )
   % ***      edgelength of a square vs. the diagonal length of it).
   % ***
   % -----------------------------------------------------------------------
-  function tikz_markersize =                                              ...
-		    translate_markersize( matlab_marker, matlab_markersize )
+  function tikz_markersize =                                            ...
+		   translate_markersize( matlab_marker, matlab_markersize )
 
     if( ~ischar(matlab_marker) )
-	error( 'matlab2tikz:translate_markersize',                        ...
+	error( 'matlab2tikz:translate_markersize',                      ...
 	      'Variable matlab_marker is not a string.' );
     end
 
     if( ~isnumeric(matlab_markersize) )
-	error( 'matlab2tikz:translate_markersize',                        ...
+	error( 'matlab2tikz:translate_markersize',                      ...
 	      'Variable matlab_markersize is not a numeral.' );
     end
 
@@ -1149,17 +1158,17 @@ function str = draw_barseries( h );
           % Make sure this happens exactly *once*.
           if isempty(added_axis_option) || ~added_axis_option
 	      if nonbar_plot_present
-		  warning( 'matlab2tikz:draw_barseries',                    ...
-			  [ 'Pgfplots can''t deal with stacked bar plots', ...
-			    ' and non-bar plots in one axis environment.', ...
-			    ' There may be unexpected results.'            ] );
+		  warning( 'matlab2tikz:draw_barseries',                 ...
+			[ 'Pgfplots can''t deal with stacked bar plots', ...
+			  ' and non-bar plots in one axis environment.', ...
+			  ' There *may* be unexpected results.'         ] );
 	      end
 	      bw_factor = get( h, 'BarWidth' );
               ulength   = normalized2physical();
-              axis_opts = [ axis_opts,                          ...
-                            'ybar stacked',                     ...
-                            sprintf( 'bar width=%g%s',          ...
-                                     ulength.value*bw_factor, ulength.unit ) ];
+              axis_opts = [ axis_opts,                                   ...
+                            'ybar stacked',                              ...
+                            sprintf( 'bar width=%g%s',                   ...
+                                  ulength.value*bw_factor, ulength.unit ) ];
               added_axis_option = 1;
           end
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
