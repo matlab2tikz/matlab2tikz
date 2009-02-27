@@ -51,42 +51,42 @@ function matlab2tikz( fn )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define some global variables
-  clear global matlab2tikz_name;
-  clear global matlab2tikz_version;
+  clear global matlab2tikzName;
+  clear global matlab2tikzVersion;
   clear global tol;
-  clear global matlab2tikz_opts;
+  clear global matlab2tikzOpts;
 
-  global matlab2tikz_name;
-  matlab2tikz_name = 'matlab2tikz';
+  global matlab2tikzName;
+  matlab2tikzName = 'matlab2tikz';
 
-  global matlab2tikz_version;
-  matlab2tikz_version = '0.0.2';
+  global matlab2tikzVersion;
+  matlab2tikzVersion = '0.0.2';
 
   global tol;
   tol = 1e-15; % global round-off tolerance;
                % used, for example, in equality test for doubles
 
-  global matlab2tikz_opts;
+  global matlab2tikzOpts;
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  matlab2tikz_opts.filename = fn;
-  matlab2tikz_opts.gca      = gca;
-  matlab2tikz_opts.gcf      = gcf;
+  matlab2tikzOpts.filename = fn;
+  matlab2tikzOpts.gca      = gca;
+  matlab2tikzOpts.gcf      = gcf;
 
-  fprintf( '%s v%s\n', matlab2tikz_name, matlab2tikz_version );
+  fprintf( '%s v%s\n', matlab2tikzName, matlab2tikzVersion );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
-  save_to_file();
+  saveToFile();
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   fprintf( '\nRemember to load \\usepackage{tikz} and \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
 
   % clean up
-  clear global matlab2tikz_name;
-  clear global matlab2tikz_version;
+  clear global matlab2tikzName;
+  clear global matlab2tikzVersion;
   clear global tol;
-  clear global matlab2tikz_opts;
+  clear global matlab2tikzOpts;
   clear all;
 
 end
@@ -97,24 +97,24 @@ end
 
 
 % =========================================================================
-% *** FUNCTION save_to_file
+% *** FUNCTION saveToFile
 % ***
 % *** Save the figure as TikZ to a file.
 % *** All other routines are called from here.
 % ***
 % =========================================================================
-function save_to_file()
+function saveToFile()
 
   global filename
-  global matlab2tikz_name
-  global matlab2tikz_version
-  global matlab2tikz_opts
+  global matlab2tikzName
+  global matlab2tikzVersion
+  global matlab2tikzOpts
 
   global neededRGBColors
 
-  fid = fopen( matlab2tikz_opts.filename, 'w' );
+  fid = fopen( matlab2tikzOpts.filename, 'w' );
   if fid == -1
-      error( 'matlab2tikz:save_to_file', ...
+      error( 'matlab2tikz:saveToFile', ...
              'Unable to open %s for writing', filename );
   end
 
@@ -126,14 +126,14 @@ function save_to_file()
   % With ShowHiddenHandles 'on', there is no escape. :)
   set( 0, 'ShowHiddenHandles', 'on' );
   fh = gcf;
-  str = handle_all_children( fh );
+  str = handleAllChildren( fh );
   set( 0, 'ShowHiddenHandles', 'off' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
   fprintf( fid, '% This file was created by %s v%s.\n\n',               ...
-                                   matlab2tikz_name, matlab2tikz_version );
+                                   matlab2tikzName, matlab2tikzVersion );
 
   fprintf( fid, '\\begin{tikzpicture}\n' );
 
@@ -155,18 +155,18 @@ function save_to_file()
   fclose( fid );
 end
 % =========================================================================
-% *** END OF FUNCTION save_to_file
+% *** END OF FUNCTION saveToFile
 % =========================================================================
  
 
 
 % =========================================================================
-% *** FUNCTION handle_all_children
+% *** FUNCTION handleAllChildren
 % ***
 % *** Draw all children of a graphics object (if they need to be drawn).
 % ***
 % =========================================================================
-function str = handle_all_children( handle )
+function str = handleAllChildren( handle )
 
   str = [];
 
@@ -180,24 +180,24 @@ function str = handle_all_children( handle )
 
       switch get( child, 'Type' )
 	  case 'axes'
-	      str = [ str, draw_axes( child ) ];
+	      str = [ str, drawAxes( child ) ];
 
 	  case 'line'
-	      str = [ str, draw_line( child ) ];
+	      str = [ str, drawLine( child ) ];
 
 	  case 'patch'
-	      str = [ str, draw_patch( child ) ];
+	      str = [ str, drawPatch( child ) ];
 
 	  case 'image'
-	      str = [ str, draw_image( child ) ];
+	      str = [ str, drawImage( child ) ];
 
 	  case 'hggroup'
-	      str = [ str, draw_hggroup( child ) ];
+	      str = [ str, drawHggroup( child ) ];
 
 	  case { 'hgtransform' }
               % don't handle those directly but descend to its children
               % (which could for example be patch handles)
-              str = [ str, handle_all_children( child ) ];
+              str = [ str, handleAllChildren( child ) ];
 
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent',  ...
@@ -205,7 +205,7 @@ function str = handle_all_children( handle )
               % don't to anything for these handles and its children
 
 	  otherwise
-	      error( 'matfig2tikz:handle_all_children',                 ...
+	      error( 'matfig2tikz:handleAllChildren',                 ...
                      'I don''t know how to handle this object: %s\n',   ...
                                                        get(child,'Type') );
 
@@ -214,44 +214,44 @@ function str = handle_all_children( handle )
 
 end
 % =========================================================================
-% *** END OF FUNCTION handle_all_children
+% *** END OF FUNCTION handleAllChildren
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_axes
+% *** FUNCTION drawAxes
 % =========================================================================
-function str = draw_axes( handle )
+function str = drawAxes( handle )
 
   % Make the axis options a global variable as plot objects further below
   % in the hierarchy might want to append something.
   % One example is the required 'ybar stacked' option for stacked bar
   % plots.
-  global axis_opts;
+  global axisOpts;
 
   str = [];
-  axis_opts = cell(0);
+  axisOpts = cell(0);
 
-  if ~is_visible( handle )
+  if ~isVisible( handle )
       % An invisible axis container *can* have visible children, so don't
       % immediately bail out here.
       if length(get(handle,'Children')) > 0
           env  = 'axis';
-          dim = get_axes_dimensions( handle );
-          axis_opts = [ axis_opts, ...
+          dim = getAxesDimensions( handle );
+          axisOpts = [ axisOpts, ...
                         'hide x axis, hide y axis', ...
                         sprintf('width=%g%s, height=%g%s', dim.x, dim.unit,   ...
                                                            dim.y, dim.unit ), ...
                                 'scale only axis' ];
-          str = plot_axis_environment( handle, env );
+          str = plotAxisEnvironment( handle, env );
       end
       return
   end
 
   if strcmp( get(handle,'Tag'), 'Colorbar' )
       % handle a colorbar separately
-      str = draw_colorbar( handle );
+      str = drawColorbar( handle );
       return
   end
 
@@ -270,29 +270,29 @@ function str = draw_axes( handle )
   xscale = get( handle, 'XScale' );
   yscale = get( handle, 'YScale' );
 
-  is_xlog = strcmp( xscale, 'log' );
-  is_ylog = strcmp( yscale, 'log' );
+  isXlog = strcmp( xscale, 'log' );
+  isYlog = strcmp( yscale, 'log' );
 
-  if  ~is_xlog && ~is_ylog
+  if  ~isXlog && ~isYlog
       env = 'axis';
-  elseif is_xlog && ~is_ylog
+  elseif isXlog && ~isYlog
       env = 'semilogxaxis';
-  elseif ~is_xlog && is_ylog
+  elseif ~isXlog && isYlog
       env = 'semilogyaxis';
   else
       env = 'loglogaxis';
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  axis_opts = [ axis_opts, 'name=main plot' ];
+  axisOpts = [ axisOpts, 'name=main plot' ];
 
   % the following is general MATLAB behavior
-  axis_opts = [ axis_opts, 'axis on top' ];
+  axisOpts = [ axisOpts, 'axis on top' ];
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
-  dim = get_axes_dimensions( handle );
-  axis_opts = [ axis_opts,                                              ...
+  dim = getAxesDimensions( handle );
+  axisOpts = [ axisOpts,                                              ...
                 sprintf( 'width=%g%s' , dim.x, dim.unit ),              ...
                 sprintf( 'height=%g%s', dim.y, dim.unit ),              ...
                 'scale only axis' ];
@@ -300,37 +300,37 @@ function str = draw_axes( handle )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
-  [ ticks, ticklabels ] = get_ticks( handle );
+  [ ticks, tickLabels ] = getTicks( handle );
   if ~isempty( ticks.x )
-      axis_opts = [ axis_opts,                              ...
-                    sprintf( 'xtick={%s}', ticks.x ) ];
+      axisOpts = [ axisOpts,                              ...
+                    sprintf( 'xTick={%s}', ticks.x ) ];
   end
-  if ~isempty( ticklabels.x )
-      axis_opts = [ axis_opts,                              ...
-                    sprintf( 'xticklabels={%s}', ticklabels.x ) ];
+  if ~isempty( tickLabels.x )
+      axisOpts = [ axisOpts,                              ...
+                    sprintf( 'xTickLabels={%s}', tickLabels.x ) ];
   end
   if ~isempty( ticks.y )
-      axis_opts = [ axis_opts,                              ...
-                    sprintf( 'ytick={%s}', ticks.y ) ];
+      axisOpts = [ axisOpts,                              ...
+                    sprintf( 'yTick={%s}', ticks.y ) ];
   end
-  if ~isempty( ticklabels.y )
-      axis_opts = [ axis_opts,                              ...
-                    sprintf( 'yticklabels={%s}', ticklabels.y ) ];
+  if ~isempty( tickLabels.y )
+      axisOpts = [ axisOpts,                              ...
+                    sprintf( 'yTickLabels={%s}', tickLabels.y ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis labels
-  axislabels = get_axislabels( handle );
-  if ~isempty( axislabels.x )
-      axis_opts = [ axis_opts,                              ...
+  axisLabels = getAxisLabels( handle );
+  if ~isempty( axisLabels.x )
+      axisOpts = [ axisOpts,                              ...
                           sprintf( 'xlabel={$%s$}',                     ...
-                                   escape_characters(axislabels.x) ) ];
+                                   escapeCharacters(axisLabels.x) ) ];
   end
-  if ~isempty( axislabels.y )
-      axis_opts = [ axis_opts,                              ...
+  if ~isempty( axisLabels.y )
+      axisOpts = [ axisOpts,                              ...
                           sprintf( 'ylabel={$%s$}',                     ...
-                                   escape_characters(axislabels.y) ) ];
+                                   escapeCharacters(axisLabels.y) ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -339,9 +339,9 @@ function str = draw_axes( handle )
   % get title
   title = get( get( handle, 'Title' ), 'String' );
   if ~isempty(title)
-      axis_opts = [ axis_opts,                              ...
+      axisOpts = [ axisOpts,                              ...
                           sprintf( 'title={$%s$}',                      ...
-                                   escape_characters(title) ) ];
+                                   escapeCharacters(title) ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -350,7 +350,7 @@ function str = draw_axes( handle )
   % get axis limits
   xlim = get( handle, 'XLim' );
   ylim = get( handle, 'YLim' );
-  axis_opts = [ axis_opts,                                  ...
+  axisOpts = [ axisOpts,                                  ...
                       sprintf('xmin=%g, xmax=%g', xlim ),               ...
                       sprintf('ymin=%g, ymax=%g', ylim ) ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -358,28 +358,28 @@ function str = draw_axes( handle )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids
-  is_grid = 0;
+  isGrid = 0;
   if strcmp( get( handle, 'XGrid'), 'on' );
-      axis_opts = [ axis_opts, 'xmajorgrids' ];
-      is_grid = 1;
+      axisOpts = [ axisOpts, 'xmajorgrids' ];
+      isGrid = 1;
   end
   if strcmp( get( handle, 'XMinorGrid'), 'on' );
-      axis_opts = [ axis_opts, 'xminorgrids' ];
-      is_grid = 1;
+      axisOpts = [ axisOpts, 'xminorgrids' ];
+      isGrid = 1;
   end
   if strcmp( get( handle, 'YGrid'), 'on' )
-      axis_opts = [ axis_opts, 'ymajorgrids' ];
-      is_grid = 1;
+      axisOpts = [ axisOpts, 'ymajorgrids' ];
+      isGrid = 1;
   end
   if strcmp( get( handle, 'YMinorGrid'), 'on' );
-      axis_opts = [ axis_opts, 'yminorgrids' ];
-      is_grid = 1;
+      axisOpts = [ axisOpts, 'yminorgrids' ];
+      isGrid = 1;
   end
 
-  % set the linestyle
-  if is_grid
-      gridlinestyle = get( handle, 'GridLineStyle' );
-      gls           = translate_linestyle( gridlinestyle );
+  % set the lineStyle
+  if isGrid
+      gridLineStyle = get( handle, 'GridLineStyle' );
+      gls           = translateLineStyle( gridLineStyle );
       str = [ str, ...
               sprintf( '\n\\pgfplotsset{every axis grid/.style={style=%s}}\n\n', gls ) ];
   end
@@ -389,71 +389,71 @@ function str = draw_axes( handle )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % See if there are any legends that need to be plotted.
   c = get( get(handle,'Parent'), 'Children' ); % siblings of this handle
-  legend_handle = 0;
+  legendHandle = 0;
   for k=1:size(c)
       if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
           strcmp( get(c(k),'Tag' ), 'legend' )
-          legend_handle = c(k);
+          legendHandle = c(k);
           break
       end
   end
 
-  if legend_handle
-      axis_opts = [ axis_opts, ...
-                    get_legend_opts( legend_handle ) ];
+  if legendHandle
+      axisOpts = [ axisOpts, ...
+                    getLegendOpts( legendHandle ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % actually begin drawing
   str = [ str, ...
-          plot_axis_environment( handle, env ) ];
+          plotAxisEnvironment( handle, env ) ];
 
   % -----------------------------------------------------------------------
-  function str = plot_axis_environment( handle, env )
+  function str = plotAxisEnvironment( handle, env )
 
       str = [];
 
       % First, run through all the children to give them the chance to
-      % contribute to 'axis_opts'.
-      matfig2pgf_opt.CurrentAxesHandle = handle;
-      children_str = handle_all_children( handle );
+      % contribute to 'axisOpts'.
+      matfig2pgfOpt.CurrentAxesHandle = handle;
+      childrenStr = handleAllChildren( handle );
 
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      % Format 'axis_opts' nicely.
-      opts = [ '%%\n', collapse( axis_opts, ',%%\n' ), '%%\n' ];
+      % Format 'axisOpts' nicely.
+      opts = [ '%%\n', collapse( axisOpts, ',%%\n' ), '%%\n' ];
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       % Now, return the whole axis environment.
       str = [ str, ...
               sprintf( ['\n\\begin{%s}[',opts,']\n'], env ), ...
-              children_str, ...
+              childrenStr, ...
               sprintf( '\\end{%s}\n\n', env ) ];
   end
   % -----------------------------------------------------------------------
 
 end
 % =========================================================================
-% *** END OF FUNCTION draw_axes
+% *** END OF FUNCTION drawAxes
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_line
+% *** FUNCTION drawLine
 % =========================================================================
-function str = draw_line( handle )
+function str = drawLine( handle )
 
   str = [];
 
-  if ~is_visible( handle )
+  if ~isVisible( handle )
       return
   end
 
-  linestyle = get( handle, 'LineStyle' );
-  linewidth = get( handle, 'LineWidth' );
+  lineStyle = get( handle, 'LineStyle' );
+  lineWidth = get( handle, 'LineWidth' );
   marker    = get( handle, 'Marker' );
 
-  if (    ( strcmp(linestyle,'none') || linewidth==0 )                  ...
+  if (    ( strcmp(lineStyle,'none') || lineWidth==0 )                  ...
        && strcmp(marker,'none') )
       return
   end
@@ -462,14 +462,14 @@ function str = draw_line( handle )
   % deal with draw options
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   color  = get( handle, 'Color' );
-  xcolor = get_color( handle, color, 'patch' );
-  draw_options = [ sprintf( 'color=%s', xcolor ),            ... % color
-                   get_line_options( linestyle, linewidth ), ... % line options
-                   get_marker_options( handle )              ... % marker options
+  xcolor = getColor( handle, color, 'patch' );
+  drawOptions = [ sprintf( 'color=%s', xcolor ),            ... % color
+                   getLineOptions( lineStyle, lineWidth ), ... % line options
+                   getMarkerOptions( handle )              ... % marker options
                  ];
 
   % insert draw options
-  opts = [ '%%\n', collapse( draw_options, ',%%\n' ), '%%\n' ];
+  opts = [ '%%\n', collapse( drawOptions, ',%%\n' ), '%%\n' ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -480,54 +480,54 @@ function str = draw_line( handle )
   p      = get( handle, 'Parent' );
   xlim   = get( p, 'XLim' );
   ylim   = get( p, 'YLim' );
-  xdata  = get( handle, 'XData' );
-  ydata  = get( handle, 'YData' );
-  segvis = segment_visible( [xdata', ydata'], xlim, ylim );
+  xData  = get( handle, 'XData' );
+  yData  = get( handle, 'YData' );
+  segvis = segmentVisible( [xData', yData'], xlim, ylim );
 
-  n = length(xdata);
+  n = length(xData);
 
   % The line gets actually broken up into several as some parts of it may
   % be outside the visible area (the plot box).
   % 'segvis' tells us which segment are actually visible, and the
   % following construction loops throught it and makes sure that each
   % point that is necessary gets actually printed.
-  % 'print_previous' tells whether or not the previous segment is visible;
+  % 'printPrevious' tells whether or not the previous segment is visible;
   % this information is used for determining when a new 'addplot' needs
   % to be opened.
-  print_previous = 0;
+  printPrevious = 0;
   for k = 1:n-1
       if segvis(k) % segment is visible
-          if ~print_previous % .. the previous wasn't, hence start a plot
+          if ~printPrevious % .. the previous wasn't, hence start a plot
               str = [ str, ...
                       sprintf( ['\\addplot [',opts,'] coordinates{\n' ] ), ...;
-                      sprintf( ' (%g,%g)', xdata(k), ydata(k) ) ];
-              print_previous = 1;
+                      sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
+              printPrevious = 1;
           end
-          str = [ str, sprintf( ' (%g,%g)', xdata(k+1), ydata(k+1) ) ];
+          str = [ str, sprintf( ' (%g,%g)', xData(k+1), yData(k+1) ) ];
       else
-          if print_previous  % that was the last entry for now
+          if printPrevious  % that was the last entry for now
               str = [ str, sprintf('\n};\n\n') ];
-              print_previous = 0;
+              printPrevious = 0;
           end
       end
   end
-  if print_previous % don't forget to print the closing bracket
+  if printPrevious % don't forget to print the closing bracket
       str = [ str, sprintf('\n};\n\n') ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-  str = [ str, handle_all_children( handle ) ];
+  str = [ str, handleAllChildren( handle ) ];
 
 
   % -----------------------------------------------------------------------
-  % FUNCTION segment_visible
+  % FUNCTION segmentVisible
   %
   % Given a series of points 'p', this routines determines which inter-'p'
   % connections are visible in the box given by 'xlim', 'ylim'.
   %
   % -----------------------------------------------------------------------
-  function out = segment_visible( p, xlim, ylim )
+  function out = segmentVisible( p, xlim, ylim )
 
       n   = size( p, 1 ); % number of points
       out = zeros( n-1, 1 );
@@ -542,35 +542,35 @@ function str = draw_line( handle )
               out(k) = 1;
           elseif any(boxpos{k}==2) || any(boxpos{k+1}==2) % one of the two is strictly outside the box
               % does the segment intersect with any of the four boundaries?
-              out(k) =  segments_intersect( [p(k:k+1,1)',xlim(1),xlim(1)], ...   % with the left?
+              out(k) =  segmentsIntersect( [p(k:k+1,1)',xlim(1),xlim(1)], ...   % with the left?
                                             [p(k:k+1,2)',ylim] ) ...
-                     || segments_intersect( [p(k:k+1,1)',xlim],  ...             % with the bottom?
+                     || segmentsIntersect( [p(k:k+1,1)',xlim],  ...             % with the bottom?
                                             [p(k:k+1,2)',ylim(1),ylim(1)] ) ...
-                     || segments_intersect( [p(k:k+1,1)',xlim(2),xlim(2)],  ...  % with the right?
+                     || segmentsIntersect( [p(k:k+1,1)',xlim(2),xlim(2)],  ...  % with the right?
                                             [p(k:k+1,2)',ylim] ) ...
-                     || segments_intersect( [p(k:k+1,1)',xlim],  ...             % with the top?
+                     || segmentsIntersect( [p(k:k+1,1)',xlim],  ...             % with the top?
                                             [p(k:k+1,2)',ylim(2),ylim(2)] );
           else % both neighboring points lie on the boundary
               % This is kind of tricky as there may be nodes *exactly*
-              % in a corner of the domain. boxpos & common_entry handle
+              % in a corner of the domain. boxpos & commonEntry handle
               % this, though.
-              out(k) =  ~common_entry( boxpos{k},boxpos{k+1} );
+              out(k) =  ~commonEntry( boxpos{k},boxpos{k+1} );
           end
       end
 
   end
   % -----------------------------------------------------------------------
-  % END FUNCTION segment_visible
+  % END FUNCTION segmentVisible
   % -----------------------------------------------------------------------
 
   % -----------------------------------------------------------------------
-  % *** FUNCTION segments_intersect
+  % *** FUNCTION segmentsIntersect
   % ***
   % *** Checks whether the segments P1--P2 and P3--P4 intersect.
   % *** The x- and y- coordinates of Pi are in x(i), y(i), respectively.
   % ***
   % -----------------------------------------------------------------------
-  function out = segments_intersect( x, y );
+  function out = segmentsIntersect( x, y );
 
     % Technically, one writes down the 2x2 equation system to solve the
     %
@@ -594,208 +594,208 @@ function str = draw_line( handle )
 
   end
   % -----------------------------------------------------------------------
-  % *** END FUNCTION segments_intersect
+  % *** END FUNCTION segmentsIntersect
   % -----------------------------------------------------------------------
 
 end
 % =========================================================================
-% *** END OF FUNCTION draw_line
+% *** END OF FUNCTION drawLine
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION get_line_options
+% *** FUNCTION getLineOptions
 % ***
 % *** Gathers the line options.
 % ***
 % =========================================================================
-function line_opts = get_line_options( linestyle, linewidth )
+function lineOpts = getLineOptions( lineStyle, lineWidth )
 
-  line_opts = cell(0);
+  lineOpts = cell(0);
 
-  if ~strcmp(linestyle,'none') && linewidth~=0
-      line_opts = [ line_opts,                                      ...
-                    sprintf('%s', translate_linestyle(linestyle) ), ...
-                    sprintf('line width=%.1fpt', linewidth ) ];
+  if ~strcmp(lineStyle,'none') && lineWidth~=0
+      lineOpts = [ lineOpts,                                      ...
+                    sprintf('%s', translateLineStyle(lineStyle) ), ...
+                    sprintf('line width=%.1fpt', lineWidth ) ];
   end
 
 end
 % =========================================================================
-% *** END FUNCTION get_line_options
+% *** END FUNCTION getLineOptions
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION get_marker_options
+% *** FUNCTION getMarkerOptions
 % ***
 % *** Handles the marker properties of a line (or any other) plot.
 % ***
 % =========================================================================
-function draw_options = get_marker_options( h )
+function drawOptions = getMarkerOptions( h )
 
-  draw_options = cell(0);
+  drawOptions = cell(0);
 
   marker = get( h, 'Marker' );
 
   if ~strcmp( marker, 'none' )
-      marker_size = get( h, 'MarkerSize' );
-      linestyle   = get( h, 'LineStyle' );
-      linewidth   = get( h, 'LineWidth' );
+      markerSize = get( h, 'MarkerSize' );
+      lineStyle  = get( h, 'LineStyle' );
+      lineWidth  = get( h, 'LineWidth' );
 
       % In MATLAB, the marker size refers to the edge length of a square
       % (for example) (~diameter), whereas in TikZ the distance of an edge
       % to the center is the measure (~radius). Hence divide by 2.
-      tikz_marker_size = translate_markersize( marker, marker_size );
-      draw_options = [ draw_options,                                    ...
-                       sprintf( 'mark size=%.1fpt', tikz_marker_size ) ];
+      tikzMarkerSize = translateMarkersize( marker, markerSize );
+      drawOptions = [ drawOptions,                                    ...
+                       sprintf( 'mark size=%.1fpt', tikzMarkerSize ) ];
 
-      mark_options = cell( 0 );
+      markOptions = cell( 0 );
       % make sure that the markers get painted in solid (and not dashed)
-      % if the 'linestyle' is not solid (otherwise there is no problem)
-      if ~strcmp( linestyle, 'solid' )
-          mark_options = [ mark_options, 'solid' ];
+      % if the 'lineStyle' is not solid (otherwise there is no problem)
+      if ~strcmp( lineStyle, 'solid' )
+          markOptions = [ markOptions, 'solid' ];
       end
 
       % print no lines
-      if strcmp(linestyle,'none') || linewidth==0
-          draw_options = [ draw_options, 'only marks' ] ;
+      if strcmp(lineStyle,'none') || lineWidth==0
+          drawOptions = [ drawOptions, 'only marks' ] ;
       end
 
       % get the marker color right
-      markerfacecolor = get( h, 'MarkerFaceColor' );
-      markeredgecolor = get( h, 'MarkerEdgeColor' );
-      [ tikz_marker, mark_options ] = translate_marker( marker,         ...
-                           mark_options, ~strcmp(markerfacecolor,'none') );
-      if ~strcmp(markerfacecolor,'none')
-          xcolor = get_color( h, markerfacecolor, 'patch' );
-          mark_options = [ mark_options,  sprintf( 'fill=%s', xcolor ) ];
+      markerFaceColor = get( h, 'markerfaceColor' );
+      markerEdgeColor = get( h, 'markeredgeColor' );
+      [ tikzMarker, markOptions ] = translateMarker( marker,         ...
+                           markOptions, ~strcmp(markerFaceColor,'none') );
+      if ~strcmp(markerFaceColor,'none')
+          xcolor = getColor( h, markerFaceColor, 'patch' );
+          markOptions = [ markOptions,  sprintf( 'fill=%s', xcolor ) ];
       end
-      if ~strcmp(markeredgecolor,'none') && ~strcmp(markeredgecolor,'auto')
-          xcolor = get_color( h, markeredgecolor, 'patch' );
-          mark_options = [ mark_options, sprintf( 'draw=%s', xcolor ) ];
+      if ~strcmp(markerEdgeColor,'none') && ~strcmp(markerEdgeColor,'auto')
+          xcolor = getColor( h, markerEdgeColor, 'patch' );
+          markOptions = [ markOptions, sprintf( 'draw=%s', xcolor ) ];
       end
 
-      % add it all to draw_options
-      draw_options = [ draw_options, sprintf( 'mark=%s', tikz_marker ) ];
+      % add it all to drawOptions
+      drawOptions = [ drawOptions, sprintf( 'mark=%s', tikzMarker ) ];
 
-      if ~isempty( mark_options )
-          mo = collapse( mark_options, ',' );
-	  draw_options = [ draw_options, [ 'mark options={', mo, '}' ] ];
+      if ~isempty( markOptions )
+          mo = collapse( markOptions, ',' );
+	  drawOptions = [ drawOptions, [ 'mark options={', mo, '}' ] ];
       end
   end
 
 
   % -----------------------------------------------------------------------
-  % *** FUNCTION translate_marker
+  % *** FUNCTION translateMarker
   % -----------------------------------------------------------------------
-  function [ tikz_marker, mark_options ] =                                ...
-	    translate_marker( matlab_marker, mark_options, facecolor_toggle )
+  function [ tikzMarker, markOptions ] =                                ...
+	     translateMarker( matlabMarker, markOptions, faceColorToggle )
 
-    if( ~ischar(matlab_marker) )
-	error( [ ' Function translate_marker:',                           ...
-		' Variable matlab_marker is not a string.' ] );
+    if( ~ischar(matlabMarker) )
+	error( [ ' Function translateMarker:',                           ...
+		' Variable matlabMarker is not a string.' ] );
     end
 
-    switch ( matlab_marker )
+    switch ( matlabMarker )
 	case 'none'
-	    tikz_marker = '';
+	    tikzMarker = '';
 	case '+'
-	    tikz_marker = '+';
+	    tikzMarker = '+';
 	case 'o'
-	    if facecolor_toggle
-		tikz_marker = '*';
+	    if faceColorToggle
+		tikzMarker = '*';
 	    else
-		tikz_marker = 'o';
+		tikzMarker = 'o';
 	    end
 	case '.'
-	    tikz_marker = '*';
+	    tikzMarker = '*';
 	case 'x'
-	    tikz_marker = 'x';
+	    tikzMarker = 'x';
 	otherwise  % the following markers are only available with PGF's
                    % plotmarks library
 	    fprintf( '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
-	    switch ( matlab_marker )
+	    switch ( matlabMarker )
 
 		    case '*'
-			    tikz_marker = 'asterisk';
+			    tikzMarker = 'asterisk';
 
 		    case {'s','square'}
-		    if facecolor_toggle
-				tikz_marker = 'square*';
+		    if faceColorToggle
+				tikzMarker = 'square*';
 		    else
-			tikz_marker = 'square';
+			tikzMarker = 'square';
 		    end
 
 		    case {'d','diamond'}
-		    if facecolor_toggle
-				tikz_marker = 'diamond*';
+		    if faceColorToggle
+				tikzMarker = 'diamond*';
 		    else
-				tikz_marker = 'diamond';
+				tikzMarker = 'diamond';
 		    end
 
 		case '^'
-		    if facecolor_toggle
-				tikz_marker = 'triangle*';
+		    if faceColorToggle
+				tikzMarker = 'triangle*';
 		    else
-				tikz_marker = 'triangle';
+				tikzMarker = 'triangle';
 		    end
 
 		    case 'v'
-		    if facecolor_toggle
-			tikz_marker = 'triangle*';
+		    if faceColorToggle
+			tikzMarker = 'triangle*';
 		    else
-				tikz_marker = 'triangle';
+				tikzMarker = 'triangle';
 		    end
-		    mark_options = [ mark_options, ',rotate=180' ];
+		    markOptions = [ markOptions, ',rotate=180' ];
 
 		    case '<'
-		    if facecolor_toggle
-			tikz_marker = 'triangle*';
+		    if faceColorToggle
+			tikzMarker = 'triangle*';
 		    else
-				tikz_marker = 'triangle';
+				tikzMarker = 'triangle';
 		    end
-		    mark_options = [ mark_options, ',rotate=270' ];
+		    markOptions = [ markOptions, ',rotate=270' ];
 
 		case '>'
-		    if facecolor_toggle
-				tikz_marker = 'triangle*';
+		    if faceColorToggle
+				tikzMarker = 'triangle*';
 		    else
-				tikz_marker = 'triangle';
+				tikzMarker = 'triangle';
 		    end
-		    mark_options = [ mark_options, ',rotate=90' ];
+		    markOptions = [ markOptions, ',rotate=90' ];
 
 		case {'p','pentagram'}
-		    if facecolor_toggle
-				tikz_marker = 'star*';
+		    if faceColorToggle
+				tikzMarker = 'star*';
 		    else
-				tikz_marker = 'star';
+				tikzMarker = 'star';
 		    end
 
 		    case {'h','hexagram'}
-		    warning( 'matlab2tikz:translate_marker',              ...
+		    warning( 'matlab2tikz:translateMarker',              ...
 			    'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
-		    if facecolor_toggle
-				tikz_marker = 'star*';
+		    if faceColorToggle
+				tikzMarker = 'star*';
 		    else
-				tikz_marker = 'star';
+				tikzMarker = 'star';
 		    end
 
 		otherwise
-		    error( [ ' Function translate_marker:',               ...
-			    ' Unknown matlab_marker ''',matlab_marker,'''.' ] );
+		    error( [ ' Function translateMarker:',               ...
+			    ' Unknown matlabMarker ''',matlabMarker,'''.' ] );
 	    end
     end
 
   end
   % -----------------------------------------------------------------------
-  % *** END OF FUNCTION translate_marker
+  % *** END OF FUNCTION translateMarker
   % -----------------------------------------------------------------------
 
 
   % -----------------------------------------------------------------------
-  % *** FUNCTION translate_markersize
+  % *** FUNCTION translateMarkersize
   % ***
   % *** The markersizes of Matlab and TikZ are related, but not equal. This
   % *** is because
@@ -806,24 +806,24 @@ function draw_options = get_marker_options( h )
   % ***      edgelength of a square vs. the diagonal length of it).
   % ***
   % -----------------------------------------------------------------------
-  function tikz_markersize =                                            ...
-		   translate_markersize( matlab_marker, matlab_markersize )
+  function tikzMarkersize =                                            ...
+		   translateMarkersize( matlabMarker, matlabMarkerSize )
 
-    if( ~ischar(matlab_marker) )
-	error( 'matlab2tikz:translate_markersize',                      ...
-	      'Variable matlab_marker is not a string.' );
+    if( ~ischar(matlabMarker) )
+	error( 'matlab2tikz:translateMarkersize',                      ...
+	      'Variable matlabMarker is not a string.' );
     end
 
-    if( ~isnumeric(matlab_markersize) )
-	error( 'matlab2tikz:translate_markersize',                      ...
-	      'Variable matlab_markersize is not a numeral.' );
+    if( ~isnumeric(matlabMarkerSize) )
+	error( 'matlab2tikz:translateMarkersize',                      ...
+	      'Variable matlabMarkerSize is not a numeral.' );
     end
 
-    switch ( matlab_marker )
+    switch ( matlabMarker )
 	case 'none'
-	    tikz_markersize = [];
+	    tikzMarkersize = [];
 	case {'+','o','x','*','p','pentagram','h','hexagram'}
-	    tikz_markersize = matlab_markersize / 2;
+	    tikzMarkersize = matlabMarkerSize / 2;
 	case '.'
 	    % as documented on the Matlab help pages:
 	    %
@@ -832,76 +832,76 @@ function draw_options = get_marker_options( h )
 	    % The point (.) marker type does not change size when the
 	    % specified value is less than 5.
 	    %
-	    tikz_markersize = matlab_markersize / 2 / 3;
+	    tikzMarkersize = matlabMarkerSize / 2 / 3;
 	case {'s','square'}
 	    % Matlab measures the diameter, TikZ half the edge length
-	    tikz_markersize = matlab_markersize / 2 / sqrt(2);
+	    tikzMarkersize = matlabMarkerSize / 2 / sqrt(2);
 	case {'d','diamond'}
 	    % Matlab measures the width, TikZ the height of the diamond;
 	    % the acute angle (top and bottom) is a manually measured
 	    % 75 degrees (in TikZ, and Matlab probably very similar);
 	    % use this as a base for calculations
-	    tikz_markersize = matlab_markersize / 2 / atan( 75/2 *pi/180 );
+	    tikzMarkersize = matlabMarkerSize / 2 / atan( 75/2 *pi/180 );
 	case {'^','v','<','>'}
 	    % for triangles, matlab takes the height
 	    % and tikz the circumcircle radius;
 	    % the triangles are always equiangular
-	    tikz_markersize = matlab_markersize / 2 * (2/3);
+	    tikzMarkersize = matlabMarkerSize / 2 * (2/3);
 	otherwise
-	    error( 'matlab2tikz:translate_markersize',                    ...
-		  'Unknown matlab_marker ''%s''.', matlab_marker  );
+	    error( 'matlab2tikz:translateMarkersize',                    ...
+		  'Unknown matlabMarker ''%s''.', matlabMarker  );
     end
 
   end
   % -----------------------------------------------------------------------
-  % *** END OF FUNCTION translate_markersize
+  % *** END OF FUNCTION translateMarkersize
   % -----------------------------------------------------------------------
 
 end
 % =========================================================================
-% *** END FUNCTION get_marker_options
+% *** END FUNCTION getMarkerOptions
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_patch
+% *** FUNCTION drawPatch
 % ***
 % *** Draws a 'patch' graphics object (as found in contourf plots, for
 % *** example).
 % ***
 % =========================================================================
-function str = draw_patch( handle )
+function str = drawPatch( handle )
 
   str = [];
 
-  if ~is_visible( handle )
+  if ~isVisible( handle )
       return
   end
 
   % -----------------------------------------------------------------------
   % gather the draw options
-  draw_options = cell(0);
+  drawOptions = cell(0);
 
   % fill color
-  facecolor  = get( handle, 'FaceColor' );
-  if ~strcmp( facecolor, 'none' )
-      xfacecolor = get_color( handle, facecolor, 'patch' );
-      draw_options = [ draw_options,                                    ...
-                       sprintf( 'fill=%s', xfacecolor ) ];
+  faceColor  = get( handle, 'FaceColor' );
+  if ~strcmp( faceColor, 'none' )
+      xFaceColor = getColor( handle, faceColor, 'patch' );
+      drawOptions = [ drawOptions,                                    ...
+                       sprintf( 'fill=%s', xFaceColor ) ];
   end
 
   % draw color
-  edgecolor = get( handle, 'EdgeColor' );
-  linestyle = get( handle, 'LineStyle' );
-  if strcmp( linestyle, 'none' ) || strcmp( edgecolor, 'none' )
-      draw_options = [ draw_options, 'draw=none' ];
+  edgeColor = get( handle, 'EdgeColor' );
+  lineStyle = get( handle, 'LineStyle' );
+  if strcmp( lineStyle, 'none' ) || strcmp( edgeColor, 'none' )
+      drawOptions = [ drawOptions, 'draw=none' ];
   else
-      xedgecolor = get_color( handle, edgecolor, 'patch' );
-      draw_options = [ draw_options, sprintf( 'draw=%s', xedgecolor ) ];
+      xEdgeColor = getColor( handle, edgeColor, 'patch' );
+      drawOptions = [ drawOptions, sprintf( 'draw=%s', xEdgeColor ) ];
   end
 
-  draw_opts = collapse( draw_options, ',' );
+  drawOpts = collapse( drawOptions, ',' );
   % -----------------------------------------------------------------------
 
 
@@ -909,18 +909,18 @@ function str = draw_patch( handle )
   % a distinct graphical object. Usually there is only one column, but
   % there may be more (-->hist plots, although they are now handled
   % within the barplot framework).
-  xdata = get( handle, 'XData' );
-  ydata = get( handle, 'YData' );
-  m = size(xdata,1);
-  n = size(xdata,2);
+  xData = get( handle, 'XData' );
+  yData = get( handle, 'YData' );
+  m = size(xData,1);
+  n = size(xData,2);
   for j=1:n
       str = [ str, ...
-              sprintf(['\\addplot [',draw_opts,'] coordinates{']) ];
+              sprintf(['\\addplot [',drawOpts,'] coordinates{']) ];
       for i=1:m
-          if ~isnan(xdata(i,j)) && ~isnan(ydata(i,j))
+          if ~isnan(xData(i,j)) && ~isnan(yData(i,j))
               % don't print NaNs
               str = [ str, ...
-	              sprintf( ' (%g,%g)', xdata(i,j), ydata(i,j) ) ];
+	              sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) ];
           end
       end
       str = [ str, sprintf('};\n') ];
@@ -928,27 +928,27 @@ function str = draw_patch( handle )
   str = [ str, sprintf('\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  str = [ str, handle_all_children(handle) ];
+  str = [ str, handleAllChildren(handle) ];
 
 end
 % =========================================================================
-% *** END OF FUNCTION draw_patch
+% *** END OF FUNCTION drawPatch
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_image
+% *** FUNCTION drawImage
 % ***
 % *** Draws an 'image' graphics object (which is essentially just a matrix
 % *** containing the RGB color values for a spot).
 % ***
 % =========================================================================
-function str = draw_image( handle )
+function str = drawImage( handle )
 
   str = [];
 
-  if ~is_visible( handle )
+  if ~isVisible( handle )
       return
   end
 
@@ -972,7 +972,7 @@ function str = draw_image( handle )
   % draw the thing
   for i = 1:length(Y)
       for j = 1:length(X)
-          xcolor = get_color( handle, cdata(i,j,:), 'image' );
+          xcolor = getColor( handle, cdata(i,j,:), 'image' );
           str = [ str, ...
                   sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
                            xcolor,  X(j)-0.5, Y(i)-0.5, X(j)+0.5, Y(i)+0.5  ) ];
@@ -981,76 +981,76 @@ function str = draw_image( handle )
 
 end
 % =========================================================================
-% *** END OF FUNCTION draw_image
+% *** END OF FUNCTION drawImage
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_hggroup
+% *** FUNCTION drawHggroup
 % =========================================================================
-function str = draw_hggroup( h );
+function str = drawHggroup( h );
 
   cl = class( handle(h) );
 
   switch( cl )
       case 'specgraph.barseries'
 	  % hist plots and friends
-          str = draw_barseries( h );
+          str = drawBarseries( h );
 
       case 'specgraph.stemseries'
 	  % stem plots
-          str = draw_stemseries( h );
+          str = drawStemseries( h );
 
       case 'specgraph.stairseries'
 	  % stair plots
-          str = draw_stairseries( h );
+          str = drawStairseries( h );
 
       case {'specgraph.contourgroup'}
 	  % handle all those the usual way
-          str = handle_all_children( h );
+          str = handleAllChildren( h );
 
       case {'specgraph.quivergroup'}
 	  % quiver arrows
-	  str = draw_quivergroup( h );
+	  str = drawQuivergroup( h );
 
       otherwise
-	  warning( 'matlab2tikz:draw_hggroup',                          ...
+	  warning( 'matlab2tikz:drawHggroup',                          ...
                    'Don''t know class ''%s''. Default handling.', cl );
-          str = handle_all_children( h );
+          str = handleAllChildren( h );
   end
 
 end
 % =========================================================================
-% *** END FUNCTION draw_hggroup
+% *** END FUNCTION drawHggroup
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_barseries
+% *** FUNCTION drawBarseries
 % ***
 % *** Takes care of plots like the ones produced by MATLAB's hist.
 % *** The main pillar is pgfplots's '{x,y}bar' plot.
 % ***
-% *** NOTE: There is code duplication with 'draw_axes'. Try to get rid of
+% *** NOTE: There is code duplication with 'drawAxes'. Try to get rid of
 % ***       that!
 % ***
 % =========================================================================
-function str = draw_barseries( h );
+function str = drawBarseries( h );
 
-  global matlab2tikz_opts;
-  global axis_opts;
+  global matlab2tikzOpts;
+  global axisOpts;
 
-  % 'barplot_id' provides a consecutively numbered ID for each
+  % 'barplotId' provides a consecutively numbered ID for each
   % barseries plot. This allows for properly handling multiple bars.
-  persistent barplot_id
-  persistent barplot_total_number
-  persistent barwidth
-  persistent barshifts
+  persistent barplotId
+  persistent barplotTotalNumber
+  persistent barWidth
+  persistent barShifts
 
-  persistent added_axis_option
-  persistent nonbar_plot_present
+  persistent addedAxisOption
+  persistent nonbarPlotPresent
 
   str = [];
 
@@ -1060,34 +1060,34 @@ function str = draw_barseries( h );
   % axis (while MATLAB can).
   % The following checks if this is the case and cowardly bails out if so.
   % On top of that, the number of bar plots is counted.
-  if isempty(barplot_total_number)
-      nonbar_plot_present  = 0;
-      barplot_total_number = 0;
+  if isempty(barplotTotalNumber)
+      nonbarPlotPresent  = 0;
+      barplotTotalNumber = 0;
       parent               = get( h, 'Parent' );
       siblings             = get( parent, 'Children' );
       for k = 1:length(siblings)
 
           % skip invisible objects
-          if ~is_visible(siblings(k))
+          if ~isVisible(siblings(k))
               continue
           end
 
           t = get( siblings(k), 'Type' );
           switch t
               case {'line','patch'}
-                  nonbar_plot_present = 1;
+                  nonbarPlotPresent = 1;
               case 'text'
                   % this is pretty harmless: don't complain about ordinary text
               case 'hggroup'
                   cl = class(handle(siblings(k)));
 	          if strcmp( cl , 'specgraph.barseries' )
-	              barplot_total_number = barplot_total_number + 1;
+	              barplotTotalNumber = barplotTotalNumber + 1;
                   else
-                      error( 'matlab2tikz:draw_barseries',              ...
+                      error( 'matlab2tikz:drawBarseries',              ...
                              'Unknown class''%s''.', cl  );
 	          end
               otherwise
-                  error( 'matlab2tikz:draw_barseries',                  ...
+                  error( 'matlab2tikz:drawBarseries',                  ...
                          'Unknown type ''%s''.', t );
           end
       end
@@ -1095,11 +1095,11 @@ function str = draw_barseries( h );
   % -----------------------------------------------------------------------
 
 
-  xdata = get( h, 'XData' );
-  ydata = get( h, 'YData' );
+  xData = get( h, 'XData' );
+  yData = get( h, 'YData' );
 
-  % init draw_options
-  draw_options = cell(0);
+  % init drawOptions
+  drawOptions = cell(0);
 
   barlayout = get( h, 'BarLayout' );
   switch barlayout
@@ -1107,13 +1107,13 @@ function str = draw_barseries( h );
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	  % grouped plots
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	  groupwidth = 0.8; % MATLAB's default value, see makebars.m
+	  groupWidth = 0.8; % MATLAB's default value, see makebars.m
 
 	  % set ID
-	  if isempty(barplot_id)
-	      barplot_id = 1;
+	  if isempty(barplotId)
+	      barplotId = 1;
 	  else
-	      barplot_id = barplot_id + 1;
+	      barplotId = barplotId + 1;
 	  end
 
 	  % ---------------------------------------------------------------
@@ -1121,18 +1121,18 @@ function str = draw_barseries( h );
 	  % The following is taken from MATLAB (see makebars.m) without
           % the special handling for hist plots or other fancy options.
 	  % ---------------------------------------------------------------
-	  if isempty( barwidth ) || isempty(barshifts)
-	      dx = min( diff(xdata) );
-	      groupwidth = dx * groupwidth;
+	  if isempty( barWidth ) || isempty(barShifts)
+	      dx = min( diff(xData) );
+	      groupWidth = dx * groupWidth;
 
-	      % this is the barwidth with no interbar spacing yet
-	      barwidth = groupwidth / barplot_total_number;
+	      % this is the barWidth with no interbar spacing yet
+	      barWidth = groupWidth / barplotTotalNumber;
 
-	      barshifts = -0.5* groupwidth                              ...
-			+ ( (0:barplot_total_number-1)+0.5) * barwidth;
+	      barShifts = -0.5* groupWidth                              ...
+			+ ( (0:barplotTotalNumber-1)+0.5) * barWidth;
 
-	      bw_factor = get( h, 'BarWidth' );
-	      barwidth  = bw_factor* barwidth;
+	      bWFactor = get( h, 'BarWidth' );
+	      barWidth  = bWFactor* barWidth;
 	  end
 	  % ---------------------------------------------------------------
 
@@ -1140,11 +1140,11 @@ function str = draw_barseries( h );
           % whereas pgfplots requires physical units (pt,cm,...); hence
           % have the units converted.
           ulength = normalized2physical();
-	  draw_options = [ draw_options,                                                ...
+	  drawOptions = [ drawOptions,                                                ...
                            'ybar',                                                      ...
 			   sprintf( 'bar width=%g%s, bar shift=%g%s',                   ...
-                                    barwidth             *ulength.value, ulength.unit , ...
-                                    barshifts(barplot_id)*ulength.value, ulength.unit  ) ];
+                                    barWidth            *ulength.value, ulength.unit , ...
+                                    barShifts(barplotId)*ulength.value, ulength.unit  ) ];
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	  % end grouped plots
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1156,33 +1156,33 @@ function str = draw_barseries( h );
           % axis environment (and disallow anything else but stacked
           % plots).
           % Make sure this happens exactly *once*.
-          if isempty(added_axis_option) || ~added_axis_option
-	      if nonbar_plot_present
-		  warning( 'matlab2tikz:draw_barseries',                 ...
+          if isempty(addedAxisOption) || ~addedAxisOption
+	      if nonbarPlotPresent
+		  warning( 'matlab2tikz:drawBarseries',                 ...
 			[ 'Pgfplots can''t deal with stacked bar plots', ...
 			  ' and non-bar plots in one axis environment.', ...
 			  ' There *may* be unexpected results.'         ] );
 	      end
-	      bw_factor = get( h, 'BarWidth' );
+	      bWFactor = get( h, 'BarWidth' );
               ulength   = normalized2physical();
-              axis_opts = [ axis_opts,                                   ...
+              axisOpts = [ axisOpts,                                   ...
                             'ybar stacked',                              ...
                             sprintf( 'bar width=%g%s',                   ...
-                                  ulength.value*bw_factor, ulength.unit ) ];
-              added_axis_option = 1;
+                                  ulength.value*bWFactor, ulength.unit ) ];
+              addedAxisOption = 1;
           end
 	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       otherwise
-          error( 'matlab2tikz:draw_barseries',                          ...
+          error( 'matlab2tikz:drawBarseries',                          ...
                  'Don''t know how to handle BarLayout ''%s''.', barlayout );
   end
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define edge color
-  edgecolor  = get( h, 'EdgeColor' );
-  xedgecolor = get_color( h, edgecolor, 'patch' );
+  edgeColor  = get( h, 'EdgeColor' );
+  xEdgeColor = getColor( h, edgeColor, 'patch' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1190,85 +1190,85 @@ function str = draw_barseries( h );
   % quite oddly, this value is not coded in the handle itself, but in its
   % child patch.
   child      = get( h, 'Children' );
-  facecolor  = get( child, 'FaceColor');
-  xfacecolor = get_color( h, facecolor, 'patch' );
+  faceColor  = get( child, 'FaceColor');
+  xFaceColor = getColor( h, faceColor, 'patch' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % gather the draw options
-  linestyle = get( h, 'LineStyle' );
+  lineStyle = get( h, 'LineStyle' );
 
-  draw_options = [ draw_options, sprintf( 'fill=%s', xfacecolor ) ];
-  if strcmp( linestyle, 'none' )
-      draw_options = [ draw_options, 'draw=none' ];
+  drawOptions = [ drawOptions, sprintf( 'fill=%s', xFaceColor ) ];
+  if strcmp( lineStyle, 'none' )
+      drawOptions = [ drawOptions, 'draw=none' ];
   else
-      draw_options = [ draw_options, sprintf( 'draw=%s', xedgecolor ) ];
+      drawOptions = [ drawOptions, sprintf( 'draw=%s', xEdgeColor ) ];
   end
-  draw_opts = collapse( draw_options, ',' );
+  drawOpts = collapse( drawOptions, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = [ str, ...
-          sprintf( '\\addplot[%s] plot coordinates{', draw_opts ) ];
+          sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
 
-  for k=1:length(xdata)
+  for k=1:length(xData)
       str = [ str, ...
-              sprintf( ' (%g,%g)', xdata(k), ydata(k) ) ];
+              sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
-% *** END FUNCTION draw_barseries
+% *** END FUNCTION drawBarseries
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_stemseries
+% *** FUNCTION drawStemseries
 % ***
 % *** Takes care of MATLAB's stem plots.
 % ***
-% *** NOTE: There is code duplication with 'draw_axes'. Try to get rid of
+% *** NOTE: There is code duplication with 'drawAxes'. Try to get rid of
 % ***       that!
 % ***
 % =========================================================================
-function str = draw_stemseries( h );
+function str = drawStemseries( h );
 
-  global matlab2tikz_opts;
+  global matlab2tikzOpts;
 
   str = [];
 
-  linestyle = get( h, 'LineStyle' );
-  linewidth = get( h, 'LineWidth' );
+  lineStyle = get( h, 'LineStyle' );
+  lineWidth = get( h, 'LineWidth' );
   marker    = get( h, 'Marker' );
 
-  if (    ( strcmp(linestyle,'none') || linewidth==0 )                  ...
+  if (    ( strcmp(lineStyle,'none') || lineWidth==0 )                  ...
        && strcmp(marker,'none') )
       % nothing to plot!
       return
   end
 
-  xdata = get( h, 'XData' );
-  ydata = get( h, 'YData' );
+  xData = get( h, 'XData' );
+  yData = get( h, 'YData' );
 
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
   % deal with draw options
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
   color     = get( h, 'Color' );
-  plotcolor = get_color( h, color, 'patch' );
+  plotColor = getColor( h, color, 'patch' );
 
-  draw_options = [ 'ycomb',                                  ...
-                   sprintf( 'color=%s', plotcolor ),         ... % color
-                   get_line_options( linestyle, linewidth ), ... % line options
-                   get_marker_options( h )                   ... % marker options
+  drawOptions = [ 'ycomb',                                  ...
+                   sprintf( 'color=%s', plotColor ),         ... % color
+                   getLineOptions( lineStyle, lineWidth ), ... % line options
+                   getMarkerOptions( h )                   ... % marker options
                  ];
 
   % insert draw options
-  draw_opts =  collapse( draw_options, ',' );
+  drawOpts =  collapse( drawOptions, ',' );
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 
@@ -1276,45 +1276,45 @@ function str = draw_stemseries( h );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = [ str, ...
-          sprintf( '\\addplot[%s] plot coordinates{', draw_opts ) ];
+          sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
 
-  xdata = get( h, 'XData' );
-  ydata = get( h, 'YData' );
+  xData = get( h, 'XData' );
+  yData = get( h, 'YData' );
 
-  for k=1:length(xdata)
+  for k=1:length(xData)
       str = [ str, ...
-              sprintf( ' (%g,%g)', xdata(k), ydata(k) ) ];
+              sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
-% *** END FUNCTION draw_stemseries
+% *** END FUNCTION drawStemseries
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_stairseries
+% *** FUNCTION drawStairseries
 % ***
 % *** Takes care of MATLAB's stairs plots.
 % ***
-% *** NOTE: There is code duplication with 'draw_axes'. Try to get rid of
+% *** NOTE: There is code duplication with 'drawAxes'. Try to get rid of
 % ***       that!
 % ***
 % =========================================================================
-function str = draw_stairseries( h );
+function str = drawStairseries( h );
 
-  global matlab2tikz_opts;
+  global matlab2tikzOpts;
 
   str = [];
 
-  linestyle = get( h, 'LineStyle');
-  linewidth = get( h, 'LineWidth');
+  lineStyle = get( h, 'LineStyle');
+  lineWidth = get( h, 'LineWidth');
   marker    = get( h, 'Marker');
 
-  if (    ( strcmp(linestyle,'none') || linewidth==0 )                  ...
+  if (    ( strcmp(lineStyle,'none') || lineWidth==0 )                  ...
        && strcmp(marker,'none') )
       return
   end
@@ -1323,60 +1323,60 @@ function str = draw_stairseries( h );
   % deal with draw options
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   color     = get( h, 'Color' );
-  plotcolor = get_color( h, color, 'patch' );
+  plotColor = getColor( h, color, 'patch' );
 
-  draw_options = [ 'const plot',                             ...
-                   sprintf( 'color=%s', plotcolor ),         ... % color
-                   get_line_options( linestyle, linewidth ), ... % line options
-                   get_marker_options( h )                   ... % marker options
+  drawOptions = [ 'const plot',                             ...
+                   sprintf( 'color=%s', plotColor ),         ... % color
+                   getLineOptions( lineStyle, lineWidth ), ... % line options
+                   getMarkerOptions( h )                   ... % marker options
                  ];
 
   % insert draw options
-  draw_opts =  collapse( draw_options, ',' );
+  drawOpts =  collapse( drawOptions, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = [ str, ...
-          sprintf( '\\addplot[%s] plot coordinates{', draw_opts ) ];
+          sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
 
-  xdata = get( h, 'XData' );
-  ydata = get( h, 'YData' );
+  xData = get( h, 'XData' );
+  yData = get( h, 'YData' );
 
-  for k=1:length(xdata)
+  for k=1:length(xData)
       str = [ str, ...
-              sprintf( ' (%g,%g)', xdata(k), ydata(k) ) ];
+              sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
-% *** END FUNCTION draw_stairseries
+% *** END FUNCTION drawStairseries
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_quivergroup
+% *** FUNCTION drawQuivergroup
 % ***
 % *** Takes care of MATLAB's quiver plots.
 % ***
 % =========================================================================
-function str = draw_quivergroup( h );
+function str = drawQuivergroup( h );
 
-  global matlab2tikz_opts;
+  global matlab2tikzOpts;
 
   str = [];
 
-  xdata = get( h, 'XData' );
-  ydata = get( h, 'YData' );
+  xData = get( h, 'XData' );
+  yData = get( h, 'YData' );
   udata = get( h, 'UData' );
   vdata = get( h, 'VData' );
 
-  m = size( xdata, 1 );
-  n = size( xdata, 2 );
+  m = size( xData, 1 );
+  n = size( xData, 2 );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Do autoscaling. The following procedure can be found in MATLAB's
@@ -1387,57 +1387,57 @@ function str = draw_quivergroup( h );
       scalefactor = get( h, 'AutoScaleFactor' );
 
       % Get average spacing in x- and y-direction.
-      % -- This assumes that when xdata, ydata are indeed 2D entities, they
+      % -- This assumes that when xData, yData are indeed 2D entities, they
       %    really repeat the same row (column) m (n) times. Hence take only
       %    the first.
-      avx = diff([min(xdata(1,:)) max(xdata(1,:))])/m;
-      avy = diff([min(ydata(:,1)) max(ydata(:,1))])/n;
+      avx = diff([min(xData(1,:)) max(xData(1,:))])/m;
+      avy = diff([min(yData(:,1)) max(yData(:,1))])/n;
       av  = avx.^2 + avy.^2; % length of the average box diagonal
 
       % get the maximal length of a scaled arrow
       if av>0
 	  len = sqrt( (udata.^2 + vdata.^2)/av );
-	  maxlen = max(len(:));
+	  maxLen = max(len(:));
       else
-	  maxlen = 0;
+	  maxLen = 0;
       end
 
-      if maxlen>0
-	  scalefactor = scalefactor*0.9 / maxlen;
+      if maxLen>0
+	  scalefactor = scalefactor*0.9 / maxLen;
       else
 	  scalefactor = scalefactor*0.9;
       end
       udata = udata*scalefactor;
-      vdata = vdata*scalefactor;      
+      vdata = vdata*scalefactor;
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % gather the arrow options
-  showarrowhead = get( h, 'ShowArrowHead' );
-  linestyle     = get( h, 'LineStyle' );
-  linewidth     = get( h, 'LineWidth' );
+  showArrowHead = get( h, 'ShowArrowHead' );
+  lineStyle     = get( h, 'LineStyle' );
+  lineWidth     = get( h, 'LineWidth' );
 
-  if ( strcmp(linestyle,'none') || linewidth==0 )  && ~showarrowhead
+  if ( strcmp(lineStyle,'none') || lineWidth==0 )  && ~showArrowHead
       return
   end
 
-  arrow_opts = cell(0);
-  if showarrowhead
-      arrow_opts = [ arrow_opts, '->' ];
+  arrowOpts = cell(0);
+  if showArrowHead
+      arrowOpts = [ arrowOpts, '->' ];
   else
-      arrow_opts = [ arrow_opts, '-' ];
+      arrowOpts = [ arrowOpts, '-' ];
   end
 
   color      = get( h, 'Color');
-  arrowcolor = get_color( h, color, 'patch' );
-  arrow_opts = [ arrow_opts,                               ...
+  arrowcolor = getColor( h, color, 'patch' );
+  arrowOpts = [ arrowOpts,                               ...
                  sprintf( 'color=%s', arrowcolor ),        ... % color
-                 get_line_options( linestyle, linewidth ), ... % line options
+                 getLineOptions( lineStyle, lineWidth ), ... % line options
                ];
 
-  arrow_options = collapse( arrow_opts, ',' );
+  arrowOptions = collapse( arrowOpts, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -1446,28 +1446,28 @@ function str = draw_quivergroup( h );
       for j=1:n
           str = [ str, ...
                   sprintf( '\\addplot [%s] coordinates{ (%g,%g) (%g,%g) };\n',...
-                           arrow_options,                              ...
-                           xdata(i,j)           , ydata(i,j)        ,  ...
-                           xdata(i,j)+udata(i,j), ydata(i,j)+vdata(i,j) ) ];
+                           arrowOptions,                              ...
+                           xData(i,j)           , yData(i,j)        ,  ...
+                           xData(i,j)+udata(i,j), yData(i,j)+vdata(i,j) ) ];
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
-% *** END FUNCTION draw_quivergroup
+% *** END FUNCTION drawQuivergroup
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_colorbar
+% *** FUNCTION drawColorbar
 % =========================================================================
-function str = draw_colorbar( handle )
+function str = drawColorbar( handle )
 
   str = [];
 
-  if ~is_visible( handle )
+  if ~isVisible( handle )
       return
   end
 
@@ -1489,27 +1489,27 @@ function str = draw_colorbar( handle )
 %    end
 %  
 %    if ~parent
-%        warning( 'matlab2tikz:draw_colorbar',                             ...
+%        warning( 'matlab2tikz:drawColorbar',                             ...
 %                 'Unable to find the colorbar''s parental axes. Skip.' );
 %        return;
 %    end
 %  
 %    % get the size of 'parent'
-%    dim = get_axes_dimensions( parent );
+%    dim = getAxesDimensions( parent );
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  % The dimensions returned by  'get_axes_dimensions' are not entirely
+  % The dimensions returned by  'getAxesDimensions' are not entirely
   % correct: When looking closely, one will see that the colorbar actually
   % (very slightly) overshoots the size of its parental axis.
   % For now, leave it like this as the overshoot is really small
-  dim = get_axes_dimensions( handle );
+  dim = getAxesDimensions( handle );
 
   % get the upper and lower limit of the colorbar
   clim = caxis;
 
   % begin collecting axes options
-  cbar_options = cell( 0 );
-  cbar_options = [ cbar_options,                                        ...
+  cbarOptions = cell( 0 );
+  cbarOptions = [ cbarOptions,                                        ...
                    'at={(colorbar anchor)}',                            ...
                    'axis on top' ];
 
@@ -1518,13 +1518,13 @@ function str = draw_colorbar( handle )
   loc = get( handle, 'Location' );
   switch loc
       case { 'North', 'South', 'East', 'West' }
-          warning( 'matlab2tikz:draw_colorbar',                         ...
+          warning( 'matlab2tikz:drawColorbar',                         ...
                    'Don''t know how to deal with inner colorbars yet.' );
           return;
 
       case {'NorthOutside','SouthOutside'}
 %            dim.y = dim.x / ratio;
-          cbar_options = [ cbar_options,                                ...
+          cbarOptions = [ cbarOptions,                                ...
 	                   sprintf( 'width=%g%s, height=%g%s',          ...
                                      dim.x, dim.unit, dim.y, dim.unit ),...
                            'scale only axis',                           ...
@@ -1534,24 +1534,24 @@ function str = draw_colorbar( handle )
 
           if strcmp( loc, 'NorthOutside' )
               anchorparent = 'above north west';
-              cbar_options = [ cbar_options,                            ...
+              cbarOptions = [ cbarOptions,                            ...
                                'anchor=south west',                     ...
-                               'xticklabel pos=right, ytick=\\empty' ];
+                               'xTickLabel pos=right, yTick=\\empty' ];
                                % we actually wanted to set pos=top here,
                                % but pgfplots doesn't support that yet.
                                % pos=right does the same thing, really.
           else
               anchorparent = 'below south west';
-              cbar_options = [ cbar_options,                            ...
+              cbarOptions = [ cbarOptions,                            ...
                                'anchor=north west',                     ...
-                               'xticklabel pos=left, ytick=\\empty' ];
+                               'xTickLabel pos=left, yTick=\\empty' ];
                                % we actually wanted to set pos=bottom here,
                                % but pgfplots doesn't support that yet. 
                                % pos=left does the same thing, really.
           end
 
       case {'EastOutside','WestOutside'}
-          cbar_options = [ cbar_options,                                ...
+          cbarOptions = [ cbarOptions,                                ...
 	                   sprintf( 'width=%g%s, height=%g%s',          ...
                                      dim.x, dim.unit, dim.y, dim.unit ),...
                            'scale only axis',                           ...
@@ -1560,39 +1560,39 @@ function str = draw_colorbar( handle )
                          ];
           if strcmp( loc, 'EastOutside' )
                anchorparent = 'right of south east';
-               cbar_options = [ cbar_options,                           ...
+               cbarOptions = [ cbarOptions,                           ...
                                 'anchor=south west',                    ...
-                                'xtick=\\empty, yticklabel pos=right' ];
+                                'xTick=\\empty, yTickLabel pos=right' ];
            else
                anchorparent = 'left of south west';
-               cbar_options = [ cbar_options,                           ...
+               cbarOptions = [ cbarOptions,                           ...
                                 'anchor=south east',                    ...
-                                'xtick=\\empty, yticklabel pos=left' ];
+                                'xTick=\\empty, yTickLabel pos=left' ];
            end
 
       otherwise
-          error( 'draw_colorbar: Unknown ''Location'' %s.', loc )
+          error( 'drawColorbar: Unknown ''Location'' %s.', loc )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
-  [ ticks, ticklabels ] = get_ticks( handle );
+  [ ticks, tickLabels ] = getTicks( handle );
   if ~isempty( ticks.x )
-      cbar_options = [ cbar_options,                                    ...
-                       sprintf( 'xtick={%s}', ticks.x ) ];
+      cbarOptions = [ cbarOptions,                                    ...
+                       sprintf( 'xTick={%s}', ticks.x ) ];
   end
-  if ~isempty( ticklabels.x )
-      cbar_options = [ cbar_options,                                    ...
-                       sprintf( 'xticklabels={%s}', ticklabels.x ) ];
+  if ~isempty( tickLabels.x )
+      cbarOptions = [ cbarOptions,                                    ...
+                       sprintf( 'xTickLabels={%s}', tickLabels.x ) ];
   end
   if ~isempty( ticks.y )
-      cbar_options = [ cbar_options,                                    ...
-                       sprintf( 'ytick={%s}', ticks.y ) ];
+      cbarOptions = [ cbarOptions,                                    ...
+                       sprintf( 'yTick={%s}', ticks.y ) ];
   end
-  if ~isempty( ticklabels.y )
-      cbar_options = [ cbar_options,                                    ...
-                       sprintf( 'yticklabels={%s}', ticklabels.y ) ];
+  if ~isempty( tickLabels.y )
+      cbarOptions = [ cbarOptions,                                    ...
+                       sprintf( 'yTickLabels={%s}', tickLabels.y ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1612,37 +1612,37 @@ function str = draw_colorbar( handle )
   % actually begin drawing the thing
   str = [ str, ...
           sprintf( '\n%% draw the colorbar\n' ) ];
-  cbar_opts = collapse( cbar_options, ',\n' );
+  cbarOpts = collapse( cbarOptions, ',\n' );
   str = [ str, ...
-          sprintf( [ '\\begin{axis}[\n', cbar_opts, '\n]\n' ] ) ];
+          sprintf( [ '\\begin{axis}[\n', cbarOpts, '\n]\n' ] ) ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % get the colormap
   cmap = colormap;
 
-  cbar_length = clim(2) - clim(1);
+  cbarLength = clim(2) - clim(1);
 
   m = size( cmap, 1 );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot tiny little badges for the respective colors
   for i=1:m
-      badgecolor = rgb2tikzcol( cmap(i,:) );
+      badgeColor = rgb2tikzcol( cmap(i,:) );
 
       switch loc
           case {'NorthOutside','SouthOutside'}
-              x1 = clim(1) + cbar_length/m *(i-1);
-              x2 = clim(1) + cbar_length/m *i;
+              x1 = clim(1) + cbarLength/m *(i-1);
+              x2 = clim(1) + cbarLength/m *i;
               y1 = 0;
               y2 = 1; 
           case {'WestOutside','EastOutside'}
               x1 = 0;
               x2 = 1;
-              y1 = clim(1) + cbar_length/m *(i-1);
-              y2 = clim(1) + cbar_length/m *i; 
+              y1 = clim(1) + cbarLength/m *(i-1);
+              y2 = clim(1) + cbarLength/m *i;
       end
       str = [ str, ...
               sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
-                         badgecolor, x1, y1, x2, y1, x2, y2, x1, y2    ) ];
+                         badgeColor, x1, y1, x2, y1, x2, y2, x1, y2    ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1653,13 +1653,13 @@ function str = draw_colorbar( handle )
 
 end
 % =========================================================================
-% *** END FUNCTION draw_colorbar
+% *** END FUNCTION drawColorbar
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION get_color
+% *** FUNCTION getColor
 % ***
 % *** Handles MATLAB colors and makes them available to TikZ.
 % *** This includes translation of the color value as well as explicit
@@ -1669,7 +1669,7 @@ end
 % *** have. Possible values are (as strings) 'patch' and 'image'.
 % ***
 % =========================================================================
-function xcolor = get_color( handle, color, mode )
+function xcolor = getColor( handle, color, mode )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % grab rgb value
@@ -1679,7 +1679,7 @@ function xcolor = get_color( handle, color, mode )
       case 'image'
           rgbcol = imagecolor2rgb ( color, handle );
       otherwise
-          error( [ 'matlab2tikz:get_color',                        ...
+          error( [ 'matlab2tikz:getColor',                        ...
                    'Argument ''mode'' has illegal value ''%s''' ], ...
                  mode );
   end
@@ -1690,7 +1690,7 @@ function xcolor = get_color( handle, color, mode )
 
 end
 % =========================================================================
-% *** END FUNCTION get_color
+% *** END FUNCTION getColor
 % =========================================================================
 
 
@@ -1837,15 +1837,15 @@ end
 % =========================================================================
 function rgbcolor = cdata2rgb ( cdata, imagehandle )
 
-  global matlab2tikz_opts;
+  global matlab2tikzOpts;
 
   if ~isnumeric(cdata)
       error( 'matlab2tikz:cdata2rgb',                        ...
 	     [ 'Don''t know how to handle cdata ''',cdata,'''.' ] )
   end
 
-  fighandle  = matlab2tikz_opts.gcf;
-  axeshandle = matlab2tikz_opts.gca;
+  fighandle  = matlab2tikzOpts.gcf;
+  axeshandle = matlab2tikzOpts.gca;
 
   colormap = get( fighandle, 'ColorMap' );
 
@@ -1889,11 +1889,11 @@ end
 
 
 % =========================================================================
-% *** FUNCTION get_legend_opts
+% *** FUNCTION getLegendOpts
 % =========================================================================
-function lopts = get_legend_opts( handle )
+function lopts = getLegendOpts( handle )
 
-  if ~is_visible( handle )
+  if ~isVisible( handle )
       return
   end
 
@@ -1946,8 +1946,8 @@ function lopts = get_legend_opts( handle )
           lopts = [ lopts,                                              ...
                     'legend style={at={(0.03,0.5)},anchor=west}' ];
       otherwise
-	  warning( 'matlab2tikz:get_legend_opts',                       ...
-                   [ ' Function get_legend_opts:',                      ...
+	  warning( 'matlab2tikz:getLegendOpts',                       ...
+                   [ ' Function getLegendOpts:',                      ...
 		     ' Unknown legend location ''',loc,''               ...
                      '. Choosing default.' ] );
   end
@@ -1955,132 +1955,132 @@ function lopts = get_legend_opts( handle )
 
 end
 % =========================================================================
-% *** FUNCTION get_legend_opts
+% *** FUNCTION getLegendOpts
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION get_ticks
+% *** FUNCTION getTicks
 % ***
 % *** Return axis tick marks pgfplot style. Nice: Tick lengths and such
 % *** details are taken care of by pgfplot.
 % ***
 % =========================================================================
-function [ ticks, ticklabels ] = get_ticks( handle )
+function [ ticks, tickLabels ] = getTicks( handle )
 
   global tol
 
-  xtick      = get( handle, 'XTick' );
-  xticklabel = get( handle, 'XTickLabel' );
+  xTick      = get( handle, 'XTick' );
+  xTickLabel = get( handle, 'XTickLabel' );
 
-  ytick      = get( handle, 'YTick' );
-  yticklabel = get( handle, 'YTickLabel' );
+  yTick      = get( handle, 'YTick' );
+  yTickLabel = get( handle, 'YTickLabel' );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % set xticks + labels
-  ticks.x = collapse( num2cell(xtick), ',' );
+  % set xTicks + labels
+  ticks.x = collapse( num2cell(xTick), ',' );
 
-  % sometimes ticklabels are cells, sometimes plain arrays
+  % sometimes tickLabels are cells, sometimes plain arrays
   % -- unify this to cells
-  if ischar( xticklabel )
-      xticklabel = strtrim( mat2cell(xticklabel,                        ...
-                          ones(size(xticklabel,1),1),size(xticklabel,2)) );
+  if ischar( xTickLabel )
+      xTickLabel = strtrim( mat2cell(xTickLabel,                        ...
+                          ones(size(xTickLabel,1),1),size(xTickLabel,2)) );
   end
 
   % if the axis is logscaled, MATLAB does not store the labels, but the
   % exponents to 10
   if strcmp( get(handle,'XScale'),'log' )
-      for k = 1:length(xticklabel)
-          if isnumeric( xticklabel{k} )
-              str = num2str( xticklabel{k} );
+      for k = 1:length(xTickLabel)
+          if isnumeric( xTickLabel{k} )
+              str = num2str( xTickLabel{k} );
           else
-              str = xticklabel{k};
+              str = xTickLabel{k};
           end
-          xticklabel{k} = sprintf( '$10^{%s}$', str );
+          xTickLabel{k} = sprintf( '$10^{%s}$', str );
       end
   end
 
-  % check if ticklabels are really necessary (and not already covered by
+  % check if tickLabels are really necessary (and not already covered by
   % the tick values themselves)
-  plot_labels_necessary = 0;
-  for k = 1:min(length(xtick),length(xticklabel))
+  plotLabelsNecessary = 0;
+  for k = 1:min(length(xTick),length(xTickLabel))
        % Don't use str2num here as then, literal strings as 'pi' get
        % legally transformed into 3.14... and the need for an explicit
        % label will not be recognized. str2double returns a NaN for 'pi'.
-       s = str2double( xticklabel{k} );
-       if isnan(s)  ||  abs(xtick(k)-s) > tol
-           plot_labels_necessary = 1;
+       s = str2double( xTickLabel{k} );
+       if isnan(s)  ||  abs(xTick(k)-s) > tol
+           plotLabelsNecessary = 1;
            break
        end
   end
 
-  if plot_labels_necessary
-      ticklabels.x = collapse( xticklabel, ',' );
+  if plotLabelsNecessary
+      tickLabels.x = collapse( xTickLabel, ',' );
   else
-      ticklabels.x = [];
+      tickLabels.x = [];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % set yticks + labels
-  ticks.y = collapse( num2cell(ytick), ',' );
+  % set yTicks + labels
+  ticks.y = collapse( num2cell(yTick), ',' );
 
-  if ischar( yticklabel )
-      yticklabel = strtrim( mat2cell(yticklabel,                        ...
-                          ones(size(yticklabel,1),1),size(yticklabel,2)) );
+  if ischar( yTickLabel )
+      yTickLabel = strtrim( mat2cell(yTickLabel,                        ...
+                          ones(size(yTickLabel,1),1),size(yTickLabel,2)) );
   end
 
   % if the axis is logscaled, MATLAB does not store the labels, but the
   % exponents to 10
   if strcmp( get(handle,'YScale'),'log' )
-      for k = 1:length(yticklabel)
-          if isnumeric( yticklabel{k} )
-              str = num2str( yticklabel{k} );
+      for k = 1:length(yTickLabel)
+          if isnumeric( yTickLabel{k} )
+              str = num2str( yTickLabel{k} );
           else
-              str = yticklabel{k};
+              str = yTickLabel{k};
           end
-          yticklabel{k} = sprintf( '$10^{%s}$', str );
+          yTickLabel{k} = sprintf( '$10^{%s}$', str );
       end
   end
 
-  % check if ticklabels are really necessary (and not already covered by
+  % check if tickLabels are really necessary (and not already covered by
   % the tick values themselves)
-  plot_labels_necessary = 0;
-  for k = 1:min(length(ytick),length(yticklabel))
+  plotLabelsNecessary = 0;
+  for k = 1:min(length(yTick),length(yTickLabel))
        % Don't use str2num here as then, literal strings as 'pi' get
        % legally transformed into 3.14... and the need for an explicit
        % label will not be recognized. str2double returns a NaN for 'pi'.
-       s = str2double( yticklabel{k} );
-       if isnan(s)  ||  abs(ytick(k)-s) > tol
-           plot_labels_necessary = 1;
+       s = str2double( yTickLabel{k} );
+       if isnan(s)  ||  abs(yTick(k)-s) > tol
+           plotLabelsNecessary = 1;
            break
        end
   end
 
-  if plot_labels_necessary
-      ticklabels.y = collapse( yticklabel, ',' );
+  if plotLabelsNecessary
+      tickLabels.y = collapse( yTickLabel, ',' );
   else
-      ticklabels.y = [];
+      tickLabels.y = [];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
-% *** END FUNCTION get_ticks
+% *** END FUNCTION getTicks
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION draw_text
+% *** FUNCTION drawText
 % =========================================================================
-function str = draw_text( handle )
+function str = drawText( handle )
 
   str = [];
 
-  if ~is_visible( handle )
+  if ~isVisible( handle )
       return
   end
 
@@ -2094,10 +2094,10 @@ function str = draw_text( handle )
 
   position = get( handle, 'Position' );
 
-  node_options = '';
+  nodeOptions = '';
   rotate = get( handle, 'Rotation' );
   if rotate~=0
-      node_options = [node_options, sprintf(',rotate=%.1f',rotate) ];
+      nodeOptions = [nodeOptions, sprintf(',rotate=%.1f',rotate) ];
   end
 
   % we're not really accurate here: stricly speaking, bottom and baseline
@@ -2105,48 +2105,48 @@ function str = draw_text( handle )
   valign = get( handle, 'VerticalAlignment' );
   switch valign
       case {'bottom','baseline'}
-	      node_options = [node_options, sprintf(',anchor=south') ];
+	      nodeOptions = [nodeOptions, sprintf(',anchor=south') ];
       case {'top','cap'}
-	      node_options = [node_options, sprintf(',anchor=north') ];
+	      nodeOptions = [nodeOptions, sprintf(',anchor=north') ];
       case 'middle'
       otherwise
-	      warning( 'matlab2tikz:draw_text',                         ...
+	      warning( 'matlab2tikz:drawText',                         ...
                   'Don''t know what VerticalAlignment %s means.', valign );
   end
   
   halign = get( handle, 'HorizontalAlignment' );
   switch halign
       case 'left'
-	      node_options = [node_options, sprintf(',anchor=west') ];
+	      nodeOptions = [nodeOptions, sprintf(',anchor=west') ];
       case 'right'
-	      node_options = [node_options, sprintf(',anchor=east') ];
+	      nodeOptions = [nodeOptions, sprintf(',anchor=east') ];
       case 'center'
       otherwise
-          warning( 'matlab2tikz:draw_text',                             ...
+          warning( 'matlab2tikz:drawText',                             ...
 	        'Don''t know what HorizontalAlignment %s means.', halign );
   end
 
   str = [ str, ...
           sprintf( '\\draw (%g,%g) node[%s] {$%s$};\n\n',               ...
-                   position(1), position(2), node_options, text ) ];
+                   position(1), position(2), nodeOptions, text ) ];
 
   str = [ str, ...
-          handle_all_children( handle ) ];
+          handleAllChildren( handle ) ];
   
 end
 % =========================================================================
-% *** END OF FUNCTION draw_text
+% *** END OF FUNCTION drawText
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION translate_text
+% *** FUNCTION translateText
 % ***
 % *** This function converts MATLAB text strings to valid LaTeX ones.
 % ***
 % =========================================================================
-function newstr = translate_text( handle )
+function newstr = translateText( handle )
 
   str = get( handle, 'String' );
 
@@ -2160,45 +2160,45 @@ function newstr = translate_text( handle )
       case {'tex','latex'}
           newstr = str;
       otherwise
-          error( 'matlab2tikz:translate_text',                          ...
+          error( 'matlab2tikz:translateText',                          ...
                  'Unknown text interpreter ''%s''.', int )
   end
 
 end
 % =========================================================================
-% *** FUNCTION translate_text
+% *** FUNCTION translateText
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION translate_linestyle
+% *** FUNCTION translateLineStyle
 % =========================================================================
-function tikz_linestyle = translate_linestyle( matlab_linestyle )
+function tikzLineStyle = translateLineStyle( matlabLineStyle )
   
-  if( ~ischar(matlab_linestyle) )
-      error( [ ' Function translate_linestyle:',                        ...
-               ' Variable matlab_linestyle is not a string.' ] );
+  if( ~ischar(matlabLineStyle) )
+      error( [ ' Function translateLineStyle:',                        ...
+               ' Variable matlabLineStyle is not a string.' ] );
   end
 
-  switch ( matlab_linestyle )
+  switch ( matlabLineStyle )
       case 'none'
-          tikz_linestyle = '';
+          tikzLineStyle = '';
       case '-'
-          tikz_linestyle = 'solid';
+          tikzLineStyle = 'solid';
       case '--'
-          tikz_linestyle = 'dashed';
+          tikzLineStyle = 'dashed';
       case ':'
-          tikz_linestyle = 'dotted';           
+          tikzLineStyle = 'dotted';
       case '-.'
-          tikz_linestyle = 'dash pattern=on 1pt off 3pt on 3pt off 3pt';
+          tikzLineStyle = 'dash pattern=on 1pt off 3pt on 3pt off 3pt';
       otherwise
-	  error( [ ' Function translate_linestyle:',                    ...
-		   ' Unknown matlab_linestyle ''',matlab_linestyle,'''.']);
+	  error( [ ' Function translateLineStyle:',                    ...
+		   ' Unknown matlabLineStyle ''',matlabLineStyle,'''.']);
   end
 end
 % =========================================================================
-% *** END OF FUNCTION translate_linestyle
+% *** END OF FUNCTION translateLineStyle
 % =========================================================================
 
 
@@ -2214,48 +2214,48 @@ end
 % *** Take a look at xcolor.sty for the color definitions.
 % ***
 % =========================================================================
-function xcolor_literal = rgb2xcolor( rgb )
+function xcolorLiteral = rgb2xcolor( rgb )
 
   if isequal( rgb, [1,0,0] )
-      xcolor_literal = 'red';
+      xcolorLiteral = 'red';
   elseif isequal( rgb, [0,1,0] )
-      xcolor_literal = 'green';
+      xcolorLiteral = 'green';
   elseif isequal( rgb, [0,0,1] )
-      xcolor_literal = 'blue';
+      xcolorLiteral = 'blue';
   elseif isequal( rgb, [0.75,0.5,0.25] )
-      xcolor_literal = 'brown';
+      xcolorLiteral = 'brown';
   elseif isequal( rgb, [0.75,1,0] )
-      xcolor_literal = 'lime';
+      xcolorLiteral = 'lime';
   elseif isequal( rgb, [1,0.5,0] )
-      xcolor_literal = 'orange';
+      xcolorLiteral = 'orange';
   elseif isequal( rgb, [1,0.75,0.75] )
-      xcolor_literal = 'pink';
+      xcolorLiteral = 'pink';
   elseif isequal( rgb, [0.75,0,0.25] )
-      xcolor_literal = 'pink';
+      xcolorLiteral = 'pink';
   elseif isequal( rgb, [0.75,0,0.25] )
-      xcolor_literal = 'purple';
+      xcolorLiteral = 'purple';
   elseif isequal( rgb, [0,0.5,0.5] )
-      xcolor_literal = 'teal';
+      xcolorLiteral = 'teal';
   elseif isequal( rgb, [0.5,0,0.5] )
-      xcolor_literal = 'violet';
+      xcolorLiteral = 'violet';
   elseif isequal( rgb, [0,1,1] )
-      xcolor_literal = 'cyan';
+      xcolorLiteral = 'cyan';
   elseif isequal( rgb, [1,0,1] )
-      xcolor_literal = 'magenta';
+      xcolorLiteral = 'magenta';
   elseif isequal( rgb, [1,1,0] )
-      xcolor_literal = 'yellow';
+      xcolorLiteral = 'yellow';
   elseif isequal( rgb, [0.5,0.5,0] )
-      xcolor_literal = 'olive';
+      xcolorLiteral = 'olive';
   elseif isequal( rgb, [0,0,0] )
-      xcolor_literal = 'black';
+      xcolorLiteral = 'black';
   elseif isequal( rgb, [0.5,0.5,0.5] )
-      xcolor_literal = 'gray';
+      xcolorLiteral = 'gray';
   elseif isequal( rgb, [0.75,0.75,0.75] )
-      xcolor_literal = 'lightgray';
+      xcolorLiteral = 'lightgray';
   elseif isequal( rgb, [1,1,1] )
-      xcolor_literal = 'white';
+      xcolorLiteral = 'white';
   else
-      xcolor_literal = '';
+      xcolorLiteral = '';
   end
 
 end
@@ -2305,16 +2305,16 @@ end
 
 
 % =========================================================================
-% *** FUNCTION get_axislabels
+% *** FUNCTION getAxisLabels
 % =========================================================================
-function axislabels = get_axislabels( handle )
+function axisLabels = getAxisLabels( handle )
 
-  axislabels.x = get( get( handle, 'XLabel' ), 'String' );
-  axislabels.y = get( get( handle, 'YLabel' ), 'String' );
+  axisLabels.x = get( get( handle, 'XLabel' ), 'String' );
+  axisLabels.y = get( get( handle, 'YLabel' ), 'String' );
 
 end
 % =========================================================================
-% *** END FUNCTION get_axislabels
+% *** END FUNCTION getAxisLabels
 % =========================================================================
 
 
@@ -2341,16 +2341,16 @@ end
 
 
 %  % =========================================================================
-%  % *** FUNCTION get_axes_scaling
+%  % *** FUNCTION getAxesScaling
 %  % ***
 %  % *** Returns the scaling of the axes.
 %  % ***
 %  % =========================================================================
-%  function scaling = get_axes_scaling( handle )
+%  function scaling = getAxesScaling( handle )
 %  
 %    % arbitrarily chosen: the longer edge of the plot has length 50(mm)
 %    % (the other is calculated according to the aspect ratio)
-%    longer_edge = 50;
+%    longerEdge = 50;
 %  
 %    xyscaling = daspect;
 %  
@@ -2367,9 +2367,9 @@ end
 %        baselength = ylength;
 %    end
 %    
-%    % one of the quotients cancels to longer_edge
-%    physical_length.x = longer_edge * xlength / baselength;
-%    physical_length.y = longer_edge * ylength / baselength;
+%    % one of the quotients cancels to longerEdge
+%    physicalLength.x = longerEdge * xlength / baselength;
+%    physicalLength.y = longerEdge * ylength / baselength;
 %  
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %    % For log-scaled axes, the pgfplot scaling means scaling powers of exp(1)
@@ -2378,15 +2378,15 @@ end
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %    xscale  = get( handle, 'XScale' );
 %    yscale  = get( handle, 'YScale' );
-%    is_xlog = strcmp( xscale, 'log' );
-%    is_ylog = strcmp( yscale, 'log' );
-%    if is_xlog
+%    isXlog = strcmp( xscale, 'log' );
+%    isYlog = strcmp( yscale, 'log' );
+%    if isXlog
 %        q.x = log( xlim(2)/xlim(1) );
 %    else
 %        q.x = xlim(2) - xlim(1);
 %    end
 %  
-%    if is_ylog
+%    if isYlog
 %        q.y = log( ylim(2)/ylim(1) );
 %    else
 %        q.y = ylim(2) - ylim(1);
@@ -2394,8 +2394,8 @@ end
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %  
 %    % finally, set the scaling
-%    scaling.x = sprintf( '%gmm', physical_length.x / q.x );
-%    scaling.y = sprintf( '%gmm', physical_length.y / q.y );
+%    scaling.x = sprintf( '%gmm', physicalLength.x / q.x );
+%    scaling.y = sprintf( '%gmm', physicalLength.y / q.y );
 %  
 %  
 %    % The only way to reliably get the aspect ratio of the axes is
@@ -2418,18 +2418,18 @@ end
 %  
 %  end
 %  % =========================================================================
-%  % *** END FUNCTION get_axes_scaling
+%  % *** END FUNCTION getAxesScaling
 %  % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION get_axes_dimensions
+% *** FUNCTION getAxesDimensions
 % ***
 % *** Returns the physical dimension of the axes.
 % ***
 % =========================================================================
-function dimension = get_axes_dimensions( handle )
+function dimension = getAxesDimensions( handle )
 
   daspectmode = get( handle, 'DataAspectRatioMode' );
   position    = get( handle, 'Position' );
@@ -2534,15 +2534,15 @@ function dimension = get_axes_dimensions( handle )
 %    % (see pgfplot manual p. 55). Hence, take the natural logarithm in those
 %    % cases.
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%    xscale  = get( handle, 'XScale' );  is_xlog = strcmp( xscale, 'log' );
-%    yscale  = get( handle, 'YScale' );  is_ylog = strcmp( yscale, 'log' );
-%    if is_xlog
+%    xscale  = get( handle, 'XScale' );  isXlog = strcmp( xscale, 'log' );
+%    yscale  = get( handle, 'YScale' );  isYlog = strcmp( yscale, 'log' );
+%    if isXlog
 %        q.x = log( xlim(2)/xlim(1) );
 %    else
 %        q.x = xlim(2) - xlim(1);
 %    end
 %  
-%    if is_ylog
+%    if isYlog
 %        q.y = log( ylim(2)/ylim(1) );
 %    else
 %        q.y = ylim(2) - ylim(1);
@@ -2550,8 +2550,8 @@ function dimension = get_axes_dimensions( handle )
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %  
 %    % finally, set the scaling
-%    scaling.x = sprintf( '%gmm', physical_length.x / q.x );
-%    scaling.y = sprintf( '%gmm', physical_length.y / q.y );
+%    scaling.x = sprintf( '%gmm', physicalLength.x / q.x );
+%    scaling.y = sprintf( '%gmm', physicalLength.y / q.y );
 
 
   % The only way to reliably get the aspect ratio of the axes is
@@ -2574,20 +2574,20 @@ function dimension = get_axes_dimensions( handle )
 
 end
 % =========================================================================
-% *** END FUNCTION get_axes_dimensions
+% *** END FUNCTION getAxesDimensions
 % =========================================================================
 
 
 
 
 % =========================================================================
-% *** FUNCTION escape_characters
+% *** FUNCTION escapeCharacters
 % ***
 % *** Replaces the single characters %, ', \ by their escaped versions
 % *** \'', %%, \\, respectively.
 % ***
 % =========================================================================
-function newstr = escape_characters( str )
+function newstr = escapeCharacters( str )
 
   newstr = str;
   newstr = strrep( newstr, '''', '\''''' );
@@ -2596,7 +2596,7 @@ function newstr = escape_characters( str )
 
 end
 % =========================================================================
-% *** END FUNCTION escape_characters
+% *** END FUNCTION escapeCharacters
 % =========================================================================
 
 
@@ -2666,13 +2666,13 @@ end
 
 
 % =========================================================================
-% *** FUNCTION common_entry
+% *** FUNCTION commonEntry
 % ***
 % *** Returns TRUE if and only if the two vectors u, v have at least one
 % *** common entry.
 % ***
 % =========================================================================
-function out = common_entry( u, v );
+function out = commonEntry( u, v );
 
   out = 0;
 
@@ -2694,24 +2694,24 @@ function out = common_entry( u, v );
 
 end
 % =========================================================================
-% *** END FUNCTION common_entry
+% *** END FUNCTION commonEntry
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION is_visible
+% *** FUNCTION isVisible
 % ***
 % *** Determines whether an object is actually visible or not.
 % ***
 % =========================================================================
-function out = is_visible( handle );
+function out = isVisible( handle );
 
   out = strcmp( get(handle,'Visible'), 'on' );
 
 end
 % =========================================================================
-% *** END FUNCTION is_visible
+% *** END FUNCTION isVisible
 % =========================================================================
 
 
@@ -2724,10 +2724,10 @@ end
 % =========================================================================
 function out = normalized2physical();
 
-  global matlab2tikz_opts
+  global matlab2tikzOpts
 
-  fig  = matlab2tikz_opts.gcf;
-  axes = matlab2tikz_opts.gca;
+  fig  = matlab2tikzOpts.gcf;
+  axes = matlab2tikzOpts.gca;
 
   % width of the full window
   fpos = get( fig, 'Position' );
