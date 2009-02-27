@@ -240,6 +240,8 @@ end
 % =========================================================================
 function str = drawAxes( handle )
 
+   global matlab2tikzOpts;
+
   % Make the axis options a global variable as plot objects further below
   % in the hierarchy might want to append something.
   % One example is the required 'ybar stacked' option for stacked bar
@@ -392,12 +394,21 @@ function str = drawAxes( handle )
       isGrid = 1;
   end
 
-  % set the lineStyle
+  % set the line style
   if isGrid
-      gridLineStyle = get( handle, 'GridLineStyle' );
-      gls           = translateLineStyle( gridLineStyle );
-      str = [ str, ...
-              sprintf( '\n\\pgfplotsset{every axis grid/.style={style=%s}}\n\n', gls ) ];
+      matlabGridLineStyle = get( handle, 'GridLineStyle' );
+
+      % take over the grid line style in any case when in strict mode;
+      % if not, don't add anything in case of default line grid line style
+      % and effectively take pgfplots' default
+      defaultMatlabGridLineStyle = ':';
+      if matlab2tikzOpts.strict ...
+         || ~strcmp(matlabGridLineStyle,defaultMatlabGridLineStyle)
+         gls = translateLineStyle( matlabGridLineStyle );
+         str = [ str, ...
+                 sprintf( '\n\\pgfplotsset{every axis grid/.style={style=%s}}\n\n', gls ) ];
+      end
+
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
