@@ -1973,98 +1973,75 @@ function [ ticks, tickLabels ] = getTicks( handle )
 
   xTick      = get( handle, 'XTick' );
   xTickLabel = get( handle, 'XTickLabel' );
+  xAxisLog   = strcmp( get(handle,'XScale'),'log' );
+  [ticks.x, tickLabels.x] = getAxisTicks( xTick, xTickLabel, handle,    ...
+                                                                xAxisLog );
 
   yTick      = get( handle, 'YTick' );
   yTickLabel = get( handle, 'YTickLabel' );
+  yAxisLog   = strcmp( get(handle,'YScale'),'log' );
+  [ticks.y, tickLabels.y] = getAxisTicks( yTick, yTickLabel, handle,    ...
+                                                                yAxisLog );
 
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % set xTicks + labels
-  ticks.x = collapse( num2cell(xTick), ',' );
+  % -----------------------------------------------------------------------
+  % *** FUNCTION getAxisTicks
+  % ***
+  % *** Converts MATLAB style ticks and tick labels to pgfplots style
+  % *** ticks and tick labels (if at all necessary).
+  % ***
+  % -----------------------------------------------------------------------
+  function [ticks, tickLabels] = getAxisTicks( tick, tickLabel, handle, ...
+                                                                isLogAxis )
 
-  % sometimes tickLabels are cells, sometimes plain arrays
-  % -- unify this to cells
-  if ischar( xTickLabel )
-      xTickLabel = strtrim( mat2cell(xTickLabel,                        ...
-                          ones(size(xTickLabel,1),1),size(xTickLabel,2)) );
+    % set ticks + labels
+    ticks = collapse( num2cell(tick), ',' );
+
+    % sometimes tickLabels are cells, sometimes plain arrays
+    % -- unify this to cells
+    if ischar( tickLabel )
+	tickLabel = strtrim( mat2cell(tickLabel,                        ...
+			    ones(size(tickLabel,1),1),size(tickLabel,2)) );
+    end
+
+    % check if tickLabels are really necessary (and not already covered by
+    % the tick values themselves)
+    plotLabelsNecessary = 0;
+    for k = 1:min(length(tick),length(tickLabel))
+	% Don't use str2num here as then, literal strings as 'pi' get
+	% legally transformed into 3.14... and the need for an explicit
+	% label will not be recognized. str2double returns a NaN for 'pi'.
+	if isLogAxis
+	    s = 10^( str2double(tickLabel{k}) );
+	else
+	    s = str2double( tickLabel{k} );
+	end
+	if isnan(s)  ||  abs(tick(k)-s) > tol
+	    plotLabelsNecessary = 1;
+	    break
+	end
+    end
+
+    if plotLabelsNecessary
+	% if the axis is logscaled, MATLAB does not store the labels,
+	% but the exponents to 10
+	if isLogAxis
+	    for k = 1:length(tickLabel)
+		if isnumeric( tickLabel{k} )
+		    str = num2str( tickLabel{k} );
+		else
+		    str = tickLabel{k};
+		end
+		tickLabel{k} = sprintf( '$10^{%s}$', str );
+	    end
+	end
+	tickLabels = collapse( tickLabel, ',' );
+    else
+	tickLabels = [];
+    end
   end
-
-  % if the axis is logscaled, MATLAB does not store the labels, but the
-  % exponents to 10
-  if strcmp( get(handle,'XScale'),'log' )
-      for k = 1:length(xTickLabel)
-          if isnumeric( xTickLabel{k} )
-              str = num2str( xTickLabel{k} );
-          else
-              str = xTickLabel{k};
-          end
-          xTickLabel{k} = sprintf( '$10^{%s}$', str );
-      end
-  end
-
-  % check if tickLabels are really necessary (and not already covered by
-  % the tick values themselves)
-  plotLabelsNecessary = 0;
-  for k = 1:min(length(xTick),length(xTickLabel))
-       % Don't use str2num here as then, literal strings as 'pi' get
-       % legally transformed into 3.14... and the need for an explicit
-       % label will not be recognized. str2double returns a NaN for 'pi'.
-       s = str2double( xTickLabel{k} );
-       if isnan(s)  ||  abs(xTick(k)-s) > tol
-           plotLabelsNecessary = 1;
-           break
-       end
-  end
-
-  if plotLabelsNecessary
-      tickLabels.x = collapse( xTickLabel, ',' );
-  else
-      tickLabels.x = [];
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % set yTicks + labels
-  ticks.y = collapse( num2cell(yTick), ',' );
-
-  if ischar( yTickLabel )
-      yTickLabel = strtrim( mat2cell(yTickLabel,                        ...
-                          ones(size(yTickLabel,1),1),size(yTickLabel,2)) );
-  end
-
-  % if the axis is logscaled, MATLAB does not store the labels, but the
-  % exponents to 10
-  if strcmp( get(handle,'YScale'),'log' )
-      for k = 1:length(yTickLabel)
-          if isnumeric( yTickLabel{k} )
-              str = num2str( yTickLabel{k} );
-          else
-              str = yTickLabel{k};
-          end
-          yTickLabel{k} = sprintf( '$10^{%s}$', str );
-      end
-  end
-
-  % check if tickLabels are really necessary (and not already covered by
-  % the tick values themselves)
-  plotLabelsNecessary = 0;
-  for k = 1:min(length(yTick),length(yTickLabel))
-       % Don't use str2num here as then, literal strings as 'pi' get
-       % legally transformed into 3.14... and the need for an explicit
-       % label will not be recognized. str2double returns a NaN for 'pi'.
-       s = str2double( yTickLabel{k} );
-       if isnan(s)  ||  abs(yTick(k)-s) > tol
-           plotLabelsNecessary = 1;
-           break
-       end
-  end
-
-  if plotLabelsNecessary
-      tickLabels.y = collapse( yTickLabel, ',' );
-  else
-      tickLabels.y = [];
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % -----------------------------------------------------------------------
+  % *** END FUNCTION getAxisTicks
+  % -----------------------------------------------------------------------
 
 end
 % =========================================================================
