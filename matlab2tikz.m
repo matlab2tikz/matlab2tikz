@@ -319,19 +319,19 @@ function str = drawAxes( handle )
   [ ticks, tickLabels ] = getTicks( handle );
   if ~isempty( ticks.x )
       axisOpts = [ axisOpts,                              ...
-                    sprintf( 'xTick={%s}', ticks.x ) ];
+                    sprintf( 'xtick={%s}', ticks.x ) ];
   end
   if ~isempty( tickLabels.x )
       axisOpts = [ axisOpts,                              ...
-                    sprintf( 'xTickLabels={%s}', tickLabels.x ) ];
+                    sprintf( 'xticklabels={%s}', tickLabels.x ) ];
   end
   if ~isempty( ticks.y )
       axisOpts = [ axisOpts,                              ...
-                    sprintf( 'yTick={%s}', ticks.y ) ];
+                    sprintf( 'ytick={%s}', ticks.y ) ];
   end
   if ~isempty( tickLabels.y )
       axisOpts = [ axisOpts,                              ...
-                    sprintf( 'yTickLabels={%s}', tickLabels.y ) ];
+                    sprintf( 'yticklabels={%s}', tickLabels.y ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -641,9 +641,8 @@ function lineOpts = getLineOptions( lineStyle, lineWidth )
       % if not, don't add anything in case of default line width
       % and effectively take pgfplots' default
       matlabDefaultLineWidth = 0.5;
-      if matlab2tikzOpts.strict || ...
-         ( ~matlab2tikzOpts.strict ...
-           && ~abs(lineWidth-matlabDefaultLineWidth)<=tol )
+      if matlab2tikzOpts.strict ...
+         || ~abs(lineWidth-matlabDefaultLineWidth) <= tol
           lineOpts = [ lineOpts,                                       ...
                        sprintf('line width=%.1fpt', lineWidth ) ];
       end
@@ -665,6 +664,8 @@ end
 % =========================================================================
 function drawOptions = getMarkerOptions( h )
 
+  global matlab2tikzOpts
+
   drawOptions = cell(0);
 
   marker = get( h, 'Marker' );
@@ -674,12 +675,16 @@ function drawOptions = getMarkerOptions( h )
       lineStyle  = get( h, 'LineStyle' );
       lineWidth  = get( h, 'LineWidth' );
 
-      % In MATLAB, the marker size refers to the edge length of a square
-      % (for example) (~diameter), whereas in TikZ the distance of an edge
-      % to the center is the measure (~radius). Hence divide by 2.
-      tikzMarkerSize = translateMarkersize( marker, markerSize );
-      drawOptions = [ drawOptions,                                    ...
-                       sprintf( 'mark size=%.1fpt', tikzMarkerSize ) ];
+      [ tikzMarkerSize, isDefault ] = ...
+                               translateMarkerSize( marker, markerSize );
+
+      % take over the marker size in any case when in strict mode;
+      % if not, don't add anything in case of default marker size
+      % and effectively take pgfplots' default
+      if matlab2tikzOpts.strict || ~isDefault
+         drawOptions = [ drawOptions,                                 ...
+                         sprintf( 'mark size=%.1fpt', tikzMarkerSize ) ];
+      end
 
       markOptions = cell( 0 );
       % make sure that the markers get painted in solid (and not dashed)
@@ -724,8 +729,8 @@ function drawOptions = getMarkerOptions( h )
 	     translateMarker( matlabMarker, markOptions, faceColorToggle )
 
     if( ~ischar(matlabMarker) )
-	error( [ ' Function translateMarker:',                           ...
-		' Variable matlabMarker is not a string.' ] );
+	error( [ 'Function translateMarker:',                           ...
+                 'Variable matlabMarker is not a string.' ] );
     end
 
     switch ( matlabMarker )
@@ -825,7 +830,7 @@ function drawOptions = getMarkerOptions( h )
 
 
   % -----------------------------------------------------------------------
-  % *** FUNCTION translateMarkersize
+  % *** FUNCTION translateMarkerSize
   % ***
   % *** The markersizes of Matlab and TikZ are related, but not equal. This
   % *** is because
@@ -836,24 +841,34 @@ function drawOptions = getMarkerOptions( h )
   % ***      edgelength of a square vs. the diagonal length of it).
   % ***
   % -----------------------------------------------------------------------
-  function tikzMarkersize =                                            ...
-		   translateMarkersize( matlabMarker, matlabMarkerSize )
+  function [ tikzMarkerSize, isDefault ] =                              ...
+                      translateMarkerSize( matlabMarker, matlabMarkerSize )
+
+    global tol
 
     if( ~ischar(matlabMarker) )
-	error( 'matlab2tikz:translateMarkersize',                      ...
-	      'Variable matlabMarker is not a string.' );
+	error( 'matlab2tikz:translateMarkerSize',                      ...
+	       'Variable matlabMarker is not a string.' );
     end
 
     if( ~isnumeric(matlabMarkerSize) )
-	error( 'matlab2tikz:translateMarkersize',                      ...
-	      'Variable matlabMarkerSize is not a numeral.' );
+	error( 'matlab2tikz:translateMarkerSize',                      ...
+	       'Variable matlabMarkerSize is not a numeral.' );
     end
+
+    % 6pt is the default MATLAB marker size for all markers
+    defaultMatlabMarkerSize = 6;
+    isDefault = abs(matlabMarkerSize-defaultMatlabMarkerSize)<tol;
 
     switch ( matlabMarker )
 	case 'none'
-	    tikzMarkersize = [];
+	    tikzMarkerSize = [];
 	case {'+','o','x','*','p','pentagram','h','hexagram'}
-	    tikzMarkersize = matlabMarkerSize / 2;
+	    % In MATLAB, the marker size refers to the edge length of a
+            % square (for example) (~diameter), whereas in TikZ the
+            % distance of an edge to the center is the measure (~radius).
+            % Hence divide by 2.
+	    tikzMarkerSize = matlabMarkerSize / 2;
 	case '.'
 	    % as documented on the Matlab help pages:
 	    %
@@ -862,29 +877,29 @@ function drawOptions = getMarkerOptions( h )
 	    % The point (.) marker type does not change size when the
 	    % specified value is less than 5.
 	    %
-	    tikzMarkersize = matlabMarkerSize / 2 / 3;
+	    tikzMarkerSize = matlabMarkerSize / 2 / 3;
 	case {'s','square'}
 	    % Matlab measures the diameter, TikZ half the edge length
-	    tikzMarkersize = matlabMarkerSize / 2 / sqrt(2);
+	    tikzMarkerSize = matlabMarkerSize / 2 / sqrt(2);
 	case {'d','diamond'}
-	    % Matlab measures the width, TikZ the height of the diamond;
-	    % the acute angle (top and bottom) is a manually measured
-	    % 75 degrees (in TikZ, and Matlab probably very similar);
-	    % use this as a base for calculations
-	    tikzMarkersize = matlabMarkerSize / 2 / atan( 75/2 *pi/180 );
+	    % MATLAB measures the width, TikZ the height of the diamond;
+	    % the acute angle (at the top and the bottom of the diamond)
+            % is a manually measured 75 degrees (in TikZ, and MATLAB
+            % probably very similar); use this as a base for calculations
+	    tikzMarkerSize = matlabMarkerSize / 2 / atan( 75/2 *pi/180 );
 	case {'^','v','<','>'}
 	    % for triangles, matlab takes the height
 	    % and tikz the circumcircle radius;
 	    % the triangles are always equiangular
-	    tikzMarkersize = matlabMarkerSize / 2 * (2/3);
+	    tikzMarkerSize = matlabMarkerSize / 2 * (2/3);
 	otherwise
-	    error( 'matlab2tikz:translateMarkersize',                    ...
-		  'Unknown matlabMarker ''%s''.', matlabMarker  );
+	    error( 'matlab2tikz:translateMarkerSize',                   ...
+	           'Unknown matlabMarker ''%s''.', matlabMarker );
     end
 
   end
   % -----------------------------------------------------------------------
-  % *** END OF FUNCTION translateMarkersize
+  % *** END OF FUNCTION translateMarkerSize
   % -----------------------------------------------------------------------
 
 end
@@ -1566,7 +1581,7 @@ function str = drawColorbar( handle )
               anchorparent = 'above north west';
               cbarOptions = [ cbarOptions,                            ...
                                'anchor=south west',                     ...
-                               'xTickLabel pos=right, yTick=\\empty' ];
+                               'xticklabel pos=right, ytick=\\empty' ];
                                % we actually wanted to set pos=top here,
                                % but pgfplots doesn't support that yet.
                                % pos=right does the same thing, really.
@@ -1574,7 +1589,7 @@ function str = drawColorbar( handle )
               anchorparent = 'below south west';
               cbarOptions = [ cbarOptions,                            ...
                                'anchor=north west',                     ...
-                               'xTickLabel pos=left, yTick=\\empty' ];
+                               'xticklabel pos=left, ytick=\\empty' ];
                                % we actually wanted to set pos=bottom here,
                                % but pgfplots doesn't support that yet. 
                                % pos=left does the same thing, really.
@@ -1592,12 +1607,12 @@ function str = drawColorbar( handle )
                anchorparent = 'right of south east';
                cbarOptions = [ cbarOptions,                           ...
                                 'anchor=south west',                    ...
-                                'xTick=\\empty, yTickLabel pos=right' ];
+                                'xtick=\\empty, yticklabel pos=right' ];
            else
                anchorparent = 'left of south west';
                cbarOptions = [ cbarOptions,                           ...
                                 'anchor=south east',                    ...
-                                'xTick=\\empty, yTickLabel pos=left' ];
+                                'xtick=\\empty, yticklabel pos=left' ];
            end
 
       otherwise
@@ -1610,19 +1625,19 @@ function str = drawColorbar( handle )
   [ ticks, tickLabels ] = getTicks( handle );
   if ~isempty( ticks.x )
       cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'xTick={%s}', ticks.x ) ];
+                       sprintf( 'xtick={%s}', ticks.x ) ];
   end
   if ~isempty( tickLabels.x )
       cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'xTickLabels={%s}', tickLabels.x ) ];
+                       sprintf( 'xticklabels={%s}', tickLabels.x ) ];
   end
   if ~isempty( ticks.y )
       cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'yTick={%s}', ticks.y ) ];
+                       sprintf( 'ytick={%s}', ticks.y ) ];
   end
   if ~isempty( tickLabels.y )
       cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'yTickLabels={%s}', tickLabels.y ) ];
+                       sprintf( 'yticklabels={%s}', tickLabels.y ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
