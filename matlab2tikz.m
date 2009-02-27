@@ -47,7 +47,7 @@
 % ***    <http://www.gnu.org/licenses/>.
 % ***
 % =========================================================================
-function matlab2tikz( fn )
+function matlab2tikz( fn, varargin )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define some global variables
@@ -72,6 +72,22 @@ function matlab2tikz( fn )
   matlab2tikzOpts.filename = fn;
   matlab2tikzOpts.gca      = gca;
   matlab2tikzOpts.gcf      = gcf;
+  matlab2tikzOpts.strict   = 0; % whether to strictly stick to the
+                                % default MATLAB plot appearence
+
+  % scan the options
+  for k = 1:length(varargin)
+      if ~isstr(varargin{k})
+          error( 'matlab2tikz:unkOpt', 'Optional arguments must be strings' );
+      end
+      switch varargin{k}
+      case 'strictmode'
+          matlab2tikzOpts.strict = 1;
+      otherwise
+          error( 'matlab2tikz:unkOpt', 'Unknown option ''%s''.', varargin{k} );
+      end
+  end
+
 
   fprintf( '%s v%s\n', matlab2tikzName, matlab2tikzVersion );
 
@@ -420,12 +436,12 @@ function str = drawAxes( handle )
 
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       % Format 'axisOpts' nicely.
-      opts = [ '%%\n', collapse( axisOpts, ',%%\n' ), '%%\n' ];
+      opts = [ '\n', collapse( axisOpts, ',\n' ), '\n' ];
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       % Now, return the whole axis environment.
       str = [ str, ...
-              sprintf( ['\n\\begin{%s}[',opts,']\n'], env ), ...
+              sprintf( ['\n\\begin{%s}[',opts,']\n\n'], env ), ...
               childrenStr, ...
               sprintf( '\\end{%s}\n\n', env ) ];
   end
@@ -453,8 +469,7 @@ function str = drawLine( handle )
   lineWidth = get( handle, 'LineWidth' );
   marker    = get( handle, 'Marker' );
 
-  if (    ( strcmp(lineStyle,'none') || lineWidth==0 )                  ...
-       && strcmp(marker,'none') )
+  if ( strcmp(lineStyle,'none') || lineWidth==0 ) && strcmp(marker,'none')
       return
   end
 
@@ -469,7 +484,7 @@ function str = drawLine( handle )
                  ];
 
   % insert draw options
-  opts = [ '%%\n', collapse( drawOptions, ',%%\n' ), '%%\n' ];
+  opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -612,12 +627,27 @@ end
 % =========================================================================
 function lineOpts = getLineOptions( lineStyle, lineWidth )
 
+  global tol
+  global matlab2tikzOpts;
+
   lineOpts = cell(0);
 
-  if ~strcmp(lineStyle,'none') && lineWidth~=0
-      lineOpts = [ lineOpts,                                      ...
-                    sprintf('%s', translateLineStyle(lineStyle) ), ...
-                    sprintf('line width=%.1fpt', lineWidth ) ];
+  if ~strcmp(lineStyle,'none') && abs(lineWidth-tol)>0
+
+      lineOpts = [ lineOpts,                                           ...
+                   sprintf('%s', translateLineStyle(lineStyle) ) ];
+
+      % take over the line width in any case when in strict mode;
+      % if not, don't add anything in case of default line width
+      % and effectively take pgfplots' default
+      matlabDefaultLineWidth = 0.5;
+      if matlab2tikzOpts.strict || ...
+         ( ~matlab2tikzOpts.strict ...
+           && ~abs(lineWidth-matlabDefaultLineWidth)<=tol )
+          lineOpts = [ lineOpts,                                       ...
+                       sprintf('line width=%.1fpt', lineWidth ) ];
+      end
+
   end
 
 end
