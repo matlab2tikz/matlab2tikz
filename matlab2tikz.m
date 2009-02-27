@@ -135,7 +135,7 @@ function save_to_file()
   fprintf( fid, '% This file was created by %s v%s.\n\n',               ...
                                    matlab2tikz_name, matlab2tikz_version );
 
-  fprintf( fid, '\\begin{tikzpicture}[scale=0.55]\n' );
+  fprintf( fid, '\\begin{tikzpicture}\n' );
 
   % don't forget to define the colors
   if size(neededRGBColors,1)
