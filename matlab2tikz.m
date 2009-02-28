@@ -26,6 +26,10 @@
 % ***    clean interface between the very handy figure creation in MATLAB
 % ***    and the powerful means that TikZ with pgfplots has to offer.
 % ***
+% ***
+% *** TODO: * tex(t) annotations
+% ***       * 3D plots
+% ***
 % =========================================================================
 % ***
 % ***    Copyright (c) 2008, 2009 by
@@ -69,7 +73,7 @@ function matlab2tikz( fn, varargin )
   global matlab2tikzOpts;
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  matlab2tikzOpts.filename = fn;
+  matlab2tikzOpts.fileName = fn;
   matlab2tikzOpts.gca      = gca;
   matlab2tikzOpts.gcf      = gcf;
   matlab2tikzOpts.strict   = 0; % whether to strictly stick to the
@@ -121,17 +125,20 @@ end
 % =========================================================================
 function saveToFile()
 
-  global filename
+  global fileName
   global matlab2tikzName
   global matlab2tikzVersion
   global matlab2tikzOpts
 
+  global tikzOptions % for the arrow style -- see if we can get this removed
+  tikzOptions = cell(0);
+
   global neededRGBColors
 
-  fid = fopen( matlab2tikzOpts.filename, 'w' );
+  fid = fopen( matlab2tikzOpts.fileName, 'w' );
   if fid == -1
       error( 'matlab2tikz:saveToFile', ...
-             'Unable to open %s for writing', filename );
+             'Unable to open %s for writing', fileName );
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -151,7 +158,11 @@ function saveToFile()
   fprintf( fid, '% This file was created by %s v%s.\n\n',               ...
                                    matlab2tikzName, matlab2tikzVersion );
 
-  fprintf( fid, '\\begin{tikzpicture}\n' );
+  if isempty(tikzOptions)
+      fprintf( fid, '\\begin{tikzpicture}\n' );
+  else
+      fprintf( fid, '\\begin{tikzpicture}[%s]\n', collapse(tikzOptions,',') );
+  end
 
   % don't forget to define the colors
   if size(neededRGBColors,1)
@@ -305,16 +316,55 @@ function str = drawAxes( handle )
   axisOpts = [ axisOpts, 'name=main plot' ];
 
   % the following is general MATLAB behavior
-  axisOpts = [ axisOpts, 'axis on top' ];
+  axisOpts = [ axisOpts, 'axis on top', 'scale only axis' ];
+
+  xlim = get( handle, 'XLim' );
+  ylim = get( handle, 'YLim' );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
   dim = getAxesDimensions( handle );
-  axisOpts = [ axisOpts,                                              ...
-                sprintf( 'width=%g%s' , dim.x, dim.unit ),              ...
-                sprintf( 'height=%g%s', dim.y, dim.unit ),              ...
-                'scale only axis' ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % until the advent of a proper 'reverse axis' option in pgfplots, use
+  % the possibility to set the unit vectors in x- and y-direction
+  xAxisOrientation = get( handle, 'XDir' );
+  switch xAxisOrientation
+      case 'normal'
+          axisOpts = [ axisOpts,                                ...
+                       sprintf( 'width=%g%s' , dim.x, dim.unit ) ];
+      case 'reverse'
+          axisOpts = [ axisOpts,                                ...
+                       sprintf( 'x=-%g%s' , dim.x, dim.unit ) ];
+      otherwise
+          error( 'drawAxes:unknOrient', ...
+                 'Unknown axis orientation ''%s''.', xAxisOrientation );
+  end
+
+  yAxisOrientation = get( handle, 'YDir' );
+  switch yAxisOrientation
+      case 'normal'
+          axisOpts = [ axisOpts,                                ...
+                       sprintf( 'height=%g%s' , dim.y, dim.unit ) ];
+      case 'reverse'
+          yUnitSize = dim.y/ (ylim(2)-ylim(1));
+          axisOpts = [ axisOpts,                                ...
+                       sprintf( 'y=-%g%s' , yUnitSize , dim.unit ) ];
+      otherwise
+          error( 'drawAxes:unknOrient', ...
+                 'Unknown axis orientation ''%s''.', yAxisOrientation );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % get axis limits
+  axisOpts = [ axisOpts,                           ...
+               sprintf('xmin=%g, xmax=%g', xlim ), ...
+               sprintf('ymin=%g, ymax=%g', ylim ) ];
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
@@ -342,13 +392,13 @@ function str = drawAxes( handle )
   axisLabels = getAxisLabels( handle );
   if ~isempty( axisLabels.x )
       axisOpts = [ axisOpts,                              ...
-                          sprintf( 'xlabel={$%s$}',                     ...
+                          sprintf( 'xlabel={$%s$}',       ...
                                    escapeCharacters(axisLabels.x) ) ];
   end
   if ~isempty( axisLabels.y )
       axisOpts = [ axisOpts,                              ...
-                          sprintf( 'ylabel={$%s$}',                     ...
-                                   escapeCharacters(axisLabels.y) ) ];
+                   sprintf( 'ylabel={$%s$}',              ...
+                             escapeCharacters(axisLabels.y) ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -358,19 +408,8 @@ function str = drawAxes( handle )
   title = get( get( handle, 'Title' ), 'String' );
   if ~isempty(title)
       axisOpts = [ axisOpts,                              ...
-                          sprintf( 'title={$%s$}',                      ...
-                                   escapeCharacters(title) ) ];
+                   sprintf( 'title={$%s$}', escapeCharacters(title) ) ];
   end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get axis limits
-  xlim = get( handle, 'XLim' );
-  ylim = get( handle, 'YLim' );
-  axisOpts = [ axisOpts,                                  ...
-                      sprintf('xmin=%g, xmax=%g', xlim ),               ...
-                      sprintf('ymin=%g, ymax=%g', ylim ) ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -427,7 +466,7 @@ function str = drawAxes( handle )
 
   if legendHandle
       axisOpts = [ axisOpts, ...
-                    getLegendOpts( legendHandle ) ];
+                   getLegendOpts( legendHandle ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -569,13 +608,13 @@ function str = drawLine( handle )
           elseif any(boxpos{k}==2) || any(boxpos{k+1}==2) % one of the two is strictly outside the box
               % does the segment intersect with any of the four boundaries?
               out(k) =  segmentsIntersect( [p(k:k+1,1)',xlim(1),xlim(1)], ...   % with the left?
-                                            [p(k:k+1,2)',ylim] ) ...
+                                           [p(k:k+1,2)',ylim] ) ...
                      || segmentsIntersect( [p(k:k+1,1)',xlim],  ...             % with the bottom?
-                                            [p(k:k+1,2)',ylim(1),ylim(1)] ) ...
+                                           [p(k:k+1,2)',ylim(1),ylim(1)] ) ...
                      || segmentsIntersect( [p(k:k+1,1)',xlim(2),xlim(2)],  ...  % with the right?
-                                            [p(k:k+1,2)',ylim] ) ...
+                                           [p(k:k+1,2)',ylim] ) ...
                      || segmentsIntersect( [p(k:k+1,1)',xlim],  ...             % with the top?
-                                            [p(k:k+1,2)',ylim(2),ylim(2)] );
+                                           [p(k:k+1,2)',ylim(2),ylim(2)] );
           else % both neighboring points lie on the boundary
               % This is kind of tricky as there may be nodes *exactly*
               % in a corner of the domain. boxpos & commonEntry handle
@@ -968,7 +1007,9 @@ function str = drawPatch( handle )
   xData = get( handle, 'XData' );
   yData = get( handle, 'YData' );
   m = size(xData,1);
-  n = size(xData,2);
+  n = size(xData,2); % is n ever ~=1? if yes, think about replacing
+                     % the drawOpts by one \pgfplotsset{}
+
   for j=1:n
       str = [ str, ...
               sprintf(['\\addplot [',drawOpts,'] coordinates{']) ];
@@ -1060,7 +1101,7 @@ function str = drawHggroup( h );
 
       case 'specgraph.stairseries'
 	  % stair plots
-          str = drawStairseries( h );
+          str = drawStairSeries( h );
 
       case {'specgraph.contourgroup'}
 	  % handle all those the usual way
@@ -1068,7 +1109,7 @@ function str = drawHggroup( h );
 
       case {'specgraph.quivergroup'}
 	  % quiver arrows
-	  str = drawQuivergroup( h );
+	  str = drawQuiverGroup( h );
 
       otherwise
 	  warning( 'matlab2tikz:drawHggroup',                          ...
@@ -1119,8 +1160,8 @@ function str = drawBarseries( h );
   if isempty(barplotTotalNumber)
       nonbarPlotPresent  = 0;
       barplotTotalNumber = 0;
-      parent               = get( h, 'Parent' );
-      siblings             = get( parent, 'Children' );
+      parent             = get( h, 'Parent' );
+      siblings           = get( parent, 'Children' );
       for k = 1:length(siblings)
 
           % skip invisible objects
@@ -1352,7 +1393,7 @@ end
 
 
 % =========================================================================
-% *** FUNCTION drawStairseries
+% *** FUNCTION drawStairSeries
 % ***
 % *** Takes care of MATLAB's stairs plots.
 % ***
@@ -1360,7 +1401,7 @@ end
 % ***       that!
 % ***
 % =========================================================================
-function str = drawStairseries( h );
+function str = drawStairSeries( h );
 
   global matlab2tikzOpts;
 
@@ -1409,27 +1450,28 @@ function str = drawStairseries( h );
 
 end
 % =========================================================================
-% *** END FUNCTION drawStairseries
+% *** END FUNCTION drawStairSeries
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION drawQuivergroup
+% *** FUNCTION drawQuiverGroup
 % ***
 % *** Takes care of MATLAB's quiver plots.
 % ***
 % =========================================================================
-function str = drawQuivergroup( h );
+function str = drawQuiverGroup( h );
 
   global matlab2tikzOpts;
+  global tikzOptions
 
   str = [];
 
   xData = get( h, 'XData' );
   yData = get( h, 'YData' );
-  udata = get( h, 'UData' );
-  vdata = get( h, 'VData' );
+  uData = get( h, 'UData' );
+  vData = get( h, 'VData' );
 
   m = size( xData, 1 );
   n = size( xData, 2 );
@@ -1452,7 +1494,7 @@ function str = drawQuivergroup( h );
 
       % get the maximal length of a scaled arrow
       if av>0
-	  len = sqrt( (udata.^2 + vdata.^2)/av );
+	  len = sqrt( (uData.^2 + vData.^2)/av );
 	  maxLen = max(len(:));
       else
 	  maxLen = 0;
@@ -1463,8 +1505,8 @@ function str = drawQuivergroup( h );
       else
 	  scalefactor = scalefactor*0.9;
       end
-      udata = udata*scalefactor;
-      vdata = vdata*scalefactor;
+      uData = uData*scalefactor;
+      vData = vData*scalefactor;
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1493,25 +1535,32 @@ function str = drawQuivergroup( h );
                  getLineOptions( lineStyle, lineWidth ), ... % line options
                ];
 
+  % define arrow style
   arrowOptions = collapse( arrowOpts, ',' );
+
+  % Append the arrow style to the TikZ options themselves.
+  % TODO: Look into replacing this by something more 'local',
+  % (see \pgfplotset{}).
+  arrowStyle  = [ 'arrow/.style={',arrowOptions,'}' ];
+  tikzOptions = [ tikzOptions, arrowStyle ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  for i=1:m
-      for j=1:n
-          str = [ str, ...
-                  sprintf( '\\addplot [%s] coordinates{ (%g,%g) (%g,%g) };\n',...
-                           arrowOptions,                              ...
-                           xData(i,j)           , yData(i,j)        ,  ...
-                           xData(i,j)+udata(i,j), yData(i,j)+vdata(i,j) ) ];
-      end
-  end
+  % return the vector field code
+  XY = zeros(4,m,n);
+  XY(1,:,:) = xData;
+  XY(2,:,:) = yData;
+  XY(3,:,:) = xData+uData;
+  XY(4,:,:) = yData+vData;
+  str = [ str, ...
+          sprintf( '\\addplot [arrow] coordinates{ (%g,%g) (%g,%g) };\n',...
+                     XY ) ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
 % =========================================================================
-% *** END FUNCTION drawQuivergroup
+% *** END FUNCTION drawQuiverGroup
 % =========================================================================
 
 
@@ -1947,7 +1996,7 @@ end
 % =========================================================================
 % *** FUNCTION getLegendOpts
 % =========================================================================
-function lopts = getLegendOpts( handle )
+function lOpts = getLegendOpts( handle )
 
   if ~isVisible( handle )
       return
@@ -1957,7 +2006,7 @@ function lopts = getLegendOpts( handle )
 
   n = length( entries );
 
-  lopts = cell( 0 );
+  lOpts = cell( 0 );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle legend entries
@@ -1968,7 +2017,7 @@ function lopts = getLegendOpts( handle )
           entries{k} = [ '$', entries{k}, '$' ];
       end
 
-      lopts = [ lopts,                                                  ...
+      lOpts = [ lOpts,                                                  ...
                 [ 'legend entries={', collapse(entries,','), '}' ] ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1981,25 +2030,25 @@ function lopts = getLegendOpts( handle )
       case 'NorthEast'
           % don't append any options in this (default) case
       case 'NorthWest'
-          lopts = [ lopts,                                              ...
+          lOpts = [ lOpts,                                              ...
                     'legend style={at={(0.03,0.97)},anchor=north west}' ]; 
       case 'SouthWest'
-          lopts = [ lopts,                                              ...
+          lOpts = [ lOpts,                                              ...
                     'legend style={at={(0.03,0.03)},anchor=south west}' ];
       case 'SouthEast'
-          lopts = [ lopts,                                              ...
+          lOpts = [ lOpts,                                              ...
                     'legend style={at={(0.97,0.03)},anchor=south east}' ];
       case 'North'
-          lopts = [ lopts,                                              ...
+          lOpts = [ lOpts,                                              ...
                     'legend style={at={(0.5,0.97)},anchor=north}' ];
       case 'East'
-          lopts = [ lopts,                                              ...
+          lOpts = [ lOpts,                                              ...
                     'legend style={at={(0.97,0.5)},anchor=east}' ];
       case 'South'
-          lopts = [ lopts,                                              ...
+          lOpts = [ lOpts,                                              ...
                     'legend style={at={(0.5,0.03)},anchor=south}' ];
       case 'West'
-          lopts = [ lopts,                                              ...
+          lOpts = [ lOpts,                                              ...
                     'legend style={at={(0.03,0.5)},anchor=west}' ];
       otherwise
 	  warning( 'matlab2tikz:getLegendOpts',                       ...
