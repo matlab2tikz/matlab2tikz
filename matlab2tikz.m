@@ -81,7 +81,7 @@ function matlab2tikz( fn, varargin )
 
   % scan the options
   for k = 1:length(varargin)
-      if ~isstr(varargin{k})
+      if ~ischar(varargin{k})
           error( 'matlab2tikz:unkOpt', 'Optional arguments must be strings' );
       end
       switch varargin{k}
@@ -265,7 +265,7 @@ function str = drawAxes( handle )
   if ~isVisible( handle )
       % An invisible axis container *can* have visible children, so don't
       % immediately bail out here.
-      if length(get(handle,'Children')) > 0
+      if ~isempty(get(handle,'Children'))
           env  = 'axis';
           dim = getAxesDimensions( handle );
           axisOpts = [ axisOpts, ...
@@ -598,9 +598,9 @@ function str = drawLine( handle )
       out = zeros( n-1, 1 );
 
       % Find out where (with respect the the box) the points 'p' sit.
-      % Consider the documentation for 'boxwhere' to find out about
+      % Consider the documentation for 'boxWhere' to find out about
       % the meaning of the return values.
-      boxpos = boxwhere( p, xlim, ylim );
+      boxpos = boxWhere( p, xlim, ylim );
 
       for k = 1:n-1
           if any(boxpos{k}==1) || any(boxpos{k+1}==1) % one of the two is strictly inside the box
@@ -635,7 +635,7 @@ function str = drawLine( handle )
   % *** The x- and y- coordinates of Pi are in x(i), y(i), respectively.
   % ***
   % -----------------------------------------------------------------------
-  function out = segmentsIntersect( x, y );
+  function out = segmentsIntersect( x, y )
 
     % Technically, one writes down the 2x2 equation system to solve the
     %
@@ -649,12 +649,12 @@ function str = drawLine( handle )
     out = det;
 
     if det % otherwise the segments are parallel
-	rhs1   = x(3) - x(1);
-	rhs2   = y(3) - y(1);
-	lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
-	mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
-	out    =   0<lambda && lambda<1 ...
-	       &&  0<mu     && mu    <1;
+	    rhs1   = x(3) - x(1);
+	    rhs2   = y(3) - y(1);
+	    lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
+	    mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
+	    out    =   0<lambda && lambda<1 ...
+	           &&  0<mu     && mu    <1;
     end
 
   end
@@ -1134,9 +1134,8 @@ end
 % ***       that!
 % ***
 % =========================================================================
-function str = drawBarseries( h );
+function str = drawBarseries( h )
 
-  global matlab2tikzOpts;
   global axisOpts;
 
   % 'barplotId' provides a consecutively numbered ID for each
@@ -1333,9 +1332,7 @@ end
 % ***       that!
 % ***
 % =========================================================================
-function str = drawStemseries( h );
-
-  global matlab2tikzOpts;
+function str = drawStemseries( h )
 
   str = [];
 
@@ -1348,9 +1345,6 @@ function str = drawStemseries( h );
       % nothing to plot!
       return
   end
-
-  xData = get( h, 'XData' );
-  yData = get( h, 'YData' );
 
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
   % deal with draw options
@@ -1461,9 +1455,8 @@ end
 % *** Takes care of MATLAB's quiver plots.
 % ***
 % =========================================================================
-function str = drawQuiverGroup( h );
+function str = drawQuiverGroup( h )
 
-  global matlab2tikzOpts;
   global tikzOptions
 
   str = [];
@@ -1820,7 +1813,7 @@ function xcolor = rgb2tikzcol( rgbcol )
 
   xcolor = rgb2xcolor( rgbcol );
   if isempty( xcolor )
-      if isempty(neededRGBColors) || length(neededRGBColors)==0
+      if isempty(neededRGBColors) || isempty(neededRGBColors)
           % initialize the matrix
           neededRGBColors = rgbcol;
           xcolor          = 'mycolor1';
@@ -2078,15 +2071,13 @@ function [ ticks, tickLabels ] = getTicks( handle )
 
   xTick      = get( handle, 'XTick' );
   xTickLabel = get( handle, 'XTickLabel' );
-  xAxisLog   = strcmp( get(handle,'XScale'),'log' );
-  [ticks.x, tickLabels.x] = getAxisTicks( xTick, xTickLabel, handle,    ...
-                                                                xAxisLog );
+  isXAxisLog = strcmp( get(handle,'XScale'), 'log' );
+  [ticks.x, tickLabels.x] = getAxisTicks( xTick, xTickLabel, isXAxisLog );
 
   yTick      = get( handle, 'YTick' );
   yTickLabel = get( handle, 'YTickLabel' );
-  yAxisLog   = strcmp( get(handle,'YScale'),'log' );
-  [ticks.y, tickLabels.y] = getAxisTicks( yTick, yTickLabel, handle,    ...
-                                                                yAxisLog );
+  isYAxisLog = strcmp( get(handle,'YScale'), 'log' );
+  [ticks.y, tickLabels.y] = getAxisTicks( yTick, yTickLabel, isYAxisLog );
 
   % -----------------------------------------------------------------------
   % *** FUNCTION getAxisTicks
@@ -2095,8 +2086,7 @@ function [ ticks, tickLabels ] = getTicks( handle )
   % *** ticks and tick labels (if at all necessary).
   % ***
   % -----------------------------------------------------------------------
-  function [ticks, tickLabels] = getAxisTicks( tick, tickLabel, handle, ...
-                                                                isLogAxis )
+  function [ticks, tickLabels] = getAxisTicks( tick, tickLabel, isLogAxis )
 
     % set ticks + labels
     ticks = collapse( num2cell(tick), ',' );
@@ -2155,101 +2145,101 @@ end
 
 
 
-% =========================================================================
-% *** FUNCTION drawText
-% =========================================================================
-function str = drawText( handle )
+% % =========================================================================
+% % *** FUNCTION drawText
+% % =========================================================================
+% function str = drawText( handle )
+% 
+%   str = [];
+% 
+%   if ~isVisible( handle )
+%       return
+%   end
+% 
+%   text = get( handle, 'String' );
+%   if isempty(strtrim(text))
+%       return
+%   end
+%   
+%   str = [ str, sprintf( fid, '%% Draw a text handle\n' ) ];
+%   text = regexprep( text, '\', '\\' );
+% 
+%   position = get( handle, 'Position' );
+% 
+%   nodeOptions = '';
+%   rotate = get( handle, 'Rotation' );
+%   if rotate~=0
+%       nodeOptions = [nodeOptions, sprintf(',rotate=%.1f',rotate) ];
+%   end
+% 
+%   % we're not really accurate here: stricly speaking, bottom and baseline
+%   % alignments are different; not being handled, yet
+%   valign = get( handle, 'VerticalAlignment' );
+%   switch valign
+%       case {'bottom','baseline'}
+% 	      nodeOptions = [nodeOptions, sprintf(',anchor=south') ];
+%       case {'top','cap'}
+% 	      nodeOptions = [nodeOptions, sprintf(',anchor=north') ];
+%       case 'middle'
+%       otherwise
+% 	      warning( 'matlab2tikz:drawText',                         ...
+%                   'Don''t know what VerticalAlignment %s means.', valign );
+%   end
+%   
+%   halign = get( handle, 'HorizontalAlignment' );
+%   switch halign
+%       case 'left'
+% 	      nodeOptions = [nodeOptions, sprintf(',anchor=west') ];
+%       case 'right'
+% 	      nodeOptions = [nodeOptions, sprintf(',anchor=east') ];
+%       case 'center'
+%       otherwise
+%           warning( 'matlab2tikz:drawText',                             ...
+% 	        'Don''t know what HorizontalAlignment %s means.', halign );
+%   end
+% 
+%   str = [ str, ...
+%           sprintf( '\\draw (%g,%g) node[%s] {$%s$};\n\n',               ...
+%                    position(1), position(2), nodeOptions, text ) ];
+% 
+%   str = [ str, ...
+%           handleAllChildren( handle ) ];
+%   
+% end
+% % =========================================================================
+% % *** END OF FUNCTION drawText
+% % =========================================================================
 
-  str = [];
-
-  if ~isVisible( handle )
-      return
-  end
-
-  text = get( handle, 'String' );
-  if isempty(strtrim(text))
-      return
-  end
-  
-  str = [ str, sprintf( fid, '%% Draw a text handle\n' ) ];
-  text = regexprep( text, '\', '\\' );
-
-  position = get( handle, 'Position' );
-
-  nodeOptions = '';
-  rotate = get( handle, 'Rotation' );
-  if rotate~=0
-      nodeOptions = [nodeOptions, sprintf(',rotate=%.1f',rotate) ];
-  end
-
-  % we're not really accurate here: stricly speaking, bottom and baseline
-  % alignments are different; not being handled, yet
-  valign = get( handle, 'VerticalAlignment' );
-  switch valign
-      case {'bottom','baseline'}
-	      nodeOptions = [nodeOptions, sprintf(',anchor=south') ];
-      case {'top','cap'}
-	      nodeOptions = [nodeOptions, sprintf(',anchor=north') ];
-      case 'middle'
-      otherwise
-	      warning( 'matlab2tikz:drawText',                         ...
-                  'Don''t know what VerticalAlignment %s means.', valign );
-  end
-  
-  halign = get( handle, 'HorizontalAlignment' );
-  switch halign
-      case 'left'
-	      nodeOptions = [nodeOptions, sprintf(',anchor=west') ];
-      case 'right'
-	      nodeOptions = [nodeOptions, sprintf(',anchor=east') ];
-      case 'center'
-      otherwise
-          warning( 'matlab2tikz:drawText',                             ...
-	        'Don''t know what HorizontalAlignment %s means.', halign );
-  end
-
-  str = [ str, ...
-          sprintf( '\\draw (%g,%g) node[%s] {$%s$};\n\n',               ...
-                   position(1), position(2), nodeOptions, text ) ];
-
-  str = [ str, ...
-          handleAllChildren( handle ) ];
-  
-end
-% =========================================================================
-% *** END OF FUNCTION drawText
-% =========================================================================
 
 
-
-% =========================================================================
-% *** FUNCTION translateText
-% ***
-% *** This function converts MATLAB text strings to valid LaTeX ones.
-% ***
-% =========================================================================
-function newstr = translateText( handle )
-
-  str = get( handle, 'String' );
-
-  int = get( handle, 'Interpreter' );
-  switch int
-      case 'none'
-          newstr = str;
-          newstr = strrep( newstr, '''', '\''''' );
-          newstr = strrep( newstr, '%' , '%%'    );
-          newstr = strrep( newstr, '\' , '\\'    );
-      case {'tex','latex'}
-          newstr = str;
-      otherwise
-          error( 'matlab2tikz:translateText',                          ...
-                 'Unknown text interpreter ''%s''.', int )
-  end
-
-end
-% =========================================================================
-% *** FUNCTION translateText
-% =========================================================================
+% % =========================================================================
+% % *** FUNCTION translateText
+% % ***
+% % *** This function converts MATLAB text strings to valid LaTeX ones.
+% % ***
+% % =========================================================================
+% function newstr = translateText( handle )
+% 
+%   str = get( handle, 'String' );
+% 
+%   int = get( handle, 'Interpreter' );
+%   switch int
+%       case 'none'
+%           newstr = str;
+%           newstr = strrep( newstr, '''', '\''''' );
+%           newstr = strrep( newstr, '%' , '%%'    );
+%           newstr = strrep( newstr, '\' , '\\'    );
+%       case {'tex','latex'}
+%           newstr = str;
+%       otherwise
+%           error( 'matlab2tikz:translateText',                          ...
+%                  'Unknown text interpreter ''%s''.', int )
+%   end
+% 
+% end
+% % =========================================================================
+% % *** FUNCTION translateText
+% % =========================================================================
 
 
 
@@ -2275,8 +2265,8 @@ function tikzLineStyle = translateLineStyle( matlabLineStyle )
       case '-.'
           tikzLineStyle = 'dash pattern=on 1pt off 3pt on 3pt off 3pt';
       otherwise
-	  error( [ ' Function translateLineStyle:',                    ...
-		   ' Unknown matlabLineStyle ''',matlabLineStyle,'''.']);
+	  error( [ 'Function translateLineStyle:',                    ...
+		   'Unknown matlabLineStyle ''',matlabLineStyle,'''.']);
   end
 end
 % =========================================================================
@@ -2684,7 +2674,7 @@ end
 
 
 % =========================================================================
-% *** FUNCTION boxwhere
+% *** FUNCTION boxWhere
 % ***
 % *** Given one or more points in 2D space 'p' and a retangular box given
 % *** by 'xlim', 'ylim', this routine determines where the point sits with
@@ -2701,7 +2691,7 @@ end
 % *** If a node happens to sit in the corner of a box, return *two* values.
 % ***
 % =========================================================================
-function l = boxwhere( p, xlim, ylim );
+function l = boxWhere( p, xlim, ylim )
 
   global tol
 
@@ -2732,7 +2722,7 @@ function l = boxwhere( p, xlim, ylim );
           end
 
           if isempty(l{k})
-              error( 'matlab2tikz:boxwhere',                    ...
+              error( 'matlab2tikz:boxWhere',                    ...
                      [ 'Point appears to neither sit inside, ', ...
                        'nor outsize, nor on the boundary of the box.' ] );
           end
@@ -2742,7 +2732,7 @@ function l = boxwhere( p, xlim, ylim );
 
 end
 % =========================================================================
-% *** END FUNCTION boxwhere
+% *** END FUNCTION boxWhere
 % =========================================================================
 
 
@@ -2754,7 +2744,7 @@ end
 % *** common entry.
 % ***
 % =========================================================================
-function out = commonEntry( u, v );
+function out = commonEntry( u, v )
 
   out = 0;
 
@@ -2787,7 +2777,7 @@ end
 % *** Determines whether an object is actually visible or not.
 % ***
 % =========================================================================
-function out = isVisible( handle );
+function out = isVisible( handle )
 
   out = strcmp( get(handle,'Visible'), 'on' );
 
@@ -2804,7 +2794,7 @@ end
 % *** Determines the physical width of one unit on the x-axis.
 % ***
 % =========================================================================
-function out = normalized2physical();
+function out = normalized2physical()
 
   global matlab2tikzOpts
 
