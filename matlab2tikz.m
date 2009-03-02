@@ -59,17 +59,20 @@ function matlab2tikz( fn, varargin )
   clear global tol;
   clear global matlab2tikzOpts;
 
+  global matlab2tikzOpts;
+
   global matlab2tikzName;
   matlab2tikzName = 'matlab2tikz';
 
   global matlab2tikzVersion;
   matlab2tikzVersion = '0.0.2';
 
+  global tikzOptions; % for the arrow style -- see if we can get this removed
+  tikzOptions = cell(0);
+
   global tol;
   tol = 1e-15; % global round-off tolerance;
                % used, for example, in equality test for doubles
-
-  global matlab2tikzOpts;
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   matlab2tikzOpts.fileName = fn;
@@ -90,7 +93,6 @@ function matlab2tikz( fn, varargin )
           error( 'matlab2tikz:unkOpt', 'Unknown option ''%s''.', varargin{k} );
       end
   end
-
 
   fprintf( '%s v%s\n', matlab2tikzName, matlab2tikzVersion );
 
@@ -128,9 +130,7 @@ function saveToFile()
   global matlab2tikzName
   global matlab2tikzVersion
   global matlab2tikzOpts
-
-  global tikzOptions % for the arrow style -- see if we can get this removed
-  tikzOptions = cell(0);
+  global tikzOptions
 
   global neededRGBColors
 
@@ -147,8 +147,17 @@ function saveToFile()
   % parental handles (and can hence not be discovered by matlab2tikz).
   % With ShowHiddenHandles 'on', there is no escape. :)
   set( 0, 'ShowHiddenHandles', 'on' );
-  fh = gcf;
-  str = handleAllChildren( fh );
+  fh  = matlab2tikzOpts.gcf;
+
+  % find alignments
+  a = alignSubPlots( fh );
+
+  axesEnv = findobj( fh, 'type', 'axes' );
+  str = [];
+  for k = 1:length(axesEnv)
+      str = [ str, drawAxes(axesEnv(k)) ];
+  end
+
   set( 0, 'ShowHiddenHandles', 'off' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -228,6 +237,8 @@ function str = handleAllChildren( handle )
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent',  ...
                  'text', 'surface' }
+              % TODO: text, surface
+              % TODO: bail out with warning in case of a 3D-plot (parameter plots!)
               % don't to anything for these handles and its children
 
 	  otherwise
@@ -250,7 +261,7 @@ end
 % =========================================================================
 function str = drawAxes( handle )
 
-   global matlab2tikzOpts;
+  global matlab2tikzOpts;
 
   % Make the axis options a global variable as plot objects further below
   % in the hierarchy might want to append something.
@@ -262,16 +273,16 @@ function str = drawAxes( handle )
   axisOpts = cell(0);
 
   if ~isVisible( handle )
-      % An invisible axis container *can* have visible children, so don't
+      % An invisible axes container *can* have visible children, so don't
       % immediately bail out here.
       if ~isempty(get(handle,'Children'))
           env  = 'axis';
           dim = getAxesDimensions( handle );
           axisOpts = [ axisOpts, ...
-                        'hide x axis, hide y axis', ...
-                        sprintf('width=%g%s, height=%g%s', dim.x, dim.unit,   ...
-                                                           dim.y, dim.unit ), ...
-                                'scale only axis' ];
+                       'hide x axis, hide y axis', ...
+                       sprintf('width=%g%s, height=%g%s', dim.x, dim.unit,   ...
+                                                          dim.y, dim.unit ), ...
+                       'scale only axis' ];
           str = plotAxisEnvironment( handle, env );
       end
       return
@@ -295,17 +306,17 @@ function str = drawAxes( handle )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get scales
-  xscale = get( handle, 'XScale' );
-  yscale = get( handle, 'YScale' );
+  xScale = get( handle, 'XScale' );
+  yScale = get( handle, 'YScale' );
 
-  isXlog = strcmp( xscale, 'log' );
-  isYlog = strcmp( yscale, 'log' );
+  isXLog = strcmp( xScale, 'log' );
+  isYLog = strcmp( yScale, 'log' );
 
-  if  ~isXlog && ~isYlog
+  if  ~isXLog && ~isYLog
       env = 'axis';
-  elseif isXlog && ~isYlog
+  elseif isXLog && ~isYLog
       env = 'semilogxaxis';
-  elseif ~isXlog && isYlog
+  elseif ~isXLog && isYLog
       env = 'semilogyaxis';
   else
       env = 'loglogaxis';
@@ -317,8 +328,8 @@ function str = drawAxes( handle )
   % the following is general MATLAB behavior
   axisOpts = [ axisOpts, 'axis on top', 'scale only axis' ];
 
-  xlim = get( handle, 'XLim' );
-  ylim = get( handle, 'YLim' );
+  xLim = get( handle, 'XLim' );
+  yLim = get( handle, 'YLim' );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
@@ -331,11 +342,16 @@ function str = drawAxes( handle )
   xAxisOrientation = get( handle, 'XDir' );
   switch xAxisOrientation
       case 'normal'
+          isXAxisRev = 0;
           axisOpts = [ axisOpts,                                ...
                        sprintf( 'width=%g%s' , dim.x, dim.unit ) ];
       case 'reverse'
-          axisOpts = [ axisOpts,                                ...
-                       sprintf( 'x=-%g%s' , dim.x, dim.unit ) ];
+          isXAxisRev = 1;
+          xUnitSize = dim.x/ (xLim(2)-xLim(1));
+          axisOpts = [ axisOpts,                                   ...
+                       sprintf( 'x=-%g%s' , xUnitSize, dim.unit ), ...
+                       'yticklabel pos=right',                     ...
+                       'yticklabel style=left' ];
       otherwise
           error( 'drawAxes:unknOrient', ...
                  'Unknown axis orientation ''%s''.', xAxisOrientation );
@@ -344,12 +360,16 @@ function str = drawAxes( handle )
   yAxisOrientation = get( handle, 'YDir' );
   switch yAxisOrientation
       case 'normal'
+          isYAxisRev = 0;
           axisOpts = [ axisOpts,                                ...
                        sprintf( 'height=%g%s' , dim.y, dim.unit ) ];
       case 'reverse'
-          yUnitSize = dim.y/ (ylim(2)-ylim(1));
-          axisOpts = [ axisOpts,                                ...
-                       sprintf( 'y=-%g%s' , yUnitSize , dim.unit ) ];
+          isYAxisRev = 1;
+          yUnitSize = dim.y/ (yLim(2)-yLim(1));
+          axisOpts = [ axisOpts,                                   ...
+                       sprintf( 'y=-%g%s' , yUnitSize, dim.unit ), ...
+                       'xticklabel pos=right',                     ...
+                       'xticklabel style=below' ];
       otherwise
           error( 'drawAxes:unknOrient', ...
                  'Unknown axis orientation ''%s''.', yAxisOrientation );
@@ -360,8 +380,8 @@ function str = drawAxes( handle )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
   axisOpts = [ axisOpts,                           ...
-               sprintf('xmin=%g, xmax=%g', xlim ), ...
-               sprintf('ymin=%g, ymax=%g', ylim ) ];
+               sprintf('xmin=%g, xmax=%g', xLim ), ...
+               sprintf('ymin=%g, ymax=%g', yLim ) ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -465,7 +485,7 @@ function str = drawAxes( handle )
 
   if legendHandle
       axisOpts = [ axisOpts, ...
-                   getLegendOpts( legendHandle ) ];
+                   getLegendOpts( legendHandle, isXAxisRev, isYAxisRev ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -542,11 +562,11 @@ function str = drawLine( handle )
   % -- Check for any node if it needs to be included at all. For zoomed
   %    plots, lots can be omitted.
   p      = get( handle, 'Parent' );
-  xlim   = get( p, 'XLim' );
-  ylim   = get( p, 'YLim' );
+  xLim   = get( p, 'XLim' );
+  yLim   = get( p, 'YLim' );
   xData  = get( handle, 'XData' );
   yData  = get( handle, 'YData' );
-  segvis = segmentVisible( [xData', yData'], xlim, ylim );
+  segvis = segmentVisible( [xData', yData'], xLim, yLim );
 
   n = length(xData);
 
@@ -588,10 +608,10 @@ function str = drawLine( handle )
   % FUNCTION segmentVisible
   %
   % Given a series of points 'p', this routines determines which inter-'p'
-  % connections are visible in the box given by 'xlim', 'ylim'.
+  % connections are visible in the box given by 'xLim', 'yLim'.
   %
   % -----------------------------------------------------------------------
-  function out = segmentVisible( p, xlim, ylim )
+  function out = segmentVisible( p, xLim, yLim )
 
       n   = size( p, 1 ); % number of points
       out = zeros( n-1, 1 );
@@ -599,21 +619,21 @@ function str = drawLine( handle )
       % Find out where (with respect the the box) the points 'p' sit.
       % Consider the documentation for 'boxWhere' to find out about
       % the meaning of the return values.
-      boxpos = boxWhere( p, xlim, ylim );
+      boxpos = boxWhere( p, xLim, yLim );
 
       for k = 1:n-1
           if any(boxpos{k}==1) || any(boxpos{k+1}==1) % one of the two is strictly inside the box
               out(k) = 1;
           elseif any(boxpos{k}==2) || any(boxpos{k+1}==2) % one of the two is strictly outside the box
               % does the segment intersect with any of the four boundaries?
-              out(k) =  segmentsIntersect( [p(k:k+1,1)',xlim(1),xlim(1)], ...   % with the left?
-                                           [p(k:k+1,2)',ylim] ) ...
-                     || segmentsIntersect( [p(k:k+1,1)',xlim],  ...             % with the bottom?
-                                           [p(k:k+1,2)',ylim(1),ylim(1)] ) ...
-                     || segmentsIntersect( [p(k:k+1,1)',xlim(2),xlim(2)],  ...  % with the right?
-                                           [p(k:k+1,2)',ylim] ) ...
-                     || segmentsIntersect( [p(k:k+1,1)',xlim],  ...             % with the top?
-                                           [p(k:k+1,2)',ylim(2),ylim(2)] );
+              out(k) =  segmentsIntersect( [p(k:k+1,1)',xLim(1),xLim(1)], ...   % with the left?
+                                           [p(k:k+1,2)',yLim] ) ...
+                     || segmentsIntersect( [p(k:k+1,1)',xLim],  ...             % with the bottom?
+                                           [p(k:k+1,2)',yLim(1),yLim(1)] ) ...
+                     || segmentsIntersect( [p(k:k+1,1)',xLim(2),xLim(2)],  ...  % with the right?
+                                           [p(k:k+1,2)',yLim] ) ...
+                     || segmentsIntersect( [p(k:k+1,1)',xLim],  ...             % with the top?
+                                           [p(k:k+1,2)',yLim(2),yLim(2)] );
           else % both neighboring points lie on the boundary
               % This is kind of tricky as there may be nodes *exactly*
               % in a corner of the domain. boxpos & commonEntry handle
@@ -1048,20 +1068,12 @@ function str = drawImage( handle )
       return
   end
 
-  warning( 'matlab2tikz:drawimage',                                     ...
-           [ 'Image data will be plotted upside down as pgfplots does ',...
-             'not yet have reverse axes. This functionality is likely ',...
-             'to be added in future versions, though.\nIf you are '    ,...
-             'feeling adventurous, you can go ahead and get the ',      ...
-             'latest CVS version of pgfplots (from sourceforge) and ',  ...
-             'insert y={(0,-1cm)} in the axis options.' ] );
-
   % read x- and y-data
-  xlimits = get( handle, 'XData' );
-  ylimits = get( handle, 'YData' );
+  xLimits = get( handle, 'XData' );
+  yLimits = get( handle, 'YData' );
 
-  X = xlimits(1):xlimits(end);
-  Y = ylimits(1):ylimits(end);
+  X = xLimits(1):xLimits(end);
+  Y = yLimits(1):yLimits(end);
 
   cdata = get( handle, 'CData' );
 
@@ -1988,7 +2000,7 @@ end
 % =========================================================================
 % *** FUNCTION getLegendOpts
 % =========================================================================
-function lOpts = getLegendOpts( handle )
+function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
 
   if ~isVisible( handle )
       return
@@ -2017,36 +2029,56 @@ function lOpts = getLegendOpts( handle )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle legend location
-  loc = get( handle, 'Location' );
+  loc  = get( handle, 'Location' );
+  dist = 0.03;  % distance to to axes in normalized coordinated
   switch loc
       case 'NorthEast'
-          % don't append any options in this (default) case
+          % only append something in this (default) case
+          % if any of the axes is reversed
+          if isXAxisReversed || isYAxisReversed
+	      position = [1-dist, 1-dist];
+	      anchor   = 'north east';
+          end
       case 'NorthWest'
-          lOpts = [ lOpts,                                              ...
-                    'legend style={at={(0.03,0.97)},anchor=north west}' ]; 
+          position = [dist, 1-dist];
+          anchor   = 'north west';
       case 'SouthWest'
-          lOpts = [ lOpts,                                              ...
-                    'legend style={at={(0.03,0.03)},anchor=south west}' ];
+          position = [dist, dist];
+          anchor   = 'south west';
       case 'SouthEast'
-          lOpts = [ lOpts,                                              ...
-                    'legend style={at={(0.97,0.03)},anchor=south east}' ];
+          position = [1-dist, dist];
+          anchor   = 'south east';
       case 'North'
-          lOpts = [ lOpts,                                              ...
-                    'legend style={at={(0.5,0.97)},anchor=north}' ];
+          position = [0.5, 1-dist];
+          anchor   = 'north';
       case 'East'
-          lOpts = [ lOpts,                                              ...
-                    'legend style={at={(0.97,0.5)},anchor=east}' ];
+          position = [1-dist, 0.5];
+          anchor   = 'east';
       case 'South'
-          lOpts = [ lOpts,                                              ...
-                    'legend style={at={(0.5,0.03)},anchor=south}' ];
+          position = [0.5, dist];
+          anchor   = 'south';
       case 'West'
-          lOpts = [ lOpts,                                              ...
-                    'legend style={at={(0.03,0.5)},anchor=west}' ];
+          position = [dist, 0.5];
+          anchor   = 'west';
       otherwise
 	  warning( 'matlab2tikz:getLegendOpts',                       ...
-                   [ ' Function getLegendOpts:',                      ...
-		     ' Unknown legend location ''',loc,''               ...
+                   [ ' Unknown legend location ''',loc,''             ...
                      '. Choosing default.' ] );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % modify for reversed axes and append to lOpts
+  if ~isempty(anchor)
+      if isXAxisReversed
+          position(1) = 1-position(1);
+      end
+      if isYAxisReversed
+          position(2) = 1-position(2);
+      end
+      lOpts = [ lOpts,                                            ...
+		sprintf( 'legend style={at={(%g,%g)},anchor=%s}', ...
+			position, anchor ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -2425,12 +2457,12 @@ end
 %  
 %    xyscaling = daspect;
 %  
-%    xlim = get( handle, 'XLim' );
-%    ylim = get( handle, 'YLim' );
+%    xLim = get( handle, 'XLim' );
+%    yLim = get( handle, 'YLim' );
 %  
 %    % [x,y]length are the actual lengths of the axes in some obscure unit
-%    xlength = (xlim(2)-xlim(1)) / xyscaling(1);
-%    ylength = (ylim(2)-ylim(1)) / xyscaling(2);
+%    xlength = (xLim(2)-xLim(1)) / xyscaling(1);
+%    ylength = (yLim(2)-yLim(1)) / xyscaling(2);
 %  
 %    if ( xlength>=ylength )
 %        baselength = xlength;
@@ -2447,20 +2479,20 @@ end
 %    % (see pgfplot manual p. 55). Hence, take the natural logarithm in those
 %    % cases.
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%    xscale  = get( handle, 'XScale' );
-%    yscale  = get( handle, 'YScale' );
-%    isXlog = strcmp( xscale, 'log' );
-%    isYlog = strcmp( yscale, 'log' );
-%    if isXlog
-%        q.x = log( xlim(2)/xlim(1) );
+%    xScale  = get( handle, 'XScale' );
+%    yScale  = get( handle, 'YScale' );
+%    isXLog = strcmp( xScale, 'log' );
+%    isYLog = strcmp( yScale, 'log' );
+%    if isXLog
+%        q.x = log( xLim(2)/xLim(1) );
 %    else
-%        q.x = xlim(2) - xlim(1);
+%        q.x = xLim(2) - xLim(1);
 %    end
 %  
-%    if isYlog
-%        q.y = log( ylim(2)/ylim(1) );
+%    if isYLog
+%        q.y = log( yLim(2)/yLim(1) );
 %    else
-%        q.y = ylim(2) - ylim(1);
+%        q.y = yLim(2) - yLim(1);
 %    end
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %  
@@ -2476,7 +2508,7 @@ end
 %  %    position = get( handle, 'Position' )
 %  %  
 %  %    xscaling = 1;
-%  %    yscaling = position(4)/position(3) * (xlim(2)-xlim(1))/(ylim(2)-ylim(1));
+%  %    yscaling = position(4)/position(3) * (xLim(2)-xLim(1))/(yLim(2)-yLim(1));
 %  %  
 %  %    % normalize: make sure the smaller side is always 1(cm)
 %  %    xscaling = xscaling/min(xscaling,yscaling);
@@ -2555,20 +2587,20 @@ function dimension = getAxesDimensions( handle )
       end
 
       % set y-axis length
-      xlim        = get ( handle, 'XLim' );
-      ylim        = get ( handle, 'YLim' );
+      xLim        = get ( handle, 'XLim' );
+      yLim        = get ( handle, 'YLim' );
       aspectRatio = get ( handle, 'DataAspectRatio' ); % = daspect
 
       % Actually, we'd have
       %
-      %    xlength = (xlim(2)-xlim(1)) / aspectRatio(1);
-      %    ylength = (ylim(2)-ylim(1)) / aspectRatio(2);
+      %    xlength = (xLim(2)-xLim(1)) / aspectRatio(1);
+      %    ylength = (yLim(2)-yLim(1)) / aspectRatio(2);
       %
       % but as xlength is scaled to a fixed 'dimension.x', 'dimension.y'
       % needs to be rescaled accordingly.
       dimension.y = dimension.x                                          ...
                   * aspectRatio(1)    / aspectRatio(2)                   ...
-                  * (ylim(2)-ylim(1)) / (xlim(2)-xlim(1));
+                  * (yLim(2)-yLim(1)) / (xLim(2)-xLim(1));
 
   end
 
@@ -2581,12 +2613,12 @@ function dimension = getAxesDimensions( handle )
 %    xyscaling = daspect;
 %  %    xyscaling = get( handle, 'DataAspectRatio' )
 %  
-%    xlim = get( handle, 'XLim' );
-%    ylim = get( handle, 'YLim' );
+%    xLim = get( handle, 'XLim' );
+%    yLim = get( handle, 'YLim' );
 %  
 %    % {x,y}length are the actual lengths of the axes in some obscure unit
-%    xlength = (xlim(2)-xlim(1)) / xyscaling(1);
-%    ylength = (ylim(2)-ylim(1)) / xyscaling(2);
+%    xlength = (xLim(2)-xLim(1)) / xyscaling(1);
+%    ylength = (yLim(2)-yLim(1)) / xyscaling(2);
 %  
 %    if ( xlength/ylength >= maxwidth/maxheight )
 %        dim.x = maxwidth;
@@ -2605,18 +2637,18 @@ function dimension = getAxesDimensions( handle )
 %    % (see pgfplot manual p. 55). Hence, take the natural logarithm in those
 %    % cases.
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%    xscale  = get( handle, 'XScale' );  isXlog = strcmp( xscale, 'log' );
-%    yscale  = get( handle, 'YScale' );  isYlog = strcmp( yscale, 'log' );
-%    if isXlog
-%        q.x = log( xlim(2)/xlim(1) );
+%    xScale  = get( handle, 'XScale' );  isXLog = strcmp( xScale, 'log' );
+%    yScale  = get( handle, 'YScale' );  isYLog = strcmp( yScale, 'log' );
+%    if isXLog
+%        q.x = log( xLim(2)/xLim(1) );
 %    else
-%        q.x = xlim(2) - xlim(1);
+%        q.x = xLim(2) - xLim(1);
 %    end
 %  
-%    if isYlog
-%        q.y = log( ylim(2)/ylim(1) );
+%    if isYLog
+%        q.y = log( yLim(2)/yLim(1) );
 %    else
-%        q.y = ylim(2) - ylim(1);
+%        q.y = yLim(2) - yLim(1);
 %    end
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %  
@@ -2632,7 +2664,7 @@ function dimension = getAxesDimensions( handle )
 %    position = get( handle, 'Position' )
 %  
 %    xscaling = 1;
-%    yscaling = position(4)/position(3) * (xlim(2)-xlim(1))/(ylim(2)-ylim(1));
+%    yscaling = position(4)/position(3) * (xLim(2)-xLim(1))/(yLim(2)-yLim(1));
 %  
 %    % normalize: make sure the smaller side is always 1(cm)
 %    xscaling = xscaling/min(xscaling,yscaling);
@@ -2676,7 +2708,7 @@ end
 % *** FUNCTION boxWhere
 % ***
 % *** Given one or more points in 2D space 'p' and a retangular box given
-% *** by 'xlim', 'ylim', this routine determines where the point sits with
+% *** by 'xLim', 'yLim', this routine determines where the point sits with
 % *** respect to the box.
 % ***
 % *** Possibilities:
@@ -2690,7 +2722,7 @@ end
 % *** If a node happens to sit in the corner of a box, return *two* values.
 % ***
 % =========================================================================
-function l = boxWhere( p, xlim, ylim )
+function l = boxWhere( p, xLim, yLim )
 
   global tol
 
@@ -2699,24 +2731,24 @@ function l = boxWhere( p, xlim, ylim )
   l = cell(n,1);
   for k = 1:n
 
-      if    p(k,1)>xlim(1) && p(k,1)<xlim(2) ...   % inside
-         && p(k,2)>ylim(1) && p(k,2)<ylim(2);
+      if    p(k,1)>xLim(1) && p(k,1)<xLim(2) ...   % inside
+         && p(k,2)>yLim(1) && p(k,2)<yLim(2);
           l{k} = 1;
-      elseif    p(k,1)<xlim(1) || p(k,1)>xlim(2) ...  % outside
-             || p(k,2)<ylim(1) || p(k,2)>ylim(2);
+      elseif    p(k,1)<xLim(1) || p(k,1)>xLim(2) ...  % outside
+             || p(k,2)<yLim(1) || p(k,2)>yLim(2);
           l{k} = 2;
       else % is on boundary -- but which?
 
-          if abs(p(k,1)-xlim(1)) < tol
+          if abs(p(k,1)-xLim(1)) < tol
               l{k} = [ l{k}, -1 ];
           end
-          if abs(p(k,2)-ylim(1)) < tol
+          if abs(p(k,2)-yLim(1)) < tol
               l{k} = [ l{k}, -2 ];
           end
-          if abs(p(k,1)-xlim(2)) < tol
+          if abs(p(k,1)-xLim(2)) < tol
               l{k} = [ l{k}, -3 ];
           end
-          if abs(p(k,2)-ylim(2)) < tol
+          if abs(p(k,2)-yLim(2)) < tol
               l{k} = [ l{k}, -4 ];
           end
 
@@ -2810,8 +2842,8 @@ function out = normalized2physical()
   pwidth = fpos(3) * apos(3);
 
   % width of one unit on the x-axis on pixels
-  xlim = get( axes, 'XLim' );
-  unitpwidth = pwidth / (xlim(2)-xlim(1));
+  xLim = get( axes, 'XLim' );
+  unitpwidth = pwidth / (xLim(2)-xLim(1));
 
   dpi = get( 0, 'ScreenPixelsPerInch' );
 
@@ -2821,4 +2853,244 @@ function out = normalized2physical()
 end
 % =========================================================================
 % *** END FUNCTION normalized2physical
+% =========================================================================
+
+
+
+% =========================================================================
+% *** FUNCTION alignSubPlots
+% ***
+% *** Returns the alignment options for all the axes enviroments.
+% *** The question whether two plots are aligns on left, right, top, or
+% *** bottom is answered by looking at the 'Position' property of the
+% *** axes object.
+% ***
+% =========================================================================
+function alignmentOptions = alignSubPlots( figureHandle )
+
+  % TODO: fix this function
+  % TODO: look for unique IDs of the axes env. which could be returned along
+  %       with its properties
+
+  global tol
+
+  % get all axes environments of gcf
+  axesEnv = findobj( figureHandle, 'type', 'axes' );
+
+  n = length(axesEnv);
+  alignmentOptions = cell(n,1);
+
+  % `isRef` tells whether the respective plot acts as a position reference
+  % for another plot.
+  for k=1:n
+      alignmentOptions{k}.isRef = 0;
+  end
+
+  % Loop over all figures to see if axes are aligned.
+  % Look for exactly *one* alignment, also if there might be more.
+  %
+  % Among all the {x,y}-alignments choose the one with the clostest
+  % {y,x}-distance. This is important, for example, in situations where
+  % there are 3 plots on top of each other:
+  % we want no. 2 to align below no. 1, and no. 3 below no. 2
+  % (and not no. 1 again).
+  for i = 1:n
+
+      positions{i} = get( axesEnv(i), 'Position' );
+      for j = 1:i-1
+          if abs( positions{i}(1)-positions{j}(1) ) < tol
+
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % left x-alignment
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              alignsWith = j;
+              yDist      = abs(positions{i}(2)-positions{j}(2));
+
+              % among all left x-alignments, choose the closest in y-distance
+              for k = j+1:i-1
+
+                  if abs( positions{i}(1)-positions{k}(1) ) < tol % alignment?
+                      yDistNew = abs( positions{i}(2)-positions{k}(2) );
+                      if yDistNew < yDist
+                          alignsWith = k;
+                          yDist      = yDistNew;
+                      end
+                  end
+              end
+              % Now, we know that plot `i` x-aligns best with plot
+              % `alignsWith`.
+
+              % Add reference options for `alignsWith`:
+              if ~alignmentOptions{alignsWith}.isRef
+                  alignmentOptions{alignsWith}.isRef = 1;
+                  alignmentOptions{alignsWith}.name  = ...
+                                              sprintf( 'plot%d', alignsWith );
+              end
+
+              % anchor and reference north or south?
+              if positions{i}(2) > positions{alignsWith}(2) % `i` above `alignsWith`
+                  refPos = 'above north west';
+                  anchor = 'south west';
+              else % `i` below `alignsWith`
+                  refPos = 'below south west';
+                  anchor = 'north west';
+              end
+
+              % add alignment options for `i`:
+              alignmentOptions{i}.opts = sprintf( 'at=(%s.%s), anchor=%s', ...
+                                        alignmentOptions{alignsWith}.name, ...
+                                        refPos, ...
+                                        anchor );
+
+              break % alignment found: don't consider others
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+          elseif abs( positions{j}(2)-positions{i}(2) ) < tol
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % lower y-alignment
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              alignsWith = j;
+              xDist      = abs(positions{i}(1)-positions{j}(1));
+
+              % among all lower y-alignments, choose the closest in x-distance
+              for k = j+1:i-1
+                  if abs( positions{i}(2)-positions{k}(2) ) < tol % alignment?
+                      xDistNew = abs( positions{i}(1)-positions{k}(1) );
+                      if xDistNew < xDist
+                          alignsWith = k;
+                          xDist      = xDistNew;
+                      end
+                  end
+              end
+              % Now, we know that plot `i` y-aligns best with plot
+              % `alignsWith`.
+
+              % Add reference options for `alignsWith`:
+              if ~alignmentOptions{alignsWith}.isRef
+                  alignmentOptions{alignsWith}.isRef = 1;
+                  alignmentOptions{alignsWith}.name  = ...
+                                              sprintf( 'plot%d', alignsWith );
+              end
+
+              % anchor and reference north or south?
+              if positions{i}(1) > positions{alignsWith}(1) % `i` right of `alignsWith`
+                  refPos = 'right of south east';
+                  anchor = 'south west';
+              else % `i` left of `alignsWith`
+                  refPos = 'left of south west';
+                  anchor = 'south east';
+              end
+
+              % add alignment options for `i`:
+              alignmentOptions{i}.opts = sprintf( 'at=(%s.%s), anchor=%s', ...
+                                        alignmentOptions{alignsWith}.name, ...
+                                        refPos, ...
+                                        anchor );
+
+              break % alignment found: don't consider others
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+          elseif abs(   positions{j}(1)+positions{j}(3) ...
+                      - positions{i}(1)+positions{i}(3) ) < tol
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % right x-alignment
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              alignsWith = j;
+              yDist      = abs(positions{i}(2)-positions{j}(2));
+
+              % among all right x-alignments, choose the closest in y-distance
+              for k = j+1:i-1
+                  aligns = abs(   positions{i}(1)+positions{i}(3) ...
+                                - positions{k}(1)+positions{k}(3) ) < tol;
+                  if aligns % alignment?
+                      yDistNew = abs( positions{i}(2)-positions{k}(2) );
+                      if yDistNew < yDist
+                          alignsWith = k;
+                          yDist      = yDistNew;
+                      end
+                  end
+              end
+              % Now, we know that plot `i` x-aligns best with plot
+              % `alignsWith`.
+
+              % Add reference options for `alignsWith`:
+              if ~alignmentOptions{alignsWith}.isRef
+                  alignmentOptions{alignsWith}.isRef = 1;
+                  alignmentOptions{alignsWith}.name  = ...
+                                              sprintf( 'plot%d', alignsWith );
+              end
+
+              % anchor and reference north or south?
+              if positions{i}(2) > positions{alignsWith}(2) % `i` above `alignsWith`
+                  refPos = 'above north east';
+                  anchor = 'south east';
+              else % `i` below `alignsWith`
+                  refPos = 'below south east';
+                  anchor = 'north east';
+              end
+
+              % add alignment options for `i`:
+              alignmentOptions{i}.opts = sprintf( 'at=(%s.%s), anchor=%s', ...
+                                        alignmentOptions{alignsWith}.name, ...
+                                        refPos, ...
+                                        anchor );
+
+              break % alignment found: don't consider others
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+          elseif abs(   positions{j}(2)+positions{j}(4) ...
+                      - positions{i}(2)-positions{i}(4) ) < tol
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % upper y-alignment
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              alignsWith = j;
+              xDist      = abs(positions{i}(1)-positions{j}(1));
+
+              % among all upper y-alignments, choose the closest in x-distance
+              for k = j+1:i-1
+                  aligns = abs(   positions{i}(2)+positions{i}(4) ...
+                                - positions{k}(2)-positions{k}(4) ) < tol
+                  if aligns
+                      xDistNew = abs( positions{i}(1)-positions{k}(1) );
+                      if xDistNew < xDist
+                          alignsWith = k;
+                          xDist      = xDistNew;
+                      end
+                  end
+              end
+              % Now, we know that plot `i` y-aligns best with plot
+              % `alignsWith`.
+
+              % Add reference options for `alignsWith`:
+              if ~alignmentOptions{alignsWith}.isRef
+                  alignmentOptions{alignsWith}.isRef = 1;
+                  alignmentOptions{alignsWith}.name  = ...
+                                              sprintf( 'plot%d', alignsWith );
+              end
+
+              % anchor and reference north or south?
+              if positions{i}(1) > positions{alignsWith}(1) % `i` right of `alignsWith`
+                  refPos = 'right of north east';
+                  anchor = 'north west';
+              else % `i` left of `alignsWith`
+                  refPos = 'left of north west';
+                  anchor = 'north east';
+              end
+
+              % add alignment options for `i`:
+              alignmentOptions{i}.opts = sprintf( 'at=(%s.%s), anchor=%s', ...
+                                        alignmentOptions{alignsWith}.name, ...
+                                        refPos, ...
+                                        anchor );
+
+              break % alignment found: don't consider others
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+          end
+      end
+
+  end
+
+end
+% =========================================================================
+% *** END FUNCTION alignSubPlots
 % =========================================================================
