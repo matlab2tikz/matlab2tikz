@@ -147,15 +147,17 @@ function saveToFile()
   % parental handles (and can hence not be discovered by matlab2tikz).
   % With ShowHiddenHandles 'on', there is no escape. :)
   set( 0, 'ShowHiddenHandles', 'on' );
-  fh  = matlab2tikzOpts.gcf;
+
+  % get all axes handles
+  fh          = matlab2tikzOpts.gcf;
+  axesHandles = findobj( fh, 'type', 'axes' );
 
   % find alignments
-  a = alignSubPlots( fh );
+  [alignmentOptions,ix] = alignSubPlots( axesHandles );
 
-  axesEnv = findobj( fh, 'type', 'axes' );
   str = [];
-  for k = 1:length(axesEnv)
-      str = [ str, drawAxes(axesEnv(k)) ];
+  for k = 1:length(axesHandles)
+      str = [ str, drawAxes(axesHandles(ix(k)),alignmentOptions(ix(k))) ];
   end
 
   set( 0, 'ShowHiddenHandles', 'off' );
@@ -258,8 +260,15 @@ end
 
 % =========================================================================
 % *** FUNCTION drawAxes
+% ***
+% *** Input arguments:
+% ***    handle.................The axes environment handle.
+% ***    alignmentOptions.......The alignment options as defined in the
+% ***                           function `alignSubPlots()`.
+% ***                           This argument is optional.
+% ***
 % =========================================================================
-function str = drawAxes( handle )
+function str = drawAxes( handle, alignmentOptions )
 
   global matlab2tikzOpts;
 
@@ -323,7 +332,13 @@ function str = drawAxes( handle )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  axisOpts = [ axisOpts, 'name=main plot' ];
+  % set alignment options
+  if alignmentOptions.isRef
+      axisOpts = [ axisOpts, sprintf('name=%s',alignmentOptions.name) ];
+  end
+  if ~isempty(alignmentOptions.opts)
+      axisOpts = [ axisOpts, alignmentOptions.opts ];
+  end
 
   % the following is general MATLAB behavior
   axisOpts = [ axisOpts, 'axis on top', 'scale only axis' ];
@@ -2865,8 +2880,35 @@ end
 % *** bottom is answered by looking at the 'Position' property of the
 % *** axes object.
 % ***
+% *** The second output argument `ix` is the order in which the axes
+% *** environments need to be created. This is to make sure that plots
+% *** which act as a reference are processed first.
+% ***
+% *** The output vector `alignmentOptions` contains:
+% ***     - whether or not it is a reference (.isRef)
+% ***     - axes name  (.name), only set if .isRef is true
+% ***     - the actual pgfplots options (.opts)
+% ***
+% *** The routine is quite smart in the sense that it will detect that in
+% *** a setup such as
+% ***
+% ***  [ AXES3 AXES2 ]
+% ***  [ AXES1       ]
+% ***
+% *** 'AXES1' will serve as a reference for t AXES2 and AXES3.
+% *** It does so by first computing a 'dependency' graph, then traversing
+% *** the graph starting from a node (AXES) with maximal connections.
+% ***
+% *** TODO:
+% ***     - diagonal connections a la
+% ***              [ AXES1       ]
+% ***              [       AXES2 ]
+% ***     - connection xleft<->xright a la
+% ***              [ AXES1   AXES3 ]
+% ***              [     AXES2     ]
+% ***
 % =========================================================================
-function alignmentOptions = alignSubPlots( figureHandle )
+function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 
   % TODO: fix this function
   % TODO: look for unique IDs of the axes env. which could be returned along
@@ -2874,16 +2916,23 @@ function alignmentOptions = alignSubPlots( figureHandle )
 
   global tol
 
-  % get all axes environments of gcf
-  axesEnv = findobj( figureHandle, 'type', 'axes' );
+  n = length(axesHandles);
 
-  n = length(axesEnv);
-  alignmentOptions = cell(n,1);
+  % Connectivity matrix of the graph.
+  % Contains 0's where the axes environments are not aligned, and
+  % positive integers where they are. The integer codes how the axes
+  % are aligned (top right:bottom left, and so on).
+  C = zeros(n);
+
 
   % `isRef` tells whether the respective plot acts as a position reference
   % for another plot.
+  % TODO: preallocate this
+  % Also, gather all the positions.
   for k=1:n
-      alignmentOptions{k}.isRef = 0;
+      alignmentOptions(k).isRef = 0;
+      alignmentOptions(k).opts  = cell(0);
+      positions{k} = get( axesHandles(k), 'Position' );
   end
 
   % Loop over all figures to see if axes are aligned.
@@ -2895,20 +2944,20 @@ function alignmentOptions = alignSubPlots( figureHandle )
   % we want no. 2 to align below no. 1, and no. 3 below no. 2
   % (and not no. 1 again).
   for i = 1:n
+      for j = i+1:n
 
-      positions{i} = get( axesEnv(i), 'Position' );
-      for j = 1:i-1
+          % now, find *one* relationship between i and j
+
           if abs( positions{i}(1)-positions{j}(1) ) < tol
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % left x-alignment
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % left x-alignment
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               alignsWith = j;
               yDist      = abs(positions{i}(2)-positions{j}(2));
 
               % among all left x-alignments, choose the closest in y-distance
               for k = j+1:i-1
-
                   if abs( positions{i}(1)-positions{k}(1) ) < tol % alignment?
                       yDistNew = abs( positions{i}(2)-positions{k}(2) );
                       if yDistNew < yDist
@@ -2920,81 +2969,17 @@ function alignmentOptions = alignSubPlots( figureHandle )
               % Now, we know that plot `i` x-aligns best with plot
               % `alignsWith`.
 
-              % Add reference options for `alignsWith`:
-              if ~alignmentOptions{alignsWith}.isRef
-                  alignmentOptions{alignsWith}.isRef = 1;
-                  alignmentOptions{alignsWith}.name  = ...
-                                              sprintf( 'plot%d', alignsWith );
-              end
-
-              % anchor and reference north or south?
-              if positions{i}(2) > positions{alignsWith}(2) % `i` above `alignsWith`
-                  refPos = 'above north west';
-                  anchor = 'south west';
-              else % `i` below `alignsWith`
-                  refPos = 'below south west';
-                  anchor = 'north west';
-              end
-
-              % add alignment options for `i`:
-              alignmentOptions{i}.opts = sprintf( 'at=(%s.%s), anchor=%s', ...
-                                        alignmentOptions{alignsWith}.name, ...
-                                        refPos, ...
-                                        anchor );
-
-              break % alignment found: don't consider others
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-          elseif abs( positions{j}(2)-positions{i}(2) ) < tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % lower y-alignment
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              alignsWith = j;
-              xDist      = abs(positions{i}(1)-positions{j}(1));
-
-              % among all lower y-alignments, choose the closest in x-distance
-              for k = j+1:i-1
-                  if abs( positions{i}(2)-positions{k}(2) ) < tol % alignment?
-                      xDistNew = abs( positions{i}(1)-positions{k}(1) );
-                      if xDistNew < xDist
-                          alignsWith = k;
-                          xDist      = xDistNew;
-                      end
-                  end
-              end
-              % Now, we know that plot `i` y-aligns best with plot
-              % `alignsWith`.
-
-              % Add reference options for `alignsWith`:
-              if ~alignmentOptions{alignsWith}.isRef
-                  alignmentOptions{alignsWith}.isRef = 1;
-                  alignmentOptions{alignsWith}.name  = ...
-                                              sprintf( 'plot%d', alignsWith );
-              end
-
-              % anchor and reference north or south?
-              if positions{i}(1) > positions{alignsWith}(1) % `i` right of `alignsWith`
-                  refPos = 'right of south east';
-                  anchor = 'south west';
-              else % `i` left of `alignsWith`
-                  refPos = 'left of south west';
-                  anchor = 'south east';
-              end
-
-              % add alignment options for `i`:
-              alignmentOptions{i}.opts = sprintf( 'at=(%s.%s), anchor=%s', ...
-                                        alignmentOptions{alignsWith}.name, ...
-                                        refPos, ...
-                                        anchor );
-
-              break % alignment found: don't consider others
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              C(i,alignsWith) =  1;
+              C(alignsWith,i) = -1;
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % END left x-alignment
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(   positions{j}(1)+positions{j}(3) ...
                       - positions{i}(1)+positions{i}(3) ) < tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % right x-alignment
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % right x-alignment
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               alignsWith = j;
               yDist      = abs(positions{i}(2)-positions{j}(2));
 
@@ -3013,36 +2998,44 @@ function alignmentOptions = alignSubPlots( figureHandle )
               % Now, we know that plot `i` x-aligns best with plot
               % `alignsWith`.
 
-              % Add reference options for `alignsWith`:
-              if ~alignmentOptions{alignsWith}.isRef
-                  alignmentOptions{alignsWith}.isRef = 1;
-                  alignmentOptions{alignsWith}.name  = ...
-                                              sprintf( 'plot%d', alignsWith );
+              C(i,alignsWith) = -1;
+              C(alignsWith,i) =  1;
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % right x-alignment
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+          elseif abs( positions{j}(2)-positions{i}(2) ) < tol
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % lower y-alignment
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              alignsWith = j;
+              xDist      = abs(positions{i}(1)-positions{j}(1));
+
+              % among all lower y-alignments, choose the closest in x-distance
+              for k = j+1:i-1
+                  if abs( positions{i}(2)-positions{k}(2) ) < tol % alignment?
+                      xDistNew = abs( positions{i}(1)-positions{k}(1) );
+                      if xDistNew < xDist
+                          alignsWith = k;
+                          xDist      = xDistNew;
+                      end
+                  end
               end
+              % Now, we know that plot `i` y-aligns best with plot
+              % `alignsWith`.
 
-              % anchor and reference north or south?
-              if positions{i}(2) > positions{alignsWith}(2) % `i` above `alignsWith`
-                  refPos = 'above north east';
-                  anchor = 'south east';
-              else % `i` below `alignsWith`
-                  refPos = 'below south east';
-                  anchor = 'north east';
-              end
-
-              % add alignment options for `i`:
-              alignmentOptions{i}.opts = sprintf( 'at=(%s.%s), anchor=%s', ...
-                                        alignmentOptions{alignsWith}.name, ...
-                                        refPos, ...
-                                        anchor );
-
-              break % alignment found: don't consider others
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              C(i,alignsWith) =  2;
+              C(alignsWith,i) = -2;
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % END lower y-alignment
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(   positions{j}(2)+positions{j}(4) ...
                       - positions{i}(2)-positions{i}(4) ) < tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % upper y-alignment
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % upper y-alignment
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
               alignsWith = j;
               xDist      = abs(positions{i}(1)-positions{j}(1));
 
@@ -3061,34 +3054,93 @@ function alignmentOptions = alignSubPlots( figureHandle )
               % Now, we know that plot `i` y-aligns best with plot
               % `alignsWith`.
 
-              % Add reference options for `alignsWith`:
-              if ~alignmentOptions{alignsWith}.isRef
-                  alignmentOptions{alignsWith}.isRef = 1;
-                  alignmentOptions{alignsWith}.name  = ...
-                                              sprintf( 'plot%d', alignsWith );
-              end
+              C(i,alignsWith) = -2;
+              C(alignsWith,i) =  2;
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % upper y-alignment
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-              % anchor and reference north or south?
-              if positions{i}(1) > positions{alignsWith}(1) % `i` right of `alignsWith`
-                  refPos = 'right of north east';
-                  anchor = 'north west';
-              else % `i` left of `alignsWith`
-                  refPos = 'left of north west';
-                  anchor = 'north east';
-              end
-
-              % add alignment options for `i`:
-              alignmentOptions{i}.opts = sprintf( 'at=(%s.%s), anchor=%s', ...
-                                        alignmentOptions{alignsWith}.name, ...
-                                        refPos, ...
-                                        anchor );
-
-              break % alignment found: don't consider others
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           end
+      end
+  end
+
+  % is each axes environment connected to at least one other?
+  isC = (C~=0);  % 1 for 'connection', 0 for 'no connection'
+  noConn = find( sum(isC,2) == 0 );
+  if ~isempty(noConn)
+      for k=noConn
+          warning( 'alignSubPlots:isoAxes', ...
+                   [ 'The axes environment no. %d is not aligned with',...
+                     ' any other axes environment and will be plotted',...
+                     ' right in the middle.' ], k );
+      end
+  end
+
+  % if the respective axes environment is processed already
+  isProcessed = zeros(n,1);
+
+  % sort the axes environments by the number of connections they have
+  [s,ix] = sort( sum(isC,2), 'descend' );
+
+  % traverse the options in order `ix`
+  for k = 1:n
+      setOptionsRecursion( ix(k) );
+  end
+
+  % --------------------------------------------------------------------------
+  % sets the alignment options for a specific node
+  % and passes on the its children
+  function setOptionsRecursion( k, parent )
+
+      % return immediately if is has been processed before
+      if isProcessed(k), return, end
+
+      % find the non-zeros elements in the k-th row
+      children = find( C(k,:) );
+
+      if any( ~isProcessed(children) ) % are there unprocessed children?
+          % then, give these axes a name
+          alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
+                                       sprintf( 'name=plot%d', k ) ];
+      end
+
+      if nargin==2 % if a parent is given
+          % See were this node sits with respect to its parent,
+          % and adapt the option accordingly.
+          switch C(k,parent)
+              case 1 % k beneath parent
+		  refPos = 'below south west';
+		  anchor = 'above north west';
+              case -1 % k above parent
+		  refPos = 'above north west';
+		  anchor = 'below south west';
+              case 2 % k right of parent
+		  refPos = 'right of north east';
+		  anchor = 'left of north west';
+              case -2 % k left of parent
+		  refPos = 'right of north east';
+		  anchor = 'left of north west';
+              otherwise
+                  error( 'alignSubPlots:unknRelCode',...
+                         'Illegal alignment code %d.', C(k,parent) );
+          end
+
+          % add the option
+          alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
+                                       sprintf( 'at=(plot%d.%s), anchor=%s', ...
+                                               parent, refPos, anchor ) ];
+      end
+
+
+      isProcessed(k) = 1;
+
+      % recursively loop over all dependent 'child' axes
+      for i = children
+	  setOptionsRecursion( i, k );
       end
 
   end
+  % --------------------------------------------------------------------------
 
 end
 % =========================================================================
