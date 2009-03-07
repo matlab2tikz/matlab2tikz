@@ -1586,6 +1586,7 @@ end
 
 % =========================================================================
 % *** FUNCTION drawColorbar
+% *** TODO: make use of the alignment of subplots code
 % =========================================================================
 function str = drawColorbar( handle )
 
@@ -2932,164 +2933,221 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
   for k=1:n
       alignmentOptions(k).isRef = 0;
       alignmentOptions(k).opts  = cell(0);
-      positions{k} = get( axesHandles(k), 'Position' );
+
+      % `axesPos` contains the x-value of the left and the right axis
+      % (indices 1,3) and the y-value of the bottom and top axis
+      % (indices 2,4)
+      axesPos{k}    = get( axesHandles(k), 'Position' );
+      axesPos{k}(3) = axesPos{k}(1) + axesPos{k}(3);
+      axesPos{k}(4) = axesPos{k}(2) + axesPos{k}(4);
   end
 
   % Loop over all figures to see if axes are aligned.
   % Look for exactly *one* alignment, also if there might be more.
   %
-  % Among all the {x,y}-alignments choose the one with the clostest
+  % Among all the {x,y}-alignments choose the one with the closest
   % {y,x}-distance. This is important, for example, in situations where
   % there are 3 plots on top of each other:
   % we want no. 2 to align below no. 1, and no. 3 below no. 2
   % (and not no. 1 again).
+  %
+  % There are eight alignments this algorithm can deal with:
+  %
+  %    3|             |4
+  %  __  _____________   __
+  %  -2 |             |  2
+  %     |             |
+  %     |             |
+  %     |             |
+  %     |             |
+  % -1_ |_____________|  1_
+  %
+  %   -3|             |-4
+  %
+  % They are coded in numbers 1 to 8. The matrix C will contain the
+  % corresponding code at position (i,j), if plot number i and j are
+  % aligned in such a way.
+  % If two plots happen to coincide at both left and right axes, for
+  % example, only one relation is stored.
+  %
   for i = 1:n
       for j = i+1:n
 
           % now, find *one* relationship between i and j
+          xLeftLeft   = abs( axesPos{i}(1)-axesPos{j}(1) ) < tol;
+          xLeftRight  = abs( axesPos{i}(1)-axesPos{j}(3) ) < tol;
+          xRightLeft  = abs( axesPos{i}(3)-axesPos{j}(1) ) < tol;
+          xRightRight = abs( axesPos{i}(3)-axesPos{j}(3) ) < tol;
 
-          if abs( positions{i}(1)-positions{j}(1) ) < tol
+          xLeftAlign = xLeftLeft || xLeftRight;
+
+          if abs( axesPos{i}(1)-axesPos{j}(1) ) < tol;
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % left x-alignment
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-              alignsWith = j;
-              yDist      = abs(positions{i}(2)-positions{j}(2));
-
-              % among all left x-alignments, choose the closest in y-distance
-              for k = j+1:i-1
-                  if abs( positions{i}(1)-positions{k}(1) ) < tol % alignment?
-                      yDistNew = abs( positions{i}(2)-positions{k}(2) );
-                      if yDistNew < yDist
-                          alignsWith = k;
-                          yDist      = yDistNew;
-                      end
-                  end
+	      % left axes align
+              if axesPos{i}(2) > axesPos{j}(2)
+                  C(i,j) = -3;
+                  C(j,i) =  3;
+              else
+                  C(i,j) =  3;
+                  C(j,i) = -3;
               end
-              % Now, we know that plot `i` x-aligns best with plot
-              % `alignsWith`.
-
-              C(i,alignsWith) =  1;
-              C(alignsWith,i) = -1;
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % END left x-alignment
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs(   positions{j}(1)+positions{j}(3) ...
-                      - positions{i}(1)+positions{i}(3) ) < tol
+          elseif abs( positions{i}(1)-positions{i}(3) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % right x-alignment
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              alignsWith = j;
-              yDist      = abs(positions{i}(2)-positions{j}(2));
-
-              % among all right x-alignments, choose the closest in y-distance
-              for k = j+1:i-1
-                  aligns = abs(   positions{i}(1)+positions{i}(3) ...
-                                - positions{k}(1)+positions{k}(3) ) < tol;
-                  if aligns % alignment?
-                      yDistNew = abs( positions{i}(2)-positions{k}(2) );
-                      if yDistNew < yDist
-                          alignsWith = k;
-                          yDist      = yDistNew;
-                      end
-                  end
+	      % left axis of `i` aligns with right axis of `j`
+              if axesPos{i}(2) > axesPos{j}(2)
+                  C(i,j) = -3;
+                  C(j,i) =  4;
+              else
+                  C(i,j) =  3;
+                  C(j,i) = -4;
               end
-              % Now, we know that plot `i` x-aligns best with plot
-              % `alignsWith`.
-
-              C(i,alignsWith) = -1;
-              C(alignsWith,i) =  1;
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % right x-alignment
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs( positions{j}(2)-positions{i}(2) ) < tol
+          elseif abs( positions{i}(3)-positions{i}(1) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % lower y-alignment
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              alignsWith = j;
-              xDist      = abs(positions{i}(1)-positions{j}(1));
-
-              % among all lower y-alignments, choose the closest in x-distance
-              for k = j+1:i-1
-                  if abs( positions{i}(2)-positions{k}(2) ) < tol % alignment?
-                      xDistNew = abs( positions{i}(1)-positions{k}(1) );
-                      if xDistNew < xDist
-                          alignsWith = k;
-                          xDist      = xDistNew;
-                      end
-                  end
+	      % right axis of `i` aligns with left axis of `j`
+              if axesPos{i}(2) > axesPos{j}(2)
+                  C(i,j) = -4;
+                  C(j,i) =  3;
+              else
+                  C(i,j) =  4;
+                  C(j,i) = -3;
               end
-              % Now, we know that plot `i` y-aligns best with plot
-              % `alignsWith`.
-
-              C(i,alignsWith) =  2;
-              C(alignsWith,i) = -2;
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % END lower y-alignment
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs(   positions{j}(2)+positions{j}(4) ...
-                      - positions{i}(2)-positions{i}(4) ) < tol
+          elseif abs( positions{i}(3)-positions{i}(1) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % upper y-alignment
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-              alignsWith = j;
-              xDist      = abs(positions{i}(1)-positions{j}(1));
-
-              % among all upper y-alignments, choose the closest in x-distance
-              for k = j+1:i-1
-                  aligns = abs(   positions{i}(2)+positions{i}(4) ...
-                                - positions{k}(2)-positions{k}(4) ) < tol
-                  if aligns
-                      xDistNew = abs( positions{i}(1)-positions{k}(1) );
-                      if xDistNew < xDist
-                          alignsWith = k;
-                          xDist      = xDistNew;
-                      end
-                  end
+	      % right axes of `i` and `j` align
+              if axesPos{i}(2) > axesPos{j}(2)
+                  C(i,j) = -4;
+                  C(j,i) =  4;
+              else
+                  C(i,j) =  4;
+                  C(j,i) = -4;
               end
-              % Now, we know that plot `i` y-aligns best with plot
-              % `alignsWith`.
-
-              C(i,alignsWith) = -2;
-              C(alignsWith,i) =  2;
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % upper y-alignment
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+          elseif abs( positions{i}(2)-positions{i}(2) ) < tol
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % lower axes of `i` and `j` align
+              if axesPos{i}(1) > axesPos{j}(1)
+                  C(i,j) = -1;
+                  C(j,i) =  1;
+              else
+                  C(i,j) =  1;
+                  C(j,i) = -1;
+              end
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+          elseif abs( positions{i}(2)-positions{i}(4) ) < tol
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % lower axis of `i` aligns with upper axis of `j`
+              if axesPos{i}(1) > axesPos{j}(1)
+                  C(i,j) = -1;
+                  C(j,i) =  2;
+              else
+                  C(i,j) =  1;
+                  C(j,i) = -2;
+              end
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+          elseif abs( positions{i}(4)-positions{i}(2) ) < tol
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % upper axis of `i` aligns with lower axis of `j`
+              if axesPos{i}(1) > axesPos{j}(1)
+                  C(i,j) = -2;
+                  C(j,i) =  1;
+              else
+                  C(i,j) =  2;
+                  C(j,i) = -1;
+              end
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+          elseif abs( positions{i}(4)-positions{i}(4) ) < tol
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	      % upper axes of `i` and `j` align
+              if axesPos{i}(1) > axesPos{j}(1)
+                  C(i,j) = -2;
+                  C(j,i) =  2;
+              else
+                  C(i,j) =  2;
+                  C(j,i) = -2;
+              end
+	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           end
+
       end
   end
 
-  % is each axes environment connected to at least one other?
-  isC = (C~=0);  % 1 for 'connection', 0 for 'no connection'
-  noConn = find( sum(isC,2) == 0 );
-  if ~isempty(noConn)
-      for k=noConn
-          warning( 'alignSubPlots:isoAxes', ...
-                   [ 'The axes environment no. %d is not aligned with',...
-                     ' any other axes environment and will be plotted',...
-                     ' right in the middle.' ], k );
+  % Now, C contains all alignment information.
+  % If, for any node, there is more than one plot that aligns with it in the
+  % same way (e.g., upper left), then pick exactly *one* of them.
+  % Take the one that is closest to the correspondig plot.
+  for i = 1:n
+      for j = 1:n % everything except `i`
+
+          if ~C(i,j)  % don't check of there double "no relation"'s
+              continue
+          end
+
+          % find doubles, and count C(i,j) in
+          doub = find( C(i,j:n)==C(i,j) );
+
+          if length(doub)>1
+              % Uh-oh, found doubles:
+              % Pick the one with the minimal distance, delete the other
+              % relations.
+              if C(i,j)==1 || C(i,j)==2  % all plots sit right of `i`
+                  dist = [axesPos{doub}(1)] - axesPos{i}(3);
+              elseif C(i,j)==-1 || C(i,j)==-2  % all plots sit left of `i`
+                  dist = axesPos{i}(1) - [axesPos{doub}(3)];
+              elseif C(i,j)==3 || C(i,j)==3  % all plots sit above `i`
+                  dist = [axesPos{doub}(2)] - axesPos{i}(4);
+              elseif C(i,j)==3 || C(i,j)==3  % all plots sit below `i`
+                  dist = axesPos{i}(2) - [axesPos{doub}(4)];
+              end
+
+	      [m,idx]   = min( dist );   % `idx` holds the index of the minimum
+	      doub(idx) = [];            % delete the index from the 'remove list'
+	      C(i,doub) = 0;
+	      C(doub,i) = 0;
+          end
+
       end
   end
 
-  % if the respective axes environment is processed already
+
+  % Alright. The matrix `C` now contains exactly the alignment info that
+  % we are looking for.
+
+  % Is each axes environment connected to at least one other?
+  noConn = find( ~any(C,2) );
+  for k = noConn
+      warning( 'alignSubPlots:isoAxes', ...
+		[ 'The axes environment no. %d is not aligned with',...
+		  ' any other axes environment and will be plotted',...
+		  ' right in the middle.' ], k );
+  end
+
+  % Now, actually go ahead and process the info to return pgfplots alignment
+  % options.
+
+  % tells if the respective axes environment is processed already:
   isProcessed = zeros(n,1);
 
-  % sort the axes environments by the number of connections they have
-  [s,ix] = sort( sum(isC,2), 'descend' );
-
-  % traverse the options in order `ix`
+  % Sort the axes environments by the number of connections they have.
+  % That means: start with the plot which has the most connections.
+  [s,ix] = sort( sum(C~=0,2), 'descend' );
   for k = 1:n
       setOptionsRecursion( ix(k) );
   end
 
-  % --------------------------------------------------------------------------
+  % -----------------------------------------------------------------------
   % sets the alignment options for a specific node
   % and passes on the its children
+  % -----------------------------------------------------------------------
   function setOptionsRecursion( k, parent )
 
       % return immediately if is has been processed before
@@ -3107,30 +3165,14 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
       if nargin==2 % if a parent is given
           % See were this node sits with respect to its parent,
           % and adapt the option accordingly.
-          switch C(k,parent)
-              case 1 % k beneath parent
-		  refPos = 'below south west';
-		  anchor = 'above north west';
-              case -1 % k above parent
-		  refPos = 'above north west';
-		  anchor = 'below south west';
-              case 2 % k right of parent
-		  refPos = 'right of north east';
-		  anchor = 'left of north west';
-              case -2 % k left of parent
-		  refPos = 'right of north east';
-		  anchor = 'left of north west';
-              otherwise
-                  error( 'alignSubPlots:unknRelCode',...
-                         'Illegal alignment code %d.', C(k,parent) );
-          end
+          anchor = cornerCode2pgfplotOption( C(k,parent) );
+          refPos = cornerCode2pgfplotOption( C(parent,k) );
 
           % add the option
           alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
                                        sprintf( 'at=(plot%d.%s), anchor=%s', ...
                                                parent, refPos, anchor ) ];
       end
-
 
       isProcessed(k) = 1;
 
@@ -3140,7 +3182,37 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
       end
 
   end
-  % --------------------------------------------------------------------------
+  % -----------------------------------------------------------------------
+
+
+  % -----------------------------------------------------------------------
+  % translates the corner code in a real option to pgfplots
+  function pgfOpt = cornerCode2pgfplotOption( code )
+
+    switch code
+        case 1
+            pgfOpt = 'right of south east'
+        case 2
+            pgfOpt = 'right of north east'
+        case 3
+            pgfOpt = 'above of north west'
+        case 4
+            pgfOpt = 'above of north east'
+        case -1
+            pgfOpt = 'left of south west'
+        case -2
+            pgfOpt = 'left of north west'
+        case -3
+            pgfOpt = 'south of south west'
+        case -1
+            pgfOpt = 'south of south east'
+        otherwise
+            error( 'cornerCode2pgfplotOption:unknRelCode',...
+                   'Illegal alignment code %d.', code );
+    end
+
+  end
+  % -----------------------------------------------------------------------
 
 end
 % =========================================================================
