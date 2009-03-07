@@ -2904,9 +2904,6 @@ end
 % ***     - diagonal connections a la
 % ***              [ AXES1       ]
 % ***              [       AXES2 ]
-% ***     - connection xleft<->xright a la
-% ***              [ AXES1   AXES3 ]
-% ***              [     AXES2     ]
 % ***
 % =========================================================================
 function [alignmentOptions,ix] = alignSubPlots( axesHandles )
@@ -2919,6 +2916,14 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 
   n = length(axesHandles);
 
+  % return immediately if nothing is to be aligned
+  if n<=1
+     alignmentOptions(1).isRef = 0;
+     alignmentOptions(1).opts  = cell(0);
+     ix = 1;
+     return
+  end
+
   % Connectivity matrix of the graph.
   % Contains 0's where the axes environments are not aligned, and
   % positive integers where they are. The integer codes how the axes
@@ -2930,16 +2935,17 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
   % for another plot.
   % TODO: preallocate this
   % Also, gather all the positions.
+  axesPos = zeros(n,4);
   for k=1:n
       alignmentOptions(k).isRef = 0;
       alignmentOptions(k).opts  = cell(0);
 
-      % `axesPos` contains the x-value of the left and the right axis
+      % `axesPos(i,:)` contains the x-value of the left and the right axis
       % (indices 1,3) and the y-value of the bottom and top axis
-      % (indices 2,4)
-      axesPos{k}    = get( axesHandles(k), 'Position' );
-      axesPos{k}(3) = axesPos{k}(1) + axesPos{k}(3);
-      axesPos{k}(4) = axesPos{k}(2) + axesPos{k}(4);
+      % (indices 2,4) of plot no. `i`
+      axesPos(k,:)    = get( axesHandles(k), 'Position' );
+      axesPos(k,3) = axesPos(k,1) + axesPos(k,3);
+      axesPos(k,4) = axesPos(k,2) + axesPos(k,4);
   end
 
   % Loop over all figures to see if axes are aligned.
@@ -2973,18 +2979,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
   for i = 1:n
       for j = i+1:n
 
-          % now, find *one* relationship between i and j
-          xLeftLeft   = abs( axesPos{i}(1)-axesPos{j}(1) ) < tol;
-          xLeftRight  = abs( axesPos{i}(1)-axesPos{j}(3) ) < tol;
-          xRightLeft  = abs( axesPos{i}(3)-axesPos{j}(1) ) < tol;
-          xRightRight = abs( axesPos{i}(3)-axesPos{j}(3) ) < tol;
-
-          xLeftAlign = xLeftLeft || xLeftRight;
-
-          if abs( axesPos{i}(1)-axesPos{j}(1) ) < tol;
+          if abs( axesPos(i,1)-axesPos(j,1) ) < tol;
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	      % left axes align
-              if axesPos{i}(2) > axesPos{j}(2)
+              if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -3;
                   C(j,i) =  3;
               else
@@ -2993,10 +2991,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
               end
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs( positions{i}(1)-positions{i}(3) ) < tol
+          elseif abs( axesPos(i,1)-axesPos(j,3) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	      % left axis of `i` aligns with right axis of `j`
-              if axesPos{i}(2) > axesPos{j}(2)
+              if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -3;
                   C(j,i) =  4;
               else
@@ -3005,10 +3003,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
               end
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs( positions{i}(3)-positions{i}(1) ) < tol
+          elseif abs( axesPos(i,3)-axesPos(j,1) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	      % right axis of `i` aligns with left axis of `j`
-              if axesPos{i}(2) > axesPos{j}(2)
+              if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -4;
                   C(j,i) =  3;
               else
@@ -3017,10 +3015,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
               end
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs( positions{i}(3)-positions{i}(1) ) < tol
+          elseif abs( axesPos(i,3)-axesPos(j,1) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	      % right axes of `i` and `j` align
-              if axesPos{i}(2) > axesPos{j}(2)
+              if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -4;
                   C(j,i) =  4;
               else
@@ -3029,10 +3027,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
               end
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs( positions{i}(2)-positions{i}(2) ) < tol
+          elseif abs( axesPos(i,2)-axesPos(j,2) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	      % lower axes of `i` and `j` align
-              if axesPos{i}(1) > axesPos{j}(1)
+              if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -1;
                   C(j,i) =  1;
               else
@@ -3041,10 +3039,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
               end
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs( positions{i}(2)-positions{i}(4) ) < tol
+          elseif abs( axesPos(i,2)-axesPos(j,4) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	      % lower axis of `i` aligns with upper axis of `j`
-              if axesPos{i}(1) > axesPos{j}(1)
+              if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -1;
                   C(j,i) =  2;
               else
@@ -3053,10 +3051,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
               end
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs( positions{i}(4)-positions{i}(2) ) < tol
+          elseif abs( axesPos(i,4)-axesPos(j,2) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	      % upper axis of `i` aligns with lower axis of `j`
-              if axesPos{i}(1) > axesPos{j}(1)
+              if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -2;
                   C(j,i) =  1;
               else
@@ -3065,10 +3063,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
               end
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-          elseif abs( positions{i}(4)-positions{i}(4) ) < tol
+          elseif abs( axesPos(i,4)-axesPos(j,4) ) < tol
 	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	      % upper axes of `i` and `j` align
-              if axesPos{i}(1) > axesPos{j}(1)
+              if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -2;
                   C(j,i) =  2;
               else
@@ -3100,13 +3098,13 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
               % Pick the one with the minimal distance, delete the other
               % relations.
               if C(i,j)==1 || C(i,j)==2  % all plots sit right of `i`
-                  dist = [axesPos{doub}(1)] - axesPos{i}(3);
+                  dist = axesPos(doub,1) - axesPos(i,3);
               elseif C(i,j)==-1 || C(i,j)==-2  % all plots sit left of `i`
-                  dist = axesPos{i}(1) - [axesPos{doub}(3)];
+                  dist = axesPos(i,1) - axesPos(doub,3);
               elseif C(i,j)==3 || C(i,j)==3  % all plots sit above `i`
-                  dist = [axesPos{doub}(2)] - axesPos{i}(4);
+                  dist = axesPos(doub,2) - axesPos(i,4);
               elseif C(i,j)==3 || C(i,j)==3  % all plots sit below `i`
-                  dist = axesPos{i}(2) - [axesPos{doub}(4)];
+                  dist = axesPos(i,2) - axesPos(doub,4);
               end
 
 	      [m,idx]   = min( dist );   % `idx` holds the index of the minimum
@@ -3124,11 +3122,13 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 
   % Is each axes environment connected to at least one other?
   noConn = find( ~any(C,2) );
-  for k = noConn
-      warning( 'alignSubPlots:isoAxes', ...
-		[ 'The axes environment no. %d is not aligned with',...
-		  ' any other axes environment and will be plotted',...
-		  ' right in the middle.' ], k );
+  if ~isempty(noConn)
+      for k = 1:length(noConn)
+	  warning( 'alignSubPlots:isoAxes', ...
+		    [ 'The axes environment no. %d is not aligned with',...
+		      ' any other axes environment and will be plotted',...
+		      ' right in the middle.' ], noConn(k) );
+      end
   end
 
   % Now, actually go ahead and process the info to return pgfplots alignment
@@ -3191,21 +3191,21 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 
     switch code
         case 1
-            pgfOpt = 'right of south east'
+            pgfOpt = 'right of south east';
         case 2
-            pgfOpt = 'right of north east'
+            pgfOpt = 'right of north east';
         case 3
-            pgfOpt = 'above of north west'
+            pgfOpt = 'above north west';
         case 4
-            pgfOpt = 'above of north east'
+            pgfOpt = 'above north east';
         case -1
-            pgfOpt = 'left of south west'
+            pgfOpt = 'left of south west';
         case -2
-            pgfOpt = 'left of north west'
+            pgfOpt = 'left of north west';
         case -3
-            pgfOpt = 'south of south west'
-        case -1
-            pgfOpt = 'south of south east'
+            pgfOpt = 'below south west';
+        case -4
+            pgfOpt = 'below south east';
         otherwise
             error( 'cornerCode2pgfplotOption:unknRelCode',...
                    'Illegal alignment code %d.', code );
