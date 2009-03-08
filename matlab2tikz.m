@@ -65,7 +65,7 @@ function matlab2tikz( fn, varargin )
   matlab2tikzName = 'matlab2tikz';
 
   global matlab2tikzVersion;
-  matlab2tikzVersion = '0.0.2';
+  matlab2tikzVersion = '0.0.3';
 
   global tikzOptions; % for the arrow style -- see if we can get this removed
   tikzOptions = cell(0);
@@ -151,6 +151,16 @@ function saveToFile()
   % get all axes handles
   fh          = matlab2tikzOpts.gcf;
   axesHandles = findobj( fh, 'type', 'axes' );
+
+  % remove all legend handles as they are treated separately
+  rmList = [];
+  for k = 1:length(axesHandles)
+     if strcmp( get(axesHandles(k),'Tag'), 'legend' )
+        rmList = [ rmList, k ];
+     end
+  end
+  axesHandles(rmList) = [];
+
 
   % Turn around the handles vector to make sure that plots that appeared
   % first also appear first in the vector. This has effects on the alignment
@@ -689,12 +699,12 @@ function str = drawLine( handle )
     out = det;
 
     if det % otherwise the segments are parallel
-	    rhs1   = x(3) - x(1);
-	    rhs2   = y(3) - y(1);
-	    lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
-	    mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
-	    out    =   0<lambda && lambda<1 ...
-	           &&  0<mu     && mu    <1;
+	rhs1   = x(3) - x(1);
+	rhs2   = y(3) - y(1);
+	lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
+	mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
+	out    =   0<lambda && lambda<1 ...
+		&&  0<mu     && mu    <1;
     end
 
   end
@@ -1004,6 +1014,9 @@ end
 % ***
 % *** Draws a 'patch' graphics object (as found in contourf plots, for
 % *** example).
+% ***
+% *** TODO: Declare common patch properties (like `draw=none`) once for
+% ***       for all patches.
 % ***
 % =========================================================================
 function str = drawPatch( handle )
@@ -1427,9 +1440,7 @@ end
 % ***       that!
 % ***
 % =========================================================================
-function str = drawStairSeries( h );
-
-  global matlab2tikzOpts;
+function str = drawStairSeries( h )
 
   str = [];
 
@@ -1592,7 +1603,11 @@ end
 
 % =========================================================================
 % *** FUNCTION drawColorbar
-% *** TODO: make use of the alignment of subplots code
+% ***
+% *** TODO: * Declare common properties (like `draw=none`) once for
+% ***         for all badges.
+% ***       * Look into orignal pgfplots color bars.
+% ***
 % =========================================================================
 function str = drawColorbar( handle, alignmentOptions )
 
@@ -1601,33 +1616,6 @@ function str = drawColorbar( handle, alignmentOptions )
   if ~isVisible( handle )
       return
   end
-
-%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%    % Try to find the parent axes of this colorbar for height/width info.
-%    % Unfortunately, all axes in a figure (and hence colorbar, too) are
-%    % siblings, and there doesn't seem to be info about the refering axes
-%    % in the colorbar axes.
-%    % Hence, go back to parent and search for the (one?) non-colorbar axes
-%    % pair.
-%    c = get( get(handle,'Parent'), 'Children' ); % siblings of handle
-%    parent = 0;
-%    for k=1:size(c)
-%        if  strcmp( get(c(k),'Type'), 'axes'     ) && ...
-%           ~strcmp( get(c(k),'Tag' ), 'Colorbar' )
-%            parent = c(k);
-%            break
-%        end
-%    end
-%  
-%    if ~parent
-%        warning( 'matlab2tikz:drawColorbar',                             ...
-%                 'Unable to find the colorbar''s parental axes. Skip.' );
-%        return;
-%    end
-%  
-%    % get the size of 'parent'
-%    dim = getAxesDimensions( parent );
-%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % The dimensions returned by  'getAxesDimensions' are not entirely
   % correct: When looking closely, one will see that the colorbar actually
@@ -2951,7 +2939,7 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 
   % Unfortunately, MATLAB doesn't seem to exactly align color bars
   % to its parent plot. Hence, some quirking is needed..
-  nonCbarHandles              = [1:n];
+  nonCbarHandles              = (1:n);
   nonCbarHandles(cbarHandles) = [];
   for k = cbarHandles
       axesPos(k,:) = correctColorbarPos( axesHandles(k), ...
@@ -3252,8 +3240,8 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 	case {'NorthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly below colBarHandle
-            axesBelow = find( axesHandlesPos(:,4)<colBarPos(2) );
-            [mn,idx]  = min( colBarPos(2) - axesHandlesPos(axesBelow,4) );
+            [mn,idx]  = min( colBarPos(2) ...
+                             - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
             pos = [ axesHandlesPos(idx,1), ...
                     colBarPos(2)         , ...
                     axesHandlesPos(idx,3), ...
@@ -3262,8 +3250,8 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 	case {'SouthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly above colBarHandle
-            axesBelow = find( axesHandlesPos(:,2)>colBarPos(4) );
-            [mn,idx]  = min( axesHandlesPos(axesBelow,2) - colBarPos(4) );
+            [mn,idx]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
+                             - colBarPos(4) );
             pos = [ axesHandlesPos(idx,1), ...
                     colBarPos(2)         , ...
                     axesHandlesPos(idx,3), ...
@@ -3272,8 +3260,8 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 	case {'EastOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly left of colBarHandle
-            axesBelow = find( axesHandlesPos(:,3)<colBarPos(1) );
-            [mn,idx]  = min( colBarPos(1) - axesHandlesPos(axesBelow,3) );
+            [mn,idx]  = min( colBarPos(1) ...
+                             - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
             pos = [ colBarPos(1),          ...
                     axesHandlesPos(idx,2), ...
                     colBarPos(3),          ...
@@ -3282,8 +3270,8 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 	case {'WestOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly right of colBarHandle
-            axesBelow = find( axesHandlesPos(:,1)>colBarPos(3) );
-            [mn,idx]  = min( axesHandlesPos(axesBelow,1) - colBarPos(3)  );
+            [mn,idx]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
+                             - colBarPos(3)  );
             pos = [ colBarPos(1),          ...
                     axesHandlesPos(idx,2), ...
                     colBarPos(3),          ...

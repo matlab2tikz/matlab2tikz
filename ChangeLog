@@ -1,3 +1,12 @@
+2009-03-08  Nico Schlömer  <nico.schloemer@ua.ac.be>
+
+        * Version 0.0.3.
+        * Added support for:
+          - subplots
+          - reverse axes
+        * Completed support for:
+          - images
+
 2009-01-08  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
         * Version 0.0.2.

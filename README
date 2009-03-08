@@ -18,10 +18,11 @@ The plots that matlab2tikz handles properly are, but are not limited to
   * quiver (arrow) plots,
   * colorbars,
   * legends,
-  * (images),
+  * images,
   * (rose plots),
   * (compass plots),
-  * (polar plots).
+  * (polar plots),
+  * subplots.
 
 
 The workflow is as follows.
