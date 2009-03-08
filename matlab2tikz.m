@@ -152,6 +152,12 @@ function saveToFile()
   fh          = matlab2tikzOpts.gcf;
   axesHandles = findobj( fh, 'type', 'axes' );
 
+  % Turn around the handles vector to make sure that plots that appeared
+  % first also appear first in the vector. This has effects on the alignment
+  % and the order in which the plots appear in the final TikZ file.
+  % In fact, this is not really important but makes things more 'natural'.
+  axesHandles = axesHandles(end:-1:1);
+
   % find alignments
   [alignmentOptions,ix] = alignSubPlots( axesHandles );
 
@@ -299,7 +305,7 @@ function str = drawAxes( handle, alignmentOptions )
 
   if strcmp( get(handle,'Tag'), 'Colorbar' )
       % handle a colorbar separately
-      str = drawColorbar( handle );
+      str = drawColorbar( handle, alignmentOptions );
       return
   end
 
@@ -1588,7 +1594,7 @@ end
 % *** FUNCTION drawColorbar
 % *** TODO: make use of the alignment of subplots code
 % =========================================================================
-function str = drawColorbar( handle )
+function str = drawColorbar( handle, alignmentOptions )
 
   str = [];
 
@@ -1599,7 +1605,7 @@ function str = drawColorbar( handle )
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %    % Try to find the parent axes of this colorbar for height/width info.
 %    % Unfortunately, all axes in a figure (and hence colorbar, too) are
-%    % siblings, and there doesn't _seem_ to be info about the refering axes
+%    % siblings, and there doesn't seem to be info about the refering axes
 %    % in the colorbar axes.
 %    % Hence, go back to parent and search for the (one?) non-colorbar axes
 %    % pair.
@@ -1634,9 +1640,15 @@ function str = drawColorbar( handle )
 
   % begin collecting axes options
   cbarOptions = cell( 0 );
-  cbarOptions = [ cbarOptions,                                        ...
-                   'at={(colorbar anchor)}',                            ...
-                   'axis on top' ];
+  cbarOptions = [ cbarOptions, 'axis on top' ];
+
+  % set alignment options
+  if alignmentOptions.isRef
+      cbarOptions = [ cbarOptions, sprintf('name=%s',alignmentOptions.name) ];
+  end
+  if ~isempty(alignmentOptions.opts)
+      cbarOptions = [ cbarOptions, alignmentOptions.opts ];
+  end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set position, ticks etc. of the colorbar
@@ -1658,17 +1670,13 @@ function str = drawColorbar( handle )
                          ];
 
           if strcmp( loc, 'NorthOutside' )
-              anchorparent = 'above north west';
               cbarOptions = [ cbarOptions,                            ...
-                               'anchor=south west',                     ...
-                               'xticklabel pos=right, ytick=\\empty' ];
-                               % we actually wanted to set pos=top here,
-                               % but pgfplots doesn't support that yet.
-                               % pos=right does the same thing, really.
+                              'xticklabel pos=right, ytick=\\empty' ];
+                              % we actually wanted to set pos=top here,
+                              % but pgfplots doesn't support that yet.
+                              % pos=right does the same thing, really.
           else
-              anchorparent = 'below south west';
               cbarOptions = [ cbarOptions,                            ...
-                               'anchor=north west',                     ...
                                'xticklabel pos=left, ytick=\\empty' ];
                                % we actually wanted to set pos=bottom here,
                                % but pgfplots doesn't support that yet. 
@@ -1684,15 +1692,11 @@ function str = drawColorbar( handle )
                            sprintf( 'ymin=%g, ymax=%g', clim )          ...
                          ];
           if strcmp( loc, 'EastOutside' )
-               anchorparent = 'right of south east';
                cbarOptions = [ cbarOptions,                           ...
-                                'anchor=south west',                    ...
-                                'xtick=\\empty, yticklabel pos=right' ];
+                               'xtick=\\empty, yticklabel pos=right' ];
            else
-               anchorparent = 'left of south west';
                cbarOptions = [ cbarOptions,                           ...
-                                'anchor=south east',                    ...
-                                'xtick=\\empty, yticklabel pos=left' ];
+                               'xtick=\\empty, yticklabel pos=left' ];
            end
 
       otherwise
@@ -1723,20 +1727,9 @@ function str = drawColorbar( handle )
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % introduce an anchor coordinate;
-  % as an extra, one could add a ++(5mm,0) or something like that to increase
-  % the space between the colorbar and the main plot
-  str = [ str, ...
-          sprintf( [ '\n\n%% introduce named coordinate:\n',            ... 
-                     '\\path (main plot.%s)',                           ...
-                     ' coordinate (colorbar anchor);\n' ], anchorparent ) ];
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually begin drawing the thing
   str = [ str, ...
-          sprintf( '\n%% draw the colorbar\n' ) ];
+          sprintf( '\n%% the colorbar\n' ) ];
   cbarOpts = collapse( cbarOptions, ',\n' );
   str = [ str, ...
           sprintf( [ '\\begin{axis}[\n', cbarOpts, '\n]\n' ] ) ];
@@ -2928,25 +2921,43 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
   % Contains 0's where the axes environments are not aligned, and
   % positive integers where they are. The integer codes how the axes
   % are aligned (top right:bottom left, and so on).
-  C = zeros(n);
+  C = zeros(n,n);
 
 
   % `isRef` tells whether the respective plot acts as a position reference
   % for another plot.
   % TODO: preallocate this
   % Also, gather all the positions.
-  axesPos = zeros(n,4);
-  for k=1:n
+  axesPos     = zeros(n,4);
+  cbarHandles = [];  % indices of color bar handles;
+                     % they need to be treated separately
+  for k = 1:n
       alignmentOptions(k).isRef = 0;
       alignmentOptions(k).opts  = cell(0);
 
       % `axesPos(i,:)` contains the x-value of the left and the right axis
       % (indices 1,3) and the y-value of the bottom and top axis
       % (indices 2,4) of plot no. `i`
-      axesPos(k,:)    = get( axesHandles(k), 'Position' );
+      if strcmp( get(axesHandles(k),'Tag'), 'Colorbar' )
+          cbarHandles = [cbarHandles,k]; % treat color bars later
+          continue
+      else
+          axesPos(k,:) = get( axesHandles(k), 'Position' );
+      end
+
       axesPos(k,3) = axesPos(k,1) + axesPos(k,3);
       axesPos(k,4) = axesPos(k,2) + axesPos(k,4);
   end
+
+  % Unfortunately, MATLAB doesn't seem to exactly align color bars
+  % to its parent plot. Hence, some quirking is needed..
+  nonCbarHandles              = [1:n];
+  nonCbarHandles(cbarHandles) = [];
+  for k = cbarHandles
+      axesPos(k,:) = correctColorbarPos( axesHandles(k), ...
+                                         axesPos(nonCbarHandles,:) );
+  end
+  % now, the color bars are nicely aligned with the plots
 
   % Loop over all figures to see if axes are aligned.
   % Look for exactly *one* alignment, also if there might be more.
@@ -3079,7 +3090,7 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
       end
   end
 
-  % Now, C contains all alignment information.
+  % Now, the matrix C contains all alignment information.
   % If, for any node, there is more than one plot that aligns with it in the
   % same way (e.g., upper left), then pick exactly *one* of them.
   % Take the one that is closest to the correspondig plot.
@@ -3097,14 +3108,18 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
               % Uh-oh, found doubles:
               % Pick the one with the minimal distance, delete the other
               % relations.
-              if C(i,j)==1 || C(i,j)==2  % all plots sit right of `i`
-                  dist = axesPos(doub,1) - axesPos(i,3);
-              elseif C(i,j)==-1 || C(i,j)==-2  % all plots sit left of `i`
-                  dist = axesPos(i,1) - axesPos(doub,3);
-              elseif C(i,j)==3 || C(i,j)==3  % all plots sit above `i`
-                  dist = axesPos(doub,2) - axesPos(i,4);
-              elseif C(i,j)==3 || C(i,j)==3  % all plots sit below `i`
-                  dist = axesPos(i,2) - axesPos(doub,4);
+              switch C(i,j)
+                  case {1,2}    % all plots sit right of `i`
+                      dist = axesPos(doub,1) - axesPos(i,3);
+                  case {-1,-2}  % all plots sit left of `i`
+                      dist = axesPos(i,1) - axesPos(doub,3);
+                  case {3,4}    % all plots sit above `i`
+                      dist = axesPos(doub,2) - axesPos(i,4);
+                  case {-3,-4}  % all plots sit below `i`
+                      dist = axesPos(i,2) - axesPos(doub,4);
+                  otherwise
+                      error( 'alignSubPlots:uknoCode', ...
+                             'Unknown alignment code %d.', C(i,j) );
               end
 
 	      [m,idx]   = min( dist );   % `idx` holds the index of the minimum
@@ -3115,7 +3130,6 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 
       end
   end
-
 
   % Alright. The matrix `C` now contains exactly the alignment info that
   % we are looking for.
@@ -3209,6 +3223,75 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
         otherwise
             error( 'cornerCode2pgfplotOption:unknRelCode',...
                    'Illegal alignment code %d.', code );
+    end
+
+  end
+  % -----------------------------------------------------------------------
+
+
+  % -----------------------------------------------------------------------
+  % The handle `colBarHandle` is the handle of a color bar,
+  % `axesHandlesPos` a (nx4)-matrix containing the positions of all
+  % *non-colorbar* handles.
+  % The function looks for the color bar's parent and returnes the position
+  % "as it should be".
+  function pos = correctColorbarPos( colBarHandle, axesHandlesPos )
+
+    colBarPos    = get( colBarHandle, 'Position' );
+    colBarPos(3) = colBarPos(1) + colBarPos(3);
+    colBarPos(4) = colBarPos(2) + colBarPos(4);
+
+    loc = get( colBarHandle, 'Location' );
+
+    switch loc
+	case { 'North', 'South', 'East', 'West' }
+	    warning( 'alignSubPlots:getColorbarPos',                     ...
+		     'Don''t know how to deal with inner colorbars yet.' );
+	    return;
+
+	case {'NorthOutside'}
+            % scan in `axesHandlesPos` for the handle number that lies
+            % directly below colBarHandle
+            axesBelow = find( axesHandlesPos(:,4)<colBarPos(2) );
+            [mn,idx]  = min( colBarPos(2) - axesHandlesPos(axesBelow,4) );
+            pos = [ axesHandlesPos(idx,1), ...
+                    colBarPos(2)         , ...
+                    axesHandlesPos(idx,3), ...
+                    colBarPos(4)           ];
+
+	case {'SouthOutside'}
+            % scan in `axesHandlesPos` for the handle number that lies
+            % directly above colBarHandle
+            axesBelow = find( axesHandlesPos(:,2)>colBarPos(4) );
+            [mn,idx]  = min( axesHandlesPos(axesBelow,2) - colBarPos(4) );
+            pos = [ axesHandlesPos(idx,1), ...
+                    colBarPos(2)         , ...
+                    axesHandlesPos(idx,3), ...
+                    colBarPos(4)           ];
+
+	case {'EastOutside'}
+            % scan in `axesHandlesPos` for the handle number that lies
+            % directly left of colBarHandle
+            axesBelow = find( axesHandlesPos(:,3)<colBarPos(1) );
+            [mn,idx]  = min( colBarPos(1) - axesHandlesPos(axesBelow,3) );
+            pos = [ colBarPos(1),          ...
+                    axesHandlesPos(idx,2), ...
+                    colBarPos(3),          ...
+                    axesHandlesPos(idx,4)  ];
+
+	case {'WestOutside'}
+            % scan in `axesHandlesPos` for the handle number that lies
+            % directly right of colBarHandle
+            axesBelow = find( axesHandlesPos(:,1)>colBarPos(3) );
+            [mn,idx]  = min( axesHandlesPos(axesBelow,1) - colBarPos(3)  );
+            pos = [ colBarPos(1),          ...
+                    axesHandlesPos(idx,2), ...
+                    colBarPos(3),          ...
+                    axesHandlesPos(idx,4)  ];
+
+	otherwise
+	    error( 'alignSubPlots:getColorbarPos',    ...
+                   'Unknown ''Location'' %s.', loc  )
     end
 
   end
