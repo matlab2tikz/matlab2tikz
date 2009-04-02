@@ -50,7 +50,7 @@
 % ***    <http://www.gnu.org/licenses/>.
 % ***
 % =========================================================================
-function matlab2tikz( fn, varargin )
+function matlab2tikz( filename, varargin )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define some global variables
@@ -58,8 +58,11 @@ function matlab2tikz( fn, varargin )
   clear global matlab2tikzVersion;
   clear global tol;
   clear global matlab2tikzOpts;
+  clear global currentHandles;
 
   global matlab2tikzOpts;
+
+  global currentHandles;
 
   global matlab2tikzName;
   matlab2tikzName = 'matlab2tikz';
@@ -75,25 +78,27 @@ function matlab2tikz( fn, varargin )
                % used, for example, in equality test for doubles
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  matlab2tikzOpts.fileName = fn;
-  matlab2tikzOpts.gca      = gca;
-  matlab2tikzOpts.gcf      = gcf;
-  matlab2tikzOpts.strict   = 0; % whether to strictly stick to the
-                                % default MATLAB plot appearence
 
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % scan the options
-  for k = 1:length(varargin)
-      if ~ischar(varargin{k})
-          error( 'matlab2tikz:unkOpt', 'Optional arguments must be strings' );
-      end
-      switch varargin{k}
-      case 'strictmode'
-          matlab2tikzOpts.strict = 1;
-      otherwise
-          error( 'matlab2tikz:unkOpt', 'Unknown option ''%s''.', varargin{k} );
-      end
-  end
+  matlab2tikzOpts = inputParser;
+  matlab2tikzOpts.addRequired( 'filename', @ischar );
 
+  % whether to strictly stick to the default MATLAB plot appearence:
+  matlab2tikzOpts.addOptional( 'strict', 0, @isnumeric );
+
+  % width and height of the figure
+  matlab2tikzOpts.addParamValue( 'height', [], @ischar );
+  matlab2tikzOpts.addParamValue( 'width' , [], @ischar );
+
+  matlab2tikzOpts.parse( filename, varargin{:} );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  % add extra elements
+  currentHandles.gca = gca;
+  currentHandles.gcf = gcf;
+
+  % print some version info to the screen
   fprintf( '%s v%s\n', matlab2tikzName, matlab2tikzVersion );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -106,8 +111,9 @@ function matlab2tikz( fn, varargin )
   % clean up
   clear global matlab2tikzName;
   clear global matlab2tikzVersion;
-  clear global tol;
   clear global matlab2tikzOpts;
+  clear global tol;
+  clear global currentHandles;
   clear all;
 
 end
@@ -126,18 +132,19 @@ end
 % =========================================================================
 function saveToFile()
 
-  global fileName
   global matlab2tikzName
   global matlab2tikzVersion
   global matlab2tikzOpts
+  global currentHandles
   global tikzOptions
 
   global neededRGBColors
 
-  fid = fopen( matlab2tikzOpts.fileName, 'w' );
+  fid = fopen( matlab2tikzOpts.Results.filename, 'w' );
   if fid == -1
       error( 'matlab2tikz:saveToFile', ...
-             'Unable to open %s for writing', fileName );
+             'Unable to open file ''%s'' for writing.', ...
+             matlab2tikzOpts.Results.filename );
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -149,7 +156,7 @@ function saveToFile()
   set( 0, 'ShowHiddenHandles', 'on' );
 
   % get all axes handles
-  fh          = matlab2tikzOpts.gcf;
+  fh          = currentHandles.gcf;
   axesHandles = findobj( fh, 'type', 'axes' );
 
   % remove all legend handles as they are treated separately
@@ -259,9 +266,9 @@ function str = handleAllChildren( handle )
               % TODO: bail out with warning in case of a 3D-plot (parameter plots!)
               % don't to anything for these handles and its children
 
-	  otherwise
-	      error( 'matfig2tikz:handleAllChildren',                 ...
-                     'I don''t know how to handle this object: %s\n',   ...
+          otherwise
+              error( 'matfig2tikz:handleAllChildren',                 ...
+                     'I don''t know how to handle this object: %s\n', ...
                                                        get(child,'Type') );
 
       end
@@ -374,8 +381,14 @@ function str = drawAxes( handle, alignmentOptions )
   switch xAxisOrientation
       case 'normal'
           isXAxisRev = 0;
-          axisOpts = [ axisOpts,                                ...
-                       sprintf( 'width=%g%s' , dim.x, dim.unit ) ];
+          if isempty( matlab2tikzOpts.Results.width )
+              axisOpts = [ axisOpts,                                ...
+                           sprintf( 'width=%g%s' , dim.x, dim.unit ) ];
+          else
+              axisOpts = [ axisOpts,             ...
+                           sprintf( 'width=%s' , ...
+                                    matlab2tikzOpts.Results.width ) ];
+          end
       case 'reverse'
           isXAxisRev = 1;
           xUnitSize = dim.x/ (xLim(2)-xLim(1));
@@ -392,8 +405,14 @@ function str = drawAxes( handle, alignmentOptions )
   switch yAxisOrientation
       case 'normal'
           isYAxisRev = 0;
-          axisOpts = [ axisOpts,                                ...
-                       sprintf( 'height=%g%s' , dim.y, dim.unit ) ];
+          if isempty( matlab2tikzOpts.Results.height )
+              axisOpts = [ axisOpts,                                ...
+                           sprintf( 'height=%g%s' , dim.y, dim.unit ) ];
+          else
+              axisOpts = [ axisOpts,             ...
+                           sprintf( 'height=%s' , ...
+                                    matlab2tikzOpts.Results.height ) ];
+          end
       case 'reverse'
           isYAxisRev = 1;
           yUnitSize = dim.y/ (yLim(2)-yLim(1));
@@ -436,6 +455,7 @@ function str = drawAxes( handle, alignmentOptions )
                     sprintf( 'yticklabels={%s}', tickLabels.y ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis labels
@@ -491,7 +511,7 @@ function str = drawAxes( handle, alignmentOptions )
       % if not, don't add anything in case of default line grid line style
       % and effectively take pgfplots' default
       defaultMatlabGridLineStyle = ':';
-      if matlab2tikzOpts.strict ...
+      if matlab2tikzOpts.Results.strict ...
          || ~strcmp(matlabGridLineStyle,defaultMatlabGridLineStyle)
          gls = translateLineStyle( matlabGridLineStyle );
          str = [ str, ...
@@ -741,7 +761,7 @@ function lineOpts = getLineOptions( lineStyle, lineWidth )
       % if not, don't add anything in case of default line width
       % and effectively take pgfplots' default
       matlabDefaultLineWidth = 0.5;
-      if matlab2tikzOpts.strict ...
+      if matlab2tikzOpts.Results.strict ...
          || ~abs(lineWidth-matlabDefaultLineWidth) <= tol
           lineOpts = [ lineOpts,                                       ...
                        sprintf('line width=%.1fpt', lineWidth ) ];
@@ -781,7 +801,7 @@ function drawOptions = getMarkerOptions( h )
       % take over the marker size in any case when in strict mode;
       % if not, don't add anything in case of default marker size
       % and effectively take pgfplots' default
-      if matlab2tikzOpts.strict || ~isDefault
+      if matlab2tikzOpts.Results.strict || ~isDefault
          drawOptions = [ drawOptions,                                 ...
                          sprintf( 'mark size=%.1fpt', tikzMarkerSize ) ];
       end
@@ -1943,15 +1963,15 @@ end
 % =========================================================================
 function rgbcolor = cdata2rgb ( cdata, imagehandle )
 
-  global matlab2tikzOpts;
+  global currentHandles;
 
   if ~isnumeric(cdata)
       error( 'matlab2tikz:cdata2rgb',                        ...
 	     [ 'Don''t know how to handle cdata ''',cdata,'''.' ] )
   end
 
-  fighandle  = matlab2tikzOpts.gcf;
-  axeshandle = matlab2tikzOpts.gca;
+  fighandle  = currentHandles.gcf;
+  axeshandle = currentHandles.gca;
 
   colormap = get( fighandle, 'ColorMap' );
 
@@ -2531,6 +2551,8 @@ end
 % =========================================================================
 function dimension = getAxesDimensions( handle )
 
+  global matlab2tikzOpts;
+
   daspectmode = get( handle, 'DataAspectRatioMode' );
   position    = get( handle, 'Position' );
   units       = get( handle, 'Units' );
@@ -2824,10 +2846,10 @@ end
 % =========================================================================
 function out = normalized2physical()
 
-  global matlab2tikzOpts
+  global currentHandles
 
-  fig  = matlab2tikzOpts.gcf;
-  axes = matlab2tikzOpts.gca;
+  fig  = currentHandles.gcf;
+  axes = currentHandles.gca;
 
   % width of the full window
   fpos = get( fig, 'Position' );
