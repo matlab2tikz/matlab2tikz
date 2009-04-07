@@ -91,6 +91,9 @@ function matlab2tikz( filename, varargin )
   matlab2tikzOpts.addParamValue( 'height', [], @ischar );
   matlab2tikzOpts.addParamValue( 'width' , [], @ischar );
 
+  % file encoding
+  matlab2tikzOpts.addParamValue( 'encoding' , '', @ischar );
+
   matlab2tikzOpts.parse( filename, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -140,7 +143,12 @@ function saveToFile()
 
   global neededRGBColors
 
-  fid = fopen( matlab2tikzOpts.Results.filename, 'w' );
+  % open the file for writing
+  fid = fopen( matlab2tikzOpts.Results.filename, ...
+               'w', ...
+               'native', ... 
+               matlab2tikzOpts.Results.encoding ...
+             );
   if fid == -1
       error( 'matlab2tikz:saveToFile', ...
              'Unable to open file ''%s'' for writing.', ...
