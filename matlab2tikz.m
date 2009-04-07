@@ -188,7 +188,7 @@ function saveToFile()
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
-  fprintf( fid, '% This file was created by %s v%s.\n\n',               ...
+  fprintf( fid, '%% This file was created by %s v%s.\n\n',              ...
                                    matlab2tikzName, matlab2tikzVersion );
 
   if isempty(tikzOptions)
@@ -559,6 +559,17 @@ function str = drawAxes( handle, alignmentOptions )
       opts = [ '\n', collapse( axisOpts, ',\n' ), '\n' ];
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+      % if a tag is given, use it as comment
+      tag = get(handle, 'tag');
+      if ~isempty(tag)
+          str = [ str, ...
+                  sprintf( '\n%% Axis "%s"', tag ) ];
+      else
+          str = [ str, ...
+                  sprintf( '\n%% Axis at [%.2g %.2f %.2g %.2g]', ...
+                           get(handle, 'position' ) ) ];
+      end
+    
       % Now, return the whole axis environment.
       str = [ str, ...
               sprintf( ['\n\\begin{%s}[',opts,']\n\n'], env ), ...
@@ -1151,7 +1162,7 @@ end
 % =========================================================================
 % *** FUNCTION drawHggroup
 % =========================================================================
-function str = drawHggroup( h );
+function str = drawHggroup( h )
 
   cl = class( handle(h) );
 
@@ -2035,7 +2046,7 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
       for k=1:n
           % escape all lenged entries to math mode for now
           % -- this is later to be removed
-          entries{k} = [ '$', entries{k}, '$' ];
+          entries{k} = [ '{$', entries{k}, '$}' ];
       end
 
       lOpts = [ lOpts,                                                  ...
@@ -2055,6 +2066,8 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
           if isXAxisReversed || isYAxisReversed
 	      position = [1-dist, 1-dist];
 	      anchor   = 'north east';
+    else
+      anchor = [];
           end
       case 'NorthWest'
           position = [dist, 1-dist];
