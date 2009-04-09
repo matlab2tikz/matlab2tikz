@@ -50,7 +50,7 @@
 % ***    <http://www.gnu.org/licenses/>.
 % ***
 % =========================================================================
-function matlab2tikz( filename, varargin )
+function matlab2tikz( varargin )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define some global variables
@@ -82,7 +82,9 @@ function matlab2tikz( filename, varargin )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % scan the options
   matlab2tikzOpts = inputParser;
-  matlab2tikzOpts.addRequired( 'filename', @ischar );
+  matlab2tikzOpts.addOptional( 'filename', ...
+                               [], ...
+                               @(x) filenameValidation(x,matlab2tikzOpts) );
 
   % whether to strictly stick to the default MATLAB plot appearence:
   matlab2tikzOpts.addOptional( 'strict', 0, @isnumeric );
@@ -94,19 +96,27 @@ function matlab2tikz( filename, varargin )
   % file encoding
   matlab2tikzOpts.addParamValue( 'encoding' , '', @ischar );
 
-  matlab2tikzOpts.parse( filename, varargin{:} );
+  matlab2tikzOpts.parse( varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % add extra elements
   currentHandles.gca = gca;
   currentHandles.gcf = gcf;
 
+  % set filename
+  if ~isempty(matlab2tikzOpts.Results.filename)
+      filename = matlab2tikzOpts.Results.filename;
+  else
+      filename = uiputfile( {'*.tikz'; '*.*'}, ...
+                            'Save File' );
+  end
+
   % print some version info to the screen
   fprintf( '%s v%s\n', matlab2tikzName, matlab2tikzVersion );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
-  saveToFile();
+  saveToFile( filename );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   fprintf( '\nRemember to load \\usepackage{tikz} and \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
@@ -118,6 +128,14 @@ function matlab2tikz( filename, varargin )
   clear global tol;
   clear global currentHandles;
   clear all;
+
+  % -----------------------------------------------------------------------
+  % validates the optional argument 'filename' to not be another
+  % another keyword
+  function l = filenameValidation( x, p )
+    l = ischar(x) && ~any( strcmp(x,p.Parameters) );
+  end
+  % -----------------------------------------------------------------------
 
 end
 % =========================================================================
@@ -133,7 +151,7 @@ end
 % *** All other routines are called from here.
 % ***
 % =========================================================================
-function saveToFile()
+function saveToFile( filename )
 
   global matlab2tikzName
   global matlab2tikzVersion
@@ -144,7 +162,7 @@ function saveToFile()
   global neededRGBColors
 
   % open the file for writing
-  fid = fopen( matlab2tikzOpts.Results.filename, ...
+  fid = fopen( filename, ...
                'w', ...
                'native', ... 
                matlab2tikzOpts.Results.encoding ...
@@ -152,7 +170,7 @@ function saveToFile()
   if fid == -1
       error( 'matlab2tikz:saveToFile', ...
              'Unable to open file ''%s'' for writing.', ...
-             matlab2tikzOpts.Results.filename );
+             filename );
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2920,7 +2938,7 @@ end
 % ***  [ AXES3 AXES2 ]
 % ***  [ AXES1       ]
 % ***
-% *** 'AXES1' will serve as a reference for t AXES2 and AXES3.
+% *** 'AXES1' will serve as a reference for AXES2 and AXES3.
 % *** It does so by first computing a 'dependency' graph, then traversing
 % *** the graph starting from a node (AXES) with maximal connections.
 % ***
