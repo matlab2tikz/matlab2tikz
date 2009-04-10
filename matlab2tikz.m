@@ -2072,7 +2072,11 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
       for k=1:n
           % escape all lenged entries to math mode for now
           % -- this is later to be removed
-          entries{k} = [ '{$', entries{k}, '$}' ];
+          entries{k} = [ '$', entries{k}, '$' ];
+          % surround the entry by braces if a comma is contained
+          if strfind( entries{k}, ',' )
+              entries{k} = [ '{', entries{k}, '}' ];
+          end
       end
 
       lOpts = [ lOpts,                                                  ...
