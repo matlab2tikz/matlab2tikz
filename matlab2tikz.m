@@ -413,7 +413,7 @@ function str = drawAxes( handle, alignmentOptions )
           else
               axisOpts = [ axisOpts,             ...
                            sprintf( 'width=%s' , ...
-                                    matlab2tikzOpts.Results.width ) ];
+                                    escapeCharacters(matlab2tikzOpts.Results.width) ) ];
           end
       case 'reverse'
           isXAxisRev = 1;
@@ -437,7 +437,7 @@ function str = drawAxes( handle, alignmentOptions )
           else
               axisOpts = [ axisOpts,             ...
                            sprintf( 'height=%s' , ...
-                                    matlab2tikzOpts.Results.height ) ];
+                                    escapeCharacters(matlab2tikzOpts.Results.height) ) ];
           end
       case 'reverse'
           isYAxisRev = 1;
