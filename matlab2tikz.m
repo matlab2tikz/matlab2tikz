@@ -2155,16 +2155,35 @@ end
 function [ ticks, tickLabels ] = getTicks( handle )
 
   global tol
+  global matlab2tikzOpts
 
-  xTick      = get( handle, 'XTick' );
-  xTickLabel = get( handle, 'XTickLabel' );
-  isXAxisLog = strcmp( get(handle,'XScale'), 'log' );
-  [ticks.x, tickLabels.x] = getAxisTicks( xTick, xTickLabel, isXAxisLog );
+  xTickMode = get( handle, 'XTickMode' );
+  if strcmp(xTickMode,'auto') && ~matlab2tikzOpts.Results.strict
+      % If the ticks are set automatically, and strict conversion is
+      % not required, then let pgfplots take care of the ticks.
+      % In most cases, this looks a lot better anyway.
+      ticks.x      = [];
+      tickLabels.x = [];
+  else
+      xTick      = get( handle, 'XTick' );
+      xTickLabel = get( handle, 'XTickLabel' );
+      isXAxisLog = strcmp( get(handle,'XScale'), 'log' );
+      [ticks.x, tickLabels.x] = getAxisTicks( xTick, xTickLabel, isXAxisLog );
+  end
 
-  yTick      = get( handle, 'YTick' );
-  yTickLabel = get( handle, 'YTickLabel' );
-  isYAxisLog = strcmp( get(handle,'YScale'), 'log' );
-  [ticks.y, tickLabels.y] = getAxisTicks( yTick, yTickLabel, isYAxisLog );
+  yTickMode = get( handle, 'YTickMode' );
+  if strcmp(yTickMode,'auto') && ~matlab2tikzOpts.Results.strict
+      % If the ticks are set automatically, and strict conversion is
+      % not required, then let pgfplots take care of the ticks.
+      % In most cases, this looks a lot better anyway.
+      ticks.y      = [];
+      tickLabels.y = [];
+  else
+      yTick      = get( handle, 'YTick' );
+      yTickLabel = get( handle, 'YTickLabel' );
+      isYAxisLog = strcmp( get(handle,'YScale'), 'log' );
+      [ticks.y, tickLabels.y] = getAxisTicks( yTick, yTickLabel, isYAxisLog );
+  end
 
   % -----------------------------------------------------------------------
   % *** FUNCTION getAxisTicks
@@ -2188,6 +2207,30 @@ function [ ticks, tickLabels ] = getTicks( handle )
     % check if tickLabels are really necessary (and not already covered by
     % the tick values themselves)
     plotLabelsNecessary = 0;
+    
+    if isLogAxis
+        scalingFactor = 1;
+    else
+        % When plotting axis, MATLAB might scale the axes by a factor of ten
+        % say 10^n, and plot a '10^k' next to th respective axis. This is
+        % common practice when the tick marks are really large or small
+        % numbers.
+        % Unfortunately, MATLAB doesn't contain the information about the
+        % scaling anywhere in the plot, and at the same time the *TickLabels
+        % are given as t*10^k, thus no longer corresponding to the actual
+        % value t.
+        % Try to find the scaling factor here. This is then used to check
+        % whether or not explicit *TickLabels are really necessary.
+        k = find( tick, 1 ); % get an index with non-zero tick value
+        s = str2double( tickLabel{k} );
+        scalingFactor = tick(k)/s;
+        % check if the factor is indeed a power of 10
+        S = log10(scalingFactor);
+        if abs(round(S)-S) > tol
+            scalingFactor = 1;
+        end
+    end
+
     for k = 1:min(length(tick),length(tickLabel))
 	% Don't use str2num here as then, literal strings as 'pi' get
 	% legally transformed into 3.14... and the need for an explicit
@@ -2197,7 +2240,7 @@ function [ ticks, tickLabels ] = getTicks( handle )
 	else
 	    s = str2double( tickLabel{k} );
 	end
-	if isnan(s)  ||  abs(tick(k)-s) > tol
+	if isnan(s)  ||  abs(tick(k)-s*scalingFactor) > tol
 	    plotLabelsNecessary = 1;
 	    break
 	end
@@ -2220,6 +2263,7 @@ function [ ticks, tickLabels ] = getTicks( handle )
     else
 	tickLabels = [];
     end
+
   end
   % -----------------------------------------------------------------------
   % *** END FUNCTION getAxisTicks
