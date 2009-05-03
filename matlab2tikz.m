@@ -2172,7 +2172,7 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
                  sprintf( 'anchor=%s', anchor ) ];
   end
   
-  % if the plot has 'legend boxoff', we have the 'not visible'
+  % If the plot has 'legend boxoff', we have the 'not visible'
   % property, so turn off line and background fill.
   if ( ~isVisible(handle) )
       lStyle=[lStyle, 'fill=none', 'draw=none' ];
@@ -2210,7 +2210,7 @@ function [ ticks, tickLabels ] = getTicks( handle )
       % In most cases, this looks a lot better anyway.
       ticks.x      = [];
       tickLabels.x = [];
-  else
+  else % strcmp(xTickMode,'manual') || matlab2tikzOpts.Results.strict
       xTick      = get( handle, 'XTick' );
       xTickLabel = get( handle, 'XTickLabel' );
       isXAxisLog = strcmp( get(handle,'XScale'), 'log' );
@@ -2224,7 +2224,7 @@ function [ ticks, tickLabels ] = getTicks( handle )
       % In most cases, this looks a lot better anyway.
       ticks.y      = [];
       tickLabels.y = [];
-  else
+  else % strcmp(yTickMode,'manual') || matlab2tikzOpts.Results.strict
       yTick      = get( handle, 'YTick' );
       yTickLabel = get( handle, 'YTickLabel' );
       isYAxisLog = strcmp( get(handle,'YScale'), 'log' );
@@ -2240,6 +2240,12 @@ function [ ticks, tickLabels ] = getTicks( handle )
   % -----------------------------------------------------------------------
   function [ticks, tickLabels] = getAxisTicks( tick, tickLabel, isLogAxis )
 
+    if isempty( tick )
+        ticks      = [];
+        tickLabels = [];
+        return
+    end
+
     % set ticks + labels
     ticks = collapse( num2cell(tick), ',' );
 
@@ -2250,23 +2256,24 @@ function [ ticks, tickLabels ] = getTicks( handle )
 			    ones(size(tickLabel,1),1),size(tickLabel,2)) );
     end
 
-    % check if tickLabels are really necessary (and not already covered by
-    % the tick values themselves)
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % Check if tickLabels are really necessary (and not already covered by
+    % the tick values themselves).
     plotLabelsNecessary = 0;
     
     if isLogAxis
         scalingFactor = 1;
     else
-        % When plotting axis, MATLAB might scale the axes by a factor of ten
-        % say 10^n, and plot a '10^k' next to th respective axis. This is
+        % When plotting axis, MATLAB might scale the axes by a factor of ten,
+        % say 10^n, and plot a 'x 10^k' next to th respective axis. This is
         % common practice when the tick marks are really large or small
         % numbers.
         % Unfortunately, MATLAB doesn't contain the information about the
-        % scaling anywhere in the plot, and at the same time the *TickLabels
+        % scaling anywhere in the plot, and at the same time the {x,y}TickLabels
         % are given as t*10^k, thus no longer corresponding to the actual
         % value t.
         % Try to find the scaling factor here. This is then used to check
-        % whether or not explicit *TickLabels are really necessary.
+        % whether or not explicit {x,y}TickLabels are really necessary.
         k = find( tick, 1 ); % get an index with non-zero tick value
         s = str2double( tickLabel{k} );
         scalingFactor = tick(k)/s;
@@ -2291,6 +2298,7 @@ function [ ticks, tickLabels ] = getTicks( handle )
 	    break
 	end
     end
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     if plotLabelsNecessary
 	% if the axis is logscaled, MATLAB does not store the labels,
