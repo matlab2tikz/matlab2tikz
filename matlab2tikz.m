@@ -558,6 +558,8 @@ function str = drawAxes( handle, alignmentOptions )
   % This could be done better with a heuristic of finding
   % the nearest legend to a plot, which would cope with legends outside
   % plot boundaries.
+
+  % TODO: How to uniquely connect a legend with a pair of axes?
   
   axisDims=get(handle,'Position');
   axisLeft=axisDims(1);
@@ -570,14 +572,15 @@ function str = drawAxes( handle, alignmentOptions )
           strcmp( get(c(k),'Tag' ), 'legend' )
           legendHandle = c(k);
           if (legendHandle)              
-              legDims=get(legendHandle,'Position');
-              legLeft=legDims(1);
-              legBot=legDims(2);
-              legWid=legDims(3);
-              legHei=legDims(4);
-              if (legLeft>axisLeft && legBot>axisBot && ...
-                      legLeft+legWid<axisLeft+axisWid && ...
-                      legBot+legHei<axisBot+axisHei)
+              legDims = get( legendHandle, 'Position' );
+              legLeft = legDims(1);
+              legBot  = legDims(2);
+              legWid  = legDims(3);
+              legHei  = legDims(4);
+              if (    legLeft > axisLeft ...
+                   && legBot > axisBot ...  
+                   && legLeft+legWid < axisLeft+axisWid ...
+                   && legBot+legHei  < axisBot+axisHei )
                   axisOpts = [ axisOpts, ...
                        getLegendOpts( legendHandle, isXAxisRev, isYAxisRev ) ];
               end
@@ -2077,23 +2080,12 @@ end
 % =========================================================================
 function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
 
-  lOpts = cell( 0 );
-
-  if ~isVisible( handle )
-      % need to check that there's nothing inside visible before we
-      % abandon this legend - an invisible property of the parent just
-      % means the legend has no box
-      children=get(handle,'Children');
-      show=0;
-      for c=1:length(children)
-          if isVisible(children(c))
-              show=1;
-              break;
-          end
-      end
-      if ~show
-        return
-      end
+  % Need to check that there's nothing inside visible before we
+  % abandon this legend -- an invisible property of the parent just
+  % means the legend has no box.
+  children = get( handle, 'Children' );
+  if ~isVisible( handle ) && ~any( isVisible(children) )
+      return
   end
 
   % read the legend text
@@ -2101,16 +2093,17 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
 
   n = length( entries );
 
+  lOpts = cell( 0 );
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle legend entries
   if n
       for k=1:n
-          % escape all legend entries to math mode for now
-          % -- this is later to be removed
-          % since it goes through printf, also escape any backslashes
-          % that might be preceding TeX code
-          entries{k} = [ '$', strrep(entries{k},'\','\\'), '$' ];
-          % surround the entry by braces if a comma is contained
+          % Escape all legend entries to math mode for now.
+          % The reason for this is that entries as "cos_x" are legal MATLAB
+          % code, but won't compile in (La)TeX except in Math mode.
+          entries{k} = [ '$', escapeCharacters(entries{k}), '$' ];
+          % Surround the entry by braces if a comma is contained.
           if strfind( entries{k}, ',' )
               entries{k} = [ '{', entries{k}, '}' ];
           end
@@ -2164,7 +2157,7 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  lStyle='';
+  lStyle = cell(0);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % modify for reversed axes and append to lOpts
   if ~isempty(anchor)
@@ -2174,23 +2167,23 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
       if isYAxisReversed
           position(2) = 1-position(2);
       end
-      lStyle=sprintf( 'at={(%g,%g)},anchor=%s', ...
-			position, anchor );
+      lStyle = [ lStyle, ...
+                 sprintf( 'at={(%g,%g)}',position ), ...
+                 sprintf( 'anchor=%s', anchor ) ];
   end
   
   % if the plot has 'legend boxoff', we have the 'not visible'
-  % property.  So turn off line and background fill
-  if (~isVisible(handle))
-      if (length(lStyle)>0)
-          lStyle=[lStyle ','];
-      end
-      lStyle=[lStyle 'fill=none, draw=none'];
+  % property, so turn off line and background fill.
+  if ( ~isVisible(handle) )
+      lStyle=[lStyle, 'fill=none', 'draw=none' ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  if (lStyle)
-      lOpts = [ lOpts, ['legend style={' lStyle '}']];
+  if ~isempty(lStyle)
+      lOpts = [ lOpts, ...
+                'legend style={' collapse(lStyle,',') '}' ];
   end
+
 end
 % =========================================================================
 % *** FUNCTION getLegendOpts
