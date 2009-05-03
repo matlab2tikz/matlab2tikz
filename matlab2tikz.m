@@ -551,19 +551,40 @@ function str = drawAxes( handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % See if there are any legends that need to be plotted.
   c = get( get(handle,'Parent'), 'Children' ); % siblings of this handle
+  
+  % Since the legends are at the same level as axes in the hierarchy,
+  % we can't work out which relates to which using the tree
+  % so we have to do it by looking for a plot inside which the legend sits.
+  % This could be done better with a heuristic of finding
+  % the nearest legend to a plot, which would cope with legends outside
+  % plot boundaries.
+  
+  axisDims=get(handle,'Position');
+  axisLeft=axisDims(1);
+  axisBot=axisDims(2);
+  axisWid=axisDims(3);
+  axisHei=axisDims(4);
   legendHandle = 0;
   for k=1:size(c)
       if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
           strcmp( get(c(k),'Tag' ), 'legend' )
           legendHandle = c(k);
-          break
+          if (legendHandle)              
+              legDims=get(legendHandle,'Position');
+              legLeft=legDims(1);
+              legBot=legDims(2);
+              legWid=legDims(3);
+              legHei=legDims(4);
+              if (legLeft>axisLeft && legBot>axisBot && ...
+                      legLeft+legWid<axisLeft+axisWid && ...
+                      legBot+legHei<axisBot+axisHei)
+                  axisOpts = [ axisOpts, ...
+                       getLegendOpts( legendHandle, isXAxisRev, isYAxisRev ) ];
+              end
+          end
       end
   end
 
-  if legendHandle
-      axisOpts = [ axisOpts, ...
-                   getLegendOpts( legendHandle, isXAxisRev, isYAxisRev ) ];
-  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % actually begin drawing
@@ -2056,23 +2077,39 @@ end
 % =========================================================================
 function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
 
+  lOpts = cell( 0 );
+
   if ~isVisible( handle )
-      return
+      % need to check that there's nothing inside visible before we
+      % abandon this legend - an invisible property of the parent just
+      % means the legend has no box
+      children=get(handle,'Children');
+      show=0;
+      for c=1:length(children)
+          if isVisible(children(c))
+              show=1;
+              break;
+          end
+      end
+      if ~show
+        return
+      end
   end
 
+  % read the legend text
   entries = get( handle, 'String' );
 
   n = length( entries );
-
-  lOpts = cell( 0 );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle legend entries
   if n
       for k=1:n
-          % escape all lenged entries to math mode for now
+          % escape all legend entries to math mode for now
           % -- this is later to be removed
-          entries{k} = [ '$', entries{k}, '$' ];
+          % since it goes through printf, also escape any backslashes
+          % that might be preceding TeX code
+          entries{k} = [ '$', strrep(entries{k},'\','\\'), '$' ];
           % surround the entry by braces if a comma is contained
           if strfind( entries{k}, ',' )
               entries{k} = [ '{', entries{k}, '}' ];
@@ -2127,6 +2164,7 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  lStyle='';
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % modify for reversed axes and append to lOpts
   if ~isempty(anchor)
@@ -2136,12 +2174,23 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
       if isYAxisReversed
           position(2) = 1-position(2);
       end
-      lOpts = [ lOpts,                                            ...
-		sprintf( 'legend style={at={(%g,%g)},anchor=%s}', ...
-			position, anchor ) ];
+      lStyle=sprintf( 'at={(%g,%g)},anchor=%s', ...
+			position, anchor );
+  end
+  
+  % if the plot has 'legend boxoff', we have the 'not visible'
+  % property.  So turn off line and background fill
+  if (~isVisible(handle))
+      if (length(lStyle)>0)
+          lStyle=[lStyle ','];
+      end
+      lStyle=[lStyle 'fill=none, draw=none'];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  if (lStyle)
+      lOpts = [ lOpts, ['legend style={' lStyle '}']];
+  end
 end
 % =========================================================================
 % *** FUNCTION getLegendOpts
