@@ -1582,6 +1582,13 @@ end
 function str = drawQuiverGroup( h )
 
   global tikzOptions
+  persistent quiverId  % in case there are more than one quiver fields
+
+  if isempty(quiverId)
+     quiverId = 0;
+  else
+     quiverId = quiverId + 1;
+  end
 
   str = [];
 
@@ -1622,6 +1629,7 @@ function str = drawQuiverGroup( h )
       else
 	  scalefactor = scalefactor*0.9;
       end
+
       uData = uData*scalefactor;
       vData = vData*scalefactor;
   end
@@ -1658,7 +1666,7 @@ function str = drawQuiverGroup( h )
   % Append the arrow style to the TikZ options themselves.
   % TODO: Look into replacing this by something more 'local',
   % (see \pgfplotset{}).
-  arrowStyle  = [ 'arrow/.style={',arrowOptions,'}' ];
+  arrowStyle  = [ 'arrow',num2str(quiverId),'/.style={',arrowOptions,'}' ];
   tikzOptions = [ tikzOptions, arrowStyle ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1670,9 +1678,11 @@ function str = drawQuiverGroup( h )
   XY(2,:,:) = yData;
   XY(3,:,:) = xData+uData;
   XY(4,:,:) = yData+vData;
+
   str = [ str, ...
-          sprintf( '\\addplot [arrow] coordinates{ (%g,%g) (%g,%g) };\n',...
-                     XY ) ];
+          sprintf( [ '\\addplot [arrow',num2str(quiverId)  ,...
+                     '] coordinates{ (%g,%g) (%g,%g) };\n'],...
+                   XY ) ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
