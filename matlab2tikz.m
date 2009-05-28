@@ -1582,7 +1582,7 @@ end
 function str = drawQuiverGroup( h )
 
   global tikzOptions
-  persistent quiverId  % in case there are more than one quiver fields
+  persistent quiverId  % used for arrow styles, in case there are more than one quiver fields
 
   if isempty(quiverId)
      quiverId = 0;
@@ -1592,47 +1592,31 @@ function str = drawQuiverGroup( h )
 
   str = [];
 
-  xData = get( h, 'XData' );
-  yData = get( h, 'YData' );
-  uData = get( h, 'UData' );
-  vData = get( h, 'VData' );
-
-  m = size( xData, 1 );
-  n = size( xData, 2 );
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % Do autoscaling. The following procedure can be found in MATLAB's
-  % quiver.m
-  autoscale = get( h, 'AutoScale' );
-  if strcmp( autoscale, 'on' )
+  % One could get(h,'{X,Y,U,V}Data') in which the intended arrow lengths are stored.
+  % MATLAB(R) however applies some quite sophisticated scaling here to avoid overlap
+  % of arrows.
+  % The actual length of the arrows is stored in c(1) of
+  %
+  %  c = get(h,'Children');
+  %
+  % 'XData' and 'YData' of c(1) will be of the form
+  %
+  % [arrow1point1, arrow1point2, NaN, arrow2point1, arrow2point2, NaN].
+  %
+  c = get( h, 'Children' );
 
-      scalefactor = get( h, 'AutoScaleFactor' );
+  xData = get( c(1), 'XData' );
+  yData = get( c(1), 'YData' );
+  m = length(x1Data);   % number of arrows
 
-      % Get average spacing in x- and y-direction.
-      % -- This assumes that when xData, yData are indeed 2D entities, they
-      %    really repeat the same row (column) m (n) times. Hence take only
-      %    the first.
-      avx = diff([min(xData(1,:)) max(xData(1,:))])/m;
-      avy = diff([min(yData(:,1)) max(yData(:,1))])/n;
-      av  = avx.^2 + avy.^2; % length of the average box diagonal
+  XY = zeros(4,m);
 
-      % get the maximal length of a scaled arrow
-      if av>0
-	  len = sqrt( (uData.^2 + vData.^2)/av );
-	  maxLen = max(len(:));
-      else
-	  maxLen = 0;
-      end
-
-      if maxLen>0
-	  scalefactor = scalefactor*0.9 / maxLen;
-      else
-	  scalefactor = scalefactor*0.9;
-      end
-
-      uData = uData*scalefactor;
-      vData = vData*scalefactor;
-  end
+  step = 3;
+  XY(1,:) = xData(1:step:end);
+  XY(2,:) = xData(2:step:end);
+  XY(3,:) = yData(1:step:end);
+  XY(4,:) = yData(2:step:end);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -1656,7 +1640,7 @@ function str = drawQuiverGroup( h )
   color      = get( h, 'Color');
   arrowcolor = getColor( h, color, 'patch' );
   arrowOpts = [ arrowOpts,                               ...
-                 sprintf( 'color=%s', arrowcolor ),        ... % color
+                 sprintf( 'color=%s', arrowcolor ),      ... % color
                  getLineOptions( lineStyle, lineWidth ), ... % line options
                ];
 
@@ -1673,12 +1657,6 @@ function str = drawQuiverGroup( h )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % return the vector field code
-  XY = zeros(4,m,n);
-  XY(1,:,:) = xData;
-  XY(2,:,:) = yData;
-  XY(3,:,:) = xData+uData;
-  XY(4,:,:) = yData+vData;
-
   str = [ str, ...
           sprintf( [ '\\addplot [arrow',num2str(quiverId)  ,...
                      '] coordinates{ (%g,%g) (%g,%g) };\n'],...
