@@ -76,7 +76,7 @@ function matlab2tikz( varargin )
   matlab2tikzName = 'matlab2tikz';
 
   global matlab2tikzVersion;
-  matlab2tikzVersion = '0.0.3';
+  matlab2tikzVersion = '0.0.4';
 
   global tikzOptions; % for the arrow style -- see if we can get this removed
   tikzOptions = cell(0);
