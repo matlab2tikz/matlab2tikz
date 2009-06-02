@@ -645,8 +645,23 @@ end
 
 % =========================================================================
 % *** FUNCTION drawLine
+% ***
+% *** Returns the code for drawing a regular line.
+% *** This is an extremely common operation and takes place in most of the
+% *** not too fancy plots.
+% ***
+% *** This function handles error bars, too.
+% ***
 % =========================================================================
-function str = drawLine( handle )
+function str = drawLine( handle, yDeviation )
+
+  global currentHandles
+
+  % check if the *optional* argument 'yDeviation' was given
+  errorbarMode = 0;
+  if nargin>1
+      errorbarMode = 1;
+  end
 
   str = [];
 
@@ -662,12 +677,13 @@ function str = drawLine( handle )
       return
   end
 
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % deal with draw options
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   color  = get( handle, 'Color' );
   xcolor = getColor( handle, color, 'patch' );
-  drawOptions = [ sprintf( 'color=%s', xcolor ),            ... % color
+  drawOptions = [ sprintf( 'color=%s', xcolor ),           ... % color
                    getLineOptions( lineStyle, lineWidth ), ... % line options
                    getMarkerOptions( handle )              ... % marker options
                  ];
@@ -681,7 +697,7 @@ function str = drawLine( handle )
   % plot the actual line data
   % -- Check for any node if it needs to be included at all. For zoomed
   %    plots, lots can be omitted.
-  p      = get( handle, 'Parent' );
+  p      = currentHandles.gca;
   xLim   = get( p, 'XLim' );
   yLim   = get( p, 'YLim' );
   xData  = get( handle, 'XData' );
@@ -690,10 +706,17 @@ function str = drawLine( handle )
 
   n = length(xData);
 
+  if errorbarMode
+      if n~=length(yDeviation)
+          error( 'drawLine:arrayLengthsMismatch', ...
+                 '''drawline'' was called with errors bars turned on, but array lengths do not match.' );
+      end
+  end
+
   % The line gets actually broken up into several as some parts of it may
   % be outside the visible area (the plot box).
   % 'segvis' tells us which segment are actually visible, and the
-  % following construction loops throught it and makes sure that each
+  % following construction loops through it and makes sure that each
   % point that is necessary gets actually printed.
   % 'printPrevious' tells whether or not the previous segment is visible;
   % this information is used for determining when a new 'addplot' needs
@@ -701,22 +724,51 @@ function str = drawLine( handle )
   printPrevious = 0;
   for k = 1:n-1
       if segvis(k) % segment is visible
+          %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
           if ~printPrevious % .. the previous wasn't, hence start a plot
               str = [ str, ...
-                      sprintf( ['\\addplot [',opts,'] coordinates{\n' ] ), ...;
+                      sprintf( ['\\addplot [',opts,']'] ) ];
+              if errorbarMode
+                  str = [ str, ...
+                          sprintf('\nplot[error bars/.cd, y dir = both, y explicit]\n') ];
+              end
+              str = [ str, ...
+                      sprintf('coordinates{\n') ];
+
+              str = [ str, ...
                       sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
+              if errorbarMode
+                  str = [ str, ...
+                          sprintf( ' +- (%g,%g)\n', 0, yDeviation(k) ) ];
+              end
               printPrevious = 1;
           end
+
           str = [ str, sprintf( ' (%g,%g)', xData(k+1), yData(k+1) ) ];
+          if errorbarMode
+              str = [ str, ...
+                      sprintf( ' +- (%g,%g)\n', 0, yDeviation(k+1) ) ];
+          end
+          %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
       else
+          %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
           if printPrevious  % that was the last entry for now
-              str = [ str, sprintf('\n};\n\n') ];
+              if ~errorbarMode % error bars already create newline characters
+                  str = [ str, ...
+                          sprintf('\n') ];
+              end
+              str = [ str, sprintf('};\n\n') ];
               printPrevious = 0;
           end
+          %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
       end
   end
   if printPrevious % don't forget to print the closing bracket
-      str = [ str, sprintf('\n};\n\n') ];
+      if ~errorbarMode % error bars already create newline characters
+          str = [ str, ...
+                  sprintf('\n') ];
+      end
+      str = [ str, sprintf('};\n\n') ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1201,12 +1253,24 @@ function str = drawImage( handle )
   cdata = get( handle, 'CData' );
 
   % draw the thing
-  for i = 1:length(Y)
-      for j = 1:length(X)
-          xcolor = getColor( handle, cdata(i,j,:), 'image' );
+  m = length(Y);
+  n = length(X);
+  xcolor = cell(m,n);
+  for i = 1:m
+      for j = 1:n
+          xcolor{i,j} = getColor( handle, cdata(i,j,:), 'image' );
+      end
+  end
+
+  % The following section takes pretty long to execute, although in principle it is
+  % discouraged to use TikZ for those; LaTeX will take forever to compile.
+  % Still, a bug has been filed on MathWorks to allow for one-line sprintf'ing with
+  % (string+num) cells.
+  for i = 1:m
+      for j = 1:n
           str = [ str, ...
                   sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
-                           xcolor,  X(j)-0.5, Y(i)-0.5, X(j)+0.5, Y(i)+0.5  ) ];
+                           xcolor{i,j},  X(j)-0.5, Y(i)-0.5, X(j)+0.5, Y(i)+0.5  ) ];
       end
   end
 
@@ -1244,6 +1308,10 @@ function str = drawHggroup( h )
       case {'specgraph.quivergroup'}
 	  % quiver arrows
 	  str = drawQuiverGroup( h );
+
+      case {'specgraph.errorbarseries'}
+          % error bars
+          str = drawErrorBars( h );
 
       otherwise
 	  warning( 'matlab2tikz:drawHggroup',                          ...
@@ -1310,11 +1378,21 @@ function str = drawBarseries( h )
                   % this is pretty harmless: don't complain about ordinary text
               case 'hggroup'
                   cl = class(handle(siblings(k)));
-	          if strcmp( cl , 'specgraph.barseries' )
-	              barplotTotalNumber = barplotTotalNumber + 1;
-                  else
-                      error( 'matlab2tikz:drawBarseries',              ...
-                             'Unknown class''%s''.', cl  );
+                  switch cl
+                      case 'specgraph.barseries'
+	                  barplotTotalNumber = barplotTotalNumber + 1;
+                      case 'specgraph.errorbarseries'
+                          % TODO:
+                          % Unfortunately, MATLAB(R) treats error bars and corresponding
+                          % bar plots as siblings of a common axes object.
+                          % For error bars to work with bar plots -- which is trivially
+                          % possible in pgfplots -- one has to match errorbar and bar
+                          % objects (probably by their values).
+                          warning( 'matlab2tikz:drawBarseries',        ...
+                                   'Error bars discarded (to be implemented).'  );
+                      otherwise
+                          error( 'matlab2tikz:drawBarseries',          ...
+                                 'Unknown class''%s''.', cl  );
 	          end
               otherwise
                   error( 'matlab2tikz:drawBarseries',                  ...
@@ -1616,14 +1694,15 @@ function str = drawQuiverGroup( h )
 
   xData = get( c(1), 'XData' );
   yData = get( c(1), 'YData' );
-  m = length(x1Data);   % number of arrows
+
+  step = 3;
+  m = length(xData(1:step:end));   % number of arrows
 
   XY = zeros(4,m);
 
-  step = 3;
   XY(1,:) = xData(1:step:end);
-  XY(2,:) = xData(2:step:end);
-  XY(3,:) = yData(1:step:end);
+  XY(2,:) = yData(1:step:end);
+  XY(3,:) = xData(2:step:end);
   XY(4,:) = yData(2:step:end);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1674,6 +1753,80 @@ function str = drawQuiverGroup( h )
 end
 % =========================================================================
 % *** END FUNCTION drawQuiverGroup
+% =========================================================================
+
+
+
+% =========================================================================
+% *** FUNCTION drawErrorBars
+% ***
+% *** Takes care of MATLAB's error bar plots.
+% ***
+% =========================================================================
+function str = drawErrorBars( h )
+
+  global tol
+
+  str = [];
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % 'errorseries' plots have two line-plot children, one of which contains
+  % the information about the center points; 'XData' and 'YData' components
+  % are both of length n.
+  % The other contains the information about the deviations (errors).
+  % 'XData' and 'YData' are of length 9*n and contain redundant info which
+  % is only needed by MATLAB itself to explicitly draw the error bars.
+  c = get( h, 'Children' );
+
+  n1 = length( get(c(1),'XData') );
+  n2 = length( get(c(2),'XData') );
+
+  if n2 - 9*n1 == 0
+      % n1 contains centerpoint info
+      dataIdx  = 1;
+      errorIdx = 2;
+  elseif n1 - 9*n2 == 0
+      % n2 contains centerpoint info
+      dataIdx  = 2;
+      errorIdx = 1;
+  else
+      error( 'drawErrorBars:errorMatch', ...
+             'Sizes of and error data not matching (9*%d ~= %d and 9*%d ~= %d).', ...
+             n1, n2, n2, n1 );
+  end
+
+  % prepare error array (that is, gather the y-deviations)
+  yValues = get( c(dataIdx) , 'YData' );
+  yErrors = get( c(errorIdx), 'YData' );
+
+  n = length(yValues);
+
+  yDeviations = zeros(n,1);
+
+  for k = 1:n
+      % upper deviation
+      kk = 9*(k-1) + 1;
+      upDev = abs(yValues(k) - yErrors(kk));
+
+      % lower deviation
+      kk = 9*(k-1) + 2;
+      loDev = abs(yValues(k) - yErrors(kk));
+
+      if abs(upDev-loDev) >= 1e-10 % don't use 'tol' here as is seems somewhat too strict
+          error( 'drawErrorBars:uneqDeviations', ...
+                 'Upper and lower error deviations not equal (%g ~= %g); matlab2tikz can''t deal with that yet. Using upper deviations.', upDev, loDev );
+      end         
+
+      yDeviations(k) = upDev;
+
+  end
+
+  % now, pull line plot with deviation information
+  str = drawLine( c(dataIdx), yDeviations );
+
+end
+% =========================================================================
+% *** END FUNCTION drawErrorBars
 % =========================================================================
 
 
