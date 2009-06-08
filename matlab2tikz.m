@@ -108,8 +108,9 @@ function matlab2tikz( varargin )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % add extra elements
-  currentHandles.gca = gca;
-  currentHandles.gcf = gcf;
+  currentHandles.gca      = gca;
+  currentHandles.gcf      = gcf;
+  currentHandles.colormap = colormap;
 
   % set filename
   if ~isempty(matlab2tikzOpts.Results.filename)
@@ -167,7 +168,7 @@ function saveToFile( filename )
   global currentHandles
   global tikzOptions
 
-  global neededRGBColors
+  global requiredRgbColors
 
   % open the file for writing
   fid = fopen( filename, ...
@@ -232,12 +233,12 @@ function saveToFile( filename )
   end
 
   % don't forget to define the colors
-  if size(neededRGBColors,1)
+  if size(requiredRgbColors,1)
       fprintf( fid, '\n%% defining custom colors\n' );
   end
-  for k = 1:size(neededRGBColors,1)
+  for k = 1:size(requiredRgbColors,1)
       fprintf( fid, '\\definecolor{mycolor%d}{rgb}{%g,%g,%g}\n', k,     ...
-                                                    neededRGBColors(k,:) );
+                                                    requiredRgbColors(k,:) );
   end
 
   % print the content
@@ -273,22 +274,22 @@ function str = handleAllChildren( handle )
       child = children(i);
 
       switch get( child, 'Type' )
-	  case 'axes'
-	      str = [ str, drawAxes( child ) ];
+          case 'axes'
+              str = [ str, drawAxes( child ) ];
 
-	  case 'line'
-	      str = [ str, drawLine( child ) ];
+          case 'line'
+              str = [ str, drawLine( child ) ];
 
-	  case 'patch'
-	      str = [ str, drawPatch( child ) ];
+          case 'patch'
+              str = [ str, drawPatch( child ) ];
 
-	  case 'image'
-	      str = [ str, drawImage( child ) ];
+          case 'image'
+              str = [ str, drawImage( child ) ];
 
-	  case 'hggroup'
-	      str = [ str, drawHggroup( child ) ];
+          case 'hggroup'
+              str = [ str, drawHggroup( child ) ];
 
-	  case { 'hgtransform' }
+          case { 'hgtransform' }
               % don't handle those directly but descend to its children
               % (which could for example be patch handles)
               str = [ str, handleAllChildren( child ) ];
@@ -569,11 +570,11 @@ function str = drawAxes( handle, alignmentOptions )
 
   % TODO: How to uniquely connect a legend with a pair of axes?
   
-  axisDims=get(handle,'Position');
-  axisLeft=axisDims(1);
-  axisBot=axisDims(2);
-  axisWid=axisDims(3);
-  axisHei=axisDims(4);
+  axisDims = get(handle,'Position');
+  axisLeft = axisDims(1);
+  axisBot  = axisDims(2);
+  axisWid  = axisDims(3);
+  axisHei  = axisDims(4);
   legendHandle = 0;
   for k=1:size(c)
       if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
@@ -840,12 +841,12 @@ function str = drawLine( handle, yDeviation )
     out = det;
 
     if det % otherwise the segments are parallel
-	rhs1   = x(3) - x(1);
-	rhs2   = y(3) - y(1);
-	lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
-	mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
-	out    =   0<lambda && lambda<1 ...
-		&&  0<mu     && mu    <1;
+        rhs1   = x(3) - x(1);
+        rhs2   = y(3) - y(1);
+        lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
+        mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
+        out    =   0<lambda && lambda<1 ...
+                &&  0<mu     && mu    <1;
     end
 
   end
@@ -958,7 +959,7 @@ function drawOptions = getMarkerOptions( h )
 
       if ~isempty( markOptions )
           mo = collapse( markOptions, ',' );
-	  drawOptions = [ drawOptions, [ 'mark options={', mo, '}' ] ];
+          drawOptions = [ drawOptions, [ 'mark options={', mo, '}' ] ];
       end
   end
 
@@ -967,101 +968,101 @@ function drawOptions = getMarkerOptions( h )
   % *** FUNCTION translateMarker
   % -----------------------------------------------------------------------
   function [ tikzMarker, markOptions ] =                                ...
-	     translateMarker( matlabMarker, markOptions, faceColorToggle )
+             translateMarker( matlabMarker, markOptions, faceColorToggle )
 
     if( ~ischar(matlabMarker) )
-	error( [ 'Function translateMarker:',                           ...
+        error( [ 'Function translateMarker:',                           ...
                  'Variable matlabMarker is not a string.' ] );
     end
 
     switch ( matlabMarker )
-	case 'none'
-	    tikzMarker = '';
-	case '+'
-	    tikzMarker = '+';
-	case 'o'
-	    if faceColorToggle
-		tikzMarker = '*';
-	    else
-		tikzMarker = 'o';
-	    end
-	case '.'
-	    tikzMarker = '*';
-	case 'x'
-	    tikzMarker = 'x';
-	otherwise  % the following markers are only available with PGF's
+        case 'none'
+            tikzMarker = '';
+        case '+'
+            tikzMarker = '+';
+        case 'o'
+            if faceColorToggle
+                tikzMarker = '*';
+            else
+                tikzMarker = 'o';
+            end
+        case '.'
+            tikzMarker = '*';
+        case 'x'
+            tikzMarker = 'x';
+        otherwise  % the following markers are only available with PGF's
                    % plotmarks library
-	    fprintf( '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
-	    switch ( matlabMarker )
+            fprintf( '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
+            switch ( matlabMarker )
 
-		    case '*'
-			    tikzMarker = 'asterisk';
+                    case '*'
+                            tikzMarker = 'asterisk';
 
-		    case {'s','square'}
-		    if faceColorToggle
-				tikzMarker = 'square*';
-		    else
-			tikzMarker = 'square';
-		    end
+                    case {'s','square'}
+                    if faceColorToggle
+                                tikzMarker = 'square*';
+                    else
+                        tikzMarker = 'square';
+                    end
 
-		    case {'d','diamond'}
-		    if faceColorToggle
-				tikzMarker = 'diamond*';
-		    else
-				tikzMarker = 'diamond';
-		    end
+                    case {'d','diamond'}
+                    if faceColorToggle
+                                tikzMarker = 'diamond*';
+                    else
+                                tikzMarker = 'diamond';
+                    end
 
-		case '^'
-		    if faceColorToggle
-				tikzMarker = 'triangle*';
-		    else
-				tikzMarker = 'triangle';
-		    end
+                case '^'
+                    if faceColorToggle
+                                tikzMarker = 'triangle*';
+                    else
+                                tikzMarker = 'triangle';
+                    end
 
-		    case 'v'
-		    if faceColorToggle
-			tikzMarker = 'triangle*';
-		    else
-				tikzMarker = 'triangle';
-		    end
-		    markOptions = [ markOptions, ',rotate=180' ];
+                    case 'v'
+                    if faceColorToggle
+                        tikzMarker = 'triangle*';
+                    else
+                                tikzMarker = 'triangle';
+                    end
+                    markOptions = [ markOptions, ',rotate=180' ];
 
-		    case '<'
-		    if faceColorToggle
-			tikzMarker = 'triangle*';
-		    else
-				tikzMarker = 'triangle';
-		    end
-		    markOptions = [ markOptions, ',rotate=270' ];
+                    case '<'
+                    if faceColorToggle
+                        tikzMarker = 'triangle*';
+                    else
+                                tikzMarker = 'triangle';
+                    end
+                    markOptions = [ markOptions, ',rotate=270' ];
 
-		case '>'
-		    if faceColorToggle
-				tikzMarker = 'triangle*';
-		    else
-				tikzMarker = 'triangle';
-		    end
-		    markOptions = [ markOptions, ',rotate=90' ];
+                case '>'
+                    if faceColorToggle
+                                tikzMarker = 'triangle*';
+                    else
+                                tikzMarker = 'triangle';
+                    end
+                    markOptions = [ markOptions, ',rotate=90' ];
 
-		case {'p','pentagram'}
-		    if faceColorToggle
-				tikzMarker = 'star*';
-		    else
-				tikzMarker = 'star';
-		    end
+                case {'p','pentagram'}
+                    if faceColorToggle
+                                tikzMarker = 'star*';
+                    else
+                                tikzMarker = 'star';
+                    end
 
-		    case {'h','hexagram'}
-		    warning( 'matlab2tikz:translateMarker',              ...
-			    'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
-		    if faceColorToggle
-				tikzMarker = 'star*';
-		    else
-				tikzMarker = 'star';
-		    end
+                    case {'h','hexagram'}
+                    warning( 'matlab2tikz:translateMarker',              ...
+                            'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
+                    if faceColorToggle
+                                tikzMarker = 'star*';
+                    else
+                                tikzMarker = 'star';
+                    end
 
-		otherwise
-		    error( [ ' Function translateMarker:',               ...
-			    ' Unknown matlabMarker ''',matlabMarker,'''.' ] );
-	    end
+                otherwise
+                    error( [ ' Function translateMarker:',               ...
+                            ' Unknown matlabMarker ''',matlabMarker,'''.' ] );
+            end
     end
 
   end
@@ -1088,13 +1089,13 @@ function drawOptions = getMarkerOptions( h )
     global tol
 
     if( ~ischar(matlabMarker) )
-	error( 'matlab2tikz:translateMarkerSize',                      ...
-	       'Variable matlabMarker is not a string.' );
+        error( 'matlab2tikz:translateMarkerSize',                      ...
+               'Variable matlabMarker is not a string.' );
     end
 
     if( ~isnumeric(matlabMarkerSize) )
-	error( 'matlab2tikz:translateMarkerSize',                      ...
-	       'Variable matlabMarkerSize is not a numeral.' );
+        error( 'matlab2tikz:translateMarkerSize',                      ...
+               'Variable matlabMarkerSize is not a numeral.' );
     end
 
     % 6pt is the default MATLAB marker size for all markers
@@ -1102,40 +1103,40 @@ function drawOptions = getMarkerOptions( h )
     isDefault = abs(matlabMarkerSize-defaultMatlabMarkerSize)<tol;
 
     switch ( matlabMarker )
-	case 'none'
-	    tikzMarkerSize = [];
-	case {'+','o','x','*','p','pentagram','h','hexagram'}
-	    % In MATLAB, the marker size refers to the edge length of a
+        case 'none'
+            tikzMarkerSize = [];
+        case {'+','o','x','*','p','pentagram','h','hexagram'}
+            % In MATLAB, the marker size refers to the edge length of a
             % square (for example) (~diameter), whereas in TikZ the
             % distance of an edge to the center is the measure (~radius).
             % Hence divide by 2.
-	    tikzMarkerSize = matlabMarkerSize / 2;
-	case '.'
-	    % as documented on the Matlab help pages:
-	    %
-	    % Note that MATLAB draws the point marker (specified by the '.'
-	    % symbol) at one-third the specified size.
-	    % The point (.) marker type does not change size when the
-	    % specified value is less than 5.
-	    %
-	    tikzMarkerSize = matlabMarkerSize / 2 / 3;
-	case {'s','square'}
-	    % Matlab measures the diameter, TikZ half the edge length
-	    tikzMarkerSize = matlabMarkerSize / 2 / sqrt(2);
-	case {'d','diamond'}
-	    % MATLAB measures the width, TikZ the height of the diamond;
-	    % the acute angle (at the top and the bottom of the diamond)
+            tikzMarkerSize = matlabMarkerSize / 2;
+        case '.'
+            % as documented on the Matlab help pages:
+            %
+            % Note that MATLAB draws the point marker (specified by the '.'
+            % symbol) at one-third the specified size.
+            % The point (.) marker type does not change size when the
+            % specified value is less than 5.
+            %
+            tikzMarkerSize = matlabMarkerSize / 2 / 3;
+        case {'s','square'}
+            % Matlab measures the diameter, TikZ half the edge length
+            tikzMarkerSize = matlabMarkerSize / 2 / sqrt(2);
+        case {'d','diamond'}
+            % MATLAB measures the width, TikZ the height of the diamond;
+            % the acute angle (at the top and the bottom of the diamond)
             % is a manually measured 75 degrees (in TikZ, and MATLAB
             % probably very similar); use this as a base for calculations
-	    tikzMarkerSize = matlabMarkerSize / 2 / atan( 75/2 *pi/180 );
-	case {'^','v','<','>'}
-	    % for triangles, matlab takes the height
-	    % and tikz the circumcircle radius;
-	    % the triangles are always equiangular
-	    tikzMarkerSize = matlabMarkerSize / 2 * (2/3);
-	otherwise
-	    error( 'matlab2tikz:translateMarkerSize',                   ...
-	           'Unknown matlabMarker ''%s''.', matlabMarker );
+            tikzMarkerSize = matlabMarkerSize / 2 / atan( 75/2 *pi/180 );
+        case {'^','v','<','>'}
+            % for triangles, matlab takes the height
+            % and tikz the circumcircle radius;
+            % the triangles are always equiangular
+            tikzMarkerSize = matlabMarkerSize / 2 * (2/3);
+        otherwise
+            error( 'matlab2tikz:translateMarkerSize',                   ...
+                   'Unknown matlabMarker ''%s''.', matlabMarker );
     end
 
   end
@@ -1211,7 +1212,7 @@ function str = drawPatch( handle )
           if ~isnan(xData(i,j)) && ~isnan(yData(i,j))
               % don't print NaNs
               str = [ str, ...
-	              sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) ];
+                      sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) ];
           end
       end
       str = [ str, sprintf('};\n') ];
@@ -1290,31 +1291,31 @@ function str = drawHggroup( h )
 
   switch( cl )
       case 'specgraph.barseries'
-	  % hist plots and friends
+          % hist plots and friends
           str = drawBarseries( h );
 
       case 'specgraph.stemseries'
-	  % stem plots
+          % stem plots
           str = drawStemseries( h );
 
       case 'specgraph.stairseries'
-	  % stair plots
+          % stair plots
           str = drawStairSeries( h );
 
       case {'specgraph.contourgroup'}
-	  % handle all those the usual way
+          % handle all those the usual way
           str = handleAllChildren( h );
 
       case {'specgraph.quivergroup'}
-	  % quiver arrows
-	  str = drawQuiverGroup( h );
+          % quiver arrows
+          str = drawQuiverGroup( h );
 
       case {'specgraph.errorbarseries'}
           % error bars
           str = drawErrorBars( h );
 
       otherwise
-	  warning( 'matlab2tikz:drawHggroup',                          ...
+          warning( 'matlab2tikz:drawHggroup',                          ...
                    'Don''t know class ''%s''. Default handling.', cl );
           str = handleAllChildren( h );
   end
@@ -1380,7 +1381,7 @@ function str = drawBarseries( h )
                   cl = class(handle(siblings(k)));
                   switch cl
                       case 'specgraph.barseries'
-	                  barplotTotalNumber = barplotTotalNumber + 1;
+                          barplotTotalNumber = barplotTotalNumber + 1;
                       case 'specgraph.errorbarseries'
                           % TODO:
                           % Unfortunately, MATLAB(R) treats error bars and corresponding
@@ -1393,7 +1394,7 @@ function str = drawBarseries( h )
                       otherwise
                           error( 'matlab2tikz:drawBarseries',          ...
                                  'Unknown class''%s''.', cl  );
-	          end
+                  end
               otherwise
                   error( 'matlab2tikz:drawBarseries',                  ...
                          'Unknown type ''%s''.', t );
@@ -1412,66 +1413,66 @@ function str = drawBarseries( h )
   barlayout = get( h, 'BarLayout' );
   switch barlayout
       case 'grouped'
-	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	  % grouped plots
-	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	  groupWidth = 0.8; % MATLAB's default value, see makebars.m
+          % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+          % grouped plots
+          % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+          groupWidth = 0.8; % MATLAB's default value, see makebars.m
 
-	  % set ID
-	  if isempty(barplotId)
-	      barplotId = 1;
-	  else
-	      barplotId = barplotId + 1;
-	  end
+          % set ID
+          if isempty(barplotId)
+              barplotId = 1;
+          else
+              barplotId = barplotId + 1;
+          end
 
-	  % ---------------------------------------------------------------
-	  % Calculate the width of each bar and the center point shift.
-	  % The following is taken from MATLAB (see makebars.m) without
+          % ---------------------------------------------------------------
+          % Calculate the width of each bar and the center point shift.
+          % The following is taken from MATLAB (see makebars.m) without
           % the special handling for hist plots or other fancy options.
-	  % ---------------------------------------------------------------
-	  if isempty( barWidth ) || isempty(barShifts)
-	      dx = min( diff(xData) );
-	      groupWidth = dx * groupWidth;
+          % ---------------------------------------------------------------
+          if isempty( barWidth ) || isempty(barShifts)
+              dx = min( diff(xData) );
+              groupWidth = dx * groupWidth;
 
-	      % this is the barWidth with no interbar spacing yet
-	      barWidth = groupWidth / barplotTotalNumber;
+              % this is the barWidth with no interbar spacing yet
+              barWidth = groupWidth / barplotTotalNumber;
 
-	      barShifts = -0.5* groupWidth                              ...
-			+ ( (0:barplotTotalNumber-1)+0.5) * barWidth;
+              barShifts = -0.5* groupWidth                              ...
+                        + ( (0:barplotTotalNumber-1)+0.5) * barWidth;
 
-	      bWFactor = get( h, 'BarWidth' );
-	      barWidth  = bWFactor* barWidth;
-	  end
-	  % ---------------------------------------------------------------
+              bWFactor = get( h, 'BarWidth' );
+              barWidth  = bWFactor* barWidth;
+          end
+          % ---------------------------------------------------------------
 
-	  % MATLAB treats shift and width in normalized coordinate units,
+          % MATLAB treats shift and width in normalized coordinate units,
           % whereas pgfplots requires physical units (pt,cm,...); hence
           % have the units converted.
           ulength = normalized2physical();
-	  drawOptions = [ drawOptions,                                                ...
+          drawOptions = [ drawOptions,                                                ...
                            'ybar',                                                      ...
-			   sprintf( 'bar width=%g%s, bar shift=%g%s',                   ...
+                           sprintf( 'bar width=%g%s, bar shift=%g%s',                   ...
                                     barWidth            *ulength.value, ulength.unit , ...
                                     barShifts(barplotId)*ulength.value, ulength.unit  ) ];
-	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	  % end grouped plots
-	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+          % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+          % end grouped plots
+          % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       case 'stacked'
-	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	  % Stacked plots --
+          % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+          % Stacked plots --
           % Add option 'ybar stacked' to the options of the surrounding
           % axis environment (and disallow anything else but stacked
           % plots).
           % Make sure this happens exactly *once*.
           if isempty(addedAxisOption) || ~addedAxisOption
-	      if nonbarPlotPresent
-		  warning( 'matlab2tikz:drawBarseries',                 ...
-			[ 'Pgfplots can''t deal with stacked bar plots', ...
-			  ' and non-bar plots in one axis environment.', ...
-			  ' There *may* be unexpected results.'         ] );
-	      end
-	      bWFactor = get( h, 'BarWidth' );
+              if nonbarPlotPresent
+                  warning( 'matlab2tikz:drawBarseries',                 ...
+                        [ 'Pgfplots can''t deal with stacked bar plots', ...
+                          ' and non-bar plots in one axis environment.', ...
+                          ' There *may* be unexpected results.'         ] );
+              end
+              bWFactor = get( h, 'BarWidth' );
               ulength   = normalized2physical();
               axisOpts = [ axisOpts,                                   ...
                             'ybar stacked',                              ...
@@ -1479,7 +1480,7 @@ function str = drawBarseries( h )
                                   ulength.value*bWFactor, ulength.unit ) ];
               addedAxisOption = 1;
           end
-	  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+          % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       otherwise
           error( 'matlab2tikz:drawBarseries',                          ...
@@ -1841,6 +1842,8 @@ end
 % =========================================================================
 function str = drawColorbar( handle, alignmentOptions )
 
+  global currentHandles
+
   str = [];
 
   if ~isVisible( handle )
@@ -1880,7 +1883,7 @@ function str = drawColorbar( handle, alignmentOptions )
       case {'NorthOutside','SouthOutside'}
 %            dim.y = dim.x / ratio;
           cbarOptions = [ cbarOptions,                                ...
-	                   sprintf( 'width=%g%s, height=%g%s',          ...
+                           sprintf( 'width=%g%s, height=%g%s',          ...
                                      dim.x, dim.unit, dim.y, dim.unit ),...
                            'scale only axis',                           ...
                            sprintf( 'xmin=%g, xmax=%g', clim ),         ...
@@ -1903,7 +1906,7 @@ function str = drawColorbar( handle, alignmentOptions )
 
       case {'EastOutside','WestOutside'}
           cbarOptions = [ cbarOptions,                                ...
-	                   sprintf( 'width=%g%s, height=%g%s',          ...
+                           sprintf( 'width=%g%s, height=%g%s',          ...
                                      dim.x, dim.unit, dim.y, dim.unit ),...
                            'scale only axis',                           ...
                            sprintf( 'xmin=%g, xmax=%g', [0,1] ),        ...
@@ -1954,7 +1957,7 @@ function str = drawColorbar( handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % get the colormap
-  cmap = colormap;
+  cmap = currentHandles.colormap;
 
   cbarLength = clim(2) - clim(1);
 
@@ -2007,22 +2010,29 @@ end
 % =========================================================================
 function xcolor = getColor( handle, color, mode )
 
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % grab rgb value
-  switch mode
-      case 'patch'
-          rgbcol = patchcolor2rgb ( color, handle );
-      case 'image'
-          rgbcol = imagecolor2rgb ( color, handle );
-      otherwise
-          error( [ 'matlab2tikz:getColor',                        ...
-                   'Argument ''mode'' has illegal value ''%s''' ], ...
-                 mode );
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % check if the color is straight given in rgb
+  % -- notice that we need the extra NaN test with respect to the QUIRK
+  %    below
+  if ( isreal(color) && length(color)==3 && ~any(isnan(color)) )
 
-  % ... and make sure a xcolor value is returned
-  xcolor = rgb2tikzcol( rgbcol );
+      % everything alright: rgb color here
+      xcolor = rgb2tikzcol( color );
+
+  else
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      switch mode
+          case 'patch'
+              colorindex = patchcolor2colorindex ( color, handle );
+          case 'image'
+              colorindex = imagecolor2colorindex ( color, handle );
+          otherwise
+              error( [ 'matlab2tikz:getColor',                          ...
+                       'Argument ''mode'' has illegal value ''%s''.' ], ...
+                       mode );
+      end
+      xcolor = colorindex2tikzcol( colorindex );
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  end
 
 end
 % =========================================================================
@@ -2038,46 +2048,38 @@ end
 % *** describing the color that can be used in the TikZ file.
 % *** It checks if the color is predefined (by xcolor.sty) or if it needs
 % *** to be custom defined. It keeps all the self-defined colors in
-% *** 'neededRGBColors' to avoid redundant definitions.
+% *** 'requiredRgbColors' to avoid redundant definitions.
 % ***
 % =========================================================================
 function xcolor = rgb2tikzcol( rgbcol )
 
   global tol
   % Remember the color rbgvalues which will need to be redefined.
-  % Each row of 'neededRGBColors' contains the RGB values of a needed
+  % Each row of 'requiredRgbColors' contains the RGB values of a needed
   % color.
-  global neededRGBColors
+  global requiredRgbColors
 
-  xcolor = rgb2xcolor( rgbcol );
-  if isempty( xcolor )
-      if isempty(neededRGBColors) || isempty(neededRGBColors)
+  [xcolor,errorcode] = rgb2xcolor( rgbcol );
+  if errorcode
+      if isempty(requiredRgbColors)
           % initialize the matrix
-          neededRGBColors = rgbcol;
-          xcolor          = 'mycolor1';
-      else
-
-          % check if the color has appeared before
-          k0 = 0;
-          n  = size(neededRGBColors,1);
-          for k = 1:size(neededRGBColors,1)
-              if norm(neededRGBColors(k,:)-rgbcol)<tol
-                  k0 = k;
-                  break
-              end
-          end
-
-          if k0
-              % take that former color
-              xcolor = sprintf( 'mycolor%d', k0 );
-          else
-              % otherwise have a new one defined
-              neededRGBColors = [neededRGBColors; rgbcol];
-              xcolor = sprintf( 'mycolor%d', n+1 );
-          end
-
+          requiredRgbColors = [];
       end
 
+      % check if the color has appeared before
+      n  = size(requiredRgbColors,1);
+      for k = 1:n
+          if isequal( requiredRgbColors(k,:), rgbcol )
+              % take that former color and return
+              xcolor = sprintf( 'mycolor%d', k );
+              return
+          end
+      end
+
+      % color not found: have a new one defined
+      requiredRgbColors = [ requiredRgbColors; ...
+                            rgbcol ];
+      xcolor = sprintf( 'mycolor%d', n+1 );
   end
 
 end
@@ -2088,138 +2090,185 @@ end
 
 
 % =========================================================================
-% *** FUNCTION patchcolor2rgb
+% *** FUNCTION colorindex2tikzcol
+% ***
+% *** This function takes a color index of the active MATLAB(R) color map
+% *** and returns a string describing the color that can be used in the
+% *** TikZ file.
+% *** 
+% *** Does caching, too.
+% ***
+% =========================================================================
+function xcolor = colorindex2tikzcol( colorindex )
+
+  % Remember the color rbgvalues which will need to be redefined.
+  % Each row of 'requiredRgbColors' contains the RGB values of a needed
+  % color.
+  global requiredRgbColors
+  global currentHandles
+
+  persistent colorindex_cache
+
+  cmap = currentHandles.colormap;
+
+  rgbcol = cmap( colorindex, : );
+  [xcolor,errorcode] = rgb2xcolor( rgbcol );
+
+  if errorcode % non-standard xcolor
+
+      if isempty(requiredRgbColors)
+          % initialize the matrix
+          requiredRgbColors = [];
+      end
+      if isempty(colorindex_cache)
+          colorindex_cache = zeros( size(cmap,1), 1 );
+      end
+
+      % check if the color has appeared before
+      if colorindex_cache(colorindex)
+          xcolor = sprintf( 'mycolor%d', colorindex_cache(colorindex) );
+      else
+          % color not found: have a new one defined
+          n  = size(requiredRgbColors,1);
+          requiredRgbColors = [ requiredRgbColors; ...
+                                rgbcol ];
+          xcolor = sprintf( 'mycolor%d', n+1 );
+          colorindex_cache(colorindex) = n+1;
+      end
+
+  end
+
+end
+% =========================================================================
+% *** FUNCTION colorindex2tikzcol
+% =========================================================================
+
+
+
+% =========================================================================
+% *** FUNCTION patchcolor2colorindex
 % ***
 % *** Transforms a color of the edge or the face of a patch to a 1x3 rgb 
 % *** color vector.
 % ***
 % =========================================================================
-function rgbcolor = patchcolor2rgb ( color, imagehandle )
+function colorindex = patchcolor2colorindex ( color, patchhandle )
 
-  % check if the color is straight given in rgb
-  % -- notice that we need the extra NaN test with respect to the QUIRK
-  %    below
-  if ( isreal(color) && length(color)==3 && ~any(isnan(color)) )
-      % everything allright: bail out
-      rgbcolor = color;
-      return
+  if ~ischar( color )
+      error( 'patchcolor2colorindex:illegalInput', ...
+             'Input argument ''color'' not a string.' );
   end
 
   switch color
       case 'flat'
           % look for CData at different places
-	  cdata = get( imagehandle, 'CData' );
+          cdata = get( patchhandle, 'CData' );
           if isempty(cdata) || ~isnumeric(cdata)
-	      c     = get( imagehandle, 'Children' );
-	      cdata = get( c, 'CData' );
+              c     = get( patchhandle, 'Children' );
+              cdata = get( c, 'CData' );
           end
 
-	  % QUIRK: With contour plots (not contourf), cdata will be a vector of
-	  %        equal values, except the last one which is a NaN. To work 
-	  %        around this oddity, just take the first entry.
-	  %        With barseries plots, data has been observed to return a
-	  %        *matrix* with all equal entries.
-	  cdata = cdata( 1, 1 );
-
-	  rgbcolor = cdata2rgb( cdata, imagehandle );
+          % QUIRK: With contour plots (not contourf), cdata will be a vector of
+          %        equal values, except the last one which is a NaN. To work 
+          %        around this oddity, just take the first entry.
+          %        With barseries plots, data has been observed to return a
+          %        *matrix* with all equal entries.
+          cdata = cdata( 1, 1 );
+          colorindex = cdata2colorindex( cdata, patchhandle );
 
       case 'none'
-	  error( [ 'matlab2tikz:anycolor2rgb',                       ...
-		   'Color model ''none'' not allowed here. ',        ...
-		   'Make sure this case gets intercepted before.' ] );
+          error( [ 'matlab2tikz:anycolor2rgb',                       ...
+                   'Color model ''none'' not allowed here. ',        ...
+                   'Make sure this case gets intercepted before.' ] );
 
       otherwise
-	  error( [ 'matlab2tikz:anycolor2rgb',                          ...
-		  'Don''t know how to handle the color model ''%s''.' ],  ...
-		  color );
+          error( [ 'matlab2tikz:anycolor2rgb',                          ...
+                   'Don''t know how to handle the color model ''%s''.' ],  ...
+                   color );
   end
 
 end
 % =========================================================================
-% *** END OF FUNCTION patchcolor2rgb
+% *** END OF FUNCTION patchcolor2colorindex
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION imagecolor2rgb
+% *** FUNCTION imagecolor2colorindex
 % ***
 % *** Transforms a color in image color format to a 1x3 rgb color vector.
 % ***
 % =========================================================================
-function rgbcolor = imagecolor2rgb ( color, imagehandle )
+function colorindex = imagecolor2colorindex ( color, imagehandle )
 
-  % check if the color is straight given in rgb
-  if ( isreal(color) && length(color)==3 )
-      rgbcolor = color;
-      return
+  if ~isnumeric( color ) && length(color)==1
+      error( 'imagecolor2colorindex:illegalInput', ...
+             'Input argument ''color'' is not a scalar.' );
   end
 
-  % -- no? then it *must* be a single cdata value
-  rgbcolor = cdata2rgb( color, imagehandle );
+  % color *must* be a single cdata value already
+  colorindex = cdata2colorindex( color, imagehandle );
 
 end
 % =========================================================================
-% *** END OF FUNCTION imagecolor2rgb
+% *** END OF FUNCTION imagecolor2colorindex
 % =========================================================================
 
 
 
 % =========================================================================
-% *** FUNCTION cdata2rgb
+% *** FUNCTION cdata2colorindex
 % ***
 % *** Transforms a color in CData format to a 1x3 rgb color vector.
 % ***
 % =========================================================================
-function rgbcolor = cdata2rgb ( cdata, imagehandle )
+function colorindex = cdata2colorindex ( cdata, imagehandle )
 
   global currentHandles;
 
   if ~isnumeric(cdata)
-      error( 'matlab2tikz:cdata2rgb',                        ...
-	     [ 'Don''t know how to handle cdata ''',cdata,'''.' ] )
+      error( 'matlab2tikz:cdata2colorindex',                        ...
+             [ 'Don''t know how to handle cdata ''',cdata,'''.' ] )
   end
 
   fighandle  = currentHandles.gcf;
   axeshandle = currentHandles.gca;
 
-  colormap = get( fighandle, 'ColorMap' );
+  cmap = currentHandles.colormap;
 
   % -----------------------------------------------------------------------
   % For the following, see, for example, the MATLAB help page for 'image',
   % section 'Image CDataMapping'.
   switch get( imagehandle, 'CDataMapping' )
       case 'scaled'
-	  % need to scale within clim
-	  % see MATLAB's manual page for caxis for details
-	  clim = get( axeshandle, 'clim' );
-	  m = size( colormap, 1 );
-	  if cdata<=clim(1)
-	      colorindex = 1;
-	  elseif cdata>=clim(2)
-	      colorindex = m;
-	  else
-	      colorindex = fix( (cdata-clim(1))/(clim(2)-clim(1)) *m ) ...
-			 + 1;
-	  end
+          % need to scale within clim
+          % see MATLAB's manual page for caxis for details
+          clim = get( axeshandle, 'clim' );
+          m = size( cmap, 1 );
+          if cdata<=clim(1)
+              colorindex = 1;
+          elseif cdata>=clim(2)
+              colorindex = m;
+          else
+              colorindex = fix( (cdata-clim(1))/(clim(2)-clim(1)) *m ) ...
+                         + 1;
+          end
 
       case 'direct'
-	  % direct index
-	  colorindex = cdata;
+          % direct index
+          colorindex = cdata;
 
       otherwise
-	    error( [ 'matlab2tikz:anycolor2rgb',                ...
-		     'Unknown CDataMapping ''%s''.' ],          ...
-		     cdatamapping );
+            error( [ 'matlab2tikz:anycolor2rgb',                ...
+                     'Unknown CDataMapping ''%s''.' ],          ...
+                     cdatamapping );
   end
   % -----------------------------------------------------------------------
 
-  % finally, return the rgb value
-  rgbcolor = colormap( colorindex, : );
-
 end
 % =========================================================================
-% *** END OF FUNCTION cdata2rgb
+% *** END OF FUNCTION cdata2colorindex
 % =========================================================================
 
 
@@ -2273,8 +2322,8 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
           % only append something in this (default) case
           % if any of the axes is reversed
           if isXAxisReversed || isYAxisReversed
-	      position = [1-dist, 1-dist];
-	      anchor   = 'north east';
+              position = [1-dist, 1-dist];
+              anchor   = 'north east';
     else
       anchor = [];
           end
@@ -2300,7 +2349,7 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
           position = [dist, 0.5];
           anchor   = 'west';
       otherwise
-	  warning( 'matlab2tikz:getLegendOpts',                       ...
+          warning( 'matlab2tikz:getLegendOpts',                       ...
                    [ ' Unknown legend location ''',loc,''             ...
                      '. Choosing default.' ] );
   end
@@ -2401,8 +2450,8 @@ function [ ticks, tickLabels ] = getTicks( handle )
     % sometimes tickLabels are cells, sometimes plain arrays
     % -- unify this to cells
     if ischar( tickLabel )
-	tickLabel = strtrim( mat2cell(tickLabel,                        ...
-			    ones(size(tickLabel,1),1),size(tickLabel,2)) );
+        tickLabel = strtrim( mat2cell(tickLabel,                        ...
+                            ones(size(tickLabel,1),1),size(tickLabel,2)) );
     end
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2434,37 +2483,37 @@ function [ ticks, tickLabels ] = getTicks( handle )
     end
 
     for k = 1:min(length(tick),length(tickLabel))
-	% Don't use str2num here as then, literal strings as 'pi' get
-	% legally transformed into 3.14... and the need for an explicit
-	% label will not be recognized. str2double returns a NaN for 'pi'.
-	if isLogAxis
-	    s = 10^( str2double(tickLabel{k}) );
-	else
-	    s = str2double( tickLabel{k} );
-	end
-	if isnan(s)  ||  abs(tick(k)-s*scalingFactor) > tol
-	    plotLabelsNecessary = 1;
-	    break
-	end
+        % Don't use str2num here as then, literal strings as 'pi' get
+        % legally transformed into 3.14... and the need for an explicit
+        % label will not be recognized. str2double returns a NaN for 'pi'.
+        if isLogAxis
+            s = 10^( str2double(tickLabel{k}) );
+        else
+            s = str2double( tickLabel{k} );
+        end
+        if isnan(s)  ||  abs(tick(k)-s*scalingFactor) > tol
+            plotLabelsNecessary = 1;
+            break
+        end
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     if plotLabelsNecessary
-	% if the axis is logscaled, MATLAB does not store the labels,
-	% but the exponents to 10
-	if isLogAxis
-	    for k = 1:length(tickLabel)
-		if isnumeric( tickLabel{k} )
-		    str = num2str( tickLabel{k} );
-		else
-		    str = tickLabel{k};
-		end
-		tickLabel{k} = sprintf( '$10^{%s}$', str );
-	    end
-	end
-	tickLabels = collapse( tickLabel, ',' );
+        % if the axis is logscaled, MATLAB does not store the labels,
+        % but the exponents to 10
+        if isLogAxis
+            for k = 1:length(tickLabel)
+                if isnumeric( tickLabel{k} )
+                    str = num2str( tickLabel{k} );
+                else
+                    str = tickLabel{k};
+                end
+                tickLabel{k} = sprintf( '$10^{%s}$', str );
+            end
+        end
+        tickLabels = collapse( tickLabel, ',' );
     else
-	tickLabels = [];
+        tickLabels = [];
     end
 
   end
@@ -2511,25 +2560,25 @@ end
 %   valign = get( handle, 'VerticalAlignment' );
 %   switch valign
 %       case {'bottom','baseline'}
-% 	      nodeOptions = [nodeOptions, sprintf(',anchor=south') ];
+%               nodeOptions = [nodeOptions, sprintf(',anchor=south') ];
 %       case {'top','cap'}
-% 	      nodeOptions = [nodeOptions, sprintf(',anchor=north') ];
+%               nodeOptions = [nodeOptions, sprintf(',anchor=north') ];
 %       case 'middle'
 %       otherwise
-% 	      warning( 'matlab2tikz:drawText',                         ...
+%               warning( 'matlab2tikz:drawText',                         ...
 %                   'Don''t know what VerticalAlignment %s means.', valign );
 %   end
 %   
 %   halign = get( handle, 'HorizontalAlignment' );
 %   switch halign
 %       case 'left'
-% 	      nodeOptions = [nodeOptions, sprintf(',anchor=west') ];
+%               nodeOptions = [nodeOptions, sprintf(',anchor=west') ];
 %       case 'right'
-% 	      nodeOptions = [nodeOptions, sprintf(',anchor=east') ];
+%               nodeOptions = [nodeOptions, sprintf(',anchor=east') ];
 %       case 'center'
 %       otherwise
 %           warning( 'matlab2tikz:drawText',                             ...
-% 	        'Don''t know what HorizontalAlignment %s means.', halign );
+%                 'Don''t know what HorizontalAlignment %s means.', halign );
 %   end
 % 
 %   str = [ str, ...
@@ -2599,8 +2648,8 @@ function tikzLineStyle = translateLineStyle( matlabLineStyle )
       case '-.'
           tikzLineStyle = 'dash pattern=on 1pt off 3pt on 3pt off 3pt';
       otherwise
-	  error( [ 'Function translateLineStyle:',                    ...
-		   'Unknown matlabLineStyle ''',matlabLineStyle,'''.']);
+          error( [ 'Function translateLineStyle:',                    ...
+                   'Unknown matlabLineStyle ''',matlabLineStyle,'''.']);
   end
 end
 % =========================================================================
@@ -2620,48 +2669,68 @@ end
 % *** Take a look at xcolor.sty for the color definitions.
 % ***
 % =========================================================================
-function xcolorLiteral = rgb2xcolor( rgb )
+function [xcolorLiteral,errorcode] = rgb2xcolor( rgb )
 
   if isequal( rgb, [1,0,0] )
       xcolorLiteral = 'red';
+      errorcode = 0;
   elseif isequal( rgb, [0,1,0] )
       xcolorLiteral = 'green';
+      errorcode = 0;
   elseif isequal( rgb, [0,0,1] )
       xcolorLiteral = 'blue';
+      errorcode = 0;
   elseif isequal( rgb, [0.75,0.5,0.25] )
       xcolorLiteral = 'brown';
+      errorcode = 0;
   elseif isequal( rgb, [0.75,1,0] )
       xcolorLiteral = 'lime';
+      errorcode = 0;
   elseif isequal( rgb, [1,0.5,0] )
       xcolorLiteral = 'orange';
+      errorcode = 0;
   elseif isequal( rgb, [1,0.75,0.75] )
       xcolorLiteral = 'pink';
+      errorcode = 0;
   elseif isequal( rgb, [0.75,0,0.25] )
       xcolorLiteral = 'pink';
+      errorcode = 0;
   elseif isequal( rgb, [0.75,0,0.25] )
       xcolorLiteral = 'purple';
+      errorcode = 0;
   elseif isequal( rgb, [0,0.5,0.5] )
       xcolorLiteral = 'teal';
+      errorcode = 0;
   elseif isequal( rgb, [0.5,0,0.5] )
       xcolorLiteral = 'violet';
+      errorcode = 0;
   elseif isequal( rgb, [0,1,1] )
       xcolorLiteral = 'cyan';
+      errorcode = 0;
   elseif isequal( rgb, [1,0,1] )
       xcolorLiteral = 'magenta';
+      errorcode = 0;
   elseif isequal( rgb, [1,1,0] )
       xcolorLiteral = 'yellow';
+      errorcode = 0;
   elseif isequal( rgb, [0.5,0.5,0] )
       xcolorLiteral = 'olive';
+      errorcode = 0;
   elseif isequal( rgb, [0,0,0] )
       xcolorLiteral = 'black';
+      errorcode = 0;
   elseif isequal( rgb, [0.5,0.5,0.5] )
       xcolorLiteral = 'gray';
+      errorcode = 0;
   elseif isequal( rgb, [0.75,0.75,0.75] )
       xcolorLiteral = 'lightgray';
+      errorcode = 0;
   elseif isequal( rgb, [1,1,1] )
       xcolorLiteral = 'white';
+      errorcode = 0;
   else
       xcolorLiteral = '';
+      errorcode = 1;
   end
 
 end
@@ -2848,12 +2917,12 @@ function dimension = getAxesDimensions( handle )
 
       if strcmp( units, 'normalized' )
 
-	  % The dpi is needed to associate the size on the screen (in pixels)
+          % The dpi is needed to associate the size on the screen (in pixels)
           % to the physical size of the plot (on a pdf, for example).
-	  % Unfortunately, MATLAB doesn't seem to be able to always make a
+          % Unfortunately, MATLAB doesn't seem to be able to always make a
           % good guess about the current DPI (a bug is filed for this on
           % mathworks.com).
-	  dpi = get( 0, 'ScreenPixelsPerInch' );
+          dpi = get( 0, 'ScreenPixelsPerInch' );
 
           dimension.unit = 'in';
           figuresize = get( gcf, 'Position' );
@@ -2874,12 +2943,12 @@ function dimension = getAxesDimensions( handle )
       % and adjusting the y-axis size based on this length.
 
       if strcmp( units, 'normalized' )
-	  % The dpi is needed to associate the size on the screen (in pixels)
+          % The dpi is needed to associate the size on the screen (in pixels)
           % to the physical size of the plot (on a pdf, for example).
-	  % Unfortunately, MATLAB doesn't seem to be able to always make a
+          % Unfortunately, MATLAB doesn't seem to be able to always make a
           % good guess about the current DPI (a bug is filed for this on
           % mathworks.com).
-	  dpi = get( 0, 'ScreenPixelsPerInch');
+          dpi = get( 0, 'ScreenPixelsPerInch');
 
           dimension.unit = 'in';
           figuresize = get( gcf, 'Position' );
@@ -3287,8 +3356,8 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
       for j = i+1:n
 
           if abs( axesPos(i,1)-axesPos(j,1) ) < tol;
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % left axes align
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % left axes align
               if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -3;
                   C(j,i) =  3;
@@ -3296,11 +3365,11 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                   C(i,j) =  3;
                   C(j,i) = -3;
               end
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs( axesPos(i,1)-axesPos(j,3) ) < tol
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % left axis of `i` aligns with right axis of `j`
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % left axis of `i` aligns with right axis of `j`
               if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -3;
                   C(j,i) =  4;
@@ -3308,11 +3377,11 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                   C(i,j) =  3;
                   C(j,i) = -4;
               end
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs( axesPos(i,3)-axesPos(j,1) ) < tol
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % right axis of `i` aligns with left axis of `j`
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % right axis of `i` aligns with left axis of `j`
               if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -4;
                   C(j,i) =  3;
@@ -3320,11 +3389,11 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                   C(i,j) =  4;
                   C(j,i) = -3;
               end
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs( axesPos(i,3)-axesPos(j,1) ) < tol
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % right axes of `i` and `j` align
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % right axes of `i` and `j` align
               if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -4;
                   C(j,i) =  4;
@@ -3332,11 +3401,11 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                   C(i,j) =  4;
                   C(j,i) = -4;
               end
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs( axesPos(i,2)-axesPos(j,2) ) < tol
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % lower axes of `i` and `j` align
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % lower axes of `i` and `j` align
               if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -1;
                   C(j,i) =  1;
@@ -3344,11 +3413,11 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                   C(i,j) =  1;
                   C(j,i) = -1;
               end
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs( axesPos(i,2)-axesPos(j,4) ) < tol
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % lower axis of `i` aligns with upper axis of `j`
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % lower axis of `i` aligns with upper axis of `j`
               if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -1;
                   C(j,i) =  2;
@@ -3356,11 +3425,11 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                   C(i,j) =  1;
                   C(j,i) = -2;
               end
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs( axesPos(i,4)-axesPos(j,2) ) < tol
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % upper axis of `i` aligns with lower axis of `j`
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % upper axis of `i` aligns with lower axis of `j`
               if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -2;
                   C(j,i) =  1;
@@ -3368,11 +3437,11 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                   C(i,j) =  2;
                   C(j,i) = -1;
               end
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs( axesPos(i,4)-axesPos(j,4) ) < tol
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	      % upper axes of `i` and `j` align
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % upper axes of `i` and `j` align
               if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -2;
                   C(j,i) =  2;
@@ -3380,7 +3449,7 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                   C(i,j) =  2;
                   C(j,i) = -2;
               end
-	      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           end
 
       end
@@ -3418,10 +3487,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                              'Unknown alignment code %d.', C(i,j) );
               end
 
-	      [m,idx]   = min( dist );   % `idx` holds the index of the minimum
-	      doub(idx) = [];            % delete the index from the 'remove list'
-	      C(i,doub) = 0;
-	      C(doub,i) = 0;
+              [m,idx]   = min( dist );   % `idx` holds the index of the minimum
+              doub(idx) = [];            % delete the index from the 'remove list'
+              C(i,doub) = 0;
+              C(doub,i) = 0;
           end
 
       end
@@ -3434,10 +3503,10 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
   noConn = find( ~any(C,2) );
   if ~isempty(noConn)
       for k = 1:length(noConn)
-	  warning( 'alignSubPlots:isoAxes', ...
-		    [ 'The axes environment no. %d is not aligned with',...
-		      ' any other axes environment and will be plotted',...
-		      ' right in the middle.' ], noConn(k) );
+          warning( 'alignSubPlots:isoAxes', ...
+                    [ 'The axes environment no. %d is not aligned with',...
+                      ' any other axes environment and will be plotted',...
+                      ' right in the middle.' ], noConn(k) );
       end
   end
 
@@ -3488,7 +3557,7 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 
       % recursively loop over all dependent 'child' axes
       for i = children
-	  setOptionsRecursion( i, k );
+          setOptionsRecursion( i, k );
       end
 
   end
@@ -3540,12 +3609,12 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
     loc = get( colBarHandle, 'Location' );
 
     switch loc
-	case { 'North', 'South', 'East', 'West' }
-	    warning( 'alignSubPlots:getColorbarPos',                     ...
-		     'Don''t know how to deal with inner colorbars yet.' );
-	    return;
+        case { 'North', 'South', 'East', 'West' }
+            warning( 'alignSubPlots:getColorbarPos',                     ...
+                     'Don''t know how to deal with inner colorbars yet.' );
+            return;
 
-	case {'NorthOutside'}
+        case {'NorthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly below colBarHandle
             [mn,idx]  = min( colBarPos(2) ...
@@ -3555,7 +3624,7 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                     axesHandlesPos(idx,3), ...
                     colBarPos(4)           ];
 
-	case {'SouthOutside'}
+        case {'SouthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly above colBarHandle
             [mn,idx]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
@@ -3565,7 +3634,7 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                     axesHandlesPos(idx,3), ...
                     colBarPos(4)           ];
 
-	case {'EastOutside'}
+        case {'EastOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly left of colBarHandle
             [mn,idx]  = min( colBarPos(1) ...
@@ -3575,7 +3644,7 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                     colBarPos(3),          ...
                     axesHandlesPos(idx,4)  ];
 
-	case {'WestOutside'}
+        case {'WestOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly right of colBarHandle
             [mn,idx]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
@@ -3585,8 +3654,8 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
                     colBarPos(3),          ...
                     axesHandlesPos(idx,4)  ];
 
-	otherwise
-	    error( 'alignSubPlots:getColorbarPos',    ...
+        otherwise
+            error( 'alignSubPlots:getColorbarPos',    ...
                    'Unknown ''Location'' %s.', loc  )
     end
 
