@@ -11,6 +11,7 @@ The plots that matlab2tikz handles properly are, but are not limited to
   * most axes properties (including logarithmic scaling),
   * grids,
   * line plots (including markers line styles),
+  * error bars,
   * contour(f) plots,
   * bar plots (stacked, grouped, histgrams),
   * stem plots,
