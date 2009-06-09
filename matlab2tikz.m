@@ -78,7 +78,7 @@ function matlab2tikz( varargin )
   global matlab2tikzVersion;
   matlab2tikzVersion = '0.0.4';
 
-  global tikzOptions; % for the arrow style -- see if we can get this removed
+  global tikzOptions; % for the arrow style -- TODO: see if we can get this removed
   tikzOptions = cell(0);
 
   global tol;
@@ -1244,18 +1244,42 @@ function str = drawImage( handle )
       return
   end
 
-  % read x- and y-data
-  xLimits = get( handle, 'XData' );
-  yLimits = get( handle, 'YData' );
-
-  X = xLimits(1):xLimits(end);
-  Y = yLimits(1):yLimits(end);
-
+  % read x-, y-, and color-data
+  xData = get( handle, 'XData' );
+  yData = get( handle, 'YData' );
   cdata = get( handle, 'CData' );
 
+  m = size(cdata,1);
+  n = size(cdata,2);
+
+  % Generate uniformly distributed X, Y, although xData and yData may be non-uniform.
+  % This is MATLAB(R) behaviour.
+  switch length(xData)
+      case 2 % only the limits given; common for generic image plots
+          hX = 1;
+      case m % specific x-data is given
+          hX = (xData(end)-xData(1)) / (length(xData)-1);
+      otherwise
+          error( 'drawImage:arrayLengthMismatch', ...
+                 sprintf( 'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', m, length(xData) ) );
+  end
+  X = xData(1):hX:xData(end);
+
+  switch length(yData)
+      case 2 % only the limits given; common for generic image plots
+          hY = 1;
+      case n % specific y-data is given
+          hY = (yData(end)-yData(1)) / (length(yData)-1);
+      otherwise
+          error( 'drawImage:arrayLengthMismatch', ...
+                 sprintf( 'Array lengths not matching (%d = size(cdata,2) ~= length(yData) = %d).', n, length(yData) ) );
+  end
+  Y = yData(1):hY:yData(end);
+
+
   % draw the thing
-  m = length(Y);
-  n = length(X);
+  m = length(X);
+  n = length(Y);
   xcolor = cell(m,n);
   for i = 1:m
       for j = 1:n
@@ -1271,7 +1295,7 @@ function str = drawImage( handle )
       for j = 1:n
           str = [ str, ...
                   sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
-                           xcolor{i,j},  X(j)-0.5, Y(i)-0.5, X(j)+0.5, Y(i)+0.5  ) ];
+                           xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2  ) ];
       end
   end
 
@@ -1766,8 +1790,6 @@ end
 % =========================================================================
 function str = drawErrorBars( h )
 
-  global tol
-
   str = [];
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2053,7 +2075,6 @@ end
 % =========================================================================
 function xcolor = rgb2tikzcol( rgbcol )
 
-  global tol
   % Remember the color rbgvalues which will need to be redefined.
   % Each row of 'requiredRgbColors' contains the RGB values of a needed
   % color.
@@ -2232,7 +2253,6 @@ function colorindex = cdata2colorindex ( cdata, imagehandle )
              [ 'Don''t know how to handle cdata ''',cdata,'''.' ] )
   end
 
-  fighandle  = currentHandles.gcf;
   axeshandle = currentHandles.gca;
 
   cmap = currentHandles.colormap;
@@ -2905,8 +2925,6 @@ end
 % ***
 % =========================================================================
 function dimension = getAxesDimensions( handle )
-
-  global matlab2tikzOpts;
 
   daspectmode = get( handle, 'DataAspectRatioMode' );
   position    = get( handle, 'Position' );
