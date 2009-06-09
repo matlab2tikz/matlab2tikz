@@ -1,3 +1,17 @@
+2009-06-09  Nico Schlömer  <nico.schloemer@ua.ac.be>
+
+	* Version 0.0.4.
+	* Added support for:
+	  - error bars (thanks Robert Whittlesey for the suggestion)
+	* Improvents in:
+	  - legends (thanks Theo Markettos for the patch),
+	  - images,
+	  - quiver plots (thanks Robert for spotting this).
+	* Improved options handling.
+	* Allow for custom file encoding (thanks Donghua Wang for the
+	suggestion).
+	* Numerous bugfixes (thanks Andreas Gäb).
+
 2009-03-08  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
         * Version 0.0.3.

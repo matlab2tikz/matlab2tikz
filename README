@@ -44,6 +44,23 @@ The workflow is as follows.
 
         >> matlab2tikz( 'myfile.tikz' );
 
+      Optional:
+      The scripts accepts several options, for example 'height', 'width', 'encoding', and some more. Invoke by
+
+        >> matlab2tikz( 'myfile.tikz', 'height', '4cm', 'width', '3in' );
+
+      To specify the dimension of the plot from within the LaTeX document, try
+        
+	>> matlab2tikz( 'myfile.tikz', 'height', '\figureheight', 'width', '\figurewidth' );
+
+      and in the LaTeX source
+ 
+        \newlength\figureheight
+        \newlength\figurewith
+        \setlength\figureheight{4cm}
+	\setlength\figurewidth{6cm}
+	\input{myfile.tikz}
+
   3.) Add the contents of myfile.tikz into your LaTeX source code; a
       convenient way of doing so is to use \input{/path/to/myfile.tikz}.
       Also make sure that at the header of your document the packages tikz and

@@ -94,7 +94,10 @@ function matlab2tikz( varargin )
                                [], ...
                                @(x) filenameValidation(x,matlab2tikzOpts) );
 
-  % whether to strictly stick to the default MATLAB plot appearence:
+  % possibility to give a file handle file as argument
+  matlab2tikzOpts.addOptional( 'filehandle', [], @filehandleValidation );
+
+  % whether to strictly stick to the default MATLAB plot appearance:
   matlab2tikzOpts.addOptional( 'strict', 0, @isnumeric );
 
   % width and height of the figure
@@ -112,23 +115,47 @@ function matlab2tikz( varargin )
   currentHandles.gcf      = gcf;
   currentHandles.colormap = colormap;
 
-  % set filename
-  if ~isempty(matlab2tikzOpts.Results.filename)
-      filename = matlab2tikzOpts.Results.filename;
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % handle output file handle/file name
+  if ~isempty( matlab2tikzOpts.Results.filehandle )
+      fid     = matlab2tikzOpts.Results.filehandle;
+      fileWasOpen = 1;
+      if ~isempty(matlab2tikzOpts.Results.filename)
+          warning( 'matlab2tikz:fileHandleFileNameConflict', ...
+                   'File handle AND file name for output given. File handle used, file name discarded.')
+      end
   else
-      filename = uiputfile( {'*.tikz'; '*.*'}, ...
-                            'Save File' );
+      fileWasOpen = 0;
+      % set filename
+      if ~isempty(matlab2tikzOpts.Results.filename)
+          filename = matlab2tikzOpts.Results.filename;
+      else
+          filename = uiputfile( {'*.tikz'; '*.*'}, ...
+                                'Save File' );
+      end
+      % open the file for writing
+      fid = fopen( filename, ...
+                  'w', ...
+                  'native', ... 
+                  matlab2tikzOpts.Results.encoding ...
+                );
+      if fid == -1
+          error( 'matlab2tikz:fileOpenError', ...
+                 'Unable to open file ''%s'' for writing.', ...
+                 filename );
+      end
   end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % print some version info to the screen
-  fprintf( '%s v%s\n', matlab2tikzName, matlab2tikzVersion );
+  sprintf( '%s v%s\n', matlab2tikzName, matlab2tikzVersion );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
-  saveToFile( filename );
+  saveToFile( fid, fileWasOpen );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  fprintf( '\nRemember to load \\usepackage{tikz} and \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
+  sprintf( '\nRemember to load \\usepackage{tikz} and \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
 
   % clean up
   clear global matlab2tikzName;
@@ -146,6 +173,14 @@ function matlab2tikz( varargin )
   end
   % -----------------------------------------------------------------------
 
+  % -----------------------------------------------------------------------
+  % validates the optional argument 'filehandle' to be the handle of
+  % an open file
+  function l = filehandleValidation( x, p )
+      l = isnumeric(x) && any( x==fopen('all') );
+  end
+  % -----------------------------------------------------------------------
+
 end
 % =========================================================================
 % *** END OF FUNCTION matlab2tikz
@@ -160,7 +195,7 @@ end
 % *** All other routines are called from here.
 % ***
 % =========================================================================
-function saveToFile( filename )
+function saveToFile( fid, fileWasOpen )
 
   global matlab2tikzName
   global matlab2tikzVersion
@@ -169,18 +204,6 @@ function saveToFile( filename )
   global tikzOptions
 
   global requiredRgbColors
-
-  % open the file for writing
-  fid = fopen( filename, ...
-               'w', ...
-               'native', ... 
-               matlab2tikzOpts.Results.encoding ...
-             );
-  if fid == -1
-      error( 'matlab2tikz:saveToFile', ...
-             'Unable to open file ''%s'' for writing.', ...
-             filename );
-  end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % enter plot recursion --
@@ -247,7 +270,10 @@ function saveToFile( filename )
   fprintf( fid, '\\end{tikzpicture}');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  fclose( fid );
+  % close the file if necessary
+  if ~fileWasOpen
+      fclose( fid );
+  end
 end
 % =========================================================================
 % *** END OF FUNCTION saveToFile
@@ -1765,7 +1791,6 @@ function str = drawQuiverGroup( h )
   arrowStyle  = [ 'arrow',num2str(quiverId),'/.style={',arrowOptions,'}' ];
   tikzOptions = [ tikzOptions, arrowStyle ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % return the vector field code

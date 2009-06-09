@@ -7,3 +7,12 @@ Matfig2PGF is written by Paul Wagenaars.
 Also, the author would like to thank Christian Feuersänger package pgfplots
 without which the structure of matlab2tikz would need to be a lot more
 complicated.
+
+Thanks for patches and other contributions to
+ 
+ Andreas Gäb
+ David Haberthür
+ Theo Markettos
+ Robert Whittlesey
+
+and many more!
