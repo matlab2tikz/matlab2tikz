@@ -2362,6 +2362,7 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
   % handle legend location
   loc  = get( handle, 'Location' );
   dist = 0.03;  % distance to to axes in normalized coordinated
+  anchor = [];
   switch loc
       case 'NorthEast'
           % only append something in this (default) case
@@ -2369,8 +2370,6 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
           if isXAxisReversed || isYAxisReversed
               position = [1-dist, 1-dist];
               anchor   = 'north east';
-    else
-      anchor = [];
           end
       case 'NorthWest'
           position = [dist, 1-dist];
@@ -2395,7 +2394,7 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
           anchor   = 'west';
       otherwise
           warning( 'matlab2tikz:getLegendOpts',                       ...
-                   [ ' Unknown legend location ''',loc,''             ...
+                   [ ' Unknown legend location ''',loc,''''           ...
                      '. Choosing default.' ] );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
