@@ -586,7 +586,7 @@ function str = drawAxes( handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % See if there are any legends that need to be plotted.
   c = get( get(handle,'Parent'), 'Children' ); % siblings of this handle
-  
+
   % Since the legends are at the same level as axes in the hierarchy,
   % we can't work out which relates to which using the tree
   % so we have to do it by looking for a plot inside which the legend sits.
@@ -595,7 +595,7 @@ function str = drawAxes( handle, alignmentOptions )
   % plot boundaries.
 
   % TODO: How to uniquely connect a legend with a pair of axes?
-  
+
   axisDims = get(handle,'Position');
   axisLeft = axisDims(1);
   axisBot  = axisDims(2);
@@ -606,7 +606,7 @@ function str = drawAxes( handle, alignmentOptions )
       if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
           strcmp( get(c(k),'Tag' ), 'legend' )
           legendHandle = c(k);
-          if (legendHandle)              
+          if (legendHandle)
               legDims = get( legendHandle, 'Position' );
               legLeft = legDims(1);
               legBot  = legDims(2);
@@ -654,7 +654,7 @@ function str = drawAxes( handle, alignmentOptions )
                   sprintf( '\n%% Axis at [%.2g %.2f %.2g %.2g]', ...
                            get(handle, 'position' ) ) ];
       end
-    
+
       % Now, return the whole axis environment.
       str = [ str, ...
               sprintf( ['\n\\begin{%s}[',opts,']\n\n'], env ), ...
@@ -2392,6 +2392,20 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
       case 'West'
           position = [dist, 0.5];
           anchor   = 'west';
+      case 'Best'
+          % TODO: Implement this one.
+          % The position could be determined by means of 'Position' and/or
+          % 'OuterPosition' of the legend handle; in fact, this could be made
+          % a general principle for all legend placements.
+          warning( 'matlab2tikz:getLegendOpts',                       ...
+                   [ ' Option ''Best'' not yet implemented.',         ...
+                     ' Choosing default.' ] );
+      case 'BestOutside'
+          % TODO: Implement this one.
+          % For comments see above.
+          warning( 'matlab2tikz:getLegendOpts',                       ...
+                   [ ' Option ''BestOutside'' not yet implemented.',  ...
+                     ' Choosing default.' ] );
       otherwise
           warning( 'matlab2tikz:getLegendOpts',                       ...
                    [ ' Unknown legend location ''',loc,''''           ...
@@ -2413,7 +2427,7 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
                  sprintf( 'at={(%g,%g)}',position ), ...
                  sprintf( 'anchor=%s', anchor ) ];
   end
-  
+
   % If the plot has 'legend boxoff', we have the 'not visible'
   % property, so turn off line and background fill.
   if ( ~isVisible(handle) )
