@@ -98,7 +98,7 @@ function matlab2tikz( varargin )
   matlab2tikzOpts.addOptional( 'filehandle', [], @filehandleValidation );
 
   % whether to strictly stick to the default MATLAB plot appearance:
-  matlab2tikzOpts.addOptional( 'strict', 0, @isnumeric );
+  matlab2tikzOpts.addOptional( 'strict', 0, @islogical );
 
   % width and height of the figure
   matlab2tikzOpts.addParamValue( 'height', [], @ischar );
@@ -106,6 +106,11 @@ function matlab2tikz( varargin )
 
   % file encoding
   matlab2tikzOpts.addParamValue( 'encoding' , '', @ischar );
+
+  % math mode in titles and captions
+  % -- this is default "true" as MATLAB may put non-LaTeX compilable structures
+  % in there.
+  matlab2tikzOpts.addParamValue( 'mathmode' , 1, @islogical );
 
   matlab2tikzOpts.parse( varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -522,14 +527,20 @@ function str = drawAxes( handle, alignmentOptions )
   % get axis labels
   axisLabels = getAxisLabels( handle );
   if ~isempty( axisLabels.x )
-      axisOpts = [ axisOpts,                              ...
-                          sprintf( 'xlabel={$%s$}',       ...
-                                   escapeCharacters(axisLabels.x) ) ];
+      xlabelText = sprintf( '%s', escapeCharacters(axisLabels.x) );
+      if matlab2tikzOpts.Results.mathmode
+          xlabelText = [ '$' xlabelText '$' ];
+      end
+      axisOpts = [ axisOpts,                       ...
+                   sprintf( 'xlabel={%s}', xlabelText ) ];
   end
   if ~isempty( axisLabels.y )
-      axisOpts = [ axisOpts,                              ...
-                   sprintf( 'ylabel={$%s$}',              ...
-                             escapeCharacters(axisLabels.y) ) ];
+      ylabelText = sprintf( '%s', escapeCharacters(axisLabels.y) );
+      if  matlab2tikzOpts.Results.mathmode
+          ylabelText = [ '$' ylabelText '$' ];
+      end
+      axisOpts = [ axisOpts,                       ...
+                   sprintf( 'ylabel={%s}', ylabelText ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -538,8 +549,12 @@ function str = drawAxes( handle, alignmentOptions )
   % get title
   title = get( get( handle, 'Title' ), 'String' );
   if ~isempty(title)
+      titleText = sprintf( '%s', escapeCharacters(title) );
+      if  matlab2tikzOpts.Results.mathmode
+          titleText = [ '$' titleText '$' ];
+      end
       axisOpts = [ axisOpts,                              ...
-                   sprintf( 'title={$%s$}', escapeCharacters(title) ) ];
+                   sprintf( 'title={%s}', titleText ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -2323,6 +2338,8 @@ end
 % =========================================================================
 function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
 
+  global matlab2tikzOpts;
+
   % Need to check that there's nothing inside visible before we
   % abandon this legend -- an invisible property of the parent just
   % means the legend has no box.
@@ -2342,10 +2359,14 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
   % handle legend entries
   if n
       for k=1:n
-          % Escape all legend entries to math mode for now.
+          % Escape all legend entries to math mode for now if not otherwise
+          % specified.
           % The reason for this is that entries as "cos_x" are legal MATLAB
           % code, but won't compile in (La)TeX except in Math mode.
-          entries{k} = [ '$', escapeCharacters(entries{k}), '$' ];
+          entries{k} = escapeCharacters(entries{k});
+          if matlab2tikzOpts.Results.mathmode
+              entries{k} = [ '$', entries{k}, '$' ];
+          end
           % Surround the entry by braces if a comma is contained.
           if strfind( entries{k}, ',' )
               entries{k} = [ '{', entries{k}, '}' ];
