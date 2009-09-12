@@ -3206,7 +3206,7 @@ function l = boxWhere( p, xLim, yLim )
           if isempty(l{k})
               error( 'matlab2tikz:boxWhere',                    ...
                      [ 'Point appears to neither sit inside, ', ...
-                       'nor outsize, nor on the boundary of the box.' ] );
+                       'nor outside, nor on the boundary of the box.' ] );
           end
       end
 
@@ -3544,7 +3544,8 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
           end
 
           % find doubles, and count C(i,j) in
-          doub = find( C(i,j:n)==C(i,j) );
+          doub = find( C(i,j:n)==C(i,j) ) ...
+               + j-1; % to get the actual index
 
           if length(doub)>1
               % Uh-oh, found doubles:
