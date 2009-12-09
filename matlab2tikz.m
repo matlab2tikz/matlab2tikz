@@ -360,12 +360,16 @@ end
 function str = drawAxes( handle, alignmentOptions )
 
   global matlab2tikzOpts;
+  global currentHandles;
 
   % Make the axis options a global variable as plot objects further below
   % in the hierarchy might want to append something.
   % One example is the required 'ybar stacked' option for stacked bar
   % plots.
   global axisOpts;
+
+  % update gca
+  currentHandles.gca = handle;
 
   str = [];
   axisOpts = cell(0);
@@ -1383,7 +1387,7 @@ function str = drawHggroup( h )
           % stair plots
           str = drawStairSeries( h );
 
-      case {'specgraph.contourgroup'}
+      case {'specgraph.contourgroup', 'hggroup'}
           % handle all those the usual way
           str = handleAllChildren( h );
 
@@ -1396,7 +1400,7 @@ function str = drawHggroup( h )
           str = drawErrorBars( h );
 
       otherwise
-          warning( 'matlab2tikz:drawHggroup',                          ...
+          warning( 'matlab2tikz:unknHggroupClass',     ...
                    'Don''t know class ''%s''. Default handling.', cl );
           str = handleAllChildren( h );
   end
@@ -3276,9 +3280,7 @@ end
 % ***
 % =========================================================================
 function out = isVisible( handle )
-
   out = strcmp( get(handle,'Visible'), 'on' );
-
 end
 % =========================================================================
 % *** END FUNCTION isVisible
