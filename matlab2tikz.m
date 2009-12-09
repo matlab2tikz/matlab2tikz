@@ -436,14 +436,16 @@ function str = drawAxes( handle, alignmentOptions )
   xColor = get( handle, 'XColor' );
   if ( any(xColor) ) % color not black [0,0,0]
       col = getColor( handle, xColor, 'patch' );
-      axisOpts = [ axisOpts, [ 'every outer x axis line/.append style=' ...
-                               '{', col, '}' ] ];
+      axisOpts = [ axisOpts, ...
+                   [ 'every outer x axis line/.append style={',col, '}' ], ...
+                   [ 'every x tick label/.append style={font=\\color{',col,'}}'] ];
   end
   yColor = get( handle, 'YColor' );
   if ( any(yColor) ) % color not black [0,0,0]
       col = getColor( handle, yColor, 'patch' );
-      axisOpts = [ axisOpts, [ 'every outer y axis line/.append style=' ...
-                               '{', col, '}' ] ];
+      axisOpts = [ axisOpts, ...
+                   [ 'every outer y axis line/.append style={',col, '}' ], ...
+                   [ 'every y tick label/.append style={font=\\color{',col,'}}'] ];
   end
 
   xLim = get( handle, 'XLim' );
