@@ -76,7 +76,7 @@ function matlab2tikz( varargin )
   matlab2tikzName = 'matlab2tikz';
 
   global matlab2tikzVersion;
-  matlab2tikzVersion = '0.0.4';
+  matlab2tikzVersion = '0.0.5beta';
 
   global tikzOptions; % for the arrow style -- TODO: see if we can get this removed
   tikzOptions = cell(0);
@@ -99,6 +99,11 @@ function matlab2tikz( varargin )
 
   % whether to strictly stick to the default MATLAB plot appearance:
   matlab2tikzOpts.addOptional( 'strict', 0, @islogical );
+
+  % Whether to save images in PNG format or to natively draw filled squares
+  % using TikZ itself.
+  % Default it PNG.
+  matlab2tikzOpts.addOptional( 'imageAsPng', 1, @islogical );
 
   % width and height of the figure
   matlab2tikzOpts.addParamValue( 'height', [], @ischar );
@@ -1299,6 +1304,9 @@ end
 % =========================================================================
 function str = drawImage( handle )
 
+  global currentHandles;
+  global matlab2tikzOpts;
+
   str = [];
 
   if ~isVisible( handle )
@@ -1337,27 +1345,51 @@ function str = drawImage( handle )
   end
   Y = yData(1):hY:yData(end);
 
-
-  % draw the thing
-  m = length(X);
-  n = length(Y);
-  xcolor = cell(m,n);
-  for i = 1:m
-      for j = 1:n
-          xcolor{i,j} = getColor( handle, cdata(i,j,:), 'image' );
+  if ( matlab2tikzOpts.Results.imageAsPng )
+      % ------------------------------------------------------------------------
+      % draw a png image
+      pngFileName = 'test.png';
+      colorData = zeros( m, n );
+      % TODO Make imagecolor2colorindex (or getColor for that matter) take matrix
+      %      arguments.
+      for i = 1:m
+          for j = 1:n
+              % Don't use getImage here to avoid 'mycolorX' constructions;
+              % exclusively color index data needed here.
+              colorData(n-i+1,j) = imagecolor2colorindex ( cdata(i,j), handle );
+          end
       end
-  end
+      imwrite(colorData, get(currentHandles.gcf,'ColorMap'), pngFileName, 'png');
+      % ------------------------------------------------------------------------
 
-  % The following section takes pretty long to execute, although in principle it is
-  % discouraged to use TikZ for those; LaTeX will take forever to compile.
-  % Still, a bug has been filed on MathWorks to allow for one-line sprintf'ing with
-  % (string+num) cells.
-  for i = 1:m
-      for j = 1:n
-          str = [ str, ...
-                  sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
-                           xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2  ) ];
+      xLim = get( currentHandles.gca, 'XLim' );
+      yLim = get( currentHandles.gca, 'YLim' );
+      str = [ str, ...
+              sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};', ...
+                       xLim(1), xLim(2), yLim(1), yLim(2), pngFileName) ];      
+  else
+      % draw the thing
+      m = length(X);
+      n = length(Y);
+      xcolor = cell(m,n);
+      for i = 1:m
+          for j = 1:n
+              xcolor{i,j} = getColor( handle, cdata(i,j,:), 'image' );
+          end
       end
+    
+      % The following section takes pretty long to execute, although in principle it is
+      % discouraged to use TikZ for those; LaTeX will take forever to compile.
+      % Still, a bug has been filed on MathWorks to allow for one-line sprintf'ing with
+      % (string+num) cells (Request ID: 1-9WHK4W).
+      for i = 1:m
+          for j = 1:n
+              str = [ str, ...
+                      sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
+                              xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2  ) ];
+          end
+      end
+
   end
 
 end
