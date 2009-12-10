@@ -107,7 +107,7 @@ function matlab2tikz( varargin )
   % Whether to save images in PNG format or to natively draw filled squares
   % using TikZ itself.
   % Default it PNG.
-  matlab2tikzOpts.addOptional( 'imageAsPng', 1, @islogical );
+  matlab2tikzOpts.addOptional( 'imagesAsPng', 1, @islogical );
   matlab2tikzOpts.addOptional( 'relativePngPath', [], @ischar );
 
   % width and height of the figure
@@ -1364,7 +1364,7 @@ function str = drawImage( handle )
   end
   Y = yData(1):hY:yData(end);
 
-  if ( matlab2tikzOpts.Results.imageAsPng )
+  if ( matlab2tikzOpts.Results.imagesAsPng )
       % ------------------------------------------------------------------------
       % draw a png image
       % Take the TikZ file base name and change the extension .png.
@@ -1994,6 +1994,12 @@ end
 function str = drawColorbar( handle, alignmentOptions )
 
   global currentHandles
+  global matlab2tikzOpts
+  global tikzFileName;
+  global relativePngPath;
+
+  persistent colorbarNo; % Keep track of how many colorbars there are, to avoid
+                         % file name collision in case PNGs are used.
 
   str = [];
 
@@ -2109,30 +2115,58 @@ function str = drawColorbar( handle, alignmentOptions )
 
   % get the colormap
   cmap = currentHandles.colormap;
-
   cbarLength = clim(2) - clim(1);
-
   m = size( cmap, 1 );
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % plot tiny little badges for the respective colors
-  for i=1:m
-      badgeColor = rgb2tikzcol( cmap(i,:) );
 
+  if (matlab2tikzOpts.Results.imagesAsPng)
+      if (isempty(colorbarNo))
+          colorbarNo = 1;
+      else
+          colorbarNo = colorbarNo + 1;
+      end
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      % plot a strip
+      [pathstr,name]   = fileparts( tikzFileName );
+      pngFileName      = fullfile( pathstr, [name '-colorbar' num2str(colorbarNo) '.png'] );
+      pngReferencePath = fullfile( relativePngPath, [name '-colorbar' num2str(colorbarNo) '.png'] );
+      strip = 1:length(cmap);
       switch loc
           case {'NorthOutside','SouthOutside'}
-              x1 = clim(1) + cbarLength/m *(i-1);
-              x2 = clim(1) + cbarLength/m *i;
-              y1 = 0;
-              y2 = 1; 
+              xLim = clim;
+              yLim = [0, 1];
           case {'WestOutside','EastOutside'}
-              x1 = 0;
-              x2 = 1;
-              y1 = clim(1) + cbarLength/m *(i-1);
-              y2 = clim(1) + cbarLength/m *i;
+              strip = strip(end:-1:1)';
+              xLim = [0,1];
+              yLim = clim;
       end
+      imwrite( strip, cmap, pngFileName, 'png' );
       str = [ str, ...
-              sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
-                         badgeColor, x1, y1, x2, y1, x2, y2, x1, y2    ) ];
+              sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
+                       xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ];
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  else
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      % plot tiny little badges for the respective colors
+      for i=1:m
+          badgeColor = rgb2tikzcol( cmap(i,:) );
+    
+          switch loc
+              case {'NorthOutside','SouthOutside'}
+                  x1 = clim(1) + cbarLength/m *(i-1);
+                  x2 = clim(1) + cbarLength/m *i;
+                  y1 = 0;
+                  y2 = 1; 
+              case {'WestOutside','EastOutside'}
+                  x1 = 0;
+                  x2 = 1;
+                  y1 = clim(1) + cbarLength/m *(i-1);
+                  y2 = clim(1) + cbarLength/m *i;
+          end
+          str = [ str, ...
+                  sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
+                            badgeColor, x1, y1, x2, y1, x2, y2, x1, y2    ) ];
+      end
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -2370,7 +2404,8 @@ end
 % =========================================================================
 % *** FUNCTION cdata2colorindex
 % ***
-% *** Transforms a color in CData format to a 1x3 rgb color vector.
+% *** Transforms a color in CData format to an index in the color map.
+% *** Only does something if CDataMapping is 'scaled', really.
 % ***
 % =========================================================================
 function colorindex = cdata2colorindex ( cdata, imagehandle )
