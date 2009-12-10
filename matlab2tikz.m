@@ -67,6 +67,8 @@ function matlab2tikz( varargin )
   clear global tol;
   clear global matlab2tikzOpts;
   clear global currentHandles;
+  clear global tikzFileName;
+  clear global relativePngPath;
 
   global matlab2tikzOpts;
 
@@ -84,6 +86,8 @@ function matlab2tikz( varargin )
   global tol;
   tol = 1e-15; % global round-off tolerance;
                % used, for example, in equality test for doubles
+
+  global relativePngPath;
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -104,6 +108,7 @@ function matlab2tikz( varargin )
   % using TikZ itself.
   % Default it PNG.
   matlab2tikzOpts.addOptional( 'imageAsPng', 1, @islogical );
+  matlab2tikzOpts.addOptional( 'relativePngPath', [], @ischar );
 
   % width and height of the figure
   matlab2tikzOpts.addParamValue( 'height', [], @ischar );
@@ -156,6 +161,18 @@ function matlab2tikz( varargin )
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  global tikzFileName;
+  tikzFileName = fopen( fid );
+
+  % By default, reference the PNG (if required) from the TikZ file
+  % as the file path of the TikZ file itself. This works if the MATLAB script
+  % is executed in the same folder where the TeX file sits.
+  if ( isempty(matlab2tikzOpts.Results.relativePngPath) )
+      relativePngPath = fileparts(tikzFileName);
+  else
+      relativePngPath = matlab2tikzOpts.Results.relativePngPath;
+  end
 
   % print some version info to the screen
   sprintf( '%s v%s\n', matlab2tikzName, matlab2tikzVersion );
@@ -1306,6 +1323,8 @@ function str = drawImage( handle )
 
   global currentHandles;
   global matlab2tikzOpts;
+  global tikzFileName;
+  global relativePngPath;
 
   str = [];
 
@@ -1348,7 +1367,10 @@ function str = drawImage( handle )
   if ( matlab2tikzOpts.Results.imageAsPng )
       % ------------------------------------------------------------------------
       % draw a png image
-      pngFileName = 'test.png';
+      % Take the TikZ file base name and change the extension .png.
+      [pathstr, name ] = fileparts( tikzFileName );
+      pngFileName = fullfile( pathstr, [name '.png'] );
+      pngReferencePath = fullfile( relativePngPath, [name '.png'] );
       colorData = zeros( m, n );
       % TODO Make imagecolor2colorindex (or getColor for that matter) take matrix
       %      arguments.
@@ -1356,9 +1378,19 @@ function str = drawImage( handle )
           for j = 1:n
               % Don't use getImage here to avoid 'mycolorX' constructions;
               % exclusively color index data needed here.
-              colorData(n-i+1,j) = imagecolor2colorindex ( cdata(i,j), handle );
+              colorData(i,j) = imagecolor2colorindex ( cdata(i,j), handle );
           end
       end
+
+      % Find out whether or not we have an imagesc plot.
+      % In that case, we must not reverse the axis.
+      % TODO This is somewhat dubious and need further research/clarification.
+      reorder = strcmp( 'scaled', get(handle, 'CDataMapping' ) );
+      if (reorder)
+          I = m:-1:1;
+          colorData = colorData(I,:);
+      end
+
       imwrite(colorData, get(currentHandles.gcf,'ColorMap'), pngFileName, 'png');
       % ------------------------------------------------------------------------
 
@@ -1366,7 +1398,12 @@ function str = drawImage( handle )
       yLim = get( currentHandles.gca, 'YLim' );
       str = [ str, ...
               sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};', ...
-                       xLim(1), xLim(2), yLim(1), yLim(2), pngFileName) ];      
+                       xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ];
+      warning( 'matlab2tikz:pngFileLocation',     ...
+               [ 'The PNG file is stored at ''%s'', the TikZ file contains ', ...
+                 'a reference to ''%s''.\nDepending on where the TeX file ', ...
+                 'is located into with TikZ gets included, you may need to adapt this.' ], ...
+               pngFileName, pngReferencePath );
   else
       % draw the thing
       m = length(X);
