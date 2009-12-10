@@ -16,7 +16,7 @@
 % *** -------
 % ***  Note:
 % *** -------
-% ***    This program is a rewrite on Paul Wagenaars' Matlab2PGF which
+% ***    This program is a rewrite on Paul Wagenaars' Matfig2PGF which
 % ***    itself uses pure PGF as output format <paul@wagenaars.org>, see
 % ***
 % ***       http://www.mathworks.com/matlabcentral/fileexchange/12962
@@ -2872,18 +2872,6 @@ function [xcolorLiteral,errorcode] = rgb2xcolor( rgb )
   elseif isequal( rgb, [0.5,0,0.5] )
       xcolorLiteral = 'violet';
       errorcode = 0;
-  elseif isequal( rgb, [0,1,1] )
-      xcolorLiteral = 'cyan';
-      errorcode = 0;
-  elseif isequal( rgb, [1,0,1] )
-      xcolorLiteral = 'magenta';
-      errorcode = 0;
-  elseif isequal( rgb, [1,1,0] )
-      xcolorLiteral = 'yellow';
-      errorcode = 0;
-  elseif isequal( rgb, [0.5,0.5,0] )
-      xcolorLiteral = 'olive';
-      errorcode = 0;
   elseif isequal( rgb, [0,0,0] )
       xcolorLiteral = 'black';
       errorcode = 0;
@@ -2900,6 +2888,25 @@ function [xcolorLiteral,errorcode] = rgb2xcolor( rgb )
       xcolorLiteral = '';
       errorcode = 1;
   end
+
+% The colors 'cyan', 'magenta', 'yellow', and 'olive' within xcolor.sty
+% are defined in the CMYK color space, with an approximation in RGB.
+% Unfortunately, the approximation is not very close (particularly for
+% cyan), so just redefine those colors.
+% ------------------------------------
+%    elseif isequal( rgb, [0,1,1] )
+%        xcolorLiteral = 'cyan';
+%        errorcode = 0;
+%    elseif isequal( rgb, [1,0,1] )
+%        xcolorLiteral = 'magenta';
+%        errorcode = 0;
+%    elseif isequal( rgb, [1,1,0] )
+%        xcolorLiteral = 'yellow';
+%        errorcode = 0;
+%    elseif isequal( rgb, [0.5,0.5,0] )
+%        xcolorLiteral = 'olive';
+%        errorcode = 0;
+% ------------------------------------
 
 end
 % =========================================================================
