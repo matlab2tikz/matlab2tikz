@@ -456,7 +456,7 @@ function str = drawAxes( handle, alignmentOptions )
   end
 
   % the following is general MATLAB behavior
-  axisOpts = [ axisOpts, 'axis on top', 'scale only axis' ];
+  axisOpts = [ axisOpts, 'scale only axis' ];
 
   % axis colors
   xColor = get( handle, 'XColor' );
@@ -636,6 +636,14 @@ function str = drawAxes( handle, alignmentOptions )
                  sprintf( '\n\\pgfplotsset{every axis grid/.style={style=%s}}\n\n', gls ) ];
       end
 
+  else
+      % When specifying 'axis on top', the axes stay above all graphs (which is
+      % default MATLAB behavior), but so do the grids (which is not default
+      % behavior).
+      % To date (Dec 12, 2009) pgfplots is not able to handle those things
+      % separately.
+      % As a prelimary compromise, only pull this option if no grid is in use.
+      axisOpts = [ axisOpts, 'axis on top' ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
