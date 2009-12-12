@@ -624,7 +624,6 @@ function str = drawAxes( handle, alignmentOptions )
   % set the line style
   if isGrid
       matlabGridLineStyle = get( handle, 'GridLineStyle' );
-
       % take over the grid line style in any case when in strict mode;
       % if not, don't add anything in case of default line grid line style
       % and effectively take pgfplots' default
@@ -635,7 +634,6 @@ function str = drawAxes( handle, alignmentOptions )
          str = [ str, ...
                  sprintf( '\n\\pgfplotsset{every axis grid/.style={style=%s}}\n\n', gls ) ];
       end
-
   else
       % When specifying 'axis on top', the axes stay above all graphs (which is
       % default MATLAB behavior), but so do the grids (which is not default
@@ -2844,6 +2842,9 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
       lStyle=[lStyle, 'fill=none', 'draw=none' ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  % make suret the entries are flush left (default MATLAB behavior)
+  lStyle=[lStyle, 'nodes=right' ];
 
   if ~isempty(lStyle)
       lOpts = [ lOpts, ...
