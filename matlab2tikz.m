@@ -786,78 +786,328 @@ function str = drawLine( handle, yDeviation )
   yLim   = get( p, 'YLim' );
   xData  = get( handle, 'XData' );
   yData  = get( handle, 'YData' );
-  segvis = segmentVisible( [xData', yData'], xLim, yLim );
 
-  n = length(xData);
+  % split the data into logical chunks
+  [xDataCell, yDataCell] = splitLine( xData, yData, xLim, yLim );
 
-  if errorbarMode
-      if n~=length(yDeviation)
-          error( 'drawLine:arrayLengthsMismatch', ...
-                 '''drawline'' was called with errors bars turned on, but array lengths do not match.' );
-      end
+  % plot them
+  for k = 1:length(xDataCell)
+      plotLine( xDataCell{k}, yDataCell{k}, xLim, yLim );
   end
 
-  % The line gets actually broken up into several as some parts of it may
-  % be outside the visible area (the plot box).
-  % 'segvis' tells us which segment are actually visible, and the
-  % following construction loops through it and makes sure that each
-  % point that is necessary gets actually printed.
-  % 'printPrevious' tells whether or not the previous segment is visible;
-  % this information is used for determining when a new 'addplot' needs
-  % to be opened.
-  printPrevious = 0;
-  for k = 1:n-1
-      if segvis(k) % segment is visible
-          %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-          if ~printPrevious % .. the previous wasn't, hence start a plot
-              str = [ str, ...
-                      sprintf( ['\\addplot [',opts,']'] ) ];
-              if errorbarMode
-                  str = [ str, ...
-                          sprintf('\nplot[error bars/.cd, y dir = both, y explicit]\n') ];
-              end
-              str = [ str, ...
-                      sprintf('coordinates{\n') ];
+  str = [ str, handleAllChildren( handle ) ];
 
-              str = [ str, ...
-                      sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
-              if errorbarMode
-                  str = [ str, ...
-                          sprintf( ' +- (%g,%g)\n', 0, yDeviation(k) ) ];
-              end
-              printPrevious = 1;
+
+  % -----------------------------------------------------------------------
+  % FUNCTION plotLine
+  % -----------------------------------------------------------------------
+  function plotLine( xData, yData, xLim, yLim )
+    
+      n = length(xData);
+    
+      if errorbarMode
+          if n~=length(yDeviation)
+              error( 'drawLine:arrayLengthsMismatch', ...
+                    '''drawline'' was called with errors bars turned on, but array lengths do not match.' );
           end
+      end
 
-          str = [ str, sprintf( ' (%g,%g)', xData(k+1), yData(k+1) ) ];
+      str = [ str, ...
+              sprintf( ['\\addplot [',opts,']'] ) ];
+      if errorbarMode
+          str = [ str, ...
+                  sprintf('\nplot[error bars/.cd, y dir = both, y explicit]\n') ];
+      end
+
+      str = [ str, ...
+              sprintf('coordinates{\n') ];
+
+      for l = 1:length(xDataCell{k})
+          str = [ str, ...
+                  sprintf( ' (%g,%g)', xDataCell{k}(l), yDataCell{k}(l) ) ];
           if errorbarMode
               str = [ str, ...
                       sprintf( ' +- (%g,%g)\n', 0, yDeviation(k+1) ) ];
           end
-          %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-      else
-          %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-          if printPrevious  % that was the last entry for now
-              if ~errorbarMode % error bars already create newline characters
-                  str = [ str, ...
-                          sprintf('\n') ];
-              end
-              str = [ str, sprintf('};\n\n') ];
-              printPrevious = 0;
-          end
-          %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
       end
-  end
-  if printPrevious % don't forget to print the closing bracket
-      if ~errorbarMode % error bars already create newline characters
-          str = [ str, ...
-                  sprintf('\n') ];
-      end
+
       str = [ str, sprintf('};\n\n') ];
+
+
+%        printPrevious = 0;
+%        for k = 1:n-1
+%            if segvis(k) % segment is visible
+%                %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+%                if ~printPrevious % .. the previous wasn't, hence start a plot
+%                    str = [ str, ...
+%                            sprintf( ['\\addplot [',opts,']'] ) ];
+%                    if errorbarMode
+%                        str = [ str, ...
+%                                sprintf('\nplot[error bars/.cd, y dir = both, y explicit]\n') ];
+%                    end
+%                    str = [ str, ...
+%                            sprintf('coordinates{\n') ];
+%      
+%                    str = [ str, ...
+%                            sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
+%                    if errorbarMode
+%                        str = [ str, ...
+%                                sprintf( ' +- (%g,%g)\n', 0, yDeviation(k) ) ];
+%                    end
+%                    printPrevious = 1;
+%                end
+%      
+%                str = [ str, sprintf( ' (%g,%g)', xData(k+1), yData(k+1) ) ];
+%                if errorbarMode
+%                    str = [ str, ...
+%                            sprintf( ' +- (%g,%g)\n', 0, yDeviation(k+1) ) ];
+%                end
+%                %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+%            else
+%                %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+%                if printPrevious  % that was the last entry for now
+%                    if ~errorbarMode % error bars already create newline characters
+%                        str = [ str, ...
+%                                sprintf('\n') ];
+%                    end
+%                    str = [ str, sprintf('};\n\n') ];
+%                    printPrevious = 0;
+%                end
+%                %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+%            end
+%        end
+%        if printPrevious % don't forget to print the closing bracket
+%            if ~errorbarMode % error bars already create newline characters
+%                str = [ str, ...
+%                        sprintf('\n') ];
+%            end
+%            str = [ str, sprintf('};\n\n') ];
+%        end
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % -----------------------------------------------------------------------
+  % END FUNCTION plotLine
+  % -----------------------------------------------------------------------
 
 
-  str = [ str, handleAllChildren( handle ) ];
+  % -----------------------------------------------------------------------
+  % FUNCTION splitLine
+  %
+  % Split the xData, yData into several chunks of data for each of which
+  % an \addplot will be generated.
+  % Splitting criteria are:
+  %    * NaNs.
+  %      If xData or yData contain a NaN at position K, the data gets
+  %      split up into index groups [1:k-1],[k+1:end].
+  %    * Visibility.
+  %      Parts of the line data may sit outside the plotbox.
+  %      'segvis' tells us which segment are actually visible, and the
+  %      following construction loops through it and makes sure that each
+  %      point that is necessary gets actually printed.
+  %      'printPrevious' tells whether or not the previous segment is visible;
+  %      this information is used for determining when a new 'addplot' needs
+  %      to be opened.
+  %    * Dimension too large.
+  %      Connected points may sit outside the plot, but their connecting
+  %      line may not. The values of the outside plot may be too large for
+  %      LaTeX to handle. Move those points closer to the bounding box,
+  %      and possibly split them up in two.
+  %
+  % -----------------------------------------------------------------------
+  function [xDataCell, yDataCell ] = splitLine( xData, yData, xLim, yLim )
+
+    xDataCell{1} = xData;
+    yDataCell{1} = yData;
+
+    % Split up at NaNs.
+    [xDataCell, yDataCell] = splitByNaNs( xDataCell, yDataCell );
+
+    % Split each of the chunks further up along visible segments
+    [xDataCell , yDataCell] = splitByVisibility( xDataCell, yDataCell, xLim, yLim );
+
+    % Split each of the current chunks further with respect to outliers
+    [xDataCell , yDataCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim );
+
+  end
+  % -----------------------------------------------------------------------
+  % END FUNCTION splitLine
+  % -----------------------------------------------------------------------
+
+
+  % -----------------------------------------------------------------------
+  % FUNCTION splitByNaNs
+  % -----------------------------------------------------------------------
+  function [xDataCellNew , yDataCellNew] = splitByNaNs( xDataCell, yDataCell )
+    xDataCellNew = cell(0);
+    yDataCellNew = cell(0);
+
+    cellIndexNew = 0;
+    for cellIndex = 1:length(xDataCell)
+        nanIndices = find( isnan(xDataCell{cellIndex}) | isnan(yDataCell{cellIndex}) );
+        m = length(nanIndices);
+        nanIndices = [ 0 nanIndices length(xDataCell{cellIndex})+1 ];
+        for k = 1:m+1
+            I = nanIndices(k)+1:nanIndices(k+1)-1;
+            if ~isempty(I)
+                cellIndexNew = cellIndexNew + 1;
+                xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(I);
+                yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(I);
+            end
+        end
+    end
+
+  end
+  % -----------------------------------------------------------------------
+  % END FUNCTION splitByNaNs
+  % -----------------------------------------------------------------------
+
+
+  % -----------------------------------------------------------------------
+  % FUNCTION splitByVisibility
+  % -----------------------------------------------------------------------
+  function [xDataCellNew , yDataCellNew] = splitByVisibility( xDataCell, yDataCell, xLim, yLim )
+    xDataCellNew = cell(0);
+    yDataCellNew = cell(0);
+
+    cellIndexNew = 0;
+    for cellIndex = 1:length(xDataCell);
+        segvis = segmentVisible( [xDataCell{cellIndex}', yDataCell{cellIndex}'], xLim, yLim );
+
+        n = length( xDataCell{cellIndex} );
+        l = 1;
+        printPrevious = 0;
+        % loop over the segments
+        for k = 1:n-1
+            if segvis(k)
+                if ~printPrevious
+                    % start new plot
+                    cellIndexNew = cellIndexNew + 1;
+                    xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(k);
+                    yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(k);
+                    l = l+1;
+                    printPrevious = 1;
+                end
+                xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(k+1);
+                yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(k+1);
+                l = l+1;
+            else
+                printPrevious = 0;
+            end
+        end
+    end
+
+  end
+  % -----------------------------------------------------------------------
+  % END FUNCTION splitByVisibility
+  % -----------------------------------------------------------------------
+
+  % -----------------------------------------------------------------------
+  % FUNCTION splitByOutliers
+  % -----------------------------------------------------------------------
+  function [xDataCellNew , yDataCellNew] = splitByOutliers( xDataCell, yDataCell, xLim, yLim )
+
+    xDataCellNew = cell(0);
+    yDataCellNew = cell(0);
+    cellIndexNew = 0;
+    delta = 0.5; % Distance around a plotbox within the range of which points
+                 % will be considered close enough, and not moved.
+    xLimLarger = [ xLim(1)-delta, xLim(2)+delta ];
+    yLimLarger = [ yLim(1)-delta, yLim(2)+delta ];
+
+    for cellIndex = 1:length(xDataCell);
+        cellIndexNew = cellIndexNew + 1;
+        l = 1; % running index in the new cell
+
+        n = length( xDataCell{cellIndex} );
+        for k = 1:n
+            x = [ xDataCell{cellIndex}(k); ...
+                  yDataCell{cellIndex}(k) ];
+            % The largest positive value of v determines where the point sits,
+            % and to which boundary it must be normalized.
+            v = [ xLim(1)-x(1), x(1)-xLim(2), yLim(1)-x(2), x(2)-yLim(2) ];
+            maxVal = max(v);
+            % If there are several maxima, just pick the first one.
+            % --> maxVal(1)
+            if maxVal(1)>delta % Point sits too far outside. Move!
+                if k>1
+                    % also shorten the distance to the previous, and split up
+                    xRef = [ xDataCell{cellIndex}(k-1); ...
+                             yDataCell{cellIndex}(k-1) ];
+                    xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );
+
+                    xDataCellNew{cellIndexNew}(l) = xNew(1);
+                    yDataCellNew{cellIndexNew}(l) = xNew(2);
+                    l = l+1;
+
+                    if k<n % In this case, it will be automatically reset at the
+                           % beginning of the k-loop.
+                        cellIndexNew = cellIndexNew + 1; % go to the next cell
+                        l = 1; % reset the index
+                    end
+                end
+                if k<n
+                    xRef = [ xDataCell{cellIndex}(k+1); ...
+                             yDataCell{cellIndex}(k+1) ];
+                    xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );    
+                    xDataCellNew{cellIndexNew}(l) = xNew(1);
+                    yDataCellNew{cellIndexNew}(l) = xNew(2);
+                    l = l+1;
+                end
+            else
+                % Point alright: Just copy it over.
+                xDataCellNew{cellIndexNew}(l) = x(1);
+                yDataCellNew{cellIndexNew}(l) = x(2);
+                l = l+1;
+            end
+        end
+    end
+
+  end
+  % -----------------------------------------------------------------------
+  % END FUNCTION splitByOutliers
+  % -----------------------------------------------------------------------
+
+  % -----------------------------------------------------------------------
+  % FUNCTION moveCloser
+  % Takes one point x outside a box defined by xLim, yLim, and one other
+  % point xRef it.
+  % Results is a point xNew that sits on the line xRef---x *and* on the
+  % boundary box.
+  % -----------------------------------------------------------------------
+  function xNew = moveCloser( x, xRef, xLim, yLim )
+
+    alpha = inf;
+
+    % Find out with which border the line x---xRef intersects, and determine
+    % the parameter alpha such that x+alpha(xRef-x) sits on the boundary.
+    if segmentsIntersect( [x(1), xRef(1), xLim(1), xLim(1)], ... % left boundary
+                          [x(2), xRef(2), yLim            ] )
+        alpha = min( alpha, (xLim(1)-x(1)) / (xRef(1)-x(1)) );
+    end
+    if segmentsIntersect( [x(1), xRef(1), xLim            ], ... % bottom boundary
+                          [x(2), xRef(2), yLim(1), yLim(1)] )
+        alpha = min( alpha, (yLim(1)-x(2)) / (xRef(2)-x(2)) );
+    end
+    if segmentsIntersect( [x(1), xRef(1), xLim(2), xLim(2)], ... % right boundary
+                          [x(2), xRef(2), yLim            ] )
+        alpha = min( alpha, (xLim(2)-x(1)) / (xRef(1)-x(1)) );
+    end
+    if segmentsIntersect( [x(1), xRef(1), xLim            ], ... % top boundary
+                          [x(2), xRef(2), yLim(2), yLim(2)] )
+        alpha = min( alpha, (yLim(2)-x(2)) / (xRef(2)-x(2)) );
+    end
+
+    if isinf(alpha)
+        error( 'matlab2tikz:noIntersecton', ...
+               'Error text.' );
+    end
+
+    % create the new point
+    xNew = xRef + alpha*(x-xRef);
+  end
+  % -----------------------------------------------------------------------
+  % END FUNCTION moveCloser
+  % -----------------------------------------------------------------------
 
 
   % -----------------------------------------------------------------------
@@ -894,7 +1144,7 @@ function str = drawLine( handle, yDeviation )
               % This is kind of tricky as there may be nodes *exactly*
               % in a corner of the domain. boxpos & commonEntry handle
               % this, though.
-              out(k) =  ~commonEntry( boxpos{k},boxpos{k+1} );
+              out(k) = ~commonEntry( boxpos{k},boxpos{k+1} );
           end
       end
 
@@ -929,7 +1179,7 @@ function str = drawLine( handle, yDeviation )
         lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
         mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
         out    =   0<lambda && lambda<1 ...
-                &&  0<mu     && mu    <1;
+               &&  0<mu     && mu    <1;
     end
 
   end
@@ -1337,8 +1587,25 @@ function str = drawImage( handle )
   yData = get( handle, 'YData' );
   cdata = get( handle, 'CData' );
 
+  % Find out whether or not we have an imagesc plot.
+  % In that case, we must not reverse the axis.
+  % TODO This is somewhat dubious and need further research/clarification.
+  reorder = ~strcmp( 'scaled', get(handle, 'CDataMapping' ) )
+
+cdata = cdata';
+
+%    if (reorder)
+%        cdata = cdata';
+%    end
+
   m = size(cdata,1);
   n = size(cdata,2);
+
+m
+xData
+
+n
+yData
 
   % Generate uniformly distributed X, Y, although xData and yData may be non-uniform.
   % This is MATLAB(R) behaviour.
@@ -1381,16 +1648,6 @@ function str = drawImage( handle )
               colorData(i,j) = imagecolor2colorindex ( cdata(i,j), handle );
           end
       end
-
-      % Find out whether or not we have an imagesc plot.
-      % In that case, we must not reverse the axis.
-      % TODO This is somewhat dubious and need further research/clarification.
-      reorder = strcmp( 'scaled', get(handle, 'CDataMapping' ) );
-      if (reorder)
-          I = m:-1:1;
-          colorData = colorData(I,:);
-      end
-
       imwrite(colorData, get(currentHandles.gcf,'ColorMap'), pngFileName, 'png');
       % ------------------------------------------------------------------------
 
@@ -3311,6 +3568,7 @@ function l = boxWhere( p, xLim, yLim )
   n = size(p,1);
 
   l = cell(n,1);
+
   for k = 1:n
 
       if    p(k,1)>xLim(1) && p(k,1)<xLim(2) ...   % inside
@@ -3319,7 +3577,7 @@ function l = boxWhere( p, xLim, yLim )
       elseif    p(k,1)<xLim(1) || p(k,1)>xLim(2) ...  % outside
              || p(k,2)<yLim(1) || p(k,2)>yLim(2);
           l{k} = 2;
-      else % is on boundary -- but which?
+      else % is on boundary -- but which one?
 
           if abs(p(k,1)-xLim(1)) < tol
               l{k} = [ l{k}, -1 ];
