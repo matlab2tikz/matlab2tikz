@@ -261,11 +261,11 @@ function saveToFile( fid, fileWasOpen )
   axesHandles = axesHandles(end:-1:1);
 
   % find alignments
-  [alignmentOptions,ix] = alignSubPlots( axesHandles );
+  [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles );
 
   str = [];
-  for k = 1:length(axesHandles)
-      str = [ str, drawAxes(axesHandles(ix(k)),alignmentOptions(ix(k))) ];
+  for k = 1:length(visibleAxesHandles)
+      str = [ str, drawAxes(visibleAxesHandles(ix(k)),alignmentOptions(ix(k))) ];
   end
 
   set( 0, 'ShowHiddenHandles', 'off' );
@@ -403,7 +403,7 @@ function str = drawAxes( handle, alignmentOptions )
       containsVisibleChild = 0;
       for k=1:length(c)
           if isVisible( c(k) )
-              containsVisibleChild = 1
+              containsVisibleChild = 1;
               break;
           end
       end
@@ -740,6 +740,31 @@ end
 % =========================================================================
 
 
+% =========================================================================
+% *** FUNCTION axisIsVisible
+% =========================================================================
+function bool = axisIsVisible( axisHandle )
+
+ if ~isVisible( axisHandle )
+     % An invisible axes container *can* have visible children, so don't
+     % immediately bail out here.
+     c = get(axisHandle,'Children');
+     bool = 0;
+     for k=1:length(c)
+         if isVisible( c(k) )
+             bool = 1;
+             return;
+         end
+     end
+  else
+      bool = true;
+  end
+
+end
+% =========================================================================
+% *** END FUNCTION axisIsVisible
+% =========================================================================
+
 
 % =========================================================================
 % *** FUNCTION drawLine
@@ -754,6 +779,11 @@ end
 function str = drawLine( handle, yDeviation )
 
   global currentHandles
+
+  % TODO Check for "special" lines, e.g.:
+  % if strcmp( get(handle,'Tag'), 'zplane_unitcircle' )
+  %     % draw unit circle and axes
+  % end
 
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = 0;
@@ -3745,7 +3775,7 @@ end
 % ***              [       AXES2 ]
 % ***
 % =========================================================================
-function [alignmentOptions,ix] = alignSubPlots( axesHandles )
+function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
 
   % TODO: fix this function
   % TODO: look for unique IDs of the axes env. which could be returned along
@@ -3753,10 +3783,18 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
 
   global tol
 
-  n = length(axesHandles);
+  l = 0;
+  for k=1:length(axesHandles)
+      if axisIsVisible( axesHandles(k) )
+          l = l+1;
+          visibleAxesHandles(l) = axesHandles(k);
+      end
+  end
+
+  n = length(visibleAxesHandles);
 
   % return immediately if nothing is to be aligned
-  if n<=1
+  if l<=1
      alignmentOptions(1).isRef = 0;
      alignmentOptions(1).opts  = cell(0);
      ix = 1;
@@ -3768,7 +3806,6 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
   % positive integers where they are. The integer codes how the axes
   % are aligned (top right:bottom left, and so on).
   C = zeros(n,n);
-
 
   % `isRef` tells whether the respective plot acts as a position reference
   % for another plot.
@@ -3784,11 +3821,11 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
       % `axesPos(i,:)` contains the x-value of the left and the right axis
       % (indices 1,3) and the y-value of the bottom and top axis
       % (indices 2,4) of plot no. `i`
-      if strcmp( get(axesHandles(k),'Tag'), 'Colorbar' )
+      if strcmp( get(visibleAxesHandles(k),'Tag'), 'Colorbar' )
           cbarHandles = [cbarHandles,k]; % treat color bars later
           continue
       else
-          axesPos(k,:) = get( axesHandles(k), 'Position' );
+          axesPos(k,:) = get( visibleAxesHandles(k), 'Position' );
       end
 
       axesPos(k,3) = axesPos(k,1) + axesPos(k,3);
@@ -3800,7 +3837,7 @@ function [alignmentOptions,ix] = alignSubPlots( axesHandles )
   nonCbarHandles              = (1:n);
   nonCbarHandles(cbarHandles) = [];
   for k = cbarHandles
-      axesPos(k,:) = correctColorbarPos( axesHandles(k), ...
+      axesPos(k,:) = correctColorbarPos( visibleAxesHandles(k), ...
                                          axesPos(nonCbarHandles,:) );
   end
   % now, the color bars are nicely aligned with the plots
