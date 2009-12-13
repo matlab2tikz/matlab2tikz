@@ -399,7 +399,15 @@ function str = drawAxes( handle, alignmentOptions )
   if ~isVisible( handle )
       % An invisible axes container *can* have visible children, so don't
       % immediately bail out here.
-      if ~isempty(get(handle,'Children'))
+      c = get(handle,'Children');
+      containsVisibleChild = 0;
+      for k=1:length(c)
+          if isVisible( c(k) )
+              containsVisibleChild = 1
+              break;
+          end
+      end
+      if containsVisibleChild
           env  = 'axis';
           dim = getAxesDimensions( handle );
           axisOpts = [ axisOpts, ...
