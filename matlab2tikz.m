@@ -1631,49 +1631,15 @@ function str = drawImage( handle )
   yData = get( handle, 'YData' );
   cdata = get( handle, 'CData' );
 
-  % Find out whether or not we have an imagesc plot.
-  % In that case, we must not reverse the axis.
-  % TODO This is somewhat dubious and need further research/clarification.
-  reorder = ~strcmp( 'scaled', get(handle, 'CDataMapping' ) )
-
-cdata = cdata';
-
-%    if (reorder)
-%        cdata = cdata';
-%    end
-
   m = size(cdata,1);
   n = size(cdata,2);
 
-m
-xData
-
-n
-yData
-
-  % Generate uniformly distributed X, Y, although xData and yData may be non-uniform.
-  % This is MATLAB(R) behaviour.
-  switch length(xData)
-      case 2 % only the limits given; common for generic image plots
-          hX = 1;
-      case m % specific x-data is given
-          hX = (xData(end)-xData(1)) / (length(xData)-1);
-      otherwise
-          error( 'drawImage:arrayLengthMismatch', ...
-                 sprintf( 'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', m, length(xData) ) );
+  if ~strcmp( get(currentHandles.gca,'Visible'), 'off' )
+      % Flip the image over as the PNG gets written starting at (0,0) that is,
+      % the top left corner.
+      % MATLAB quirk: In case the axes are invisible, don't do this.
+      cdata = cdata(m:-1:1,:);
   end
-  X = xData(1):hX:xData(end);
-
-  switch length(yData)
-      case 2 % only the limits given; common for generic image plots
-          hY = 1;
-      case n % specific y-data is given
-          hY = (yData(end)-yData(1)) / (length(yData)-1);
-      otherwise
-          error( 'drawImage:arrayLengthMismatch', ...
-                 sprintf( 'Array lengths not matching (%d = size(cdata,2) ~= length(yData) = %d).', n, length(yData) ) );
-  end
-  Y = yData(1):hY:yData(end);
 
   if ( matlab2tikzOpts.Results.imagesAsPng )
       % ------------------------------------------------------------------------
@@ -1687,7 +1653,7 @@ yData
       %      arguments.
       for i = 1:m
           for j = 1:n
-              % Don't use getImage here to avoid 'mycolorX' constructions;
+              % Don't use getImage() here to avoid 'mycolorX' constructions;
               % exclusively color index data needed here.
               colorData(i,j) = imagecolor2colorindex ( cdata(i,j), handle );
           end
@@ -1698,7 +1664,7 @@ yData
       xLim = get( currentHandles.gca, 'XLim' );
       yLim = get( currentHandles.gca, 'YLim' );
       str = [ str, ...
-              sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};', ...
+              sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
                        xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ];
       warning( 'matlab2tikz:pngFileLocation',     ...
                [ 'The PNG file is stored at ''%s'', the TikZ file contains ', ...
@@ -1706,7 +1672,33 @@ yData
                  'is located into with TikZ gets included, you may need to adapt this.' ], ...
                pngFileName, pngReferencePath );
   else
+      % ------------------------------------------------------------------------
       % draw the thing
+
+      % Generate uniformly distributed X, Y, although xData and yData may be non-uniform.
+      % This is MATLAB(R) behaviour.
+      switch length(xData)
+          case 2 % only the limits given; common for generic image plots
+              hX = 1;
+          case m % specific x-data is given
+              hX = (xData(end)-xData(1)) / (length(xData)-1);
+          otherwise
+              error( 'drawImage:arrayLengthMismatch', ...
+                    sprintf( 'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', m, length(xData) ) );
+      end
+      X = xData(1):hX:xData(end);
+    
+      switch length(yData)
+          case 2 % only the limits given; common for generic image plots
+              hY = 1;
+          case n % specific y-data is given
+              hY = (yData(end)-yData(1)) / (length(yData)-1);
+          otherwise
+              error( 'drawImage:arrayLengthMismatch', ...
+                    sprintf( 'Array lengths not matching (%d = size(cdata,2) ~= length(yData) = %d).', n, length(yData) ) );
+      end
+      Y = yData(1):hY:yData(end);
+
       m = length(X);
       n = length(Y);
       xcolor = cell(m,n);
@@ -1727,7 +1719,7 @@ yData
                               xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2  ) ];
           end
       end
-
+      % ------------------------------------------------------------------------
   end
 
 end
