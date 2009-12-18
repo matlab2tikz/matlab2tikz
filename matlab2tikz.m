@@ -832,11 +832,19 @@ function str = drawLine( handle, yDeviation )
   yData  = get( handle, 'YData' );
 
   % split the data into logical chunks
-  [xDataCell, yDataCell] = splitLine( xData, yData, xLim, yLim );
+  if errorbarMode
+      [xDataCell, yDataCell, yDeviationCell ] = splitLine( xData, yData, xLim, yLim, yDeviation );
+  else
+      [xDataCell, yDataCell] = splitLine( xData, yData, xLim, yLim );
+  end
 
   % plot them
   for k = 1:length(xDataCell)
-      plotLine( xDataCell{k}, yDataCell{k}, xLim, yLim );
+      if errorbarMode
+          plotLine( xDataCell{k}, yDataCell{k}, xLim, yLim, yDeviationCell{k} );
+      else
+          plotLine( xDataCell{k}, yDataCell{k}, xLim, yLim );
+      end
   end
 
   str = [ str, handleAllChildren( handle ) ];
@@ -845,8 +853,14 @@ function str = drawLine( handle, yDeviation )
   % -----------------------------------------------------------------------
   % FUNCTION plotLine
   % -----------------------------------------------------------------------
-  function plotLine( xData, yData, xLim, yLim )
-    
+  function plotLine( xData, yData, xLim, yLim, yDeviation )
+
+      % check if the *optional* argument 'yDeviation' was given
+      errorbarMode = 0;
+      if nargin>4
+	  errorbarMode = 1;
+      end
+
       n = length(xData);
     
       if errorbarMode
@@ -866,12 +880,12 @@ function str = drawLine( handle, yDeviation )
       str = [ str, ...
               sprintf('coordinates{\n') ];
 
-      for l = 1:length(xDataCell{k})
+      for l = 1:length(xData)
           str = [ str, ...
-                  sprintf( ' (%g,%g)', xDataCell{k}(l), yDataCell{k}(l) ) ];
+                  sprintf( ' (%g,%g)', xData(l), yData(l) ) ];
           if errorbarMode
               str = [ str, ...
-                      sprintf( ' +- (%g,%g)\n', 0, yDeviation(k+1) ) ];
+                      sprintf( ' +- (%g,%g)\n', 0.0, yDeviation(l) ) ];
           end
       end
 
@@ -958,19 +972,41 @@ function str = drawLine( handle, yDeviation )
   %      and possibly split them up in two.
   %
   % -----------------------------------------------------------------------
-  function [xDataCell, yDataCell ] = splitLine( xData, yData, xLim, yLim )
+  function [xDataCell, yDataCell, yDeviationCell] = splitLine( xData, yData, xLim, yLim, yDeviation )
+
+    % check if the *optional* argument 'yDeviation' was given
+    errorbarMode = 0;
+    if nargin>4
+        errorbarMode = 1;
+    end
 
     xDataCell{1} = xData;
     yDataCell{1} = yData;
+    if errorbarMode
+        yDeviationCell{1} = yDeviation;
+    end
+
 
     % Split up at NaNs.
-    [xDataCell, yDataCell] = splitByNaNs( xDataCell, yDataCell );
+    if errorbarMode
+        [xDataCell, yDataCell, yDeviationCell] = splitByNaNs( xDataCell, yDataCell, yDeviationCell );
+    else
+        [xDataCell, yDataCell] = splitByNaNs( xDataCell, yDataCell );
+    end
 
     % Split each of the chunks further up along visible segments
-    [xDataCell , yDataCell] = splitByVisibility( xDataCell, yDataCell, xLim, yLim );
+    if errorbarMode
+        [xDataCell , yDataCell, yDeviationCell] = splitByVisibility( xDataCell, yDataCell, xLim, yLim, yDeviationCell );
+    else
+        [xDataCell , yDataCell] = splitByVisibility( xDataCell, yDataCell, xLim, yLim );
+    end
 
     % Split each of the current chunks further with respect to outliers
-    [xDataCell , yDataCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim );
+    if errorbarMode
+        [xDataCell , yDataCell, yDeviationCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell );
+    else
+        [xDataCell , yDataCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim );
+    end
 
   end
   % -----------------------------------------------------------------------
@@ -981,9 +1017,18 @@ function str = drawLine( handle, yDeviation )
   % -----------------------------------------------------------------------
   % FUNCTION splitByNaNs
   % -----------------------------------------------------------------------
-  function [xDataCellNew , yDataCellNew] = splitByNaNs( xDataCell, yDataCell )
+  function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByNaNs( xDataCell, yDataCell, yDeviationCell )
+    % check if the *optional* argument 'yDeviation' was given
+    errorbarMode = 0;
+    if nargin>2
+        errorbarMode = 1;
+    end
+
     xDataCellNew = cell(0);
     yDataCellNew = cell(0);
+    if errorbarMode
+        yDeviationCellNew = cell(0);
+    end
 
     cellIndexNew = 0;
     for cellIndex = 1:length(xDataCell)
@@ -996,6 +1041,9 @@ function str = drawLine( handle, yDeviation )
                 cellIndexNew = cellIndexNew + 1;
                 xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(I);
                 yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(I);
+		if errorbarMode
+		    yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndexNew}(I);
+		end
             end
         end
     end
@@ -1009,9 +1057,19 @@ function str = drawLine( handle, yDeviation )
   % -----------------------------------------------------------------------
   % FUNCTION splitByVisibility
   % -----------------------------------------------------------------------
-  function [xDataCellNew , yDataCellNew] = splitByVisibility( xDataCell, yDataCell, xLim, yLim )
+  function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByVisibility( xDataCell, yDataCell, xLim, yLim, yDeviationCell )
+    % check if the *optional* argument 'yDeviation' was given
+    errorbarMode = 0;
+    if nargin>4
+        errorbarMode = 1;
+    end
+
     xDataCellNew = cell(0);
     yDataCellNew = cell(0);
+    if errorbarMode
+        yDeviationCellNew = cell(0);
+    end
+
 
     cellIndexNew = 0;
     for cellIndex = 1:length(xDataCell);
@@ -1028,11 +1086,17 @@ function str = drawLine( handle, yDeviation )
                     cellIndexNew = cellIndexNew + 1;
                     xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(k);
                     yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(k);
+		    if errorbarMode
+			yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k);
+		    end
                     l = l+1;
                     printPrevious = 1;
                 end
                 xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(k+1);
                 yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(k+1);
+		if errorbarMode
+		    yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k+1);
+		end
                 l = l+1;
             else
                 printPrevious = 0;
@@ -1048,10 +1112,18 @@ function str = drawLine( handle, yDeviation )
   % -----------------------------------------------------------------------
   % FUNCTION splitByOutliers
   % -----------------------------------------------------------------------
-  function [xDataCellNew , yDataCellNew] = splitByOutliers( xDataCell, yDataCell, xLim, yLim )
+  function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell )
+    % check if the *optional* argument 'yDeviation' was given
+    errorbarMode = 0;
+    if nargin>4
+        errorbarMode = 1;
+    end
 
     xDataCellNew = cell(0);
     yDataCellNew = cell(0);
+    if errorbarMode
+        yDeviationCellNew = cell(0);
+    end
     cellIndexNew = 0;
     delta = 0.5; % Distance around a plotbox within the range of which points
                  % will be considered close enough, and not moved.
@@ -1081,6 +1153,9 @@ function str = drawLine( handle, yDeviation )
 
                     xDataCellNew{cellIndexNew}(l) = xNew(1);
                     yDataCellNew{cellIndexNew}(l) = xNew(2);
+                    if errorbarMode
+                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k);
+                    end
                     l = l+1;
 
                     if k<n % In this case, it will be automatically reset at the
@@ -1095,12 +1170,18 @@ function str = drawLine( handle, yDeviation )
                     xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );    
                     xDataCellNew{cellIndexNew}(l) = xNew(1);
                     yDataCellNew{cellIndexNew}(l) = xNew(2);
+                    if errorbarMode
+                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k);
+                    end
                     l = l+1;
                 end
             else
                 % Point alright: Just copy it over.
                 xDataCellNew{cellIndexNew}(l) = x(1);
                 yDataCellNew{cellIndexNew}(l) = x(2);
+		if errorbarMode
+		    yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k);
+		end
                 l = l+1;
             end
         end
