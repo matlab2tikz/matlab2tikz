@@ -32,7 +32,7 @@
 % ***
 % =========================================================================
 % ***
-% *** Copyright (c) 2008, 2009, Nico Schlömer <nico.schloemer@ua.ac.be>
+% *** Copyright (c) 2008, 2009, Nico Schl??mer <nico.schloemer@ua.ac.be>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without 
@@ -325,7 +325,7 @@ function str = handleAllChildren( handle )
   % and the order of plotting the colored patches.
   for i = length(children):-1:1
       child = children(i);
-
+ 
       switch get( child, 'Type' )
           case 'axes'
               str = [ str, drawAxes( child ) ];
@@ -392,6 +392,7 @@ function str = drawAxes( handle, alignmentOptions )
 
   % update gca
   currentHandles.gca = handle;
+  
 
   str = [];
   axisOpts = cell(0);
@@ -456,9 +457,6 @@ function str = drawAxes( handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % set alignment options
-  if alignmentOptions.isRef
-      axisOpts = [ axisOpts, sprintf('name=%s',alignmentOptions.name) ];
-  end
   if ~isempty(alignmentOptions.opts)
       axisOpts = [ axisOpts, alignmentOptions.opts ];
   end
@@ -543,6 +541,17 @@ function str = drawAxes( handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % for double axes pairs, unconditionally put the ordinate left for the
+  % first one, right for the second one.
+  if alignmentOptions.isElderTwin
+      axisOpts = [ axisOpts, 'axis y line=left', 'axis x line=bottom' ];
+  elseif alignmentOptions.isYoungerTwin
+      axisOpts = [ axisOpts, 'axis y line=right', 'axis x line=top' ];
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
+  
+  
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
   axisOpts = [ axisOpts,                           ...
@@ -890,58 +899,6 @@ function str = drawLine( handle, yDeviation )
       end
 
       str = [ str, sprintf('};\n\n') ];
-
-
-%        printPrevious = 0;
-%        for k = 1:n-1
-%            if segvis(k) % segment is visible
-%                %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-%                if ~printPrevious % .. the previous wasn't, hence start a plot
-%                    str = [ str, ...
-%                            sprintf( ['\\addplot [',opts,']'] ) ];
-%                    if errorbarMode
-%                        str = [ str, ...
-%                                sprintf('\nplot[error bars/.cd, y dir = both, y explicit]\n') ];
-%                    end
-%                    str = [ str, ...
-%                            sprintf('coordinates{\n') ];
-%      
-%                    str = [ str, ...
-%                            sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
-%                    if errorbarMode
-%                        str = [ str, ...
-%                                sprintf( ' +- (%g,%g)\n', 0, yDeviation(k) ) ];
-%                    end
-%                    printPrevious = 1;
-%                end
-%      
-%                str = [ str, sprintf( ' (%g,%g)', xData(k+1), yData(k+1) ) ];
-%                if errorbarMode
-%                    str = [ str, ...
-%                            sprintf( ' +- (%g,%g)\n', 0, yDeviation(k+1) ) ];
-%                end
-%                %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-%            else
-%                %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-%                if printPrevious  % that was the last entry for now
-%                    if ~errorbarMode % error bars already create newline characters
-%                        str = [ str, ...
-%                                sprintf('\n') ];
-%                    end
-%                    str = [ str, sprintf('};\n\n') ];
-%                    printPrevious = 0;
-%                end
-%                %  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-%            end
-%        end
-%        if printPrevious % don't forget to print the closing bracket
-%            if ~errorbarMode % error bars already create newline characters
-%                str = [ str, ...
-%                        sprintf('\n') ];
-%            end
-%            str = [ str, sprintf('};\n\n') ];
-%        end
-      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
   % -----------------------------------------------------------------------
   % END FUNCTION plotLine
@@ -985,7 +942,6 @@ function str = drawLine( handle, yDeviation )
     if errorbarMode
         yDeviationCell{1} = yDeviation;
     end
-
 
     % Split up at NaNs.
     if errorbarMode
@@ -1765,7 +1721,7 @@ function str = drawImage( handle )
               hX = (xData(end)-xData(1)) / (length(xData)-1);
           otherwise
               error( 'drawImage:arrayLengthMismatch', ...
-                    sprintf( 'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', m, length(xData) ) );
+                     'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', m, length(xData) );
       end
       X = xData(1):hX:xData(end);
     
@@ -1776,7 +1732,7 @@ function str = drawImage( handle )
               hY = (yData(end)-yData(1)) / (length(yData)-1);
           otherwise
               error( 'drawImage:arrayLengthMismatch', ...
-                    sprintf( 'Array lengths not matching (%d = size(cdata,2) ~= length(yData) = %d).', n, length(yData) ) );
+                     'Array lengths not matching (%d = size(cdata,2) ~= length(yData) = %d).', n, length(yData) );
       end
       Y = yData(1):hY:yData(end);
 
@@ -2395,9 +2351,6 @@ function str = drawColorbar( handle, alignmentOptions )
   cbarOptions = [ cbarOptions, 'axis on top' ];
 
   % set alignment options
-  if alignmentOptions.isRef
-      cbarOptions = [ cbarOptions, sprintf('name=%s',alignmentOptions.name) ];
-  end
   if ~isempty(alignmentOptions.opts)
       cbarOptions = [ cbarOptions, alignmentOptions.opts ];
   end
@@ -3856,22 +3809,26 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
 
   global tol
 
-  l = 0;
+  n = 0; % number of visible axes handles
   for k=1:length(axesHandles)
       if axisIsVisible( axesHandles(k) )
-          l = l+1;
-          visibleAxesHandles(l) = axesHandles(k);
+          n = n+1;
+          visibleAxesHandles(n) = axesHandles(k);
       end
   end
-
-  n = length(visibleAxesHandles);
+  
+  % initialize alignmentOptions
+  alignmentOptions = struct([]);
+  for k=1:n
+      alignmentOptions(k).isElderTwin   = 0;
+      alignmentOptions(k).isYoungerTwin = 0;
+      alignmentOptions(k).opts          = cell(0);
+  end
 
   % return immediately if nothing is to be aligned
-  if l<=1
-     alignmentOptions(1).isRef = 0;
-     alignmentOptions(1).opts  = cell(0);
-     ix = 1;
-     return
+  if n<=1
+      ix = 1;
+      return
   end
 
   % Connectivity matrix of the graph.
@@ -3888,9 +3845,6 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
   cbarHandles = [];  % indices of color bar handles;
                      % they need to be treated separately
   for k = 1:n
-      alignmentOptions(k).isRef = 0;
-      alignmentOptions(k).opts  = cell(0);
-
       % `axesPos(i,:)` contains the x-value of the left and the right axis
       % (indices 1,3) and the y-value of the bottom and top axis
       % (indices 2,4) of plot no. `i`
@@ -3916,7 +3870,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
   % now, the color bars are nicely aligned with the plots
 
   % Loop over all figures to see if axes are aligned.
-  % Look for exactly *one* alignment, also if there might be more.
+  % Look for exactly *one* alignment, even if there might be more.
   %
   % Among all the {x,y}-alignments choose the one with the closest
   % {y,x}-distance. This is important, for example, in situations where
@@ -3930,7 +3884,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
   %  __  _____________   __
   %  -2 |             |  2
   %     |             |
-  %     |             |
+  %     |      5      |
   %     |             |
   %     |             |
   % -1_ |_____________|  1_
@@ -3946,7 +3900,14 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
   for i = 1:n
       for j = i+1:n
 
-          if abs( axesPos(i,1)-axesPos(j,1) ) < tol;
+          if max(abs(axesPos(i,:)-axesPos(j,:))) < tol
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              % twins
+              C(i,j) =  5;
+              C(j,i) = -5;
+              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+              
+          elseif abs( axesPos(i,1)-axesPos(j,1) ) < tol;
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % left axes align
               if axesPos(i,2) > axesPos(j,2)
@@ -4053,7 +4014,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
   for i = 1:n
       for j = 1:n % everything except `i`
 
-          if ~C(i,j)  % don't check of there double "no relation"'s
+          if C(i,j)==0 || abs(C(i,j))==5 % don't check for double zeros (aka "no relation"'s) or triplets, quadruplets,...
               continue
           end
 
@@ -4075,12 +4036,17 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
                   case {-3,-4}  % all plots sit below `i`
                       dist = axesPos(i,2) - axesPos(doub,4);
                   otherwise
-                      error( 'alignSubPlots:uknoCode', ...
-                             'Unknown alignment code %d.', C(i,j) );
+                      error( 'alignSubPlots:illCode', ...
+                             'Illegal alignment code %d.', C(i,j) );
               end
 
-              [m,idx]   = min( dist );   % `idx` holds the index of the minimum
-              doub(idx) = [];            % delete the index from the 'remove list'
+              [m,idx]   = min( dist ); % `idx` holds the index of the minimum.
+                                       % If there is more than one, then
+                                       % `idx` has twins. min returns the one
+                                       % with the lowest index.
+                            
+              % delete the index from the 'remove list'
+              doub(idx) = [];          
               C(i,doub) = 0;
               C(doub,i) = 0;
           end
@@ -4106,11 +4072,11 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
   % options.
 
   % tells if the respective axes environment is processed already:
-  isProcessed = zeros(n,1);
+  isProcessed = zeros(1,n);
 
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
-  [s,ix] = sort( sum(C~=0,2), 'descend' );
+  [s,ix] = sort( sum(C~=0, 2), 'descend' );
   for k = 1:n
       setOptionsRecursion( ix(k) );
   end
@@ -4124,32 +4090,52 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
       % return immediately if is has been processed before
       if isProcessed(k), return, end
 
+      % TODO not looking at twins is probably not the right thing to do
       % find the non-zeros elements in the k-th row
-      children = find( C(k,:) );
-
-      if any( ~isProcessed(children) ) % are there unprocessed children?
+      unprocessedFriends = find( C(k,:)~=0 & ~isProcessed );
+      
+      unprocessedChildren = unprocessedFriends( abs(C(k,unprocessedFriends))~=5 );
+      unprocessedTwins    = unprocessedFriends( abs(C(k,unprocessedFriends))==5 );
+      
+      if length(unprocessedTwins)==1
+          alignmentOptions(k).isElderTwin = 1;
+      elseif length(unprocessedTwins)>1
+          error( 'setOptionsRecursion:twoTwins',...
+                 'More than one twin axes discovered.' );
+      end
+      
+      if ~isempty(unprocessedChildren)  % are there unprocessed children
           % then, give these axes a name
           alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
                                        sprintf( 'name=plot%d', k ) ];
       end
 
       if nargin==2 % if a parent is given
-          % See were this node sits with respect to its parent,
-          % and adapt the option accordingly.
-          anchor = cornerCode2pgfplotOption( C(k,parent) );
-          refPos = cornerCode2pgfplotOption( C(parent,k) );
+          if ( abs(C(parent,k))==5 ) % don't apply "at=" for younger twins
+              alignmentOptions(k).isYoungerTwin = 1;
+          else
+              % See were this node sits with respect to its parent,
+              % and adapt the option accordingly.
+              anchor = cornerCode2pgfplotOption( C(k,parent) );
+              refPos = cornerCode2pgfplotOption( C(parent,k) );
 
-          % add the option
-          alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
-                                       sprintf( 'at=(plot%d.%s), anchor=%s', ...
-                                               parent, refPos, anchor ) ];
+              % add the option
+              alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
+                                           sprintf( 'at=(plot%d.%s), anchor=%s', ...
+                                                   parent, refPos, anchor ) ];
+          end
       end
 
       isProcessed(k) = 1;
 
-      % recursively loop over all dependent 'child' axes
-      for i = children
-          setOptionsRecursion( i, k );
+      % Recursively loop over all dependent 'child' axes;
+      % first the twins, though, to make sure they appear consecutively
+      % in the TikZ file.
+      for ii = unprocessedTwins
+          setOptionsRecursion( ii, k );
+      end
+      for ii = unprocessedChildren
+          setOptionsRecursion( ii, k );
       end
 
   end
