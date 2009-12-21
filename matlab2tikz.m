@@ -226,7 +226,6 @@ function saveToFile( fid, fileWasOpen )
 
   global matlab2tikzName
   global matlab2tikzVersion
-  global matlab2tikzOpts
   global currentHandles
   global tikzOptions
 
@@ -681,7 +680,6 @@ function str = drawAxes( handle, alignmentOptions )
   axisBot  = axisDims(2);
   axisWid  = axisDims(3);
   axisHei  = axisDims(4);
-  legendHandle = 0;
   for k=1:size(c)
       if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
           strcmp( get(c(k),'Tag' ), 'legend' )
@@ -712,11 +710,8 @@ function str = drawAxes( handle, alignmentOptions )
   % -----------------------------------------------------------------------
   function str = plotAxisEnvironment( handle, env )
 
-      str = [];
-
       % First, run through all the children to give them the chance to
       % contribute to 'axisOpts'.
-      matfig2pgfOpt.CurrentAxesHandle = handle;
       childrenStr = handleAllChildren( handle );
 
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -727,12 +722,10 @@ function str = drawAxes( handle, alignmentOptions )
       % if a tag is given, use it as comment
       tag = get(handle, 'tag');
       if ~isempty(tag)
-          str = [ str, ...
-                  sprintf( '\n%% Axis "%s"', tag ) ];
+          str = sprintf( '\n%% Axis "%s"', tag );
       else
-          str = [ str, ...
-                  sprintf( '\n%% Axis at [%.2g %.2f %.2g %.2g]', ...
-                           get(handle, 'position' ) ) ];
+          str = sprintf( '\n%% Axis at [%.2g %.2f %.2g %.2g]', ...
+                           get(handle, 'position' ) );
       end
 
       % Now, return the whole axis environment.
@@ -850,9 +843,9 @@ function str = drawLine( handle, yDeviation )
   % plot them
   for k = 1:length(xDataCell)
       if errorbarMode
-          plotLine( xDataCell{k}, yDataCell{k}, xLim, yLim, yDeviationCell{k} );
+          plotLine( xDataCell{k}, yDataCell{k}, yDeviationCell{k} );
       else
-          plotLine( xDataCell{k}, yDataCell{k}, xLim, yLim );
+          plotLine( xDataCell{k}, yDataCell{k} );
       end
   end
 
@@ -862,12 +855,12 @@ function str = drawLine( handle, yDeviation )
   % -----------------------------------------------------------------------
   % FUNCTION plotLine
   % -----------------------------------------------------------------------
-  function plotLine( xData, yData, xLim, yLim, yDeviation )
+  function plotLine( xData, yData, yDeviation )
 
       % check if the *optional* argument 'yDeviation' was given
       errorbarMode = 0;
       if nargin>4
-	  errorbarMode = 1;
+          errorbarMode = 1;
       end
 
       n = length(xData);
@@ -991,15 +984,15 @@ function str = drawLine( handle, yDeviation )
         nanIndices = find( isnan(xDataCell{cellIndex}) | isnan(yDataCell{cellIndex}) );
         m = length(nanIndices);
         nanIndices = [ 0 nanIndices length(xDataCell{cellIndex})+1 ];
-        for k = 1:m+1
-            I = nanIndices(k)+1:nanIndices(k+1)-1;
+        for kk = 1:m+1
+            I = nanIndices(kk)+1:nanIndices(kk+1)-1;
             if ~isempty(I)
                 cellIndexNew = cellIndexNew + 1;
                 xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(I);
                 yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(I);
-		if errorbarMode
-		    yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndexNew}(I);
-		end
+                if errorbarMode
+                    yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndexNew}(I);
+                end
             end
         end
     end
@@ -1026,33 +1019,30 @@ function str = drawLine( handle, yDeviation )
         yDeviationCellNew = cell(0);
     end
 
-
     cellIndexNew = 0;
     for cellIndex = 1:length(xDataCell);
         segvis = segmentVisible( [xDataCell{cellIndex}', yDataCell{cellIndex}'], xLim, yLim );
-
-        n = length( xDataCell{cellIndex} );
-        l = 1;
         printPrevious = 0;
         % loop over the segments
-        for k = 1:n-1
-            if segvis(k)
+        for kk = 1:length(segvis)
+            if segvis(kk)
                 if ~printPrevious
                     % start new plot
+                    l = 1;
                     cellIndexNew = cellIndexNew + 1;
-                    xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(k);
-                    yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(k);
-		    if errorbarMode
-			yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k);
-		    end
+                    xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk);
+                    yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk);
+                    if errorbarMode
+                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
+                    end
                     l = l+1;
                     printPrevious = 1;
                 end
-                xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(k+1);
-                yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(k+1);
-		if errorbarMode
-		    yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k+1);
-		end
+                xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk+1);
+                yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk+1);
+                if errorbarMode
+                    yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk+1);
+                end
                 l = l+1;
             else
                 printPrevious = 0;
@@ -1091,9 +1081,9 @@ function str = drawLine( handle, yDeviation )
         l = 1; % running index in the new cell
 
         n = length( xDataCell{cellIndex} );
-        for k = 1:n
-            x = [ xDataCell{cellIndex}(k); ...
-                  yDataCell{cellIndex}(k) ];
+        for kk = 1:n
+            x = [ xDataCell{cellIndex}(kk); ...
+                  yDataCell{cellIndex}(kk) ];
             % The largest positive value of v determines where the point sits,
             % and to which boundary it must be normalized.
             v = [ xLim(1)-x(1), x(1)-xLim(2), yLim(1)-x(2), x(2)-yLim(2) ];
@@ -1101,33 +1091,33 @@ function str = drawLine( handle, yDeviation )
             % If there are several maxima, just pick the first one.
             % --> maxVal(1)
             if maxVal(1)>delta % Point sits too far outside. Move!
-                if k>1
+                if kk>1
                     % also shorten the distance to the previous, and split up
-                    xRef = [ xDataCell{cellIndex}(k-1); ...
-                             yDataCell{cellIndex}(k-1) ];
+                    xRef = [ xDataCell{cellIndex}(kk-1); ...
+                             yDataCell{cellIndex}(kk-1) ];
                     xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );
 
                     xDataCellNew{cellIndexNew}(l) = xNew(1);
                     yDataCellNew{cellIndexNew}(l) = xNew(2);
                     if errorbarMode
-                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k);
+                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
                     end
                     l = l+1;
 
-                    if k<n % In this case, it will be automatically reset at the
+                    if kk<n % In this case, it will be automatically reset at the
                            % beginning of the k-loop.
                         cellIndexNew = cellIndexNew + 1; % go to the next cell
                         l = 1; % reset the index
                     end
                 end
-                if k<n
-                    xRef = [ xDataCell{cellIndex}(k+1); ...
-                             yDataCell{cellIndex}(k+1) ];
+                if kk<n
+                    xRef = [ xDataCell{cellIndex}(kk+1); ...
+                             yDataCell{cellIndex}(kk+1) ];
                     xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );    
                     xDataCellNew{cellIndexNew}(l) = xNew(1);
                     yDataCellNew{cellIndexNew}(l) = xNew(2);
                     if errorbarMode
-                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k);
+                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
                     end
                     l = l+1;
                 end
@@ -1135,9 +1125,9 @@ function str = drawLine( handle, yDeviation )
                 % Point alright: Just copy it over.
                 xDataCellNew{cellIndexNew}(l) = x(1);
                 yDataCellNew{cellIndexNew}(l) = x(2);
-		if errorbarMode
-		    yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(k);
-		end
+                if errorbarMode
+                    yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
+                end
                 l = l+1;
             end
         end
@@ -1180,7 +1170,8 @@ function str = drawLine( handle, yDeviation )
 
     if isinf(alpha)
         error( 'matlab2tikz:noIntersecton', ...
-               'Error text.' );
+               [ 'Could not determine were the outside point sits with ', ...
+                 'respect to the box. Both x and xRef outside the box?' ] );
     end
 
     % create the new point
@@ -1208,24 +1199,24 @@ function str = drawLine( handle, yDeviation )
       % the meaning of the return values.
       boxpos = boxWhere( p, xLim, yLim );
 
-      for k = 1:n-1
-          if any(boxpos{k}==1) || any(boxpos{k+1}==1) % one of the two is strictly inside the box
-              out(k) = 1;
-          elseif any(boxpos{k}==2) || any(boxpos{k+1}==2) % one of the two is strictly outside the box
+      for kk = 1:n-1
+          if any(boxpos{kk}==1) || any(boxpos{kk+1}==1) % one of the two is strictly inside the box
+              out(kk) = 1;
+          elseif any(boxpos{kk}==2) || any(boxpos{kk+1}==2) % one of the two is strictly outside the box
               % does the segment intersect with any of the four boundaries?
-              out(k) =  segmentsIntersect( [p(k:k+1,1)',xLim(1),xLim(1)], ...   % with the left?
-                                           [p(k:k+1,2)',yLim] ) ...
-                     || segmentsIntersect( [p(k:k+1,1)',xLim],  ...             % with the bottom?
-                                           [p(k:k+1,2)',yLim(1),yLim(1)] ) ...
-                     || segmentsIntersect( [p(k:k+1,1)',xLim(2),xLim(2)],  ...  % with the right?
-                                           [p(k:k+1,2)',yLim] ) ...
-                     || segmentsIntersect( [p(k:k+1,1)',xLim],  ...             % with the top?
-                                           [p(k:k+1,2)',yLim(2),yLim(2)] );
+              out(kk) =  segmentsIntersect( [p(kk:kk+1,1)',xLim(1),xLim(1)], ...   % with the left?
+                                            [p(kk:kk+1,2)',yLim] ) ...
+                     || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the bottom?
+                                           [p(kk:kk+1,2)',yLim(1),yLim(1)] ) ...
+                     || segmentsIntersect( [p(kk:kk+1,1)',xLim(2),xLim(2)],  ...  % with the right?
+                                           [p(kk:kk+1,2)',yLim] ) ...
+                     || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the top?
+                                           [p(kk:kk+1,2)',yLim(2),yLim(2)] );
           else % both neighboring points lie on the boundary
               % This is kind of tricky as there may be nodes *exactly*
               % in a corner of the domain. boxpos & commonEntry handle
               % this, though.
-              out(k) = ~commonEntry( boxpos{k},boxpos{k+1} );
+              out(kk) = ~commonEntry( boxpos{kk},boxpos{kk+1} );
           end
       end
 
@@ -2248,8 +2239,6 @@ end
 % ***
 % =========================================================================
 function str = drawErrorBars( h )
-
-  str = [];
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % 'errorseries' plots have two line-plot children, one of which contains
@@ -4040,7 +4029,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
                              'Illegal alignment code %d.', C(i,j) );
               end
 
-              [m,idx]   = min( dist ); % `idx` holds the index of the minimum.
+              [~,idx]   = min( dist ); % `idx` holds the index of the minimum.
                                        % If there is more than one, then
                                        % `idx` has twins. min returns the one
                                        % with the lowest index.
@@ -4076,7 +4065,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
 
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
-  [s,ix] = sort( sum(C~=0, 2), 'descend' );
+  [~,ix] = sort( sum(C~=0, 2), 'descend' );
   for k = 1:n
       setOptionsRecursion( ix(k) );
   end
@@ -4195,7 +4184,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
         case {'NorthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly below colBarHandle
-            [mn,idx]  = min( colBarPos(2) ...
+            [~,idx]  = min( colBarPos(2) ...
                              - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
             pos = [ axesHandlesPos(idx,1), ...
                     colBarPos(2)         , ...
@@ -4205,7 +4194,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
         case {'SouthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly above colBarHandle
-            [mn,idx]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
+            [~,idx]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
                              - colBarPos(4) );
             pos = [ axesHandlesPos(idx,1), ...
                     colBarPos(2)         , ...
@@ -4215,7 +4204,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
         case {'EastOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly left of colBarHandle
-            [mn,idx]  = min( colBarPos(1) ...
+            [~,idx]  = min( colBarPos(1) ...
                              - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
             pos = [ colBarPos(1),          ...
                     axesHandlesPos(idx,2), ...
@@ -4225,7 +4214,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
         case {'WestOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly right of colBarHandle
-            [mn,idx]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
+            [~,idx]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
                              - colBarPos(3)  );
             pos = [ colBarPos(1),          ...
                     axesHandlesPos(idx,2), ...
