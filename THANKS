@@ -8,13 +8,18 @@ Also, the author would like to thank Christian Feuersänger package pgfplots
 without which the structure of matlab2tikz would need to be a lot more
 complicated.
 
-Thanks for patches and other contributions to
+Thanks for patches, suggestions, and other contributions to
  
+ Katherine Elkington
  Andreas Gäb
+ Roman Gesenhues
  David Haberthür
+ Patrick Häcker
+ Mykel Kochenderfer
+ Henk Kortier
  Theo Markettos
- Robert Whittlesey
  Dragan Mitrevski
+ Robert Whittlesey
 
 and MathWorks' very own
 

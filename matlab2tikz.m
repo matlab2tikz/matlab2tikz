@@ -117,6 +117,9 @@ function matlab2tikz( varargin )
   % minimum distance for two points to be plotted separately
   matlab2tikzOpts.addParamValue( 'minimumPointsDistance', 0.0, @isnumeric );
 
+  % extra axis options
+  matlab2tikzOpts.addParamValue( 'extraAxisOptions', 0.0, @isCellOrChar );
+
   % file encoding
   matlab2tikzOpts.addParamValue( 'encoding' , '', @ischar );
 
@@ -208,6 +211,13 @@ function matlab2tikz( varargin )
   % an open file
   function l = filehandleValidation( x, p )
       l = isnumeric(x) && any( x==fopen('all') );
+  end
+  % -----------------------------------------------------------------------
+
+
+  % -----------------------------------------------------------------------
+  function l = isCellOrChar( x, p )
+      l = iscell(x) || ischar(x);
   end
   % -----------------------------------------------------------------------
 
@@ -420,6 +430,13 @@ function str = drawAxes( handle, alignmentOptions )
           str = plotAxisEnvironment( handle, env );
       end
       return
+  end
+
+  % add manually given extra axis options
+  extraAxisOptions = matlab2tikzOpts.Results.extraAxisOptions;
+  if ~isempty( extraAxisOptions )
+      axisOpts = [ axisOpts, ...
+                   extraAxisOptions ];
   end
 
   if strcmp( get(handle,'Tag'), 'Colorbar' )
