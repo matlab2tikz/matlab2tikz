@@ -23,7 +23,9 @@ The plots that matlab2tikz handles properly are, but are not limited to
   * (rose plots),
   * (compass plots),
   * (polar plots),
-  * subplots.
+  * subplots,
+  * zplane plots,
+  * frequency response plots.
 
 
 The workflow is as follows.
