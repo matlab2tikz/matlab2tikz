@@ -114,6 +114,9 @@ function matlab2tikz( varargin )
   matlab2tikzOpts.addParamValue( 'height', [], @ischar );
   matlab2tikzOpts.addParamValue( 'width' , [], @ischar );
 
+  % minimum distance for two points to be plotted separately
+  matlab2tikzOpts.addParamValue( 'minimumPointsDistance', 0.0, @isnumeric );
+
   % file encoding
   matlab2tikzOpts.addParamValue( 'encoding' , '', @ischar );
 
@@ -392,7 +395,6 @@ function str = drawAxes( handle, alignmentOptions )
   % update gca
   currentHandles.gca = handle;
   
-
   str = [];
   axisOpts = cell(0);
 
@@ -842,10 +844,11 @@ function str = drawLine( handle, yDeviation )
 
   % plot them
   for k = 1:length(xDataCell)
+      mask = pointReduction( xDataCell{k}, yDataCell{k} );
       if errorbarMode
-          plotLine( xDataCell{k}, yDataCell{k}, yDeviationCell{k} );
+          plotLine( xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) );
       else
-          plotLine( xDataCell{k}, yDataCell{k} );
+          plotLine( xDataCell{k}(mask), yDataCell{k}(mask) );
       end
   end
 
@@ -1257,6 +1260,38 @@ function str = drawLine( handle, yDeviation )
   end
   % -----------------------------------------------------------------------
   % *** END FUNCTION segmentsIntersect
+  % -----------------------------------------------------------------------
+
+
+  % -----------------------------------------------------------------------
+  % *** FUNCTION pointReduction
+  % ***
+  % *** Generates a mask which is true for the first point, and all
+  % *** subsequent points which have a greater norm2-distance from
+  % *** the previous point than 'threshold'.
+  % ***
+  % -----------------------------------------------------------------------
+  function mask = pointReduction( xData, yData )
+    global matlab2tikzOpts;
+
+    n = length(xData);
+    mask = false(n,1);
+
+    threshold = matlab2tikzOpts.Results.minimumPointsDistance;
+
+    XRef = [ xData(1), yData(1) ];
+    mask(1) = true;
+    for kk = 2:n
+        X0 = [ xData(kk), yData(kk) ];
+        if norm(XRef-X0,2) > threshold
+            XRef = X0;
+            mask(kk) = true;
+        end
+    end
+
+  end
+  % -----------------------------------------------------------------------
+  % *** END FUNCTION pointReduction
   % -----------------------------------------------------------------------
 
 end
