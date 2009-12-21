@@ -1568,6 +1568,8 @@ end
 % =========================================================================
 function str = drawPatch( handle )
 
+  global tol;
+
   str = [];
 
   if ~isVisible( handle )
@@ -1583,7 +1585,12 @@ function str = drawPatch( handle )
   if ~strcmp( faceColor, 'none' )
       xFaceColor = getColor( handle, faceColor, 'patch' );
       drawOptions = [ drawOptions,                                    ...
-                       sprintf( 'fill=%s', xFaceColor ) ];
+                      sprintf( 'fill=%s', xFaceColor ) ];
+      xFaceAlpha = get( handle, 'FaceAlpha' );
+      if abs(xFaceAlpha-1.0)>tol
+          drawOptions = [ drawOptions, ...
+                          sprintf( 'opacity=%s', xFaceAlpha ) ];
+      end
   end
 
   % draw color
