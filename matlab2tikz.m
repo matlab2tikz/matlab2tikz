@@ -859,7 +859,7 @@ function str = drawLine( handle, yDeviation )
 
       % check if the *optional* argument 'yDeviation' was given
       errorbarMode = 0;
-      if nargin>4
+      if nargin>2
           errorbarMode = 1;
       end
 
