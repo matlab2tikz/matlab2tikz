@@ -1,3 +1,27 @@
+2009-12-21  Nico Schlömer  <nico.schloemer@ua.ac.be>
+
+	* Version 0.0.5.
+	* Improvements in axis handling:
+	  - colored axes
+	  - allow different left and right ordinates
+	* Improvements for line plots:
+	  - far outliers are moved toward the plot, avoiding 'Dimension too
+	    large'-type errors in LaTeX
+	  - optional point reduction by new option 'minimumPointsDistance'
+	* Improvements for image handling:
+	  - creation of a PNG file, added by '\addplot graphics'
+	  - fixed axis orientation bug
+	* Bugfixes for:
+	  - multiple axes
+	  - CMYK colors
+	  - legend text alignment (thanks Dragen Mitrevski)
+	  - transparent patches (thanks Carlos R)
+	* Added support for:
+	  - Bode plots
+	  - zplane plots
+	  - freqz plots
+
+
 2009-06-09  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
 	* Version 0.0.4.
