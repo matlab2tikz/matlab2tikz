@@ -15,7 +15,7 @@
 	  - multiple axes
 	  - CMYK colors
 	  - legend text alignment (thanks Dragen Mitrevski)
-	  - transparent patches (thanks Carlos R)
+	  - transparent patches (thanks Carlos Russo)
 	* Added support for:
 	  - Bode plots
 	  - zplane plots
@@ -38,32 +38,32 @@
 
 2009-03-08  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
-        * Version 0.0.3.
-        * Added support for:
-          - subplots
-          - reverse axes
-        * Completed support for:
-          - images
+	* Version 0.0.3.
+	* Added support for:
+	  - subplots
+	  - reverse axes
+	* Completed support for:
+	  - images
 
 2009-01-08  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
-        * Version 0.0.2.
-        * Added support for:
-          - quiver (arrow) plots
-          - bar plots
-          - stem plots
-          - stairs plots
-        * Added preliminary support for:
-          - images
-          - rose plots
-          - compass plots
-          - polar plots
-        * Moreover, large code improvement have been introduced, notably:
-          - aspect ratio handling
-          - color handling
-          - plot options handling
+	* Version 0.0.2.
+	* Added support for:
+	  - quiver (arrow) plots
+	  - bar plots
+	  - stem plots
+	  - stairs plots
+	* Added preliminary support for:
+	  - images
+	  - rose plots
+	  - compass plots
+	  - polar plots
+	* Moreover, large code improvement have been introduced, notably:
+	  - aspect ratio handling
+	  - color handling
+	  - plot options handling
 
 
 2008-11-07  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
-        * Initial version 0.0.1.
+	* Initial version 0.0.1.
