@@ -118,7 +118,7 @@ function matlab2tikz( varargin )
   matlab2tikzOpts.addParamValue( 'minimumPointsDistance', 0.0, @isnumeric );
 
   % extra axis options
-  matlab2tikzOpts.addParamValue( 'extraAxisOptions', 0.0, @isCellOrChar );
+  matlab2tikzOpts.addParamValue( 'extraAxisOptions', {}, @isCellOrChar );
 
   % file encoding
   matlab2tikzOpts.addParamValue( 'encoding' , '', @ischar );
@@ -1167,6 +1167,19 @@ function str = drawLine( handle, yDeviation )
   % -----------------------------------------------------------------------
   function xNew = moveCloser( x, xRef, xLim, yLim )
 
+    % Handle the case where Infs appear in the separately as segmentsIntersect
+    % can't deal with it.
+    infIndex = find( isinf(x) );
+    if length(infIndex)==1
+        delta          = 0.5;
+        xNew           = xRef;
+        xNew(infIndex) = xLim(infIndex) + delta;
+        return;
+    elseif length(infIndex)>1
+        error( 'matlab2tikz:infPoint', ...
+               'Illegal point (Inf,Inf) detected.' );
+    end
+    
     alpha = inf;
 
     % Find out with which border the line x---xRef intersects, and determine
