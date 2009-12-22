@@ -893,7 +893,7 @@ function str = drawLine( handle, yDeviation )
       end
 
       str = [ str, ...
-              sprintf( ['\\addplot [',opts,']'] ) ];
+              sprintf( ['\\addplot [',opts,']\n'] ) ];
       if errorbarMode
           str = [ str, ...
                   sprintf('\nplot[error bars/.cd, y dir = both, y explicit]\n') ];
@@ -911,7 +911,7 @@ function str = drawLine( handle, yDeviation )
           end
       end
 
-      str = [ str, sprintf('};\n\n') ];
+      str = [ str, sprintf('\n};\n\n') ];
   end
   % -----------------------------------------------------------------------
   % END FUNCTION plotLine
@@ -956,11 +956,11 @@ function str = drawLine( handle, yDeviation )
         yDeviationCell{1} = yDeviation;
     end
 
-    % Split up at NaNs.
+    % Split up at Infs and NaNs.
     if errorbarMode
-        [xDataCell, yDataCell, yDeviationCell] = splitByNaNs( xDataCell, yDataCell, yDeviationCell );
+        [xDataCell, yDataCell, yDeviationCell] = splitByInfsNaNs( xDataCell, yDataCell, yDeviationCell );
     else
-        [xDataCell, yDataCell] = splitByNaNs( xDataCell, yDataCell );
+        [xDataCell, yDataCell] = splitByInfsNaNs( xDataCell, yDataCell );
     end
 
     % Split each of the chunks further up along visible segments
@@ -984,9 +984,9 @@ function str = drawLine( handle, yDeviation )
 
 
   % -----------------------------------------------------------------------
-  % FUNCTION splitByNaNs
+  % FUNCTION splitByInfsNaNs
   % -----------------------------------------------------------------------
-  function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByNaNs( xDataCell, yDataCell, yDeviationCell )
+  function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByInfsNaNs( xDataCell, yDataCell, yDeviationCell )
     % check if the *optional* argument 'yDeviation' was given
     errorbarMode = 0;
     if nargin>2
@@ -1001,7 +1001,7 @@ function str = drawLine( handle, yDeviation )
 
     cellIndexNew = 0;
     for cellIndex = 1:length(xDataCell)
-        nanIndices = find( isnan(xDataCell{cellIndex}) | isnan(yDataCell{cellIndex}) );
+        nanIndices = find( ~isfinite(xDataCell{cellIndex}) | ~isfinite(yDataCell{cellIndex}) );
         m = length(nanIndices);
         nanIndices = [ 0 nanIndices length(xDataCell{cellIndex})+1 ];
         for kk = 1:m+1
@@ -1019,7 +1019,7 @@ function str = drawLine( handle, yDeviation )
 
   end
   % -----------------------------------------------------------------------
-  % END FUNCTION splitByNaNs
+  % END FUNCTION splitByInfsNaNs
   % -----------------------------------------------------------------------
 
 
@@ -1166,19 +1166,6 @@ function str = drawLine( handle, yDeviation )
   % boundary box.
   % -----------------------------------------------------------------------
   function xNew = moveCloser( x, xRef, xLim, yLim )
-
-    % Handle the case where Infs appear in the separately as segmentsIntersect
-    % can't deal with it.
-    infIndex = find( isinf(x) );
-    if length(infIndex)==1
-        delta          = 0.5;
-        xNew           = xRef;
-        xNew(infIndex) = xLim(infIndex) + delta;
-        return;
-    elseif length(infIndex)>1
-        error( 'matlab2tikz:infPoint', ...
-               'Illegal point (Inf,Inf) detected.' );
-    end
     
     alpha = inf;
 
@@ -1304,10 +1291,16 @@ function str = drawLine( handle, yDeviation )
   function mask = pointReduction( xData, yData )
     global matlab2tikzOpts;
 
-    n = length(xData);
-    mask = false(n,1);
-
     threshold = matlab2tikzOpts.Results.minimumPointsDistance;
+    n = length(xData);
+
+    if ( threshold==0.0 )
+        % bail out early
+        mask = true(n,1);
+        return
+    end
+
+    mask = false(n,1);
 
     XRef = [ xData(1), yData(1) ];
     mask(1) = true;
