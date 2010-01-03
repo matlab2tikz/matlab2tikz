@@ -402,11 +402,26 @@ function str = drawAxes( handle, alignmentOptions )
   % plots.
   global axisOpts;
 
+  if strcmp( get(handle,'Tag'), 'Colorbar' )
+      % Handle a colorbar separately.
+      % Note how currentHandles.gca does *not* get updated; this fact is
+      % made use of in drawColorbar().
+      str = drawColorbar( handle, alignmentOptions );
+      return
+  end
+
   % update gca
   currentHandles.gca = handle;
   
   str = [];
   axisOpts = cell(0);
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % get the axes dimensions
+  dim = getAxesDimensions( handle, ...
+                           matlab2tikzOpts.Results.width, ...
+                           matlab2tikzOpts.Results.height );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   if ~isVisible( handle )
       % An invisible axes container *can* have visible children, so don't
@@ -421,11 +436,10 @@ function str = drawAxes( handle, alignmentOptions )
       end
       if containsVisibleChild
           env  = 'axis';
-          dim = getAxesDimensions( handle );
           axisOpts = [ axisOpts, ...
                        'hide x axis, hide y axis', ...
-                       sprintf('width=%g%s, height=%g%s', dim.x, dim.unit,   ...
-                                                          dim.y, dim.unit ), ...
+                       sprintf('width=%g%s, height=%g%s', dim.x.value, dim.x.unit,   ...
+                                                          dim.y.value, dim.y.unit ), ...
                        'scale only axis' ];
           str = plotAxisEnvironment( handle, env );
       end
@@ -437,12 +451,6 @@ function str = drawAxes( handle, alignmentOptions )
   if ~isempty( extraAxisOptions )
       axisOpts = [ axisOpts, ...
                    extraAxisOptions ];
-  end
-
-  if strcmp( get(handle,'Tag'), 'Colorbar' )
-      % handle a colorbar separately
-      str = drawColorbar( handle, alignmentOptions );
-      return
   end
 
   if strcmp( get(handle,'Tag'), 'legend' )
@@ -501,60 +509,19 @@ function str = drawAxes( handle, alignmentOptions )
   xLim = get( handle, 'XLim' );
   yLim = get( handle, 'YLim' );
 
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get the axes dimensions
-  dim = getAxesDimensions( handle );
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % set the width
+  axisOpts = [ axisOpts,                                ...
+               sprintf( 'width=%g%s' , dim.x.value, dim.x.unit ) ];
+  axisOpts = [ axisOpts,                                ...
+               sprintf( 'height=%g%s' , dim.y.value, dim.y.unit ) ];
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % until the advent of a proper 'reverse axis' option in pgfplots, use
-  % the possibility to set the unit vectors in x- and y-direction
-  xAxisOrientation = get( handle, 'XDir' );
-  switch xAxisOrientation
-      case 'normal'
-          isXAxisRev = 0;
-          if isempty( matlab2tikzOpts.Results.width )
-              axisOpts = [ axisOpts,                                ...
-                           sprintf( 'width=%g%s' , dim.x, dim.unit ) ];
-          else
-              axisOpts = [ axisOpts,             ...
-                           sprintf( 'width=%s' , ...
-                                    escapeCharacters(matlab2tikzOpts.Results.width) ) ];
-          end
-      case 'reverse'
-          isXAxisRev = 1;
-          xUnitSize = dim.x/ (xLim(2)-xLim(1));
-          axisOpts = [ axisOpts,                                   ...
-                       sprintf( 'x=-%g%s' , xUnitSize, dim.unit ), ...
-                       'yticklabel pos=right',                     ...
-                       'yticklabel style=left' ];
-      otherwise
-          error( 'drawAxes:unknOrient', ...
-                 'Unknown axis orientation ''%s''.', xAxisOrientation );
+  % handle the orientation
+  if strcmp( get(handle,'XDir'), 'reverse' )
+      axisOpts = [ axisOpts, 'x dir=reverse' ];
   end
-
-  yAxisOrientation = get( handle, 'YDir' );
-  switch yAxisOrientation
-      case 'normal'
-          isYAxisRev = 0;
-          if isempty( matlab2tikzOpts.Results.height )
-              axisOpts = [ axisOpts,                                ...
-                           sprintf( 'height=%g%s' , dim.y, dim.unit ) ];
-          else
-              axisOpts = [ axisOpts,             ...
-                           sprintf( 'height=%s' , ...
-                                    escapeCharacters(matlab2tikzOpts.Results.height) ) ];
-          end
-      case 'reverse'
-          isYAxisRev = 1;
-          yUnitSize = dim.y/ (yLim(2)-yLim(1));
-          axisOpts = [ axisOpts,                                   ...
-                       sprintf( 'y=-%g%s' , yUnitSize, dim.unit ), ...
-                       'xticklabel pos=right',                     ...
-                       'xticklabel style=below' ];
-      otherwise
-          error( 'drawAxes:unknOrient', ...
-                 'Unknown axis orientation ''%s''.', yAxisOrientation );
+  if strcmp( get(handle,'YDir'), 'reverse' )
+      axisOpts = [ axisOpts, 'y dir=reverse' ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -714,7 +681,7 @@ function str = drawAxes( handle, alignmentOptions )
                    && legLeft+legWid < axisLeft+axisWid ...
                    && legBot+legHei  < axisBot+axisHei )
                   axisOpts = [ axisOpts, ...
-                       getLegendOpts( legendHandle, isXAxisRev, isYAxisRev ) ];
+                               getLegendOpts( legendHandle ) ];
               end
           end
       end
@@ -896,7 +863,7 @@ function str = drawLine( handle, yDeviation )
               sprintf( ['\\addplot [',opts,']\n'] ) ];
       if errorbarMode
           str = [ str, ...
-                  sprintf('\nplot[error bars/.cd, y dir = both, y explicit]\n') ];
+                  sprintf('plot[error bars/.cd, y dir = both, y explicit]\n') ];
       end
 
       str = [ str, ...
@@ -957,10 +924,11 @@ function str = drawLine( handle, yDeviation )
     end
 
     % Split up at Infs and NaNs.
+    mask      = splitByInfsNaNs( xDataCell, yDataCell );
+    xDataCell = splitByMask( xDataCell, mask );
+    yDataCell = splitByMask( yDataCell, mask );
     if errorbarMode
-        [xDataCell, yDataCell, yDeviationCell] = splitByInfsNaNs( xDataCell, yDataCell, yDeviationCell );
-    else
-        [xDataCell, yDataCell] = splitByInfsNaNs( xDataCell, yDataCell );
+        yDeviationCell = splitByMask( yDeviationCell, mask );
     end
 
     % Split each of the chunks further up along visible segments
@@ -984,37 +952,49 @@ function str = drawLine( handle, yDeviation )
 
 
   % -----------------------------------------------------------------------
-  % FUNCTION splitByInfsNaNs
+  % FUNCTION splitByMask
+  %   Splits a dataCell up into cells along contiguous 'true' chunks of
+  %   mask.
   % -----------------------------------------------------------------------
-  function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByInfsNaNs( xDataCell, yDataCell, yDeviationCell )
-    % check if the *optional* argument 'yDeviation' was given
-    errorbarMode = 0;
-    if nargin>2
-        errorbarMode = 1;
-    end
+  function newDataCell = splitByMask( dataCell, mask )
+    n = length(dataCell);
 
-    xDataCellNew = cell(0);
-    yDataCellNew = cell(0);
-    if errorbarMode
-        yDeviationCellNew = cell(0);
+    if ( length(mask)~=n )
+        error( 'splitByMask:illegalInput', ...
+               'Input arguments do not match.' );
     end
-
-    cellIndexNew = 0;
-    for cellIndex = 1:length(xDataCell)
-        nanIndices = find( ~isfinite(xDataCell{cellIndex}) | ~isfinite(yDataCell{cellIndex}) );
-        m = length(nanIndices);
-        nanIndices = [ 0 nanIndices length(xDataCell{cellIndex})+1 ];
-        for kk = 1:m+1
-            I = nanIndices(kk)+1:nanIndices(kk+1)-1;
+     
+    newDataCell = cell(0);
+    newField = 0;
+    for cellIndex = 1:n
+        m = length(mask{cellIndex});
+        outIndices = [0 find(~mask{cellIndex}) m+1 ];
+        for kk = 1:length(outIndices)-1
+            I = ( outIndices(kk)+1 : outIndices(kk+1)-1 ) ;
             if ~isempty(I)
-                cellIndexNew = cellIndexNew + 1;
-                xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(I);
-                yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(I);
-                if errorbarMode
-                    yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndexNew}(I);
-                end
+                newField = newField+1;
+                newDataCell{newField} = dataCell{cellIndex}(I);
             end
         end
+    end
+
+  end
+  % -----------------------------------------------------------------------
+  % END FUNCTION splitByMask
+  % -----------------------------------------------------------------------
+
+
+  % -----------------------------------------------------------------------
+  % FUNCTION splitByInfsNaNs
+  % -----------------------------------------------------------------------
+  function mask = splitByInfsNaNs( xDataCell, yDataCell  )
+
+    n = length(xDataCell);
+    mask = cell(n,1);
+
+    for cellIndex = 1:n
+        mask{cellIndex} = isfinite(xDataCell{cellIndex}) ...
+                        & isfinite(yDataCell{cellIndex});
     end
 
   end
@@ -2379,8 +2359,8 @@ function str = drawColorbar( handle, alignmentOptions )
 
   global currentHandles
   global matlab2tikzOpts
-  global tikzFileName;
-  global relativePngPath;
+  global tikzFileName
+  global relativePngPath
 
   persistent colorbarNo; % Keep track of how many colorbars there are, to avoid
                          % file name collision in case PNGs are used.
@@ -2391,11 +2371,14 @@ function str = drawColorbar( handle, alignmentOptions )
       return
   end
 
-  % The dimensions returned by  'getAxesDimensions' are not entirely
-  % correct: When looking closely, one will see that the colorbar actually
-  % (very slightly) overshoots the size of its parental axis.
-  % For now, leave it like this as the overshoot is really small
-  dim = getAxesDimensions( handle );
+  % Assume that the parent axes pair is currentHandles.gca.
+  parentDim = getAxesDimensions( currentHandles.gca, ...
+                                 matlab2tikzOpts.Results.width, ...
+                                 matlab2tikzOpts.Results.height );
+
+  % Inherent MATLAB(R) parameter, indicating the ratio of the long
+  % edge of a color bar versus the short one.
+  matlabColorBarLongShortRatio = 14.8;
 
   % get the upper and lower limit of the colorbar
   clim = caxis;
@@ -2419,10 +2402,12 @@ function str = drawColorbar( handle, alignmentOptions )
           return;
 
       case {'NorthOutside','SouthOutside'}
-%            dim.y = dim.x / ratio;
-          cbarOptions = [ cbarOptions,                                ...
-                           sprintf( 'width=%g%s, height=%g%s',          ...
-                                     dim.x, dim.unit, dim.y, dim.unit ),...
+          yLength = parentDim.x.value / matlabColorBarLongShortRatio;
+          yUnit   = parentDim.x.unit;
+          cbarOptions = [ cbarOptions,                          ...
+                           sprintf( 'width=%g%s, height=%g%s',  ...
+                                     parentDim.x.value, parentDim.x.unit,   ...
+                                     yLength          , yUnit            ), ...
                            'scale only axis',                           ...
                            sprintf( 'xmin=%g, xmax=%g', clim ),         ...
                            sprintf( 'ymin=%g, ymax=%g', [0,1] )         ...
@@ -2443,9 +2428,12 @@ function str = drawColorbar( handle, alignmentOptions )
           end
 
       case {'EastOutside','WestOutside'}
-          cbarOptions = [ cbarOptions,                                ...
-                           sprintf( 'width=%g%s, height=%g%s',          ...
-                                     dim.x, dim.unit, dim.y, dim.unit ),...
+          xLength = parentDim.y.value / matlabColorBarLongShortRatio;
+          xUnit   = parentDim.y.unit;
+          cbarOptions = [ cbarOptions,                          ...
+                           sprintf( 'width=%g%s, height=%g%s',  ...
+                                     xLength          , xUnit     ,   ...
+                                     parentDim.y.value, parentDim.y.unit ), ...
                            'scale only axis',                           ...
                            sprintf( 'xmin=%g, xmax=%g', [0,1] ),        ...
                            sprintf( 'ymin=%g, ymax=%g', clim )          ...
@@ -2488,7 +2476,7 @@ function str = drawColorbar( handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually begin drawing the thing
   str = [ str, ...
-          sprintf( '\n%% the colorbar\n' ) ];
+          sprintf( '\n%% colorbar\n' ) ];
   cbarOpts = collapse( cbarOptions, ',\n' );
   str = [ str, ...
           sprintf( [ '\\begin{axis}[\n', cbarOpts, '\n]\n' ] ) ];
@@ -2841,7 +2829,7 @@ end
 % =========================================================================
 % *** FUNCTION getLegendOpts
 % =========================================================================
-function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
+function lOpts = getLegendOpts( handle )
 
   global matlab2tikzOpts;
 
@@ -2891,12 +2879,7 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
   anchor = [];
   switch loc
       case 'NorthEast'
-          % only append something in this (default) case
-          % if any of the axes is reversed
-          if isXAxisReversed || isYAxisReversed
-              position = [1-dist, 1-dist];
-              anchor   = 'north east';
-          end
+          % don't anything in this (default) case
       case 'NorthWest'
           position = [dist, 1-dist];
           anchor   = 'north west';
@@ -2941,14 +2924,8 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
 
   lStyle = cell(0);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % modify for reversed axes and append to lOpts
+  % append to ledend options
   if ~isempty(anchor)
-      if isXAxisReversed
-          position(1) = 1-position(1);
-      end
-      if isYAxisReversed
-          position(2) = 1-position(2);
-      end
       lStyle = [ lStyle, ...
                  sprintf( 'at={(%g,%g)}',position ), ...
                  sprintf( 'anchor=%s', anchor ) ];
@@ -2961,12 +2938,12 @@ function lOpts = getLegendOpts( handle, isXAxisReversed, isYAxisReversed )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  % make suret the entries are flush left (default MATLAB behavior)
+  % make sure the entries are flush left (default MATLAB behavior)
   lStyle=[lStyle, 'nodes=right' ];
 
   if ~isempty(lStyle)
       lOpts = [ lOpts, ...
-                'legend style={' collapse(lStyle,',') '}' ];
+                ['legend style={' collapse(lStyle,',') '}'] ];
   end
 
 end
@@ -3498,149 +3475,139 @@ end
 % *** Returns the physical dimension of the axes.
 % ***
 % =========================================================================
-function dimension = getAxesDimensions( handle )
+function dimension = getAxesDimensions( handle, ...
+                                        widthString, heightString ) % optional
 
-  daspectmode = get( handle, 'DataAspectRatioMode' );
-  position    = get( handle, 'Position' );
-  units       = get( handle, 'Units' );
+  [width, height, unit] = getNaturalAxesDimensions();
 
-  if strcmp( daspectmode, 'auto' )
-      % The plot will use the full size of the current figure.,
+  % get the natural width-height ration of the plot
+  axesWidthHeightRatio = width / height;
 
-      if strcmp( units, 'normalized' )
-
-          % The dpi is needed to associate the size on the screen (in pixels)
-          % to the physical size of the plot (on a pdf, for example).
-          % Unfortunately, MATLAB doesn't seem to be able to always make a
-          % good guess about the current DPI (a bug is filed for this on
-          % mathworks.com).
-          dpi = get( 0, 'ScreenPixelsPerInch' );
-
-          dimension.unit = 'in';
-          figuresize = get( gcf, 'Position' );
-
-          dimension.x = position(3) * figuresize(3) / dpi;
-          dimension.y = position(4) * figuresize(4) / dpi;
-
-      else % assume that TikZ knows the unit (in, cm,...)
-          dimension.unit = units;
-          dimension.x    = position(3);
-          dimension.y    = position(4);
-      end
-
-  else % strcmp( daspectmode, 'manual' )
-
-      % When daspect was manually set, stick to it.
-      % This is achieved here by explicitly determining the x-axis size
-      % and adjusting the y-axis size based on this length.
-
-      if strcmp( units, 'normalized' )
-          % The dpi is needed to associate the size on the screen (in pixels)
-          % to the physical size of the plot (on a pdf, for example).
-          % Unfortunately, MATLAB doesn't seem to be able to always make a
-          % good guess about the current DPI (a bug is filed for this on
-          % mathworks.com).
-          dpi = get( 0, 'ScreenPixelsPerInch');
-
-          dimension.unit = 'in';
-          figuresize = get( gcf, 'Position' );
-
-          dimension.x = position(3) * figuresize(3) / dpi;
-
-      else % assume that TikZ knows the unit
-          dimension.unit = units;
-          dimension.x    = position(3);
-      end
-
-      % set y-axis length
-      xLim        = get ( handle, 'XLim' );
-      yLim        = get ( handle, 'YLim' );
-      aspectRatio = get ( handle, 'DataAspectRatio' ); % = daspect
-
-      % Actually, we'd have
-      %
-      %    xlength = (xLim(2)-xLim(1)) / aspectRatio(1);
-      %    ylength = (yLim(2)-yLim(1)) / aspectRatio(2);
-      %
-      % but as xlength is scaled to a fixed 'dimension.x', 'dimension.y'
-      % needs to be rescaled accordingly.
-      dimension.y = dimension.x                                          ...
-                  * aspectRatio(1)    / aspectRatio(2)                   ...
-                  * (yLim(2)-yLim(1)) / (xLim(2)-xLim(1));
-
+  % check matlab2tikz arguments
+  if ~isempty( widthString )
+      width = extractValueUnit( widthString );
+  end
+  if ~isempty( heightString )
+      height = extractValueUnit( heightString );
   end
 
-%    % arbitrarily chosen: maximal width and height (in mm)
-%    % this seems to be pretty much what the PDF/EPS print functions in MATLAB
-%    % do
-%    maxwidth  = 150;
-%    maxheight = 120;
-%  
-%    xyscaling = daspect;
-%  %    xyscaling = get( handle, 'DataAspectRatio' )
-%  
-%    xLim = get( handle, 'XLim' );
-%    yLim = get( handle, 'YLim' );
-%  
-%    % {x,y}length are the actual lengths of the axes in some obscure unit
-%    xlength = (xLim(2)-xLim(1)) / xyscaling(1);
-%    ylength = (yLim(2)-yLim(1)) / xyscaling(2);
-%  
-%    if ( xlength/ylength >= maxwidth/maxheight )
-%        dim.x = maxwidth;
-%        dim.y = maxwidth * ylength / xlength;
-%    else
-%        dim.x = maxheight * xlength / ylength;
-%        dim.y = maxheight;
-%    end
-%  
-%    dimension.x = dim.x;
-%    dimension.y = dim.y;
+  % prepare the output
+  if ~isempty( widthString ) && ~isempty( heightString )
+      dimension.x.unit  = width.unit;
+      dimension.x.value = width.value;
+      dimension.y.unit  = height.unit;
+      dimension.y.value = height.value;
+  elseif ~isempty( widthString )
+      dimension.x.unit  = width.unit;
+      dimension.x.value = width.value;
+      dimension.y.unit  = width.unit;
+      dimension.y.value = width.value / axesWidthHeightRatio;
+  elseif ~isempty( heightString )
+      dimension.y.unit  = height.unit;
+      dimension.y.value = height.value;
+      dimension.x.unit  = height.unit;
+      dimension.x.value = height.value * axesWidthHeightRatio;
+  else % neither width nor height given
+      dimension.x.unit  = unit;
+      dimension.x.value = width;
+      dimension.y.unit  = unit;
+      dimension.y.value = height;
+  end
 
+  % ---------------------------------------------------------------------------
+  function [width, height, unit] = getNaturalAxesDimensions()
+    daspectmode = get( handle, 'DataAspectRatioMode' );
+    position    = get( handle, 'Position' );
+    units       = get( handle, 'Units' );
 
-%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%    % For log-scaled axes, the pgfplot scaling means scaling powers of exp(1)
-%    % (see pgfplot manual p. 55). Hence, take the natural logarithm in those
-%    % cases.
-%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%    xScale  = get( handle, 'XScale' );  isXLog = strcmp( xScale, 'log' );
-%    yScale  = get( handle, 'YScale' );  isYLog = strcmp( yScale, 'log' );
-%    if isXLog
-%        q.x = log( xLim(2)/xLim(1) );
-%    else
-%        q.x = xLim(2) - xLim(1);
-%    end
-%  
-%    if isYLog
-%        q.y = log( yLim(2)/yLim(1) );
-%    else
-%        q.y = yLim(2) - yLim(1);
-%    end
-%    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%  
-%    % finally, set the scaling
-%    scaling.x = sprintf( '%gmm', physicalLength.x / q.x );
-%    scaling.y = sprintf( '%gmm', physicalLength.y / q.y );
+    switch daspectmode
+        case 'auto'
+          % ---------------------------------------------------------------------
+          % The plot will use the full size of the current figure.,
+          if strcmp( units, 'normalized' )
+              % The dpi is needed to associate the size on the screen (in pixels)
+              % to the physical size of the plot (on a pdf, for example).
+              % Unfortunately, MATLAB doesn't seem to be able to always make a
+              % good guess about the current DPI (a bug is filed for this on
+              % mathworks.com).
+              dpi = get( 0, 'ScreenPixelsPerInch' );
 
+              unit = 'in';
+              figuresize = get( gcf, 'Position' );
 
-  % The only way to reliably get the aspect ratio of the axes is
-  % the 'Position' property. Neither 'DataAspectRatio' nor
-  % 'PlotBoxAspectRatio' seem to always  yield the correct ratio.
-  % Critital are for example figures with subplots.
-%    position = get( handle, 'Position' )
-%  
-%    xscaling = 1;
-%    yscaling = position(4)/position(3) * (xLim(2)-xLim(1))/(yLim(2)-yLim(1));
-%  
-%    % normalize: make sure the smaller side is always 1(cm)
-%    xscaling = xscaling/min(xscaling,yscaling);
-%    yscaling = yscaling/min(xscaling,yscaling);
+              width  = position(3) * figuresize(3) / dpi;
+              height = position(4) * figuresize(4) / dpi;
 
-  % well, it seems that MATLAB's very own print functions doesn't preserve
-  % aspect ratio when printing -- we do! hence the difference in the output
-%    dar = get( handle, 'DataAspectRatio' );
-%    xyscaling = 1 ./ dar;
+          else % assume that TikZ knows the unit (in, cm,...)
+              unit   = units;
+              width  = position(3);
+              height = position(4);
+          end
+          % ---------------------------------------------------------------------
 
+        case 'manual'
+          % ---------------------------------------------------------------------
+          % When daspect was manually set, stick to it.
+          % This is achieved here by explicitly determining the x-axis size
+          % and adjusting the y-axis size based on this length.
+
+          if strcmp( units, 'normalized' )
+              % The dpi is needed to associate the size on the screen (in pixels)
+              % to the physical size of the plot (on a pdf, for example).
+              % Unfortunately, MATLAB doesn't seem to be able to always make a
+              % good guess about the current DPI (a bug is filed for this on
+              % mathworks.com).
+              dpi = get( 0, 'ScreenPixelsPerInch');
+
+              unit = 'in';
+              figuresize = get( gcf, 'Position' );
+
+              width = position(3) * figuresize(3) / dpi;
+
+          else % assume that TikZ knows the unit
+              unit  = units;
+              width = position(3);
+          end
+
+          % set y-axis length
+          xLim        = get ( handle, 'XLim' );
+          yLim        = get ( handle, 'YLim' );
+          aspectRatio = get ( handle, 'DataAspectRatio' ); % = daspect
+
+          % Actually, we'd have
+          %
+          %    xlength = (xLim(2)-xLim(1)) / aspectRatio(1);
+          %    ylength = (yLim(2)-yLim(1)) / aspectRatio(2);
+          %
+          % but as xlength is scaled to a fixed 'dimension.x', 'dimension.y'
+          % needs to be rescaled accordingly.
+          height = width                                  ...
+                 * aspectRatio(1)    / aspectRatio(2)     ...
+                 * (yLim(2)-yLim(1)) / (xLim(2)-xLim(1));
+          % ---------------------------------------------------------------------
+        otherwise
+          error( 'getAxesDimensions:illDaspectMode', ...
+                'Illegal DataAspectRatioMode ''%s''.', daspectmode );
+    end
+  end
+  % ---------------------------------------------------------------------------
+
+  % ---------------------------------------------------------------------------
+  function out = extractValueUnit( str )
+      % decompose matlab2tikzOpts.Results.width into value and unit
+      i = regexp( str, '[a-z,\\]*' ); %% include the backslash to allow for units such as \figureheight
+      if length(i) > 1
+          error( 'getAxesDimensions:illegalWidth', ...
+                 'The width string ''%s'' could not be decomposed into value-unit pair.', str ); 
+      end
+      if i==1
+          out.value = 1.0; % such as in '1.0\figurewidth'
+      else
+          out.value = str2double( str(1:i-1) );
+      end
+      out.unit  = strtrim( str(i:end) );
+  end
+  % ---------------------------------------------------------------------------
 end
 % =========================================================================
 % *** END FUNCTION getAxesDimensions
@@ -3921,7 +3888,9 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
       axesPos(k,:) = correctColorbarPos( visibleAxesHandles(k), ...
                                          axesPos(nonCbarHandles,:) );
   end
+
   % now, the color bars are nicely aligned with the plots
+
 
   % Loop over all figures to see if axes are aligned.
   % Look for exactly *one* alignment, even if there might be more.
@@ -3953,7 +3922,6 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
   %
   for i = 1:n
       for j = i+1:n
-
           if max(abs(axesPos(i,:)-axesPos(j,:))) < tol
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % twins
@@ -4240,6 +4208,46 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
 
     loc = get( colBarHandle, 'Location' );
 
+    % get the ID of the refence axes of the color bar
+    refAxesId  = getReferenceAxes( loc, colBarPos, axesHandlesPos );
+    refAxesPos = axesHandlesPos(refAxesId,:);
+
+    switch loc
+        case { 'North', 'South', 'East', 'West' }
+            warning( 'alignSubPlots:getColorbarPos',                     ...
+                     'Don''t know how to deal with inner colorbars yet.' );
+            return;
+
+        case {'NorthOutside','SouthOutside'}
+            pos = [ refAxesPos(1), ...
+                    colBarPos(2) , ...
+                    refAxesPos(3), ...
+                    colBarPos(4)       ];
+
+        case {'EastOutside','WestOutside'}
+            pos = [ colBarPos(1) , ...
+                    refAxesPos(2), ...
+                    colBarPos(3) , ...
+                    refAxesPos(4)      ];
+
+        otherwise
+            error( 'alignSubPlots:getColorbarPos',    ...
+                   'Unknown ''Location'' %s.', loc  );
+    end
+
+  end
+  % -----------------------------------------------------------------------
+
+
+  % -----------------------------------------------------------------------
+  function refAxesId = getReferenceAxes( loc, colBarPos, axesHandlesPos )
+
+    % if there is only one axes reference handle, it must be the parent
+    if size(axesHandlesPos,1) == 1
+        refAxesId = 1;
+        return;
+    end
+
     switch loc
         case { 'North', 'South', 'East', 'West' }
             warning( 'alignSubPlots:getColorbarPos',                     ...
@@ -4249,46 +4257,30 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
         case {'NorthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly below colBarHandle
-            [m,idx]  = min( colBarPos(2) ...
-                             - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
-            pos = [ axesHandlesPos(idx,1), ...
-                    colBarPos(2)         , ...
-                    axesHandlesPos(idx,3), ...
-                    colBarPos(4)           ];
+            [m,refAxesId]  = min( colBarPos(2) ...
+                                 - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
 
         case {'SouthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly above colBarHandle
-            [m,idx]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
+            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
                              - colBarPos(4) );
-            pos = [ axesHandlesPos(idx,1), ...
-                    colBarPos(2)         , ...
-                    axesHandlesPos(idx,3), ...
-                    colBarPos(4)           ];
 
         case {'EastOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly left of colBarHandle
-            [m,idx]  = min( colBarPos(1) ...
+            [m,refAxesId]  = min( colBarPos(1) ...
                              - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
-            pos = [ colBarPos(1),          ...
-                    axesHandlesPos(idx,2), ...
-                    colBarPos(3),          ...
-                    axesHandlesPos(idx,4)  ];
 
         case {'WestOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly right of colBarHandle
-            [m,idx]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
+            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
                              - colBarPos(3)  );
-            pos = [ colBarPos(1),          ...
-                    axesHandlesPos(idx,2), ...
-                    colBarPos(3),          ...
-                    axesHandlesPos(idx,4)  ];
 
         otherwise
-            error( 'alignSubPlots:getColorbarPos',    ...
-                   'Unknown ''Location'' %s.', loc  )
+            error( 'getReferenceAxes:illLocation',    ...
+                   'Illegal ''Location'' ''%s''.', loc  );
     end
 
   end
