@@ -406,12 +406,24 @@ function str = drawAxes( handle, alignmentOptions )
   global xAxisReversed;
   global yAxisReversed;
 
-  if strcmp( get(handle,'Tag'), 'Colorbar' )
-      % Handle a colorbar separately.
-      % Note how currentHandles.gca does *not* get updated; this fact is
-      % made use of in drawColorbar().
-      str = drawColorbar( handle, alignmentOptions );
-      return
+  % handle special cases
+  switch get(handle,'Tag')
+      case 'Colorbar'
+          % Handle a colorbar separately.
+          % Note how currentHandles.gca does *not* get updated; this fact is
+          % made use of in drawColorbar().
+          str = drawColorbar( handle, alignmentOptions );
+          return
+      case 'legend'
+          % Don't handle the legend here, but further below in the 'axis'
+          % environment.
+          % In MATLAB, an axes environment and it's corresponding legend are
+          % children of the same figure (siblings), while in pgfplots, the
+          % \legend (or \addlegendentry) command must appear within the axis
+          % environment.
+          return
+      otherwise
+          % continue as usual
   end
 
   % update gca
@@ -457,16 +469,6 @@ function str = drawAxes( handle, alignmentOptions )
                    extraAxisOptions ];
   end
 
-  if strcmp( get(handle,'Tag'), 'legend' )
-      % Don't handle the legend here, but further below in the 'axis'
-      % environment.
-      % In MATLAB, an axes environment and it's corresponding legend are
-      % children of the same figure (siblings), while in pgfplots, the
-      % \legend (or \addlegendentry) command must appear within the axis
-      % environment.
-      return
-  end
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get scales
   xScale = get( handle, 'XScale' );
@@ -494,6 +496,7 @@ function str = drawAxes( handle, alignmentOptions )
   % the following is general MATLAB behavior
   axisOpts = [ axisOpts, 'scale only axis' ];
 
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % axis colors
   xColor = get( handle, 'XColor' );
   if ( any(xColor) ) % color not black [0,0,0]
@@ -509,15 +512,27 @@ function str = drawAxes( handle, alignmentOptions )
                    [ 'every outer y axis line/.append style={',col, '}' ], ...
                    [ 'every y tick label/.append style={font=\\color{',col,'}}'] ];
   end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  xLim = get( handle, 'XLim' );
-  yLim = get( handle, 'YLim' );
 
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % background color
+  backgroundColor = get( handle, 'Color' );
+  col = getColor( handle, backgroundColor, 'patch' );
+  if ~strcmp( col, 'white' )
+      axisOpts = [ axisOpts,                                ...
+                   sprintf( 'axis background/.style={fill=%s}' , col ) ];
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set the width
   axisOpts = [ axisOpts,                                ...
                sprintf( 'width=%g%s' , dim.x.value, dim.x.unit ) ];
   axisOpts = [ axisOpts,                                ...
                sprintf( 'height=%g%s' , dim.y.value, dim.y.unit ) ];
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle the orientation
@@ -548,6 +563,8 @@ function str = drawAxes( handle, alignmentOptions )
   
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
+  xLim = get( handle, 'XLim' );
+  yLim = get( handle, 'YLim' );
   axisOpts = [ axisOpts,                           ...
                sprintf('xmin=%g, xmax=%g', xLim ), ...
                sprintf('ymin=%g, ymax=%g', yLim ) ];

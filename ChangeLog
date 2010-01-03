@@ -17,6 +17,7 @@
 	  - legend text alignment (thanks Dragen Mitrevski)
 	  - transparent patches (thanks Carlos Russo)
 	* Added support for:
+	  - background color
 	  - Bode plots
 	  - zplane plots
 	  - freqz plots
