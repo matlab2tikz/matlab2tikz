@@ -402,6 +402,10 @@ function str = drawAxes( handle, alignmentOptions )
   % plots.
   global axisOpts;
 
+  % pass on information about reversed axis (to drawImage)
+  global xAxisReversed;
+  global yAxisReversed;
+
   if strcmp( get(handle,'Tag'), 'Colorbar' )
       % Handle a colorbar separately.
       % Note how currentHandles.gca does *not* get updated; this fact is
@@ -517,10 +521,15 @@ function str = drawAxes( handle, alignmentOptions )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle the orientation
+  xAxisReversed = 0;
   if strcmp( get(handle,'XDir'), 'reverse' )
+      xAxisReversed = 1;
       axisOpts = [ axisOpts, 'x dir=reverse' ];
   end
+
+  xAxisReversed = 0;
   if strcmp( get(handle,'YDir'), 'reverse' )
+      yAxisReversed = 1;
       axisOpts = [ axisOpts, 'y dir=reverse' ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1686,12 +1695,14 @@ end
 % *** containing the RGB color values for a spot).
 % ***
 % =========================================================================
-function str = drawImage( handle )
+function str = drawImage( handle, xAxisReversed, yAxisReversed )
 
   global currentHandles;
   global matlab2tikzOpts;
   global tikzFileName;
   global relativePngPath;
+  global xAxisReversed;
+  global yAxisReversed;
 
   str = [];
 
@@ -1731,6 +1742,16 @@ function str = drawImage( handle )
               colorData(i,j) = imagecolor2colorindex ( cdata(i,j), handle );
           end
       end
+
+      % flip the image if reverse
+      if xAxisReversed
+          colorData = colorData(:,n:-1:1);
+      end
+      if yAxisReversed
+          colorData = colorData(m:-1:1,:);
+      end
+
+      % write the image
       imwrite(colorData, get(currentHandles.gcf,'ColorMap'), pngFileName, 'png');
       % ------------------------------------------------------------------------
 
