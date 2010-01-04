@@ -1,4 +1,4 @@
-2009-12-21  Nico Schlömer  <nico.schloemer@ua.ac.be>
+2010-01-04  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
 	* Version 0.0.5.
 	* Improvements in axis handling:
@@ -16,6 +16,7 @@
 	  - CMYK colors
 	  - legend text alignment (thanks Dragen Mitrevski)
 	  - transparent patches (thanks Carlos Russo)
+	  - ...
 	* Added support for:
 	  - background color
 	  - Bode plots
