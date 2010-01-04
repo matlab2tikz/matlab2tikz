@@ -142,8 +142,8 @@ function matlab2tikz( varargin )
       fid     = matlab2tikzOpts.Results.filehandle;
       fileWasOpen = 1;
       if ~isempty(matlab2tikzOpts.Results.filename)
-          warning( 'matlab2tikz:fileHandleFileNameConflict', ...
-                   'File handle AND file name for output given. File handle used, file name discarded.')
+          userWarning( 'matlab2tikz', ...
+                       'File handle AND file name for output given. File handle used, file name discarded.')
       end
   else
       fileWasOpen = 0;
@@ -518,10 +518,12 @@ function str = drawAxes( handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % background color
   backgroundColor = get( handle, 'Color' );
-  col = getColor( handle, backgroundColor, 'patch' );
-  if ~strcmp( col, 'white' )
-      axisOpts = [ axisOpts,                                ...
-                   sprintf( 'axis background/.style={fill=%s}' , col ) ];
+  if ~strcmp( backgroundColor, 'none' )
+      col = getColor( handle, backgroundColor, 'patch' );
+      if ~strcmp( col, 'white' )
+          axisOpts = [ axisOpts,                                ...
+                       sprintf( 'axis background/.style={fill=%s}' , col ) ];
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1461,7 +1463,8 @@ function drawOptions = getMarkerOptions( h )
             tikzMarker = 'x';
         otherwise  % the following markers are only available with PGF's
                    % plotmarks library
-            fprintf( '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
+            userWarning( 'translateMarker', ...
+                         'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
             switch ( matlabMarker )
 
                     case '*'
@@ -1520,8 +1523,8 @@ function drawOptions = getMarkerOptions( h )
                     end
 
                     case {'h','hexagram'}
-                    warning( 'matlab2tikz:translateMarker',              ...
-                            'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
+                        userWarning( 'translateMarker', ...
+                                     'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
                     if faceColorToggle
                                 tikzMarker = 'star*';
                     else
@@ -1777,11 +1780,11 @@ function str = drawImage( handle, xAxisReversed, yAxisReversed )
       str = [ str, ...
               sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
                        xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ];
-      warning( 'matlab2tikz:pngFileLocation',     ...
-               [ 'The PNG file is stored at ''%s'', the TikZ file contains ', ...
-                 'a reference to ''%s''.\nDepending on where the TeX file ', ...
-                 'is located into with TikZ gets included, you may need to adapt this.' ], ...
-               pngFileName, pngReferencePath );
+      userWarning( 'drawImage', ...
+                   [ 'The PNG file is stored at ''%s'', the TikZ file contains ', ...
+                     'a reference to ''%s''.\nDepending on where the TeX file ', ...
+                     'is located into with TikZ gets included, you may need to adapt this.' ], ...
+                   pngFileName, pngReferencePath );
   else
       % ------------------------------------------------------------------------
       % draw the thing
@@ -1873,8 +1876,8 @@ function str = drawHggroup( h )
           str = drawErrorBars( h );
 
       otherwise
-          warning( 'matlab2tikz:unknHggroupClass',     ...
-                   'Don''t know class ''%s''. Default handling.', cl );
+          userWarning( 'drawHggroup', ...
+                       'Don''t know class ''%s''. Default handling.', cl );
           str = handleAllChildren( h );
   end
 
@@ -1947,8 +1950,8 @@ function str = drawBarseries( h )
                           % For error bars to work with bar plots -- which is trivially
                           % possible in pgfplots -- one has to match errorbar and bar
                           % objects (probably by their values).
-                          warning( 'matlab2tikz:drawBarseries',        ...
-                                   'Error bars discarded (to be implemented).'  );
+                          userWarning( 'drawBarseries', ...
+                                       'Error bars discarded (to be implemented).'  );
                       otherwise
                           error( 'matlab2tikz:drawBarseries',          ...
                                  'Unknown class''%s''.', cl  );
@@ -2025,10 +2028,10 @@ function str = drawBarseries( h )
           % Make sure this happens exactly *once*.
           if isempty(addedAxisOption) || ~addedAxisOption
               if nonbarPlotPresent
-                  warning( 'matlab2tikz:drawBarseries',                 ...
-                        [ 'Pgfplots can''t deal with stacked bar plots', ...
-                          ' and non-bar plots in one axis environment.', ...
-                          ' There *may* be unexpected results.'         ] );
+                  userWarning( 'matlab2tikz:drawBarseries',                 ...
+                               [ 'Pgfplots can''t deal with stacked bar plots', ...
+                                 ' and non-bar plots in one axis environment.', ...
+                                 ' There *may* be unexpected results.'         ] );
               end
               bWFactor = get( h, 'BarWidth' );
               ulength   = normalized2physical();
@@ -2435,8 +2438,8 @@ function str = drawColorbar( handle, alignmentOptions )
   loc = get( handle, 'Location' );
   switch loc
       case { 'North', 'South', 'East', 'West' }
-          warning( 'matlab2tikz:drawColorbar',                         ...
-                   'Don''t know how to deal with inner colorbars yet.' );
+          userWarning( 'matlab2tikz:drawColorbar',                         ...
+                       'Don''t know how to deal with inner colorbars yet.' );
           return;
 
       case {'NorthOutside','SouthOutside'}
@@ -2944,19 +2947,19 @@ function lOpts = getLegendOpts( handle )
           % The position could be determined by means of 'Position' and/or
           % 'OuterPosition' of the legend handle; in fact, this could be made
           % a general principle for all legend placements.
-          warning( 'matlab2tikz:getLegendOpts',                       ...
-                   [ ' Option ''Best'' not yet implemented.',         ...
-                     ' Choosing default.' ] );
+          userWarning( 'matlab2tikz:getLegendOpts',                       ...
+                       [ ' Option ''Best'' not yet implemented.',         ...
+                         ' Choosing default.' ] );
       case 'BestOutside'
           % TODO: Implement this one.
           % For comments see above.
-          warning( 'matlab2tikz:getLegendOpts',                       ...
-                   [ ' Option ''BestOutside'' not yet implemented.',  ...
-                     ' Choosing default.' ] );
+          userWarning( 'matlab2tikz:getLegendOpts',                       ...
+                       [ ' Option ''BestOutside'' not yet implemented.',  ...
+                         ' Choosing default.' ] );
       otherwise
-          warning( 'matlab2tikz:getLegendOpts',                       ...
-                   [ ' Unknown legend location ''',loc,''''           ...
-                     '. Choosing default.' ] );
+          userWarning( 'matlab2tikz:getLegendOpts',                       ...
+                       [ ' Unknown legend location ''',loc,''''           ...
+                         '. Choosing default.' ] );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -4121,10 +4124,10 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
   noConn = find( ~any(C,2) );
   if ~isempty(noConn)
       for k = 1:length(noConn)
-          warning( 'alignSubPlots:isoAxes', ...
-                    [ 'The axes environment no. %d is not aligned with',...
-                      ' any other axes environment and will be plotted',...
-                      ' right in the middle.' ], noConn(k) );
+          userWarning( 'alignSubPlots:isoAxes', ...
+                       [ 'The axes environment no. %d is not aligned with',...
+                         ' any other axes environment and will be plotted',...
+                         ' right in the middle.' ], noConn(k) );
       end
   end
 
@@ -4252,8 +4255,8 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
 
     switch loc
         case { 'North', 'South', 'East', 'West' }
-            warning( 'alignSubPlots:getColorbarPos',                     ...
-                     'Don''t know how to deal with inner colorbars yet.' );
+            userWarning( 'alignSubPlots:getColorbarPos',                     ...
+                         'Don''t know how to deal with inner colorbars yet.' );
             return;
 
         case {'NorthOutside','SouthOutside'}
@@ -4288,8 +4291,8 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
 
     switch loc
         case { 'North', 'South', 'East', 'West' }
-            warning( 'alignSubPlots:getColorbarPos',                     ...
-                     'Don''t know how to deal with inner colorbars yet.' );
+            userWarning( 'alignSubPlots:getColorbarPos',                     ...
+                         'Don''t know how to deal with inner colorbars yet.' );
             return;
 
         case {'NorthOutside'}
@@ -4327,4 +4330,42 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
 end
 % =========================================================================
 % *** END FUNCTION alignSubPlots
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION userWarning
+% ***
+% *** Drop-in replacement for warning().
+% ***
+% =========================================================================
+function userWarning( fun, message, varargin )
+
+  global matlab2tikzName
+
+  n = length(varargin);
+  switch n
+      case 0;
+         mess = sprintf( message );
+      case 1;
+         mess = sprintf( message, varargin{1} );
+      case 2;
+         mess = sprintf( message, varargin{1}, varargin{2} );
+      case 3;
+         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3} );
+      case 4;
+         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3}, varargin{4} );
+      otherwise
+         error( 'userWarning:longVarargin', ...
+                'Can''t deal with length(varargin)>4 yet.' );
+  end
+
+  % Replace '\n' by '\n *** '.
+  mess = regexprep( mess, '\n', '\n *** ' );
+
+  fprintf( '\n\n *** %s warning in %s:\n *** %s\n\n', matlab2tikzName, fun, mess );
+
+end
+% =========================================================================
+% *** END FUNCTION userWarning
 % =========================================================================
