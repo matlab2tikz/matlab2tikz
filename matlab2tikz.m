@@ -32,7 +32,7 @@
 % ***
 % =========================================================================
 % ***
-% *** Copyright (c) 2008, 2009, Nico Schl??mer <nico.schloemer@ua.ac.be>
+% *** Copyright (c) 2008--2010, Nico Schlömer <nico.schloemer@ua.ac.be>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without 
@@ -64,6 +64,9 @@ function matlab2tikz( varargin )
   % define some global variables
   clear global matlab2tikzName;
   clear global matlab2tikzVersion;
+  clear global matlab2tikzAuthor;
+  clear global matlab2tikzAuthorEmail;
+  clear global matlab2tikzYears;
   clear global tol;
   clear global matlab2tikzOpts;
   clear global currentHandles;
@@ -78,7 +81,16 @@ function matlab2tikz( varargin )
   matlab2tikzName = 'matlab2tikz';
 
   global matlab2tikzVersion;
-  matlab2tikzVersion = '0.0.5beta';
+  matlab2tikzVersion = '0.0.5';
+
+  global matlab2tikzAuthor;
+  matlab2tikzAuthor = 'Nico Schlömer';
+
+  global matlab2tikzAuthorEmail;
+  matlab2tikzAuthorEmail = 'nico.schloemer@ua.ac.be';
+
+  global matlab2tikzYears;
+  matlab2tikzYears = '2008--2010';
 
   global tikzOptions; % for the arrow style -- TODO: see if we can get this removed
   tikzOptions = cell(0);
@@ -103,6 +115,9 @@ function matlab2tikz( varargin )
 
   % whether to strictly stick to the default MATLAB plot appearance:
   matlab2tikzOpts.addOptional( 'strict', 0, @islogical );
+
+  % don't plot warning messages
+  matlab2tikzOpts.addOptional( 'silent', 0, @islogical );
 
   % Whether to save images in PNG format or to natively draw filled squares
   % using TikZ itself.
@@ -142,8 +157,7 @@ function matlab2tikz( varargin )
       fid     = matlab2tikzOpts.Results.filehandle;
       fileWasOpen = 1;
       if ~isempty(matlab2tikzOpts.Results.filename)
-          userWarning( 'matlab2tikz', ...
-                       'File handle AND file name for output given. File handle used, file name discarded.')
+          userWarning( 'File handle AND file name for output given. File handle used, file name discarded.')
       end
   else
       fileWasOpen = 0;
@@ -181,7 +195,17 @@ function matlab2tikz( varargin )
   end
 
   % print some version info to the screen
-  sprintf( '%s v%s\n', matlab2tikzName, matlab2tikzVersion );
+  userWarning( [ '\nThis is %s v%s.\n' , ...
+                 'The latest updates can be retrieved from\n\n', ...
+                 '  http://win.ua.ac.be/~nschloe/content/matlab2tikz/\n\n', ...
+                 'and\n\n',...
+                 '  http://www.mathworks.com/matlabcentral/fileexchange/22022 .\n\n', ...
+                 'where you can also make suggestions and rate %s.\n' ], ...
+                 matlab2tikzName, matlab2tikzVersion, matlab2tikzName );
+
+  userWarning( [ 'matlab2tikz uses features of Pgfplots which may be available only in recent version.\n', ...
+                 'Make sure you have at least Pgfplots 1.3 available.\n', ...
+                 'For best results, use \\pgfplotsset{compat=newest}.\n' ] );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
@@ -239,6 +263,10 @@ function saveToFile( fid, fileWasOpen )
 
   global matlab2tikzName
   global matlab2tikzVersion
+  global matlab2tikzAuthor
+  global matlab2tikzAuthorEmail
+  global matlab2tikzYears
+  global matlab2tikzOpts
   global currentHandles
   global tikzOptions
 
@@ -285,8 +313,23 @@ function saveToFile( fid, fileWasOpen )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
-  fprintf( fid, '%% This file was created by %s v%s.\n\n',              ...
-                                   matlab2tikzName, matlab2tikzVersion );
+  fprintf( fid, [ '%% This file was created by %s v%s.\n', ...
+                  '%% Copyright (c) %s, %s <%s>\n', ...
+                  '%% All rights reserved.\n' ],              ...
+                matlab2tikzName, matlab2tikzVersion, ...
+                matlab2tikzYears, matlab2tikzAuthor, matlab2tikzAuthorEmail );
+
+  if ~matlab2tikzOpts.Results.silent
+      fprintf( fid, [ '%%\n',...
+                      '%% The latest updates can be retrieved from\n', ...
+                      '%%  http://win.ua.ac.be/~nschloe/content/matlab2tikz/\n', ...
+                      '%% and\n',...
+                      '%%  http://www.mathworks.com/matlabcentral/fileexchange/22022 .\n', ...
+                      '%% where you can also make suggestions and rate %s.\n\n' ], ...
+                      matlab2tikzName  );
+  else
+      fprintf( fid, '\n' );
+  end
 
   if isempty(tikzOptions)
       fprintf( fid, '\\begin{tikzpicture}\n' );
@@ -730,7 +773,7 @@ function str = drawAxes( handle, alignmentOptions )
 
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       % Format 'axisOpts' nicely.
-      opts = [ '\n', collapse( axisOpts, ',\n' ), '\n' ];
+      opts = [ '\n', collapse( axisOpts, ',\n' ) ];
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       % if a tag is given, use it as comment
@@ -1463,8 +1506,7 @@ function drawOptions = getMarkerOptions( h )
             tikzMarker = 'x';
         otherwise  % the following markers are only available with PGF's
                    % plotmarks library
-            userWarning( 'translateMarker', ...
-                         'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
+            userWarning( 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
             switch ( matlabMarker )
 
                     case '*'
@@ -1523,8 +1565,7 @@ function drawOptions = getMarkerOptions( h )
                     end
 
                     case {'h','hexagram'}
-                        userWarning( 'translateMarker', ...
-                                     'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
+                        userWarning( 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
                     if faceColorToggle
                                 tikzMarker = 'star*';
                     else
@@ -1780,8 +1821,7 @@ function str = drawImage( handle, xAxisReversed, yAxisReversed )
       str = [ str, ...
               sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
                        xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ];
-      userWarning( 'drawImage', ...
-                   [ 'The PNG file is stored at ''%s'', the TikZ file contains ', ...
+      userWarning( [ 'The PNG file is stored at ''%s'', the TikZ file contains ', ...
                      'a reference to ''%s''.\nDepending on where the TeX file ', ...
                      'is located into with TikZ gets included, you may need to adapt this.' ], ...
                    pngFileName, pngReferencePath );
@@ -1876,8 +1916,7 @@ function str = drawHggroup( h )
           str = drawErrorBars( h );
 
       otherwise
-          userWarning( 'drawHggroup', ...
-                       'Don''t know class ''%s''. Default handling.', cl );
+          userWarning( 'Don''t know class ''%s''. Default handling.', cl );
           str = handleAllChildren( h );
   end
 
@@ -1950,8 +1989,7 @@ function str = drawBarseries( h )
                           % For error bars to work with bar plots -- which is trivially
                           % possible in pgfplots -- one has to match errorbar and bar
                           % objects (probably by their values).
-                          userWarning( 'drawBarseries', ...
-                                       'Error bars discarded (to be implemented).'  );
+                          userWarning( 'Error bars discarded (to be implemented).'  );
                       otherwise
                           error( 'matlab2tikz:drawBarseries',          ...
                                  'Unknown class''%s''.', cl  );
@@ -2028,8 +2066,7 @@ function str = drawBarseries( h )
           % Make sure this happens exactly *once*.
           if isempty(addedAxisOption) || ~addedAxisOption
               if nonbarPlotPresent
-                  userWarning( 'matlab2tikz:drawBarseries',                 ...
-                               [ 'Pgfplots can''t deal with stacked bar plots', ...
+                  userWarning( [ 'Pgfplots can''t deal with stacked bar plots', ...
                                  ' and non-bar plots in one axis environment.', ...
                                  ' There *may* be unexpected results.'         ] );
               end
@@ -2419,9 +2456,9 @@ function str = drawColorbar( handle, alignmentOptions )
 
   % TODO Compute the colorbar width. This is pretty much a *guess* of what MATLAB(R) does.
   if ~strcmp(parentDim.x.unit, parentDim.y.unit)
-      userWarning( 'drawColorbar', ...
-                   [ 'Physical units of x- and y-axis do not coincide (x: %s; y: %s).', ...
-                     'Color bar sizes will likely need tweaking.' ], parentDim.x.unit, parentDim.y.unit );
+      userWarning( [ 'Physical units of x- and y-axis do not coincide (x: %s; y: %s).', ...
+                     'Color bar sizes will likely need tweaking.' ], ...
+                   parentDim.x.unit, parentDim.y.unit );
   end
   % Inherent MATLAB(R) parameter, indicating the ratio of the long
   % edge of a color bar versus the short one.
@@ -2446,8 +2483,7 @@ function str = drawColorbar( handle, alignmentOptions )
   loc = get( handle, 'Location' );
   switch loc
       case { 'North', 'South', 'East', 'West' }
-          userWarning( 'matlab2tikz:drawColorbar',                         ...
-                       'Don''t know how to deal with inner colorbars yet.' );
+          userWarning( 'Don''t know how to deal with inner colorbars yet.' );
           return;
 
       case {'NorthOutside','SouthOutside'}
@@ -2951,18 +2987,15 @@ function lOpts = getLegendOpts( handle )
           % The position could be determined by means of 'Position' and/or
           % 'OuterPosition' of the legend handle; in fact, this could be made
           % a general principle for all legend placements.
-          userWarning( 'matlab2tikz:getLegendOpts',                       ...
-                       [ ' Option ''Best'' not yet implemented.',         ...
+          userWarning( [ ' Option ''Best'' not yet implemented.',         ...
                          ' Choosing default.' ] );
       case 'BestOutside'
           % TODO: Implement this one.
           % For comments see above.
-          userWarning( 'matlab2tikz:getLegendOpts',                       ...
-                       [ ' Option ''BestOutside'' not yet implemented.',  ...
+          userWarning( [ ' Option ''BestOutside'' not yet implemented.',  ...
                          ' Choosing default.' ] );
       otherwise
-          userWarning( 'matlab2tikz:getLegendOpts',                       ...
-                       [ ' Unknown legend location ''',loc,''''           ...
+          userWarning( [ ' Unknown legend location ''',loc,''''           ...
                          '. Choosing default.' ] );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4128,8 +4161,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
   noConn = find( ~any(C,2) );
   if ~isempty(noConn)
       for k = 1:length(noConn)
-          userWarning( 'alignSubPlots:isoAxes', ...
-                       [ 'The axes environment no. %d is not aligned with',...
+          userWarning( [ 'The axes environment no. %d is not aligned with',...
                          ' any other axes environment and will be plotted',...
                          ' right in the middle.' ], noConn(k) );
       end
@@ -4295,8 +4327,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
 
     switch loc
         case { 'North', 'South', 'East', 'West' }
-            userWarning( 'alignSubPlots:getColorbarPos',                     ...
-                         'Don''t know how to deal with inner colorbars yet.' );
+            userWarning( 'Don''t know how to deal with inner colorbars yet.' );
             return;
 
         case {'NorthOutside'}
@@ -4343,7 +4374,13 @@ end
 % *** Drop-in replacement for warning().
 % ***
 % =========================================================================
-function userWarning( fun, message, varargin )
+function userWarning( message, varargin )
+
+  global matlab2tikzOpts
+
+  if matlab2tikzOpts.Results.silent
+      return
+  end
 
   global matlab2tikzName
 
@@ -4364,10 +4401,9 @@ function userWarning( fun, message, varargin )
                 'Can''t deal with length(varargin)>4 yet.' );
   end
 
-  % Replace '\n' by '\n *** '.
+  % Replace '\n' by '\n *** ' and print.
   mess = regexprep( mess, '\n', '\n *** ' );
-
-  fprintf( '\n\n *** %s warning in %s:\n *** %s\n\n', matlab2tikzName, fun, mess );
+  fprintf( '\n *** %s', mess );
 
 end
 % =========================================================================
