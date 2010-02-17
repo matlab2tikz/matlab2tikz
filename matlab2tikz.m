@@ -60,6 +60,14 @@
 % =========================================================================
 function matlab2tikz( varargin )
 
+  % make sure we're running MATLAB>=2007a (for inputParser)
+  version_data = ver('MATLAB');
+  Version_string = version_data.Version;
+  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3))<4)
+       disp('You need at least   MATLAB R2007a   to run this script.')
+       return
+  end
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define some global variables
   clear global matlab2tikzName;
@@ -2691,13 +2699,18 @@ function xcolor = rgb2tikzcol( rgbcol )
   % Remember the color rbgvalues which will need to be redefined.
   % Each row of 'requiredRgbColors' contains the RGB values of a needed
   % color.
-  global requiredRgbColors
+  global     requiredRgbColors
+  persistent first
+
+  % make sure rgbcol has shape (1,3), and not (1,1,3) or similar
+  rgbcol = rgbcol(:)';
 
   [xcolor,errorcode] = rgb2xcolor( rgbcol );
   if errorcode
-      if isempty(requiredRgbColors)
+      if isempty(first)
           % initialize the matrix
           requiredRgbColors = [];
+          first = 0;
       end
 
       % check if the color has appeared before
@@ -2710,7 +2723,7 @@ function xcolor = rgb2tikzcol( rgbcol )
           end
       end
 
-      % color not found: have a new one defined
+      % color not found: have a new one defined;
       requiredRgbColors = [ requiredRgbColors; ...
                             rgbcol ];
       xcolor = sprintf( 'mycolor%d', n+1 );
@@ -3418,7 +3431,7 @@ function newstr = collapse( cellstr, delimiter )
       else
           str = cellstr{k};
       end
-      newstr = [ newstr, delimiter, str ];
+      newstr = [ newstr, delimiter, escapeCharacters(str) ];
   end
 
 end
