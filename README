@@ -1,6 +1,8 @@
-This is matlab2tikz, a MATLAB script for converting MATLAB figures into native
-TikZ figures. matlab2tikz is based on Paul Wagenaars' matfig2pgf but tries to
-be shorter, cleaner, more robust and more powerful.
+This is matlab2tikz, a MATLAB(R) script for converting MATLAB(R) figures into native
+TikZ figures.
+
+To download and rate matlab2tikz, go to its page on MathWorks 
+http://www.mathworks.com/matlabcentral/fileexchange/22022.
 
 As of now, matlab2tikz does by far not support the conversion of all possible
 MATLAB figures. In particular, 3D plots are not yet supported. However, the if
@@ -68,7 +70,6 @@ The workflow is as follows.
       Also make sure that at the header of your document the packages tikz and
       pgfplots are included:
 
-          \usepackage{tikz}
           \usepackage{pgfplots}
 
       and optionally (as of Pgfplots 1.3)
@@ -78,10 +79,6 @@ The workflow is as follows.
 
 If you experience bugs, have nice examples of what matlab2tikz can do, or if
 you are just looking for more information, please visit the web page of
-matlab2tikz <http://win.ua.ac.be/~nschloe/matlab2tikz/>.
+matlab2tikz http://github.com/nicki/matlab2tikz.
 
-There's also a matlab2tikz forum at <http://win.ua.ac.be/~nschloe/forum/12/>.
-
-To follow the development of matlab2tikz, visit its WebSVN interface <http://win.ua.ac.be/~nschloe/other/websvn/listing.php?repname=matlab2tikz>.
-
-To rate matlab2tikz, go to its page on MathWorks <http://www.mathworks.com/matlabcentral/fileexchange/22022>.
+There's also a matlab2tikz forum at http://win.ua.ac.be/~nschloe/forum/12/.
