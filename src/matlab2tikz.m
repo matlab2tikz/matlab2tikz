@@ -313,7 +313,7 @@ function saveToFile( fid, fileWasOpen )
 
   str = [];
   for k = 1:length(visibleAxesHandles)
-      str = [ str, drawAxes(visibleAxesHandles(ix(k)),alignmentOptions(ix(k))) ];
+      str = strcat( str, drawAxes(visibleAxesHandles(ix(k)),alignmentOptions(ix(k))) );
   end
 
   set( 0, 'ShowHiddenHandles', 'off' );
@@ -368,7 +368,6 @@ end
 % =========================================================================
 % *** END OF FUNCTION saveToFile
 % =========================================================================
- 
 
 
 % =========================================================================
@@ -388,27 +387,27 @@ function str = handleAllChildren( handle )
   % and the order of plotting the colored patches.
   for i = length(children):-1:1
       child = children(i);
- 
+      
       switch get( child, 'Type' )
           case 'axes'
-              str = [ str, drawAxes( child ) ];
+              str = strcat( str, drawAxes( child ) );
 
           case 'line'
-              str = [ str, drawLine( child ) ];
+              str = strcat( str, drawLine( child ) );
 
           case 'patch'
-              str = [ str, drawPatch( child ) ];
+              str = strcat( str, drawPatch( child ) );
 
           case 'image'
-              str = [ str, drawImage( child ) ];
+              str = strcat( str, drawImage( child ) );
 
           case 'hggroup'
-              str = [ str, drawHggroup( child ) ];
+              str = strcat( str, drawHggroup( child ) );
 
           case { 'hgtransform' }
               % don't handle those directly but descend to its children
               % (which could for example be patch handles)
-              str = [ str, handleAllChildren( child ) ];
+              str = strcat( str, handleAllChildren( child ) );
 
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent',  ...
@@ -949,11 +948,11 @@ function str = drawLine( handle, yDeviation )
               sprintf('coordinates{\n') ];
 
       for l = 1:length(xData)
-          str = [ str, ...
-                  sprintf( ' (%g,%g)', xData(l), yData(l) ) ];
+          str = strcat( str, ...
+                        sprintf( ' (%g,%g)', xData(l), yData(l) ) );
           if errorbarMode
-              str = [ str, ...
-                      sprintf( ' +- (%g,%g)\n', 0.0, yDeviation(l) ) ];
+              str = strcat( str, ...
+                            sprintf( ' +- (%g,%g)\n', 0.0, yDeviation(l) ) );
           end
       end
 
@@ -1485,113 +1484,6 @@ function drawOptions = getMarkerOptions( h )
       end
   end
 
-
-  % -----------------------------------------------------------------------
-  % *** FUNCTION translateMarker
-  % -----------------------------------------------------------------------
-  function [ tikzMarker, markOptions ] =                                ...
-             translateMarker( matlabMarker, markOptions, faceColorToggle )
-
-    if( ~ischar(matlabMarker) )
-        error( [ 'Function translateMarker:',                           ...
-                 'Variable matlabMarker is not a string.' ] );
-    end
-
-    switch ( matlabMarker )
-        case 'none'
-            tikzMarker = '';
-        case '+'
-            tikzMarker = '+';
-        case 'o'
-            if faceColorToggle
-                tikzMarker = '*';
-            else
-                tikzMarker = 'o';
-            end
-        case '.'
-            tikzMarker = '*';
-        case 'x'
-            tikzMarker = 'x';
-        otherwise  % the following markers are only available with PGF's
-                   % plotmarks library
-            userWarning( 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
-            switch ( matlabMarker )
-
-                    case '*'
-                            tikzMarker = 'asterisk';
-
-                    case {'s','square'}
-                    if faceColorToggle
-                                tikzMarker = 'square*';
-                    else
-                        tikzMarker = 'square';
-                    end
-
-                    case {'d','diamond'}
-                    if faceColorToggle
-                                tikzMarker = 'diamond*';
-                    else
-                                tikzMarker = 'diamond';
-                    end
-
-                case '^'
-                    if faceColorToggle
-                                tikzMarker = 'triangle*';
-                    else
-                                tikzMarker = 'triangle';
-                    end
-
-                    case 'v'
-                    if faceColorToggle
-                        tikzMarker = 'triangle*';
-                    else
-                                tikzMarker = 'triangle';
-                    end
-                    markOptions = [ markOptions, ',rotate=180' ];
-
-                    case '<'
-                    if faceColorToggle
-                        tikzMarker = 'triangle*';
-                    else
-                                tikzMarker = 'triangle';
-                    end
-                    markOptions = [ markOptions, ',rotate=270' ];
-
-                case '>'
-                    if faceColorToggle
-                                tikzMarker = 'triangle*';
-                    else
-                                tikzMarker = 'triangle';
-                    end
-                    markOptions = [ markOptions, ',rotate=90' ];
-
-                case {'p','pentagram'}
-                    if faceColorToggle
-                                tikzMarker = 'star*';
-                    else
-                                tikzMarker = 'star';
-                    end
-
-                    case {'h','hexagram'}
-                        userWarning( 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
-                    if faceColorToggle
-                                tikzMarker = 'star*';
-                    else
-                                tikzMarker = 'star';
-                    end
-
-                otherwise
-                    error( [ ' Function translateMarker:',               ...
-                            ' Unknown matlabMarker ''',matlabMarker,'''.' ] );
-            end
-    end
-
-  end
-  % -----------------------------------------------------------------------
-  % *** END OF FUNCTION translateMarker
-  % -----------------------------------------------------------------------
-
-
   % -----------------------------------------------------------------------
   % *** FUNCTION translateMarkerSize
   % ***
@@ -1671,6 +1563,115 @@ end
 % =========================================================================
 
 
+% =========================================================================
+% *** FUNCTION translateMarker
+% ***
+% *** This function is used for getMarkerOptions() as well as
+% *** drawScatterPlot().
+% ***
+% =========================================================================
+function [ tikzMarker, markOptions ] =                                ...
+         translateMarker( matlabMarker, markOptions, faceColorToggle )
+
+if( ~ischar(matlabMarker) )
+    error( [ 'Function translateMarker:',                           ...
+             'Variable matlabMarker is not a string.' ] );
+end
+
+switch ( matlabMarker )
+    case 'none'
+        tikzMarker = '';
+    case '+'
+        tikzMarker = '+';
+    case 'o'
+        if faceColorToggle
+            tikzMarker = '*';
+        else
+            tikzMarker = 'o';
+        end
+    case '.'
+        tikzMarker = '*';
+    case 'x'
+        tikzMarker = 'x';
+    otherwise  % the following markers are only available with PGF's
+               % plotmarks library
+        userWarning( 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
+        switch ( matlabMarker )
+
+                case '*'
+                        tikzMarker = 'asterisk';
+
+                case {'s','square'}
+                if faceColorToggle
+                            tikzMarker = 'square*';
+                else
+                    tikzMarker = 'square';
+                end
+
+                case {'d','diamond'}
+                if faceColorToggle
+                            tikzMarker = 'diamond*';
+                else
+                            tikzMarker = 'diamond';
+                end
+
+            case '^'
+                if faceColorToggle
+                            tikzMarker = 'triangle*';
+                else
+                            tikzMarker = 'triangle';
+                end
+
+                case 'v'
+                if faceColorToggle
+                    tikzMarker = 'triangle*';
+                else
+                            tikzMarker = 'triangle';
+                end
+                markOptions = [ markOptions, ',rotate=180' ];
+
+                case '<'
+                if faceColorToggle
+                    tikzMarker = 'triangle*';
+                else
+                            tikzMarker = 'triangle';
+                end
+                markOptions = [ markOptions, ',rotate=270' ];
+
+            case '>'
+                if faceColorToggle
+                            tikzMarker = 'triangle*';
+                else
+                            tikzMarker = 'triangle';
+                end
+                markOptions = [ markOptions, ',rotate=90' ];
+
+            case {'p','pentagram'}
+                if faceColorToggle
+                            tikzMarker = 'star*';
+                else
+                            tikzMarker = 'star';
+                end
+
+                case {'h','hexagram'}
+                    userWarning( 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
+                if faceColorToggle
+                            tikzMarker = 'star*';
+                else
+                            tikzMarker = 'star';
+                end
+
+            otherwise
+                error( [ ' Function translateMarker:',               ...
+                        ' Unknown matlabMarker ''',matlabMarker,'''.' ] );
+        end
+end
+
+end
+% =========================================================================
+% *** END OF FUNCTION translateMarker
+% =========================================================================
+
 
 % =========================================================================
 % *** FUNCTION drawPatch
@@ -1734,16 +1735,16 @@ function str = drawPatch( handle )
                      % the drawOpts by one \pgfplotsset{}
 
   for j=1:n
-      str = [ str, ...
-              sprintf(['\\addplot [',drawOpts,'] coordinates{']) ];
+      str = strcat( str, ...
+                    sprintf(['\\addplot [',drawOpts,'] coordinates{']) );
       for i=1:m
           if ~isnan(xData(i,j)) && ~isnan(yData(i,j))
               % don't print NaNs
-              str = [ str, ...
-                      sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) ];
+              str = strcat( str, ...
+                            sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) );
           end
       end
-      str = [ str, sprintf('};\n') ];
+      str = strcat( str, sprintf('};\n') );
   end
   str = [ str, sprintf('\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1876,9 +1877,9 @@ function str = drawImage( handle )
       % (string+num) cells (Request ID: 1-9WHK4W).
       for i = 1:m
           for j = 1:n
-              str = [ str, ...
-                      sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
-                              xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2  ) ];
+              str = strcat( str, ...
+                            sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
+                                     xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2  ) );
           end
       end
       % ------------------------------------------------------------------------
@@ -1922,6 +1923,10 @@ function str = drawHggroup( h )
       case {'specgraph.errorbarseries'}
           % error bars
           str = drawErrorBars( h );
+          
+      case {'specgraph.scattergroup'}
+          % error bars
+          str = drawScatterPlot( h );
 
       otherwise
           userWarning( 'Don''t know class ''%s''. Default handling.', cl );
@@ -1933,6 +1938,49 @@ end
 % *** END FUNCTION drawHggroup
 % =========================================================================
 
+
+% =========================================================================
+% *** FUNCTION drawScatterPlot
+% =========================================================================
+function str = drawScatterPlot( h )
+
+  global axisOpts;
+
+  str = [];
+  
+  drawOptions = cell(0);
+  
+  xData = get( h, 'XData' );
+  yData = get( h, 'YData' );
+  cData = get( h, 'CData' );
+  
+  drawOptions = [ drawOptions, 'scatter', 'only marks', 'scatter src=explicit' ];
+  
+  
+  matlabMarker = get( h, 'Marker' );
+  
+  tikzMarker = translateMarker( matlabMarker, [], false );
+  
+  axisOpts = [ axisOpts, ...
+               [ 'scatter/use mapped color= {mark=', tikzMarker,',draw=mapped color}' ] ];
+  
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % plot the thing
+  drawOpts = collapse( drawOptions, ',' );
+  str = [ str, ...
+          sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
+
+  for k=1:length(xData)
+      str = strcat( str, ...
+                    sprintf( ' (%g,%g) [%d]\n', xData(k), yData(k), cData(k) ) );
+  end
+  str = [ str, sprintf(' };\n\n') ];
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+end
+% =========================================================================
+% *** END FUNCTION drawScatterPlot
+% =========================================================================
 
 
 % =========================================================================
@@ -2129,8 +2177,8 @@ function str = drawBarseries( h )
           sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
 
   for k=1:length(xData)
-      str = [ str, ...
-              sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
+      str = strcat( str, ...
+                    sprintf( ' (%g,%g)', xData(k), yData(k) ) );
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2192,8 +2240,8 @@ function str = drawStemseries( h )
   yData = get( h, 'YData' );
 
   for k=1:length(xData)
-      str = [ str, ...
-              sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
+      str = strcat( str, ...
+                    sprintf( ' (%g,%g)', xData(k), yData(k) ) );
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2253,8 +2301,8 @@ function str = drawStairSeries( h )
   yData = get( h, 'YData' );
 
   for k=1:length(xData)
-      str = [ str, ...
-              sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
+      str = strcat( str, ...
+                    sprintf( ' (%g,%g)', xData(k), yData(k) ) );
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2620,9 +2668,9 @@ function str = drawColorbar( handle, alignmentOptions )
                   y1 = clim(1) + cbarLength/m *(i-1);
                   y2 = clim(1) + cbarLength/m *i;
           end
-          str = [ str, ...
-                  sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
-                            badgeColor, x1, y1, x2, y1, x2, y2, x1, y2    ) ];
+          str = strcat( str, ...
+                        sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
+                                  badgeColor, x1, y1, x2, y1, x2, y2, x1, y2    ) );
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
@@ -3431,7 +3479,7 @@ function newstr = collapse( cellstr, delimiter )
       else
           str = cellstr{k};
       end
-      newstr = [ newstr, delimiter, escapeCharacters(str) ];
+      newstr = strcat( newstr, delimiter, escapeCharacters(str) );
   end
 
 end
@@ -4153,7 +4201,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
                              'Illegal alignment code %d.', C(i,j) );
               end
 
-              [m,idx]   = min( dist ); % `idx` holds the index of the minimum.
+              [~,idx]   = min( dist ); % `idx` holds the index of the minimum.
                                        % If there is more than one, then
                                        % `idx` has twins. min returns the one
                                        % with the lowest index.

@@ -971,7 +971,7 @@ end
 % =========================================================================
 function description = scatterPlot()
   load seamount
-  scatter(x,y,5,z);
+  scatter(x,y,5,z,'^');
   description = 'Scatter plot';
 end
 % =========================================================================

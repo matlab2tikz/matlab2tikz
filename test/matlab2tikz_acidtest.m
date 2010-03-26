@@ -48,7 +48,7 @@ function matlab2tikz_acidtest( varargin )
   texfile_init( fh );
 
   % query the number of test functions
-  [desc, n] = testfunctions(0);
+  [~, n] = testfunctions(0);
 
   if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
       indices = matlab2tikzOpts.Results.testFunctionIndices;
@@ -81,7 +81,7 @@ function matlab2tikz_acidtest( varargin )
       tic;
 
       % now, test matlab2xxx
-      matlab2tikz( gen_file, 'silent', true,...
+      matlab2tikz( gen_file, 'silent', false,...
                              'relativePngPath', '../data/', ...
                              'width', '\figurewidth');
 
