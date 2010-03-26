@@ -63,8 +63,8 @@ function matlab2tikz( varargin )
   % make sure we're running MATLAB>=2007a (for inputParser)
   version_data = ver('MATLAB');
   Version_string = version_data.Version;
-  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3))<4)
-       disp('You need at least   MATLAB R2007a   to run this script.')
+  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<10)
+       disp('You need at least   MATLAB R2010a   to run this script.')
        return
   end
 
@@ -205,7 +205,7 @@ function matlab2tikz( varargin )
   % print some version info to the screen
   userWarning( [ '\nThis is %s v%s.\n' , ...
                  'The latest updates can be retrieved from\n\n', ...
-                 '  http://win.ua.ac.be/~nschloe/content/matlab2tikz/\n\n', ...
+                 '  http://github.com/nicki/matlab2tikz\n\n', ...
                  'and\n\n',...
                  '  http://www.mathworks.com/matlabcentral/fileexchange/22022 .\n\n', ...
                  'where you can also make suggestions and rate %s.\n' ], ...
@@ -220,7 +220,7 @@ function matlab2tikz( varargin )
   saveToFile( fid, fileWasOpen );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  sprintf( '\nRemember to load \\usepackage{tikz} and \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
+  sprintf( '\nRemember to load \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
 
   % clean up
   clear global matlab2tikzName;
@@ -554,14 +554,14 @@ function str = drawAxes( handle, alignmentOptions )
       col = getColor( handle, xColor, 'patch' );
       axisOpts = [ axisOpts, ...
                    [ 'every outer x axis line/.append style={',col, '}' ], ...
-                   [ 'every x tick label/.append style={font=\\color{',col,'}}'] ];
+                   [ 'every x tick label/.append style={font=\color{',col,'}}'] ];
   end
   yColor = get( handle, 'YColor' );
   if ( any(yColor) ) % color not black [0,0,0]
       col = getColor( handle, yColor, 'patch' );
       axisOpts = [ axisOpts, ...
                    [ 'every outer y axis line/.append style={',col, '}' ], ...
-                   [ 'every y tick label/.append style={font=\\color{',col,'}}'] ];
+                   [ 'every y tick label/.append style={font=b\color{',col,'}}'] ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -595,7 +595,7 @@ function str = drawAxes( handle, alignmentOptions )
       axisOpts = [ axisOpts, 'x dir=reverse' ];
   end
 
-  xAxisReversed = 0;
+  yAxisReversed = 0;
   if strcmp( get(handle,'YDir'), 'reverse' )
       yAxisReversed = 1;
       axisOpts = [ axisOpts, 'y dir=reverse' ];
@@ -650,7 +650,7 @@ function str = drawAxes( handle, alignmentOptions )
   % get axis labels
   axisLabels = getAxisLabels( handle );
   if ~isempty( axisLabels.x )
-      xlabelText = sprintf( '%s', escapeCharacters(axisLabels.x) );
+      xlabelText = sprintf( '%s', axisLabels.x );
       if matlab2tikzOpts.Results.mathmode
           xlabelText = [ '$' xlabelText '$' ];
       end
@@ -658,7 +658,7 @@ function str = drawAxes( handle, alignmentOptions )
                    sprintf( 'xlabel={%s}', xlabelText ) ];
   end
   if ~isempty( axisLabels.y )
-      ylabelText = sprintf( '%s', escapeCharacters(axisLabels.y) );
+      ylabelText = sprintf( '%s', axisLabels.y );
       if  matlab2tikzOpts.Results.mathmode
           ylabelText = [ '$' ylabelText '$' ];
       end
@@ -672,7 +672,7 @@ function str = drawAxes( handle, alignmentOptions )
   % get title
   title = get( get( handle, 'Title' ), 'String' );
   if ~isempty(title)
-      titleText = sprintf( '%s', escapeCharacters(title) );
+      titleText = sprintf( '%s', title );
       if  matlab2tikzOpts.Results.mathmode
           titleText = [ '$' titleText '$' ];
       end
@@ -1764,7 +1764,7 @@ end
 % *** containing the RGB color values for a spot).
 % ***
 % =========================================================================
-function str = drawImage( handle, xAxisReversed, yAxisReversed )
+function str = drawImage( handle )
 
   global currentHandles;
   global matlab2tikzOpts;
@@ -2506,13 +2506,13 @@ function str = drawColorbar( handle, alignmentOptions )
 
           if strcmp( loc, 'NorthOutside' )
               cbarOptions = [ cbarOptions,                            ...
-                              'xticklabel pos=right, ytick=\\empty' ];
+                              'xticklabel pos=right, ytick=\empty' ];
                               % we actually wanted to set pos=top here,
                               % but pgfplots doesn't support that yet.
                               % pos=right does the same thing, really.
           else
               cbarOptions = [ cbarOptions,                            ...
-                               'xticklabel pos=left, ytick=\\empty' ];
+                               'xticklabel pos=left, ytick=\empty' ];
                                % we actually wanted to set pos=bottom here,
                                % but pgfplots doesn't support that yet. 
                                % pos=left does the same thing, really.
@@ -2529,10 +2529,10 @@ function str = drawColorbar( handle, alignmentOptions )
                          ];
           if strcmp( loc, 'EastOutside' )
                cbarOptions = [ cbarOptions,                           ...
-                               'xtick=\\empty, yticklabel pos=right' ];
+                               'xtick=\empty, yticklabel pos=right' ];
            else
                cbarOptions = [ cbarOptions,                           ...
-                               'xtick=\\empty, yticklabel pos=left' ];
+                               'xtick=\empty, yticklabel pos=left' ];
            end
 
       otherwise
@@ -2950,7 +2950,7 @@ function lOpts = getLegendOpts( handle )
           % specified.
           % The reason for this is that entries as "cos_x" are legal MATLAB
           % code, but won't compile in (La)TeX except in Math mode.
-          entries{k} = escapeCharacters(entries{k});
+          % entries{k} = escapeCharacters(entries{k});
           if matlab2tikzOpts.Results.mathmode
               entries{k} = [ '$', entries{k}, '$' ];
           end
@@ -3048,7 +3048,7 @@ end
 % *** FUNCTION getTicks
 % ***
 % *** Return axis tick marks pgfplot style. Nice: Tick lengths and such
-% *** details are taken care of by pgfplot.
+% *** details are taken care of by Pgfplots.
 % ***
 % =========================================================================
 function [ ticks, tickLabels ] = getTicks( handle )
@@ -4188,7 +4188,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
 
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
-  [s,ix] = sort( sum(C~=0, 2), 'descend' );
+  [~,ix] = sort( sum(C~=0, 2), 'descend' );
   for k = 1:n
       setOptionsRecursion( ix(k) );
   end
@@ -4346,25 +4346,25 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( axesHandles )
         case {'NorthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly below colBarHandle
-            [m,refAxesId]  = min( colBarPos(2) ...
+            [~,refAxesId]  = min( colBarPos(2) ...
                                  - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
 
         case {'SouthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly above colBarHandle
-            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
+            [~,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
                              - colBarPos(4) );
 
         case {'EastOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly left of colBarHandle
-            [m,refAxesId]  = min( colBarPos(1) ...
+            [~,refAxesId]  = min( colBarPos(1) ...
                              - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
 
         case {'WestOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly right of colBarHandle
-            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
+            [~,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
                              - colBarPos(3)  );
 
         otherwise
@@ -4394,8 +4394,6 @@ function userWarning( message, varargin )
   if matlab2tikzOpts.Results.silent
       return
   end
-
-  global matlab2tikzName
 
   n = length(varargin);
   switch n

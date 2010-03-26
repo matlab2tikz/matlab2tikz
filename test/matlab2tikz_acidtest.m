@@ -83,7 +83,7 @@ function matlab2tikz_acidtest( varargin )
       % now, test matlab2xxx
       matlab2tikz( gen_file, 'silent', true,...
                              'relativePngPath', '../data/', ...
-                             'width', '\\figurewidth');
+                             'width', '\figurewidth');
 
       % Create a copy, which we can modify (which 'savefig' does)
       savefig( pdf_file, 'pdf' );
