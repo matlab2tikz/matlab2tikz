@@ -63,8 +63,8 @@ function matlab2tikz( varargin )
   % make sure we're running MATLAB>=2007a (for inputParser)
   version_data = ver('MATLAB');
   Version_string = version_data.Version;
-  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3))<4)
-       disp('You need at least   MATLAB R2007a   to run this script.')
+  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<10)
+       disp('You need at least   MATLAB R2010a   to run this script.')
        return
   end
 
@@ -188,8 +188,6 @@ function matlab2tikz( varargin )
   userWarning( m2t, [ '\nThis is %s v%s.\n' , ...
                  'The latest updates can be retrieved from\n\n', ...
                  '  %s\n\n', ...
-                 'and\n\n',...
-                 '  http://www.mathworks.com/matlabcentral/fileexchange/22022 .\n\n', ...
                  'where you can also make suggestions and rate %s.\n' ], ...
                  m2t.name, m2t.version, m2t.website, m2t.name );
 
@@ -202,7 +200,7 @@ function matlab2tikz( varargin )
   saveToFile( m2t, fid, fileWasOpen );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  sprintf( '\nRemember to load  \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
+  sprintf( '\nRemember to load \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
 
   % -----------------------------------------------------------------------
   % validates the optional argument 'filename' to not be another
@@ -324,7 +322,6 @@ end
 % =========================================================================
 % *** END OF FUNCTION saveToFile
 % =========================================================================
- 
 
 
 % =========================================================================
@@ -537,7 +534,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       env.appendOptions( 'x dir=reverse' );
   end
 
-  m2t.xAxisReversed = 0;
+  m2t.yAxisReversed = 0;
   if strcmp( get(handle,'YDir'), 'reverse' )
        env.appendOptions( 'y dir=reverse' );
   end
@@ -863,11 +860,11 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
               sprintf('coordinates{\n') ];
 
       for l = 1:length(xData)
-          str = [ str, ...
-                  sprintf( ' (%g,%g)', xData(l), yData(l) ) ];
+          str = strcat( str, ...
+                        sprintf( ' (%g,%g)', xData(l), yData(l) ) );
           if errorbarMode
-              str = [ str, ...
-                      sprintf( ' +- (%g,%g)\n', 0.0, yDeviation(l) ) ];
+              str = strcat( str, ...
+                            sprintf( ' +- (%g,%g)\n', 0.0, yDeviation(l) ) );
           end
       end
 
@@ -1393,7 +1390,6 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
       end
   end
 
-
   % -----------------------------------------------------------------------
   % *** FUNCTION translateMarker
   % -----------------------------------------------------------------------
@@ -1499,7 +1495,6 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
   % *** END OF FUNCTION translateMarker
   % -----------------------------------------------------------------------
 
-
   % -----------------------------------------------------------------------
   % *** FUNCTION translateMarkerSize
   % ***
@@ -1577,6 +1572,115 @@ end
 % =========================================================================
 
 
+% =========================================================================
+% *** FUNCTION translateMarker
+% ***
+% *** This function is used for getMarkerOptions() as well as
+% *** drawScatterPlot().
+% ***
+% =========================================================================
+function [ tikzMarker, markOptions ] =                                ...
+         translateMarker( matlabMarker, markOptions, faceColorToggle )
+
+if( ~ischar(matlabMarker) )
+    error( [ 'Function translateMarker:',                           ...
+             'Variable matlabMarker is not a string.' ] );
+end
+
+switch ( matlabMarker )
+    case 'none'
+        tikzMarker = '';
+    case '+'
+        tikzMarker = '+';
+    case 'o'
+        if faceColorToggle
+            tikzMarker = '*';
+        else
+            tikzMarker = 'o';
+        end
+    case '.'
+        tikzMarker = '*';
+    case 'x'
+        tikzMarker = 'x';
+    otherwise  % the following markers are only available with PGF's
+               % plotmarks library
+        userWarning( 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
+        switch ( matlabMarker )
+
+                case '*'
+                        tikzMarker = 'asterisk';
+
+                case {'s','square'}
+                if faceColorToggle
+                            tikzMarker = 'square*';
+                else
+                    tikzMarker = 'square';
+                end
+
+                case {'d','diamond'}
+                if faceColorToggle
+                            tikzMarker = 'diamond*';
+                else
+                            tikzMarker = 'diamond';
+                end
+
+            case '^'
+                if faceColorToggle
+                            tikzMarker = 'triangle*';
+                else
+                            tikzMarker = 'triangle';
+                end
+
+                case 'v'
+                if faceColorToggle
+                    tikzMarker = 'triangle*';
+                else
+                            tikzMarker = 'triangle';
+                end
+                markOptions = [ markOptions, ',rotate=180' ];
+
+                case '<'
+                if faceColorToggle
+                    tikzMarker = 'triangle*';
+                else
+                            tikzMarker = 'triangle';
+                end
+                markOptions = [ markOptions, ',rotate=270' ];
+
+            case '>'
+                if faceColorToggle
+                            tikzMarker = 'triangle*';
+                else
+                            tikzMarker = 'triangle';
+                end
+                markOptions = [ markOptions, ',rotate=90' ];
+
+            case {'p','pentagram'}
+                if faceColorToggle
+                            tikzMarker = 'star*';
+                else
+                            tikzMarker = 'star';
+                end
+
+                case {'h','hexagram'}
+                    userWarning( 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
+                if faceColorToggle
+                            tikzMarker = 'star*';
+                else
+                            tikzMarker = 'star';
+                end
+
+            otherwise
+                error( [ ' Function translateMarker:',               ...
+                        ' Unknown matlabMarker ''',matlabMarker,'''.' ] );
+        end
+end
+
+end
+% =========================================================================
+% *** END OF FUNCTION translateMarker
+% =========================================================================
+
 
 % =========================================================================
 % *** FUNCTION drawPatch
@@ -1638,16 +1742,16 @@ function [ m2t, str ] = drawPatch( m2t, handle )
                      % the drawOpts by one \pgfplotsset{}
 
   for j=1:n
-      str = [ str, ...
-              sprintf(['\\addplot [',drawOpts,'] coordinates{']) ];
+      str = strcat( str, ...
+                    sprintf(['\\addplot [',drawOpts,'] coordinates{']) );
       for i=1:m
           if ~isnan(xData(i,j)) && ~isnan(yData(i,j))
               % don't print NaNs
-              str = [ str, ...
-                      sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) ];
+              str = strcat( str, ...
+                            sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) );
           end
       end
-      str = [ str, sprintf('};\n') ];
+      str = strcat( str, sprintf('};\n') );
   end
   str = [ str, sprintf('\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1773,9 +1877,9 @@ function [ m2t, str ] = drawImage( m2t, handle )
       % (string+num) cells (Request ID: 1-9WHK4W).
       for i = 1:m
           for j = 1:n
-              str = [ str, ...
-                      sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
-                              xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2  ) ];
+              str = strcat( str, ...
+                            sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
+                                     xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2  ) );
           end
       end
       % ------------------------------------------------------------------------
@@ -1818,7 +1922,11 @@ function [ m2t, str ] = drawHggroup( m2t, h )
 
       case {'specgraph.errorbarseries'}
           % error bars
-          [m2t, str] = drawErrorBars( m2t, h );
+          [m2t,str] = drawErrorBars( h );
+          
+      case {'specgraph.scattergroup'}
+          % scatter plots
+          [m2t,str] = drawScatterPlot( h );
 
       otherwise
           userWarning( m2t, 'Don''t know class ''%s''. Default handling.', cl );
@@ -1830,6 +1938,49 @@ end
 % *** END FUNCTION drawHggroup
 % =========================================================================
 
+
+% =========================================================================
+% *** FUNCTION drawScatterPlot
+% =========================================================================
+function str = drawScatterPlot( h )
+
+  global axisOpts;
+
+  str = [];
+  
+  drawOptions = cell(0);
+  
+  xData = get( h, 'XData' );
+  yData = get( h, 'YData' );
+  cData = get( h, 'CData' );
+  
+  drawOptions = [ drawOptions, 'scatter', 'only marks', 'scatter src=explicit' ];
+  
+  
+  matlabMarker = get( h, 'Marker' );
+  
+  tikzMarker = translateMarker( matlabMarker, [], false );
+  
+  axisOpts = [ axisOpts, ...
+               [ 'scatter/use mapped color= {mark=', tikzMarker,',draw=mapped color}' ] ];
+  
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % plot the thing
+  drawOpts = collapse( drawOptions, ',' );
+  str = [ str, ...
+          sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
+
+  for k=1:length(xData)
+      str = strcat( str, ...
+                    sprintf( ' (%g,%g) [%d]\n', xData(k), yData(k), cData(k) ) );
+  end
+  str = [ str, sprintf(' };\n\n') ];
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+end
+% =========================================================================
+% *** END FUNCTION drawScatterPlot
+% =========================================================================
 
 
 % =========================================================================
@@ -2025,8 +2176,8 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
 
   for k=1:length(xData)
-      str = [ str, ...
-              sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
+      str = strcat( str, ...
+                    sprintf( ' (%g,%g)', xData(k), yData(k) ) );
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2091,8 +2242,8 @@ function [ m2t, str ] = drawStemseries( m2t, h )
   yData = get( h, 'YData' );
 
   for k=1:length(xData)
-      str = [ str, ...
-              sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
+      str = strcat( str, ...
+                    sprintf( ' (%g,%g)', xData(k), yData(k) ) );
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2155,8 +2306,8 @@ function [ m2t, str ] = drawStairSeries( m2t, h )
   yData = get( h, 'YData' );
 
   for k=1:length(xData)
-      str = [ str, ...
-              sprintf( ' (%g,%g)', xData(k), yData(k) ) ];
+      str = strcat( str, ...
+                    sprintf( ' (%g,%g)', xData(k), yData(k) ) );
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2918,7 +3069,7 @@ end
 % *** FUNCTION getTicks
 % ***
 % *** Return axis tick marks pgfplot style. Nice: Tick lengths and such
-% *** details are taken care of by pgfplot.
+% *** details are taken care of by Pgfplots.
 % ***
 % =========================================================================
 function [ ticks, tickLabels ] = getTicks( m2t, handle )
@@ -3298,7 +3449,7 @@ function newstr = collapse( cellstr, delimiter )
       else
           str = cellstr{k};
       end
-      newstr = [ newstr, delimiter, str ];
+      newstr = strcat( newstr, delimiter, str );
   end
 
 end
@@ -4014,7 +4165,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
                              'Illegal alignment code %d.', C(i,j) );
               end
 
-              [m,idx]   = min( dist ); % `idx` holds the index of the minimum.
+              [~,idx]   = min( dist ); % `idx` holds the index of the minimum.
                                        % If there is more than one, then
                                        % `idx` has twins. min returns the one
                                        % with the lowest index.
@@ -4049,7 +4200,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
 
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
-  [s,ix] = sort( sum(C~=0, 2), 'descend' );
+  [~,ix] = sort( sum(C~=0, 2), 'descend' );
   for k = 1:n
       setOptionsRecursion( ix(k) );
   end
@@ -4207,25 +4358,25 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
         case {'NorthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly below colBarHandle
-            [m,refAxesId]  = min( colBarPos(2) ...
+            [~,refAxesId]  = min( colBarPos(2) ...
                                  - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
 
         case {'SouthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly above colBarHandle
-            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
+            [~,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
                              - colBarPos(4) );
 
         case {'EastOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly left of colBarHandle
-            [m,refAxesId]  = min( colBarPos(1) ...
+            [~,refAxesId]  = min( colBarPos(1) ...
                              - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
 
         case {'WestOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly right of colBarHandle
-            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
+            [~,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
                              - colBarPos(3)  );
 
         otherwise

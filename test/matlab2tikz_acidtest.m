@@ -6,7 +6,7 @@
 % ***
 % =========================================================================  
 % ***
-% *** Copyright (c) 2008--2010, Nico Schl\"omer <nico.schloemer@ua.ac.be>
+% *** Copyright (c) 2008--2010, Nico Schl\"omer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without 
@@ -81,7 +81,7 @@ function matlab2tikz_acidtest( varargin )
       tic;
 
       % now, test matlab2xxx
-      matlab2tikz( gen_file, 'silent', true,...
+      matlab2tikz( gen_file, 'silent', false,...
                              'relativePngPath', '../data/', ...
                              'width', '\figurewidth');
 
