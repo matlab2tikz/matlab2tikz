@@ -6,7 +6,7 @@
 % ***
 % =========================================================================  
 % ***
-% *** Copyright (c) 2008, 2009, Nico Schl??mer <nico.schloemer@ua.ac.be>
+% *** Copyright (c) 2008--2010, Nico Schl\"omer <nico.schloemer@ua.ac.be>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without 
@@ -48,7 +48,7 @@ function matlab2tikz_acidtest( varargin )
   texfile_init( fh );
 
   % query the number of test functions
-  [desc, n] = testfunctions(0);
+  [~, n] = testfunctions(0);
 
   if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
       indices = matlab2tikzOpts.Results.testFunctionIndices;
@@ -83,7 +83,7 @@ function matlab2tikz_acidtest( varargin )
       % now, test matlab2xxx
       matlab2tikz( gen_file, 'silent', true,...
                              'relativePngPath', '../data/', ...
-                             'width', '\\figurewidth');
+                             'width', '\figurewidth');
 
       % Create a copy, which we can modify (which 'savefig' does)
       savefig( pdf_file, 'pdf' );
