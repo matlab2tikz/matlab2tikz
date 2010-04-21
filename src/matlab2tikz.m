@@ -60,11 +60,11 @@
 % =========================================================================
 function matlab2tikz( varargin )
 
-  % make sure we're running MATLAB>=2007a (for inputParser)
+  % make sure we're running MATLAB>=2009b
   version_data = ver('MATLAB');
   Version_string = version_data.Version;
-  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<10)
-       disp('You need at least   MATLAB R2010a   to run this script.')
+  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<9)
+       error('You need at least   MATLAB R2009b   to run this script.');
        return
   end
 
@@ -74,7 +74,7 @@ function matlab2tikz( varargin )
   m2t.currentHandles = [];
 
   m2t.name = 'matlab2tikz';
-  m2t.version = '0.0.5';
+  m2t.version = '0.0.6_pre';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2010';
@@ -136,8 +136,7 @@ function matlab2tikz( varargin )
   m2t.opts.parse( varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  % add extra elements
-  m2t.currentHandles.gca      = gca;
+  % add global elements
   m2t.currentHandles.gcf      = gcf;
   m2t.currentHandles.colormap = colormap;
 
@@ -536,11 +535,9 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
 
   m2t.yAxisReversed = 0;
   if strcmp( get(handle,'YDir'), 'reverse' )
-       env.appendOptions( 'y dir=reverse' );
+      m2t.yAxisReversed = 1;
+      env.appendOptions( 'y dir=reverse' );
   end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % for double axes pairs, unconditionally put the ordinate left for the
   % first one, right for the second one.
@@ -1370,7 +1367,7 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
       % get the marker color right
       markerFaceColor = get( h, 'markerfaceColor' );
       markerEdgeColor = get( h, 'markeredgeColor' );
-      [ tikzMarker, markOptions ] = translateMarker( marker,         ...
+      [ tikzMarker, markOptions ] = translateMarker( m2t, marker,         ...
                            markOptions, ~strcmp(markerFaceColor,'none') );
       if ~strcmp(markerFaceColor,'none')
           [ m2t, xcolor ] = getColor( m2t, h, markerFaceColor, 'patch' );
@@ -1389,111 +1386,6 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
           drawOptions = [ drawOptions, [ 'mark options={', mo, '}' ] ];
       end
   end
-
-  % -----------------------------------------------------------------------
-  % *** FUNCTION translateMarker
-  % -----------------------------------------------------------------------
-  function [ tikzMarker, markOptions ] =                                ...
-             translateMarker( matlabMarker, markOptions, faceColorToggle )
-
-    if( ~ischar(matlabMarker) )
-        error( [ 'Function translateMarker:',                           ...
-                 'Variable matlabMarker is not a string.' ] );
-    end
-
-    switch ( matlabMarker )
-        case 'none'
-            tikzMarker = '';
-        case '+'
-            tikzMarker = '+';
-        case 'o'
-            if faceColorToggle
-                tikzMarker = '*';
-            else
-                tikzMarker = 'o';
-            end
-        case '.'
-            tikzMarker = '*';
-        case 'x'
-            tikzMarker = 'x';
-        otherwise  % the following markers are only available with PGF's
-                   % plotmarks library
-            userWarning( m2t, 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
-            switch ( matlabMarker )
-
-                    case '*'
-                            tikzMarker = 'asterisk';
-
-                    case {'s','square'}
-                    if faceColorToggle
-                                tikzMarker = 'square*';
-                    else
-                        tikzMarker = 'square';
-                    end
-
-                    case {'d','diamond'}
-                    if faceColorToggle
-                                tikzMarker = 'diamond*';
-                    else
-                                tikzMarker = 'diamond';
-                    end
-
-                case '^'
-                    if faceColorToggle
-                                tikzMarker = 'triangle*';
-                    else
-                                tikzMarker = 'triangle';
-                    end
-
-                    case 'v'
-                    if faceColorToggle
-                        tikzMarker = 'triangle*';
-                    else
-                                tikzMarker = 'triangle';
-                    end
-                    markOptions = [ markOptions, ',rotate=180' ];
-
-                    case '<'
-                    if faceColorToggle
-                        tikzMarker = 'triangle*';
-                    else
-                                tikzMarker = 'triangle';
-                    end
-                    markOptions = [ markOptions, ',rotate=270' ];
-
-                case '>'
-                    if faceColorToggle
-                                tikzMarker = 'triangle*';
-                    else
-                                tikzMarker = 'triangle';
-                    end
-                    markOptions = [ markOptions, ',rotate=90' ];
-
-                case {'p','pentagram'}
-                    if faceColorToggle
-                                tikzMarker = 'star*';
-                    else
-                                tikzMarker = 'star';
-                    end
-
-                    case {'h','hexagram'}
-                        userWarning( m2t, 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
-                    if faceColorToggle
-                                tikzMarker = 'star*';
-                    else
-                                tikzMarker = 'star';
-                    end
-
-                otherwise
-                    error( [ ' Function translateMarker:',               ...
-                            ' Unknown matlabMarker ''',matlabMarker,'''.' ] );
-            end
-    end
-
-  end
-  % -----------------------------------------------------------------------
-  % *** END OF FUNCTION translateMarker
-  % -----------------------------------------------------------------------
 
   % -----------------------------------------------------------------------
   % *** FUNCTION translateMarkerSize
@@ -1580,7 +1472,7 @@ end
 % ***
 % =========================================================================
 function [ tikzMarker, markOptions ] =                                ...
-         translateMarker( matlabMarker, markOptions, faceColorToggle )
+         translateMarker( m2t, matlabMarker, markOptions, faceColorToggle )
 
 if( ~ischar(matlabMarker) )
     error( [ 'Function translateMarker:',                           ...
@@ -1604,7 +1496,7 @@ switch ( matlabMarker )
         tikzMarker = 'x';
     otherwise  % the following markers are only available with PGF's
                % plotmarks library
-        userWarning( 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
+        userWarning( m2t, 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
         switch ( matlabMarker )
 
                 case '*'
@@ -1922,11 +1814,11 @@ function [ m2t, str ] = drawHggroup( m2t, h )
 
       case {'specgraph.errorbarseries'}
           % error bars
-          [m2t,str] = drawErrorBars( h );
+          [m2t,str] = drawErrorBars( m2t, h );
           
       case {'specgraph.scattergroup'}
           % scatter plots
-          [m2t,str] = drawScatterPlot( h );
+          [m2t,str] = drawScatterPlot( m2t, h );
 
       otherwise
           userWarning( m2t, 'Don''t know class ''%s''. Default handling.', cl );
@@ -1942,9 +1834,7 @@ end
 % =========================================================================
 % *** FUNCTION drawScatterPlot
 % =========================================================================
-function str = drawScatterPlot( h )
-
-  global axisOpts;
+function [ m2t, str ] = drawScatterPlot( m2t, h )
 
   str = [];
   
@@ -1956,13 +1846,11 @@ function str = drawScatterPlot( h )
   
   drawOptions = [ drawOptions, 'scatter', 'only marks', 'scatter src=explicit' ];
   
-  
   matlabMarker = get( h, 'Marker' );
   
-  tikzMarker = translateMarker( matlabMarker, [], false );
+  tikzMarker = translateMarker( m2t, matlabMarker, [], false );
   
-  axisOpts = [ axisOpts, ...
-               [ 'scatter/use mapped color= {mark=', tikzMarker,',draw=mapped color}' ] ];
+  m2t.axisOpts.appendOptions( [ 'scatter/use mapped color= {mark=', tikzMarker,',draw=mapped color}' ] );
   
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
