@@ -108,6 +108,7 @@ classdef pgfplotsEnvironment < hgsetget
                 if ischar( this.children{k} )
                     fprintf( fid, escapeCharacters(this.children{k}) );
                 elseif all(class(this.children{k})=='pgfplotsEnvironment')
+                    fprintf( fid, '\n' );
                     this.children{k}.print( fid );
                 end
             end

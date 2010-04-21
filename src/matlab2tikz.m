@@ -3497,6 +3497,14 @@ function dimension = getAxesDimensions( handle, ...
       dimension.y.value = height;
   end
 
+  % return, e.g., 'width=\figurewidth' instead of 'width=1\figurewidth'
+  if dimension.x.unit(1)=='\' && dimension.x.value==1.0
+      dimension.x.value = [];
+  end
+  if dimension.y.unit(1)=='\' && dimension.y.value==1.0
+      dimension.y.value = [];
+  end
+
   % ---------------------------------------------------------------------------
   function [width, height, unit] = getNaturalAxesDimensions()
     daspectmode = get( handle, 'DataAspectRatioMode' );
