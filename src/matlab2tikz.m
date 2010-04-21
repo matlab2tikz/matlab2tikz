@@ -546,9 +546,9 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % for double axes pairs, unconditionally put the ordinate left for the
   % first one, right for the second one.
   if alignmentOptions.isElderTwin
-      env.appendOptions( {'axis y line=left', 'axis x line=bottom'} );
+      env.appendOptions( {'axis y line*=left', 'axis x line*=bottom'} );
   elseif alignmentOptions.isYoungerTwin
-      env.appendOptions( {'axis y line=right', 'axis x line=top'} );
+      env.appendOptions( {'axis y line*=right', 'axis x line*=top'} );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
   % get axis limits
