@@ -69,7 +69,8 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @zplanePlot1         , ...
                            @zplanePlot2         , ...
                            @multipleAxes        , ...
-                           @scatterPlot
+                           @scatterPlot         , ...
+                           @spectro
                          };
                            %@freqResponsePlot    , ...
                            %@bodeplots           , ...
@@ -977,4 +978,24 @@ function description = scatterPlot()
 end
 % =========================================================================
 % *** END FUNCTION scatterPlot
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION spectro
+% =========================================================================
+function description = spectro()
+  % check of the signal processing toolbox is installed
+  if length(ver('signal')) ~= 1
+      fprintf( 'Signal toolbox not found. Abort.\n\n' );
+      description = [];
+      return
+  end
+
+  load chirp; %audio-file in vector 'y'
+  spectrogram( y, hann(1024), 512, 1024, Fs, 'yaxis' )
+  description = 'Spectrogram plot';
+end
+% =========================================================================
+% *** END FUNCTION spectro
 % =========================================================================
