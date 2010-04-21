@@ -465,6 +465,9 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
                                 'scale only axis' } );
           env.comment = getTag( handle );
       end
+      % recurse into the children of this environment
+      [ m2t, childrenEnvs ] = handleAllChildren( m2t, handle );
+      env.addChildren( childrenEnvs );
       return
   end
 
@@ -809,8 +812,6 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
           str = plotLine( xDataCell{k}(mask), yDataCell{k}(mask) );
       end
   end
-
-%    m2t = handleAllChildren( m2t, handle );
 
   % -----------------------------------------------------------------------
   % FUNCTION plotLine
@@ -1635,8 +1636,6 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   end
   str = [ str, sprintf('\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-%    str = [ str, handleAllChildren( m2t, handle ) ];
 
 end
 % =========================================================================
