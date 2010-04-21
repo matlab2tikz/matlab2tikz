@@ -405,12 +405,6 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % initialize empty enviroment
   env = pgfplotsEnvironment();
 
-  % Make the axis options a global variable as plot objects further below
-  % in the hierarchy might want to append something.
-  % One example is the required 'ybar stacked' option for stacked bar
-  % plots.
-  m2t.axisOpts = cell(0);
-
   % pass on information about reversed axis (to drawImage)
   m2t.xAxisReversed = [];
   m2t.yAxisReversed = [];
@@ -437,6 +431,13 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
 
   % update gca
   m2t.currentHandles.gca = handle;
+
+  % Store a pointer to the current pgfplotsEnvironment axis environment
+  % as plot objects further below in the hierarchy might want to append
+  % something.
+  % One example is the required 'ybar stacked' option for stacked bar
+  % plots.
+  m2t.currentHandles.pgfAxis = env;
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
@@ -682,19 +683,6 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   [ m2t, childrenEnvs ] = handleAllChildren( m2t, handle );
   env.addChildren( childrenEnvs );
 
-  % -----------------------------------------------------------------------
-%    function pgfplotsEnv = plotAxisEnvironment( m2t, handle, env )
-%  
-%        % First, run through all the children to give them the chance to
-%        % contribute to 'm2t.axisOpts'.
-%  %        m2t = handleAllChildren( m2t, handle );
-%        pgfplotsEnv = pgfplotsEnvironment();
-%  
-%        pgfplotsEnv.name = env;
-%        pgfplotsEnv.appendOptions( m2t.axisOpts );
-%  
-%        pgfplotsEnv.comment = getTag( handle );
-%    end
   % -----------------------------------------------------------------------
   function tag = getTag( handle )
 
@@ -1850,7 +1838,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   
   tikzMarker = translateMarker( m2t, matlabMarker, [], false );
   
-  m2t.axisOpts.appendOptions( [ 'scatter/use mapped color= {mark=', tikzMarker,',draw=mapped color}' ] );
+  m2t.currentHandles.pgfAxis.appendOptions( ['scatter/use mapped color={mark=', tikzMarker,',draw=mapped color}'] );
   
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
@@ -2015,11 +2003,9 @@ function [ m2t, str ] = drawBarseries( m2t, h )
               end
               bWFactor = get( h, 'BarWidth' );
               ulength   = normalized2physical( m2t );
-              m2t.axisOpts = [ m2t.axisOpts,                                ...
-                               'ybar stacked',                              ...
-                               sprintf( 'bar width=%g%s',                   ...
-                                        ulength.value*bWFactor, ulength.unit ) ];
-              addedAxisOption = 1;
+              m2t.currentHandles.pgfAxis.appendOptions( { 'ybar stacked',                              ...
+                                                          sprintf( 'bar width=%g%s',                   ...
+                                                                    ulength.value*bWFactor, ulength.unit ) } );
           end
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
