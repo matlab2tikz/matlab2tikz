@@ -363,10 +363,13 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               % don't handle those directly but descend to its children
               % (which could for example be patch handles)
               [m2t, env] = handleAllChildren( m2t, child );
+              
+          case 'surface' 
+              [m2t, env] = drawSurface( m2t, child );
 
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent',  ...
-                 'text', 'surface' }
+                 'text'}
               % don't to anything for these handles and its children
               env = [];
               % TODO text, surface
@@ -1815,6 +1818,35 @@ function [ m2t, str ] = drawHggroup( m2t, h )
 end
 % =========================================================================
 % *** END FUNCTION drawHggroup
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION drawSurface  %--BETA--BETA--BETA--BETA--BETA--BETA---
+% =========================================================================
+function [m2t,env] = drawSurface( m2t, handle )
+    
+    str = sprintf('\n\\addplot3[surf] \ncoordinates{ \n');
+     
+    dx = get(handle,'XData');
+    dy = get(handle,'YData');
+    dz = get(handle,'ZData');
+    
+    [col, row] = size(dx); 
+    for i=1:col
+        for j=1:row
+            str = [str, sprintf('(%g,%g,%g)' ,dx(i,j),dy(i,j),dz(i,j) )];
+        end
+        str = [str, sprintf('\n')];
+    end
+    str = [str, sprintf('};\n\n')];
+    env = str;
+
+
+end
+
+% =========================================================================
+% *** END FUNCTION drawSurface
 % =========================================================================
 
 
