@@ -76,6 +76,8 @@ The workflow is as follows.
 
           \pgfplotsset{compat=newest}
 
+There are reported incompatibilties with the follwing LaTeX packages:
+   * signalflowdiagram <http://www.texample.net/tikz/examples/signal-flow-building-blocks/>
 
 If you experience bugs, have nice examples of what matlab2tikz can do, or if
 you are just looking for more information, please visit the web page of
