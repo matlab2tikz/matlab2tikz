@@ -530,8 +530,18 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set the width
-   env.appendOptions( sprintf( 'width=%g%s'  , dim.x.value, dim.x.unit ) );
-   env.appendOptions( sprintf( 'height=%g%s' , dim.y.value, dim.y.unit ) );
+  if dim.x.unit(1)=='\' && dim.x.value==1.0
+      % only return \figurewidth instead of 1.0\figurewidth
+      env.appendOptions( sprintf( 'width=%s', dim.x.unit ) );
+  else
+      env.appendOptions( sprintf( 'width=%g%s'  , dim.x.value, dim.x.unit ) );
+  end
+  if dim.y.unit(1)=='\' && dim.y.value==1.0
+      % only return \figureheight instead of 1.0\figureheight
+      env.appendOptions( sprintf( 'height=%s', dim.y.unit ) );
+  else
+      env.appendOptions( sprintf( 'height=%g%s' , dim.y.value, dim.y.unit ) );
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle the orientation
   m2t.xAxisReversed = 0;
@@ -2428,7 +2438,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   % Inherent MATLAB(R) parameter, indicating the ratio of the long
   % edge of a color bar versus the short one.
   matlabColorBarLongShortRatio = 14.8;
-  width.value = max( parentDim.x.value, parentDim.y.value) / matlabColorBarLongShortRatio;
+  width.value = max( parentDim.x.value, parentDim.y.value ) / matlabColorBarLongShortRatio;
   width.unit  = parentDim.x.unit;
 
   % get the upper and lower limit of the colorbar
@@ -3427,14 +3437,6 @@ function dimension = getAxesDimensions( handle, ...
       dimension.x.value = width;
       dimension.y.unit  = unit;
       dimension.y.value = height;
-  end
-
-  % return, e.g., 'width=\figurewidth' instead of 'width=1\figurewidth'
-  if dimension.x.unit(1)=='\' && dimension.x.value==1.0
-      dimension.x.value = [];
-  end
-  if dimension.y.unit(1)=='\' && dimension.y.value==1.0
-      dimension.y.value = [];
   end
 
   % ---------------------------------------------------------------------------
