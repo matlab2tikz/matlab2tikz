@@ -820,9 +820,11 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   for k = 1:length(xDataCell)
       mask = pointReduction( m2t, xDataCell{k}, yDataCell{k} );
       if errorbarMode
-          str = plotLine( xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) );
+          str = [ str, ...
+                  plotLine( xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) ) ];
       else
-          str = plotLine( xDataCell{k}(mask), yDataCell{k}(mask) );
+          str = [ str, ...
+                  plotLine( xDataCell{k}(mask), yDataCell{k}(mask) ) ];
       end
   end
 
