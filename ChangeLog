@@ -1,4 +1,23 @@
+2010-05-06  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.0.6.
+	* Support for scatter plots.
+	* Preliminary support for surface plots; thanks to Pooya.
+	* Large changes in the codebase:
+	  - next to matlab2tikz.m, the file pgfplotsEnvironment.m
+	    is now needed as well; it provides a much better
+	    structured approach to storing and writing environments
+	    when parsing the MATLAB(R) figure
+	* proper MATLAB(R) version check
+	* lots of small fixes
+
 2009-12-21  Nico Schlömer  <nico.schloemer@ua.ac.be>
+
+	* Version 0.0.5.
+	* Improvements in axis handling:
+	  - colored axes
+	  - allow different left and right ordinates
+	* Improvements for line plots:
 
 	* Version 0.0.5.
 	* Improvements in axis handling:

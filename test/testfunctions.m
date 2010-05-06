@@ -5,7 +5,7 @@
 % ***
 % =========================================================================  
 % ***
-% *** Copyright (c) 2008, 2009, Nico Schl\"omer <nico.schloemer@ua.ac.be>
+% *** Copyright (c) 2008--2010, Nico Schl\"omer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without 
@@ -70,8 +70,9 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @zplanePlot2         , ...
                            @multipleAxes        , ...
                            @scatterPlot         , ...
-                           @spectro
+                           @surfPlot
                          };
+%                             @spectro
                            %@freqResponsePlot    , ...
                            %@bodeplots           , ...
 
@@ -982,20 +983,49 @@ end
 
 
 % =========================================================================
+% *** FUNCTION surfPlot
+% =========================================================================
+function description = surfPlot()
+  [X,Y,Z] = peaks(30);
+  surf(X,Y,Z)
+  colormap hsv
+  axis([-3 3 -3 3 -10 5])
+
+  description = 'Surface plot';
+end
+% =========================================================================
+% *** END FUNCTION surfPlot
+% =========================================================================
+
+% =========================================================================
 % *** FUNCTION spectro
 % =========================================================================
-function description = spectro()
-  % check of the signal processing toolbox is installed
-  if length(ver('signal')) ~= 1
-      fprintf( 'Signal toolbox not found. Abort.\n\n' );
-      description = [];
-      return
-  end
-
-  load chirp; %audio-file in vector 'y'
-  spectrogram( y, hann(1024), 512, 1024, Fs, 'yaxis' )
-  description = 'Spectrogram plot';
-end
+%  function description = spectro()
+%    % check of the signal processing toolbox is installed
+%    if length(ver('signal')) ~= 1
+%        fprintf( 'Signal toolbox not found. Abort.\n\n' );
+%        description = [];
+%        return
+%    end
+%  
+%    load chirp; %audio-file in vector 'y'
+%    spectrogram( y, hann(1024), 512, 1024, Fs, 'yaxis' )
+%    description = 'Spectrogram plot';
+%  end
 % =========================================================================
 % *** END FUNCTION spectro
 % =========================================================================
+
+
+%  % =========================================================================
+%  % *** FUNCTION spyplot
+%  % =========================================================================
+%  function description = spyplot()
+%  
+%    spy
+%  
+%    description = 'Sparsity pattern';
+%  end
+%  % =========================================================================
+%  % *** END FUNCTION spyplot
+%  % =========================================================================

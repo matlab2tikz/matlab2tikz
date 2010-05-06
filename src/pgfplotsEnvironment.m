@@ -97,7 +97,7 @@ classdef pgfplotsEnvironment < hgsetget
             if isempty(this.options)
                 fprintf( fid, '\\begin{%s}\n', this.name );
             else
-                fprintf( fid, '\\begin{%s}[%s]\n', this.name, collapse(this.options, sprintf(',\n')) );
+                fprintf( fid, '\\begin{%s}[%%\n%s]\n', this.name, collapse(this.options, sprintf(',\n')) );
             end
 
             for k = 1:length(this.content)

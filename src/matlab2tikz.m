@@ -28,7 +28,6 @@
 % ***
 % ***
 % *** TODO: * tex(t) annotations
-% ***       * 3D plots
 % ***
 % =========================================================================
 % ***
@@ -74,11 +73,12 @@ function matlab2tikz( varargin )
   m2t.currentHandles = [];
 
   m2t.name = 'matlab2tikz';
-  m2t.version = '0.0.6_pre';
+  m2t.version = '0.0.6';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2010';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
+
   m2t.tikzOptions = cell(0); % for the arrow style -- TODO: see if we can get this removed
   m2t.tol = 1.0e-15; % global round-off tolerance;
                      % used, for example, in equality test for doubles
@@ -192,7 +192,8 @@ function matlab2tikz( varargin )
 
   userWarning( m2t, [ 'matlab2tikz uses features of Pgfplots which may be available only in recent version.\n', ...
                  'Make sure you have at least Pgfplots 1.3 available.\n', ...
-                 'For best results, use \\pgfplotsset{compat=newest}.\n' ] );
+                 'For best results, use \\pgfplotsset{compat=newest}, and for speed ', ...
+                 'use \\pgfplotsset{plot coordinates/math parser=false} .\n' ] );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
