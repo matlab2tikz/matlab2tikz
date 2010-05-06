@@ -442,6 +442,10 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % plots.
   m2t.currentHandles.pgfAxis = env;
 
+
+  % get the view angle
+  env.appendOptions( sprintf( 'view={%g}{%g}', get( handle, 'View') ) )
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
   dim = getAxesDimensions( handle, ...
@@ -1834,7 +1838,7 @@ end
 
 
 % =========================================================================
-% *** FUNCTION drawSurface  %--BETA--BETA--BETA--BETA--BETA--BETA---
+% *** FUNCTION drawSurface
 % =========================================================================
 function [m2t,env] = drawSurface( m2t, handle )
     
@@ -1845,18 +1849,18 @@ function [m2t,env] = drawSurface( m2t, handle )
     dz = get(handle,'ZData');
     
     [col, row] = size(dx); 
-    for i=1:col
-        for j=1:row
-            str = [str, sprintf('(%g,%g,%g)' ,dx(i,j),dy(i,j),dz(i,j) )];
+    for i = 1:col
+        for j = 1:row
+            str = [ str, ...
+                    sprintf('(%g,%g,%g)', dx(i,j), dy(i,j), dz(i,j) ) ];
         end
-        str = [str, sprintf('\n')];
+        % insert an empty line to tell Pgfplots about one row ending here
+        str = [str, sprintf('\n\n')];
     end
     str = [str, sprintf('};\n\n')];
     env = str;
 
-
 end
-
 % =========================================================================
 % *** END FUNCTION drawSurface
 % =========================================================================
@@ -3729,18 +3733,18 @@ end
 % ***     - axes name  (.name), only set if .isRef is true
 % ***     - the actual pgfplots options (.opts)
 % ***
-% *** The routine is quite smart in the sense that it will detect that in
+% *** The routine tries to be smart in the sense that it will detect that in
 % *** a setup such as
 % ***
-% ***  [ AXES3 AXES2 ]
-% ***  [ AXES1       ]
+% ***  [ AXES1 AXES2 ]
+% ***  [ AXES3       ]
 % ***
 % *** 'AXES1' will serve as a reference for AXES2 and AXES3.
 % *** It does so by first computing a 'dependency' graph, then traversing
 % *** the graph starting from a node (AXES) with maximal connections.
 % ***
 % *** TODO:
-% ***     - diagonal connections a la
+% ***     - diagonal connections 'a la
 % ***              [ AXES1       ]
 % ***              [       AXES2 ]
 % ***
@@ -3758,7 +3762,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
           visibleAxesHandles(n) = axesHandles(k);
       end
   end
-  
+
   % initialize alignmentOptions
   alignmentOptions = struct([]);
   for k=1:n
@@ -3775,7 +3779,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
 
   % Connectivity matrix of the graph.
   % Contains 0's where the axes environments are not aligned, and
-  % positive integers where they are. The integer codes how the axes
+  % positive integers where they are. The integer encodes how the axes
   % are aligned (top right:bottom left, and so on).
   C = zeros(n,n);
 
@@ -3787,9 +3791,10 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
   cbarHandles = [];  % indices of color bar handles;
                      % they need to be treated separately
   for k = 1:n
-      % `axesPos(i,:)` contains the x-value of the left and the right axis
-      % (indices 1,3) and the y-value of the bottom and top axis
-      % (indices 2,4) of plot no. `i`
+      % `axesPos(i,:)` contains
+      %     (indices 1,3): the x-value of the left and the right axis, and
+      %     (indices 2,4): the y-value of the bottom and top axis,
+      % of plot no. `i`
       if strcmp( get(visibleAxesHandles(k),'Tag'), 'Colorbar' )
           cbarHandles = [cbarHandles,k]; % treat color bars later
           continue
@@ -4005,8 +4010,8 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
   if ~isempty(noConn)
       for k = 1:length(noConn)
           userWarning( m2t, [ 'The axes environment no. %d is not aligned with',...
-                         ' any other axes environment and will be plotted',...
-                         ' right in the middle.' ], noConn(k) );
+                              ' any other axes environment and will be plotted',...
+                              ' right in the middle.' ], noConn(k) );
       end
   end
 
