@@ -3189,9 +3189,6 @@ function [xcolorLiteral,errorcode] = rgb2xcolor( rgb )
       xcolorLiteral = 'pink';
       errorcode = 0;
   elseif isequal( rgb, [0.75,0,0.25] )
-      xcolorLiteral = 'pink';
-      errorcode = 0;
-  elseif isequal( rgb, [0.75,0,0.25] )
       xcolorLiteral = 'purple';
       errorcode = 0;
   elseif isequal( rgb, [0,0.5,0.5] )
