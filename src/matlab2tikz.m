@@ -1546,7 +1546,7 @@ switch ( matlabMarker )
                 else
                             tikzMarker = 'triangle';
                 end
-                markOptions = [ markOptions, ',rotate=270' ];
+                markOptions = [ markOptions, ',rotate=90' ];
 
             case '>'
                 if faceColorToggle
@@ -1554,7 +1554,7 @@ switch ( matlabMarker )
                 else
                             tikzMarker = 'triangle';
                 end
-                markOptions = [ markOptions, ',rotate=90' ];
+                markOptions = [ markOptions, ',rotate=270' ];
 
             case {'p','pentagram'}
                 if faceColorToggle
