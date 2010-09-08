@@ -1016,32 +1016,43 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
     end
 
     cellIndexNew = 0;
-    for cellIndex = 1:length(xDataCell);
-        segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], xLim, yLim );
-        printPrevious = 0;
-        % loop over the segments
-        for kk = 1:length(segvis)
-            if segvis(kk)
-                if ~printPrevious
-                    % start new plot
-                    l = 1;
-                    cellIndexNew = cellIndexNew + 1;
-                    xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk);
-                    yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk);
+    for cellIndex = 1:length(xDataCell)
+        if length( xDataCell{cellIndex} ) == 1 % the "line" is actually just one point
+            % print it unconditionally
+            cellIndexNew = cellIndexNew + 1;
+            xDataCellNew{cellIndexNew}(1) = xDataCell{cellIndex}(1);
+            yDataCellNew{cellIndexNew}(1) = yDataCell{cellIndex}(1);
+            if errorbarMode
+                yDeviationCellNew{cellIndexNew}(1) = yDeviationCell{cellIndex}(1);
+            end
+
+        else % more than one node in the line -- this is usually the case
+            segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], xLim, yLim );
+            printPrevious = 0;
+            % loop over the segments
+            for kk = 1:length(segvis)
+                if segvis(kk)
+                    if ~printPrevious
+                        % start new plot
+                        l = 1;
+                        cellIndexNew = cellIndexNew + 1;
+                        xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk);
+                        yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk);
+                        if errorbarMode
+                            yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
+                        end
+                        l = l+1;
+                        printPrevious = 1;
+                    end
+                    xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk+1);
+                    yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk+1);
                     if errorbarMode
-                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
+                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk+1);
                     end
                     l = l+1;
-                    printPrevious = 1;
+                else
+                    printPrevious = 0;
                 end
-                xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk+1);
-                yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk+1);
-                if errorbarMode
-                    yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk+1);
-                end
-                l = l+1;
-            else
-                printPrevious = 0;
             end
         end
     end

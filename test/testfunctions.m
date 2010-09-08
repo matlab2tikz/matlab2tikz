@@ -35,6 +35,7 @@ function [ desc, numFunctions ] = testfunctions ( k )
 
   % assign the functions to test
   testfunction_handles = {                        ...
+                           @one_point           , ...
                            @plain_cos           , ...
                            @sine_with_markers   , ...
                            @sine_with_annotation, ...
@@ -95,6 +96,20 @@ end
 % *** END FUNCTION testfunctions
 % =========================================================================
 
+
+% =========================================================================
+% *** FUNCTION one_point
+% =========================================================================
+function description = one_point ()
+
+  plot(0.1, 0.1, 'x')
+
+  description = 'Plot only one single point.' ;
+
+end
+% =========================================================================
+% *** END FUNCTION one_point
+% =========================================================================
 
 
 % =========================================================================
