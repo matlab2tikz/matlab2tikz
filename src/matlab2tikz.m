@@ -1849,12 +1849,10 @@ function [m2t,env] = drawSurface( m2t, handle )
     dy = get(handle,'YData');
     dz = get(handle,'ZData');
     [col, row] = size(dz);
-
     
     % check, if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
     if isvector(dx)
-    
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         % plot is 'spectrogram'
         for i = 1:col
@@ -1866,9 +1864,7 @@ function [m2t,env] = drawSurface( m2t, handle )
             str = [str, sprintf('\n\n')];
         end
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    
     else
-       
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         % plot is 'surf'
         for i = 1:col
@@ -1880,7 +1876,6 @@ function [m2t,env] = drawSurface( m2t, handle )
             str = [str, sprintf('\n\n')];
         end
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
     end %if-else
 
     % TODO:
