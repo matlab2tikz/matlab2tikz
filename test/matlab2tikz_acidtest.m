@@ -48,7 +48,7 @@ function matlab2tikz_acidtest( varargin )
   texfile_init( fh );
 
   % query the number of test functions
-  [~, n] = testfunctions(0);
+  [m, n] = testfunctions(0);
 
   if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
       indices = matlab2tikzOpts.Results.testFunctionIndices;

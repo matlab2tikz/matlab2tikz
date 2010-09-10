@@ -59,12 +59,11 @@
 % =========================================================================
 function matlab2tikz( varargin )
 
-  % make sure we're running MATLAB>=2009b
+  % make sure we're running MATLAB>=2008b
   version_data = ver('MATLAB');
   Version_string = version_data.Version;
-  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<9)
-       error('You need at least   MATLAB R2009b   to run this script.');
-       return
+  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<7)
+       error( 'You need at least   MATLAB R2008b   to run this script.');
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -73,7 +72,7 @@ function matlab2tikz( varargin )
   m2t.currentHandles = [];
 
   m2t.name = 'matlab2tikz';
-  m2t.version = '0.0.6';
+  m2t.version = '0.0.7';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2010';
@@ -4024,7 +4023,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
                              'Illegal alignment code %d.', C(i,j) );
               end
 
-              [~,idx]   = min( dist ); % `idx` holds the index of the minimum.
+              [m,idx]   = min( dist ); % `idx` holds the index of the minimum.
                                        % If there is more than one, then
                                        % `idx` has twins. min returns the one
                                        % with the lowest index.
@@ -4059,7 +4058,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
 
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
-  [~,ix] = sort( sum(C~=0, 2), 'descend' );
+  [s,ix] = sort( sum(C~=0, 2), 'descend' );
   for k = 1:n
       setOptionsRecursion( ix(k) );
   end
@@ -4217,25 +4216,25 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
         case {'NorthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly below colBarHandle
-            [~,refAxesId]  = min( colBarPos(2) ...
+            [m,refAxesId]  = min( colBarPos(2) ...
                                  - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
 
         case {'SouthOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly above colBarHandle
-            [~,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
+            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
                              - colBarPos(4) );
 
         case {'EastOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly left of colBarHandle
-            [~,refAxesId]  = min( colBarPos(1) ...
+            [m,refAxesId]  = min( colBarPos(1) ...
                              - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
 
         case {'WestOutside'}
             % scan in `axesHandlesPos` for the handle number that lies
             % directly right of colBarHandle
-            [~,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
+            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
                              - colBarPos(3)  );
 
         otherwise
