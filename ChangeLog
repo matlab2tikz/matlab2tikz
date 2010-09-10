@@ -1,3 +1,13 @@
+2010-09-10  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.0.7.
+	* Compatibility fixes for older MATLAB installations.
+	* Several bugfixes:
+	   - line plots with only one point
+	   - certain surface plots
+	   - orientation of triangle markers ("<" vs. ">")
+	   - display of the color "purple"
+
 2010-05-06  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.0.6.
