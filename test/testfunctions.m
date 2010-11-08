@@ -147,7 +147,11 @@ function description = sine_with_markers ()
                   'MarkerFaceColor','g',...
                   'MarkerSize', 5*360/127 );
 
-  set(gca,'Color',[0.9 0.9 1]);
+  set( gca, 'Color', [0.9 0.9 1], ...
+            'XTickLabel', [], ...
+            'YTickLabel', [] ...
+     );
+
 
   description = [ 'Twisted plot of the sine function. '                   ,...
                   'Pay particular attention to how markers are treated.'    ];
@@ -1028,7 +1032,6 @@ end
 % =========================================================================
 % *** END FUNCTION surfPlot2
 % =========================================================================
-
 
 
 

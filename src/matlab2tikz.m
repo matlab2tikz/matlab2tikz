@@ -3033,6 +3033,7 @@ end
 % =========================================================================
 function [ ticks, tickLabels ] = getTicks( m2t, handle )
 
+  xTickLabel = get( handle, 'XTickLabel' );
   xTickMode = get( handle, 'XTickMode' );
   if strcmp(xTickMode,'auto') && ~m2t.opts.Results.strict
       % If the ticks are set automatically, and strict conversion is
@@ -3042,11 +3043,15 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
       tickLabels.x = [];
   else % strcmp(xTickMode,'manual') || m2t.opts.Results.strict
       xTick      = get( handle, 'XTick' );
-      xTickLabel = get( handle, 'XTickLabel' );
       isXAxisLog = strcmp( get(handle,'XScale'), 'log' );
       [ticks.x, tickLabels.x] = getAxisTicks( xTick, xTickLabel, isXAxisLog );
   end
+  % overwrite if empty
+  if isempty(xTickLabel)
+      tickLabels.x = '\empty';
+  end
 
+  yTickLabel = get( handle, 'YTickLabel' );
   yTickMode = get( handle, 'YTickMode' );
   if strcmp(yTickMode,'auto') && ~m2t.opts.Results.strict
       % If the ticks are set automatically, and strict conversion is
@@ -3056,9 +3061,12 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
       tickLabels.y = [];
   else % strcmp(yTickMode,'manual') || m2t.opts.Results.strict
       yTick      = get( handle, 'YTick' );
-      yTickLabel = get( handle, 'YTickLabel' );
       isYAxisLog = strcmp( get(handle,'YScale'), 'log' );
       [ticks.y, tickLabels.y] = getAxisTicks( yTick, yTickLabel, isYAxisLog );
+  end
+  % overwrite if empty
+  if isempty(yTickLabel)
+      tickLabels.y = '\empty';
   end
 
   % -----------------------------------------------------------------------
@@ -3090,7 +3098,7 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
     % Check if tickLabels are really necessary (and not already covered by
     % the tick values themselves).
     plotLabelsNecessary = 0;
-    
+
     if isLogAxis
         scalingFactor = 1;
     else
