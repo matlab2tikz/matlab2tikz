@@ -797,9 +797,6 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
                   lineOptions, ...
                   markerOptions
                 ];
-
-  % insert draw options
-  opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -823,6 +820,17 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   % plot them
   for k = 1:length(xDataCell)
       mask = pointReduction( m2t, xDataCell{k}, yDataCell{k} );
+
+      % If the line has been broken up into separate pieces, make sure that
+      % they appear as one in the legend. The following makes sure that all
+      % the segments, except for the last one, are discarded from the legend.
+      if k < length(xDataCell)
+          myDrawOptions = [ drawOptions, 'forget plot' ];
+          opts = [ '\n', collapse( myDrawOptions, ',\n' ), '\n' ];
+      else
+          opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
+      end
+
       if errorbarMode
           str = [ str, ...
                   plotLine( xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) ) ];
@@ -846,7 +854,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
       end
 
       n = length(xData);
-    
+
       if errorbarMode
           if n~=length(yDeviation)
               error( 'drawLine:arrayLengthsMismatch', ...
