@@ -1976,8 +1976,8 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   % The following checks if this is the case and cowardly bails out if so.
   % On top of that, the number of bar plots is counted.
   if isempty(m2t.barplotTotalNumber)
-      nonbarPlotPresent  = 0;
-      barplotTotalNumber = 0;
+      m2t.nonbarPlotPresent  = 0;
+      m2t.barplotTotalNumber = 0;
       parent             = get( h, 'Parent' );
       siblings           = get( parent, 'Children' );
       for k = 1:length(siblings)
@@ -2050,10 +2050,10 @@ function [ m2t, str ] = drawBarseries( m2t, h )
               groupWidth = dx * groupWidth;
 
               % this is the barWidth with no interbar spacing yet
-              m2t.barWidth = groupWidth / barplotTotalNumber;
+              m2t.barWidth = groupWidth / m2t.barplotTotalNumber;
 
               m2t.barShifts = -0.5* groupWidth                              ...
-                            + ( (0:barplotTotalNumber-1)+0.5) * m2t.barWidth;
+                            + ( (0:m2t.barplotTotalNumber-1)+0.5) * m2t.barWidth;
 
               bWFactor = get( h, 'BarWidth' );
               m2t.barWidth  = bWFactor* m2t.barWidth;
@@ -2081,7 +2081,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           % plots).
           % Make sure this happens exactly *once*.
           if isempty(m2t.addedAxisOption) || ~m2t.addedAxisOption
-              if nonbarPlotPresent
+              if m2t.nonbarPlotPresent
                   userWarning( m2t, [ 'Pgfplots can''t deal with stacked bar plots', ...
                                  ' and non-bar plots in one axis environment.', ...
                                  ' There *may* be unexpected results.'         ] );
@@ -3493,6 +3493,20 @@ function dimension = getAxesDimensions( handle, ...
     daspectmode = get( handle, 'DataAspectRatioMode' );
     position    = get( handle, 'Position' );
     units       = get( handle, 'Units' );
+
+	% Convert the MATLAB unit strings into TeX unit strings.
+	switch units
+		case 'pixels'
+			units = 'px';
+		case 'centimeters'
+			units = 'cm';
+		case 'inches'
+			units = 'in';
+		case 'points'
+			units = 'pt';
+		case 'characters'
+			units = 'em';
+	end
 
     switch daspectmode
         case 'auto'

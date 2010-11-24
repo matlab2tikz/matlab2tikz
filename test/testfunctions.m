@@ -55,6 +55,8 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @roseplot            , ...
                            @compassplot         , ...
                            @stemplot            , ...
+                           @groupbars           , ...
+                           @bars                , ...
                            @stackbars           , ...
                            @xAxisReversed       , ...
                            @errorBars           , ...
@@ -296,10 +298,21 @@ end
 % =========================================================================
 function description = legendplot ()
 
-  x = -pi:pi/20:pi;
-  plot(x,cos(x),'-ro',x,sin(x),'-.b');
-  h = legend('one pretty long legend cos_x','sin_x',2);
-  set(h,'Interpreter','none');
+%    x = -pi:pi/20:pi;
+%    plot(x,cos(x),'-ro',x,sin(x),'-.b');
+%    h = legend('one pretty long legend cos_x','sin_x',2);
+%    set(h,'Interpreter','none');
+
+%  figure(1)
+x=0:0.01:2*pi;
+plot(x,sin(x),'b',x,cos(x),'r')
+xlim([0 2*pi])
+ylim([-0.9 0.9])
+Title('{tikz test}')
+xlabel('{x-Values}')
+ylabel('{y-Values}')
+legend('\sin(x)','\cos(x)');
+grid on
 
   description = 'Test inserting of legends.';
 
