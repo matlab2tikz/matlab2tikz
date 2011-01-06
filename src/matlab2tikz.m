@@ -31,7 +31,7 @@
 % ***
 % =========================================================================
 % ***
-% *** Copyright (c) 2008--2010, Nico Schlömer <nico.schloemer@gmail.com>
+% *** Copyright (c) 2008--2011, Nico Schlömer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without 
@@ -75,7 +75,7 @@ function matlab2tikz( varargin )
   m2t.version = '0.0.7';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
-  m2t.years = '2008--2010';
+  m2t.years = '2008--2011';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
 
   m2t.tikzOptions = cell(0); % for the arrow style -- TODO: see if we can get this removed

@@ -6,7 +6,7 @@
 % ***
 % =========================================================================  
 % ***
-% *** Copyright (c) 2008--2010, Nico Schl\"omer <nico.schloemer@gmail.com>
+% *** Copyright (c) 2008--2011, Nico Schl\"omer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without 
