@@ -89,7 +89,17 @@ function matlab2tikz( varargin )
   m2t.requiredRgbColors = [];
 
   % the actual contents of the TikZ file go here
-  m2t.content = pgfplotsEnvironment();
+  m2t.content = struct( 'name',     [], ...
+                        'comment',  [], ...
+                        'options',  [], ...
+                        'content',  [], ...
+                        'children', []  ...
+                      );
+  % Setting the following to cell(0) straight away doesn't work unfortunately
+  % as MATLAB(R) interprets structs with cell values as a cell array of structs.
+  m2t.content.options  = cell(0);
+  m2t.content.content  = cell(0);
+  m2t.content.children = cell(0);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -273,7 +283,7 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
 
   for k = 1:length(visibleAxesHandles)
       [m2t,env] = drawAxes( m2t, visibleAxesHandles(ix(k)), alignmentOptions(ix(k)) );
-      m2t.content.addChildren( env );
+      m2t.content = addChildren( m2t.content, env );
   end
 
   set( 0, 'ShowHiddenHandles', 'off' );
@@ -297,20 +307,25 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
 
   m2t.content.name = 'tikzpicture';
 
-  m2t.content.appendOptions( m2t.tikzOptions );
+  m2t.content.options = appendOptions( m2t.content.options, ...
+                                       m2t.tikzOptions );
 
   % don't forget to define the colors
   if size(m2t.requiredRgbColors,1)
-      m2t.content.append( sprintf('\n%% defining custom colors\n') );
+      m2t.content = append( m2t.content, ...
+                            sprintf('\n%% defining custom colors\n') ...
+                          );
       for k = 1:size(m2t.requiredRgbColors,1)
-          m2t.content.append( sprintf('\\definecolor{mycolor%d}{rgb}{%g,%g,%g}\n', k,     ...
-                                                        m2t.requiredRgbColors(k,:))  );
+          m2t.content = append( m2t.content, ...
+                                sprintf('\\definecolor{mycolor%d}{rgb}{%g,%g,%g}\n', k,     ...
+                                                          m2t.requiredRgbColors(k,:)) ...
+                              );
       end
-      m2t.content.append( sprintf('\n') );
+       m2t.content = append( m2t.content, sprintf('\n') );
   end
 
   % finally print it to the file
-  m2t.content.print( fid );
+  printAll( m2t.content, fid );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % close the file if necessary
@@ -363,7 +378,7 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               % don't handle those directly but descend to its children
               % (which could for example be patch handles)
               [m2t, env] = handleAllChildren( m2t, child );
-              
+
           case 'surface' 
               [m2t, env] = drawSurface( m2t, child );
 
@@ -405,15 +420,28 @@ end
 % =========================================================================
 function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
 
-  % initialize empty enviroment
-  env = pgfplotsEnvironment();
+  % Initialize empty enviroment.
+  % Use a struct instead of a custom subclass of hgsetget (which would
+  % facilitate writing clean code) as structs are more portable (old MATLAB(R)
+  % versions, GNU Octave).
+  env = struct( 'name',     [], ...
+                'comment',  [], ...
+                'options',  [], ...
+                'content',  [], ...
+                'children', []  ...
+              );
+  % Setting the following to cell(0) straight away doesn't work unfortunately
+  % as MATLAB(R) interprets structs with cell values as a cell array of structs.
+  env.options  = cell(0);
+  env.content  = cell(0);
+  env.children = cell(0);
 
   % pass on information about reversed axis (to drawImage)
   m2t.xAxisReversed = [];
   m2t.yAxisReversed = [];
 
   % handle special cases
-  switch get(handle,'Tag')
+  switch get( handle, 'Tag' )
       case 'Colorbar'
           % Handle a colorbar separately.
           % Note how m2t.currentHandles.gca does *not* get updated; this fact is
@@ -442,9 +470,10 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % plots.
   m2t.currentHandles.pgfAxis = env;
 
-
   % get the view angle
-  env.appendOptions( sprintf( 'view={%g}{%g}', get( handle, 'View') ) )
+  env.options = appendOptions( env.options, ...
+                               sprintf( 'view={%g}{%g}', get( handle, 'View') ) ...
+                             );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
@@ -466,22 +495,24 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       end
       if containsVisibleChild
           env.name = 'axis';
-          env.appendOptions ( { 'hide x axis, hide y axis', ...
-                                sprintf('width=%g%s, height=%g%s', dim.x.value, dim.x.unit,   ...
-                                                                   dim.y.value, dim.y.unit ), ...
-                                'scale only axis' } );
+          env.options = appendOptions( env.options, ...
+                                       { 'hide x axis, hide y axis', ...
+                                          sprintf('width=%g%s, height=%g%s', dim.x.value, dim.x.unit,   ...
+                                                                             dim.y.value, dim.y.unit ), ...
+                                          'scale only axis' } ...
+                                     );
           env.comment = getTag( handle );
       end
       % recurse into the children of this environment
       [ m2t, childrenEnvs ] = handleAllChildren( m2t, handle );
-      env.addChildren( childrenEnvs );
+      env = addChildren( env, childrenEnvs );
       return
   end
 
   % add manually given extra axis options
   extraAxisOptions = m2t.opts.Results.extraAxisOptions;
   if ~isempty( extraAxisOptions )
-      env.appendOptions( extraAxisOptions );
+      env.options = appendOptions( env.options, extraAxisOptions );
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -504,24 +535,28 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set alignment options
   if ~isempty(alignmentOptions.opts)
-      env.appendOptions( alignmentOptions.opts );
+      env.options = appendOptions( env.options, alignmentOptions.opts );
   end
 
   % the following is general MATLAB behavior
-  env.appendOptions( 'scale only axis' );
+  env.options = appendOptions( env.options, 'scale only axis' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % axis colors
   xColor = get( handle, 'XColor' );
   if ( any(xColor) ) % color not black [0,0,0]
        [ m2t, col ] = getColor( m2t, handle, xColor, 'patch' );
-       env.appendOptions( { ['every outer x axis line/.append style={',col, '}'], ...
-                            ['every x tick label/.append style={font=\color{',col,'}}' ] } );
+       env.options = appendOptions( env.options, ...
+                                    { ['every outer x axis line/.append style={',col, '}'], ...
+                                      ['every x tick label/.append style={font=\color{',col,'}}' ] } ...
+                                  );
   end
   yColor = get( handle, 'YColor' );
   if ( any(yColor) ) % color not black [0,0,0]
       [ m2t, col ] = getColor( m2t, handle, yColor, 'patch' );
-      env.appendOptions( { [ 'every outer y axis line/.append style={',col, '}' ], ...
-                           [ 'every y tick label/.append style={font=\color{',col,'}}' ] } );
+      env.options = appendOptions( env.options, ...
+                                   { [ 'every outer y axis line/.append style={',col, '}' ], ...
+                                     [ 'every y tick label/.append style={font=\color{',col,'}}' ] } ...
+                                 );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % background color
@@ -529,65 +564,72 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   if ~strcmp( backgroundColor, 'none' )
       [ m2t, col ] = getColor( m2t, handle, backgroundColor, 'patch' );
       if ~strcmp( col, 'white' )
-          env.appendOptions( sprintf( 'axis background/.style={fill=%s}' , col ) );
+          env.options = appendOptions( env.options, ...
+                                       sprintf( 'axis background/.style={fill=%s}', col ) ...
+                                     );
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set the width
   if dim.x.unit(1)=='\' && dim.x.value==1.0
       % only return \figurewidth instead of 1.0\figurewidth
-      env.appendOptions( sprintf( 'width=%s', dim.x.unit ) );
+      env.options = appendOptions( env.options, ...
+                                   sprintf( 'width=%s', dim.x.unit ) );
   else
-      env.appendOptions( sprintf( 'width=%g%s'  , dim.x.value, dim.x.unit ) );
+      env.options = appendOptions( env.options, ...
+                                   sprintf( 'width=%g%s', dim.x.value, dim.x.unit ) );
   end
   if dim.y.unit(1)=='\' && dim.y.value==1.0
       % only return \figureheight instead of 1.0\figureheight
-      env.appendOptions( sprintf( 'height=%s', dim.y.unit ) );
+      env.options = appendOptions( env.options, ...
+                                   sprintf( 'height=%s', dim.y.unit ) );
   else
-      env.appendOptions( sprintf( 'height=%g%s' , dim.y.value, dim.y.unit ) );
+      env.options = appendOptions( env.options, ...
+                                   sprintf( 'height=%g%s' , dim.y.value, dim.y.unit ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle the orientation
   m2t.xAxisReversed = 0;
   if strcmp( get(handle,'XDir'), 'reverse' )
       m2t.xAxisReversed = 1;
-      env.appendOptions( 'x dir=reverse' );
+      env.options = appendOptions( env.options, 'x dir=reverse' );
   end
 
   m2t.yAxisReversed = 0;
   if strcmp( get(handle,'YDir'), 'reverse' )
       m2t.yAxisReversed = 1;
-      env.appendOptions( 'y dir=reverse' );
+      env.options = appendOptions( env.options, 'y dir=reverse' );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % for double axes pairs, unconditionally put the ordinate left for the
   % first one, right for the second one.
   if alignmentOptions.isElderTwin
-      env.appendOptions( {'axis y line*=left', 'axis x line*=bottom'} );
+      env.options = appendOptions( env.options, {'axis y line*=left', 'axis x line*=bottom'} );
   elseif alignmentOptions.isYoungerTwin
-      env.appendOptions( {'axis y line*=right', 'axis x line*=top'} );
+      env.options = appendOptions( env.options, {'axis y line*=right', 'axis x line*=top'} );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
   % get axis limits
   xLim = get( handle, 'XLim' );
   yLim = get( handle, 'YLim' );
-  env.appendOptions( { sprintf('xmin=%g, xmax=%g', xLim ), ...
-                       sprintf('ymin=%g, ymax=%g', yLim ) } ...
-                   );
+  env.options = appendOptions( env.options, ...
+                               { sprintf('xmin=%g, xmax=%g', xLim ), ...
+                                 sprintf('ymin=%g, ymax=%g', yLim ) } ...
+                             );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
   [ ticks, tickLabels ] = getTicks( m2t, handle );
   if ~isempty( ticks.x )
-      env.appendOptions( sprintf( 'xtick={%s}', ticks.x ) );
+      env.options = appendOptions( env.options, sprintf( 'xtick={%s}', ticks.x ) );
   end
   if ~isempty( tickLabels.x )
-      env.appendOptions( sprintf( 'xticklabels={%s}', tickLabels.x ) );
+      env.options = appendOptions( env.options, sprintf( 'xticklabels={%s}', tickLabels.x ) );
   end
   if ~isempty( ticks.y )
-      env.appendOptions( sprintf( 'ytick={%s}', ticks.y ) );
+      env.options = appendOptions( env.options, sprintf( 'ytick={%s}', ticks.y ) );
   end
   if ~isempty( tickLabels.y )
-      env.appendOptions( sprintf( 'yticklabels={%s}', tickLabels.y ) );
+      env.options = appendOptions( env.options, sprintf( 'yticklabels={%s}', tickLabels.y ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis labels
@@ -597,14 +639,14 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       if m2t.opts.Results.mathmode
           xlabelText = [ '$' xlabelText '$' ];
       end
-      env.appendOptions( sprintf( 'xlabel={%s}', xlabelText ) );
+      env.options = appendOptions( env.options, sprintf( 'xlabel={%s}', xlabelText ) );
   end
   if ~isempty( axisLabels.y )
       ylabelText = sprintf( '%s', axisLabels.y );
       if  m2t.opts.Results.mathmode
           ylabelText = [ '$' ylabelText '$' ];
       end
-      env.appendOptions( sprintf( 'ylabel={%s}', ylabelText ) );
+      env.options = appendOptions( env.options, sprintf( 'ylabel={%s}', ylabelText ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get title
@@ -614,25 +656,25 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       if  m2t.opts.Results.mathmode
           titleText = [ '$' titleText '$' ];
       end
-      env.appendOptions( sprintf( 'title={%s}', titleText ) );
+      env.options = appendOptions( env.options, sprintf( 'title={%s}', titleText ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids
   isGrid = 0;
   if strcmp( get( handle, 'XGrid'), 'on' );
-      env.appendOptions( 'xmajorgrids' );
+      env.options = appendOptions( env.options, 'xmajorgrids' );
       isGrid = 1;
   end
   if strcmp( get( handle, 'XMinorGrid'), 'on' );
-      env.appendOptions( 'xminorgrids' );
+      env.options = appendOptions( env.options, 'xminorgrids' );
       isGrid = 1;
   end
   if strcmp( get( handle, 'YGrid'), 'on' )
-      env.appendOptions( 'ymajorgrids' );
+      env.options = appendOptions( env.options, 'ymajorgrids' );
       isGrid = 1;
   end
   if strcmp( get( handle, 'YMinorGrid'), 'on' );
-      env.appendOptions( 'yminorgrids' );
+      env.options = appendOptions( env.options, 'yminorgrids' );
       isGrid = 1;
   end
 
@@ -656,7 +698,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       % To date (Dec 12, 2009) pgfplots is not able to handle those things
       % separately.
       % As a prelimary compromise, only pull this option if no grid is in use.
-      env.appendOptions( 'axis on top' );
+      env.options = appendOptions( env.options, 'axis on top' );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % See if there are any legends that need to be plotted.
@@ -691,7 +733,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
                    && legLeft+legWid < axisLeft+axisWid ...
                    && legBot+legHei  < axisBot+axisHei )
                   [ m2t, legendOpts ] = getLegendOpts( m2t, legendHandle );
-                  env.appendOptions( legendOpts );
+                  env.options = appendOptions( env.options, legendOpts );
               end
           end
       end
@@ -701,7 +743,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
 
   % recurse into the children of this environment
   [ m2t, childrenEnvs ] = handleAllChildren( m2t, handle );
-  env.addChildren( childrenEnvs );
+  env = addChildren( env, childrenEnvs );
 
   % -----------------------------------------------------------------------
   function tag = getTag( handle )
@@ -1918,21 +1960,23 @@ end
 function [ m2t, str ] = drawScatterPlot( m2t, h )
 
   str = [];
-  
+
   drawOptions = cell(0);
-  
+
   xData = get( h, 'XData' );
   yData = get( h, 'YData' );
   cData = get( h, 'CData' );
-  
+
   drawOptions = [ drawOptions, 'scatter', 'only marks', 'scatter src=explicit' ];
-  
+
   matlabMarker = get( h, 'Marker' );
-  
+
   tikzMarker = translateMarker( m2t, matlabMarker, [], false );
-  
-  m2t.currentHandles.pgfAxis.appendOptions( ['scatter/use mapped color={mark=', tikzMarker,',draw=mapped color}'] );
-  
+
+  m2t.currentHandles.pgfAxis.options = appendOptions( m2t.currentHandles.pgfAxis.options, ...
+                                                      ['scatter/use mapped color={mark=', tikzMarker,',draw=mapped color}'] ...
+                                                    );
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   drawOpts = collapse( drawOptions, ',' );
@@ -2096,9 +2140,11 @@ function [ m2t, str ] = drawBarseries( m2t, h )
               end
               bWFactor = get( h, 'BarWidth' );
               ulength   = normalized2physical( m2t );
-              m2t.currentHandles.pgfAxis.appendOptions( { 'ybar stacked',                              ...
-                                                          sprintf( 'bar width=%g%s',                   ...
-                                                                    ulength.value*bWFactor, ulength.unit ) } );
+              m2t.currentHandles.pgfAxis.options = appendOptions( m2t.currentHandles.pgfAxis.options, ...
+                                                                  { 'ybar stacked',                              ...
+                                                                    sprintf( 'bar width=%g%s',                   ...
+                                                                             ulength.value*bWFactor, ulength.unit ) } ...
+                                                                );
           end
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -2466,8 +2512,18 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   end
 
   env = pgfplotsEnvironment();
-  env.comment = 'colorbar';
-  env.name = 'axis';
+  % the actual contents of the TikZ file go here
+  env = struct( 'name',     'axis', ...
+                'comment',  'colorbar', ...
+                'options',  [], ...
+                'content',  [], ...
+                'children', []  ...
+              );
+  % Setting the following to cell(0) straight away doesn't work unfortunately
+  % as MATLAB(R) interprets structs with cell values as a cell array of structs.
+  env.options  = cell(0);
+  env.content  = cell(0);
+  env.children = cell(0);
 
   if ~isfield( m2t, 'colorbarNo' )
       % Keep track of how many colorbars there are, to avoid
@@ -2578,7 +2634,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set the options
-  env.appendOptions( cbarOptions );
+  env.options = appendOptions( env.options, cbarOptions );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the colormap
   cmap = m2t.currentHandles.colormap;
@@ -2607,16 +2663,17 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
               yLim = clim;
       end
       imwrite( strip, cmap, pngFileName, 'png' );
-      env.append( sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
-                           xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ...
-                );
+      env = append( env, ...
+                    sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
+                             xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ...
+                  );
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   else
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       % plot tiny little badges for the respective colors
       for i=1:m
           [m2t, badgeColor] = rgb2tikzcol( m2t, cmap(i,:) );
-    
+
           switch loc
               case {'NorthOutside','SouthOutside'}
                   x1 = clim(1) + cbarLength/m *(i-1);
@@ -2629,10 +2686,10 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                   y1 = clim(1) + cbarLength/m *(i-1);
                   y2 = clim(1) + cbarLength/m *i;
           end
-          env.append(sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
-                               badgeColor, x1, y1, x2, y1, x2, y2, x1, y2  ) ...
-                    );
-
+          env = append( env, ...
+                        sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
+                                 badgeColor, x1, y1, x2, y1, x2, y2, x1, y2  ) ...
+                      );
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
@@ -3305,9 +3362,14 @@ end
 % =========================================================================
 function newstr = collapse( cellstr, delimiter )
 
-  if length(cellstr)<1
-     newstr = [];
-     return
+  if ~iscellstr( cellstr ) && ~isnumeric( cellstr{1} )
+      cellstr
+      error( 'Expected cellstr or numeric.' );
+  end
+
+  if isempty(cellstr)
+    newstr = [];
+    return
   end
 
   if isnumeric( cellstr{1} )
@@ -3322,7 +3384,7 @@ function newstr = collapse( cellstr, delimiter )
       else
           str = cellstr{k};
       end
-      newstr = strcat( newstr, delimiter, str );
+      newstr = [ newstr, delimiter, str ];
   end
 
 end
@@ -4317,4 +4379,118 @@ function userWarning( m2t, message, varargin )
 end
 % =========================================================================
 % *** END FUNCTION userWarning
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION append
+% =========================================================================
+function root = append( root, appendix )
+    if isempty(appendix)
+        return;
+    end
+    if ~ischar(appendix)
+        error( 'Argument must be of class ''string''.' );
+    end
+
+    root.content = [ root.content, appendix ];
+    return;
+end
+% =========================================================================
+% *** END FUNCTION append
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION appendOptions
+% =========================================================================
+function options = appendOptions( options, appendix )
+
+    if isempty(appendix)
+        return;
+    end
+
+    if ischar(appendix)
+        options = [ options, appendix ];
+    elseif iscellstr(appendix)
+        for k = 1:length(appendix)
+            options = [ options, appendix{k} ];
+        end
+    else
+        error( 'Argument must be of class ''string'' or cell of strings.' );
+    end
+
+    return
+end
+% =========================================================================
+% *** END FUNCTION appendOptions
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION addChildren
+% =========================================================================
+function parent = addChildren( parent, children )
+
+    if isempty(children)
+        return;
+    end
+
+    if iscell(children)
+        for k = 1:length(children)
+            parent = addChildren( parent, children{k} );
+        end
+    else
+        if isempty( parent.children )
+            parent.children = {children};
+        else
+            % TODO Get something simpler here.
+            tmp = cell( length(parent.children), 1 );
+            for k = 1:length(parent.children)
+                tmp{k} = parent.children{k};
+            end
+            tmp{length(parent.children)+1} = children;
+            parent.children = tmp;
+        end
+    end
+
+    return;
+end
+% =========================================================================
+% *** END FUNCTION addChildren
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION printAll
+% =========================================================================
+function printAll( env, fid )
+
+    if ~isempty(env.comment)
+        fprintf( fid, '%% %s\n', regexprep( env.comment, '\n', '\n% ' ) );
+    end
+
+    if isempty(env.options)
+        fprintf( fid, '\\begin{%s}\n', env.name );
+    else
+        fprintf( fid, '\\begin{%s}[%%\n%s]\n', env.name, collapse(env.options, sprintf(',\n')) );
+    end
+
+    for k = 1:length(env.content)
+        fprintf( fid, '%s', env.content{k} );
+    end
+
+    for k = 1:length( env.children )
+        if ischar( env.children{k} )
+            fprintf( fid, escapeCharacters(env.children{k}) );
+        else
+            fprintf( fid, '\n' );
+            printAll( env.children{k}, fid );
+        end
+    end
+
+    fprintf( fid, '\\end{%s}\n', env.name );
+end
+% =========================================================================
+% *** END FUNCTION printAll
 % =========================================================================
