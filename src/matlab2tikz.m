@@ -22,7 +22,7 @@
 % ***       http://www.mathworks.com/matlabcentral/fileexchange/12962
 % ***
 % ***    In an attempt to simplify and extend things, the idea for
-% ***    matlab2tikz has emerged. The goal is to provide the user with a 
+% ***    matlab2tikz has emerged. The goal is to provide the user with a
 % ***    clean interface between the very handy figure creation in MATLAB
 % ***    and the powerful means that TikZ with pgfplots has to offer.
 % ***
@@ -34,26 +34,26 @@
 % *** Copyright (c) 2008--2011, Nico Schlömer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
-% *** Redistribution and use in source and binary forms, with or without 
-% *** modification, are permitted provided that the following conditions are 
+% *** Redistribution and use in source and binary forms, with or without
+% *** modification, are permitted provided that the following conditions are
 % *** met:
 % ***
-% ***    * Redistributions of source code must retain the above copyright 
+% ***    * Redistributions of source code must retain the above copyright
 % ***      notice, this list of conditions and the following disclaimer.
-% ***    * Redistributions in binary form must reproduce the above copyright 
-% ***      notice, this list of conditions and the following disclaimer in 
+% ***    * Redistributions in binary form must reproduce the above copyright
+% ***      notice, this list of conditions and the following disclaimer in
 % ***      the documentation and/or other materials provided with the distribution
 % ***
-% *** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-% *** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-% *** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-% *** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
-% *** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-% *** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-% *** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-% *** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-% *** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-% *** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+% *** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+% *** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+% *** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+% *** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+% *** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+% *** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+% *** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+% *** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+% *** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+% *** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % *** POSSIBILITY OF SUCH DAMAGE.
 % ***
 % =========================================================================
@@ -170,7 +170,7 @@ function matlab2tikz( varargin )
       % open the file for writing
       fid = fopen( filename, ...
                   'w', ...
-                  'native', ... 
+                  'native', ...
                   m2t.opts.Results.encoding ...
                 );
       if fid == -1
@@ -348,7 +348,7 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
   % It's important that we go from back to front here, as this is
   % how MATLAB does it, too. Significant for patch (contour) plots,
   % and the order of plotting the colored patches.
- 
+
   for i = length(children):-1:1
       child = children(i);
 
@@ -373,7 +373,7 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               % (which could for example be patch handles)
               [m2t, env] = handleAllChildren( m2t, child );
 
-          case 'surface' 
+          case 'surface'
               [m2t, env] = drawSurface( m2t, child );
 
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
@@ -602,7 +602,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   elseif alignmentOptions.isYoungerTwin
       env.options = appendOptions( env.options, {'axis y line*=right', 'axis x line*=top'} );
   end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
   xLim = get( handle, 'XLim' );
   yLim = get( handle, 'YLim' );
@@ -723,7 +723,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
               legWid  = legDims(3);
               legHei  = legDims(4);
               if (    legLeft > axisLeft ...
-                   && legBot > axisBot ...  
+                   && legBot > axisBot ...
                    && legLeft+legWid < axisLeft+axisWid ...
                    && legBot+legHei  < axisBot+axisHei )
                   [ m2t, legendOpts ] = getLegendOpts( m2t, legendHandle );
@@ -1800,7 +1800,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
                      'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', m, length(xData) );
       end
       X = xData(1):hX:xData(end);
-    
+
       switch length(yData)
           case 2 % only the limits given; common for generic image plots
               hY = 1;
@@ -1820,7 +1820,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
               [ m2t, xcolor{i,j} ] = getColor( m2t, handle, cdata(i,j,:), 'image' );
           end
       end
-    
+
       % The following section takes pretty long to execute, although in principle it is
       % discouraged to use TikZ for those; LaTeX will take forever to compile.
       % Still, a bug has been filed on MathWorks to allow for one-line sprintf'ing with
@@ -1873,7 +1873,7 @@ function [ m2t, str ] = drawHggroup( m2t, h )
       case {'specgraph.errorbarseries'}
           % error bars
           [m2t,str] = drawErrorBars( m2t, h );
-          
+
       case {'specgraph.scattergroup'}
           % scatter plots
           [m2t,str] = drawScatterPlot( m2t, h );
@@ -1893,14 +1893,14 @@ end
 % *** FUNCTION drawSurface
 % =========================================================================
 function [m2t,env] = drawSurface( m2t, handle )
-    
+
     str = sprintf('\n\\addplot3[surf] \ncoordinates{ \n');
-     
+
     dx = get(handle,'XData');
     dy = get(handle,'YData');
     dz = get(handle,'ZData');
     [col, row] = size(dz);
-    
+
     % check, if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
     if isvector(dx)
@@ -1930,12 +1930,12 @@ function [m2t,env] = drawSurface( m2t, handle )
     end %if-else
 
     % TODO:
-    % - remove grids in spectrogram by either removing grid command 
+    % - remove grids in spectrogram by either removing grid command
     %   or adding: 'grid=none' from/in axis options
     % - using a "real" colorbar instead of colorbar-png-flle
     % - handling of huge data amounts in LaTeX.
     % - correcting wrong colors
-        
+
     str = [str, sprintf('};\n\n')];
     env = str;
 
@@ -1980,7 +1980,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  
+
 end
 % =========================================================================
 % *** END FUNCTION drawScatterPlot
@@ -2224,7 +2224,7 @@ function [ m2t, str ] = drawStemseries( m2t, h )
 
   lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
   [ m2t, markerOptions ] = getMarkerOptions( m2t, h );
- 
+
   drawOptions = [ 'ycomb',                                  ...
                    sprintf( 'color=%s', plotColor ),         ... % color
                    lineOptions, ...
@@ -2472,7 +2472,7 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
       if abs(upDev-loDev) >= 1e-10 % don't use 'm2t.tol' here as is seems somewhat too strict
           error( 'drawErrorBars:uneqDeviations', ...
                  'Upper and lower error deviations not equal (%g ~= %g); matlab2tikz can''t deal with that yet. Using upper deviations.', upDev, loDev );
-      end         
+      end
 
       yDeviations(k) = upDev;
 
@@ -2579,7 +2579,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
               cbarOptions = [ cbarOptions,                            ...
                                'xticklabel pos=left, ytick=\empty' ];
                                % we actually wanted to set pos=bottom here,
-                               % but pgfplots doesn't support that yet. 
+                               % but pgfplots doesn't support that yet.
                                % pos=left does the same thing, really.
           end
 
@@ -2669,7 +2669,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                   x1 = clim(1) + cbarLength/m *(i-1);
                   x2 = clim(1) + cbarLength/m *i;
                   y1 = 0;
-                  y2 = 1; 
+                  y2 = 1;
               case {'WestOutside','EastOutside'}
                   x1 = 0;
                   x2 = 1;
@@ -2783,7 +2783,7 @@ end
 % *** This function takes a color index of the active MATLAB(R) color map
 % *** and returns a string describing the color that can be used in the
 % *** TikZ file.
-% *** 
+% ***
 % *** Does caching, too.
 % ***
 % =========================================================================
@@ -2835,7 +2835,7 @@ end
 % =========================================================================
 % *** FUNCTION patchcolor2colorindex
 % ***
-% *** Transforms a color of the edge or the face of a patch to a 1x3 rgb 
+% *** Transforms a color of the edge or the face of a patch to a 1x3 rgb
 % *** color vector.
 % ***
 % =========================================================================
@@ -2856,7 +2856,7 @@ function [ m2t, colorindex ] = patchcolor2colorindex ( m2t, color, patchhandle )
           end
 
           % QUIRK: With contour plots (not contourf), cdata will be a vector of
-          %        equal values, except the last one which is a NaN. To work 
+          %        equal values, except the last one which is a NaN. To work
           %        around this oddity, just take the first entry.
           %        With barseries plots, data has been observed to return a
           %        *matrix* with all equal entries.
@@ -3225,7 +3225,7 @@ end
 % *** FUNCTION translateLineStyle
 % =========================================================================
 function tikzLineStyle = translateLineStyle( matlabLineStyle )
-  
+
   if( ~ischar(matlabLineStyle) )
       error( [ ' Function translateLineStyle:',                        ...
                ' Variable matlabLineStyle is not a string.' ] );
@@ -3426,30 +3426,30 @@ end
 %  % ***
 %  % =========================================================================
 %  function scaling = getAxesScaling( handle )
-%  
+%
 %    % arbitrarily chosen: the longer edge of the plot has length 50(mm)
 %    % (the other is calculated according to the aspect ratio)
 %    longerEdge = 50;
-%  
+%
 %    xyscaling = daspect;
-%  
+%
 %    xLim = get( handle, 'XLim' );
 %    yLim = get( handle, 'YLim' );
-%  
+%
 %    % [x,y]length are the actual lengths of the axes in some obscure unit
 %    xlength = (xLim(2)-xLim(1)) / xyscaling(1);
 %    ylength = (yLim(2)-yLim(1)) / xyscaling(2);
-%  
+%
 %    if ( xlength>=ylength )
 %        baselength = xlength;
 %    else
 %        baselength = ylength;
 %    end
-%    
+%
 %    % one of the quotients cancels to longerEdge
 %    physicalLength.x = longerEdge * xlength / baselength;
 %    physicalLength.y = longerEdge * ylength / baselength;
-%  
+%
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %    % For log-scaled axes, the pgfplot scaling means scaling powers of exp(1)
 %    % (see pgfplot manual p. 55). Hence, take the natural logarithm in those
@@ -3464,37 +3464,37 @@ end
 %    else
 %        q.x = xLim(2) - xLim(1);
 %    end
-%  
+%
 %    if isYLog
 %        q.y = log( yLim(2)/yLim(1) );
 %    else
 %        q.y = yLim(2) - yLim(1);
 %    end
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%  
+%
 %    % finally, set the scaling
 %    scaling.x = sprintf( '%gmm', physicalLength.x / q.x );
 %    scaling.y = sprintf( '%gmm', physicalLength.y / q.y );
-%  
-%  
+%
+%
 %    % The only way to reliably get the aspect ratio of the axes is
 %    % the 'Position' property. Neither 'DataAspectRatio' nor
 %    % 'PlotBoxAspectRatio' seem to always  yield the correct ratio.
 %    % Critital are for example figures with subplots.
 %  %    position = get( handle, 'Position' )
-%  %  
+%  %
 %  %    xscaling = 1;
 %  %    yscaling = position(4)/position(3) * (xLim(2)-xLim(1))/(yLim(2)-yLim(1));
-%  %  
+%  %
 %  %    % normalize: make sure the smaller side is always 1(cm)
 %  %    xscaling = xscaling/min(xscaling,yscaling);
 %  %    yscaling = yscaling/min(xscaling,yscaling);
-%  
+%
 %    % well, it seems that MATLAB's very own print functions doesn't preserve
 %    % aspect ratio when printing -- we do! hence the difference in the output
 %  %    dar = get( handle, 'DataAspectRatio' );
 %  %    xyscaling = 1 ./ dar;
-%  
+%
 %  end
 %  % =========================================================================
 %  % *** END FUNCTION getAxesScaling
