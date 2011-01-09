@@ -211,30 +211,24 @@ function matlab2tikz( varargin )
 
   sprintf( '\nRemember to load \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
 
-  % -----------------------------------------------------------------------
-  % validates the optional argument 'filename' to not be another
-  % another keyword
-  function l = filenameValidation( x, p )
-    l = ischar(x) && ~any( strcmp(x,p.Parameters) );
-  end
-  % -----------------------------------------------------------------------
-
-  % -----------------------------------------------------------------------
-  % validates the optional argument 'filehandle' to be the handle of
-  % an open file
-  function l = filehandleValidation( x, p )
-      l = isnumeric(x) && any( x==fopen('all') );
-  end
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  function l = isCellOrChar( x, p )
-      l = iscell(x) || ischar(x);
-  end
-  % -----------------------------------------------------------------------
-
 end
+% -------------------------------------------------------------------------
+% validates the optional argument 'filename' to not be another
+% another keyword
+function l = filenameValidation( x, p )
+  l = ischar(x) && ~any( strcmp(x,p.Parameters) );
+end
+% -------------------------------------------------------------------------
+% validates the optional argument 'filehandle' to be the handle of
+% an open file
+function l = filehandleValidation( x, p )
+    l = isnumeric(x) && any( x==fopen('all') );
+end
+% -------------------------------------------------------------------------
+function l = isCellOrChar( x, p )
+    l = iscell(x) || ischar(x);
+end
+% -------------------------------------------------------------------------
 % =========================================================================
 % *** END OF FUNCTION matlab2tikz
 % =========================================================================
@@ -745,21 +739,20 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   [ m2t, childrenEnvs ] = handleAllChildren( m2t, handle );
   env = addChildren( env, childrenEnvs );
 
-  % -----------------------------------------------------------------------
-  function tag = getTag( handle )
+end
+% ---------------------------------------------------------------------------
+function tag = getTag( handle )
 
-      % if a tag is given, use it as comment
-      tag = get(handle, 'tag');
-      if ~isempty(tag)
-          tag = sprintf( 'Axis "%s"', tag );
-      else
-          tag = sprintf( 'Axis at [%.2g %.2f %.2g %.2g]', get(handle, 'position' ) );
-      end
-
-  end
-  % -----------------------------------------------------------------------
+    % if a tag is given, use it as comment
+    tag = get(handle, 'tag');
+    if ~isempty(tag)
+        tag = sprintf( 'Axis "%s"', tag );
+    else
+        tag = sprintf( 'Axis at [%.2g %.2f %.2g %.2g]', get(handle, 'position' ) );
+    end
 
 end
+% ---------------------------------------------------------------------------
 % =========================================================================
 % *** END OF FUNCTION drawAxes
 % =========================================================================
@@ -854,9 +847,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
 
   % split the data into logical chunks
   if errorbarMode
-      [xDataCell, yDataCell, yDeviationCell ] = splitLine( xData, yData, xLim, yLim, yDeviation );
+      [xDataCell, yDataCell, yDeviationCell ] = splitLine( m2t, xData, yData, xLim, yLim, yDeviation );
   else
-      [xDataCell, yDataCell] = splitLine( xData, yData, xLim, yLim );
+      [xDataCell, yDataCell] = splitLine( m2t, xData, yData, xLim, yLim );
   end
 
   % plot them
@@ -875,484 +868,483 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
 
       if errorbarMode
           str = [ str, ...
-                  plotLine( xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) ) ];
+                  plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) ) ];
       else
           str = [ str, ...
-                  plotLine( xDataCell{k}(mask), yDataCell{k}(mask) ) ];
+                  plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask) ) ];
       end
   end
-
-  % -----------------------------------------------------------------------
-  % FUNCTION plotLine
-  % -----------------------------------------------------------------------
-  function str = plotLine( xData, yData, yDeviation )
-
-      str = [];
-
-      % check if the *optional* argument 'yDeviation' was given
-      errorbarMode = 0;
-      if nargin>2
-          errorbarMode = 1;
-      end
-
-      n = length(xData);
-
-      if errorbarMode
-          if n~=length(yDeviation)
-              error( 'drawLine:arrayLengthsMismatch', ...
-                    '''drawline'' was called with errors bars turned on, but array lengths do not match.' );
-          end
-      end
-
-      str = [ str, ...
-              sprintf( ['\\addplot [',opts,']\n'] ) ];
-      if errorbarMode
-          str = [ str, ...
-                  sprintf('plot [error bars/.cd, y dir = both, y explicit]\n') ];
-      end
-
-      str = [ str, ...
-              sprintf('coordinates{\n') ];
-
-      for l = 1:length(xData)
-          str = strcat( str, ...
-                        sprintf( ' (%g,%g)', xData(l), yData(l) ) );
-          if errorbarMode
-              str = strcat( str, ...
-                            sprintf( ' +- (%g,%g)\n', 0.0, yDeviation(l) ) );
-          end
-      end
-
-      str = [ str, sprintf('\n};\n\n') ];
-  end
-  % -----------------------------------------------------------------------
-  % END FUNCTION plotLine
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  % FUNCTION splitLine
-  %
-  % Split the xData, yData into several chunks of data for each of which
-  % an \addplot will be generated.
-  % Splitting criteria are:
-  %    * NaNs.
-  %      If xData or yData contain a NaN at position K, the data gets
-  %      split up into index groups [1:k-1],[k+1:end].
-  %    * Visibility.
-  %      Parts of the line data may sit outside the plotbox.
-  %      'segvis' tells us which segment are actually visible, and the
-  %      following construction loops through it and makes sure that each
-  %      point that is necessary gets actually printed.
-  %      'printPrevious' tells whether or not the previous segment is visible;
-  %      this information is used for determining when a new 'addplot' needs
-  %      to be opened.
-  %    * Dimension too large.
-  %      Connected points may sit outside the plot, but their connecting
-  %      line may not. The values of the outside plot may be too large for
-  %      LaTeX to handle. Move those points closer to the bounding box,
-  %      and possibly split them up in two.
-  %
-  % -----------------------------------------------------------------------
-  function [xDataCell, yDataCell, yDeviationCell] = splitLine( xData, yData, xLim, yLim, yDeviation )
-
-    % check if the *optional* argument 'yDeviation' was given
-    errorbarMode = 0;
-    if nargin>4
-        errorbarMode = 1;
-    end
-
-    xDataCell{1} = xData;
-    yDataCell{1} = yData;
-    if errorbarMode
-        yDeviationCell{1} = yDeviation;
-    end
-
-    % Split up at Infs and NaNs.
-    mask      = splitByInfsNaNs( xDataCell, yDataCell );
-    xDataCell = splitByMask( xDataCell, mask );
-    yDataCell = splitByMask( yDataCell, mask );
-    if errorbarMode
-        yDeviationCell = splitByMask( yDeviationCell, mask );
-    end
-
-    % Split each of the chunks further up along visible segments
-    if errorbarMode
-        [xDataCell , yDataCell, yDeviationCell] = splitByVisibility( xDataCell, yDataCell, xLim, yLim, yDeviationCell );
-    else
-        [xDataCell , yDataCell] = splitByVisibility( xDataCell, yDataCell, xLim, yLim );
-    end
-
-    % Split each of the current chunks further with respect to outliers
-    if errorbarMode
-        [xDataCell , yDataCell, yDeviationCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell );
-    else
-        [xDataCell , yDataCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim );
-    end
-
-  end
-  % -----------------------------------------------------------------------
-  % END FUNCTION splitLine
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  % FUNCTION splitByMask
-  %   Splits a dataCell up into cells along contiguous 'true' chunks of
-  %   mask.
-  % -----------------------------------------------------------------------
-  function newDataCell = splitByMask( dataCell, mask )
-    n = length(dataCell);
-
-    if ( length(mask)~=n )
-        error( 'splitByMask:illegalInput', ...
-               'Input arguments do not match.' );
-    end
-     
-    newDataCell = cell(0);
-    newField = 0;
-    for cellIndex = 1:n
-        m = length(mask{cellIndex});
-        outIndices = [0 find(~mask{cellIndex}) m+1 ];
-        for kk = 1:length(outIndices)-1
-            I = ( outIndices(kk)+1 : outIndices(kk+1)-1 ) ;
-            if ~isempty(I)
-                newField = newField+1;
-                newDataCell{newField} = dataCell{cellIndex}(I);
-            end
-        end
-    end
-
-  end
-  % -----------------------------------------------------------------------
-  % END FUNCTION splitByMask
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  % FUNCTION splitByInfsNaNs
-  % -----------------------------------------------------------------------
-  function mask = splitByInfsNaNs( xDataCell, yDataCell  )
-
-    n = length(xDataCell);
-    mask = cell(n,1);
-
-    for cellIndex = 1:n
-        mask{cellIndex} = isfinite(xDataCell{cellIndex}) ...
-                        & isfinite(yDataCell{cellIndex});
-    end
-
-  end
-  % -----------------------------------------------------------------------
-  % END FUNCTION splitByInfsNaNs
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  % FUNCTION splitByVisibility
-  % -----------------------------------------------------------------------
-  function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByVisibility( xDataCell, yDataCell, xLim, yLim, yDeviationCell )
-    % check if the *optional* argument 'yDeviation' was given
-    errorbarMode = 0;
-    if nargin>4
-        errorbarMode = 1;
-    end
-
-    xDataCellNew = cell(0);
-    yDataCellNew = cell(0);
-    if errorbarMode
-        yDeviationCellNew = cell(0);
-    end
-
-    cellIndexNew = 0;
-    for cellIndex = 1:length(xDataCell)
-        if length( xDataCell{cellIndex} ) == 1 % the "line" is actually just one point
-            % print it unconditionally
-            cellIndexNew = cellIndexNew + 1;
-            xDataCellNew{cellIndexNew}(1) = xDataCell{cellIndex}(1);
-            yDataCellNew{cellIndexNew}(1) = yDataCell{cellIndex}(1);
-            if errorbarMode
-                yDeviationCellNew{cellIndexNew}(1) = yDeviationCell{cellIndex}(1);
-            end
-
-        else % more than one node in the line -- this is usually the case
-            segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], xLim, yLim );
-            printPrevious = 0;
-            % loop over the segments
-            for kk = 1:length(segvis)
-                if segvis(kk)
-                    if ~printPrevious
-                        % start new plot
-                        l = 1;
-                        cellIndexNew = cellIndexNew + 1;
-                        xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk);
-                        yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk);
-                        if errorbarMode
-                            yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
-                        end
-                        l = l+1;
-                        printPrevious = 1;
-                    end
-                    xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk+1);
-                    yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk+1);
-                    if errorbarMode
-                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk+1);
-                    end
-                    l = l+1;
-                else
-                    printPrevious = 0;
-                end
-            end
-        end
-    end
-
-  end
-  % -----------------------------------------------------------------------
-  % END FUNCTION splitByVisibility
-  % -----------------------------------------------------------------------
-
-  % -----------------------------------------------------------------------
-  % FUNCTION splitByOutliers
-  % -----------------------------------------------------------------------
-  function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell )
-    % check if the *optional* argument 'yDeviation' was given
-    errorbarMode = 0;
-    if nargin>4
-        errorbarMode = 1;
-    end
-
-    xDataCellNew = cell(0);
-    yDataCellNew = cell(0);
-    if errorbarMode
-        yDeviationCellNew = cell(0);
-    end
-    cellIndexNew = 0;
-    delta = 0.5; % Distance around a plotbox within the range of which points
-                 % will be considered close enough, and not moved.
-    xLimLarger = [ xLim(1)-delta, xLim(2)+delta ];
-    yLimLarger = [ yLim(1)-delta, yLim(2)+delta ];
-
-    for cellIndex = 1:length(xDataCell);
-        cellIndexNew = cellIndexNew + 1;
-        l = 1; % running index in the new cell
-
-        n = length( xDataCell{cellIndex} );
-        for kk = 1:n
-            x = [ xDataCell{cellIndex}(kk); ...
-                  yDataCell{cellIndex}(kk) ];
-            % The largest positive value of v determines where the point sits,
-            % and to which boundary it must be normalized.
-            v = [ xLim(1)-x(1), x(1)-xLim(2), yLim(1)-x(2), x(2)-yLim(2) ];
-            maxVal = max(v);
-            % If there are several maxima, just pick the first one.
-            % --> maxVal(1)
-            if maxVal(1)>delta % Point sits too far outside. Move!
-                if kk>1
-                    % also shorten the distance to the previous, and split up
-                    xRef = [ xDataCell{cellIndex}(kk-1); ...
-                             yDataCell{cellIndex}(kk-1) ];
-                    xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );
-
-                    xDataCellNew{cellIndexNew}(l) = xNew(1);
-                    yDataCellNew{cellIndexNew}(l) = xNew(2);
-                    if errorbarMode
-                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
-                    end
-                    l = l+1;
-
-                    if kk<n % In this case, it will be automatically reset at the
-                           % beginning of the k-loop.
-                        cellIndexNew = cellIndexNew + 1; % go to the next cell
-                        l = 1; % reset the index
-                    end
-                end
-                if kk<n
-                    xRef = [ xDataCell{cellIndex}(kk+1); ...
-                             yDataCell{cellIndex}(kk+1) ];
-                    xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );    
-                    xDataCellNew{cellIndexNew}(l) = xNew(1);
-                    yDataCellNew{cellIndexNew}(l) = xNew(2);
-                    if errorbarMode
-                        yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
-                    end
-                    l = l+1;
-                end
-            else
-                % Point alright: Just copy it over.
-                xDataCellNew{cellIndexNew}(l) = x(1);
-                yDataCellNew{cellIndexNew}(l) = x(2);
-                if errorbarMode
-                    yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
-                end
-                l = l+1;
-            end
-        end
-    end
-
-  end
-  % -----------------------------------------------------------------------
-  % END FUNCTION splitByOutliers
-  % -----------------------------------------------------------------------
-
-  % -----------------------------------------------------------------------
-  % FUNCTION moveCloser
-  % Takes one point x outside a box defined by xLim, yLim, and one other
-  % point xRef it.
-  % Results is a point xNew that sits on the line xRef---x *and* on the
-  % boundary box.
-  % -----------------------------------------------------------------------
-  function xNew = moveCloser( x, xRef, xLim, yLim )
-    
-    alpha = inf;
-
-    % Find out with which border the line x---xRef intersects, and determine
-    % the parameter alpha such that x+alpha(xRef-x) sits on the boundary.
-    if segmentsIntersect( [x(1), xRef(1), xLim(1), xLim(1)], ... % left boundary
-                          [x(2), xRef(2), yLim            ] )
-        alpha = min( alpha, (xLim(1)-x(1)) / (xRef(1)-x(1)) );
-    end
-    if segmentsIntersect( [x(1), xRef(1), xLim            ], ... % bottom boundary
-                          [x(2), xRef(2), yLim(1), yLim(1)] )
-        alpha = min( alpha, (yLim(1)-x(2)) / (xRef(2)-x(2)) );
-    end
-    if segmentsIntersect( [x(1), xRef(1), xLim(2), xLim(2)], ... % right boundary
-                          [x(2), xRef(2), yLim            ] )
-        alpha = min( alpha, (xLim(2)-x(1)) / (xRef(1)-x(1)) );
-    end
-    if segmentsIntersect( [x(1), xRef(1), xLim            ], ... % top boundary
-                          [x(2), xRef(2), yLim(2), yLim(2)] )
-        alpha = min( alpha, (yLim(2)-x(2)) / (xRef(2)-x(2)) );
-    end
-
-    if isinf(alpha)
-        error( 'matlab2tikz:noIntersecton', ...
-               [ 'Could not determine were the outside point sits with ', ...
-                 'respect to the box. Both x and xRef outside the box?' ] );
-    end
-
-    % create the new point
-    xNew = xRef + alpha*(x-xRef);
-  end
-  % -----------------------------------------------------------------------
-  % END FUNCTION moveCloser
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  % FUNCTION segmentVisible
-  %
-  % Given a series of points 'p', this routines determines which inter-'p'
-  % connections are visible in the box given by 'xLim', 'yLim'.
-  %
-  % -----------------------------------------------------------------------
-  function out = segmentVisible( m2t, p, xLim, yLim )
-
-      n   = size( p, 1 ); % number of points
-      out = zeros( n-1, 1 );
-
-      % Find out where (with respect the the box) the points 'p' sit.
-      % Consider the documentation for 'boxWhere' to find out about
-      % the meaning of the return values.
-      boxpos = boxWhere( m2t, p, xLim, yLim );
-
-      for kk = 1:n-1
-          if any(boxpos{kk}==1) || any(boxpos{kk+1}==1) % one of the two is strictly inside the box
-              out(kk) = 1;
-          elseif any(boxpos{kk}==2) || any(boxpos{kk+1}==2) % one of the two is strictly outside the box
-              % does the segment intersect with any of the four boundaries?
-              out(kk) =  segmentsIntersect( [p(kk:kk+1,1)',xLim(1),xLim(1)], ...   % with the left?
-                                            [p(kk:kk+1,2)',yLim] ) ...
-                     || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the bottom?
-                                           [p(kk:kk+1,2)',yLim(1),yLim(1)] ) ...
-                     || segmentsIntersect( [p(kk:kk+1,1)',xLim(2),xLim(2)],  ...  % with the right?
-                                           [p(kk:kk+1,2)',yLim] ) ...
-                     || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the top?
-                                           [p(kk:kk+1,2)',yLim(2),yLim(2)] );
-          else % both neighboring points lie on the boundary
-              % This is kind of tricky as there may be nodes *exactly*
-              % in a corner of the domain. boxpos & commonEntry handle
-              % this, though.
-              out(kk) = ~commonEntry( boxpos{kk},boxpos{kk+1} );
-          end
-      end
-
-  end
-  % -----------------------------------------------------------------------
-  % END FUNCTION segmentVisible
-  % -----------------------------------------------------------------------
-
-  % -----------------------------------------------------------------------
-  % *** FUNCTION segmentsIntersect
-  % ***
-  % *** Checks whether the segments P1--P2 and P3--P4 intersect.
-  % *** The x- and y- coordinates of Pi are in x(i), y(i), respectively.
-  % ***
-  % -----------------------------------------------------------------------
-  function out = segmentsIntersect( x, y )
-
-    % Technically, one writes down the 2x2 equation system to solve the
-    %
-    %   x1 + lambda (x2-x1)  =  x3 + mu (x4-x3)
-    %   y1 + lambda (y2-y1)  =  y3 + mu (y4-y3)
-    %
-    % for lambda and mu. If a solution exists, check if   0 < lambda,mu < 1.
-
-    det = (x(4)-x(3))*(y(2)-y(1)) - (y(4)-y(3))*(x(2)-x(1));
-
-    out = det;
-
-    if det % otherwise the segments are parallel
-        rhs1   = x(3) - x(1);
-        rhs2   = y(3) - y(1);
-        lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
-        mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
-        out    =   0<lambda && lambda<1 ...
-               &&  0<mu     && mu    <1;
-    end
-
-  end
-  % -----------------------------------------------------------------------
-  % *** END FUNCTION segmentsIntersect
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  % *** FUNCTION pointReduction
-  % ***
-  % *** Generates a mask which is true for the first point, and all
-  % *** subsequent points which have a greater norm2-distance from
-  % *** the previous point than 'threshold'.
-  % ***
-  % -----------------------------------------------------------------------
-  function mask = pointReduction( m2t, xData, yData )
-
-    threshold = m2t.opts.Results.minimumPointsDistance;
-    n = length(xData);
-
-    if ( threshold==0.0 )
-        % bail out early
-        mask = true(n,1);
-        return
-    end
-
-    mask = false(n,1);
-
-    XRef = [ xData(1), yData(1) ];
-    mask(1) = true;
-    for kk = 2:n
-        X0 = [ xData(kk), yData(kk) ];
-        if norm(XRef-X0,2) > threshold
-            XRef = X0;
-            mask(kk) = true;
-        end
-    end
-
-  end
-  % -----------------------------------------------------------------------
-  % *** END FUNCTION pointReduction
-  % -----------------------------------------------------------------------
 
 end
+% ---------------------------------------------------------------------------
+% FUNCTION plotLine
+% ---------------------------------------------------------------------------
+function str = plotLine( opts, xData, yData, yDeviation )
+
+    str = [];
+
+    % check if the *optional* argument 'yDeviation' was given
+    errorbarMode = 0;
+    if nargin>3
+        errorbarMode = 1;
+    end
+
+    n = length(xData);
+
+    if errorbarMode
+        if n~=length(yDeviation)
+            error( 'drawLine:arrayLengthsMismatch', ...
+                  '''drawline'' was called with errors bars turned on, but array lengths do not match.' );
+        end
+    end
+
+    str = [ str, ...
+            sprintf( ['\\addplot [',opts,']\n'] ) ];
+    if errorbarMode
+        str = [ str, ...
+                sprintf('plot [error bars/.cd, y dir = both, y explicit]\n') ];
+    end
+
+    str = [ str, ...
+            sprintf('coordinates{\n') ];
+
+    for l = 1:length(xData)
+        str = strcat( str, ...
+                      sprintf( ' (%g,%g)', xData(l), yData(l) ) );
+        if errorbarMode
+            str = strcat( str, ...
+                          sprintf( ' +- (%g,%g)\n', 0.0, yDeviation(l) ) );
+        end
+    end
+
+    str = [ str, sprintf('\n};\n\n') ];
+end
+% ---------------------------------------------------------------------------
+% END FUNCTION plotLine
+% ---------------------------------------------------------------------------
+
+
+% ---------------------------------------------------------------------------
+% FUNCTION splitLine
+%
+% Split the xData, yData into several chunks of data for each of which
+% an \addplot will be generated.
+% Splitting criteria are:
+%    * NaNs.
+%      If xData or yData contain a NaN at position K, the data gets
+%      split up into index groups [1:k-1],[k+1:end].
+%    * Visibility.
+%      Parts of the line data may sit outside the plotbox.
+%      'segvis' tells us which segment are actually visible, and the
+%      following construction loops through it and makes sure that each
+%      point that is necessary gets actually printed.
+%      'printPrevious' tells whether or not the previous segment is visible;
+%      this information is used for determining when a new 'addplot' needs
+%      to be opened.
+%    * Dimension too large.
+%      Connected points may sit outside the plot, but their connecting
+%      line may not. The values of the outside plot may be too large for
+%      LaTeX to handle. Move those points closer to the bounding box,
+%      and possibly split them up in two.
+%
+% ---------------------------------------------------------------------------
+function [xDataCell, yDataCell, yDeviationCell] = splitLine( m2t, xData, yData, xLim, yLim, yDeviation )
+
+  % check if the *optional* argument 'yDeviation' was given
+  errorbarMode = 0;
+  if nargin>5
+      errorbarMode = 1;
+  end
+
+  xDataCell{1} = xData;
+  yDataCell{1} = yData;
+  if errorbarMode
+      yDeviationCell{1} = yDeviation;
+  end
+
+  % Split up at Infs and NaNs.
+  mask      = splitByInfsNaNs( xDataCell, yDataCell );
+  xDataCell = splitByMask( xDataCell, mask );
+  yDataCell = splitByMask( yDataCell, mask );
+  if errorbarMode
+      yDeviationCell = splitByMask( yDeviationCell, mask );
+  end
+
+  % Split each of the chunks further up along visible segments
+  if errorbarMode
+      [xDataCell , yDataCell, yDeviationCell] = splitByVisibility( m2t, xDataCell, yDataCell, xLim, yLim, yDeviationCell );
+  else
+      [xDataCell , yDataCell] = splitByVisibility( m2t, xDataCell, yDataCell, xLim, yLim );
+  end
+
+  % Split each of the current chunks further with respect to outliers
+  if errorbarMode
+      [xDataCell , yDataCell, yDeviationCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell );
+  else
+      [xDataCell , yDataCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim );
+  end
+
+end
+% ---------------------------------------------------------------------------
+% END FUNCTION splitLine
+% ---------------------------------------------------------------------------
+
+
+% ---------------------------------------------------------------------------
+% FUNCTION splitByMask
+%   Splits a dataCell up into cells along contiguous 'true' chunks of
+%   mask.
+% ---------------------------------------------------------------------------
+function newDataCell = splitByMask( dataCell, mask )
+  n = length(dataCell);
+
+  if ( length(mask)~=n )
+      error( 'splitByMask:illegalInput', ...
+              'Input arguments do not match.' );
+  end
+
+  newDataCell = cell(0);
+  newField = 0;
+  for cellIndex = 1:n
+      m = length(mask{cellIndex});
+      outIndices = [0 find(~mask{cellIndex}) m+1 ];
+      for kk = 1:length(outIndices)-1
+          I = ( outIndices(kk)+1 : outIndices(kk+1)-1 ) ;
+          if ~isempty(I)
+              newField = newField+1;
+              newDataCell{newField} = dataCell{cellIndex}(I);
+          end
+      end
+  end
+
+end
+% -------------------------------------------------------------------------
+% END FUNCTION splitByMask
+% -------------------------------------------------------------------------
+
+
+% -------------------------------------------------------------------------
+% FUNCTION splitByInfsNaNs
+% -------------------------------------------------------------------------
+function mask = splitByInfsNaNs( xDataCell, yDataCell  )
+
+  n = length(xDataCell);
+  mask = cell(n,1);
+
+  for cellIndex = 1:n
+      mask{cellIndex} = isfinite(xDataCell{cellIndex}) ...
+                      & isfinite(yDataCell{cellIndex});
+  end
+
+end
+% -------------------------------------------------------------------------
+% END FUNCTION splitByInfsNaNs
+% -------------------------------------------------------------------------
+
+
+% -------------------------------------------------------------------------
+% FUNCTION splitByVisibility
+% -------------------------------------------------------------------------
+function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByVisibility( m2t, xDataCell, yDataCell, xLim, yLim, yDeviationCell )
+  % check if the *optional* argument 'yDeviation' was given
+  errorbarMode = 0;
+  if nargin>5
+      errorbarMode = 1;
+  end
+
+  xDataCellNew = cell(0);
+  yDataCellNew = cell(0);
+  if errorbarMode
+      yDeviationCellNew = cell(0);
+  end
+
+  cellIndexNew = 0;
+  for cellIndex = 1:length(xDataCell)
+      if length( xDataCell{cellIndex} ) == 1 % the "line" is actually just one point
+          % print it unconditionally
+          cellIndexNew = cellIndexNew + 1;
+          xDataCellNew{cellIndexNew}(1) = xDataCell{cellIndex}(1);
+          yDataCellNew{cellIndexNew}(1) = yDataCell{cellIndex}(1);
+          if errorbarMode
+              yDeviationCellNew{cellIndexNew}(1) = yDeviationCell{cellIndex}(1);
+          end
+
+      else % more than one node in the line -- this is usually the case
+          segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], xLim, yLim );
+          printPrevious = 0;
+          % loop over the segments
+          for kk = 1:length(segvis)
+              if segvis(kk)
+                  if ~printPrevious
+                      % start new plot
+                      l = 1;
+                      cellIndexNew = cellIndexNew + 1;
+                      xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk);
+                      yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk);
+                      if errorbarMode
+                          yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
+                      end
+                      l = l+1;
+                      printPrevious = 1;
+                  end
+                  xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk+1);
+                  yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk+1);
+                  if errorbarMode
+                      yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk+1);
+                  end
+                  l = l+1;
+              else
+                  printPrevious = 0;
+              end
+          end
+      end
+  end
+
+end
+% -------------------------------------------------------------------------
+% END FUNCTION splitByVisibility
+% -------------------------------------------------------------------------
+
+% -------------------------------------------------------------------------
+% FUNCTION splitByOutliers
+% -------------------------------------------------------------------------
+function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell )
+  % check if the *optional* argument 'yDeviation' was given
+  errorbarMode = 0;
+  if nargin>4
+      errorbarMode = 1;
+  end
+
+  xDataCellNew = cell(0);
+  yDataCellNew = cell(0);
+  if errorbarMode
+      yDeviationCellNew = cell(0);
+  end
+  cellIndexNew = 0;
+  delta = 0.5; % Distance around a plotbox within the range of which points
+                % will be considered close enough, and not moved.
+  xLimLarger = [ xLim(1)-delta, xLim(2)+delta ];
+  yLimLarger = [ yLim(1)-delta, yLim(2)+delta ];
+
+  for cellIndex = 1:length(xDataCell);
+      cellIndexNew = cellIndexNew + 1;
+      l = 1; % running index in the new cell
+
+      n = length( xDataCell{cellIndex} );
+      for kk = 1:n
+          x = [ xDataCell{cellIndex}(kk); ...
+                yDataCell{cellIndex}(kk) ];
+          % The largest positive value of v determines where the point sits,
+          % and to which boundary it must be normalized.
+          v = [ xLim(1)-x(1), x(1)-xLim(2), yLim(1)-x(2), x(2)-yLim(2) ];
+          maxVal = max(v);
+          % If there are several maxima, just pick the first one.
+          % --> maxVal(1)
+          if maxVal(1)>delta % Point sits too far outside. Move!
+              if kk>1
+                  % also shorten the distance to the previous, and split up
+                  xRef = [ xDataCell{cellIndex}(kk-1); ...
+                            yDataCell{cellIndex}(kk-1) ];
+                  xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );
+
+                  xDataCellNew{cellIndexNew}(l) = xNew(1);
+                  yDataCellNew{cellIndexNew}(l) = xNew(2);
+                  if errorbarMode
+                      yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
+                  end
+                  l = l+1;
+
+                  if kk<n % In this case, it will be automatically reset at the
+                          % beginning of the k-loop.
+                      cellIndexNew = cellIndexNew + 1; % go to the next cell
+                      l = 1; % reset the index
+                  end
+              end
+              if kk<n
+                  xRef = [ xDataCell{cellIndex}(kk+1); ...
+                            yDataCell{cellIndex}(kk+1) ];
+                  xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );
+                  xDataCellNew{cellIndexNew}(l) = xNew(1);
+                  yDataCellNew{cellIndexNew}(l) = xNew(2);
+                  if errorbarMode
+                      yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
+                  end
+                  l = l+1;
+              end
+          else
+              % Point alright: Just copy it over.
+              xDataCellNew{cellIndexNew}(l) = x(1);
+              yDataCellNew{cellIndexNew}(l) = x(2);
+              if errorbarMode
+                  yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
+              end
+              l = l+1;
+          end
+      end
+  end
+
+end
+% -------------------------------------------------------------------------
+% END FUNCTION splitByOutliers
+% -------------------------------------------------------------------------
+
+% -------------------------------------------------------------------------
+% FUNCTION moveCloser
+% Takes one point x outside a box defined by xLim, yLim, and one other
+% point xRef it.
+% Results is a point xNew that sits on the line xRef---x *and* on the
+% boundary box.
+% -------------------------------------------------------------------------
+function xNew = moveCloser( x, xRef, xLim, yLim )
+
+  alpha = inf;
+
+  % Find out with which border the line x---xRef intersects, and determine
+  % the parameter alpha such that x+alpha(xRef-x) sits on the boundary.
+  if segmentsIntersect( [x(1), xRef(1), xLim(1), xLim(1)], ... % left boundary
+                        [x(2), xRef(2), yLim            ] )
+      alpha = min( alpha, (xLim(1)-x(1)) / (xRef(1)-x(1)) );
+  end
+  if segmentsIntersect( [x(1), xRef(1), xLim            ], ... % bottom boundary
+                        [x(2), xRef(2), yLim(1), yLim(1)] )
+      alpha = min( alpha, (yLim(1)-x(2)) / (xRef(2)-x(2)) );
+  end
+  if segmentsIntersect( [x(1), xRef(1), xLim(2), xLim(2)], ... % right boundary
+                        [x(2), xRef(2), yLim            ] )
+      alpha = min( alpha, (xLim(2)-x(1)) / (xRef(1)-x(1)) );
+  end
+  if segmentsIntersect( [x(1), xRef(1), xLim            ], ... % top boundary
+                        [x(2), xRef(2), yLim(2), yLim(2)] )
+      alpha = min( alpha, (yLim(2)-x(2)) / (xRef(2)-x(2)) );
+  end
+
+  if isinf(alpha)
+      error( 'matlab2tikz:noIntersecton', ...
+              [ 'Could not determine were the outside point sits with ', ...
+                'respect to the box. Both x and xRef outside the box?' ] );
+  end
+
+  % create the new point
+  xNew = xRef + alpha*(x-xRef);
+end
+% -------------------------------------------------------------------------
+% END FUNCTION moveCloser
+% -------------------------------------------------------------------------
+
+
+% -------------------------------------------------------------------------
+% FUNCTION segmentVisible
+%
+% Given a series of points 'p', this routines determines which inter-'p'
+% connections are visible in the box given by 'xLim', 'yLim'.
+%
+% -------------------------------------------------------------------------
+function out = segmentVisible( m2t, p, xLim, yLim )
+
+    n   = size( p, 1 ); % number of points
+    out = zeros( n-1, 1 );
+
+    % Find out where (with respect the the box) the points 'p' sit.
+    % Consider the documentation for 'boxWhere' to find out about
+    % the meaning of the return values.
+    boxpos = boxWhere( m2t, p, xLim, yLim );
+
+    for kk = 1:n-1
+        if any(boxpos{kk}==1) || any(boxpos{kk+1}==1) % one of the two is strictly inside the box
+            out(kk) = 1;
+        elseif any(boxpos{kk}==2) || any(boxpos{kk+1}==2) % one of the two is strictly outside the box
+            % does the segment intersect with any of the four boundaries?
+            out(kk) =  segmentsIntersect( [p(kk:kk+1,1)',xLim(1),xLim(1)], ...   % with the left?
+                                          [p(kk:kk+1,2)',yLim] ) ...
+                    || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the bottom?
+                                          [p(kk:kk+1,2)',yLim(1),yLim(1)] ) ...
+                    || segmentsIntersect( [p(kk:kk+1,1)',xLim(2),xLim(2)],  ...  % with the right?
+                                          [p(kk:kk+1,2)',yLim] ) ...
+                    || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the top?
+                                          [p(kk:kk+1,2)',yLim(2),yLim(2)] );
+        else % both neighboring points lie on the boundary
+            % This is kind of tricky as there may be nodes *exactly*
+            % in a corner of the domain. boxpos & commonEntry handle
+            % this, though.
+            out(kk) = ~commonEntry( boxpos{kk},boxpos{kk+1} );
+        end
+    end
+
+end
+% -------------------------------------------------------------------------
+% END FUNCTION segmentVisible
+% -------------------------------------------------------------------------
+
+% -------------------------------------------------------------------------
+% *** FUNCTION segmentsIntersect
+% ***
+% *** Checks whether the segments P1--P2 and P3--P4 intersect.
+% *** The x- and y- coordinates of Pi are in x(i), y(i), respectively.
+% ***
+% -------------------------------------------------------------------------
+function out = segmentsIntersect( x, y )
+
+  % Technically, one writes down the 2x2 equation system to solve the
+  %
+  %   x1 + lambda (x2-x1)  =  x3 + mu (x4-x3)
+  %   y1 + lambda (y2-y1)  =  y3 + mu (y4-y3)
+  %
+  % for lambda and mu. If a solution exists, check if   0 < lambda,mu < 1.
+
+  det = (x(4)-x(3))*(y(2)-y(1)) - (y(4)-y(3))*(x(2)-x(1));
+
+  out = det;
+
+  if det % otherwise the segments are parallel
+      rhs1   = x(3) - x(1);
+      rhs2   = y(3) - y(1);
+      lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
+      mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
+      out    =   0<lambda && lambda<1 ...
+              &&  0<mu     && mu    <1;
+  end
+
+end
+% -------------------------------------------------------------------------
+% *** END FUNCTION segmentsIntersect
+% -------------------------------------------------------------------------
+
+
+% -------------------------------------------------------------------------
+% *** FUNCTION pointReduction
+% ***
+% *** Generates a mask which is true for the first point, and all
+% *** subsequent points which have a greater norm2-distance from
+% *** the previous point than 'threshold'.
+% ***
+% -------------------------------------------------------------------------
+function mask = pointReduction( m2t, xData, yData )
+
+  threshold = m2t.opts.Results.minimumPointsDistance;
+  n = length(xData);
+
+  if ( threshold==0.0 )
+      % bail out early
+      mask = true(n,1);
+      return
+  end
+
+  mask = false(n,1);
+
+  XRef = [ xData(1), yData(1) ];
+  mask(1) = true;
+  for kk = 2:n
+      X0 = [ xData(kk), yData(kk) ];
+      if norm(XRef-X0,2) > threshold
+          XRef = X0;
+          mask(kk) = true;
+      end
+  end
+
+end
+% -------------------------------------------------------------------------
+% *** END FUNCTION pointReduction
+% -------------------------------------------------------------------------
 % =========================================================================
 % *** END OF FUNCTION drawLine
 % =========================================================================
@@ -1456,78 +1448,77 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
       end
   end
 
-  % -----------------------------------------------------------------------
-  % *** FUNCTION translateMarkerSize
-  % ***
-  % *** The markersizes of Matlab and TikZ are related, but not equal. This
-  % *** is because
-  % ***
-  % ***  1.) MATLAB uses the MarkerSize property to describe something like
-  % ***      the diameter of the mark, while TikZ refers to the 'radius',
-  % ***  2.) MATLAB and TikZ take different measures (, e.g., the
-  % ***      edgelength of a square vs. the diagonal length of it).
-  % ***
-  % -----------------------------------------------------------------------
-  function [ tikzMarkerSize, isDefault ] =                              ...
-                      translateMarkerSize( m2t, matlabMarker, matlabMarkerSize )
+end
+% -------------------------------------------------------------------------
+% *** FUNCTION translateMarkerSize
+% ***
+% *** The markersizes of Matlab and TikZ are related, but not equal. This
+% *** is because
+% ***
+% ***  1.) MATLAB uses the MarkerSize property to describe something like
+% ***      the diameter of the mark, while TikZ refers to the 'radius',
+% ***  2.) MATLAB and TikZ take different measures (, e.g., the
+% ***      edgelength of a square vs. the diagonal length of it).
+% ***
+% -------------------------------------------------------------------------
+function [ tikzMarkerSize, isDefault ] =                              ...
+                    translateMarkerSize( m2t, matlabMarker, matlabMarkerSize )
 
-    if( ~ischar(matlabMarker) )
-        error( 'matlab2tikz:translateMarkerSize',                      ...
-               'Variable matlabMarker is not a string.' );
-    end
-
-    if( ~isnumeric(matlabMarkerSize) )
-        error( 'matlab2tikz:translateMarkerSize',                      ...
-               'Variable matlabMarkerSize is not a numeral.' );
-    end
-
-    % 6pt is the default MATLAB marker size for all markers
-    defaultMatlabMarkerSize = 6;
-    isDefault = abs(matlabMarkerSize-defaultMatlabMarkerSize)<m2t.tol;
-
-    switch ( matlabMarker )
-        case 'none'
-            tikzMarkerSize = [];
-        case {'+','o','x','*','p','pentagram','h','hexagram'}
-            % In MATLAB, the marker size refers to the edge length of a
-            % square (for example) (~diameter), whereas in TikZ the
-            % distance of an edge to the center is the measure (~radius).
-            % Hence divide by 2.
-            tikzMarkerSize = matlabMarkerSize / 2;
-        case '.'
-            % as documented on the Matlab help pages:
-            %
-            % Note that MATLAB draws the point marker (specified by the '.'
-            % symbol) at one-third the specified size.
-            % The point (.) marker type does not change size when the
-            % specified value is less than 5.
-            %
-            tikzMarkerSize = matlabMarkerSize / 2 / 3;
-        case {'s','square'}
-            % Matlab measures the diameter, TikZ half the edge length
-            tikzMarkerSize = matlabMarkerSize / 2 / sqrt(2);
-        case {'d','diamond'}
-            % MATLAB measures the width, TikZ the height of the diamond;
-            % the acute angle (at the top and the bottom of the diamond)
-            % is a manually measured 75 degrees (in TikZ, and MATLAB
-            % probably very similar); use this as a base for calculations
-            tikzMarkerSize = matlabMarkerSize / 2 / atan( 75/2 *pi/180 );
-        case {'^','v','<','>'}
-            % for triangles, matlab takes the height
-            % and tikz the circumcircle radius;
-            % the triangles are always equiangular
-            tikzMarkerSize = matlabMarkerSize / 2 * (2/3);
-        otherwise
-            error( 'matlab2tikz:translateMarkerSize',                   ...
-                   'Unknown matlabMarker ''%s''.', matlabMarker );
-    end
-
+  if( ~ischar(matlabMarker) )
+      error( 'matlab2tikz:translateMarkerSize',                      ...
+              'Variable matlabMarker is not a string.' );
   end
-  % -----------------------------------------------------------------------
-  % *** END OF FUNCTION translateMarkerSize
-  % -----------------------------------------------------------------------
+
+  if( ~isnumeric(matlabMarkerSize) )
+      error( 'matlab2tikz:translateMarkerSize',                      ...
+              'Variable matlabMarkerSize is not a numeral.' );
+  end
+
+  % 6pt is the default MATLAB marker size for all markers
+  defaultMatlabMarkerSize = 6;
+  isDefault = abs(matlabMarkerSize-defaultMatlabMarkerSize)<m2t.tol;
+
+  switch ( matlabMarker )
+      case 'none'
+          tikzMarkerSize = [];
+      case {'+','o','x','*','p','pentagram','h','hexagram'}
+          % In MATLAB, the marker size refers to the edge length of a
+          % square (for example) (~diameter), whereas in TikZ the
+          % distance of an edge to the center is the measure (~radius).
+          % Hence divide by 2.
+          tikzMarkerSize = matlabMarkerSize / 2;
+      case '.'
+          % as documented on the Matlab help pages:
+          %
+          % Note that MATLAB draws the point marker (specified by the '.'
+          % symbol) at one-third the specified size.
+          % The point (.) marker type does not change size when the
+          % specified value is less than 5.
+          %
+          tikzMarkerSize = matlabMarkerSize / 2 / 3;
+      case {'s','square'}
+          % Matlab measures the diameter, TikZ half the edge length
+          tikzMarkerSize = matlabMarkerSize / 2 / sqrt(2);
+      case {'d','diamond'}
+          % MATLAB measures the width, TikZ the height of the diamond;
+          % the acute angle (at the top and the bottom of the diamond)
+          % is a manually measured 75 degrees (in TikZ, and MATLAB
+          % probably very similar); use this as a base for calculations
+          tikzMarkerSize = matlabMarkerSize / 2 / atan( 75/2 *pi/180 );
+      case {'^','v','<','>'}
+          % for triangles, matlab takes the height
+          % and tikz the circumcircle radius;
+          % the triangles are always equiangular
+          tikzMarkerSize = matlabMarkerSize / 2 * (2/3);
+      otherwise
+          error( 'matlab2tikz:translateMarkerSize',                   ...
+                  'Unknown matlabMarker ''%s''.', matlabMarker );
+  end
 
 end
+% -------------------------------------------------------------------------
+% *** END OF FUNCTION translateMarkerSize
+% -------------------------------------------------------------------------
 % =========================================================================
 % *** END FUNCTION getMarkerOptions
 % =========================================================================
@@ -2511,7 +2502,6 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
       return
   end
 
-  env = pgfplotsEnvironment();
   % the actual contents of the TikZ file go here
   env = struct( 'name',     'axis', ...
                 'comment',  'colorbar', ...
@@ -3109,7 +3099,7 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
   else % strcmp(xTickMode,'manual') || m2t.opts.Results.strict
       xTick      = get( handle, 'XTick' );
       isXAxisLog = strcmp( get(handle,'XScale'), 'log' );
-      [ticks.x, tickLabels.x] = getAxisTicks( xTick, xTickLabel, isXAxisLog );
+      [ticks.x, tickLabels.x] = getAxisTicks( m2t, xTick, xTickLabel, isXAxisLog );
   end
   % overwrite if empty
   if isempty(xTickLabel)
@@ -3127,106 +3117,105 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
   else % strcmp(yTickMode,'manual') || m2t.opts.Results.strict
       yTick      = get( handle, 'YTick' );
       isYAxisLog = strcmp( get(handle,'YScale'), 'log' );
-      [ticks.y, tickLabels.y] = getAxisTicks( yTick, yTickLabel, isYAxisLog );
+      [ticks.y, tickLabels.y] = getAxisTicks( m2t, yTick, yTickLabel, isYAxisLog );
   end
   % overwrite if empty
   if isempty(yTickLabel)
       tickLabels.y = '\empty';
   end
 
-  % -----------------------------------------------------------------------
-  % *** FUNCTION getAxisTicks
-  % ***
-  % *** Converts MATLAB style ticks and tick labels to pgfplots style
-  % *** ticks and tick labels (if at all necessary).
-  % ***
-  % -----------------------------------------------------------------------
-  function [ticks, tickLabels] = getAxisTicks( tick, tickLabel, isLogAxis )
+end
+% -------------------------------------------------------------------------
+% *** FUNCTION getAxisTicks
+% ***
+% *** Converts MATLAB style ticks and tick labels to pgfplots style
+% *** ticks and tick labels (if at all necessary).
+% ***
+% -------------------------------------------------------------------------
+function [ticks, tickLabels] = getAxisTicks( m2t, tick, tickLabel, isLogAxis )
 
-    if isempty( tick )
-        ticks      = [];
-        tickLabels = [];
-        return
-    end
-
-    % set ticks + labels
-    ticks = collapse( num2cell(tick), ',' );
-
-    % sometimes tickLabels are cells, sometimes plain arrays
-    % -- unify this to cells
-    if ischar( tickLabel )
-        tickLabel = strtrim( mat2cell(tickLabel,                        ...
-                            ones(size(tickLabel,1),1),size(tickLabel,2)) );
-    end
-
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % Check if tickLabels are really necessary (and not already covered by
-    % the tick values themselves).
-    plotLabelsNecessary = 0;
-
-    if isLogAxis
-        scalingFactor = 1;
-    else
-        % When plotting axis, MATLAB might scale the axes by a factor of ten,
-        % say 10^n, and plot a 'x 10^k' next to th respective axis. This is
-        % common practice when the tick marks are really large or small
-        % numbers.
-        % Unfortunately, MATLAB doesn't contain the information about the
-        % scaling anywhere in the plot, and at the same time the {x,y}TickLabels
-        % are given as t*10^k, thus no longer corresponding to the actual
-        % value t.
-        % Try to find the scaling factor here. This is then used to check
-        % whether or not explicit {x,y}TickLabels are really necessary.
-        k = find( tick, 1 ); % get an index with non-zero tick value
-        s = str2double( tickLabel{k} );
-        scalingFactor = tick(k)/s;
-        % check if the factor is indeed a power of 10
-        S = log10(scalingFactor);
-        if abs(round(S)-S) > m2t.tol
-            scalingFactor = 1;
-        end
-    end
-
-    for k = 1:min(length(tick),length(tickLabel))
-        % Don't use str2num here as then, literal strings as 'pi' get
-        % legally transformed into 3.14... and the need for an explicit
-        % label will not be recognized. str2double returns a NaN for 'pi'.
-        if isLogAxis
-            s = 10^( str2double(tickLabel{k}) );
-        else
-            s = str2double( tickLabel{k} );
-        end
-        if isnan(s)  ||  abs(tick(k)-s*scalingFactor) > m2t.tol
-            plotLabelsNecessary = 1;
-            break
-        end
-    end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    if plotLabelsNecessary
-        % if the axis is logscaled, MATLAB does not store the labels,
-        % but the exponents to 10
-        if isLogAxis
-            for k = 1:length(tickLabel)
-                if isnumeric( tickLabel{k} )
-                    str = num2str( tickLabel{k} );
-                else
-                    str = tickLabel{k};
-                end
-                tickLabel{k} = sprintf( '$10^{%s}$', str );
-            end
-        end
-        tickLabels = collapse( tickLabel, ',' );
-    else
-        tickLabels = [];
-    end
-
+  if isempty( tick )
+      ticks      = [];
+      tickLabels = [];
+      return
   end
-  % -----------------------------------------------------------------------
-  % *** END FUNCTION getAxisTicks
-  % -----------------------------------------------------------------------
+
+  % set ticks + labels
+  ticks = collapse( num2cell(tick), ',' );
+
+  % sometimes tickLabels are cells, sometimes plain arrays
+  % -- unify this to cells
+  if ischar( tickLabel )
+      tickLabel = strtrim( mat2cell(tickLabel,                        ...
+                          ones(size(tickLabel,1),1),size(tickLabel,2)) );
+  end
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % Check if tickLabels are really necessary (and not already covered by
+  % the tick values themselves).
+  plotLabelsNecessary = 0;
+
+  if isLogAxis
+      scalingFactor = 1;
+  else
+      % When plotting axis, MATLAB might scale the axes by a factor of ten,
+      % say 10^n, and plot a 'x 10^k' next to th respective axis. This is
+      % common practice when the tick marks are really large or small
+      % numbers.
+      % Unfortunately, MATLAB doesn't contain the information about the
+      % scaling anywhere in the plot, and at the same time the {x,y}TickLabels
+      % are given as t*10^k, thus no longer corresponding to the actual
+      % value t.
+      % Try to find the scaling factor here. This is then used to check
+      % whether or not explicit {x,y}TickLabels are really necessary.
+      k = find( tick, 1 ); % get an index with non-zero tick value
+      s = str2double( tickLabel{k} );
+      scalingFactor = tick(k)/s;
+      % check if the factor is indeed a power of 10
+      S = log10(scalingFactor);
+      if abs(round(S)-S) > m2t.tol
+          scalingFactor = 1;
+      end
+  end
+
+  for k = 1:min(length(tick),length(tickLabel))
+      % Don't use str2num here as then, literal strings as 'pi' get
+      % legally transformed into 3.14... and the need for an explicit
+      % label will not be recognized. str2double returns a NaN for 'pi'.
+      if isLogAxis
+          s = 10^( str2double(tickLabel{k}) );
+      else
+          s = str2double( tickLabel{k} );
+      end
+      if isnan(s)  ||  abs(tick(k)-s*scalingFactor) > m2t.tol
+          plotLabelsNecessary = 1;
+          break
+      end
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  if plotLabelsNecessary
+      % if the axis is logscaled, MATLAB does not store the labels,
+      % but the exponents to 10
+      if isLogAxis
+          for k = 1:length(tickLabel)
+              if isnumeric( tickLabel{k} )
+                  str = num2str( tickLabel{k} );
+              else
+                  str = tickLabel{k};
+              end
+              tickLabel{k} = sprintf( '$10^{%s}$', str );
+          end
+      end
+      tickLabels = collapse( tickLabel, ',' );
+  else
+      tickLabels = [];
+  end
 
 end
+% -------------------------------------------------------------------------
+% *** END FUNCTION getAxisTicks
+% -------------------------------------------------------------------------
 % =========================================================================
 % *** END FUNCTION getTicks
 % =========================================================================
@@ -3522,7 +3511,7 @@ end
 function dimension = getAxesDimensions( handle, ...
                                         widthString, heightString ) % optional
 
-  [width, height, unit] = getNaturalAxesDimensions();
+  [width, height, unit] = getNaturalAxesDimensions( handle );
 
   % get the natural width-height ration of the plot
   axesWidthHeightRatio = width / height;
@@ -3558,115 +3547,115 @@ function dimension = getAxesDimensions( handle, ...
       dimension.y.value = height;
   end
 
-  % ---------------------------------------------------------------------------
-  function [width, height, unit] = getNaturalAxesDimensions()
-    daspectmode = get( handle, 'DataAspectRatioMode' );
-    position    = get( handle, 'Position' );
-    units       = get( handle, 'Units' );
-
-	% Convert the MATLAB unit strings into TeX unit strings.
-	switch units
-		case 'pixels'
-			units = 'px';
-		case 'centimeters'
-			units = 'cm';
-		case 'inches'
-			units = 'in';
-		case 'points'
-			units = 'pt';
-		case 'characters'
-			units = 'em';
-	end
-
-    switch daspectmode
-        case 'auto'
-          % ---------------------------------------------------------------------
-          % The plot will use the full size of the current figure.,
-          if strcmp( units, 'normalized' )
-              % The dpi is needed to associate the size on the screen (in pixels)
-              % to the physical size of the plot (on a pdf, for example).
-              % Unfortunately, MATLAB doesn't seem to be able to always make a
-              % good guess about the current DPI (a bug is filed for this on
-              % mathworks.com).
-              dpi = get( 0, 'ScreenPixelsPerInch' );
-
-              unit = 'in';
-              figuresize = get( gcf, 'Position' );
-
-              width  = position(3) * figuresize(3) / dpi;
-              height = position(4) * figuresize(4) / dpi;
-
-          else % assume that TikZ knows the unit (in, cm,...)
-              unit   = units;
-              width  = position(3);
-              height = position(4);
-          end
-          % ---------------------------------------------------------------------
-
-        case 'manual'
-          % ---------------------------------------------------------------------
-          % When daspect was manually set, stick to it.
-          % This is achieved here by explicitly determining the x-axis size
-          % and adjusting the y-axis size based on this length.
-
-          if strcmp( units, 'normalized' )
-              % The dpi is needed to associate the size on the screen (in pixels)
-              % to the physical size of the plot (on a pdf, for example).
-              % Unfortunately, MATLAB doesn't seem to be able to always make a
-              % good guess about the current DPI (a bug is filed for this on
-              % mathworks.com).
-              dpi = get( 0, 'ScreenPixelsPerInch');
-
-              unit = 'in';
-              figuresize = get( gcf, 'Position' );
-
-              width = position(3) * figuresize(3) / dpi;
-
-          else % assume that TikZ knows the unit
-              unit  = units;
-              width = position(3);
-          end
-
-          % set y-axis length
-          xLim        = get ( handle, 'XLim' );
-          yLim        = get ( handle, 'YLim' );
-          aspectRatio = get ( handle, 'DataAspectRatio' ); % = daspect
-
-          % Actually, we'd have
-          %
-          %    xlength = (xLim(2)-xLim(1)) / aspectRatio(1);
-          %    ylength = (yLim(2)-yLim(1)) / aspectRatio(2);
-          %
-          % but as xlength is scaled to a fixed 'dimension.x', 'dimension.y'
-          % needs to be rescaled accordingly.
-          height = width                                  ...
-                 * aspectRatio(1)    / aspectRatio(2)     ...
-                 * (yLim(2)-yLim(1)) / (xLim(2)-xLim(1));
-          % ---------------------------------------------------------------------
-        otherwise
-          error( 'getAxesDimensions:illDaspectMode', ...
-                'Illegal DataAspectRatioMode ''%s''.', daspectmode );
-    end
-  end
-  % ---------------------------------------------------------------------------
-
-  % ---------------------------------------------------------------------------
-  function out = extractValueUnit( str )
-      % decompose m2t.opts.Results.width into value and unit
-      i = regexp( str, '[a-z,\\]*' ); %% include the backslash to allow for units such as \figureheight
-      if length(i) > 1
-          error( 'getAxesDimensions:illegalWidth', ...
-                 'The width string ''%s'' could not be decomposed into value-unit pair.', str ); 
-      end
-      if i==1
-          out.value = 1.0; % such as in '1.0\figurewidth'
-      else
-          out.value = str2double( str(1:i-1) );
-      end
-      out.unit  = strtrim( str(i:end) );
-  end
-  % ---------------------------------------------------------------------------
 end
+% ---------------------------------------------------------------------------
+function [width, height, unit] = getNaturalAxesDimensions( handle )
+  daspectmode = get( handle, 'DataAspectRatioMode' );
+  position    = get( handle, 'Position' );
+  units       = get( handle, 'Units' );
+
+      % Convert the MATLAB unit strings into TeX unit strings.
+      switch units
+              case 'pixels'
+                      units = 'px';
+              case 'centimeters'
+                      units = 'cm';
+              case 'inches'
+                      units = 'in';
+              case 'points'
+                      units = 'pt';
+              case 'characters'
+                      units = 'em';
+      end
+
+  switch daspectmode
+      case 'auto'
+        % ---------------------------------------------------------------------
+        % The plot will use the full size of the current figure.,
+        if strcmp( units, 'normalized' )
+            % The dpi is needed to associate the size on the screen (in pixels)
+            % to the physical size of the plot (on a pdf, for example).
+            % Unfortunately, MATLAB doesn't seem to be able to always make a
+            % good guess about the current DPI (a bug is filed for this on
+            % mathworks.com).
+            dpi = get( 0, 'ScreenPixelsPerInch' );
+
+            unit = 'in';
+            figuresize = get( gcf, 'Position' );
+
+            width  = position(3) * figuresize(3) / dpi;
+            height = position(4) * figuresize(4) / dpi;
+
+        else % assume that TikZ knows the unit (in, cm,...)
+            unit   = units;
+            width  = position(3);
+            height = position(4);
+        end
+        % ---------------------------------------------------------------------
+
+      case 'manual'
+        % ---------------------------------------------------------------------
+        % When daspect was manually set, stick to it.
+        % This is achieved here by explicitly determining the x-axis size
+        % and adjusting the y-axis size based on this length.
+
+        if strcmp( units, 'normalized' )
+            % The dpi is needed to associate the size on the screen (in pixels)
+            % to the physical size of the plot (on a pdf, for example).
+            % Unfortunately, MATLAB doesn't seem to be able to always make a
+            % good guess about the current DPI (a bug is filed for this on
+            % mathworks.com).
+            dpi = get( 0, 'ScreenPixelsPerInch');
+
+            unit = 'in';
+            figuresize = get( gcf, 'Position' );
+
+            width = position(3) * figuresize(3) / dpi;
+
+        else % assume that TikZ knows the unit
+            unit  = units;
+            width = position(3);
+        end
+
+        % set y-axis length
+        xLim        = get ( handle, 'XLim' );
+        yLim        = get ( handle, 'YLim' );
+        aspectRatio = get ( handle, 'DataAspectRatio' ); % = daspect
+
+        % Actually, we'd have
+        %
+        %    xlength = (xLim(2)-xLim(1)) / aspectRatio(1);
+        %    ylength = (yLim(2)-yLim(1)) / aspectRatio(2);
+        %
+        % but as xlength is scaled to a fixed 'dimension.x', 'dimension.y'
+        % needs to be rescaled accordingly.
+        height = width                                  ...
+                * aspectRatio(1)    / aspectRatio(2)     ...
+                * (yLim(2)-yLim(1)) / (xLim(2)-xLim(1));
+        % ---------------------------------------------------------------------
+      otherwise
+        error( 'getAxesDimensions:illDaspectMode', ...
+              'Illegal DataAspectRatioMode ''%s''.', daspectmode );
+  end
+end
+% ---------------------------------------------------------------------------
+
+% ---------------------------------------------------------------------------
+function out = extractValueUnit( str )
+    % decompose m2t.opts.Results.width into value and unit
+    i = regexp( str, '[a-z,\\]*' ); %% include the backslash to allow for units such as \figureheight
+    if length(i) > 1
+        error( 'getAxesDimensions:illegalWidth', ...
+                'The width string ''%s'' could not be decomposed into value-unit pair.', str );
+    end
+    if i==1
+        out.value = 1.0; % such as in '1.0\figurewidth'
+    else
+        out.value = str2double( str(1:i-1) );
+    end
+    out.unit  = strtrim( str(i:end) );
+end
+% ---------------------------------------------------------------------------
 % =========================================================================
 % *** END FUNCTION getAxesDimensions
 % =========================================================================
@@ -3918,23 +3907,23 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
   cbarHandles = [];  % indices of color bar handles;
                      % they need to be treated separately
   for k = 1:n
+      % treat color bars later
+      if strcmp( get(visibleAxesHandles(k),'Tag'), 'Colorbar' )
+          cbarHandles = [ cbarHandles, k ];
+          continue
+      end
+
       % `axesPos(i,:)` contains
       %     (indices 1,3): the x-value of the left and the right axis, and
       %     (indices 2,4): the y-value of the bottom and top axis,
       % of plot no. `i`
-      if strcmp( get(visibleAxesHandles(k),'Tag'), 'Colorbar' )
-          cbarHandles = [cbarHandles,k]; % treat color bars later
-          continue
-      else
-          axesPos(k,:) = get( visibleAxesHandles(k), 'Position' );
-      end
-
+      axesPos(k,:) = get( visibleAxesHandles(k), 'Position' );
       axesPos(k,3) = axesPos(k,1) + axesPos(k,3);
       axesPos(k,4) = axesPos(k,2) + axesPos(k,4);
   end
 
   % Unfortunately, MATLAB doesn't seem to exactly align color bars
-  % to its parent plot. Hence, some quirking is needed..
+  % to its parent plot. Hence, some quirking is needed.
   nonCbarHandles              = (1:n);
   nonCbarHandles(cbarHandles) = [];
   for k = cbarHandles
@@ -3981,7 +3970,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
               C(i,j) =  5;
               C(j,i) = -5;
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              
+
           elseif abs( axesPos(i,1)-axesPos(j,1) ) < m2t.tol;
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % left axes align
@@ -4119,9 +4108,9 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
                                        % If there is more than one, then
                                        % `idx` has twins. min returns the one
                                        % with the lowest index.
-                            
+
               % delete the index from the 'remove list'
-              doub(idx) = [];          
+              doub(idx) = [];
               C(i,doub) = 0;
               C(doub,i) = 0;
           end
@@ -4152,192 +4141,193 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
   % That means: start with the plot which has the most connections.
   [s,ix] = sort( sum(C~=0, 2), 'descend' );
   for k = 1:n
-      setOptionsRecursion( ix(k) );
+      [isProcessed,alignmentOptions] = setOptionsRecursion( isProcessed, C, alignmentOptions, ix(k) );
   end
-
-  % -----------------------------------------------------------------------
-  % sets the alignment options for a specific node
-  % and passes on the its children
-  % -----------------------------------------------------------------------
-  function setOptionsRecursion( k, parent )
-
-      % return immediately if is has been processed before
-      if isProcessed(k), return, end
-
-      % TODO not looking at twins is probably not the right thing to do
-      % find the non-zeros elements in the k-th row
-      unprocessedFriends = find( C(k,:)~=0 & ~isProcessed );
-      
-      unprocessedChildren = unprocessedFriends( abs(C(k,unprocessedFriends))~=5 );
-      unprocessedTwins    = unprocessedFriends( abs(C(k,unprocessedFriends))==5 );
-      
-      if length(unprocessedTwins)==1
-          alignmentOptions(k).isElderTwin = 1;
-      elseif length(unprocessedTwins)>1
-          error( 'setOptionsRecursion:twoTwins',...
-                 'More than one twin axes discovered.' );
-      end
-      
-      if ~isempty(unprocessedChildren)  % are there unprocessed children
-          % then, give these axes a name
-          alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
-                                       sprintf( 'name=plot%d', k ) ];
-      end
-
-      if nargin==2 % if a parent is given
-          if ( abs(C(parent,k))==5 ) % don't apply "at=" for younger twins
-              alignmentOptions(k).isYoungerTwin = 1;
-          else
-              % See were this node sits with respect to its parent,
-              % and adapt the option accordingly.
-              anchor = cornerCode2pgfplotOption( C(k,parent) );
-              refPos = cornerCode2pgfplotOption( C(parent,k) );
-
-              % add the option
-              alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
-                                           sprintf( 'at=(plot%d.%s), anchor=%s', ...
-                                                   parent, refPos, anchor ) ];
-          end
-      end
-
-      isProcessed(k) = 1;
-
-      % Recursively loop over all dependent 'child' axes;
-      % first the twins, though, to make sure they appear consecutively
-      % in the TikZ file.
-      for ii = unprocessedTwins
-          setOptionsRecursion( ii, k );
-      end
-      for ii = unprocessedChildren
-          setOptionsRecursion( ii, k );
-      end
-
-  end
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  % translates the corner code in a real option to pgfplots
-  function pgfOpt = cornerCode2pgfplotOption( code )
-
-    switch code
-        case 1
-            pgfOpt = 'right of south east';
-        case 2
-            pgfOpt = 'right of north east';
-        case 3
-            pgfOpt = 'above north west';
-        case 4
-            pgfOpt = 'above north east';
-        case -1
-            pgfOpt = 'left of south west';
-        case -2
-            pgfOpt = 'left of north west';
-        case -3
-            pgfOpt = 'below south west';
-        case -4
-            pgfOpt = 'below south east';
-        otherwise
-            error( 'cornerCode2pgfplotOption:unknRelCode',...
-                   'Illegal alignment code %d.', code );
-    end
-
-  end
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  % The handle `colBarHandle` is the handle of a color bar,
-  % `axesHandlesPos` a (nx4)-matrix containing the positions of all
-  % *non-colorbar* handles.
-  % The function looks for the color bar's parent and returnes the position
-  % "as it should be".
-  function pos = correctColorbarPos( colBarHandle, axesHandlesPos )
-
-    colBarPos    = get( colBarHandle, 'Position' );
-    colBarPos(3) = colBarPos(1) + colBarPos(3);
-    colBarPos(4) = colBarPos(2) + colBarPos(4);
-
-    loc = get( colBarHandle, 'Location' );
-
-    % get the ID of the refence axes of the color bar
-    refAxesId  = getReferenceAxes( loc, colBarPos, axesHandlesPos );
-    refAxesPos = axesHandlesPos(refAxesId,:);
-
-    switch loc
-        case { 'North', 'South', 'East', 'West' }
-            userWarning( m2t, 'alignSubPlots:getColorbarPos',                     ...
-                         'Don''t know how to deal with inner colorbars yet.' );
-            return;
-
-        case {'NorthOutside','SouthOutside'}
-            pos = [ refAxesPos(1), ...
-                    colBarPos(2) , ...
-                    refAxesPos(3), ...
-                    colBarPos(4)       ];
-
-        case {'EastOutside','WestOutside'}
-            pos = [ colBarPos(1) , ...
-                    refAxesPos(2), ...
-                    colBarPos(3) , ...
-                    refAxesPos(4)      ];
-
-        otherwise
-            error( 'alignSubPlots:getColorbarPos',    ...
-                   'Unknown ''Location'' %s.', loc  );
-    end
-
-  end
-  % -----------------------------------------------------------------------
-
-
-  % -----------------------------------------------------------------------
-  function refAxesId = getReferenceAxes( loc, colBarPos, axesHandlesPos )
-
-    % if there is only one axes reference handle, it must be the parent
-    if size(axesHandlesPos,1) == 1
-        refAxesId = 1;
-        return;
-    end
-
-    switch loc
-        case { 'North', 'South', 'East', 'West' }
-            userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
-            return;
-
-        case {'NorthOutside'}
-            % scan in `axesHandlesPos` for the handle number that lies
-            % directly below colBarHandle
-            [m,refAxesId]  = min( colBarPos(2) ...
-                                 - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
-
-        case {'SouthOutside'}
-            % scan in `axesHandlesPos` for the handle number that lies
-            % directly above colBarHandle
-            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
-                             - colBarPos(4) );
-
-        case {'EastOutside'}
-            % scan in `axesHandlesPos` for the handle number that lies
-            % directly left of colBarHandle
-            [m,refAxesId]  = min( colBarPos(1) ...
-                             - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
-
-        case {'WestOutside'}
-            % scan in `axesHandlesPos` for the handle number that lies
-            % directly right of colBarHandle
-            [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
-                             - colBarPos(3)  );
-
-        otherwise
-            error( 'getReferenceAxes:illLocation',    ...
-                   'Illegal ''Location'' ''%s''.', loc  );
-    end
-
-  end
-  % -----------------------------------------------------------------------
 
 end
+% -----------------------------------------------------------------------
+% sets the alignment options for a specific node
+% and passes on the its children
+% -----------------------------------------------------------------------
+function [isProcessed, alignmentOptions] = setOptionsRecursion( isProcessed, C, alignmentOptions, k, parent )
+
+    % return immediately if is has been processed before
+    if isProcessed(k)
+        return
+    end
+
+    % TODO not looking at twins is probably not the right thing to do
+    % find the non-zeros elements in the k-th row
+    unprocessedFriends = find( C(k,:)~=0 & ~isProcessed );
+
+    unprocessedChildren = unprocessedFriends( abs(C(k,unprocessedFriends))~=5 );
+    unprocessedTwins    = unprocessedFriends( abs(C(k,unprocessedFriends))==5 );
+
+    if length(unprocessedTwins)==1
+        alignmentOptions(k).isElderTwin = 1;
+    elseif length(unprocessedTwins)>1
+        error( 'setOptionsRecursion:twoTwins',...
+                'More than one twin axes discovered.' );
+    end
+
+    if ~isempty(unprocessedChildren)  % are there unprocessed children
+        % then, give these axes a name
+        alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
+                                      sprintf( 'name=plot%d', k ) ];
+    end
+
+    if nargin==5 % if a parent is given
+        if ( abs(C(parent,k))==5 ) % don't apply "at=" for younger twins
+            alignmentOptions(k).isYoungerTwin = 1;
+        else
+            % See were this node sits with respect to its parent,
+            % and adapt the option accordingly.
+            anchor = cornerCode2pgfplotOption( C(k,parent) );
+            refPos = cornerCode2pgfplotOption( C(parent,k) );
+
+            % add the option
+            alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
+                                          sprintf( 'at=(plot%d.%s), anchor=%s', ...
+                                                  parent, refPos, anchor ) ];
+        end
+    end
+
+    isProcessed(k) = 1;
+
+    % Recursively loop over all dependent 'child' axes;
+    % first the twins, though, to make sure they appear consecutively
+    % in the TikZ file.
+    for ii = unprocessedTwins
+        [isProcessed,alignmentOptions] = setOptionsRecursion( isProcessed, C, alignmentOptions, ii, k );
+    end
+    for ii = unprocessedChildren
+        [isProcessed,alignmentOptions] = setOptionsRecursion( isProcessed, C, alignmentOptions, ii, k );
+    end
+
+end
+% -----------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------
+% translates the corner code in a real option to pgfplots
+function pgfOpt = cornerCode2pgfplotOption( code )
+
+  switch code
+      case 1
+          pgfOpt = 'right of south east';
+      case 2
+          pgfOpt = 'right of north east';
+      case 3
+          pgfOpt = 'above north west';
+      case 4
+          pgfOpt = 'above north east';
+      case -1
+          pgfOpt = 'left of south west';
+      case -2
+          pgfOpt = 'left of north west';
+      case -3
+          pgfOpt = 'below south west';
+      case -4
+          pgfOpt = 'below south east';
+      otherwise
+          error( 'cornerCode2pgfplotOption:unknRelCode',...
+                  'Illegal alignment code %d.', code );
+  end
+
+end
+% -----------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------
+% The handle `colBarHandle` is the handle of a color bar,
+% `axesHandlesPos` a (nx4)-matrix containing the positions of all
+% *non-colorbar* handles.
+% The function looks for the color bar's parent and returnes the position
+% "as it should be".
+function pos = correctColorbarPos( colBarHandle, axesHandlesPos )
+
+  colBarPos    = get( colBarHandle, 'Position' );
+  colBarPos(3) = colBarPos(1) + colBarPos(3);
+  colBarPos(4) = colBarPos(2) + colBarPos(4);
+
+  loc = get( colBarHandle, 'Location' );
+
+  % get the ID of the refence axes of the color bar
+  refAxesId  = getReferenceAxes( loc, colBarPos, axesHandlesPos );
+  refAxesPos = axesHandlesPos(refAxesId,:);
+
+  switch loc
+      case { 'North', 'South', 'East', 'West' }
+          userWarning( m2t, 'alignSubPlots:getColorbarPos',                     ...
+                        'Don''t know how to deal with inner colorbars yet.' );
+          return;
+
+      case {'NorthOutside','SouthOutside'}
+          pos = [ refAxesPos(1), ...
+                  colBarPos(2) , ...
+                  refAxesPos(3), ...
+                  colBarPos(4)       ];
+
+      case {'EastOutside','WestOutside'}
+          pos = [ colBarPos(1) , ...
+                  refAxesPos(2), ...
+                  colBarPos(3) , ...
+                  refAxesPos(4)      ];
+
+      otherwise
+          error( 'alignSubPlots:getColorbarPos',    ...
+                  'Unknown ''Location'' %s.', loc  );
+  end
+
+end
+% -----------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------
+function refAxesId = getReferenceAxes( loc, colBarPos, axesHandlesPos )
+
+  % if there is only one axes reference handle, it must be the parent
+  if size(axesHandlesPos,1) == 1
+      refAxesId = 1;
+      return;
+  end
+
+  switch loc
+      case { 'North', 'South', 'East', 'West' }
+          userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
+          return;
+
+      case {'NorthOutside'}
+          % scan in `axesHandlesPos` for the handle number that lies
+          % directly below colBarHandle
+          [m,refAxesId]  = min( colBarPos(2) ...
+                                - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
+
+      case {'SouthOutside'}
+          % scan in `axesHandlesPos` for the handle number that lies
+          % directly above colBarHandle
+          [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
+                            - colBarPos(4) );
+
+      case {'EastOutside'}
+          % scan in `axesHandlesPos` for the handle number that lies
+          % directly left of colBarHandle
+          [m,refAxesId]  = min( colBarPos(1) ...
+                            - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
+
+      case {'WestOutside'}
+          % scan in `axesHandlesPos` for the handle number that lies
+          % directly right of colBarHandle
+          [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
+                            - colBarPos(3)  );
+
+      otherwise
+          error( 'getReferenceAxes:illLocation',    ...
+                  'Illegal ''Location'' ''%s''.', loc  );
+  end
+
+end
+% -----------------------------------------------------------------------
 % =========================================================================
 % *** END FUNCTION alignSubPlots
 % =========================================================================
