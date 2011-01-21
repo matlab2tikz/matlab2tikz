@@ -284,7 +284,6 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   end
   axesHandles(rmList) = [];
 
-
   % Turn around the handles vector to make sure that plots that appeared
   % first also appear first in the vector. This has effects on the alignment
   % and the order in which the plots appear in the final TikZ file.
@@ -334,7 +333,7 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
                                                           m2t.requiredRgbColors(k,:)) ...
                               );
       end
-       m2t.content = append( m2t.content, sprintf('\n') );
+      m2t.content = append( m2t.content, sprintf('\n') );
   end
 
   % finally print it to the file
@@ -3534,7 +3533,6 @@ function dimension = getAxesDimensions( handle, ...
 
   % get the natural width-height ration of the plot
   axesWidthHeightRatio = width / height;
-
   % check matlab2tikz arguments
   if ~isempty( widthString )
       width = extractValueUnit( widthString );
@@ -3660,9 +3658,13 @@ end
 % ---------------------------------------------------------------------------
 
 % ---------------------------------------------------------------------------
+% decompose m2t.opts.Results.width into value and unit
 function out = extractValueUnit( str )
-    % decompose m2t.opts.Results.width into value and unit
-    i = regexp( str, '[a-z,\\]*' ); %% include the backslash to allow for units such as \figureheight
+
+    % include the backslash to allow for units such as \figureheight
+    % TODO This line hangs in Octave. Make sure this is fixed.
+    i = regexp( str, '[a-z,\\]*' );
+
     if length(i) > 1
         error( 'getAxesDimensions:illegalWidth', ...
                 'The width string ''%s'' could not be decomposed into value-unit pair.', str );
@@ -3672,7 +3674,7 @@ function out = extractValueUnit( str )
     else
         out.value = str2double( str(1:i-1) );
     end
-    out.unit  = strtrim( str(i:end) );
+    out.unit = strtrim( str(i:end) );
 end
 % ---------------------------------------------------------------------------
 % =========================================================================

@@ -35,11 +35,13 @@
 function matlab2tikz_acidtest( varargin )
 
   % -----------------------------------------------------------------------
-  matlab2tikzOpts = inputParser;
+  matlab2tikzOpts = myInputParser;
 
-  matlab2tikzOpts.addOptional( 'testFunctionIndices' , [], @isfloat );
+  matlab2tikzOpts = matlab2tikzOpts.addOptional( matlab2tikzOpts, ...
+                                                 'testFunctionIndices', ...
+                                                 [], @isfloat );
 
-  matlab2tikzOpts.parse( varargin{:} );
+  matlab2tikzOpts = matlab2tikzOpts.parse( matlab2tikzOpts, varargin{:} );
   % -----------------------------------------------------------------------
 
   % first, initialize the tex output
@@ -83,7 +85,9 @@ function matlab2tikz_acidtest( varargin )
       % now, test matlab2xxx
       matlab2tikz( gen_file, 'silent', false,...
                              'relativePngPath', '../data/', ...
-                             'width', '\figurewidth');
+                             'width', '\figurewidth' );
+
+      return
 
       % Create a copy, which we can modify (which 'savefig' does)
       savefig( pdf_file, 'pdf' );
