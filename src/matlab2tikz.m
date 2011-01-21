@@ -59,12 +59,24 @@
 % =========================================================================
 function matlab2tikz( varargin )
 
-  % make sure we're running MATLAB>=2008b
-  version_data = ver('MATLAB');
-  Version_string = version_data.Version;
-  if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<7)
-       error( 'You need at least   MATLAB R2008b   to run this script.');
+  % Check if we are in MATLAB or Octave.  ver('MATLAB') will return an empty
+  % struct if we are in Octave. Used below to suppress the graphics. 
+  version_data = ver;
+  if length( version_data ) > 1 % assume MATLAB
+      % make sure we're running MATLAB>=2008b
+      isMatlab = 1;
+      version_data = ver('MATLAB');
+      Version_string = version_data.Version;
+      if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<7)
+           error( 'You need at least   MATLAB R2008b   to run this script.');
+      end
+  elseif strcmp( version_data.Name, 'Octave' )
+      % Octave should work with all versions.
+      isMatlab = 0;
+  else
+      error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
+
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   m2t.opts = [];
@@ -104,45 +116,46 @@ function matlab2tikz( varargin )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % scan the options
-  m2t.opts = inputParser;
-  m2t.opts.addOptional( 'filename', ...
-                        [], ...
-                        @(x) filenameValidation(x,m2t.opts) );
+  m2t.opts = myInputParser;
+  m2t.opts = m2t.opts.addOptional( m2t.opts, ...
+                                   'filename', ...
+                                   [], ...
+                                   @(x) filenameValidation(x,m2t.opts) );
 
   % possibility to give a file handle file as argument
-  m2t.opts.addOptional( 'filehandle', [], @filehandleValidation );
+  m2t.opts = m2t.opts.addOptional( m2t.opts, 'filehandle', [], @filehandleValidation );
 
   % whether to strictly stick to the default MATLAB plot appearance:
-  m2t.opts.addOptional( 'strict', 0, @islogical );
+  m2t.opts = m2t.opts.addOptional( m2t.opts, 'strict', 0, @islogical );
 
   % don't plot warning messages
-  m2t.opts.addOptional( 'silent', 0, @islogical );
+  m2t.opts = m2t.opts.addOptional( m2t.opts, 'silent', 0, @islogical );
 
   % Whether to save images in PNG format or to natively draw filled squares
   % using TikZ itself.
   % Default it PNG.
-  m2t.opts.addOptional( 'imagesAsPng', 1, @islogical );
-  m2t.opts.addOptional( 'relativePngPath', [], @ischar );
+  m2t.opts = m2t.opts.addOptional( m2t.opts, 'imagesAsPng', 1, @islogical );
+  m2t.opts = m2t.opts.addOptional( m2t.opts, 'relativePngPath', [], @ischar );
 
   % width and height of the figure
-  m2t.opts.addParamValue( 'height', [], @ischar );
-  m2t.opts.addParamValue( 'width' , [], @ischar );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'height', [], @ischar );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'width' , [], @ischar );
 
   % minimum distance for two points to be plotted separately
-  m2t.opts.addParamValue( 'minimumPointsDistance', 0.0, @isnumeric );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'minimumPointsDistance', 0.0, @isnumeric );
 
   % extra axis options
-  m2t.opts.addParamValue( 'extraAxisOptions', {}, @isCellOrChar );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'extraAxisOptions', {}, @isCellOrChar );
 
   % file encoding
-  m2t.opts.addParamValue( 'encoding' , '', @ischar );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'encoding' , '', @ischar );
 
   % math mode in titles and captions
   % -- this is default "true" as MATLAB may put non-LaTeX compilable structures
   % in there.
-  m2t.opts.addParamValue( 'mathmode' , 1, @islogical );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'mathmode' , 1, @islogical );
 
-  m2t.opts.parse( varargin{:} );
+  m2t.opts = m2t.opts.parse( m2t.opts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % add global elements
@@ -167,12 +180,18 @@ function matlab2tikz( varargin )
           filename = uiputfile( {'*.tikz'; '*.*'}, ...
                                 'Save File' );
       end
+
       % open the file for writing
-      fid = fopen( filename, ...
-                  'w', ...
-                  'native', ...
-                  m2t.opts.Results.encoding ...
-                );
+      if isMatlab
+          fid = fopen( filename, ...
+                       'w', ...
+                       'native', ...
+                       m2t.opts.Results.encoding ...
+                     );
+      else
+          fid = fopen( filename, 'w' );
+      end
+
       if fid == -1
           error( 'matlab2tikz:fileOpenError', ...
                  'Unable to open file ''%s'' for writing.', ...
@@ -392,7 +411,7 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       end
 
       % append the environment
-      pgfEnvironments = [ pgfEnvironments, env ];
+      pgfEnvironments = [ pgfEnvironments, {env} ];
   end
 
 end
@@ -828,7 +847,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   [ m2t, xcolor ] = getColor( m2t, handle, color, 'patch' );
   lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
   [ m2t, markerOptions ] = getMarkerOptions( m2t, handle );
-  drawOptions = [ sprintf( 'color=%s', xcolor ), ... % color
+  drawOptions = [ {sprintf( 'color=%s', xcolor )}, ... % color
                   lineOptions, ...
                   markerOptions
                 ];
@@ -1363,8 +1382,8 @@ function lineOpts = getLineOptions( m2t, lineStyle, lineWidth )
 
   if ~strcmp(lineStyle,'none') && abs(lineWidth-m2t.tol)>0
 
-      lineOpts = [ lineOpts,                                           ...
-                   sprintf('%s', translateLineStyle(lineStyle) ) ];
+      lineOpts = appendOptions( lineOpts,                                 ...
+                                sprintf('%s', translateLineStyle(lineStyle) ) );
 
       % take over the line width in any case when in strict mode;
       % if not, don't add anything in case of default line width
@@ -4363,6 +4382,7 @@ function userWarning( m2t, message, varargin )
   end
 
   % Replace '\n' by '\n *** ' and print.
+  % TODO Fix this for Octave.
   mess = regexprep( mess, '\n', '\n *** ' );
   fprintf( '\n *** %s', mess );
 
@@ -4401,10 +4421,12 @@ function options = appendOptions( options, appendix )
     end
 
     if ischar(appendix)
-        options = [ options, appendix ];
+        % MATLAB(R) doesn't actually need the curly-bracket conversion-to-
+        % struct for the string, but Octave does. Code works for both.
+        options = [ options, {appendix} ];
     elseif iscellstr(appendix)
         for k = 1:length(appendix)
-            options = [ options, appendix{k} ];
+            options = appendOptions( options, appendix{k} );
         end
     else
         error( 'Argument must be of class ''string'' or cell of strings.' );
