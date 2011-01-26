@@ -153,7 +153,7 @@ function matlab2tikz( varargin )
   % math mode in titles and captions
   % -- this is default "true" as MATLAB may put non-LaTeX compilable structures
   % in there.
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'mathmode' , 1, @islogical );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'mathmode', 1, @islogical );
 
   m2t.opts = m2t.opts.parse( m2t.opts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

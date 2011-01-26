@@ -1,3 +1,4 @@
+% =========================================================================
 function parser = myInputParser ()
   % Initialize the structure.
   parser = struct ();
@@ -17,15 +18,15 @@ function parser = myInputParser ()
   parser.UsingDefaults = {};
 
   % Handles for functions that act on the object.
-  parser.addRequired = @addRequired;
-  parser.addOptional = @addOptional;
+  parser.addRequired   = @addRequired;
+  parser.addOptional   = @addOptional;
   parser.addParamValue = @addParamValue;
-  parser.parse = @parse;
+  parser.parse         = @parse;
 
   % Initialize the parser plan
   parser.plan = {};
 end
-
+% =========================================================================
 function p = parser_plan (q, arg_type, name, default, validator)
   p = q;
   plan = p.plan;
@@ -35,25 +36,25 @@ function p = parser_plan (q, arg_type, name, default, validator)
   else
     n = numel (plan) + 1;
   end
-  plan(n).type = arg_type;
-  plan(n).name = name;
-  plan(n).default = default;
+  plan(n).type      = arg_type;
+  plan(n).name      = name;
+  plan(n).default   = default;
   plan(n).validator = validator;
   p.plan = plan;
 end
-
+% =========================================================================
 function p = addRequired (p, name, validator)
   p = parser_plan (p, 'required', name, [], validator);
 end
-
+% =========================================================================
 function p = addOptional (p, name, default, validator)
   p = parser_plan (p, 'optional', name, default, validator);
 end
-
+% =========================================================================
 function p = addParamValue (p, name, default, validator)
   p = parser_plan (p, 'paramvalue', name, default, validator);
 end
-
+% =========================================================================
 function p = parse (p, varargin)
   plan = p.plan;
   results = p.Results;
@@ -116,21 +117,24 @@ function p = parse (p, varargin)
           varargin(union(m,m+1)) = [];
         end
       otherwise
-        error (sprintf ('%s:parse', mfilename), ...
-               'parse (%s): Invalid argument type.', mfilename)
+        error( sprintf ('%s:parse', mfilename), ...
+               'parse (%s): Invalid argument type.', mfilename ...
+             )
       end
     end
     if (found)
       if (validate_arg (plan(n).validator, value))
         results.(plan(n).name) = value;
       else
-        error (sprintf ('%s:invalidinput', mfilename), ...
-               '%s: input ''%s'' is invalid.\n', mfilename, plan(n).name);
+        error( sprintf ('%s:invalidinput', mfilename), ...
+               '%s: Input argument ''%s'' has invalid value.\n', mfilename, plan(n).name ...
+             );
       end
       p.Parameters = union (p.Parameters, {plan(n).name});
     elseif (strcmp (plan(n).type, 'required'))
-      error (sprintf ('%s:missinginput', mfilename), ...
-             '%s: input ''%s'' is missing.\n', mfilename, plan(n).name);
+      error( sprintf ('%s:missinginput', mfilename), ...
+             '%s: input ''%s'' is missing.\n', mfilename, plan(n).name ...
+           );
     else
       using_defaults = union (using_defaults, {plan(n).name});
     end
@@ -156,7 +160,7 @@ function p = parse (p, varargin)
   p.UsingDefaults = using_defaults;
 
 end
-
+% =========================================================================
 function result = validate_arg (validator, arg)
   try
     result = validator (arg);
@@ -164,3 +168,4 @@ function result = validate_arg (validator, arg)
     result = false;
   end
 end
+% =========================================================================
