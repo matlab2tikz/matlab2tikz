@@ -74,7 +74,8 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @multipleAxes        , ...
                            @scatterPlot         , ...
                            @surfPlot            , ...
-                           @surfPlot2
+                           @surfPlot2           , ...
+                           @ylabels
                          };
 %                             @spectro
                            %@freqResponsePlot    , ...
@@ -1044,6 +1045,26 @@ function description = surfPlot2()
 end
 % =========================================================================
 % *** END FUNCTION surfPlot2
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION ylabels
+% =========================================================================
+function description = ylabels()
+
+  x = 0:.01:2*pi;
+  H = plotyy(x,sin(x),x,3*cos(x));
+
+  ylabel(H(1),'sin(x)');
+  ylabel(H(2),'3cos(x)');
+
+  xlabel(gca,'time')
+
+  description = 'Separate y-labels.';
+end
+% =========================================================================
+% *** END FUNCTION ylabels
 % =========================================================================
 
 

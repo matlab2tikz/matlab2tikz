@@ -87,8 +87,6 @@ function matlab2tikz_acidtest( varargin )
                              'relativePngPath', '../data/', ...
                              'width', '\figurewidth' );
 
-      return
-
       % Create a copy, which we can modify (which 'savefig' does)
       savefig( pdf_file, 'pdf' );
 
@@ -103,7 +101,7 @@ function matlab2tikz_acidtest( varargin )
       end
 
       close( fig_handle );
-      
+
       elapsedTime = toc;
       fprintf( 'done (%4.2fs).\n\n', elapsedTime );
   end
