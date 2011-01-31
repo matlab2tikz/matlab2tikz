@@ -222,7 +222,9 @@ function matlab2tikz( varargin )
                  'Make sure you have at least Pgfplots 1.3 available.\n', ...
                  'For best results, use \\pgfplotsset{compat=newest}, and for speed ', ...
                  'use \\pgfplotsset{plot coordinates/math parser=false} .\n' ] );
-  fprintf( '\n' );
+  if ~m2t.opts.Results.silent
+      fprintf( '\n' );
+  end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
@@ -3122,10 +3124,10 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
       xTick      = get( handle, 'XTick' );
       isXAxisLog = strcmp( get(handle,'XScale'), 'log' );
       [ticks.x, tickLabels.x] = getAxisTicks( m2t, xTick, xTickLabel, isXAxisLog );
-  end
-  % overwrite if empty
-  if isempty(xTickLabel)
-      tickLabels.x = '\empty';
+      % overwrite if empty
+      if isempty(xTickLabel)
+          tickLabels.x = '\empty';
+      end
   end
 
   yTickLabel = get( handle, 'YTickLabel' );
@@ -3140,10 +3142,10 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
       yTick      = get( handle, 'YTick' );
       isYAxisLog = strcmp( get(handle,'YScale'), 'log' );
       [ticks.y, tickLabels.y] = getAxisTicks( m2t, yTick, yTickLabel, isYAxisLog );
-  end
-  % overwrite if empty
-  if isempty(yTickLabel)
-      tickLabels.y = '\empty';
+      % overwrite if empty
+      if isempty(yTickLabel)
+          tickLabels.y = '\empty';
+      end
   end
 
 end
