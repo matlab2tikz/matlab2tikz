@@ -108,7 +108,7 @@ function p = parse (p, varargin)
           varargin(union(m,m+1)) = [];
         end
       case 'paramvalue'
-        m = cellfun (@ischar, varargin);
+        m = find( cellfun (@ischar, varargin) );
         k = find (name_cmp (plan(n).name, varargin(m)));
         if (~ isempty (k))
           found = true;
