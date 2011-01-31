@@ -222,6 +222,7 @@ function matlab2tikz( varargin )
                  'Make sure you have at least Pgfplots 1.3 available.\n', ...
                  'For best results, use \\pgfplotsset{compat=newest}, and for speed ', ...
                  'use \\pgfplotsset{plot coordinates/math parser=false} .\n' ] );
+  fprintf( '\n' );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
@@ -483,9 +484,12 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   m2t.currentHandles.pgfAxis = env;
 
   % get the view angle
-  env.options = appendOptions( env.options, ...
-                               sprintf( 'view={%g}{%g}', get( handle, 'View') ) ...
-                             );
+  view = get( handle, 'View' );
+  if any( view ~= [0,90] )
+      env.options = appendOptions( env.options, ...
+                                   sprintf( 'view={%g}{%g}', get( handle, 'View') ) ...
+                                 );
+  end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
