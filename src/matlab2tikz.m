@@ -1390,8 +1390,8 @@ function lineOpts = getLineOptions( m2t, lineStyle, lineWidth )
       matlabDefaultLineWidth = 0.5;
       if m2t.opts.Results.strict ...
          || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
-          lineOpts = [ lineOpts,                                       ...
-                       sprintf('line width=%.1fpt', lineWidth ) ];
+          lineOpts = appendOptions( lineOpts,                              ...
+                                    sprintf('line width=%.1fpt', lineWidth ) );
       end
 
   end
@@ -3161,11 +3161,20 @@ function [ticks, tickLabels] = getAxisTicks( m2t, tick, tickLabel, isLogAxis )
   % set ticks + labels
   ticks = collapse( num2cell(tick), ',' );
 
+  % if there's no specific labels, return empty
+  if isempty( tickLabel )
+      tickLabels = [];
+      return
+  end
+
   % sometimes tickLabels are cells, sometimes plain arrays
   % -- unify this to cells
   if ischar( tickLabel )
-      tickLabel = strtrim( mat2cell(tickLabel,                        ...
-                          ones(size(tickLabel,1),1),size(tickLabel,2)) );
+      tickLabel = strtrim( mat2cell( tickLabel,                    ...
+                                     ones( size(tickLabel,1), 1 ), ...
+                                     size( tickLabel, 2 )          ...
+                                   ) ...
+                         );
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
