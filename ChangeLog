@@ -1,3 +1,11 @@
+2010-01-31  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.1.0.
+	* Basic Octave compatibility.
+	* Several bugfixes:
+	   - bar plots fix (thanks to Christoph Rüdiger)
+	   - fix legends with split graphs
+
 2010-09-10  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.0.7.
