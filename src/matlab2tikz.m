@@ -116,6 +116,25 @@ function matlab2tikz( varargin )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % scan the options
+
+  % optionally allow the first parameter to define the figure
+  if ischar(varargin{1})
+      m2t.currentHandles.gcf = gcf;
+      m2t.currentHandles.colormap = colormap;
+  else
+      m2t.currentHandles.gcf = varargin{1};
+      try
+          m2t.currentHandles.colormap = get(varargin{1},'colormap');
+      catch err
+          error( 'matlab2tikz:parse',...
+                 ['Expected a valid figure handle, filename, or a '...
+                  'parameter key as the first argument\n']...
+               );
+      end
+      varargin = varargin(2:end);
+  end
+  
+  % use the input parser for all remaining options
   m2t.opts = myInputParser;
   m2t.opts = m2t.opts.addOptional( m2t.opts, ...
                                    'filename', ...
@@ -157,10 +176,6 @@ function matlab2tikz( varargin )
 
   m2t.opts = m2t.opts.parse( m2t.opts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  % add global elements
-  m2t.currentHandles.gcf      = gcf;
-  m2t.currentHandles.colormap = colormap;
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle output file handle/file name
