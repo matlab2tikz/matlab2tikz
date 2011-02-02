@@ -735,10 +735,10 @@ end
 % =========================================================================
 function description = errorBars2 ()
 
-  load count.dat;
-  y = mean(count,2);
-  e = std(count,1,2);
-  errorbar(y,e,'xr')
+  data = load( 'count.dat' );
+  y = mean( data, 2 );
+  e = std( data, 1, 2 );
+  errorbar( y, e, 'xr' );
 
   description = 'Another error bar example.' ;
 
@@ -837,10 +837,10 @@ end
 % *** FUNCTION mandrillImage
 % =========================================================================
 function description = mandrillImage()
-  load mandrill
+  data = load( 'mandrill' );
   figure('color','k')
-  image(X)
-  colormap(map) 
+  image( data.X )
+  colormap( data.map )
   axis off
   axis image
 
@@ -887,9 +887,9 @@ end
 % *** FUNCTION clownImage
 % =========================================================================
 function description = clownImage()
-  load clown
-  imagesc(X)
-  colormap(gray)
+  data = load( 'clown' );
+  imagesc( data.X )
+  colormap( gray )
 
   description = 'Picture of a clown';
 end
@@ -1007,8 +1007,8 @@ end
 % *** FUNCTION scatterPlot
 % =========================================================================
 function description = scatterPlot()
-  load seamount
-  scatter(x,y,5,z,'^');
+  data = load( 'seamount' );
+  scatter( data.x, data.y, 5, data.z, '^' );
   description = 'Scatter plot';
 end
 % =========================================================================
