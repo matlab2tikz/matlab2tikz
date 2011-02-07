@@ -85,6 +85,10 @@ function p = parse (p, varargin)
   if (isempty (results))
     results = struct ();
   end
+  type = {plan.type};
+  n = find( strcmp( type, 'paramvalue' ) );
+  m = setdiff (1:numel( plan ), n );
+  plan = plan ([n,m]);
   for n = 1 : numel (plan)
     found = false;
     results.(plan(n).name) = plan(n).default;
@@ -92,6 +96,9 @@ function p = parse (p, varargin)
       switch plan(n).type
       case 'required'
         found = true;
+        if (strcmpi (varargin{1}, plan(n).name))
+          varargin(1) = [];
+        end
         value = varargin{1};
         varargin(1) = [];
       case 'optional'
