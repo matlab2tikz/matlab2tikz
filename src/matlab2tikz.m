@@ -122,7 +122,7 @@ function matlab2tikz( varargin )
                                    [], ...
                                    @(x) filenameValidation(x,m2t.opts) );
 
-  % possibility to give a file handle file as argument
+  % possibility to give a file handle as argument
   m2t.opts = m2t.opts.addOptional( m2t.opts, 'filehandle', [], @filehandleValidation );
 
   % whether to strictly stick to the default MATLAB plot appearance:
@@ -2578,12 +2578,15 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set position, ticks etc. of the colorbar
   loc = get( handle, 'Location' );
-  switch loc
-      case { 'North', 'South', 'East', 'West' }
+
+  % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
+  % small cased ('northoutside'). Hence, use lower() to unification.
+  switch lower( loc )
+      case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
           return;
 
-      case {'NorthOutside','SouthOutside'}
+      case {'northoutside','southoutside'}
           cbarOptions = [ cbarOptions,                          ...
                            sprintf( 'width=%g%s, height=%g%s',  ...
                                      parentDim.x.value, parentDim.x.unit,   ...
@@ -2593,7 +2596,9 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                            sprintf( 'ymin=%g, ymax=%g', [0,1] )         ...
                          ];
 
-          if strcmp( loc, 'NorthOutside' )
+          % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'),
+          % in Octave small cased ('northoutside').
+          if strcmp( lower( loc ), 'northoutside' )
               cbarOptions = [ cbarOptions,                            ...
                               'xticklabel pos=right, ytick=\empty' ];
                               % we actually wanted to set pos=top here,
@@ -2607,7 +2612,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                                % pos=left does the same thing, really.
           end
 
-      case {'EastOutside','WestOutside'}
+      case {'eastoutside','westoutside'}
           cbarOptions = [ cbarOptions,                          ...
                            sprintf( 'width=%g%s, height=%g%s',  ...
                                      width.value      , width.unit,  ...
@@ -2616,7 +2621,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                            sprintf( 'xmin=%g, xmax=%g', [0,1] ),        ...
                            sprintf( 'ymin=%g, ymax=%g', clim )          ...
                          ];
-          if strcmp( loc, 'EastOutside' )
+          if strcmp( lower( loc ), 'eastoutside' )
                cbarOptions = [ cbarOptions,                           ...
                                'xtick=\empty, yticklabel pos=right' ];
            else
@@ -2667,11 +2672,13 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
       pngFileName      = fullfile( pathstr, [name '-colorbar' num2str(m2t.colorbarNo) '.png'] );
       pngReferencePath = fullfile( m2t.relativePngPath, [name '-colorbar' num2str(m2t.colorbarNo) '.png'] );
       strip = 1:length(cmap);
-      switch loc
-          case {'NorthOutside','SouthOutside'}
+      % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
+      % small cased ('northoutside'). Hence, use lower() to unification.
+      switch lower( loc )
+          case {'northoutside','southoutside'}
               xLim = clim;
               yLim = [0, 1];
-          case {'WestOutside','EastOutside'}
+          case {'westoutside','eastoutside'}
               strip = strip(end:-1:1)';
               xLim = [0,1];
               yLim = clim;
@@ -2688,13 +2695,15 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
       for i=1:m
           [m2t, badgeColor] = rgb2tikzcol( m2t, cmap(i,:) );
 
-          switch loc
-              case {'NorthOutside','SouthOutside'}
+          % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
+          % small cased ('northoutside'). Hence, use lower() to unification.
+          switch lower( loc )
+              case {'northoutside','southoutside'}
                   x1 = clim(1) + cbarLength/m *(i-1);
                   x2 = clim(1) + cbarLength/m *i;
                   y1 = 0;
                   y2 = 1;
-              case {'WestOutside','EastOutside'}
+              case {'westoutside','eastoutside'}
                   x1 = 0;
                   x2 = 1;
                   y1 = clim(1) + cbarLength/m *(i-1);
@@ -3030,38 +3039,40 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   loc  = get( handle, 'Location' );
   dist = 0.03;  % distance to to axes in normalized coordinated
   anchor = [];
-  switch loc
-      case 'NorthEast'
+  % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
+  % small cased ('northoutside'). Hence, use lower() to unification.
+  switch lower( loc )
+      case 'northeast'
           % don't anything in this (default) case
-      case 'NorthWest'
+      case 'northwest'
           position = [dist, 1-dist];
           anchor   = 'north west';
-      case 'SouthWest'
+      case 'southwest'
           position = [dist, dist];
           anchor   = 'south west';
-      case 'SouthEast'
+      case 'southeast'
           position = [1-dist, dist];
           anchor   = 'south east';
-      case 'North'
+      case 'north'
           position = [0.5, 1-dist];
           anchor   = 'north';
-      case 'East'
+      case 'east'
           position = [1-dist, 0.5];
           anchor   = 'east';
-      case 'South'
+      case 'south'
           position = [0.5, dist];
           anchor   = 'south';
-      case 'West'
+      case 'west'
           position = [dist, 0.5];
           anchor   = 'west';
-      case 'Best'
+      case 'best'
           % TODO: Implement this one.
           % The position could be determined by means of 'Position' and/or
           % 'OuterPosition' of the legend handle; in fact, this could be made
           % a general principle for all legend placements.
           userWarning( m2t, [ ' Option ''Best'' not yet implemented.',         ...
                          ' Choosing default.' ] );
-      case 'BestOutside'
+      case 'bestoutside'
           % TODO: Implement this one.
           % For comments see above.
           userWarning( m2t, [ ' Option ''BestOutside'' not yet implemented.',  ...
@@ -4292,19 +4303,21 @@ function pos = correctColorbarPos( colBarHandle, axesHandlesPos )
   refAxesId  = getReferenceAxes( loc, colBarPos, axesHandlesPos );
   refAxesPos = axesHandlesPos(refAxesId,:);
 
-  switch loc
-      case { 'North', 'South', 'East', 'West' }
+  % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
+  % small cased ('northoutside'). Hence, use lower() to unification.
+  switch lower( loc )
+      case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'alignSubPlots:getColorbarPos',                     ...
                         'Don''t know how to deal with inner colorbars yet.' );
           return;
 
-      case {'NorthOutside','SouthOutside'}
+      case {'northoutside','southoutside'}
           pos = [ refAxesPos(1), ...
                   colBarPos(2) , ...
                   refAxesPos(3), ...
                   colBarPos(4)       ];
 
-      case {'EastOutside','WestOutside'}
+      case {'eastoutside','westoutside'}
           pos = [ colBarPos(1) , ...
                   refAxesPos(2), ...
                   colBarPos(3) , ...
@@ -4328,30 +4341,32 @@ function refAxesId = getReferenceAxes( loc, colBarPos, axesHandlesPos )
       return;
   end
 
-  switch loc
-      case { 'North', 'South', 'East', 'West' }
+  % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
+  % small cased ('northoutside'). Hence, use lower() to unification.
+  switch lower( loc )
+      case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
           return;
 
-      case {'NorthOutside'}
+      case {'northoutside'}
           % scan in `axesHandlesPos` for the handle number that lies
           % directly below colBarHandle
           [m,refAxesId]  = min( colBarPos(2) ...
                                 - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
 
-      case {'SouthOutside'}
+      case {'southoutside'}
           % scan in `axesHandlesPos` for the handle number that lies
           % directly above colBarHandle
           [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
                             - colBarPos(4) );
 
-      case {'EastOutside'}
+      case {'eastoutside'}
           % scan in `axesHandlesPos` for the handle number that lies
           % directly left of colBarHandle
           [m,refAxesId]  = min( colBarPos(1) ...
                             - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
 
-      case {'WestOutside'}
+      case {'westoutside'}
           % scan in `axesHandlesPos` for the handle number that lies
           % directly right of colBarHandle
           [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
