@@ -126,16 +126,16 @@ function matlab2tikz( varargin )
   m2t.opts = m2t.opts.addOptional( m2t.opts, 'filehandle', [], @filehandleValidation );
 
   % whether to strictly stick to the default MATLAB plot appearance:
-  m2t.opts = m2t.opts.addOptional( m2t.opts, 'strict', 0, @islogical );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'strict', 0, @islogical );
 
   % don't plot warning messages
-  m2t.opts = m2t.opts.addOptional( m2t.opts, 'silent', 0, @islogical );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'silent', 0, @islogical );
 
   % Whether to save images in PNG format or to natively draw filled squares
   % using TikZ itself.
   % Default it PNG.
-  m2t.opts = m2t.opts.addOptional( m2t.opts, 'imagesAsPng', 1, @islogical );
-  m2t.opts = m2t.opts.addOptional( m2t.opts, 'relativePngPath', [], @ischar );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'imagesAsPng', 1, @islogical );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'relativePngPath', [], @ischar );
 
   % width and height of the figure
   m2t.opts = m2t.opts.addParamValue( m2t.opts, 'height', [], @ischar );
