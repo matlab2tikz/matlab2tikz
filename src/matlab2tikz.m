@@ -3085,26 +3085,31 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
 
   lStyle = cell(0);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % append to ledend options
+  % append to legend options
   if ~isempty(anchor)
-      lStyle = [ lStyle, ...
-                 sprintf( 'at={(%g,%g)}',position ), ...
-                 sprintf( 'anchor=%s', anchor ) ];
+      lStyle = appendOptions( lStyle, ...
+                              { sprintf( 'at={(%g,%g)}',position ), ...
+                                sprintf( 'anchor=%s', anchor ) ...
+                              } ...
+                            );
   end
 
   % If the plot has 'legend boxoff', we have the 'not visible'
   % property, so turn off line and background fill.
   if ( ~isVisible(handle) )
-      lStyle=[lStyle, 'fill=none', 'draw=none' ];
+      lStyle = appendOptions( lStyle, ...
+                              { 'fill=none', 'draw=none' } ...
+                            );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % make sure the entries are flush left (default MATLAB behavior)
-  lStyle=[lStyle, 'nodes=right' ];
+  lStyle = appendOptions( lStyle, 'nodes=right' );
 
-  if ~isempty(lStyle)
-      lOpts = [ lOpts, ...
-                ['legend style={' collapse(lStyle,',') '}'] ];
+  if ~isempty( lStyle )
+      lOpts = appendOptions( lOpts, ...
+                             ['legend style={' collapse(lStyle,',') '}'] ...
+                           );
   end
 
 end
