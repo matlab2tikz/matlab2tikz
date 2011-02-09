@@ -3696,20 +3696,32 @@ end
 % decompose m2t.opts.Results.width into value and unit
 function out = extractValueUnit( str )
 
-    % include the backslash to allow for units such as \figureheight
-    % TODO This line hangs in Octave. Make sure this is fixed.
-    i = regexp( str, '[a-z,\\]*' );
+    % Regular expression to match '4.12cm', '\figurewidth', ...
+    fp_regex = '[-+]?\d*\.?\d*(?:e[-+]?\d+)?';
+    pattern = strcat( '(', fp_regex, ')?', '(\\?[a-z]+)' );
 
-    if length(i) > 1
-        error( 'getAxesDimensions:illegalWidth', ...
-                'The width string ''%s'' could not be decomposed into value-unit pair.', str );
+    [s,e,te,m,t,nm] = regexp( str, pattern, 'match' );
+
+    if length(t)~=1
+        error( 'getAxesDimensions:illegalLength', ...
+               'The width string ''%s'' could not be decomposed into value-unit pair.', str );
     end
-    if i==1
+
+    if length(t{1}) == 1
         out.value = 1.0; % such as in '1.0\figurewidth'
+        out.unit  = strtrim( t{1}{1} );
+    elseif length(t{1}) == 2 && length(t{1}{1}) == 0
+        % MATLAB(R) does this:
+        % length(t{1})==2 always, but the first field may be empty.
+        out.value = 1.0;
+        out.unit  = strtrim( t{1}{2} );
+    elseif length(t{1}) == 2
+        out.value = str2double( t{1}{1} );
+        out.unit  = strtrim( t{1}{2} );
     else
-        out.value = str2double( str(1:i-1) );
+        error( 'getAxesDimensions:illegalLength', ...
+               'The width string ''%s'' could not be decomposed into value-unit pair.', str );
     end
-    out.unit = strtrim( str(i:end) );
 end
 % ---------------------------------------------------------------------------
 % =========================================================================
