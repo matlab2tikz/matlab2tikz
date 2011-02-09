@@ -3032,8 +3032,8 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
           end
       end
 
-      lOpts = [ lOpts,                                                  ...
-                [ 'legend entries={', collapse(entries,','), '}' ] ];
+      lOpts = appendOptions( lOpts,                                          ...
+                             [ 'legend entries={', collapse(entries,','), '}' ] );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -4456,7 +4456,7 @@ function root = append( root, appendix )
         error( 'Argument must be of class ''string''.' );
     end
 
-    root.content = [ root.content, appendix ];
+    root.content = appendOptions( root.content, appendix );
     return;
 end
 % =========================================================================
