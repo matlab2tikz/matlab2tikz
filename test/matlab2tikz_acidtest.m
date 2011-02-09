@@ -34,6 +34,16 @@
 % =========================================================================
 function matlab2tikz_acidtest( varargin )
 
+  % In which environment are we?
+  version_data = ver;
+  if length( version_data ) > 1 % assume MATLAB
+      env = 'MATLAB(R)';
+  elseif strcmp( version_data.Name, 'Octave' )
+      env = 'GNU Octave';
+  else
+      error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
+  end
+
   % -----------------------------------------------------------------------
   matlab2tikzOpts = myInputParser;
 
@@ -87,8 +97,16 @@ function matlab2tikz_acidtest( varargin )
                              'relativePngPath', '../data/', ...
                              'width', '\figurewidth' );
 
-      % Create a copy, which we can modify (which 'savefig' does)
-      savefig( pdf_file, 'pdf' );
+      if strcmp( env, 'MATLAB(R)' )
+          % Create a cropped print.
+          savefig( pdf_file, 'pdf' );
+      elseif strcmp( env, 'GNU Octave' )
+          % In Octave, figures are automatically cropped when using print().
+          print( strcat(pdf_file,'.pdf'), '-dpdf' );
+          pause( 1.0 )
+      else
+          error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
+      end
 
       % ...and finally write the bits to the LaTeX file
       texfile_addtest( fh, pdf_file, gen_file, desc );

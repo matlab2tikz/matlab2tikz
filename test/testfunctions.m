@@ -123,8 +123,18 @@ end
 % =========================================================================
 function description = plain_cos ()
 
+
   fplot( @cos, [0,2*pi] );
-  daspect([ 1 2 1 ])
+
+  % Adjust the aspect ration when in MATLAB(R).
+  version_data = ver;
+  if length( version_data ) > 1 % assume MATLAB
+      daspect([ 1 2 1 ])
+  elseif strcmp( version_data.Name, 'Octave' )
+      % Octave doesn't have daspect unfortunately.
+  else
+      error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
+  end
 
   description = 'Plain cosine function, no particular extras.' ;
 
