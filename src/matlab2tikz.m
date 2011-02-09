@@ -1433,20 +1433,20 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
       % if not, don't add anything in case of default marker size
       % and effectively take pgfplots' default
       if m2t.opts.Results.strict || ~isDefault
-         drawOptions = [ drawOptions,                                 ...
-                         sprintf( 'mark size=%.1fpt', tikzMarkerSize ) ];
+         drawOptions = appendOptions( drawOptions,                           ...
+                                      sprintf( 'mark size=%.1fpt', tikzMarkerSize ) );
       end
 
       markOptions = cell( 0 );
       % make sure that the markers get painted in solid (and not dashed)
       % if the 'lineStyle' is not solid (otherwise there is no problem)
       if ~strcmp( lineStyle, 'solid' )
-          markOptions = [ markOptions, 'solid' ];
+          markOptions = appendOptions( markOptions, 'solid' );
       end
 
       % print no lines
       if strcmp(lineStyle,'none') || lineWidth==0
-          drawOptions = [ drawOptions, 'only marks' ] ;
+          drawOptions = appendOptions( drawOptions, 'only marks' );
       end
 
       % get the marker color right
@@ -1456,19 +1456,23 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
                            markOptions, ~strcmp(markerFaceColor,'none') );
       if ~strcmp(markerFaceColor,'none')
           [ m2t, xcolor ] = getColor( m2t, h, markerFaceColor, 'patch' );
-          markOptions = [ markOptions,  sprintf( 'fill=%s', xcolor ) ];
+          markOptions = appendOptions( markOptions, ...
+                                       sprintf( 'fill=%s', xcolor ) );
       end
       if ~strcmp(markerEdgeColor,'none') && ~strcmp(markerEdgeColor,'auto')
           [ m2t, xcolor ] = getColor( m2t, h, markerEdgeColor, 'patch' );
-          markOptions = [ markOptions, sprintf( 'draw=%s', xcolor ) ];
+          markOptions = appendOptions( markOptions, ...
+                                       sprintf( 'draw=%s', xcolor ) );
       end
 
       % add it all to drawOptions
-      drawOptions = [ drawOptions, sprintf( 'mark=%s', tikzMarker ) ];
+      drawOptions = appendOptions( drawOptions, ...
+                                   sprintf( 'mark=%s', tikzMarker ) );
 
       if ~isempty( markOptions )
           mo = collapse( markOptions, ',' );
-          drawOptions = [ drawOptions, [ 'mark options={', mo, '}' ] ];
+          drawOptions = appendOptions( drawOptions, ...
+                                       [ 'mark options={', mo, '}' ] );
       end
   end
 
