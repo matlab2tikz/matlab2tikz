@@ -852,10 +852,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   [ m2t, xcolor ] = getColor( m2t, handle, color, 'patch' );
   lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
   [ m2t, markerOptions ] = getMarkerOptions( m2t, handle );
-  drawOptions = [ {sprintf( 'color=%s', xcolor )}, ... % color
+  drawOptions = appendOptions( {sprintf( 'color=%s', xcolor )}, ... % color
                   lineOptions, ...
-                  markerOptions
-                ];
+                  markerOptions );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -884,7 +883,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
       % they appear as one in the legend. The following makes sure that all
       % the segments, except for the last one, are discarded from the legend.
       if k < length(xDataCell)
-          myDrawOptions = [ drawOptions, 'forget plot' ];
+          myDrawOptions = appendOptions( drawOptions, 'forget plot' );
           opts = [ '\n', collapse( myDrawOptions, ',\n' ), '\n' ];
       else
           opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
@@ -1688,12 +1687,12 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   faceColor  = get( handle, 'FaceColor' );
   if ~strcmp( faceColor, 'none' )
       [ m2t, xFaceColor ] = getColor( m2t, handle, faceColor, 'patch' );
-      drawOptions = [ drawOptions,                                    ...
-                      sprintf( 'fill=%s', xFaceColor ) ];
+      drawOptions = appendOptions( drawOptions,                                    ...
+                      sprintf( 'fill=%s', xFaceColor ) );
       xFaceAlpha = get( handle, 'FaceAlpha' );
       if abs(xFaceAlpha-1.0)>m2t.tol
-          drawOptions = [ drawOptions, ...
-                          sprintf( 'opacity=%s', xFaceAlpha ) ];
+          drawOptions = appendOptions( drawOptions, ...
+                          sprintf( 'opacity=%s', xFaceAlpha ) );
       end
   end
 
@@ -1701,10 +1700,10 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   edgeColor = get( handle, 'EdgeColor' );
   lineStyle = get( handle, 'LineStyle' );
   if strcmp( lineStyle, 'none' ) || strcmp( edgeColor, 'none' )
-      drawOptions = [ drawOptions, 'draw=none' ];
+      drawOptions = appendOptions( drawOptions, 'draw=none' );
   else
       [ m2t, xEdgeColor ] = getColor( m2t, handle, edgeColor, 'patch' );
-      drawOptions = [ drawOptions, sprintf( 'draw=%s', xEdgeColor ) ];
+      drawOptions = appendOptions( drawOptions, sprintf( 'draw=%s', xEdgeColor ) );
   end
 
   drawOpts = collapse( drawOptions, ',' );
@@ -1875,7 +1874,15 @@ end
 % =========================================================================
 function [ m2t, str ] = drawHggroup( m2t, h )
 
-  cl = class( handle(h) );
+  % Octave doesn't have the handle() function, so there's no way to
+  % determine the nature of the plot anymore at this point.
+  % Set to 'unknown' to force fallback handling. This produces something
+  % for bar plots, for example.
+  try
+    cl = class( handle(h) );
+  catch
+    cl = 'unknown';
+  end
 
   switch( cl )
       case 'specgraph.barseries'
@@ -1986,7 +1993,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   yData = get( h, 'YData' );
   cData = get( h, 'CData' );
 
-  drawOptions = [ drawOptions, 'scatter', 'only marks', 'scatter src=explicit' ];
+  drawOptions = appendOptions( drawOptions, 'scatter', 'only marks', 'scatter src=explicit' );
 
   matlabMarker = get( h, 'Marker' );
 
@@ -2135,11 +2142,11 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           % whereas pgfplots requires physical units (pt,cm,...); hence
           % have the units converted.
           ulength = normalized2physical( m2t );
-          drawOptions = [ drawOptions,                                                 ...
+          drawOptions = appendOptions( drawOptions,                                    ...
                           'ybar',                                                      ...
                           sprintf( 'bar width=%g%s, bar shift=%g%s',                   ...
                                     m2t.barWidth                *ulength.value, ulength.unit , ...
-                                    m2t.barShifts(m2t.barplotId)*ulength.value, ulength.unit  ) ];
+                                    m2t.barShifts(m2t.barplotId)*ulength.value, ulength.unit  ) );
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           % end grouped plots
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2192,11 +2199,11 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   % gather the draw options
   lineStyle = get( h, 'LineStyle' );
 
-  drawOptions = [ drawOptions, sprintf( 'fill=%s', xFaceColor ) ];
+  drawOptions = appendOptions( drawOptions, sprintf( 'fill=%s', xFaceColor ) );
   if strcmp( lineStyle, 'none' )
-      drawOptions = [ drawOptions, 'draw=none' ];
+      drawOptions = appendOptions( drawOptions, 'draw=none' );
   else
-      drawOptions = [ drawOptions, sprintf( 'draw=%s', xEdgeColor ) ];
+      drawOptions = appendOptions( drawOptions, sprintf( 'draw=%s', xEdgeColor ) );
   end
   drawOpts = collapse( drawOptions, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2253,11 +2260,10 @@ function [ m2t, str ] = drawStemseries( m2t, h )
   lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
   [ m2t, markerOptions ] = getMarkerOptions( m2t, h );
 
-  drawOptions = [ 'ycomb',                                  ...
+  drawOptions = appendOptions( 'ycomb',                      ...
                    sprintf( 'color=%s', plotColor ),         ... % color
                    lineOptions, ...
-                   markerOptions
-                ];
+                   markerOptions );
 
   % insert draw options
   drawOpts =  collapse( drawOptions, ',' );
@@ -2318,11 +2324,10 @@ function [ m2t, str ] = drawStairSeries( m2t, h )
   lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
   [ m2t, markerOptions ] = getMarkerOptions( m2t, h );
 
-  drawOptions = [ 'const plot',                      ...
+  drawOptions = appendOptions( 'const plot',         ...
                    sprintf( 'color=%s', plotColor ), ... % color
                    lineOptions, ...
-                   markerOptions
-                ];
+                   markerOptions );
 
   % insert draw options
   drawOpts =  collapse( drawOptions, ',' );
@@ -4255,7 +4260,7 @@ function [isProcessed, alignmentOptions] = setOptionsRecursion( isProcessed, C, 
 
             % add the option
             alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
-                                          sprintf( 'at=(plot%d.%s), anchor=%s', ...
+                                         sprintf( 'at=(plot%d.%s), anchor=%s', ...
                                                   parent, refPos, anchor ) ];
         end
     end
