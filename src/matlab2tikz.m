@@ -1799,7 +1799,11 @@ function [ m2t, str ] = drawImage( m2t, handle )
       end
 
       % write the image
-      imwrite(colorData, get(m2t.currentHandles.gcf,'ColorMap'), pngFileName, 'png');
+      imwrite( colorData, ...
+               get(m2t.currentHandles.gcf,'ColorMap'), ...
+               pngFileName, ...
+               'png' ...
+             );
       % ------------------------------------------------------------------------
 
       xLim = get( m2t.currentHandles.gca, 'XLim' );
@@ -4245,8 +4249,8 @@ function [isProcessed, alignmentOptions] = setOptionsRecursion( isProcessed, C, 
 
     if ~isempty(unprocessedChildren)  % are there unprocessed children
         % then, give these axes a name
-        alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
-                                      sprintf( 'name=plot%d', k ) ];
+        alignmentOptions(k).opts = appendOptions( alignmentOptions(k).opts, ...
+                                                  sprintf( 'name=plot%d', k ) );
     end
 
     if nargin==5 % if a parent is given
@@ -4259,9 +4263,10 @@ function [isProcessed, alignmentOptions] = setOptionsRecursion( isProcessed, C, 
             refPos = cornerCode2pgfplotOption( C(parent,k) );
 
             % add the option
-            alignmentOptions(k).opts = [ alignmentOptions(k).opts, ...
-                                         sprintf( 'at=(plot%d.%s), anchor=%s', ...
-                                                  parent, refPos, anchor ) ];
+            alignmentOptions(k).opts = appendOptions( alignmentOptions(k).opts, ...
+                                                      sprintf( 'at=(plot%d.%s), anchor=%s', ...
+                                                               parent, refPos, anchor ) ...
+                                                    );
         end
     end
 

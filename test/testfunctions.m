@@ -218,7 +218,7 @@ end
 function description = peaks_contour ()
 
   contour(peaks(20),10);
-  
+
   colormap winter;
 
   description = 'Test contour plots.';
@@ -237,17 +237,12 @@ end
 % =========================================================================
 function description = peaks_contourf ()
 
-  contourf(peaks(20),10);
-%    axis square;
-%    daspect([ 1, 3, 1] )
-  
-  colorbar;
-  colorbar('location','northoutside');
-  colorbar;
-  colorbar('location','southoutside');
-  colorbar;
-  colorbar('location','westoutside');
-  
+  contourf( peaks(20), 10 );
+
+  colorbar('NorthOutside');
+  colorbar('SouthOutside');
+  colorbar('WestOutside');
+
 %    colormap autumn;
   colormap jet;
 
@@ -314,16 +309,17 @@ function description = legendplot ()
 %    h = legend('one pretty long legend cos_x','sin_x',2);
 %    set(h,'Interpreter','none');
 
-%  figure(1)
-x=0:0.01:2*pi;
-plot(x,sin(x),'b',x,cos(x),'r')
-xlim([0 2*pi])
-ylim([-0.9 0.9])
-Title('{tikz test}')
-xlabel('{x-Values}')
-ylabel('{y-Values}')
-legend('\sin(x)','\cos(x)');
-grid on
+
+  x = 0:0.01:2*pi;
+  plot( x, sin(x), 'b', ...
+        x, cos(x), 'r' );
+  xlim( [0 2*pi] )
+  ylim( [-0.9 0.9] )
+  title( '{tikz test}' )
+  xlabel( '{x-Values}' )
+  ylabel( '{y-Values}' )
+  legend( '\sin(x)', '\cos(x)' );
+  grid on
 
   description = 'Test inserting of legends.';
 
@@ -342,9 +338,11 @@ end
 function description = legendplotBoxoff ()
 
   x = -pi:pi/20:pi;
-  plot(x,cos(x),'-ro',x,sin(x),'-.b');
-  h = legend('cos_x','one pretty long legend sin_x',2);
-  set(h,'Interpreter','none');
+  plot( x, cos(x),'-ro',...
+        x, sin(x),'-.b' ...
+      );
+  h = legend( 'cos_x', 'one pretty long legend sin_x', 2 );
+  set( h, 'Interpreter', 'none' );
   legend boxoff;
 
   description = 'Test inserting of legends.';
@@ -745,7 +743,7 @@ end
 % =========================================================================
 function description = errorBars2 ()
 
-  data = load( 'count.dat' );
+  data = load( 'myCount.dat' );
   y = mean( data, 2 );
   e = std( data, 1, 2 );
   errorbar( y, e, 'xr' );
@@ -764,11 +762,11 @@ end
 % =========================================================================
 function description = legendsubplots ()
 % size of upper subplot
-rows=4;
+rows = 4;
 % number of points.  A large number here (eg 1000) will stress-test
 % matlab2tikz and your TeX installation.  Be prepared for it to run out of
 % memory
-length=100;
+length = 100;
 
 
 % make some spurious data
@@ -915,7 +913,7 @@ function description = zplanePlot1()
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
-      fprintf( 'Signal toolbox not found. Abort.\n\n' );
+      fprintf( 'Signal toolbox not found. Skip.\n\n' );
       description = [];
       return
   end
@@ -938,7 +936,7 @@ function description = zplanePlot2()
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
-      fprintf( 'Signal toolbox not found. Abort.\n\n' );
+      fprintf( 'Signal toolbox not found. Skip.\n\n' );
       description = [];
       return
   end
@@ -961,7 +959,7 @@ function description = freqResponsePlot()
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
-      fprintf( 'Signal toolbox not found. Abort.\n\n' );
+      fprintf( 'Signal toolbox not found. Skip.\n\n' );
       description = [];
       return
   end
