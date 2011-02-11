@@ -1709,27 +1709,37 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   drawOpts = collapse( drawOptions, ',' );
   % -----------------------------------------------------------------------
 
-
   % MATLAB's patch elements are matrices in which each column represents a
   % a distinct graphical object. Usually there is only one column, but
   % there may be more (-->hist plots, although they are now handled
   % within the barplot framework).
   xData = get( handle, 'XData' );
   yData = get( handle, 'YData' );
+
+  % filter out the NaNs
+  xData = xData( ~isnan(xData) );
+  yData = yData( ~isnan(yData) );
+
   m = size(xData,1);
   n = size(xData,2); % is n ever ~=1? if yes, think about replacing
                      % the drawOpts by one \pgfplotsset{}
 
-  for j=1:n
+  for j = 1:n
       str = strcat( str, ...
                     sprintf(['\\addplot [',drawOpts,'] coordinates{']) );
-      for i=1:m
-          if ~isnan(xData(i,j)) && ~isnan(yData(i,j))
-              % don't print NaNs
-              str = strcat( str, ...
-                            sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) );
-          end
+
+      for i = 1:m
+          str = strcat( str, ...
+                        sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) );
       end
+
+      % make sure the path is closed
+      if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j)
+          str = strcat( str, ...
+                        sprintf( ' (%g,%g)', xData(1,j), yData(1,j) ) );
+      end
+
+      % close it
       str = strcat( str, sprintf('};\n') );
   end
   str = [ str, sprintf('\n') ];
