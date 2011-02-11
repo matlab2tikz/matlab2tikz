@@ -64,7 +64,7 @@ function matlab2tikz( varargin )
   version_data = ver;
   if length( version_data ) > 1 % assume MATLAB
       % make sure we're running MATLAB>=2008b
-      isMatlab = 1;
+      m2t.env = 'MATLAB';
       version_data = ver('MATLAB');
       Version_string = version_data.Version;
       if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<7)
@@ -72,11 +72,10 @@ function matlab2tikz( varargin )
       end
   elseif strcmp( version_data.Name, 'Octave' )
       % Octave should work with all versions.
-      isMatlab = 0;
+      m2t.env = 'Octave';
   else
       error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
-
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   m2t.opts = [];
@@ -182,14 +181,16 @@ function matlab2tikz( varargin )
       end
 
       % open the file for writing
-      if isMatlab
+      if strcmp( m2t.env, 'MATLAB' );
           fid = fopen( filename, ...
                        'w', ...
                        'native', ...
                        m2t.opts.Results.encoding ...
                      );
-      else
+      elseif strcmp( m2t.env, 'Octave' );
           fid = fopen( filename, 'w' );
+      else
+          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
       end
 
       if fid == -1
@@ -455,12 +456,23 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   m2t.xAxisReversed = [];
   m2t.yAxisReversed = [];
 
-  % handle special cases
-  switch get( handle, 'Tag' )
-      case 'Colorbar'
+  % Handle special cases.
+  % MATLAB(R) uses 'Tag', Octave 'tag' for their tags. :/
+  if strcmp( m2t.env, 'MATLAB' );
+      tagKeyword = 'Tag';
+      colorbarKeyword = 'Colorbar';
+  elseif strcmp( m2t.env, 'Octave' );
+      tagKeyword = 'tag';
+      colorbarKeyword = 'colorbar';
+  else
+      error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
+  end
+  switch get( handle, tagKeyword )
+      case colorbarKeyword
           % Handle a colorbar separately.
-          % Note how m2t.currentHandles.gca does *not* get updated; this fact is
-          % made use of in drawColorbar().
+          % Note how m2t.currentHandles.gca does *not* get updated.
+          % Within drawColorbar(), m2t.currentHandles.gca is assumed to point
+          % to the parent axes.
           [m2t, env] = drawColorbar( m2t, handle, alignmentOptions );
           return
       case 'legend'
@@ -2569,6 +2581,13 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   end
 
   % Assume that the parent axes pair is m2t.currentHandles.gca.
+  try
+      m2t.currentHandles.gca;
+  catch
+      error( [ 'm2t.currentHandles.gca not set although needed ', ...
+               'by the color bar. The parent axes have not been printed yet.' ] ...
+           )
+  end
   parentDim = getAxesDimensions( m2t.currentHandles.gca, ...
                                  m2t.opts.Results.width, ...
                                  m2t.opts.Results.height );

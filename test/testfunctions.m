@@ -238,10 +238,10 @@ end
 function description = peaks_contourf ()
 
   contourf( peaks(20), 10 );
-
-  colorbar('NorthOutside');
-  colorbar('SouthOutside');
-  colorbar('WestOutside');
+  colorbar();
+%    colorbar('NorthOutside');
+%    colorbar('SouthOutside');
+%    colorbar('WestOutside');
 
 %    colormap autumn;
   colormap jet;
