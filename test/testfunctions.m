@@ -1049,6 +1049,8 @@ function description = surfPlot2()
 
   surf( abs( fftshift(fft2(z)) ) )
 
+  legend( 'legendary', 'Location', 'NorthEastOutside' );
+
   description = 'Another surface plot';
 end
 % =========================================================================

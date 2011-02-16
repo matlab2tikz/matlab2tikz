@@ -742,29 +742,31 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % plot boundaries.
 
   % TODO: How to uniquely connect a legend with a pair of axes?
-
-  axisDims = get(handle,'Position');
+  axisDims = get(handle,'Position')
   axisLeft = axisDims(1);
   axisBot  = axisDims(2);
   axisWid  = axisDims(3);
   axisHei  = axisDims(4);
-  for k=1:size(c)
+  for k = 1:size(c)
       if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
           strcmp( get(c(k),'Tag' ), 'legend' )
           legendHandle = c(k);
           if (legendHandle)
-              legDims = get( legendHandle, 'Position' );
+              legDims = get( legendHandle, 'Position' )
               legLeft = legDims(1);
               legBot  = legDims(2);
               legWid  = legDims(3);
               legHei  = legDims(4);
-              if (    legLeft > axisLeft ...
-                   && legBot > axisBot ...
-                   && legLeft+legWid < axisLeft+axisWid ...
-                   && legBot+legHei  < axisBot+axisHei )
+              % TODO The following logic does not work for 3D plots.
+              %      => Commented out.
+              %      This creates problems though for stacked plots with legends.
+%                if (    legLeft > axisLeft ...
+%                     && legBot > axisBot ...
+%                     && legLeft+legWid < axisLeft+axisWid ...
+%                     && legBot+legHei  < axisBot+axisHei )
                   [ m2t, legendOpts ] = getLegendOpts( m2t, legendHandle );
                   env.options = appendOptions( env.options, legendOpts );
-              end
+%                end
           end
       end
   end
@@ -864,9 +866,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   [ m2t, xcolor ] = getColor( m2t, handle, color, 'patch' );
   lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
   [ m2t, markerOptions ] = getMarkerOptions( m2t, handle );
-  drawOptions = appendOptions( {sprintf( 'color=%s', xcolor )}, ... % color
+  drawOptions = [ {sprintf( 'color=%s', xcolor )}, ... % color
                   lineOptions, ...
-                  markerOptions );
+                  markerOptions ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -2019,7 +2021,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   yData = get( h, 'YData' );
   cData = get( h, 'CData' );
 
-  drawOptions = appendOptions( drawOptions, 'scatter', 'only marks', 'scatter src=explicit' );
+  drawOptions = { 'scatter', 'only marks', 'scatter src=explicit' };
 
   matlabMarker = get( h, 'Marker' );
 
@@ -2168,11 +2170,11 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           % whereas pgfplots requires physical units (pt,cm,...); hence
           % have the units converted.
           ulength = normalized2physical( m2t );
-          drawOptions = appendOptions( drawOptions,                                    ...
+          drawOptions = [ drawOptions,                                    ...
                           'ybar',                                                      ...
                           sprintf( 'bar width=%g%s, bar shift=%g%s',                   ...
                                     m2t.barWidth                *ulength.value, ulength.unit , ...
-                                    m2t.barShifts(m2t.barplotId)*ulength.value, ulength.unit  ) );
+                                    m2t.barShifts(m2t.barplotId)*ulength.value, ulength.unit  ) ];
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           % end grouped plots
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2286,10 +2288,10 @@ function [ m2t, str ] = drawStemseries( m2t, h )
   lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
   [ m2t, markerOptions ] = getMarkerOptions( m2t, h );
 
-  drawOptions = appendOptions( 'ycomb',                      ...
+  drawOptions = [ 'ycomb',                      ...
                    sprintf( 'color=%s', plotColor ),         ... % color
                    lineOptions, ...
-                   markerOptions );
+                   markerOptions ];
 
   % insert draw options
   drawOpts =  collapse( drawOptions, ',' );
@@ -2350,10 +2352,10 @@ function [ m2t, str ] = drawStairSeries( m2t, h )
   lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
   [ m2t, markerOptions ] = getMarkerOptions( m2t, h );
 
-  drawOptions = appendOptions( 'const plot',         ...
+  drawOptions = [ 'const plot',         ...
                    sprintf( 'color=%s', plotColor ), ... % color
                    lineOptions, ...
-                   markerOptions );
+                   markerOptions ];
 
   % insert draw options
   drawOpts =  collapse( drawOptions, ',' );
@@ -3107,6 +3109,12 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
       case 'west'
           position = [dist, 0.5];
           anchor   = 'west';
+      case 'northeastoutside'
+          position = [1+dist, 1];
+          anchor = 'north west';
+      case 'southeastoutside'
+          position = [1+dist, 0];
+          anchor = 'south west';
       case 'best'
           % TODO: Implement this one.
           % The position could be determined by means of 'Position' and/or
