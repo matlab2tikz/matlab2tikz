@@ -1597,7 +1597,7 @@ switch ( matlabMarker )
         tikzMarker = 'x';
     otherwise  % the following markers are only available with PGF's
                % plotmarks library
-        userWarning( m2t, 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.' );
+        userWarning( m2t, 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
         switch ( matlabMarker )
 
                 case '*'
