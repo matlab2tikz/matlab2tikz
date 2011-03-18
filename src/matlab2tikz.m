@@ -711,15 +711,15 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % set the line style
   if isGrid
       matlabGridLineStyle = get( handle, 'GridLineStyle' );
-      % take over the grid line style in any case when in strict mode;
-      % if not, don't add anything in case of default line grid line style
-      % and effectively take pgfplots' default
+      % Take over the grid line style in any case when in strict mode.
+      % If not, don't add anything in case of default line grid line style
+      % and effectively take pgfplots' default.
       defaultMatlabGridLineStyle = ':';
       if m2t.opts.Results.strict ...
          || ~strcmp(matlabGridLineStyle,defaultMatlabGridLineStyle)
          gls = translateLineStyle( matlabGridLineStyle );
-         str = [ str, ...
-                 sprintf( '\n\\pgfplotsset{every axis grid/.style={style=%s}}\n\n', gls ) ];
+         axisGridOpts = sprintf( 'grid style={%s}', gls );
+         env.options = appendOptions( env.options, axisGridOpts );
       end
   else
       % When specifying 'axis on top', the axes stay above all graphs (which is
