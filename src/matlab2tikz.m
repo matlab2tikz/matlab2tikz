@@ -742,7 +742,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % plot boundaries.
 
   % TODO: How to uniquely connect a legend with a pair of axes?
-  axisDims = get(handle,'Position')
+  axisDims = get(handle,'Position');
   axisLeft = axisDims(1);
   axisBot  = axisDims(2);
   axisWid  = axisDims(3);
