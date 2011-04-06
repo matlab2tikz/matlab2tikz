@@ -1,4 +1,11 @@
-2010-01-31  Nico Schlömer  <nico.schloemer@gmail.com>
+2011-04-06  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.1.1.
+	* Improved Octave compatibility.
+	* Several bugfixes:
+	   - input parser
+
+2011-01-31  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.1.0.
 	* Basic Octave compatibility.
