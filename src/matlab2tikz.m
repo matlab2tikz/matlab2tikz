@@ -83,7 +83,7 @@ function matlab2tikz( varargin )
   m2t.currentHandles = [];
 
   m2t.name = 'matlab2tikz';
-  m2t.version = '0.1.0';
+  m2t.version = '0.1.1';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2011';
@@ -752,7 +752,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
           strcmp( get(c(k),'Tag' ), 'legend' )
           legendHandle = c(k);
           if (legendHandle)
-              legDims = get( legendHandle, 'Position' )
+              legDims = get( legendHandle, 'Position' );
               legLeft = legDims(1);
               legBot  = legDims(2);
               legWid  = legDims(3);

@@ -26,6 +26,18 @@ eps2pdf:
 	@echo -e " done.\n\n"
 	
 clean:
-	@rm -f $(TARGET).aux $(TARGET).log $(TARGET).nav $(TARGET).out $(TARGET).snm $(TARGET).toc $(TARGET).vrb $(TARGET).pdf $(TARGET).dvi $(TARGET).ps missfont.log
+	@rm -f $(TARGET).aux \
+	$(TARGET).log \
+	$(TARGET).nav \
+	$(TARGET).out \
+	$(TARGET).snm \
+	$(TARGET).toc \
+	$(TARGET).vrb \
+	$(TARGET).pdf \
+	$(TARGET).dvi \
+	$(TARGET).ps \
+	missfont.log
 	@rm -f *~
+
+distclean: clean
 	@rm -f ../data/*
