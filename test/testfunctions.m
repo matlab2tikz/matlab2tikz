@@ -43,6 +43,7 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @peaks_contourf      , ...
                            @many_random_points  , ...
                            @logplot             , ...
+                           @colorbarLogplot     , ...
                            @legendplot          , ...
                            @legendplotBoxoff    , ...
                            @zoom                , ...
@@ -298,6 +299,23 @@ end
 % =========================================================================
 
 
+% =========================================================================
+% *** FUNCTION logplot
+% ***
+% *** Test the performance when drawing many points.
+% ***
+% =========================================================================
+function description = colorbarLogplot ()
+
+  imagesc([1 10 100]);
+  set(colorbar(), 'YScale', 'log');
+
+  description = 'Logscaled colorbar.';
+
+end
+% =========================================================================
+% *** END FUNCTION logplot
+% =========================================================================
 
 % =========================================================================
 % *** FUNCTION legendplot

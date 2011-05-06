@@ -2576,6 +2576,21 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   env.content  = cell(0);
   env.children = cell(0);
 
+  % Do log handling for color bars, too.
+  xScale = get( handle, 'XScale' );
+  yScale = get( handle, 'YScale' );
+  isXLog = strcmp( xScale, 'log' );
+  isYLog = strcmp( yScale, 'log' );
+  if  ~isXLog && ~isYLog
+      env.name = 'axis';
+  elseif isXLog && ~isYLog
+      env.name = 'semilogxaxis';
+  elseif ~isXLog && isYLog
+      env.name = 'semilogyaxis';
+  else
+      env.name = 'loglogaxis';
+  end
+
   if ~isfield( m2t, 'colorbarNo' )
       % Keep track of how many colorbars there are, to avoid
       % file name collision in case PNGs are used.
