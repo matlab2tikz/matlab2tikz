@@ -60,7 +60,7 @@
 function matlab2tikz( varargin )
 
   % Check if we are in MATLAB or Octave.  ver('MATLAB') will return an empty
-  % struct if we are in Octave. Used below to suppress the graphics. 
+  % struct if we are in Octave. Used below to suppress the graphics.
   version_data = ver;
   if length( version_data ) > 1 % assume MATLAB
       % make sure we're running MATLAB>=2008b
