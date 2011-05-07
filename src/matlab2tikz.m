@@ -60,7 +60,7 @@
 function matlab2tikz( varargin )
 
   % Check if we are in MATLAB or Octave.  ver('MATLAB') will return an empty
-  % struct if we are in Octave. Used below to suppress the graphics. 
+  % struct if we are in Octave. Used below to suppress the graphics.
   version_data = ver;
   if length( version_data ) > 1 % assume MATLAB
       % make sure we're running MATLAB>=2008b
@@ -1793,7 +1793,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       % Flip the image over as the PNG gets written starting at (0,0) that is,
       % the top left corner.
       % MATLAB quirk: In case the axes are invisible, don't do this.
-      cdata = cdata(m:-1:1,:);
+      cdata = cdata(m:-1:1,:,:);
   end
 
   if ( m2t.opts.Results.imagesAsPng )
@@ -1803,31 +1803,35 @@ function [ m2t, str ] = drawImage( m2t, handle )
       [pathstr, name ] = fileparts( m2t.tikzFileName );
       pngFileName = fullfile( pathstr, [name '.png'] );
       pngReferencePath = fullfile( m2t.relativePngPath, [name '.png'] );
-      colorData = zeros( m, n );
-      % TODO Make imagecolor2colorindex (or getColor for that matter) take matrix
-      %      arguments.
-      for i = 1:m
-          for j = 1:n
-              % Don't use getImage() here to avoid 'mycolorX' constructions;
-              % exclusively color index data needed here.
-              [ m2t, colorData(i,j) ] = imagecolor2colorindex ( m2t, cdata(i,j), handle );
+
+      % Get color indices for indexed color images and truecolor values otherwise.
+      if ndims( cdata ) == 2
+          colorData = zeros( m, n );
+          % TODO Make imagecolor2colorindex (or getColor for that matter) take matrix
+          %      arguments.
+          for i = 1:m
+              for j = 1:n
+                  % Don't use getImage() here to avoid 'mycolorX' constructions;
+                  % exclusively color index data needed here.
+                  [ m2t, colorData(i,j) ] = imagecolor2colorindex ( m2t, cdata(i,j), handle );
+              end
           end
+      else
+          colorData = cdata;
       end
 
       % flip the image if reverse
       if m2t.xAxisReversed
-          colorData = colorData(:,n:-1:1);
+          colorData = colorData(:,n:-1:1,:);
       end
       if m2t.yAxisReversed
-          colorData = colorData(m:-1:1,:);
+          colorData = colorData(m:-1:1,:,:);
       end
 
+      cmap = get(m2t.currentHandles.gcf, 'ColorMap');
+
       % write the image
-      imwrite( colorData, ...
-               get(m2t.currentHandles.gcf,'ColorMap'), ...
-               pngFileName, ...
-               'png' ...
-             );
+      imwriteWrapperPNG ( colorData, cmap, pngFileName );
       % ------------------------------------------------------------------------
 
       xLim = get( m2t.currentHandles.gca, 'XLim' );
@@ -2742,7 +2746,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
               xLim = [0,1];
               yLim = clim;
       end
-      imwrite( strip, cmap, pngFileName, 'png' );
+      imwriteWrapperPNG( strip, cmap, pngFileName );
       env = append( env, ...
                     sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
                              xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ...
@@ -4620,4 +4624,27 @@ function printAll( env, fid )
 end
 % =========================================================================
 % *** END FUNCTION printAll
+% =========================================================================
+
+% =========================================================================
+% *** FUNCTION imwriteWrapper
+% =========================================================================
+function imwriteWrapperPNG( colorData, cmap, fileName )
+    % Write an indexed or a truecolor image
+    if ndims( colorData ) == 2
+        % According to imwrite's documentation there is support for 1-bit, 2-bit, 4-bit
+        % and 8-bit indexed images only. In practice, indexed images with up to 256
+        % colors work.
+        % When having more colors, a truecolor image must be generated and used instead.
+        if size( cmap, 1 ) <= 256
+            imwrite ( colorData, cmap, fileName, 'png' );
+        else
+            imwrite ( ind2rgb(colorData, cmap), fileName, 'png' );
+        end
+    else
+        imwrite ( colorData, fileName, 'png' );
+    end
+end
+% =========================================================================
+% *** END FUNCTION imwriteWrapper
 % =========================================================================
