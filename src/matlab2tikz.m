@@ -4627,15 +4627,15 @@ end
 % =========================================================================
 
 % =========================================================================
-% *** FUNCTION imwriteWrapper
+% *** FUNCTION imwriteWrapperPNG
 % =========================================================================
 function imwriteWrapperPNG( colorData, cmap, fileName )
     % Write an indexed or a truecolor image
     if ndims( colorData ) == 2
-        % According to imwrite's documentation there is support for 1-bit, 2-bit, 4-bit
-        % and 8-bit indexed images only. In practice, indexed images with up to 256
-        % colors work.
-        % When having more colors, a truecolor image must be generated and used instead.
+        % According to imwrite's documentation there is support for 1-bit,
+        % 2-bit, 4-bit and 8-bit (i.e., 256 colors) indexed images only.
+        % When having more colors, a truecolor image must be generated and
+        % used instead.
         if size( cmap, 1 ) <= 256
             imwrite ( colorData, cmap, fileName, 'png' );
         else
@@ -4646,5 +4646,5 @@ function imwriteWrapperPNG( colorData, cmap, fileName )
     end
 end
 % =========================================================================
-% *** END FUNCTION imwriteWrapper
+% *** END FUNCTION imwriteWrapperPNG
 % =========================================================================
