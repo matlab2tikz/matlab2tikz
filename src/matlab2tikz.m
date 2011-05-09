@@ -123,6 +123,10 @@ function matlab2tikz( varargin )
 
   % possibility to give a file handle as argument
   m2t.opts = m2t.opts.addOptional( m2t.opts, 'filehandle', [], @filehandleValidation );
+  
+  % explicitly specify which figure to use
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'figurehandle', gcf, @ishandle );
+  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'colormap', colormap, @isnumeric );
 
   % whether to strictly stick to the default MATLAB plot appearance:
   m2t.opts = m2t.opts.addParamValue( m2t.opts, 'strict', 0, @islogical );
@@ -158,8 +162,8 @@ function matlab2tikz( varargin )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % add global elements
-  m2t.currentHandles.gcf      = gcf;
-  m2t.currentHandles.colormap = colormap;
+  m2t.currentHandles.gcf      = m2t.opts.Results.figurehandle;
+  m2t.currentHandles.colormap = get(m2t.currentHandles.gcf,'colormap');
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle output file handle/file name
