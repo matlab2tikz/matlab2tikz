@@ -279,11 +279,13 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   fh          = m2t.currentHandles.gcf;
   axesHandles = findobj( fh, 'type', 'axes' );
 
-  % remove all legend handles as they are treated separately
+  % remove all legend and colorbar handles as they are treated separately 
   rmList = [];
   for k = 1:length(axesHandles)
      if strcmp( get(axesHandles(k),'Tag'), 'legend' )
         rmList = [ rmList, k ];
+     elseif strcmpi( get(axesHandles(k),'Tag'), 'Colorbar' )
+         rmList = [ rmList, k ];
      end
   end
   axesHandles(rmList) = [];
@@ -467,25 +469,26 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   else
       error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
   end
-  switch get( handle, tagKeyword )
-      case colorbarKeyword
-          % Handle a colorbar separately.
-          % Note how m2t.currentHandles.gca does *not* get updated.
-          % Within drawColorbar(), m2t.currentHandles.gca is assumed to point
-          % to the parent axes.
-          [m2t, env] = drawColorbar( m2t, handle, alignmentOptions );
-          return
-      case 'legend'
-          % Don't handle the legend here, but further below in the 'axis'
-          % environment.
-          % In MATLAB, an axes environment and it's corresponding legend are
-          % children of the same figure (siblings), while in pgfplots, the
-          % \legend (or \addlegendentry) command must appear within the axis
-          % environment.
-          return
-      otherwise
-          % continue as usual
-  end
+%   switch get( handle, tagKeyword ) % Don't think this is needed as PGFs internal colorbar is used now. See changes further below
+%       case colorbarKeyword
+%           % Handle a colorbar separately.
+%           % Note how m2t.currentHandles.gca does *not* get updated.
+%           % Within drawColorbar(), m2t.currentHandles.gca is assumed to point
+%           % to the parent axes.
+% %           [m2t, env] = drawColorbar( m2t, handle, alignmentOptions );
+% %           [m2t, cbarOpts] = drawColorbar( m2t, handle );
+%           return
+%       case 'legend'
+%           % Don't handle the legend here, but further below in the 'axis'
+%           % environment.
+%           % In MATLAB, an axes environment and it's corresponding legend are
+%           % children of the same figure (siblings), while in pgfplots, the
+%           % \legend (or \addlegendentry) command must appear within the axis
+%           % environment.
+%           return
+%       otherwise
+%           % continue as usual
+%   end
 
   % update gca
   m2t.currentHandles.gca = handle;
@@ -646,6 +649,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
                                { sprintf('xmin=%g, xmax=%g', xLim ), ...
                                  sprintf('ymin=%g, ymax=%g', yLim ) } ...
                              );
+  % There should be a zLim here as well, but some clever checking is needed in order to make sure that it isn't included when actually isn't needed. I.e. a regular 2D plot in MATLAB will return zLim = [-1 1] as default. Once zmin and zmax are present under the axis environment Pgf turns the plot into a 3D plot, showing the 2D plot in the XY-plane.
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
   [ ticks, tickLabels ] = getTicks( m2t, handle );
@@ -660,6 +664,12 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   end
   if ~isempty( tickLabels.y )
       env.options = appendOptions( env.options, sprintf( 'yticklabels={%s}', tickLabels.y ) );
+  end
+  if ~isempty( ticks.z )
+      env.options = appendOptions( env.options, sprintf( 'ztick={%s}', ticks.z ) );
+  end
+  if ~isempty( tickLabels.z )
+      env.options = appendOptions( env.options, sprintf( 'zticklabels={%s}', tickLabels.z ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis labels
@@ -677,6 +687,32 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
           ylabelText = [ '$' ylabelText '$' ];
       end
       env.options = appendOptions( env.options, sprintf( 'ylabel={%s}', ylabelText ) );
+  end
+  if ~isempty( axisLabels.z )
+      zlabelText = sprintf( '%s', axisLabels.z );
+      if m2t.opts.Results.mathmode
+          zlabelText = [ '$' zlabelText '$' ];
+      end
+      env.options = appendOptions( env.options, sprintf( 'zlabel={%s}', zlabelText ) );
+  end
+  
+  % get colormap and colorbar
+  surfHandle = findobj( gcf, 'Type', 'surface' ); % Handle for surface plot
+  cbarHandle = findobj( gcf, 'Tag' , 'Colorbar' ); % Handle for colorbar
+  if ~isempty( surfHandle ) % Check for surface / mesh plot
+    box = get( gca, 'Box' ); % Check for 3D box
+    if strcmpi( box, 'on' )
+        env.options = appendOptions( env.options, sprintf( '3d box' ) );
+    end
+    [m2t,cmapOtps] = getColorMap( m2t, handle ); % Get colormap options.
+    env.options = appendOptions( env.options, cmapOtps ); % Append colormap options
+  end
+  
+  if isVisible( cbarHandle ) % If colorbar is visible, a colormap should be made as well
+    [m2t,cmapOtps] = getColorMap( m2t, handle ); % Get colormap options
+    env.options = appendOptions( env.options, cmapOtps ); % Append colormap options
+    [m2t, cbarOpts] = drawColorbar( m2t, cbarHandle ); % Get colorbar options
+    env.options = appendOptions( env.options, cbarOpts ); % Append colorbar options
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get title
@@ -705,6 +741,14 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   end
   if strcmp( get( handle, 'YMinorGrid'), 'on' );
       env.options = appendOptions( env.options, 'yminorgrids' );
+      isGrid = 1;
+  end
+  if strcmp( get( handle, 'ZGrid'), 'on' )
+      env.options = appendOptions( env.options, 'zmajorgrids' );
+      isGrid = 1;
+  end
+  if strcmp( get( handle, 'ZMinorGrid'), 'on' );
+      env.options = appendOptions( env.options, 'zminorgrids' );
       isGrid = 1;
   end
 
@@ -1961,7 +2005,9 @@ end
 % =========================================================================
 function [m2t,env] = drawSurface( m2t, handle )
 
-    str = sprintf('\n\\addplot3[surf] \ncoordinates{ \n');
+    str = [];
+    [m2t, opts, plotType] = surfaceOpts( m2t, handle );
+    str = [ str, sprintf( [ '\n\\addplot3[%%\n%s,\n', opts ,']\ncoordinates{ \n' ], plotType ) ];
 
     dx = get(handle,'XData');
     dy = get(handle,'YData');
@@ -2009,6 +2055,75 @@ function [m2t,env] = drawSurface( m2t, handle )
 end
 % =========================================================================
 % *** END FUNCTION drawSurface
+% =========================================================================
+
+% =========================================================================
+% *** FUNCTION surfaceOpts
+% =========================================================================
+function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
+
+  faceColor = get( handle, 'FaceColor');
+  edgeColor = get( handle, 'EdgeColor');
+  
+  % Check for surf or mesh plot. Second argument in if-check corresponds to
+  % default values for mesh plot in MATLAB.
+  if strcmpi( faceColor, 'none') || ( strcmpi( edgeColor, 'flat' ) && isequal( faceColor, [1 1 1]))
+      plotType = 'mesh';
+  else
+      plotType = 'surf';
+  end
+      
+  surfOptions = cell(0);
+  
+  % Set opacity if FaceAlpha < 1 in MATLAB
+  faceAlpha = get( handle, 'FaceAlpha');
+  if faceAlpha ~= 1 && isnumeric( faceAlpha )
+    surfOptions = appendOptions( surfOptions, sprintf( 'opacity=%g', faceAlpha ) );
+  end
+  
+  if strcmpi( plotType, 'surf' )
+    % Set shader for surface plot. 
+    % TODO: find MATLAB equivalents for flat corner and flat mean  
+    if strcmpi( edgeColor, 'none' ) && strcmpi( faceColor, 'flat' )
+        surfOptions = appendOptions( surfOptions, sprintf( 'shader=flat' ) );
+    elseif isnumeric( edgeColor) && strcmpi( faceColor, 'flat' )
+        [ m2t, xEdgeColor ] = getColor( m2t, handle, edgeColor, 'patch' );
+        % same as shader=flat,draw=\pgfkeysvalueof{/pgfplots/faceted color}
+        surfOptions = appendOptions( surfOptions, sprintf( 'shader=faceted' ) );
+        surfOptions = appendOptions( surfOptions, sprintf( 'draw=%s', xEdgeColor) );
+    elseif strcmpi( edgeColor, 'none') && strcmpi( faceColor, 'interp' )
+        surfOptions = appendOptions( surfOptions, sprintf( 'shader=interp') );
+    else
+        surfOptions = appendOptions( surfOptions, sprintf( 'shader=faceted' ) );
+    end
+    surfOpts = collapse( surfOptions , ',\n' );
+  else % default for mesh plot is shader=flat
+    surfOptions = appendOptions( surfOptions, sprintf( 'shader=flat' ) );
+    surfOpts = collapse( surfOptions , ',\n' );
+  end
+  
+end
+% =========================================================================
+% *** END FUNCTION surfaceOpts
+% =========================================================================
+
+% =========================================================================
+% *** FUNCTION getColorMap
+% =========================================================================
+function [m2t,cmapOpts] = getColorMap( m2t, handle )
+  
+  cm = get( gcf, 'Colormap' );
+  [M N] = size(cm);
+  cmap = cell(0);
+  for k = 1:M
+      [m2t, xtempColor] = getColor( m2t, handle, cm(k,:), 'path');
+      cmap = appendOptions( cmap, sprintf( 'color=(%s)', xtempColor ) );
+  end
+  cmapOpts = [ 'colormap={mymap}{' collapse( cmap , '; ') '}' ];
+  
+end
+% =========================================================================
+% *** END FUNCTION getColorMap
 % =========================================================================
 
 
@@ -2561,227 +2676,41 @@ end
 % ***       * Look into orignal pgfplots color bars.
 % ***
 % =========================================================================
-function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
-
-  if ~isVisible( handle )
-      return
-  end
-
-  % the actual contents of the TikZ file go here
-  env = struct( 'name',     'axis', ...
-                'comment',  'colorbar', ...
-                'options',  [], ...
-                'content',  [], ...
-                'children', []  ...
-              );
-  % Setting the following to cell(0) straight away doesn't work unfortunately
-  % as MATLAB(R) interprets structs with cell values as a cell array of structs.
-  env.options  = cell(0);
-  env.content  = cell(0);
-  env.children = cell(0);
-
-  % Do log handling for color bars, too.
-  xScale = get( handle, 'XScale' );
-  yScale = get( handle, 'YScale' );
-  isXLog = strcmp( xScale, 'log' );
-  isYLog = strcmp( yScale, 'log' );
-  if  ~isXLog && ~isYLog
-      env.name = 'axis';
-  elseif isXLog && ~isYLog
-      env.name = 'semilogxaxis';
-  elseif ~isXLog && isYLog
-      env.name = 'semilogyaxis';
-  else
-      env.name = 'loglogaxis';
-  end
-
-  if ~isfield( m2t, 'colorbarNo' )
-      % Keep track of how many colorbars there are, to avoid
-      % file name collision in case PNGs are used.
-      m2t.colorbarNo = [];
-  end
-
-  % Assume that the parent axes pair is m2t.currentHandles.gca.
-  try
-      m2t.currentHandles.gca;
-  catch
-      error( [ 'm2t.currentHandles.gca not set although needed ', ...
-               'by the color bar. The parent axes have not been printed yet.' ] ...
-           )
-  end
-  parentDim = getAxesDimensions( m2t.currentHandles.gca, ...
-                                 m2t.opts.Results.width, ...
-                                 m2t.opts.Results.height );
-
-  % TODO Compute the colorbar width. This is pretty much a *guess* of what MATLAB(R) does.
-  if ~strcmp(parentDim.x.unit, parentDim.y.unit)
-      userWarning( m2t, ...
-                   [ 'Physical units of x- and y-axis do not coincide (x: %s; y: %s).', ...
-                     'Color bar sizes will likely need tweaking.' ], ...
-                   parentDim.x.unit, parentDim.y.unit );
-  end
-  % Inherent MATLAB(R) parameter, indicating the ratio of the long
-  % edge of a color bar versus the short one.
-  matlabColorBarLongShortRatio = 14.8;
-  width.value = max( parentDim.x.value, parentDim.y.value ) / matlabColorBarLongShortRatio;
-  width.unit  = parentDim.x.unit;
-
-  % get the upper and lower limit of the colorbar
-  clim = caxis;
-
-  % begin collecting axes options
+function [ m2t, cbarOptions ] = drawColorbar( m2t, handle )
+  
+  % begin collecting colorbar options
   cbarOptions = cell( 0 );
-  cbarOptions = [ cbarOptions, 'axis on top' ];
-
-  % set alignment options
-  if ~isempty(alignmentOptions.opts)
-      cbarOptions = [ cbarOptions, alignmentOptions.opts ];
-  end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set position, ticks etc. of the colorbar
   loc = get( handle, 'Location' );
 
-  % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() to unification.
   switch lower( loc )
       case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
           return;
 
       case {'northoutside','southoutside'}
-          cbarOptions = [ cbarOptions,                          ...
-                           sprintf( 'width=%g%s, height=%g%s',  ...
-                                     parentDim.x.value, parentDim.x.unit,   ...
-                                     width.value      , width.unit           ), ...
-                           'scale only axis',                           ...
-                           sprintf( 'xmin=%g, xmax=%g', clim ),         ...
-                           sprintf( 'ymin=%g, ymax=%g', [0,1] )         ...
-                         ];
-
-          % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'),
-          % in Octave small cased ('northoutside').
-          if strcmp( lower( loc ), 'northoutside' )
-              cbarOptions = [ cbarOptions,                            ...
-                              'xticklabel pos=right, ytick=\empty' ];
-                              % we actually wanted to set pos=top here,
-                              % but pgfplots doesn't support that yet.
-                              % pos=right does the same thing, really.
+          if strcmpi(  loc , 'northoutside' )
+              cbarOptions = [ cbarOptions 'colorbar horizontal' ...
+                              'colorbar style={at={(0.5,1.1)}' ...     
+                              'anchor=south' ...
+                              'xticklabel pos=upper}' ];
           else
-              cbarOptions = [ cbarOptions,                            ...
-                               'xticklabel pos=left, ytick=\empty' ];
-                               % we actually wanted to set pos=bottom here,
-                               % but pgfplots doesn't support that yet.
-                               % pos=left does the same thing, really.
+              cbarOptions = [ cbarOptions 'colorbar horizontal' ];
           end
 
       case {'eastoutside','westoutside'}
-          cbarOptions = [ cbarOptions,                          ...
-                           sprintf( 'width=%g%s, height=%g%s',  ...
-                                     width.value      , width.unit,  ...
-                                     parentDim.y.value, parentDim.y.unit ), ...
-                           'scale only axis',                           ...
-                           sprintf( 'xmin=%g, xmax=%g', [0,1] ),        ...
-                           sprintf( 'ymin=%g, ymax=%g', clim )          ...
-                         ];
-          if strcmp( lower( loc ), 'eastoutside' )
-               cbarOptions = [ cbarOptions,                           ...
-                               'xtick=\empty, yticklabel pos=right' ];
+          if strcmpi(  loc , 'eastoutside' )
+              cbarOptions = [ cbarOptions 'colorbar right' ];
            else
-               cbarOptions = [ cbarOptions,                           ...
-                               'xtick=\empty, yticklabel pos=left' ];
+              cbarOptions = [ cbarOptions 'colorbar left' ];
            end
 
       otherwise
           error( 'drawColorbar: Unknown ''Location'' %s.', loc )
   end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get ticks along with the labels
-  [ ticks, tickLabels ] = getTicks( m2t, handle );
-  if ~isempty( ticks.x )
-      cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'xtick={%s}', ticks.x ) ];
-  end
-  if ~isempty( tickLabels.x )
-      cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'xticklabels={%s}', tickLabels.x ) ];
-  end
-  if ~isempty( ticks.y )
-      cbarOptions = [ cbarOptions,                                    ...
-                      sprintf( 'ytick={%s}', ticks.y ) ];
-  end
-  if ~isempty( tickLabels.y )
-      cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'yticklabels={%s}', tickLabels.y ) ];
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % set the options
-  env.options = appendOptions( env.options, cbarOptions );
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get the colormap
-  cmap = m2t.currentHandles.colormap;
-  cbarLength = clim(2) - clim(1);
-  m = size( cmap, 1 );
-
-  if (m2t.opts.Results.imagesAsPng)
-      if isempty( m2t.colorbarNo )
-          m2t.colorbarNo = 1;
-      else
-          m2t.colorbarNo = m2t.colorbarNo + 1;
-      end
-      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      % plot a strip
-      [pathstr,name]   = fileparts( m2t.tikzFileName );
-      pngFileName      = fullfile( pathstr, [name '-colorbar' num2str(m2t.colorbarNo) '.png'] );
-      pngReferencePath = fullfile( m2t.relativePngPath, [name '-colorbar' num2str(m2t.colorbarNo) '.png'] );
-      strip = 1:length(cmap);
-      % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-      % small cased ('northoutside'). Hence, use lower() to unification.
-      switch lower( loc )
-          case {'northoutside','southoutside'}
-              xLim = clim;
-              yLim = [0, 1];
-          case {'westoutside','eastoutside'}
-              strip = strip(end:-1:1)';
-              xLim = [0,1];
-              yLim = clim;
-      end
-      imwriteWrapperPNG( strip, cmap, pngFileName );
-      env = append( env, ...
-                    sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
-                             xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ...
-                  );
-      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  else
-      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      % plot tiny little badges for the respective colors
-      for i=1:m
-          [m2t, badgeColor] = rgb2tikzcol( m2t, cmap(i,:) );
-
-          % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-          % small cased ('northoutside'). Hence, use lower() to unification.
-          switch lower( loc )
-              case {'northoutside','southoutside'}
-                  x1 = clim(1) + cbarLength/m *(i-1);
-                  x2 = clim(1) + cbarLength/m *i;
-                  y1 = 0;
-                  y2 = 1;
-              case {'westoutside','eastoutside'}
-                  x1 = 0;
-                  x2 = 1;
-                  y1 = clim(1) + cbarLength/m *(i-1);
-                  y2 = clim(1) + cbarLength/m *i;
-          end
-          env = append( env, ...
-                        sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
-                                 badgeColor, x1, y1, x2, y1, x2, y2, x1, y2  ) ...
-                      );
-      end
-      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  % do _not_ handle colorbar's children
+  cbarOptions = collapse( cbarOptions , ',\n' );
 
 end
 % =========================================================================
