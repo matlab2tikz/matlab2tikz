@@ -469,26 +469,6 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   else
       error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
   end
-%   switch get( handle, tagKeyword ) % Don't think this is needed as PGFs internal colorbar is used now. See changes further below
-%       case colorbarKeyword
-%           % Handle a colorbar separately.
-%           % Note how m2t.currentHandles.gca does *not* get updated.
-%           % Within drawColorbar(), m2t.currentHandles.gca is assumed to point
-%           % to the parent axes.
-% %           [m2t, env] = drawColorbar( m2t, handle, alignmentOptions );
-% %           [m2t, cbarOpts] = drawColorbar( m2t, handle );
-%           return
-%       case 'legend'
-%           % Don't handle the legend here, but further below in the 'axis'
-%           % environment.
-%           % In MATLAB, an axes environment and it's corresponding legend are
-%           % children of the same figure (siblings), while in pgfplots, the
-%           % \legend (or \addlegendentry) command must appear within the axis
-%           % environment.
-%           return
-%       otherwise
-%           % continue as usual
-%   end
 
   % update gca
   m2t.currentHandles.gca = handle;
