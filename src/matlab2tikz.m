@@ -1986,14 +1986,20 @@ end
 % =========================================================================
 function [m2t,env] = drawSurface( m2t, handle )
 
-    str = sprintf('\n\\addplot3[surf] \ncoordinates{ \n');
+%      str = sprintf('\n\\addplot3[surf] \ncoordinates{ \n');
+
+    str = [];
+    [m2t, opts, plotType] = surfaceOpts( m2t, handle );
+    str = [ str, sprintf( [ '\n\\addplot3[%%\n%s,\n', opts ,']' ], plotType ) ];
+
+    str = [ str, sprintf( '\ncoordinates{ \n' ) ];
 
     dx = get(handle,'XData');
     dy = get(handle,'YData');
     dz = get(handle,'ZData');
     [col, row] = size(dz);
 
-    % check, if surf plot is 'spectrogram' or 'surf' and run corresponding
+    % Check if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
     if isvector(dx)
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2034,6 +2040,58 @@ function [m2t,env] = drawSurface( m2t, handle )
 end
 % =========================================================================
 % *** END FUNCTION drawSurface
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION surfaceOpts
+% =========================================================================
+function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
+
+  faceColor = get( handle, 'FaceColor');
+  edgeColor = get( handle, 'EdgeColor');
+  
+  % Check for surf or mesh plot. Second argument in if-check corresponds to
+  % default values for mesh plot in MATLAB.
+  if strcmpi( faceColor, 'none') || ...
+     ( strcmpi( edgeColor, 'flat' ) && isequal( faceColor, [1 1 1]))
+      plotType = 'mesh';
+  else
+      plotType = 'surf';
+  end
+      
+  surfOptions = cell(0);
+  
+  % Set opacity if FaceAlpha < 1 in MATLAB
+  faceAlpha = get( handle, 'FaceAlpha');
+  if faceAlpha ~= 1 && isnumeric( faceAlpha )
+    surfOptions = appendOptions( surfOptions, sprintf( 'opacity=%g', faceAlpha ) );
+  end
+  
+  if strcmpi( plotType, 'surf' )
+      % Set shader for surface plot. 
+      % TODO: find MATLAB equivalents for flat corner and flat mean  
+      if strcmpi( edgeColor, 'none' ) && strcmpi( faceColor, 'flat' )
+          surfOptions = appendOptions( surfOptions, sprintf( 'shader=flat' ) );
+      elseif isnumeric( edgeColor) && strcmpi( faceColor, 'flat' )
+          [ m2t, xEdgeColor ] = getColor( m2t, handle, edgeColor, 'patch' );
+          % same as shader=flat,draw=\pgfkeysvalueof{/pgfplots/faceted color}
+          surfOptions = appendOptions( surfOptions, sprintf( 'shader=faceted' ) );
+          surfOptions = appendOptions( surfOptions, sprintf( 'draw=%s', xEdgeColor) );
+      elseif strcmpi( edgeColor, 'none') && strcmpi( faceColor, 'interp' )
+          surfOptions = appendOptions( surfOptions, sprintf( 'shader=interp') );
+      else
+          surfOptions = appendOptions( surfOptions, sprintf( 'shader=faceted' ) );
+      end
+      surfOpts = collapse( surfOptions , ',\n' );
+  else % default for mesh plot is shader=flat
+      surfOptions = appendOptions( surfOptions, sprintf( 'shader=flat' ) );
+      surfOpts = collapse( surfOptions , ',\n' );
+  end
+  
+end
+% =========================================================================
+% *** END FUNCTION surfaceOpts
 % =========================================================================
 
 
