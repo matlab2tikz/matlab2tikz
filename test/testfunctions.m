@@ -1051,6 +1051,10 @@ function description = surfPlot()
   colormap hsv
   axis([-3 3 -3 3 -10 5])
 
+  xlabel( 'x' )
+  ylabel( 'y' )
+  zlabel( 'z' )
+
   description = 'Surface plot';
 end
 % =========================================================================

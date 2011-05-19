@@ -665,6 +665,12 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   if ~isempty( tickLabels.y )
       env.options = appendOptions( env.options, sprintf( 'yticklabels={%s}', tickLabels.y ) );
   end
+  if ~isempty( ticks.z )
+      env.options = appendOptions( env.options, sprintf( 'ztick={%s}', ticks.z ) );
+  end
+  if ~isempty( tickLabels.z )
+      env.options = appendOptions( env.options, sprintf( 'zticklabels={%s}', tickLabels.z ) );
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis labels
   axisLabels = getAxisLabels( handle );
@@ -681,6 +687,13 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
           ylabelText = [ '$' ylabelText '$' ];
       end
       env.options = appendOptions( env.options, sprintf( 'ylabel={%s}', ylabelText ) );
+  end
+  if ~isempty( axisLabels.z )
+      zlabelText = sprintf( '%s', axisLabels.z );
+      if m2t.opts.Results.mathmode
+          zlabelText = [ '$' zlabelText '$' ];
+      end
+      env.options = appendOptions( env.options, sprintf( 'zlabel={%s}', zlabelText ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get title
@@ -709,6 +722,14 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   end
   if strcmp( get( handle, 'YMinorGrid'), 'on' );
       env.options = appendOptions( env.options, 'yminorgrids' );
+      isGrid = 1;
+  end
+  if strcmp( get( handle, 'ZGrid'), 'on' )
+      env.options = appendOptions( env.options, 'zmajorgrids' );
+      isGrid = 1;
+  end
+  if strcmp( get( handle, 'ZMinorGrid'), 'on' );
+      env.options = appendOptions( env.options, 'zminorgrids' );
       isGrid = 1;
   end
 
@@ -3237,6 +3258,24 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
       end
   end
 
+  zTickLabel = get( handle, 'ZTickLabel' );
+  zTickMode = get( handle, 'ZTickMode' );
+  if strcmp(yTickMode,'auto') && ~m2t.opts.Results.strict
+      % If the ticks are set automatically, and strict conversion is
+      % not required, then let pgfplots take care of the ticks.
+      % In most cases, this looks a lot better anyway.
+      ticks.z      = [];
+      tickLabels.z = [];
+  else % strcmp(zTickMode,'manual') || m2t.opts.Results.strict
+      zTick      = get( handle, 'ZTick' );
+      isZAxisLog = strcmp( get(handle,'ZScale'), 'log' );
+      [ticks.z, tickLabels.z] = getAxisTicks( m2t, zTick, zTickLabel, isZAxisLog );
+      % overwrite if empty
+      if isempty(zTickLabel)
+          tickLabels.z = '\empty';
+      end
+  end
+
 end
 % -------------------------------------------------------------------------
 % *** FUNCTION getAxisTicks
@@ -3512,6 +3551,7 @@ function axisLabels = getAxisLabels( handle )
 
   axisLabels.x = get( get( handle, 'XLabel' ), 'String' );
   axisLabels.y = get( get( handle, 'YLabel' ), 'String' );
+  axisLabels.z = get( get( handle, 'ZLabel' ), 'String' );
 
 end
 % =========================================================================
