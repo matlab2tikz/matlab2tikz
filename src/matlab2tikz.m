@@ -767,32 +767,40 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % the nearest legend to a plot, which would cope with legends outside
   % plot boundaries.
 
-  % TODO: How to uniquely connect a legend with a pair of axes?
-  axisDims = get(handle,'Position');
-  axisLeft = axisDims(1);
-  axisBot  = axisDims(2);
-  axisWid  = axisDims(3);
-  axisHei  = axisDims(4);
-  for k = 1:size(c)
-      if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
-          strcmp( get(c(k),'Tag' ), 'legend' )
-          legendHandle = c(k);
-          if (legendHandle)
-              legDims = get( legendHandle, 'Position' );
-              legLeft = legDims(1);
-              legBot  = legDims(2);
-              legWid  = legDims(3);
-              legHei  = legDims(4);
-              % TODO The following logic does not work for 3D plots.
-              %      => Commented out.
-              %      This creates problems though for stacked plots with legends.
-%                if (    legLeft > axisLeft ...
-%                     && legBot > axisBot ...
-%                     && legLeft+legWid < axisLeft+axisWid ...
-%                     && legBot+legHei  < axisBot+axisHei )
-                  [ m2t, legendOpts ] = getLegendOpts( m2t, legendHandle );
-                  env.options = appendOptions( env.options, legendOpts );
-%                end
+  if strcmp( m2t.env, 'MATLAB' )
+      legendHandle = legend(handle);
+      if ~isempty(legendHandle)
+          [ m2t, legendOpts ] = getLegendOpts( m2t, legendHandle );
+          env.options = appendOptions( env.options, legendOpts );
+      end
+  else
+      % TODO: How to uniquely connect a legend with a pair of axes in Octave?
+      axisDims = get(handle,'Position');
+      axisLeft = axisDims(1);
+      axisBot  = axisDims(2);
+      axisWid  = axisDims(3);
+      axisHei  = axisDims(4);
+      for k = 1:size(c)
+          if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
+              strcmp( get(c(k),'Tag' ), 'legend' )
+              legendHandle = c(k);
+              if (legendHandle)
+                  legDims = get( legendHandle, 'Position' );
+                  legLeft = legDims(1);
+                  legBot  = legDims(2);
+                  legWid  = legDims(3);
+                  legHei  = legDims(4);
+                  % TODO The following logic does not work for 3D plots.
+                  %      => Commented out.
+                  %      This creates problems though for stacked plots with legends.
+    %                if (    legLeft > axisLeft ...
+    %                     && legBot > axisBot ...
+    %                     && legLeft+legWid < axisLeft+axisWid ...
+    %                     && legBot+legHei  < axisBot+axisHei )
+                      [ m2t, legendOpts ] = getLegendOpts( m2t, legendHandle );
+                      env.options = appendOptions( env.options, legendOpts );
+    %                end
+              end
           end
       end
   end
