@@ -28,6 +28,7 @@
 % ***
 % ***
 % *** TODO: * tex(t) annotations
+% ***       * Replace slow strcat() in loops with Julien Ridoux' idea.
 % ***
 % =========================================================================
 % ***
@@ -970,16 +971,27 @@ function str = plotLine( opts, xData, yData, yDeviation )
     str = [ str, ...
             sprintf('coordinates{\n') ];
 
-    for l = 1:length(xData)
-        str = strcat( str, ...
-                      sprintf( ' (%g,%g)', xData(l), yData(l) ) );
+    % Make sure data is in column vectors
+    if size(xData,2) > 1
+        xData = xData';
+        yData = yData';
         if errorbarMode
-            str = strcat( str, ...
-                          sprintf( ' +- (%g,%g)\n', 0.0, yDeviation(l) ) );
+            yDeviation = yDeviation';
         end
     end
 
-    str = [ str, sprintf('\n};\n\n') ];
+    % Convert to string array then cell to call sprintf once (and no loops).
+    if errorbarMode
+        str_data = cellstr(num2str([xData yData yDeviation],'(%g,%g) +- (0.0,%g)'));
+    else
+        str_data = cellstr(num2str([xData yData],'(%g,%g)'));
+    end
+    str_data = sprintf('%s', str_data{:});
+
+    % The process above adds extra white spaces, remove them all
+    str_data = str_data(~isspace(str_data));
+    str = sprintf('%s %s \n};\n\n', str, str_data);
+
 end
 % ---------------------------------------------------------------------------
 % END FUNCTION plotLine
