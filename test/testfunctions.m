@@ -73,6 +73,7 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @zplanePlot1         , ...
                            @zplanePlot2         , ...
                            @multipleAxes        , ...
+                           @scatterPlotRandom   , ...
                            @scatterPlot         , ...
                            @surfPlot            , ...
                            @surfPlot2           , ...
@@ -760,10 +761,20 @@ function description = multipleAxes()
   description = 'Multiple axes';
 end
 % =========================================================================
+function description = scatterPlotRandom()
+
+  x = randn( 10, 2 );
+  scatter( x(:,1), x(:,2)  );
+  description = 'Generic scatter plot';
+
+end
+% =========================================================================
 function description = scatterPlot()
+
   data = load( 'seamount' );
   scatter( data.x, data.y, 5, data.z, '^' );
-  description = 'Scatter plot';
+  description = 'Scatter plot with MATLAB(R) data';
+
 end
 % =========================================================================
 function description = surfPlot()

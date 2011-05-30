@@ -2108,15 +2108,23 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   yData = get( h, 'YData' );
   cData = get( h, 'CData' );
 
-  drawOptions = { 'scatter', 'only marks', 'scatter src=explicit' };
-
   matlabMarker = get( h, 'Marker' );
-
   tikzMarker = translateMarker( m2t, matlabMarker, [], false );
 
-  drawOptions = appendOptions( drawOptions, ...
-                               ['scatter/use mapped color={mark=', tikzMarker,',draw=mapped color}'] ...
-                             );
+  if length(cData) == 3
+      % No special treatment for the colors or markers are needed.
+      [ m2t, xcolor ] = getColor( m2t, h, cData, 'patch' );
+      drawOptions = { 'only marks', ...
+                      ['mark=' tikzMarker], ...
+                      ['color=' xcolor ] };
+
+  else
+      drawOptions = { 'scatter', ...
+                      'only marks', ...
+                      'scatter src=explicit', ...
+                      ['scatter/use mapped color={mark=', tikzMarker,',draw=mapped color}'] };
+  end
+
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
@@ -2124,10 +2132,18 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   str = [ str, ...
           sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
 
-  for k=1:length(xData)
-      str = strcat( str, ...
-                    sprintf( ' (%g,%g) [%d]\n', xData(k), yData(k), cData(k) ) );
+  if length(cData) == 3
+      for k=1:length(xData)
+          str = strcat( str, ...
+                        sprintf( ' (%g,%g)\n', xData(k), yData(k) ) );
+      end
+  else
+      for k=1:length(xData)
+          str = strcat( str, ...
+                        sprintf( ' (%g,%g) [%d]\n', xData(k), yData(k), cData(k) ) );
+      end
   end
+
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
