@@ -1005,21 +1005,8 @@ end
 % an \addplot will be generated.
 % Splitting criteria are:
 %    * NaNs.
-%      If xData or yData contain a NaN at position K, the data gets
-%      split up into index groups [1:k-1],[k+1:end].
 %    * Visibility.
-%      Parts of the line data may sit outside the plotbox.
-%      'segvis' tells us which segment are actually visible, and the
-%      following construction loops through it and makes sure that each
-%      point that is necessary gets actually printed.
-%      'printPrevious' tells whether or not the previous segment is visible;
-%      this information is used for determining when a new 'addplot' needs
-%      to be opened.
 %    * Dimension too large.
-%      Connected points may sit outside the plot, but their connecting
-%      line may not. The values of the outside plot may be too large for
-%      LaTeX to handle. Move those points closer to the bounding box,
-%      and possibly split them up in two.
 %
 % ---------------------------------------------------------------------------
 function [xDataCell, yDataCell, yDeviationCell] = splitLine( m2t, xData, yData, xLim, yLim, yDeviation )
@@ -1037,7 +1024,7 @@ function [xDataCell, yDataCell, yDeviationCell] = splitLine( m2t, xData, yData, 
   end
 
   % Split up at Infs and NaNs.
-  mask      = splitByInfsNaNs( xDataCell, yDataCell );
+  mask      = infsNaNs2mask( xDataCell, yDataCell );
   xDataCell = splitByMask( xDataCell, mask );
   yDataCell = splitByMask( yDataCell, mask );
   if errorbarMode
@@ -1098,9 +1085,13 @@ end
 
 
 % -------------------------------------------------------------------------
-% FUNCTION splitByInfsNaNs
+% FUNCTION infsNaNs2mask
+%
+%      If xData or yData contain a NaN at position K, the data gets
+%      split up into index groups [1:k-1],[k+1:end].
+%
 % -------------------------------------------------------------------------
-function mask = splitByInfsNaNs( xDataCell, yDataCell  )
+function mask = infsNaNs2mask( xDataCell, yDataCell  )
 
   n = length(xDataCell);
   mask = cell(n,1);
@@ -1112,12 +1103,21 @@ function mask = splitByInfsNaNs( xDataCell, yDataCell  )
 
 end
 % -------------------------------------------------------------------------
-% END FUNCTION splitByInfsNaNs
+% END FUNCTION infsNaNs2mask
 % -------------------------------------------------------------------------
 
 
 % -------------------------------------------------------------------------
 % FUNCTION splitByVisibility
+%
+%      Parts of the line data may sit outside the plotbox.
+%      'segvis' tells us which segment are actually visible, and the
+%      following construction loops through it and makes sure that each
+%      point that is necessary gets actually printed.
+%      'printPrevious' tells whether or not the previous segment is visible;
+%      this information is used for determining when a new 'addplot' needs
+%      to be opened.
+%
 % -------------------------------------------------------------------------
 function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByVisibility( m2t, xDataCell, yDataCell, xLim, yLim, yDeviationCell )
   % check if the *optional* argument 'yDeviation' was given
@@ -1181,6 +1181,12 @@ end
 
 % -------------------------------------------------------------------------
 % FUNCTION splitByOutliers
+%
+%      Connected points may sit outside the plot, but their connecting
+%      line may not. The values of the outside plot may be too large for
+%      LaTeX to handle. Move those points closer to the bounding box,
+%      and possibly split them up in two.
+%
 % -------------------------------------------------------------------------
 function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell )
   % check if the *optional* argument 'yDeviation' was given
