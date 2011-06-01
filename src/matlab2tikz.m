@@ -27,8 +27,7 @@
 % ***    and the powerful means that TikZ with pgfplots has to offer.
 % ***
 % ***
-% *** TODO: * tex(t) annotations
-% ***       * Replace slow strcat() in loops with Julien Ridoux' idea.
+% *** TODO: * Replace slow strcat() in loops with Julien Ridoux' idea.
 % ***
 % =========================================================================
 % ***
@@ -403,12 +402,13 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
           case 'surface'
               [m2t, env] = drawSurface( m2t, child );
 
+          case 'text'
+              [m2t, env] = drawText( m2t, child );
+
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
-                 'uitogglesplittool', 'uipushtool', 'hgjavacomponent',  ...
-                 'text'}
+                 'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
               % don't to anything for these handles and its children
               env = [];
-              % TODO text, surface
               % TODO bail out with warning in case of a 3D-plot (parameter plots!)
 
           otherwise
@@ -2068,6 +2068,67 @@ end
 % *** END FUNCTION drawSurface
 % =========================================================================
 
+% =========================================================================
+% *** FUNCTION drawText
+% =========================================================================
+function [ m2t, str ] = drawText( m2t, handle)
+  str = [];
+
+  % there may be some text objects floating around a Matlab figure which
+  % are handled by other subfunctions (labels etc.) or don't need to be
+  % handled at all
+  if     strcmp(get(handle, 'Visible'), 'off') ...
+      || strcmp(get(handle, 'HandleVisibility'), 'off')
+    return;
+  end
+
+  drawOptions = { 'nodes near coords', ...
+                  'only marks', ...
+                  'mark=none', ...
+                  'point meta=explicit symbolic' ...
+                };
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % get required properties
+  color  = get( handle, 'Color' );
+  [ m2t, tcolor ] = getColor( m2t, handle, color, 'patch' );
+  EdgeColor = get(handle, 'EdgeColor');
+  HorizontalAlignment = get(handle, 'HorizontalAlignment');
+  pos = get (handle, 'Position');
+  String = get(handle, 'String');
+  if m2t.opts.Results.mathmode
+      String = [ '$' String '$' ];
+  end
+  VerticalAlignment = get(handle, 'VerticalAlignment');
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % translate them to pgf style
+  switch VerticalAlignment
+    case {'top', 'cap'},         style = 'below';
+    case {'baseline', 'bottom'}, style = 'above';
+    otherwise,    style = '';
+  end
+  switch HorizontalAlignment
+    case 'left',  style = [style, ' right'];
+    case 'right', style = [style, ' left'];
+  end
+
+  style = [style ', text=' tcolor];
+  if ~strcmp(EdgeColor, 'none')
+    [ m2t, ecolor ] = getColor( m2t, handle, EdgeColor, 'patch' );
+    style = [style ', draw=', ecolor];
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % plot the thing
+  drawOptions{end+1} = sprintf(...
+    '\n\tevery node near coord/.append style={%s}', style);
+  drawOpts = collapse( drawOptions, ',' );
+  str = [ str, ...
+          sprintf( '\\addplot+[%s]\ncoordinates{(%g, %g) [%s]};\n', ...
+          drawOpts, pos(1), pos(2), String ) ];
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+end
+% =========================================================================
+% *** END FUNCTION drawText
+% =========================================================================
 
 % =========================================================================
 % *** FUNCTION surfaceOpts
