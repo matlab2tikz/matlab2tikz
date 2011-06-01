@@ -1278,9 +1278,9 @@ end
 
 % -------------------------------------------------------------------------
 % FUNCTION moveCloser
-% Takes one point x outside a box defined by xLim, yLim, and one other
-% point xRef it.
-% Results is a point xNew that sits on the line xRef---x *and* on the
+% Takes one point x outside of a box defined by xLim, yLim, and one other
+% point xRef inside of it.
+% Returns a point xNew that sits on the line xRef---x *and* on the
 % boundary box.
 % -------------------------------------------------------------------------
 function xNew = moveCloser( x, xRef, xLim, yLim )
