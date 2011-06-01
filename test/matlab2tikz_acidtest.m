@@ -45,7 +45,7 @@ function matlab2tikz_acidtest( varargin )
   end
 
   % -----------------------------------------------------------------------
-  matlab2tikzOpts = myInputParser;
+  matlab2tikzOpts = matlab2tikzInputParser;
 
   matlab2tikzOpts = matlab2tikzOpts.addOptional( matlab2tikzOpts, ...
                                                  'testFunctionIndices', ...

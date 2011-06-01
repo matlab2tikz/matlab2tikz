@@ -1,5 +1,5 @@
 % =========================================================================
-function parser = myInputParser ()
+function parser = matlab2tikzInputParser ()
   % Initialize the structure.
   parser = struct ();
   % Public Properties
