@@ -1,3 +1,15 @@
+2011-06-01  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.1.2.
+	* Support for logscaled color bar.
+	* Support for truecolor images.
+	* Initial support for text handles.
+	* Speed up processing for line plots.
+	* Several bugfixes:
+	   - axis labels, tick labels, etc. for z-axis
+	   - marker handling for scatter plots
+	   - fix for unicolor scatter plots
+
 2011-04-06  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.1.1.
