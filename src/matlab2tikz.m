@@ -1157,32 +1157,37 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByVisibility( m
 
       else % more than one node in the line -- this is usually the case
           segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], xLim, yLim );
-          printPrevious = 0;
-          % loop over the segments
-          for kk = 1:length(segvis)
-              if segvis(kk)
-                  if ~printPrevious
-                      % start new plot
-                      l = 1;
-                      cellIndexNew = cellIndexNew + 1;
-                      xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk);
-                      yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk);
-                      if errorbarMode
-                          yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
-                      end
-                      l = l+1;
-                      printPrevious = 1;
-                  end
-                  xDataCellNew{cellIndexNew}(l) = xDataCell{cellIndex}(kk+1);
-                  yDataCellNew{cellIndexNew}(l) = yDataCell{cellIndex}(kk+1);
-                  if errorbarMode
-                      yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk+1);
-                  end
-                  l = l+1;
-              else
-                  printPrevious = 0;
-              end
-          end
+
+		  % find data points that compose two invisible segments, by adding
+		  % segvis to itself. Value in datapoints are:
+		  % 2 if both segment visible
+		  % 1 if one segment crosses the boundary
+		  % 0 if both segment are not visible
+		  % '1's are the edges of visible segments. We may miss the first and
+		  % last edges of corresponding visible segments. Plus some magic to
+		  % deal with indices off by one (segvis is about intervals, not points) 
+		  datapoints = segvis(2:end) + segvis(1:end-1);
+		  edges = find(datapoints == 1) + 1;
+		  vis_indices = find(segvis==1);
+		  if ~isempty(vis_indices)
+			  edges = [ vis_indices(1) edges' vis_indices(end)+1 ];
+		  end
+		  edges = unique(edges);
+
+		  % Sanity check, make sure we have an even number of edges.
+		  if mod(length(edges), 2)
+			  error('Number of edges is not even. Something went really wrong.\n');
+		  end
+
+		  % Split data along edges
+		  for ee=1:2:length(edges)
+			  cellIndexNew = cellIndexNew + 1;
+			  xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(edges(ee):edges(ee+1));
+			  yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(edges(ee):edges(ee+1));
+			  if errorbarMode
+				  yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex}(edges(ee):edges(ee+1));
+			  end
+		  end
       end
   end
 
