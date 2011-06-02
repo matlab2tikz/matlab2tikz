@@ -982,8 +982,12 @@ function str = plotLine( opts, xData, yData, yDeviation )
     % Make sure data is in column vectors
     if size(xData,2) > 1
         xData = xData';
+	end
+    if size(yData,2) > 1
         yData = yData';
-        if errorbarMode
+	end
+	if errorbarMode
+		if size(yDeviation,2) > 1
             yDeviation = yDeviation';
         end
     end
