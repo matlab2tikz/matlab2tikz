@@ -1019,6 +1019,7 @@ end
 %    * NaNs.
 %    * Visibility.
 %    * Dimension too large.
+%    * Data set too large.
 %
 % ---------------------------------------------------------------------------
 function [xDataCell, yDataCell, yDeviationCell] = splitLine( m2t, xData, yData, xLim, yLim, yDeviation )
@@ -1055,6 +1056,13 @@ function [xDataCell, yDataCell, yDeviationCell] = splitLine( m2t, xData, yData, 
       [xDataCell , yDataCell, yDeviationCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell );
   else
       [xDataCell , yDataCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim );
+  end
+
+  % Split each of the current chunks further to limit size of coordinate arrays
+  if errorbarMode
+      [xDataCell , yDataCell, yDeviationCell] = splitByArraySize( xDataCell, yDataCell, yDeviationCell );
+  else
+      [xDataCell , yDataCell] = splitByArraySize( xDataCell, yDataCell );
   end
 
 end
@@ -1300,6 +1308,120 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
 end
 % -------------------------------------------------------------------------
 % END FUNCTION splitByOutliers
+% -------------------------------------------------------------------------
+
+% -------------------------------------------------------------------------
+% FUNCTION splitByArraySize
+%   TeX parses files line by line with a buffer of size buf_size. If the
+%   plot has too many data points, we may exceed the size of the buffer.
+%   Splitting 'large' plots makes TeX happier. What is a "large" array?
+%   TeX parser buffer is buf_size=200000 char on Mac TeXLive, let's say 
+%   100000 to be on the safe side.
+%   1 point is represented by 25 characters (estimation): 2 coordinates (10
+%   char), 2 brackets, commma and white space, + 1 extra char.
+%   That gives a magic arbitrary number of 4000 data points per array.
+% -------------------------------------------------------------------------
+function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xDataCell, yDataCell, yDeviationCell )
+  % check if the *optional* argument 'yDeviation' was given
+  errorbarMode = 0;
+  if nargin>2
+      errorbarMode = 1;
+  end
+
+  newArraySize = 4000;
+  xDataCellNew = cell(0);
+  yDataCellNew = cell(0);
+  if errorbarMode
+      yDeviationCellNew = cell(0);
+  end
+  cellIndexNew = 0;
+
+  for cellIndex = 1:length(xDataCell);
+	  
+	  xData = xDataCell{cellIndex};
+	  yData = yDataCell{cellIndex};
+	  if errorbarMode
+		  yDeviation = yDeviationCell{cellIndex}
+	  end
+
+	  % Assuming data is never a matrix
+	  if (size(xData, 2) > 1)
+		  xData = xData';
+	  end
+	  if (size(yData, 2) > 1)
+		  yData = yData';
+	  end
+	  if errorbarMode
+		  if (size(yDeviation, 2) > 1)
+		  	yDeviation = yDeviation';
+		  end
+	  end
+
+	  % If vector does not have to be split, take a shortcut
+	  if length(xData < newArraySize)
+		  cellIndexNew = cellIndexNew + 1;
+		  xDataCellNew{cellIndexNew} = xData;
+		  yDataCellNew{cellIndexNew} = yData;
+		  if errorbarMode
+			  yDeviationCellNew{cellIndexNew} = yDeviation;
+		  end
+		  continue;
+	  end
+
+	  % mod(length(xData),newArraySize) may not be 0, so need to take care of
+	  % remaining data points that fall out of the reshaped array
+	  cols = floor(length(xData) ./ newArraySize);
+	  xDataReshaped = reshape(xData(1:cols*newArraySize), newArraySize, []);
+	  yDataReshaped = reshape(yData(1:cols*newArraySize), newArraySize, []);
+	  if errorbarMode
+		  yDeviationReshaped = reshape(yDeviation(1:cols*newArraySize), newArraySize, []);
+	  end
+	  xDataLeft = xData(cols*newArraySize+1:end);
+	  yDataLeft = yData(cols*newArraySize+1:end);
+	  if errorbarMode
+		  yDeviationLeft = yDeviation(cols*newArraySize+1:end);
+	  end
+
+	  % Need to add one point to each reshaped row otherwise tikz won't draw
+	  % continuous lines (missing interval).
+	  xDataExtra= zeros(1,cols);
+	  yDataExtra = zeros(1,cols);
+	  if errorbarMode
+		  yDeviationExtra = zeros(1,cols);
+	  end
+	  xDataExtra(1:end-1) = xDataReshaped(1,2:end);
+	  yDataExtra(1:end-1) = yDataReshaped(1,2:end);
+	  if errorbarMode
+		  yDeviationExtra(1:end-1) = yDeviationReshaped(1,2:end);
+	  end
+	  xDataExtra(end) = xDataLeft(1,1);
+	  yDataExtra(end) = yDataLeft(1,1);
+	  if errorbarMode
+		  yDeviationExtra(end) = yDeviationLeft(1,1);
+	  end
+
+	  % Push split arrays in new cells, with extra point
+	  for kk=1:cols
+		  cellIndexNew = cellIndexNew + 1;
+		  xDataCellNew{cellIndexNew} = [ xDataReshaped(:,kk); xDataExtra(kk) ];
+		  yDataCellNew{cellIndexNew} = [ yDataReshaped(:,kk); yDataExtra(kk) ];
+		  if errorbarMode
+			  yDeviationCellNew{cellIndexNew} = [ yDeviationReshaped(:,kk); yDeviationExtra(kk) ];
+		  end
+	  end
+	  if cols ~= length(xData) ./ newArraySize
+		  cellIndexNew = cellIndexNew + 1;
+		  xDataCellNew{cellIndexNew} = xDataLeft;
+		  yDataCellNew{cellIndexNew} = yDataLeft;
+		  if errorbarMode
+			  yDeviationCellNew{cellIndexNew} = yDeviationLeft;
+		  end
+	  end
+  end
+
+end
+% -------------------------------------------------------------------------
+% END FUNCTION splitByArraySize
 % -------------------------------------------------------------------------
 
 % -------------------------------------------------------------------------
