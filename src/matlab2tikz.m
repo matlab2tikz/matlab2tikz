@@ -962,11 +962,9 @@ function str = plotLine( opts, xData, yData, yDeviation )
 
     n = length(xData);
 
-    if errorbarMode
-        if n~=length(yDeviation)
-            error( 'drawLine:arrayLengthsMismatch', ...
-                  '''drawline'' was called with errors bars turned on, but array lengths do not match.' );
-        end
+    if errorbarMode && n~=length(yDeviation)
+        error( 'drawLine:arrayLengthsMismatch', ...
+              '''drawline'' was called with errors bars turned on, but array lengths do not match.' );
     end
 
     str = [ str, ...
@@ -982,14 +980,12 @@ function str = plotLine( opts, xData, yData, yDeviation )
     % Make sure data is in column vectors
     if size(xData,2) > 1
         xData = xData';
-	end
+    end
     if size(yData,2) > 1
         yData = yData';
-	end
-	if errorbarMode
-		if size(yDeviation,2) > 1
-            yDeviation = yDeviation';
-        end
+    end
+    if errorbarMode && size(yDeviation,2) > 1
+        yDeviation = yDeviation';
     end
 
     % Convert to string array then cell to call sprintf once (and no loops).
@@ -1166,36 +1162,36 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByVisibility( m
       else % more than one node in the line -- this is usually the case
           segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], xLim, yLim );
 
-		  % find data points that compose two invisible segments, by adding
-		  % segvis to itself. Value in datapoints are:
-		  % 2 if both segment visible
-		  % 1 if one segment crosses the boundary
-		  % 0 if both segment are not visible
-		  % '1's are the edges of visible segments. We may miss the first and
-		  % last edges of corresponding visible segments. Plus some magic to
-		  % deal with indices off by one (segvis is about intervals, not points) 
-		  datapoints = segvis(2:end) + segvis(1:end-1);
-		  edges = find(datapoints == 1) + 1;
-		  vis_indices = find(segvis==1);
-		  if ~isempty(vis_indices)
-			  edges = [ vis_indices(1) edges' vis_indices(end)+1 ];
-		  end
-		  edges = unique(edges);
+          % find data points that compose two invisible segments, by adding
+          % segvis to itself. Value in datapoints are:
+          % 2 if both segment visible
+          % 1 if one segment crosses the boundary
+          % 0 if both segment are not visible
+          % '1's are the edges of visible segments. We may miss the first and
+          % last edges of corresponding visible segments. Plus some magic to
+          % deal with indices off by one (segvis is about intervals, not points)
+          datapoints = segvis(2:end) + segvis(1:end-1);
+          edges = find(datapoints == 1) + 1;
+          vis_indices = find(segvis==1);
+          if ~isempty(vis_indices)
+              edges = [ vis_indices(1) edges' vis_indices(end)+1 ];
+          end
+          edges = unique(edges);
 
-		  % Sanity check, make sure we have an even number of edges.
-		  if mod(length(edges), 2)
-			  error('Number of edges is not even. Something went really wrong.\n');
-		  end
+          % Sanity check, make sure we have an even number of edges.
+          if mod(length(edges), 2)
+              error('Number of edges is not even. Something went really wrong.\n');
+          end
 
-		  % Split data along edges
-		  for ee=1:2:length(edges)
-			  cellIndexNew = cellIndexNew + 1;
-			  xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(edges(ee):edges(ee+1));
-			  yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(edges(ee):edges(ee+1));
-			  if errorbarMode
-				  yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex}(edges(ee):edges(ee+1));
-			  end
-		  end
+          % Split data along edges
+          for ee=1:2:length(edges)
+              cellIndexNew = cellIndexNew + 1;
+              xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(edges(ee):edges(ee+1));
+              yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(edges(ee):edges(ee+1));
+              if errorbarMode
+                  yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex}(edges(ee):edges(ee+1));
+              end
+          end
       end
   end
 
@@ -1232,77 +1228,77 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
   yLimLarger = [ yLim(1)-delta, yLim(2)+delta ];
 
   for cellIndex = 1:length(xDataCell);
-	  % Code clarity and to make sure we deal with column vectors
-	  if size(xDataCell{cellIndex},2) > 1
-		  x = xDataCell{cellIndex}';
-	  else
-		  x = xDataCell{cellIndex};
-	  end
-	  if size(yDataCell{cellIndex},2) > 1
-		  y = yDataCell{cellIndex}';
-	  else
-		  y = yDataCell{cellIndex};
-	  end
+      % Code clarity and to make sure we deal with column vectors
+      if size(xDataCell{cellIndex},2) > 1
+          x = xDataCell{cellIndex}';
+      else
+          x = xDataCell{cellIndex};
+      end
+      if size(yDataCell{cellIndex},2) > 1
+          y = yDataCell{cellIndex}';
+      else
+          y = yDataCell{cellIndex};
+      end
 
-	  % The largest positive value of v determines where the point sits,
-	  % and to which boundary it must be normalized.
-	  v = [ xLim(1)-x, x-xLim(2), yLim(1)-y, y-yLim(2) ];
-	  maxVal = max(v,[],2);
-	  outliers = find( maxVal > delta);
+      % The largest positive value of v determines where the point sits,
+      % and to which boundary it must be normalized.
+      v = [ xLim(1)-x, x-xLim(2), yLim(1)-y, y-yLim(2) ];
+      maxVal = max(v,[],2);
+      outliers = find( maxVal > delta);
 
-	  % if nothing to do in this cell, take a shortcut
-	  if isempty(outliers)
-		  cellIndexNew = cellIndexNew + 1;
-		  xDataCellNew{cellIndexNew} = xDataCell{cellIndex};
-		  yDataCellNew{cellIndexNew} = yDataCell{cellIndex};
-		  if errorbarMode
-			  yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex};
-		  end
-		  continue
-	  end
+      % if nothing to do in this cell, take a shortcut
+      if isempty(outliers)
+          cellIndexNew = cellIndexNew + 1;
+          xDataCellNew{cellIndexNew} = xDataCell{cellIndex};
+          yDataCellNew{cellIndexNew} = yDataCell{cellIndex};
+          if errorbarMode
+              yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex};
+          end
+          continue
+      end
 
-	  % Compute the two new points that will replace the outlier after split
-	  outDataNew = zeros(length(outliers),4);
-	  for kk=1:length(outliers)
-		  out = outliers(kk);
-		  outData = [ x(out); y(out) ];
-		  if out > 1
-			  ref = [ x(out-1); y(out-1) ];
-			  new = moveCloser( outData, ref, xLimLarger, yLimLarger );
-			  outDataNew(kk, 1:2) = new;
-		  end
-		  if out < length(x)
-			  ref = [ x(out+1); y(out+1) ];
-			  new = moveCloser( outData, ref, xLimLarger, yLimLarger );
-			  outDataNew(kk, 3:4) = new;
-		  end
-	  end
+      % Compute the two new points that will replace the outlier after split
+      outDataNew = zeros(length(outliers),4);
+      for kk=1:length(outliers)
+          out = outliers(kk);
+          outData = [ x(out); y(out) ];
+          if out > 1
+              ref = [ x(out-1); y(out-1) ];
+              new = moveCloser( outData, ref, xLimLarger, yLimLarger );
+              outDataNew(kk, 1:2) = new;
+          end
+          if out < length(x)
+              ref = [ x(out+1); y(out+1) ];
+              new = moveCloser( outData, ref, xLimLarger, yLimLarger );
+              outDataNew(kk, 3:4) = new;
+          end
+      end
 
-	  % Split the data at outliers indices, need to include first and last data
-	  % points if not there already
-	  if ~ismember(1,outliers)
-		  outliers = [1 outliers];
-		  outDataNew = [ [0 0 x(1) y(1) ]; outDataNew ];
-	  end
-	  if ~ismember(length(x),outliers)
-		  outliers = [outliers length(x)];
-		  outDataNew = [ outDataNew; [x(end) y(end) 0 0] ];
-	  end
+      % Split the data at outliers indices, need to include first and last data
+      % points if not there already
+      if ~ismember(1,outliers)
+          outliers = [1 outliers];
+          outDataNew = [ [0 0 x(1) y(1) ]; outDataNew ];
+      end
+      if ~ismember(length(x),outliers)
+          outliers = [outliers length(x)];
+          outDataNew = [ outDataNew; [x(end) y(end) 0 0] ];
+      end
 
-	  for kk=1:length(outliers)-1
-		  cellIndexNew = cellIndexNew + 1;
+      for kk=1:length(outliers)-1
+          cellIndexNew = cellIndexNew + 1;
 
-		  xDataCellNew{cellIndexNew} = [ outDataNew(kk,3) ...
-						xDataCell{cellIndex}(outliers(kk)+1:outliers(kk+1)-1) ...
-						outDataNew(kk+1,1) ];
-		  yDataCellNew{cellIndexNew} = [ outDataNew(kk,4) ...
-						yDataCell{cellIndex}(outliers(kk)+1:outliers(kk+1)-1) ...
-						outDataNew(kk+1,2) ];
-		  if errorbarMode
-		  		yDeviationCellNew{cellIndexNew} = ...
-						yDataCell{cellIndex}(outliers(kk):outliers(kk+1));
-		  end
-	  end
+          xDataCellNew{cellIndexNew} = [ outDataNew(kk,3) ...
+                                        xDataCell{cellIndex}(outliers(kk)+1:outliers(kk+1)-1) ...
+                                        outDataNew(kk+1,1) ];
+          yDataCellNew{cellIndexNew} = [ outDataNew(kk,4) ...
+                                        yDataCell{cellIndex}(outliers(kk)+1:outliers(kk+1)-1) ...
+                                        outDataNew(kk+1,2) ];
+          if errorbarMode
+              yDeviationCellNew{cellIndexNew} = ...
+                            yDataCell{cellIndex}(outliers(kk):outliers(kk+1));
+          end
+      end
   end
 
 end
@@ -1337,86 +1333,84 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
   cellIndexNew = 0;
 
   for cellIndex = 1:length(xDataCell);
-	  
-	  xData = xDataCell{cellIndex};
-	  yData = yDataCell{cellIndex};
-	  if errorbarMode
-		  yDeviation = yDeviationCell{cellIndex}
-	  end
 
-	  % Assuming data is never a matrix
-	  if (size(xData, 2) > 1)
-		  xData = xData';
-	  end
-	  if (size(yData, 2) > 1)
-		  yData = yData';
-	  end
-	  if errorbarMode
-		  if (size(yDeviation, 2) > 1)
-		  	yDeviation = yDeviation';
-		  end
-	  end
+      xData = xDataCell{cellIndex};
+      yData = yDataCell{cellIndex};
+      if errorbarMode
+          yDeviation = yDeviationCell{cellIndex};
+      end
 
-	  % If vector does not have to be split, take a shortcut
-	  if length(xData < newArraySize)
-		  cellIndexNew = cellIndexNew + 1;
-		  xDataCellNew{cellIndexNew} = xData;
-		  yDataCellNew{cellIndexNew} = yData;
-		  if errorbarMode
-			  yDeviationCellNew{cellIndexNew} = yDeviation;
-		  end
-		  continue;
-	  end
+      % Assuming data is never a matrix
+      if (size(xData, 2) > 1)
+          xData = xData';
+      end
+      if (size(yData, 2) > 1)
+          yData = yData';
+      end
+      if errorbarMode && (size(yDeviation, 2) > 1)
+          yDeviation = yDeviation';
+      end
 
-	  % mod(length(xData),newArraySize) may not be 0, so need to take care of
-	  % remaining data points that fall out of the reshaped array
-	  cols = floor(length(xData) ./ newArraySize);
-	  xDataReshaped = reshape(xData(1:cols*newArraySize), newArraySize, []);
-	  yDataReshaped = reshape(yData(1:cols*newArraySize), newArraySize, []);
-	  if errorbarMode
-		  yDeviationReshaped = reshape(yDeviation(1:cols*newArraySize), newArraySize, []);
-	  end
-	  xDataLeft = xData(cols*newArraySize+1:end);
-	  yDataLeft = yData(cols*newArraySize+1:end);
-	  if errorbarMode
-		  yDeviationLeft = yDeviation(cols*newArraySize+1:end);
-	  end
+      % If vector does not have to be split, take a shortcut
+      if length(xData < newArraySize)
+          cellIndexNew = cellIndexNew + 1;
+          xDataCellNew{cellIndexNew} = xData;
+          yDataCellNew{cellIndexNew} = yData;
+          if errorbarMode
+                  yDeviationCellNew{cellIndexNew} = yDeviation;
+          end
+          continue;
+      end
 
-	  % Need to add one point to each reshaped row otherwise tikz won't draw
-	  % continuous lines (missing interval).
-	  xDataExtra= zeros(1,cols);
-	  yDataExtra = zeros(1,cols);
-	  if errorbarMode
-		  yDeviationExtra = zeros(1,cols);
-	  end
-	  xDataExtra(1:end-1) = xDataReshaped(1,2:end);
-	  yDataExtra(1:end-1) = yDataReshaped(1,2:end);
-	  if errorbarMode
-		  yDeviationExtra(1:end-1) = yDeviationReshaped(1,2:end);
-	  end
-	  xDataExtra(end) = xDataLeft(1,1);
-	  yDataExtra(end) = yDataLeft(1,1);
-	  if errorbarMode
-		  yDeviationExtra(end) = yDeviationLeft(1,1);
-	  end
+      % mod(length(xData),newArraySize) may not be 0, so need to take care of
+      % remaining data points that fall out of the reshaped array
+      cols = floor(length(xData) ./ newArraySize);
+      xDataReshaped = reshape(xData(1:cols*newArraySize), newArraySize, []);
+      yDataReshaped = reshape(yData(1:cols*newArraySize), newArraySize, []);
+      if errorbarMode
+          yDeviationReshaped = reshape(yDeviation(1:cols*newArraySize), newArraySize, []);
+      end
+      xDataLeft = xData(cols*newArraySize+1:end);
+      yDataLeft = yData(cols*newArraySize+1:end);
+      if errorbarMode
+          yDeviationLeft = yDeviation(cols*newArraySize+1:end);
+      end
 
-	  % Push split arrays in new cells, with extra point
-	  for kk=1:cols
-		  cellIndexNew = cellIndexNew + 1;
-		  xDataCellNew{cellIndexNew} = [ xDataReshaped(:,kk); xDataExtra(kk) ];
-		  yDataCellNew{cellIndexNew} = [ yDataReshaped(:,kk); yDataExtra(kk) ];
-		  if errorbarMode
-			  yDeviationCellNew{cellIndexNew} = [ yDeviationReshaped(:,kk); yDeviationExtra(kk) ];
-		  end
-	  end
-	  if cols ~= length(xData) ./ newArraySize
-		  cellIndexNew = cellIndexNew + 1;
-		  xDataCellNew{cellIndexNew} = xDataLeft;
-		  yDataCellNew{cellIndexNew} = yDataLeft;
-		  if errorbarMode
-			  yDeviationCellNew{cellIndexNew} = yDeviationLeft;
-		  end
-	  end
+      % Need to add one point to each reshaped row otherwise tikz won't draw
+      % continuous lines (missing interval).
+      xDataExtra= zeros(1,cols);
+      yDataExtra = zeros(1,cols);
+      if errorbarMode
+          yDeviationExtra = zeros(1,cols);
+      end
+      xDataExtra(1:end-1) = xDataReshaped(1,2:end);
+      yDataExtra(1:end-1) = yDataReshaped(1,2:end);
+      if errorbarMode
+          yDeviationExtra(1:end-1) = yDeviationReshaped(1,2:end);
+      end
+      xDataExtra(end) = xDataLeft(1,1);
+      yDataExtra(end) = yDataLeft(1,1);
+      if errorbarMode
+          yDeviationExtra(end) = yDeviationLeft(1,1);
+      end
+
+      % Push split arrays in new cells, with extra point
+      for kk=1:cols
+          cellIndexNew = cellIndexNew + 1;
+          xDataCellNew{cellIndexNew} = [ xDataReshaped(:,kk); xDataExtra(kk) ];
+          yDataCellNew{cellIndexNew} = [ yDataReshaped(:,kk); yDataExtra(kk) ];
+          if errorbarMode
+                  yDeviationCellNew{cellIndexNew} = [ yDeviationReshaped(:,kk); yDeviationExtra(kk) ];
+          end
+      end
+      if cols ~= length(xData) ./ newArraySize
+          cellIndexNew = cellIndexNew + 1;
+          xDataCellNew{cellIndexNew} = xDataLeft;
+          yDataCellNew{cellIndexNew} = yDataLeft;
+          if errorbarMode
+                  yDeviationCellNew{cellIndexNew} = yDeviationLeft;
+          end
+      end
   end
 
 end
@@ -1536,8 +1530,8 @@ function out = segmentsIntersect( x, y )
       rhs2   = y(3) - y(1);
       lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
       mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
-      out    =   0<lambda && lambda<1 ...
-              &&  0<mu     && mu    <1;
+      out    =  0<lambda && lambda<1 ...
+             && 0<mu     && mu    <1;
   end
 
 end
@@ -1799,67 +1793,67 @@ switch ( matlabMarker )
         userWarning( m2t, 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
         switch ( matlabMarker )
 
-                case '*'
-                        tikzMarker = 'asterisk';
+            case '*'
+                tikzMarker = 'asterisk';
 
-                case {'s','square'}
+            case {'s','square'}
                 if faceColorToggle
-                            tikzMarker = 'square*';
+                    tikzMarker = 'square*';
                 else
                     tikzMarker = 'square';
                 end
 
-                case {'d','diamond'}
+            case {'d','diamond'}
                 if faceColorToggle
-                            tikzMarker = 'diamond*';
+                    tikzMarker = 'diamond*';
                 else
-                            tikzMarker = 'diamond';
+                    tikzMarker = 'diamond';
                 end
 
             case '^'
                 if faceColorToggle
-                            tikzMarker = 'triangle*';
+                    tikzMarker = 'triangle*';
                 else
-                            tikzMarker = 'triangle';
+                    tikzMarker = 'triangle';
                 end
 
-                case 'v'
+            case 'v'
                 if faceColorToggle
                     tikzMarker = 'triangle*';
                 else
-                            tikzMarker = 'triangle';
+                    tikzMarker = 'triangle';
                 end
                 markOptions = [ markOptions, ',rotate=180' ];
 
-                case '<'
+            case '<'
                 if faceColorToggle
                     tikzMarker = 'triangle*';
                 else
-                            tikzMarker = 'triangle';
+                    tikzMarker = 'triangle';
                 end
                 markOptions = [ markOptions, ',rotate=90' ];
 
             case '>'
                 if faceColorToggle
-                            tikzMarker = 'triangle*';
+                    tikzMarker = 'triangle*';
                 else
-                            tikzMarker = 'triangle';
+                    tikzMarker = 'triangle';
                 end
                 markOptions = [ markOptions, ',rotate=270' ];
 
             case {'p','pentagram'}
                 if faceColorToggle
-                            tikzMarker = 'star*';
+                    tikzMarker = 'star*';
                 else
-                            tikzMarker = 'star';
+                    tikzMarker = 'star';
                 end
 
-                case {'h','hexagram'}
-                    userWarning( 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
+            case {'h','hexagram'}
+                userWarning( 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
                 if faceColorToggle
-                            tikzMarker = 'star*';
+                    tikzMarker = 'star*';
                 else
-                            tikzMarker = 'star';
+                    tikzMarker = 'star';
                 end
 
             otherwise
@@ -2110,9 +2104,9 @@ function [ m2t, str ] = drawHggroup( m2t, h )
   % Set to 'unknown' to force fallback handling. This produces something
   % for bar plots, for example.
   try
-    cl = class( handle(h) );
+      cl = class( handle(h) );
   catch
-    cl = 'unknown';
+      cl = 'unknown';
   end
 
   switch( cl )
@@ -2532,11 +2526,15 @@ function [ m2t, str ] = drawBarseries( m2t, h )
               end
               bWFactor = get( h, 'BarWidth' );
               ulength   = normalized2physical( m2t );
-              m2t.currentHandles.pgfAxis.options = appendOptions( m2t.currentHandles.pgfAxis.options, ...
-                                                                  { 'ybar stacked',                              ...
-                                                                    sprintf( 'bar width=%g%s',                   ...
-                                                                             ulength.value*bWFactor, ulength.unit ) } ...
-                                                                );
+              % TODO Adding this to m2t.content.options are the TikZ environment
+              %      options whereas this is supposed to go with the options
+              %      of the current axes environment. Fix this.
+%                m2t.content.options = appendOptions( m2t.content.options, ...
+%                                                     { 'ybar stacked',                          ...
+%                                                       sprintf( 'bar width=%g%s',               ...
+%                                                       ulength.value*bWFactor, ulength.unit ) } ...
+%                                                   );
+              m2t.addedAxisOption = 1;
           end
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -4954,7 +4952,7 @@ function printAll( env, fid )
         fprintf( fid, '%% %s\n', regexprep( env.comment, '\n', '\n% ' ) );
     end
 
-    if isempty(env.options)
+    if isempty( env.options )
         fprintf( fid, '\\begin{%s}\n', env.name );
     else
         fprintf( fid, '\\begin{%s}[%%\n%s]\n', env.name, collapse(env.options, sprintf(',\n')) );
