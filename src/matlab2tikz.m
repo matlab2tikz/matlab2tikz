@@ -1224,60 +1224,77 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
   yLimLarger = [ yLim(1)-delta, yLim(2)+delta ];
 
   for cellIndex = 1:length(xDataCell);
-      cellIndexNew = cellIndexNew + 1;
-      l = 1; % running index in the new cell
+	  % Code clarity and to make sure we deal with column vectors
+	  if size(xDataCell{cellIndex},2) > 1
+		  x = xDataCell{cellIndex}';
+	  else
+		  x = xDataCell{cellIndex};
+	  end
+	  if size(yDataCell{cellIndex},2) > 1
+		  y = yDataCell{cellIndex}';
+	  else
+		  y = yDataCell{cellIndex};
+	  end
 
-      n = length( xDataCell{cellIndex} );
-      for kk = 1:n
-          x = [ xDataCell{cellIndex}(kk); ...
-                yDataCell{cellIndex}(kk) ];
-          % The largest positive value of v determines where the point sits,
-          % and to which boundary it must be normalized.
-          v = [ xLim(1)-x(1), x(1)-xLim(2), yLim(1)-x(2), x(2)-yLim(2) ];
-          maxVal = max(v);
-          % If there are several maxima, just pick the first one.
-          % --> maxVal(1)
-          if maxVal(1)>delta % Point sits too far outside. Move!
-              if kk>1
-                  % also shorten the distance to the previous, and split up
-                  xRef = [ xDataCell{cellIndex}(kk-1); ...
-                            yDataCell{cellIndex}(kk-1) ];
-                  xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );
+	  % The largest positive value of v determines where the point sits,
+	  % and to which boundary it must be normalized.
+	  v = [ xLim(1)-x, x-xLim(2), yLim(1)-y, y-yLim(2) ];
+	  maxVal = max(v,[],2);
+	  outliers = find( maxVal > delta);
 
-                  xDataCellNew{cellIndexNew}(l) = xNew(1);
-                  yDataCellNew{cellIndexNew}(l) = xNew(2);
-                  if errorbarMode
-                      yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
-                  end
-                  l = l+1;
+	  % if nothing to do in this cell, take a shortcut
+	  if isempty(outliers)
+		  cellIndexNew = cellIndexNew + 1;
+		  xDataCellNew{cellIndexNew} = xDataCell{cellIndex};
+		  yDataCellNew{cellIndexNew} = yDataCell{cellIndex};
+		  if errorbarMode
+			  yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex};
+		  end
+		  continue
+	  end
 
-                  if kk<n % In this case, it will be automatically reset at the
-                          % beginning of the k-loop.
-                      cellIndexNew = cellIndexNew + 1; % go to the next cell
-                      l = 1; % reset the index
-                  end
-              end
-              if kk<n
-                  xRef = [ xDataCell{cellIndex}(kk+1); ...
-                            yDataCell{cellIndex}(kk+1) ];
-                  xNew = moveCloser( x, xRef, xLimLarger, yLimLarger );
-                  xDataCellNew{cellIndexNew}(l) = xNew(1);
-                  yDataCellNew{cellIndexNew}(l) = xNew(2);
-                  if errorbarMode
-                      yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
-                  end
-                  l = l+1;
-              end
-          else
-              % Point alright: Just copy it over.
-              xDataCellNew{cellIndexNew}(l) = x(1);
-              yDataCellNew{cellIndexNew}(l) = x(2);
-              if errorbarMode
-                  yDeviationCellNew{cellIndexNew}(l) = yDeviationCell{cellIndex}(kk);
-              end
-              l = l+1;
-          end
-      end
+	  % Compute the two new points that will replace the outlier after split
+	  outDataNew = zeros(length(outliers),4);
+	  for kk=1:length(outliers)
+		  out = outliers(kk);
+		  outData = [ x(out); y(out) ];
+		  if out > 1
+			  ref = [ x(out-1); y(out-1) ];
+			  new = moveCloser( outData, ref, xLimLarger, yLimLarger );
+			  outDataNew(kk, 1:2) = new;
+		  end
+		  if out < length(x)
+			  ref = [ x(out+1); y(out+1) ];
+			  new = moveCloser( outData, ref, xLimLarger, yLimLarger );
+			  outDataNew(kk, 3:4) = new;
+		  end
+	  end
+
+	  % Split the data at outliers indices, need to include first and last data
+	  % points if not there already
+	  if ~ismember(1,outliers)
+		  outliers = [1 outliers];
+		  outDataNew = [ [0 0 x(1) y(1) ]; outDataNew ];
+	  end
+	  if ~ismember(length(x),outliers)
+		  outliers = [outliers length(x)];
+		  outDataNew = [ outDataNew; [x(end) y(end) 0 0] ];
+	  end
+
+	  for kk=1:length(outliers)-1
+		  cellIndexNew = cellIndexNew + 1;
+
+		  xDataCellNew{cellIndexNew} = [ outDataNew(kk,3) ...
+						xDataCell{cellIndex}(outliers(kk)+1:outliers(kk+1)-1) ...
+						outDataNew(kk+1,1) ];
+		  yDataCellNew{cellIndexNew} = [ outDataNew(kk,4) ...
+						yDataCell{cellIndex}(outliers(kk)+1:outliers(kk+1)-1) ...
+						outDataNew(kk+1,2) ];
+		  if errorbarMode
+		  		yDeviationCellNew{cellIndexNew} = ...
+						yDataCell{cellIndex}(outliers(kk):outliers(kk+1));
+		  end
+	  end
   end
 
 end
