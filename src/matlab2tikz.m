@@ -4349,14 +4349,14 @@ end
 % ***              [       AXES2 ]
 % ***
 % =========================================================================
-function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHandles )
+function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, axesHandles )
 
   % TODO: fix this function
   % TODO: look for unique IDs of the axes env. which could be returned along
   %       with its properties
 
   n = 0; % number of visible axes handles
-  for k=1:length(axesHandles)
+  for k = 1:length(axesHandles)
       if axisIsVisible( axesHandles(k) )
           n = n+1;
           visibleAxesHandles(n) = axesHandles(k);
@@ -4365,7 +4365,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
 
   % initialize alignmentOptions
   alignmentOptions = struct([]);
-  for k=1:n
+  for k = 1:n
       alignmentOptions(k).isElderTwin   = 0;
       alignmentOptions(k).isYoungerTwin = 0;
       alignmentOptions(k).opts          = cell(0);
@@ -4373,7 +4373,7 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
 
   % return immediately if nothing is to be aligned
   if n<=1
-      ix = 1;
+      plotOrder = 1;
       return
   end
 
@@ -4618,14 +4618,13 @@ function [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHand
   % Now, actually go ahead and process the info to return pgfplots alignment
   % options.
 
-  % tells if the respective axes environment is processed already:
-  isProcessed = zeros(1,n);
-
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
   [s,ix] = sort( sum(C~=0, 2), 'descend' );
+  plotOrder = zeros(1,n);
+  plotNumber = 0;
   for k = 1:n
-      [isProcessed,alignmentOptions] = setOptionsRecursion( isProcessed, C, alignmentOptions, ix(k) );
+      [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion( plotOrder, plotNumber, C, alignmentOptions, ix(k), [] );
   end
 
 end
@@ -4633,34 +4632,36 @@ end
 % sets the alignment options for a specific node
 % and passes on the its children
 % -----------------------------------------------------------------------
-function [isProcessed, alignmentOptions] = setOptionsRecursion( isProcessed, C, alignmentOptions, k, parent )
+function [plotOrder, plotNumber, alignmentOptions] = setOptionsRecursion( plotOrder, plotNumber, C, alignmentOptions, k, parent )
 
     % return immediately if is has been processed before
-    if isProcessed(k)
+    if plotOrder(k)
         return
     end
 
+    plotNumber = plotNumber + 1;
+
     % TODO not looking at twins is probably not the right thing to do
     % find the non-zeros elements in the k-th row
-    unprocessedFriends = find( C(k,:)~=0 & ~isProcessed );
+    unprocessedFriends = find( C(k,:)~=0 & ~plotOrder );
 
     unprocessedChildren = unprocessedFriends( abs(C(k,unprocessedFriends))~=5 );
     unprocessedTwins    = unprocessedFriends( abs(C(k,unprocessedFriends))==5 );
 
-    if length(unprocessedTwins)==1
+    if length(unprocessedTwins) == 1
         alignmentOptions(k).isElderTwin = 1;
-    elseif length(unprocessedTwins)>1
+    elseif length(unprocessedTwins) > 1
         error( 'setOptionsRecursion:twoTwins',...
-                'More than one twin axes discovered.' );
+               'More than one twin axes discovered.' );
     end
 
-    if ~isempty(unprocessedChildren)  % are there unprocessed children
-        % then, give these axes a name
+    if ~isempty(unprocessedChildren) % Are there unprocessed children?
+        % Give these axes a name.
         alignmentOptions(k).opts = appendOptions( alignmentOptions(k).opts, ...
                                                   sprintf( 'name=plot%d', k ) );
     end
 
-    if nargin==5 % if a parent is given
+    if ~isempty( parent ) % if a parent is given
         if ( abs(C(parent,k))==5 ) % don't apply "at=" for younger twins
             alignmentOptions(k).isYoungerTwin = 1;
         else
@@ -4677,16 +4678,16 @@ function [isProcessed, alignmentOptions] = setOptionsRecursion( isProcessed, C, 
         end
     end
 
-    isProcessed(k) = 1;
+    plotOrder(k) = plotNumber;
 
     % Recursively loop over all dependent 'child' axes;
     % first the twins, though, to make sure they appear consecutively
     % in the TikZ file.
     for ii = unprocessedTwins
-        [isProcessed,alignmentOptions] = setOptionsRecursion( isProcessed, C, alignmentOptions, ii, k );
+        [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion( plotOrder, plotNumber, C, alignmentOptions, ii, k );
     end
     for ii = unprocessedChildren
-        [isProcessed,alignmentOptions] = setOptionsRecursion( isProcessed, C, alignmentOptions, ii, k );
+        [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion( plotOrder, plotNumber, C, alignmentOptions, ii, k );
     end
 
 end

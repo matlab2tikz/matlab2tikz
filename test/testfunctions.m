@@ -63,6 +63,7 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @errorBars           , ...
                            @errorBars2          , ...
                            @subplot2x2          , ...
+                           @subplot2x2b         , ...
                            @subplot3x1          , ...
                            @subplotCustom       , ...
                            @legendsubplots      , ...
@@ -485,6 +486,31 @@ function description = xAxisReversed ()
 end
 % =========================================================================
 function description = subplot2x2 ()
+
+  x = (1:5);
+
+  subplot(2,2,1);
+  y = rand(1,5);
+  plot(x,y);
+
+  subplot(2,2,2);
+  y = rand(1,5);
+  plot(x,y);
+
+  subplot(2,2,3);
+  y = rand(1,5);
+  plot(x,y);
+
+  subplot(2,2,4);
+  y = rand(1,5);
+  plot(x,y);
+
+
+  description = 'Four aligned subplots on a $2\times 2$ subplot grid.' ;
+
+end
+% =========================================================================
+function description = subplot2x2b ()
 
   x = (1:5);
  
