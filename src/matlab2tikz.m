@@ -2224,11 +2224,6 @@ function [ m2t, str ] = drawText( m2t, handle)
     return;
   end
 
-  drawOptions = { 'nodes near coords', ...
-                  'only marks', ...
-                  'mark=none', ...
-                  'point meta=explicit symbolic' ...
-                };
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get required properties
   color  = get( handle, 'Color' );
@@ -2260,17 +2255,14 @@ function [ m2t, str ] = drawText( m2t, handle)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  drawOptions{end+1} = sprintf(...
-    '\n\tevery node near coord/.append style={%s}', style);
-  drawOpts = collapse( drawOptions, ',' );
-  str = [ str, ...
-          sprintf( '\\addplot+[%s]\ncoordinates{(%g, %g) [%s]};\n', ...
-          drawOpts, pos(1), pos(2), String ) ];
+  str = sprintf( '\\node[%s]\nat (axis cs:%g, %g) {%s};\n', ...
+                 style, pos(1), pos(2), String );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
 % *** END FUNCTION drawText
 % =========================================================================
+
 
 % =========================================================================
 % *** FUNCTION surfaceOpts
