@@ -3849,8 +3849,19 @@ end
 function axisLabels = getAxisLabels( handle )
 
   axisLabels.x = get( get( handle, 'XLabel' ), 'String' );
+  if iscell(axisLabels.x)
+      axisLabels.x = axisLabels.x{:};
+  end
+
   axisLabels.y = get( get( handle, 'YLabel' ), 'String' );
+  if iscell(axisLabels.y)
+      axisLabels.y = axisLabels.y{:};
+  end
+
   axisLabels.z = get( get( handle, 'ZLabel' ), 'String' );
+  if iscell(axisLabels.z)
+      axisLabels.z = axisLabels.z{:};
+  end
 
 end
 % =========================================================================
