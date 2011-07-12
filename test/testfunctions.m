@@ -79,7 +79,8 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @surfPlot            , ...
                            @surfPlot2           , ...
                            @meshPlot            , ...
-                           @ylabels
+                           @ylabels             , ...
+                           @mixedBarLine
                          };
 %                             @spectro
                            %@freqResponsePlot    , ...
@@ -873,4 +874,15 @@ end
 %  
 %    description = 'Sparsity pattern';
 %  end
+% =========================================================================
+function description = mixedBarLine()
+
+    x = round(rand(1000,1)*10);
+    hist(x,10)
+    y = ylim;
+    hold on
+    plot([3 3], y, '-r');
+
+    description = 'Mixed bar/line plot.';
+end
 % =========================================================================
