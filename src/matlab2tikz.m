@@ -59,24 +59,23 @@
 % =========================================================================
 function matlab2tikz( varargin )
 
-  % Check if we are in MATLAB or Octave.  ver('MATLAB') will return an empty
-  % struct if we are in Octave. Used below to suppress the graphics.
-  version_data = ver;
-  if length( version_data ) > 1 % assume MATLAB
-      % make sure we're running MATLAB>=2008b
-      m2t.env = 'MATLAB';
-      version_data = ver('MATLAB');
-      Version_string = version_data.Version;
-      if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<7)
-           error( 'You need at least   MATLAB R2008b   to run this script.');
-      end
-  elseif strcmp( version_data.Name, 'Octave' )
-      % Octave should work with all versions.
-      m2t.env = 'Octave';
-  else
-      error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+  % Check if we are in MATLAB or Octave.
+  versionData = ver;
+  switch versionData(1).Name
+      case 'MATLAB'
+          % make sure we're running MATLAB>=2008b
+          m2t.env = 'MATLAB';
+          versionData = ver('MATLAB');
+          Version_string = versionData.Version;
+          if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<7)
+              error( 'You need at least   MATLAB R2008b   to run this script.');
+          end
+      case 'Octave'
+          % Octave should work with all versions.
+          m2t.env = 'Octave';
+      otherwise
+          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   m2t.opts = [];
 
