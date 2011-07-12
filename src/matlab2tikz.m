@@ -4855,8 +4855,7 @@ function userWarning( m2t, message, varargin )
   end
 
   % Replace '\n' by '\n *** ' and print.
-  % TODO Fix this for Octave.
-  mess = regexprep( mess, '\n', '\n *** ' );
+  mess = regexprep( mess, '(\n)', '$1 *** ' );
   fprintf( '\n *** %s', mess );
 
 end
