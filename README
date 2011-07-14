@@ -5,7 +5,7 @@ To download and rate matlab2tikz, go to its page on MathWorks
 http://www.mathworks.com/matlabcentral/fileexchange/22022.
 
 As of now, matlab2tikz does by far not support the conversion of all possible
-MATLAB figures. In particular, 3D plots are not yet supported. However, the if
+MATLAB figures. In particular, 3D plots are not yet supported. However, if
 you have a nice 2D plot, matlab2tikz might just do what you want it to.
 
 The plots that matlab2tikz handles properly are, but are not limited to
