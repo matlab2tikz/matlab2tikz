@@ -16,4 +16,4 @@ It provides the means for easily comparing the results of a direct PDF print of 
 
   3.) You can compile 'tex/acid.tex' with 'make' (making use of 'tex/Makefile').
 
-If all goes will, the result will be the file 'tex/acid.pdf' which contains a list of the test figures, exported as PDF and right next to it the matlab2tikz generated plot.
+If all goes well, the result will be the file 'tex/acid.pdf' which contains a list of the test figures, exported as PDF and right next to it the matlab2tikz generated plot.

@@ -240,7 +240,7 @@ function matlab2tikz( varargin )
 end
 % -------------------------------------------------------------------------
 % validates the optional argument 'filename' to not be another
-% another keyword
+% keyword
 function l = filenameValidation( x, p )
   l = ischar(x) && ~any( strcmp(x,p.Parameters) );
 end
