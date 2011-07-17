@@ -411,7 +411,7 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               % TODO bail out with warning in case of a 3D-plot (parameter plots!)
 
           otherwise
-              error( 'matfig2tikz:handleAllChildren',                 ...
+              error( 'matlab2tikz:handleAllChildren',                 ...
                      'I don''t know how to handle this object: %s\n', ...
                                                        get(child,'Type') );
 
@@ -2197,7 +2197,7 @@ function [m2t,env] = drawSurface( m2t, handle )
     % TODO:
     % - remove grids in spectrogram by either removing grid command
     %   or adding: 'grid=none' from/in axis options
-    % - using a "real" colorbar instead of colorbar-png-flle
+    % - using a "real" colorbar instead of colorbar-png-file
     % - handling of huge data amounts in LaTeX.
     % - correcting wrong colors
 
@@ -2880,8 +2880,8 @@ end
 % *** FUNCTION drawColorbar
 % ***
 % *** TODO: * Declare common properties (like `draw=none`) once for
-% ***         for all badges.
-% ***       * Look into orignal pgfplots color bars.
+% ***         all badges.
+% ***       * Look into original pgfplots color bars.
 % ***
 % =========================================================================
 function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
@@ -3618,7 +3618,7 @@ function [ticks, tickLabels] = getAxisTicks( m2t, tick, tickLabel, isLogAxis )
       scalingFactor = 1;
   else
       % When plotting axis, MATLAB might scale the axes by a factor of ten,
-      % say 10^n, and plot a 'x 10^k' next to th respective axis. This is
+      % say 10^n, and plot a 'x 10^k' next to the respective axis. This is
       % common practice when the tick marks are really large or small
       % numbers.
       % Unfortunately, MATLAB doesn't contain the information about the
@@ -4346,7 +4346,7 @@ end
 % *** the graph starting from a node (AXES) with maximal connections.
 % ***
 % *** TODO:
-% ***     - diagonal connections 'a la
+% ***     - diagonal connections à la
 % ***              [ AXES1       ]
 % ***              [       AXES2 ]
 % ***
