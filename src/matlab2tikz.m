@@ -61,18 +61,20 @@ function matlab2tikz( varargin )
 
   % Check if we are in MATLAB or Octave.
   versionData = ver;
-  switch versionData(1).Name
+  m2t.env = versionData(1).Name;
+  versionString = versionData.Version;
+  switch m2t.env
       case 'MATLAB'
-          % make sure we're running MATLAB>=2008b
-          m2t.env = 'MATLAB';
+          % Make sure we're running MATLAB >= 2008b.
           versionData = ver('MATLAB');
-          Version_string = versionData.Version;
-          if str2double(Version_string(1))<7 || (str2double(Version_string(1))==7 && str2double(Version_string(3:end))<7)
+          if str2double(versionString(1))<7 || (str2double(versionString(1))==7 && str2double(versionString(3:end))<7)
               error( 'You need at least   MATLAB R2008b   to run this script.');
           end
       case 'Octave'
-          % Octave should work with all versions.
-          m2t.env = 'Octave';
+          % Make sure we're running Octave >= 3.4.0.
+          if str2double(versionString(1))<3 || (str2double(versionString(1))==3 && str2double(versionString(3))<4)
+              error( 'You need at least   Octave 3.4.0   to run this script.');
+          end
       otherwise
           error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
