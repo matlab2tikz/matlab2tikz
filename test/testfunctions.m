@@ -93,9 +93,9 @@ function [ desc, numFunctions ] = testfunctions ( k )
       desc = testfunction_handles{ k } ();
       if ~isempty(desc)
           desc = [ desc, ' \texttt{', ...
-                   regexprep(func2str(testfunction_handles{ k }), '_', '\_') , ...
+                   regexprep(func2str(testfunction_handles{ k }), '_', '\\_') , ...
                    '}' ];
-      endif
+      end
   else
       error( 'testfunctions:outOfBounds', ...
              'Out of bounds (number of testfunctions=%d)', numFunctions ); 
@@ -888,8 +888,9 @@ function description = mixedBarLine()
     x = round(rand(1000,1)*10);
     hist(x,10)
     y = ylim;
-    hold on
+    hold on;
     plot([3 3], y, '-r');
+    hold off;
 
     description = 'Mixed bar/line plot.';
 end
