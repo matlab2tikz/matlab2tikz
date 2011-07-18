@@ -86,14 +86,16 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            %@freqResponsePlot    , ...
                            %@bodeplots           , ...
 
-%                             @groupbars           , ...
-%                             @bars                , ...
-
   numFunctions = length( testfunction_handles );
   if (k<=0) 
       desc = '';
   elseif (k<=numFunctions)
       desc = testfunction_handles{ k } ();
+      if ~isempty(desc)
+          desc = [ desc, ' \texttt{', ...
+                   regexprep(func2str(testfunction_handles{ k }), '_', '\_') , ...
+                   '}' ];
+      endif
   else
       error( 'testfunctions:outOfBounds', ...
              'Out of bounds (number of testfunctions=%d)', numFunctions ); 
@@ -119,12 +121,18 @@ function description = plain_cos ()
 
   fplot( @cos, [0,2*pi] );
 
-  % Adjust the aspect ration when in MATLAB(R).
-  version_data = ver;
-  if length( version_data ) > 1 % assume MATLAB
+  % Adjust the aspect ratio when in MATLAB(R) or Octave >= 3.4.
+  versionData = ver;
+  env = versionData(1).Name;
+  if strcmp( env, 'MATLAB' ) % MATLAB
       daspect([ 1 2 1 ])
-  elseif strcmp( version_data.Name, 'Octave' )
-      % Octave doesn't have daspect unfortunately.
+  elseif strcmp( env, 'Octave' )
+      versionString = versionData.Version;
+      if str2double(versionString(1))<3 || (str2double(versionString(1))==3 && str2double(versionString(3))<4)
+          % Octave < 3.4 doesn't have daspect unfortunately.
+      else
+          daspect([ 1 2 1 ])
+      end
   else
       error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
   end
@@ -240,7 +248,7 @@ end
 % =========================================================================
 % *** FUNCTION logplot
 % ***
-% *** Test the performance when drawing many points.
+% *** Test logscaled axes.
 % ***
 % =========================================================================
 function description = logplot ()
@@ -253,9 +261,9 @@ function description = logplot ()
 
 end
 % =========================================================================
-% *** FUNCTION logplot
+% *** FUNCTION colorbarLogplot
 % ***
-% *** Test the performance when drawing many points.
+% *** Logscaled colorbar.
 % ***
 % =========================================================================
 function description = colorbarLogplot ()
@@ -468,7 +476,7 @@ function description = imagescplot ()
   z       = sin(x)'*cos(y);
   imagesc(x,y,z);
 
-  description = 'An imagesc plot os $\sin(x)\cos(y)$.' ;
+  description = 'An imagesc plot of $\sin(x)\cos(y)$.' ;
 
 end
 % =========================================================================
@@ -606,7 +614,7 @@ rows = 4;
 length = 100;
 
 
-% make some spurious data
+% generate some spurious data
 t=0:(4*pi)/length:4*pi;
 x=t;
 a=t;
