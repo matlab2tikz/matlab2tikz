@@ -41,3 +41,4 @@ clean:
 
 distclean: clean
 	@rm -f ../data/*
+	@rm -f $(TARGET).tex
