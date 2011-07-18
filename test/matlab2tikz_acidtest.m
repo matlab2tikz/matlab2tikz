@@ -51,7 +51,7 @@ function matlab2tikz_acidtest( varargin )
   matlab2tikzOpts = matlab2tikzOpts.parse( matlab2tikzOpts, varargin{:} );
   % -----------------------------------------------------------------------
 
-  % first, initialize the tex output
+  % first, initialize the tex outputploterrmsg
   texfile = 'tex/acid.tex';
   fh = fopen( texfile, 'w' );
   texfile_init( fh );
@@ -68,20 +68,25 @@ function matlab2tikz_acidtest( varargin )
       indices = 1:n;
   end
 
-  for k = indices
+  k = 0;
+  ploterrmsg = cell( length(indices), 1 );
+  tikzerrmsg = cell( length(indices), 1 );
+  pdferrmsg  = cell( length(indices), 1 );
+  desk = cell( length(indices), 1 );
+  for i = indices
+      k = k+1;
 
-      fprintf('Treating test function no. %d...\n', k );
+      fprintf('Treating test function no. %d...\n', i );
 
       % open a window
       fig_handle = figure;
 
       % plot the figure
       try
-          desc{k} = testfunctions( k );
+          desc{k} = testfunctions( i );
           ploterror{k} = false;
       catch
           e = lasterror( 'reset' );
-          ploterrmsg{k} = '';
           if ~isempty( e.message )
               ploterrmsg{k} = [ ploterrmsg{k}, sprintf( 'error: %s\n', e.message ) ];
           end
@@ -91,7 +96,6 @@ function matlab2tikz_acidtest( varargin )
           if ~isempty( e.stack )
               ploterrmsg{k} = [ ploterrmsg{k}, sprintf( 'error: called from:\n' ) ];
           end
-          desc{k} = '';
           for i = 1:length( e.stack )
               ploterrmsg{k} = [ ploterrmsg{k}, ...
                                 sprintf( 'error:   %s at line %d, in function %s\n', ...
@@ -103,10 +107,10 @@ function matlab2tikz_acidtest( varargin )
               end
           end
           if isempty(desc{k})
-              desc{k} = [ '{\color{red}Error during plot generation.}', ...
+              desc{k} = [ '\textcolor{red}{Error during plot generation.}', ...
                           sprintf(' \\texttt{testfunctions( %d )}', k) ];
           else
-              desc{k} = [ '{\color{red}Error during plot generation.}', ...
+              desc{k} = [ '\textcolor{red}{Error during plot generation.}', ...
                           sprintf(' \\texttt{%s}', desc{k}) ];
           end
           fprintf( ploterrmsg{k} )
@@ -132,7 +136,6 @@ function matlab2tikz_acidtest( varargin )
           tikzerror{k} = false;
       catch
           e = lasterror('reset');
-          tikzerrmsg{k} = '';
           if ~isempty( e.message )
               tikzerrmsg{k} = [ tikzerrmsg{k}, sprintf( 'error: %s\n', e.message ) ];
           end
@@ -153,20 +156,20 @@ function matlab2tikz_acidtest( varargin )
 
       % Save reference output as PDF
       try
-          if strcmp( env, 'MATLAB' )
-              % Create a cropped print.
-              savefig( pdf_file, 'pdf' );
-          elseif strcmp( env, 'Octave' )
-              % In Octave, figures are automatically cropped when using print().
-              print( strcat(pdf_file,'.pdf'), '-dpdf', '-S415,311', '-r150' );
-              pause( 1.0 )
-          else
-              error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
+          switch env
+              case 'MATLAB'
+                  % Create a cropped print.
+                  savefig( pdf_file, 'pdf' );
+              case 'Octave'
+                  % In Octave, figures are automatically cropped when using print().
+                  print( strcat(pdf_file,'.pdf'), '-dpdf', '-S415,311', '-r150' );
+                  pause( 1.0 )
+              otherwise
+                  error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
           end
           pdferror{k} = false;
       catch
           e = lasterror('reset');
-          pdferrmsg{k} = '';
           if ~isempty( e.message )
               pdferrmsg{k} = [ pdferrmsg{k}, sprintf( 'error: %s\n', e.message ) ];
           end
@@ -203,79 +206,73 @@ function matlab2tikz_acidtest( varargin )
 
   % Write the summary table to the LaTeX file
   texfile_tab_completion_init( fh )
-  for k = indices
+  k = 0;
+  for i = indices
+      k = k+1;
       % Break table up into pieces if it gets too long for one page
       if ~mod(k,35)
-          texfile_tab_completion_finish( fh )
-          texfile_tab_completion_init( fh )
+          texfile_tab_completion_finish( fh );
+          texfile_tab_completion_init( fh );
       end
 
-      fprintf( fh, '%d &', k )
+      fprintf( fh, '%d &', i );
       if isempty( desc{k} )
-          fprintf( fh, ' & --- & skipped & ---' )
+          fprintf( fh, ' & --- & skipped & ---' );
       else
-          fprintf( fh, ' %s', regexprep(desc{k}, '.*(\\texttt{.*}).*', '$1') )
-          for error = [ ploterror{k}, pdferror{k}, tikzerror{k} ]
-              if error
-                  fprintf( fh, ' & {\\color{red}failed}' )
+          fprintf( fh, ' %s', regexprep(desc{k}, '.*(\\texttt{.*}).*', '$1') );
+          for err = [ ploterror{k}, pdferror{k}, tikzerror{k} ]
+              if err
+                  fprintf( fh, ' & \\textcolor{red}{failed}' );
               else
-                  fprintf( fh, ' & {\\color{green!50!black}passed}' )
+                  fprintf( fh, ' & \\textcolor{green!50!black}{passed}' );
               end
           end
       end
-      fprintf( fh, ' \\\\\n' )
+      fprintf( fh, ' \\\\\n' );
   end
-  texfile_tab_completion_finish( fh )
+  texfile_tab_completion_finish( fh );
 
   % Write the error messages to the LaTeX file
-  fprintf( fh, '\\section*{Error messages}\n\\scriptsize\n' )
-  for k = indices
-      if (k <= length( ploterrmsg ) && ~isempty( ploterrmsg{k} )) || ...
-         (k <= length( tikzerrmsg ) && ~isempty( tikzerrmsg{k} )) || ...
-         (k <= length(  pdferrmsg ) && ~isempty(  pdferrmsg{k} ))
+  fprintf( fh, '\\section*{Error messages}\n\\scriptsize\n' );
+  k = 0;
+  for i = indices
+      k = k+1;
+      if ~isempty( ploterrmsg{k} ) || ~isempty( tikzerrmsg{k} ) || ~isempty( pdferrmsg{k} )
           % There are error messages for this test case
-          fprintf( fh, '\n\\subsection*{Test case %d}\n', k )
+          fprintf( fh, '\n\\subsection*{Test case %d}\n', i );
       else
           % No error messages for this test case
           continue
       end
-      if k <= length( ploterrmsg ) && ~isempty( ploterrmsg{k} )
+      if ~isempty( ploterrmsg{k} )
           fprintf( fh, [ '\\subsubsection*{Plot generation}\n'  , ...
                          '\\begin{verbatim}\n'                  , ...
                          '%s'                                   , ...
                          '\\end{verbatim}\n'                   ], ...
-                         ploterrmsg{k}                         )
+                         ploterrmsg{k}                         );
       end
-      if k <= length( pdferrmsg ) && ~isempty( pdferrmsg{k} )
+      if ~isempty( pdferrmsg{k} )
           fprintf( fh, [ '\\subsubsection*{PDF generation}\n'   , ...
                          '\\begin{verbatim}\n'                  , ...
                          '%s'                                   , ...
                          '\\end{verbatim}\n'                   ], ...
-                         pdferrmsg{k}                          )
+                         pdferrmsg{k}                          );
       end
-      if k <= length( tikzerrmsg ) && ~isempty( tikzerrmsg{k} )
+      if ~isempty( tikzerrmsg{k} )
           fprintf( fh, [ '\\subsubsection*{matlab2tikz}\n'      , ...
                          '\\begin{verbatim}\n'                  , ...
                          '%s'                                   , ...
                          '\\end{verbatim}\n'                   ], ...
-                         tikzerrmsg{k}                         )
+                         tikzerrmsg{k}                         );
       end
   end
-  fprintf( fh, '\n\\normalsize\n\n' )
+  fprintf( fh, '\n\\normalsize\n\n' );
 
   % now, finish off the file and close file and window
   texfile_finish( fh );
   fclose( fh );
 
 end
-% =========================================================================
-% *** END OF FUNCTION matlab2xxx_acidtest
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION texfile_init
 % =========================================================================
 function texfile_init( texfile_handle )
 
@@ -292,32 +289,17 @@ function texfile_init( texfile_handle )
 
 end
 % =========================================================================
-% *** END OF FUNCTION texfile_init
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION texfile_finish
-% =========================================================================
 function texfile_finish( texfile_handle )
 
   fprintf( texfile_handle, '\\end{document}' );
 
 end
 % =========================================================================
-% *** END OF FUNCTION texfile_finish
-% =========================================================================
-
-
-
-% =========================================================================
 % *** FUNCTION texfile_addtest
 % ***
 % *** Actually add the piece of LaTeX code that'll later be used to display
 % *** the given test.
 % ***
-% =========================================================================
 function texfile_addtest( texfile_handle, ref_file, gen_file, desc, ...
                           ref_error, gen_error )
 
@@ -337,7 +319,7 @@ function texfile_addtest( texfile_handle, ref_file, gen_file, desc, ...
                   '(0,0) -- (\\figurewidth,\\figurewidth) '           , ...
                   '(0,\\figurewidth) -- (\\figurewidth,0);}\n'       ]  ...
               );
-  endif
+  end
       fprintf ( texfile_handle                                        , ...
                   '&\n'                                                 ...
               );
@@ -352,7 +334,7 @@ function texfile_addtest( texfile_handle, ref_file, gen_file, desc, ...
                   '(0,0) -- (\\figurewidth,\\figurewidth) '           , ...
                   '(0,\\figurewidth) -- (\\figurewidth,0);}\\\\\n'   ]  ...
               );
-  endif
+  end
   fprintf ( texfile_handle                                            , ...
             [ 'reference rendering & generated\n'                     , ...
               '\\end{tabular}\n'                                      , ...
@@ -363,14 +345,6 @@ function texfile_addtest( texfile_handle, ref_file, gen_file, desc, ...
 
 end
 % =========================================================================
-% *** END OF FUNCTION texfile_addtest
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION texfile_tab_completion_init
-% =========================================================================
 function texfile_tab_completion_init( texfile_handle )
 
   fprintf( texfile_handle                                             , ...
@@ -380,25 +354,15 @@ function texfile_tab_completion_init( texfile_handle )
              '\\caption{Test case completion summary}\n'              , ...
              '\\begin{tabular}{rlccc}\n'                              , ...
              'No. & Test case & Plot & PDF & TikZ \\\\\n'           , ...
-             '\\hline\n'                                             ] )
+             '\\hline\n'                                             ] );
 
 end
-% =========================================================================
-% *** END OF FUNCTION texfile_tab_completion_init
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION texfile_tab_completion_finish
 % =========================================================================
 function texfile_tab_completion_finish( texfile_handle )
 
   fprintf( texfile_handle                                             , ...
            [ '\\end{tabular}\n'                                       , ...
-             '\\end{table}\n\n'                                      ] )
+             '\\end{table}\n\n'                                      ] );
 
 end
-% =========================================================================
-% *** END OF FUNCTION texfile_tab_completion_finish
 % =========================================================================
