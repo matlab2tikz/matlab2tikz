@@ -51,7 +51,7 @@ function matlab2tikz_acidtest( varargin )
   matlab2tikzOpts = matlab2tikzOpts.parse( matlab2tikzOpts, varargin{:} );
   % -----------------------------------------------------------------------
 
-  % first, initialize the tex outputploterrmsg
+  % first, initialize the tex output
   texfile = 'tex/acid.tex';
   fh = fopen( texfile, 'w' );
   texfile_init( fh );
@@ -72,7 +72,7 @@ function matlab2tikz_acidtest( varargin )
   ploterrmsg = cell( length(indices), 1 );
   tikzerrmsg = cell( length(indices), 1 );
   pdferrmsg  = cell( length(indices), 1 );
-  desk = cell( length(indices), 1 );
+  desc = cell( length(indices), 1 );
   for i = indices
       k = k+1;
 
@@ -103,7 +103,11 @@ function matlab2tikz_acidtest( varargin )
               if isempty(desc{k}) && ~isempty(regexp(e.stack(i).name, '^testfunctions>'))
                   % extract function name
                   desc{k} = regexprep(e.stack(i).name, '^testfunctions>(.*)', '$1');
-                  desc{k} = regexprep(desc{k}, '_', '\_');   % make underscores TeX compatible
+                  % Octave would treat '\\' as two backslashes outside of *printf() whereas
+                  % MATLAB would treat it as one backslash. Generate a '\_' string that
+                  % works for both environments.
+                  tex_uscore = sprintf('\\_');
+                  desc{k} = regexprep(desc{k}, '_', tex_uscore);   % make underscores TeX compatible
               end
           end
           if isempty(desc{k})
