@@ -92,8 +92,12 @@ function [ desc, numFunctions ] = testfunctions ( k )
   elseif (k<=numFunctions)
       desc = testfunction_handles{ k } ();
       if ~isempty(desc)
+          % Octave would treat '\\' as two backslashes outside of *printf() whereas
+          % MATLAB would treat it as one backslash. Generate a '\_' string that
+          % works for both environments.
+          tex_uscore = sprintf('\\_');
           desc = [ desc, ' \texttt{', ...
-                   regexprep(func2str(testfunction_handles{ k }), '_', '\\_') , ...
+                   regexprep(func2str(testfunction_handles{ k }), '_', tex_uscore) , ...
                    '}' ];
       end
   else
