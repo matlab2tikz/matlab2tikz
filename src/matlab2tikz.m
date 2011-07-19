@@ -4953,7 +4953,7 @@ end
 function printAll( env, fid )
 
     if ~isempty(env.comment)
-        fprintf( fid, '%% %s\n', regexprep( env.comment, '\n', '\n% ' ) );
+        fprintf( fid, '%% %s\n', regexprep( env.comment, '(\n)', '$1% ' ) );
     end
 
     if isempty( env.options )
