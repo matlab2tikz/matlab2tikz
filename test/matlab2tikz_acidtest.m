@@ -57,7 +57,7 @@ function matlab2tikz_acidtest( varargin )
   texfile_init( fh );
 
   % query the number of test functions
-  [m, n] = testfunctions(0);
+  [dummya, dummyb, n] = testfunctions(0);
 
   if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
       indices = matlab2tikzOpts.Results.testFunctionIndices;
@@ -72,7 +72,11 @@ function matlab2tikz_acidtest( varargin )
   ploterrmsg = cell( length(indices), 1 );
   tikzerrmsg = cell( length(indices), 1 );
   pdferrmsg  = cell( length(indices), 1 );
+  ploterror = cell( length(indices), 1 );
+  tikzerror = cell( length(indices), 1 );
+  pdferror  = cell( length(indices), 1 );
   desc = cell( length(indices), 1 );
+  funcName = cell( length(indices), 1 );
   for i = indices
       k = k+1;
 
@@ -83,7 +87,7 @@ function matlab2tikz_acidtest( varargin )
 
       % plot the figure
       try
-          desc{k} = testfunctions( i );
+          [desc{k}, funcName{k}] = testfunctions( i );
           ploterror{k} = false;
       catch
           e = lasterror( 'reset' );
@@ -96,28 +100,28 @@ function matlab2tikz_acidtest( varargin )
           if ~isempty( e.stack )
               ploterrmsg{k} = [ ploterrmsg{k}, sprintf( 'error: called from:\n' ) ];
           end
-          for i = 1:length( e.stack )
+          for j = 1:length( e.stack )
               ploterrmsg{k} = [ ploterrmsg{k}, ...
                                 sprintf( 'error:   %s at line %d, in function %s\n', ...
-                                         e.stack(i).file, e.stack(i).line, e.stack(i).name ) ];
-              if isempty(desc{k}) && ~isempty(regexp(e.stack(i).name, '^testfunctions>'))
+                                         e.stack(j).file, e.stack(j).line, e.stack(j).name ) ];
+              if isempty(funcName{k}) && ~isempty(regexp(e.stack(j).name, '^testfunctions>'))
                   % extract function name
-                  desc{k} = regexprep(e.stack(i).name, '^testfunctions>(.*)', '$1');
-                  % Octave would treat '\\' as two backslashes outside of *printf() whereas
-                  % MATLAB would treat it as one backslash. Generate a '\_' string that
-                  % works for both environments.
-                  tex_uscore = sprintf('\\_');
-                  desc{k} = regexprep(desc{k}, '_', tex_uscore);   % make underscores TeX compatible
+                  funcName{k} = regexprep(e.stack(j).name, '^testfunctions>(.*)', '$1');
               end
           end
-          if isempty(desc{k})
-              desc{k} = [ '\textcolor{red}{Error during plot generation.}', ...
-                          sprintf(' \\texttt{testfunctions( %d )}', k) ];
-          else
-              desc{k} = [ '\textcolor{red}{Error during plot generation.}', ...
-                          sprintf(' \\texttt{%s}', desc{k}) ];
+          desc{k} = '\textcolor{red}{Error during plot generation.}';
+          if isempty( funcName{k} )
+              funcName{k} = sprintf( 'testfunctions( %d )', k );
           end
-          fprintf( ploterrmsg{k} )
+          % When displaying the error message in MATLAB, all backslashes
+          % have to be replaced by two backslashes. This must not, however,
+          % be applied constantly as the string that's saved to the LaTeX
+          % output must have only one backslash.
+          if strcmp( env, 'MATLAB' )
+              fprintf( regexprep( ploterrmsg{k}, '\', '\\\\' ) )
+          else
+              fprintf( ploterrmsg{k} )
+          end
           ploterror{k} = true;
       end
 
@@ -149,12 +153,20 @@ function matlab2tikz_acidtest( varargin )
           if ~isempty( e.stack )
               tikzerrmsg{k} = [ tikzerrmsg{k}, sprintf('error: called from:\n') ];
           end
-          for i = 1:length(e.stack)
+          for j = 1:length(e.stack)
               tikzerrmsg{k} = [ tikzerrmsg{k}, ...
                                 sprintf( 'error:   %s at line %d, in function %s\n', ...
-                                         e.stack(i).file, e.stack(i).line, e.stack(i).name ) ];
+                                         e.stack(j).file, e.stack(j).line, e.stack(j).name ) ];
           end
-          fprintf( tikzerrmsg{k} )
+          % When displaying the error message in MATLAB, all backslashes
+          % have to be replaced by two backslashes. This must not, however,
+          % be applied constantly as the string that's saved to the LaTeX
+          % output must have only one backslash.
+          if strcmp( env, 'MATLAB' )
+              fprintf( regexprep( tikzerrmsg{k}, '\', '\\\\' ) )
+          else
+              fprintf( tikzerrmsg{k} )
+          end
           tikzerror{k} = true;
       end
 
@@ -183,17 +195,36 @@ function matlab2tikz_acidtest( varargin )
           if ~isempty( e.stack )
               pdferrmsg{k} = [ pdferrmsg{k}, sprintf('error: called from:\n') ];
           end
-          for i = 1:length(e.stack)
+          for j = 1:length(e.stack)
               pdferrmsg{k} = [ pdferrmsg{k}, ...
                                 sprintf( 'error:   %s at line %d, in function %s\n', ...
-                                         e.stack(i).file, e.stack(i).line, e.stack(i).name ) ];
+                                         e.stack(j).file, e.stack(j).line, e.stack(j).name ) ];
           end
-          fprintf( pdferrmsg{k} )
+          % When displaying the error message in MATLAB, all backslashes
+          % have to be replaced by two backslashes. This must not, however,
+          % be applied constantly as the string that's saved to the LaTeX
+          % output must have only one backslash.
+          if strcmp( env, 'MATLAB' )
+              fprintf( regexprep( pdferrmsg{k}, '\', '\\\\' ) )
+          else
+              fprintf( pdferrmsg{k} )
+          end
           pdferror{k} = true;
       end
 
+      % Octave would treat '\\' as two backslashes outside of *printf() whereas
+      % MATLAB would treat it as one backslash. Generate a '\_' string that
+      % works for both environments.
+      tex_uscore = '\\_';
+      if strcmp( env, 'Octave' )
+          tex_uscore = sprintf( tex_uscore );
+      end
+      % Make underscores in function names TeX compatible
+      funcName{k} = regexprep( funcName{k}, '_', tex_uscore );
+
       % ...and finally write the bits to the LaTeX file
-      texfile_addtest( fh, pdf_file, gen_file, desc{k}, pdferror{k}, tikzerror{k} );
+      texfile_addtest( fh, pdf_file, gen_file, desc{k}, funcName{k}, ...
+                           pdferror{k}, tikzerror{k} );
 
       % After 10 floats, put a \clearpage to avoid
       %
@@ -219,11 +250,10 @@ function matlab2tikz_acidtest( varargin )
           texfile_tab_completion_init( fh );
       end
 
-      fprintf( fh, '%d &', i );
+      fprintf( fh, '%d & \\texttt{%s}', i, funcName{k} );
       if isempty( desc{k} )
           fprintf( fh, ' & --- & skipped & ---' );
       else
-          fprintf( fh, ' %s', regexprep(desc{k}, '.*(\\texttt{.*}).*', '$1') );
           for err = [ ploterror{k}, pdferror{k}, tikzerror{k} ]
               if err
                   fprintf( fh, ' & \\textcolor{red}{failed}' );
@@ -236,41 +266,43 @@ function matlab2tikz_acidtest( varargin )
   end
   texfile_tab_completion_finish( fh );
 
-  % Write the error messages to the LaTeX file
-  fprintf( fh, '\\section*{Error messages}\n\\scriptsize\n' );
-  k = 0;
-  for i = indices
-      k = k+1;
-      if ~isempty( ploterrmsg{k} ) || ~isempty( tikzerrmsg{k} ) || ~isempty( pdferrmsg{k} )
-          % There are error messages for this test case
-          fprintf( fh, '\n\\subsection*{Test case %d}\n', i );
-      else
-          % No error messages for this test case
-          continue
+  % Write the error messages to the LaTeX file if there are any
+  if any(any(cell2mat( [ ploterror ; tikzerror ; pdferror ] )))
+      fprintf( fh, '\\section*{Error messages}\n\\scriptsize\n' );
+      k = 0;
+      for i = indices
+          k = k+1;
+          if ~isempty( ploterrmsg{k} ) || ~isempty( tikzerrmsg{k} ) || ~isempty( pdferrmsg{k} )
+              % There are error messages for this test case
+              fprintf( fh, '\n\\subsection*{Test case %d}\n', i );
+          else
+              % No error messages for this test case
+              continue
+          end
+          if ~isempty( ploterrmsg{k} )
+              fprintf( fh, [ '\\subsubsection*{Plot generation}\n'  , ...
+                             '\\begin{verbatim}\n'                  , ...
+                             '%s'                                   , ...
+                             '\\end{verbatim}\n'                   ], ...
+                             ploterrmsg{k}                         );
+          end
+          if ~isempty( pdferrmsg{k} )
+              fprintf( fh, [ '\\subsubsection*{PDF generation}\n'   , ...
+                             '\\begin{verbatim}\n'                  , ...
+                             '%s'                                   , ...
+                             '\\end{verbatim}\n'                   ], ...
+                             pdferrmsg{k}                          );
+          end
+          if ~isempty( tikzerrmsg{k} )
+              fprintf( fh, [ '\\subsubsection*{matlab2tikz}\n'      , ...
+                             '\\begin{verbatim}\n'                  , ...
+                             '%s'                                   , ...
+                             '\\end{verbatim}\n'                   ], ...
+                             tikzerrmsg{k}                         );
+          end
       end
-      if ~isempty( ploterrmsg{k} )
-          fprintf( fh, [ '\\subsubsection*{Plot generation}\n'  , ...
-                         '\\begin{verbatim}\n'                  , ...
-                         '%s'                                   , ...
-                         '\\end{verbatim}\n'                   ], ...
-                         ploterrmsg{k}                         );
-      end
-      if ~isempty( pdferrmsg{k} )
-          fprintf( fh, [ '\\subsubsection*{PDF generation}\n'   , ...
-                         '\\begin{verbatim}\n'                  , ...
-                         '%s'                                   , ...
-                         '\\end{verbatim}\n'                   ], ...
-                         pdferrmsg{k}                          );
-      end
-      if ~isempty( tikzerrmsg{k} )
-          fprintf( fh, [ '\\subsubsection*{matlab2tikz}\n'      , ...
-                         '\\begin{verbatim}\n'                  , ...
-                         '%s'                                   , ...
-                         '\\end{verbatim}\n'                   ], ...
-                         tikzerrmsg{k}                         );
-      end
+      fprintf( fh, '\n\\normalsize\n\n' );
   end
-  fprintf( fh, '\n\\normalsize\n\n' );
 
   % now, finish off the file and close file and window
   texfile_finish( fh );
@@ -305,7 +337,7 @@ end
 % *** the given test.
 % ***
 function texfile_addtest( texfile_handle, ref_file, gen_file, desc, ...
-                          ref_error, gen_error )
+                          funcName, ref_error, gen_error )
 
   fprintf ( texfile_handle                                            , ...
             [ '\\begin{figure}\n'                                     , ...
@@ -342,9 +374,9 @@ function texfile_addtest( texfile_handle, ref_file, gen_file, desc, ...
   fprintf ( texfile_handle                                            , ...
             [ 'reference rendering & generated\n'                     , ...
               '\\end{tabular}\n'                                      , ...
-              '\\caption{%s}\n'                                       , ...
+              '\\caption{%s \\texttt{%s}}\n'                          , ...
               '\\end{figure}\n\n'                                    ], ...
-              desc                                                      ...
+              desc, funcName                                            ...
           );
 
 end

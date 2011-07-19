@@ -31,7 +31,7 @@
 % *** POSSIBILITY OF SUCH DAMAGE.
 % ***
 % =========================================================================
-function [ desc, numFunctions ] = testfunctions ( k )
+function [ desc, funcName, numFunctions ] = testfunctions ( k )
 
   % assign the functions to test
   testfunction_handles = {                        ...
@@ -68,11 +68,13 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @subplotCustom       , ...
                            @legendsubplots      , ...
                            @imageplot           , ...
+                           @bodeplots           , ...
                            @mandrillImage       , ...
                            @besselImage         , ...
                            @clownImage          , ...
                            @zplanePlot1         , ...
                            @zplanePlot2         , ...
+                           @freqResponsePlot    , ...
                            @multipleAxes        , ...
                            @scatterPlotRandom   , ...
                            @scatterPlot         , ...
@@ -80,26 +82,17 @@ function [ desc, numFunctions ] = testfunctions ( k )
                            @surfPlot2           , ...
                            @meshPlot            , ...
                            @ylabels             , ...
+                      ...% @spectro             , ... % easily exceeds TeX's memory
                            @mixedBarLine
                          };
-%                             @spectro
-                           %@freqResponsePlot    , ...
-                           %@bodeplots           , ...
 
   numFunctions = length( testfunction_handles );
   if (k<=0) 
       desc = '';
+      funcName = '';
   elseif (k<=numFunctions)
       desc = testfunction_handles{ k } ();
-      if ~isempty(desc)
-          % Octave would treat '\\' as two backslashes outside of *printf() whereas
-          % MATLAB would treat it as one backslash. Generate a '\_' string that
-          % works for both environments.
-          tex_uscore = sprintf('\\_');
-          desc = [ desc, ' \texttt{', ...
-                   regexprep(func2str(testfunction_handles{ k }), '_', tex_uscore) , ...
-                   '}' ];
-      end
+      funcName = func2str( testfunction_handles{ k } );
   else
       error( 'testfunctions:outOfBounds', ...
              'Out of bounds (number of testfunctions=%d)', numFunctions ); 
@@ -629,14 +622,14 @@ b=sin(t)+0.1*randn(1,length+1)+0.05*cos(2*t);
 subplot(rows+2,1,1:rows);
 
 % first line
-sigma1=std(y,0,1);
+sigma1=std(y);
 tracey=mean(y,1);
 plot123=plot(x,tracey,'b-'); 
 
 hold on
 
 % second line
-sigma2=mean(std(b,0,1));
+sigma2=std(b);
 traceb=mean(b,1);
 plot456=plot(a,traceb,'r-');
 
@@ -661,7 +654,8 @@ xlabel('Time/s')
 ylabel('\Delta V')
 title('Differential time traces');
 
-description = 'Subplots with legends.  Increase value of "length" in the code to stress-test your TeX installation.';
+description = [ 'Subplots with legends. '                             , ...
+                'Increase value of "length" in the code to stress-test your TeX installation.' ];
 
 end
 % =========================================================================
@@ -687,7 +681,7 @@ function description = mandrillImage()
   axis off
   axis image
 
-  description = 'Picture of a mandrill';
+  description = 'Picture of a mandrill.';
 end
 % =========================================================================
 function description = besselImage()
@@ -712,7 +706,7 @@ function description = besselImage()
   ylabel('\beta')
   set(gca,'YDir','normal')
   
-  description = 'Bessel function';
+  description = 'Bessel function.';
 end
 % =========================================================================
 function description = clownImage()
@@ -720,7 +714,7 @@ function description = clownImage()
   imagesc( data.X )
   colormap( gray )
 
-  description = 'Picture of a clown';
+  description = 'Picture of a clown.';
 end
 % =========================================================================
 function description = zplanePlot1()
@@ -768,7 +762,7 @@ function description = freqResponsePlot()
   hd = dfilt.dffir(b);
   freqz(hd);
 
-  description = 'Frequency response plot';
+  description = 'Frequency response plot.';
 end
 % =========================================================================
 function description = multipleAxes()
@@ -797,14 +791,14 @@ function description = multipleAxes()
   % Now set the tick mark locations.
   set(ax1,'XTick',xlimits(1):xinc:xlimits(2) ,...
           'YTick',ylimits(1):yinc:ylimits(2) )
-  description = 'Multiple axes';
+  description = 'Multiple axes.';
 end
 % =========================================================================
 function description = scatterPlotRandom()
 
   x = randn( 10, 2 );
   scatter( x(:,1), x(:,2)  );
-  description = 'Generic scatter plot';
+  description = 'Generic scatter plot.';
 
 end
 % =========================================================================
@@ -812,7 +806,7 @@ function description = scatterPlot()
 
   data = load( 'seamount' );
   scatter( data.x, data.y, 5, data.z, '^' );
-  description = 'Scatter plot with MATLAB(R) data';
+  description = 'Scatter plot with MATLAB(R) data.';
 
 end
 % =========================================================================
@@ -826,7 +820,7 @@ function description = surfPlot()
   ylabel( 'y' )
   zlabel( 'z' )
 
-  description = 'Surface plot';
+  description = 'Surface plot.';
 end
 % =========================================================================
 function description = surfPlot2()
@@ -838,7 +832,7 @@ function description = surfPlot2()
 
   legend( 'legendary', 'Location', 'NorthEastOutside' );
 
-  description = 'Another surface plot';
+  description = 'Another surface plot.';
 end
 % =========================================================================
 function description = meshPlot()
@@ -851,7 +845,7 @@ function description = meshPlot()
   ylabel( 'y' )
   zlabel( 'z' )
 
-  description = 'Mesh plot';
+  description = 'Mesh plot.';
 end
 % =========================================================================
 function description = ylabels()
@@ -867,18 +861,18 @@ function description = ylabels()
   description = 'Separate y-labels.';
 end
 % =========================================================================
-%  function description = spectro()
-%    % check of the signal processing toolbox is installed
-%    if length(ver('signal')) ~= 1
-%        fprintf( 'Signal toolbox not found. Abort.\n\n' );
-%        description = [];
-%        return
-%    end
-%  
-%    load chirp; %audio-file in vector 'y'
-%    spectrogram( y, hann(1024), 512, 1024, Fs, 'yaxis' )
-%    description = 'Spectrogram plot';
-%  end
+function description = spectro()
+  % check of the signal processing toolbox is installed
+  if length(ver('signal')) ~= 1
+      fprintf( 'Signal toolbox not found. Abort.\n\n' );
+      description = [];
+      return
+  end
+
+  load chirp; %audio-file in vector 'y'
+  spectrogram( y, hann(1024), 512, 1024, Fs, 'yaxis' )
+  description = 'Spectrogram plot';
+end
 % =========================================================================
 %  function description = spyplot()
 %  
