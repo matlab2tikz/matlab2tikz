@@ -60,31 +60,16 @@
 function matlab2tikz( varargin )
 
   % Check if we are in MATLAB or Octave.
-  % `ver' in MATLAB gives versioning information on all installed packages
-  % separately, and there is no guarantee that MATLAB itself is listed first.
-  % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
-  versionData = ver;
-  for k = 1:max(size(versionData))
-      if strcmp( versionData(k).Name, 'MATLAB' )
-          m2t.env = 'MATLAB';
-          versionString = versionData(k).Version;
-          break;
-      elseif strcmp( versionData(k).Name, 'Octave' )
-          m2t.env = 'Octave';
-          versionString = versionData(k).Version;
-          break;
-        end
-  end
-  
+  m2t.env = getEnvironment();
   switch m2t.env
       case 'MATLAB'
           % Make sure we're running MATLAB >= 2008b.
-          if str2double(versionString(1))<7 || (str2double(versionString(1))==7 && str2double(versionString(3:end))<7)
+          if isVersionBelow( m2t.env, 7, 7)
               error( 'You need at least   MATLAB R2008b   to run this script.');
           end
       case 'Octave'
           % Make sure we're running Octave >= 3.4.0.
-          if str2double(versionString(1))<3 || (str2double(versionString(1))==3 && str2double(versionString(3))<4)
+          if isVersionBelow( m2t.env, 3, 4)
               error( 'You need at least   Octave 3.4.0   to run this script.');
           end
       otherwise
@@ -5014,4 +4999,66 @@ function imwriteWrapperPNG( colorData, cmap, fileName )
 end
 % =========================================================================
 % *** END FUNCTION imwriteWrapperPNG
+% =========================================================================
+
+% =========================================================================
+% *** FUNCTION getEnvironment
+% =========================================================================
+function env = getEnvironment
+  env = '';
+  % Check if we are in MATLAB or Octave.
+  % `ver' in MATLAB gives versioning information on all installed packages
+  % separately, and there is no guarantee that MATLAB itself is listed first.
+  % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
+  versionData = ver;
+  for k = 1:max(size(versionData))
+      if strcmp( versionData(k).Name, 'MATLAB' )
+          env = 'MATLAB';
+          break;
+      elseif strcmp( versionData(k).Name, 'Octave' )
+          env = 'Octave';
+          break;
+      end
+  end
+end
+% =========================================================================
+% *** END FUNCTION getEnvironment
+% =========================================================================
+
+% =========================================================================
+% *** FUNCTION isVersionBelow
+% =========================================================================
+function [below, error] = isVersionBelow ( env, threshMajor, threshMinor )
+  % get version string for `env' by iterating over all toolboxes
+  versionData = ver;
+  versionString = '';
+  for k = 1:max(size(versionData))
+      if strcmp( versionData(k).Name, env )
+          % found it: store and exit the loop
+          versionString = versionData(k).Version;
+          break
+      end
+  end
+  
+  if isempty( versionString )
+      % couldn't find `env'
+      below = true;
+      error = true;
+      return
+  end
+
+  majorVer = str2double(regexprep( versionString, '^(\d+)\..*', '$1' ));
+  minorVer = str2double(regexprep( versionString, '^\d+\.(\d+)[^\d]*.*', '$1' ));
+  
+  if (majorVer < threshMajor) || (majorVer == threshMajor && minorVer < threshMinor)
+      % version of `env' is below threshold
+      below = true;
+  else
+      % version of `env' is same as or above threshold
+      below = false;
+  end
+  error = false;
+end
+% =========================================================================
+% *** END FUNCTION isVersionBelow
 % =========================================================================
