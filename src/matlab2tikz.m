@@ -31,7 +31,7 @@
 % ***
 % =========================================================================
 % ***
-% *** Copyright (c) 2008--2011, Nico Schlömer <nico.schloemer@gmail.com>
+% *** Copyright (c) 2008--2011, Nico SchlÃ¶mer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without
@@ -60,9 +60,7 @@
 function matlab2tikz( varargin )
 
   % Check if we are in MATLAB or Octave.
-  versionData = ver;
-  m2t.env = versionData(1).Name;
-  versionString = versionData(1).Version;
+  [m2t.env versionString] = getEnvironment();
   switch m2t.env
       case 'MATLAB'
           % Make sure we're running MATLAB >= 2008b.
@@ -84,7 +82,7 @@ function matlab2tikz( varargin )
 
   m2t.name = 'matlab2tikz';
   m2t.version = '0.1.2';
-  m2t.author = 'Nico Schlömer';
+  m2t.author = 'Nico SchlÃ¶mer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2011';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
@@ -235,7 +233,6 @@ function matlab2tikz( varargin )
   % Save the figure as pgf to file -- here's where the work happens
   saveToFile( m2t, fid, fileWasOpen );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   sprintf( '\nRemember to load \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
 
 end
@@ -284,13 +281,13 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   axesHandles = findobj( fh, 'type', 'axes' );
 
   % remove all legend handles as they are treated separately
-  rmList = [];
+  rmList = zeros(numel(axesHandles ),1);
   for k = 1:length(axesHandles)
      if strcmp( get(axesHandles(k),'Tag'), 'legend' )
-        rmList = [ rmList, k ];
+		rmList(k) = 1;
      end
   end
-  axesHandles(rmList) = [];
+  axesHandles(rmList==1) = [];
 
   % Turn around the handles vector to make sure that plots that appeared
   % first also appear first in the vector. This has effects on the alignment
@@ -343,7 +340,8 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
       end
       m2t.content = append( m2t.content, sprintf('\n') );
   end
-
+  
+  m2t.content.children{1}.options = appendOptions( m2t.content.children{1}.options, m2t.currentHandles.pgfAxis.options );
   % finally print it to the file
   printAll( m2t.content, fid );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -463,10 +461,10 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
 
   % Handle special cases.
   % MATLAB(R) uses 'Tag', Octave 'tag' for their tags. :/
-  if strcmp( m2t.env, 'MATLAB' );
+  if strcmpi( m2t.env, 'MATLAB' );
       tagKeyword = 'Tag';
       colorbarKeyword = 'Colorbar';
-  elseif strcmp( m2t.env, 'Octave' );
+  elseif strcmpi( m2t.env, 'Octave' );
       tagKeyword = 'tag';
       colorbarKeyword = 'colorbar';
   else
@@ -651,6 +649,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
                                { sprintf('xmin=%g, xmax=%g', xLim ), ...
                                  sprintf('ymin=%g, ymax=%g', yLim ) } ...
                              );
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
   [ ticks, tickLabels ] = getTicks( m2t, handle );
@@ -733,7 +732,6 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       env.options = appendOptions( env.options, 'zminorgrids' );
       isGrid = 1;
   end
-
   % set the line style
   if isGrid
       matlabGridLineStyle = get( handle, 'GridLineStyle' );
@@ -804,9 +802,8 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
           end
       end
   end
-
+  
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   % recurse into the children of this environment
   [ m2t, childrenEnvs ] = handleAllChildren( m2t, handle );
   env = addChildren( env, childrenEnvs );
@@ -915,6 +912,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   yLim   = get( p, 'YLim' );
   xData  = get( handle, 'XData' );
   yData  = get( handle, 'YData' );
+
 
   % split the data into logical chunks
   if errorbarMode
@@ -1352,7 +1350,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
       end
 
       % If vector does not have to be split, take a shortcut
-      if length(xData < newArraySize)
+      if length(xData < newArraySize) % Should this be: if length(xData) < newArraySize ?
           cellIndexNew = cellIndexNew + 1;
           xDataCellNew{cellIndexNew} = xData;
           yDataCellNew{cellIndexNew} = yData;
@@ -2153,9 +2151,24 @@ end
 % *** FUNCTION drawSurface
 % =========================================================================
 function [m2t,env] = drawSurface( m2t, handle )
-
-%      str = sprintf('\n\\addplot3[surf] \ncoordinates{ \n');
-
+   
+    % Just need to figure out how the updated pgfAxis can be written 
+	% to the already existing one.
+	pgfAxis = m2t.currentHandles.pgfAxis.options;
+    
+	% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+	% get z-limits
+    zLim = get( m2t.currentHandles.gca, 'ZLim' );
+    pgfAxis = appendOptions( pgfAxis , sprintf( 'zmin=%g, zmax=%g', zLim ) );
+    
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % get box
+    box = get( m2t.currentHandles.gca, 'Box' ); % Check for 3D box
+    if strcmpi( box, 'on' )
+      pgfAxis = appendOptions( pgfAxis, sprintf( '3d box' ) );
+    end
+    m2t.currentHandles.pgfAxis.options = pgfAxis;
+	
     str = [];
     [m2t, opts, plotType] = surfaceOpts( m2t, handle );
     str = [ str, sprintf( [ '\n\\addplot3[%%\n%s,\n', opts ,']' ], plotType ) ];
@@ -2267,7 +2280,7 @@ end
 % =========================================================================
 % *** FUNCTION surfaceOpts
 % =========================================================================
-function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
+function [ m2t, surfOpts, plotType ] = surfaceOpts( m2t, handle )
 
   faceColor = get( handle, 'FaceColor');
   edgeColor = get( handle, 'EdgeColor');
@@ -2304,17 +2317,37 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
       else
           surfOptions = appendOptions( surfOptions, sprintf( 'shader=faceted' ) );
       end
-      surfOpts = collapse( surfOptions , ',\n' );
   else % default for mesh plot is shader=flat
       surfOptions = appendOptions( surfOptions, sprintf( 'shader=flat' ) );
-      surfOpts = collapse( surfOptions , ',\n' );
   end
   
+  % Get colormap used to plot with the correct colours
+  [m2t,cmapOtps] = getColorMap( m2t, handle );
+  surfOptions = appendOptions( surfOptions, cmapOtps );
+  
+  surfOpts = collapse( surfOptions , ',\n' );
 end
 % =========================================================================
 % *** END FUNCTION surfaceOpts
 % =========================================================================
 
+% =========================================================================
+% *** FUNCTION getColorMap
+% =========================================================================
+function [m2t,cmapOpts] = getColorMap( m2t, handle )
+  
+  [M N] = size( m2t.currentHandles.colormap );
+  cmap = cell(0);
+  for k = 1:M
+      [m2t, xtempColor] = getColor( m2t, handle, m2t.currentHandles.colormap(k,:), 'path');
+      cmap = appendOptions( cmap, sprintf( 'color=(%s)', xtempColor ) );
+  end
+  cmapOpts = [ 'colormap={mymap}{' collapse( cmap , '; ') '}' ];
+  
+end
+% =========================================================================
+% *** END FUNCTION getColorMap
+% =========================================================================
 
 % =========================================================================
 % *** FUNCTION drawScatterPlot
@@ -4347,7 +4380,7 @@ end
 % *** the graph starting from a node (AXES) with maximal connections.
 % ***
 % *** TODO:
-% ***     - diagonal connections à la
+% ***     - diagonal connections Ã  la
 % ***              [ AXES1       ]
 % ***              [       AXES2 ]
 % ***
@@ -4950,7 +4983,6 @@ end
 % *** FUNCTION printAll
 % =========================================================================
 function printAll( env, fid )
-
     if ~isempty(env.comment)
         fprintf( fid, '%% %s\n', regexprep( env.comment, '(\n)', '$1% ' ) );
     end
@@ -5002,3 +5034,26 @@ end
 % =========================================================================
 % *** END FUNCTION imwriteWrapperPNG
 % =========================================================================
+
+% =========================================================================
+% *** FUNCTION getEnvironment
+% =========================================================================
+function [env version] = getEnvironment()
+    versionData = ver;
+    env = ''; % Initialize so error for unknown environment can be used
+    for k = 1:max( size( versionData ) )
+        if strcmpi( versionData(k).Name, 'MATLAB' )
+            env = 'MATLAB';
+            version = versionData(k).Version;
+            break;
+        elseif strcmpi( versionData(k).Name, 'Octave' )
+            env = 'Octave';
+            version = versionData(k).Version;
+            break;
+        end
+    end
+end
+% =========================================================================
+% *** END FUNCTION getEnvironment
+% =========================================================================
+            
