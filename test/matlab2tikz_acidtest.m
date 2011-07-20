@@ -35,8 +35,7 @@
 function matlab2tikz_acidtest( varargin )
 
   % In which environment are we?
-  version_data = ver;
-  env = version_data(1).Name;
+  env = getEnvironment();
   if ~strcmp( env, 'MATLAB' ) && ~strcmp( env, 'Octave' )
       error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
   end
@@ -398,4 +397,28 @@ function texfile_tab_completion_finish( texfile_handle )
              '\\end{table}\n\n'                                      ] );
 
 end
+% =========================================================================
+
+% =========================================================================
+% *** FUNCTION getEnvironment
+% =========================================================================
+function env = getEnvironment
+  env = '';
+  % Check if we are in MATLAB or Octave.
+  % `ver' in MATLAB gives versioning information on all installed packages
+  % separately, and there is no guarantee that MATLAB itself is listed first.
+  % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
+  versionData = ver;
+  for k = 1:max(size(versionData))
+      if strcmp( versionData(k).Name, 'MATLAB' )
+          env = 'MATLAB';
+          break;
+      elseif strcmp( versionData(k).Name, 'Octave' )
+          env = 'Octave';
+          break;
+      end
+  end
+end
+% =========================================================================
+% *** END FUNCTION getEnvironment
 % =========================================================================
