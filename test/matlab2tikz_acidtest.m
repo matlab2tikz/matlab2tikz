@@ -72,9 +72,9 @@ function matlab2tikz_acidtest( varargin )
   ploterrmsg = cell( length(indices), 1 );
   tikzerrmsg = cell( length(indices), 1 );
   pdferrmsg  = cell( length(indices), 1 );
-  ploterror = cell( length(indices), 1 );
-  tikzerror = cell( length(indices), 1 );
-  pdferror  = cell( length(indices), 1 );
+  ploterror = false( length(indices), 1 );
+  tikzerror = false( length(indices), 1 );
+  pdferror  = false( length(indices), 1 );
   desc = cell( length(indices), 1 );
   funcName = cell( length(indices), 1 );
   for i = indices
@@ -88,7 +88,6 @@ function matlab2tikz_acidtest( varargin )
       % plot the figure
       try
           [desc{k}, funcName{k}] = testfunctions( i );
-          ploterror{k} = false;
       catch
           e = lasterror( 'reset' );
           if ~isempty( e.message )
@@ -122,7 +121,7 @@ function matlab2tikz_acidtest( varargin )
           else
               fprintf( ploterrmsg{k} )
           end
-          ploterror{k} = true;
+          ploterror(k) = true;
       end
 
       % plot not sucessful
@@ -141,7 +140,6 @@ function matlab2tikz_acidtest( varargin )
           matlab2tikz( gen_file, 'silent', true,...
                                  'relativePngPath', '../data/', ...
                                  'width', '\figurewidth' );
-          tikzerror{k} = false;
       catch
           e = lasterror('reset');
           if ~isempty( e.message )
@@ -167,7 +165,7 @@ function matlab2tikz_acidtest( varargin )
           else
               fprintf( tikzerrmsg{k} )
           end
-          tikzerror{k} = true;
+          tikzerror(k) = true;
       end
 
       % Save reference output as PDF
@@ -183,7 +181,6 @@ function matlab2tikz_acidtest( varargin )
               otherwise
                   error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
           end
-          pdferror{k} = false;
       catch
           e = lasterror('reset');
           if ~isempty( e.message )
@@ -209,7 +206,7 @@ function matlab2tikz_acidtest( varargin )
           else
               fprintf( pdferrmsg{k} )
           end
-          pdferror{k} = true;
+          pdferror(k) = true;
       end
 
       % Octave would treat '\\' as two backslashes outside of *printf() whereas
@@ -224,7 +221,7 @@ function matlab2tikz_acidtest( varargin )
 
       % ...and finally write the bits to the LaTeX file
       texfile_addtest( fh, pdf_file, gen_file, desc{k}, funcName{k}, ...
-                           pdferror{k}, tikzerror{k} );
+                           pdferror(k), tikzerror(k) );
 
       % After 10 floats, put a \clearpage to avoid
       %
@@ -254,7 +251,7 @@ function matlab2tikz_acidtest( varargin )
       if isempty( desc{k} )
           fprintf( fh, ' & --- & skipped & ---' );
       else
-          for err = [ ploterror{k}, pdferror{k}, tikzerror{k} ]
+          for err = [ ploterror(k), pdferror(k), tikzerror(k) ]
               if err
                   fprintf( fh, ' & \\textcolor{red}{failed}' );
               else
@@ -267,7 +264,7 @@ function matlab2tikz_acidtest( varargin )
   texfile_tab_completion_finish( fh );
 
   % Write the error messages to the LaTeX file if there are any
-  if any(any(cell2mat( [ ploterror ; tikzerror ; pdferror ] )))
+  if any( [ploterror ; tikzerror ; pdferror ] )
       fprintf( fh, '\\section*{Error messages}\n\\scriptsize\n' );
       k = 0;
       for i = indices

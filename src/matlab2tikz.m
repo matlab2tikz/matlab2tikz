@@ -60,9 +60,22 @@
 function matlab2tikz( varargin )
 
   % Check if we are in MATLAB or Octave.
+  % `ver' in MATLAB gives versioning information on all installed packages
+  % separately, and there is no guarantee that MATLAB itself is listed first.
+  % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
   versionData = ver;
-  m2t.env = versionData(1).Name;
-  versionString = versionData(1).Version;
+  for k = 1:max(size(versionData))
+      if strcmp( versionData(k).Name, 'MATLAB' )
+          m2t.env = 'MATLAB';
+          versionString = versionData(k).Version;
+          break;
+      elseif strcmp( versionData(k).Name, 'Octave' )
+          m2t.env = 'Octave';
+          versionString = versionData(k).Version;
+          break;
+        end
+  end
+  
   switch m2t.env
       case 'MATLAB'
           % Make sure we're running MATLAB >= 2008b.
