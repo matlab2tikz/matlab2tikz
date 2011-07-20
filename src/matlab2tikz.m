@@ -62,11 +62,10 @@ function matlab2tikz( varargin )
   % Check if we are in MATLAB or Octave.
   versionData = ver;
   m2t.env = versionData(1).Name;
-  versionString = versionData.Version;
+  versionString = versionData(1).Version;
   switch m2t.env
       case 'MATLAB'
           % Make sure we're running MATLAB >= 2008b.
-          versionData = ver('MATLAB');
           if str2double(versionString(1))<7 || (str2double(versionString(1))==7 && str2double(versionString(3:end))<7)
               error( 'You need at least   MATLAB R2008b   to run this script.');
           end
