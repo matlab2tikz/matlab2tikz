@@ -76,7 +76,7 @@ function matlab2tikz( varargin )
           error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  m2t.opts = [];
+  m2t.cmdOpts = [];
 
   m2t.currentHandles = [];
 
@@ -113,70 +113,70 @@ function matlab2tikz( varargin )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % scan the options
-  m2t.opts = matlab2tikzInputParser;
-  m2t.opts = m2t.opts.addOptional( m2t.opts, ...
-                                   'filename', ...
-                                   [], ...
-                                   @(x) filenameValidation(x,m2t.opts) );
+  m2t.cmdOpts = matlab2tikzInputParser;
+  m2t.cmdOpts = m2t.cmdOpts.addOptional( m2t.cmdOpts, ...
+                                         'filename', ...
+                                         [], ...
+                                         @(x) filenameValidation(x,m2t.cmdOpts) );
 
   % possibility to give a file handle as argument
-  m2t.opts = m2t.opts.addOptional( m2t.opts, 'filehandle', [], @filehandleValidation );
+  m2t.cmdOpts = m2t.cmdOpts.addOptional( m2t.cmdOpts, 'filehandle', [], @filehandleValidation );
   
   % explicitly specify which figure to use
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'figurehandle', gcf, @ishandle );
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'colormap', colormap, @isnumeric );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'figurehandle', gcf, @ishandle );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'colormap', colormap, @isnumeric );
 
   % whether to strictly stick to the default MATLAB plot appearance:
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'strict', 0, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'strict', 0, @islogical );
 
   % don't plot warning messages
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'silent', 0, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'silent', 0, @islogical );
 
   % Whether to save images in PNG format or to natively draw filled squares
   % using TikZ itself.
   % Default it PNG.
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'imagesAsPng', 1, @islogical );
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'relativePngPath', [], @ischar );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'imagesAsPng', 1, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'relativePngPath', [], @ischar );
 
   % width and height of the figure
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'height', [], @ischar );
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'width' , [], @ischar );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'height', [], @ischar );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'width' , [], @ischar );
 
   % minimum distance for two points to be plotted separately
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'minimumPointsDistance', 0.0, @isnumeric );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'minimumPointsDistance', 0.0, @isnumeric );
 
   % extra axis options
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'extraAxisOptions', {}, @isCellOrChar );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'extraAxisOptions', {}, @isCellOrChar );
 
   % file encoding
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'encoding' , '', @ischar );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'encoding' , '', @ischar );
 
   % math mode in titles and captions
   % -- this is default "true" as MATLAB may put non-LaTeX compilable structures
   % in there.
-  m2t.opts = m2t.opts.addParamValue( m2t.opts, 'mathmode', 1, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'mathmode', 1, @islogical );
 
-  m2t.opts = m2t.opts.parse( m2t.opts, varargin{:} );
+  m2t.cmdOpts = m2t.cmdOpts.parse( m2t.cmdOpts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % add global elements
-  m2t.currentHandles.gcf      = m2t.opts.Results.figurehandle;
+  m2t.currentHandles.gcf      = m2t.cmdOpts.Results.figurehandle;
   m2t.currentHandles.colormap = get(m2t.currentHandles.gcf,'colormap');
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle output file handle/file name
-  if ~isempty( m2t.opts.Results.filehandle )
-      fid     = m2t.opts.Results.filehandle;
+  if ~isempty( m2t.cmdOpts.Results.filehandle )
+      fid     = m2t.cmdOpts.Results.filehandle;
       fileWasOpen = 1;
-      if ~isempty(m2t.opts.Results.filename)
+      if ~isempty(m2t.cmdOpts.Results.filename)
           userWarning( m2t, ...
                        'File handle AND file name for output given. File handle used, file name discarded.')
       end
   else
       fileWasOpen = 0;
       % set filename
-      if ~isempty(m2t.opts.Results.filename)
-          filename = m2t.opts.Results.filename;
+      if ~isempty(m2t.cmdOpts.Results.filename)
+          filename = m2t.cmdOpts.Results.filename;
       else
           filename = uiputfile( {'*.tikz'; '*.*'}, ...
                                 'Save File' );
@@ -187,7 +187,7 @@ function matlab2tikz( varargin )
           fid = fopen( filename, ...
                        'w', ...
                        'native', ...
-                       m2t.opts.Results.encoding ...
+                       m2t.cmdOpts.Results.encoding ...
                      );
       elseif strcmp( m2t.env, 'Octave' );
           fid = fopen( filename, 'w' );
@@ -208,10 +208,10 @@ function matlab2tikz( varargin )
   % By default, reference the PNG (if required) from the TikZ file
   % as the file path of the TikZ file itself. This works if the MATLAB script
   % is executed in the same folder where the TeX file sits.
-  if ( isempty(m2t.opts.Results.relativePngPath) )
+  if isempty(m2t.cmdOpts.Results.relativePngPath)
       m2t.relativePngPath = fileparts(m2t.tikzFileName);
   else
-      m2t.relativePngPath = m2t.opts.Results.relativePngPath;
+      m2t.relativePngPath = m2t.cmdOpts.Results.relativePngPath;
   end
 
   % print some version info to the screen
@@ -225,7 +225,7 @@ function matlab2tikz( varargin )
                  'Make sure you have at least Pgfplots 1.3 available.\n', ...
                  'For best results, use \\pgfplotsset{compat=newest}, and for speed ', ...
                  'use \\pgfplotsset{plot coordinates/math parser=false} .\n' ] );
-  if ~m2t.opts.Results.silent
+  if ~m2t.cmdOpts.Results.silent
       fprintf( '\n' );
   end
 
@@ -313,7 +313,7 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
                                    m2t.name, m2t.version, ...
                                    m2t.years, m2t.author, m2t.authorEmail );
 
-  if ~m2t.opts.Results.silent
+  if ~m2t.cmdOpts.Results.silent
       m2t.content.comment = [ m2t.content.comment, ...
                               sprintf( [ '\n',...
                                          'The latest updates can be retrieved from\n', ...
@@ -511,8 +511,8 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
   dim = getAxesDimensions( handle, ...
-                           m2t.opts.Results.width, ...
-                           m2t.opts.Results.height );
+                           m2t.cmdOpts.Results.width, ...
+                           m2t.cmdOpts.Results.height );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   if ~isVisible( handle )
@@ -543,7 +543,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   end
 
   % add manually given extra axis options
-  extraAxisOptions = m2t.opts.Results.extraAxisOptions;
+  extraAxisOptions = m2t.cmdOpts.Results.extraAxisOptions;
   if ~isempty( extraAxisOptions )
       env.options = appendOptions( env.options, extraAxisOptions );
   end
@@ -675,21 +675,21 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   axisLabels = getAxisLabels( handle );
   if ~isempty( axisLabels.x )
       xlabelText = sprintf( '%s', axisLabels.x );
-      if m2t.opts.Results.mathmode
+      if m2t.cmdOpts.Results.mathmode
           xlabelText = [ '$' xlabelText '$' ];
       end
       env.options = appendOptions( env.options, sprintf( 'xlabel={%s}', xlabelText ) );
   end
   if ~isempty( axisLabels.y )
       ylabelText = sprintf( '%s', axisLabels.y );
-      if  m2t.opts.Results.mathmode
+      if  m2t.cmdOpts.Results.mathmode
           ylabelText = [ '$' ylabelText '$' ];
       end
       env.options = appendOptions( env.options, sprintf( 'ylabel={%s}', ylabelText ) );
   end
   if ~isempty( axisLabels.z )
       zlabelText = sprintf( '%s', axisLabels.z );
-      if m2t.opts.Results.mathmode
+      if m2t.cmdOpts.Results.mathmode
           zlabelText = [ '$' zlabelText '$' ];
       end
       env.options = appendOptions( env.options, sprintf( 'zlabel={%s}', zlabelText ) );
@@ -699,7 +699,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   title = get( get( handle, 'Title' ), 'String' );
   if ~isempty(title)
       titleText = sprintf( '%s', title );
-      if  m2t.opts.Results.mathmode
+      if  m2t.cmdOpts.Results.mathmode
           titleText = [ '$' titleText '$' ];
       end
       env.options = appendOptions( env.options, sprintf( 'title={%s}', titleText ) );
@@ -739,7 +739,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       % If not, don't add anything in case of default line grid line style
       % and effectively take pgfplots' default.
       defaultMatlabGridLineStyle = ':';
-      if m2t.opts.Results.strict ...
+      if m2t.cmdOpts.Results.strict ...
          || ~strcmp(matlabGridLineStyle,defaultMatlabGridLineStyle)
          gls = translateLineStyle( matlabGridLineStyle );
          axisGridOpts = sprintf( 'grid style={%s}', gls );
@@ -1548,7 +1548,7 @@ end
 % -------------------------------------------------------------------------
 function mask = pointReduction( m2t, xData, yData )
 
-  threshold = m2t.opts.Results.minimumPointsDistance;
+  threshold = m2t.cmdOpts.Results.minimumPointsDistance;
   n = length(xData);
 
   if ( threshold==0.0 )
@@ -1598,7 +1598,7 @@ function lineOpts = getLineOptions( m2t, lineStyle, lineWidth )
       % if not, don't add anything in case of default line width
       % and effectively take pgfplots' default
       matlabDefaultLineWidth = 0.5;
-      if m2t.opts.Results.strict ...
+      if m2t.cmdOpts.Results.strict ...
          || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
           lineOpts = appendOptions( lineOpts,                              ...
                                     sprintf('line width=%.1fpt', lineWidth ) );
@@ -1636,7 +1636,7 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
       % take over the marker size in any case when in strict mode;
       % if not, don't add anything in case of default marker size
       % and effectively take pgfplots' default
-      if m2t.opts.Results.strict || ~isDefault
+      if m2t.cmdOpts.Results.strict || ~isDefault
          drawOptions = appendOptions( drawOptions,                           ...
                                       sprintf( 'mark size=%.1fpt', tikzMarkerSize ) );
       end
@@ -1987,7 +1987,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       cdata = cdata(m:-1:1,:,:);
   end
 
-  if ( m2t.opts.Results.imagesAsPng )
+  if ( m2t.cmdOpts.Results.imagesAsPng )
       % ------------------------------------------------------------------------
       % draw a png image
       % Take the TikZ file base name and change the extension .png.
@@ -2230,7 +2230,7 @@ function [ m2t, str ] = drawText( m2t, handle)
   HorizontalAlignment = get(handle, 'HorizontalAlignment');
   pos = get (handle, 'Position');
   String = get(handle, 'String');
-  if m2t.opts.Results.mathmode
+  if m2t.cmdOpts.Results.mathmode
       String = [ '$' String '$' ];
   end
   VerticalAlignment = get(handle, 'VerticalAlignment');
@@ -2932,8 +2932,8 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
            )
   end
   parentDim = getAxesDimensions( m2t.currentHandles.gca, ...
-                                 m2t.opts.Results.width, ...
-                                 m2t.opts.Results.height );
+                                 m2t.cmdOpts.Results.width, ...
+                                 m2t.cmdOpts.Results.height );
 
   % TODO Compute the colorbar width. This is pretty much a *guess* of what MATLAB(R) does.
   if ~strcmp(parentDim.x.unit, parentDim.y.unit)
@@ -3045,7 +3045,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   cbarLength = clim(2) - clim(1);
   m = size( cmap, 1 );
 
-  if (m2t.opts.Results.imagesAsPng)
+  if (m2t.cmdOpts.Results.imagesAsPng)
       if isempty( m2t.colorbarNo )
           m2t.colorbarNo = 1;
       else
@@ -3404,7 +3404,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
           % specified.
           % The reason for this is that entries as "cos_x" are legal MATLAB
           % code, but won't compile in (La)TeX except in Math mode.
-          if m2t.opts.Results.mathmode
+          if m2t.cmdOpts.Results.mathmode
               entries{k} = [ '$', entries{k}, '$' ];
           end
           % Surround the entry by braces if a comma is contained.
@@ -3521,13 +3521,13 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
 
   xTickLabel = get( handle, 'XTickLabel' );
   xTickMode = get( handle, 'XTickMode' );
-  if strcmp(xTickMode,'auto') && ~m2t.opts.Results.strict
+  if strcmp(xTickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
       % not required, then let pgfplots take care of the ticks.
       % In most cases, this looks a lot better anyway.
       ticks.x      = [];
       tickLabels.x = [];
-  else % strcmp(xTickMode,'manual') || m2t.opts.Results.strict
+  else % strcmp(xTickMode,'manual') || m2t.cmdOpts.Results.strict
       xTick      = get( handle, 'XTick' );
       isXAxisLog = strcmp( get(handle,'XScale'), 'log' );
       [ticks.x, tickLabels.x] = getAxisTicks( m2t, xTick, xTickLabel, isXAxisLog );
@@ -3539,13 +3539,13 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
 
   yTickLabel = get( handle, 'YTickLabel' );
   yTickMode = get( handle, 'YTickMode' );
-  if strcmp(yTickMode,'auto') && ~m2t.opts.Results.strict
+  if strcmp(yTickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
       % not required, then let pgfplots take care of the ticks.
       % In most cases, this looks a lot better anyway.
       ticks.y      = [];
       tickLabels.y = [];
-  else % strcmp(yTickMode,'manual') || m2t.opts.Results.strict
+  else % strcmp(yTickMode,'manual') || m2t.cmdOpts.Results.strict
       yTick      = get( handle, 'YTick' );
       isYAxisLog = strcmp( get(handle,'YScale'), 'log' );
       [ticks.y, tickLabels.y] = getAxisTicks( m2t, yTick, yTickLabel, isYAxisLog );
@@ -3557,13 +3557,13 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
 
   zTickLabel = get( handle, 'ZTickLabel' );
   zTickMode = get( handle, 'ZTickMode' );
-  if strcmp(yTickMode,'auto') && ~m2t.opts.Results.strict
+  if strcmp(yTickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
       % not required, then let pgfplots take care of the ticks.
       % In most cases, this looks a lot better anyway.
       ticks.z      = [];
       tickLabels.z = [];
-  else % strcmp(zTickMode,'manual') || m2t.opts.Results.strict
+  else % strcmp(zTickMode,'manual') || m2t.cmdOpts.Results.strict
       zTick      = get( handle, 'ZTick' );
       isZAxisLog = strcmp( get(handle,'ZScale'), 'log' );
       [ticks.z, tickLabels.z] = getAxisTicks( m2t, zTick, zTickLabel, isZAxisLog );
@@ -4110,7 +4110,7 @@ end
 % ---------------------------------------------------------------------------
 
 % ---------------------------------------------------------------------------
-% decompose m2t.opts.Results.width into value and unit
+% decompose m2t.cmdOpts.Results.width into value and unit
 function out = extractValueUnit( str )
 
     % Regular expression to match '4.12cm', '\figurewidth', ...
@@ -4832,7 +4832,7 @@ end
 % =========================================================================
 function userWarning( m2t, message, varargin )
 
-  if m2t.opts.Results.silent
+  if m2t.cmdOpts.Results.silent
       return
   end
 
