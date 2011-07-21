@@ -300,8 +300,8 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHandles );
 
   for k = 1:length(visibleAxesHandles)
-      [m2t,env] = drawAxes( m2t, visibleAxesHandles(ix(k)), alignmentOptions(ix(k)) );
-      m2t.content = addChildren( m2t.content, env );
+      m2t = drawAxes( m2t, visibleAxesHandles(ix(k)), alignmentOptions(ix(k)) );
+      m2t.content = addChildren( m2t.content, m2t.currentAxesContainer );
   end
 
   set( 0, 'ShowHiddenHandles', 'off' );
@@ -375,10 +375,8 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
 
   for i = length(children):-1:1
       child = children(i);
-
       switch get( child, 'Type' )
-          case 'axes'
-              [m2t, env] = drawAxes( m2t, child );
+          % 'axes' environments are treated separately.
 
           case 'line'
               [m2t, env] = drawLine( m2t, child );
@@ -437,23 +435,24 @@ end
 % ***                           This argument is optional.
 % ***
 % =========================================================================
-function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
+function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % Initialize empty enviroment.
   % Use a struct instead of a custom subclass of hgsetget (which would
   % facilitate writing clean code) as structs are more portable (old MATLAB(R)
   % versions, GNU Octave).
-  env = struct( 'name',     [], ...
-                'comment',  [], ...
-                'options',  [], ...
-                'content',  [], ...
-                'children', []  ...
-              );
+  m2t.currentAxesContainer = struct( 'name',     [], ...
+                                     'comment',  [], ...
+                                     'options',  [], ...
+                                     'content',  [], ...
+                                     'children', []  ...
+                                   );
+
   % Setting the following to cell(0) straight away doesn't work unfortunately
   % as MATLAB(R) interprets structs with cell values as a cell array of structs.
-  env.options  = cell(0);
-  env.content  = cell(0);
-  env.children = cell(0);
+  m2t.currentAxesContainer.options  = cell(0);
+  m2t.currentAxesContainer.content  = cell(0);
+  m2t.currentAxesContainer.children = cell(0);
 
   % pass on information about reversed axis (to drawImage)
   m2t.xAxisReversed = [];
@@ -476,7 +475,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
           % Note how m2t.currentHandles.gca does *not* get updated.
           % Within drawColorbar(), m2t.currentHandles.gca is assumed to point
           % to the parent axes.
-          [m2t, env] = drawColorbar( m2t, handle, alignmentOptions );
+          [m2t, m2t.currentAxesContainer] = drawColorbar( m2t, handle, alignmentOptions );
           return
       case 'legend'
           % Don't handle the legend here, but further below in the 'axis'
@@ -493,19 +492,12 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % update gca
   m2t.currentHandles.gca = handle;
 
-  % Store a pointer to the current pgfplotsEnvironment axis environment
-  % as plot objects further below in the hierarchy might want to append
-  % something.
-  % One example is the required 'ybar stacked' option for stacked bar
-  % plots.
-  m2t.currentHandles.pgfAxis = env;
-
   % get the view angle
   view = get( handle, 'View' );
   if any( view ~= [0,90] )
-      env.options = appendOptions( env.options, ...
-                                   sprintf( 'view={%g}{%g}', get( handle, 'View') ) ...
-                                 );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                                        sprintf( 'view={%g}{%g}', get( handle, 'View') ) ...
+                                                      );
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -527,25 +519,24 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
           end
       end
       if containsVisibleChild
-          env.name = 'axis';
-          env.options = appendOptions( env.options, ...
-                                       { 'hide x axis, hide y axis', ...
-                                          sprintf('width=%g%s, height=%g%s', dim.x.value, dim.x.unit,   ...
-                                                                             dim.y.value, dim.y.unit ), ...
-                                          'scale only axis' } ...
+          m2t.currentAxesContainer.name = 'axis';
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                                            { 'hide x axis, hide y axis', ...
+                                                               sprintf('width=%g%s, height=%g%s', dim.x.value, dim.x.unit,   ...
+                                                                                                  dim.y.value, dim.y.unit ), ...
+                                                              'scale only axis' } ...
                                      );
-          env.comment = getTag( handle );
+          m2t.currentAxesContainer.comment = getTag( handle );
       end
       % recurse into the children of this environment
       [ m2t, childrenEnvs ] = handleAllChildren( m2t, handle );
-      env = addChildren( env, childrenEnvs );
+      m2t.currentAxesContainer = addChildren( m2t.currentAxesContainer, childrenEnvs );
       return
   end
 
   % add manually given extra axis options
-  extraAxisOptions = m2t.cmdOpts.Results.extraAxisOptions;
-  if ~isempty( extraAxisOptions )
-      env.options = appendOptions( env.options, extraAxisOptions );
+  if ~isempty( m2t.cmdOpts.Results.extraAxisOptions )
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, m2t.cmdOpts.Results.extraAxisOptions );
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -557,28 +548,28 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   isYLog = strcmp( yScale, 'log' );
 
   if  ~isXLog && ~isYLog
-      env.name = 'axis';
+      m2t.currentAxesContainer.name = 'axis';
   elseif isXLog && ~isYLog
-      env.name = 'semilogxaxis';
+      m2t.currentAxesContainer.name = 'semilogxaxis';
   elseif ~isXLog && isYLog
-      env.name = 'semilogyaxis';
+      m2t.currentAxesContainer.name = 'semilogyaxis';
   else
-      env.name = 'loglogaxis';
+      m2t.currentAxesContainer.name = 'loglogaxis';
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set alignment options
   if ~isempty(alignmentOptions.opts)
-      env.options = appendOptions( env.options, alignmentOptions.opts );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, alignmentOptions.opts );
   end
 
   % the following is general MATLAB behavior
-  env.options = appendOptions( env.options, 'scale only axis' );
+  m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'scale only axis' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % axis colors
   xColor = get( handle, 'XColor' );
   if ( any(xColor) ) % color not black [0,0,0]
        [ m2t, col ] = getColor( m2t, handle, xColor, 'patch' );
-       env.options = appendOptions( env.options, ...
+       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                     { ['every outer x axis line/.append style={',col, '}'], ...
                                       ['every x tick label/.append style={font=\color{',col,'}}' ] } ...
                                   );
@@ -586,7 +577,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   yColor = get( handle, 'YColor' );
   if ( any(yColor) ) % color not black [0,0,0]
       [ m2t, col ] = getColor( m2t, handle, yColor, 'patch' );
-      env.options = appendOptions( env.options, ...
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                    { [ 'every outer y axis line/.append style={',col, '}' ], ...
                                      [ 'every y tick label/.append style={font=\color{',col,'}}' ] } ...
                                  );
@@ -597,7 +588,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   if ~strcmp( backgroundColor, 'none' )
       [ m2t, col ] = getColor( m2t, handle, backgroundColor, 'patch' );
       if ~strcmp( col, 'white' )
-          env.options = appendOptions( env.options, ...
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                        sprintf( 'axis background/.style={fill=%s}', col ) ...
                                      );
       end
@@ -606,18 +597,18 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % set the width
   if dim.x.unit(1)=='\' && dim.x.value==1.0
       % only return \figurewidth instead of 1.0\figurewidth
-      env.options = appendOptions( env.options, ...
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                    sprintf( 'width=%s', dim.x.unit ) );
   else
-      env.options = appendOptions( env.options, ...
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                    sprintf( 'width=%g%s', dim.x.value, dim.x.unit ) );
   end
   if dim.y.unit(1)=='\' && dim.y.value==1.0
       % only return \figureheight instead of 1.0\figureheight
-      env.options = appendOptions( env.options, ...
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                    sprintf( 'height=%s', dim.y.unit ) );
   else
-      env.options = appendOptions( env.options, ...
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                    sprintf( 'height=%g%s' , dim.y.value, dim.y.unit ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -625,27 +616,27 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   m2t.xAxisReversed = 0;
   if strcmp( get(handle,'XDir'), 'reverse' )
       m2t.xAxisReversed = 1;
-      env.options = appendOptions( env.options, 'x dir=reverse' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'x dir=reverse' );
   end
 
   m2t.yAxisReversed = 0;
   if strcmp( get(handle,'YDir'), 'reverse' )
       m2t.yAxisReversed = 1;
-      env.options = appendOptions( env.options, 'y dir=reverse' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'y dir=reverse' );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % for double axes pairs, unconditionally put the ordinate left for the
   % first one, right for the second one.
   if alignmentOptions.isElderTwin
-      env.options = appendOptions( env.options, {'axis y line*=left', 'axis x line*=bottom'} );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, {'axis y line*=left', 'axis x line*=bottom'} );
   elseif alignmentOptions.isYoungerTwin
-      env.options = appendOptions( env.options, {'axis y line*=right', 'axis x line*=top'} );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, {'axis y line*=right', 'axis x line*=top'} );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
   xLim = get( handle, 'XLim' );
   yLim = get( handle, 'YLim' );
-  env.options = appendOptions( env.options, ...
+  m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                { sprintf('xmin=%g, xmax=%g', xLim ), ...
                                  sprintf('ymin=%g, ymax=%g', yLim ) } ...
                              );
@@ -653,22 +644,22 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
   % get ticks along with the labels
   [ ticks, tickLabels ] = getTicks( m2t, handle );
   if ~isempty( ticks.x )
-      env.options = appendOptions( env.options, sprintf( 'xtick={%s}', ticks.x ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xtick={%s}', ticks.x ) );
   end
   if ~isempty( tickLabels.x )
-      env.options = appendOptions( env.options, sprintf( 'xticklabels={%s}', tickLabels.x ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xticklabels={%s}', tickLabels.x ) );
   end
   if ~isempty( ticks.y )
-      env.options = appendOptions( env.options, sprintf( 'ytick={%s}', ticks.y ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ytick={%s}', ticks.y ) );
   end
   if ~isempty( tickLabels.y )
-      env.options = appendOptions( env.options, sprintf( 'yticklabels={%s}', tickLabels.y ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'yticklabels={%s}', tickLabels.y ) );
   end
   if ~isempty( ticks.z )
-      env.options = appendOptions( env.options, sprintf( 'ztick={%s}', ticks.z ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ztick={%s}', ticks.z ) );
   end
   if ~isempty( tickLabels.z )
-      env.options = appendOptions( env.options, sprintf( 'zticklabels={%s}', tickLabels.z ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zticklabels={%s}', tickLabels.z ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis labels
@@ -678,21 +669,21 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       if m2t.cmdOpts.Results.mathmode
           xlabelText = [ '$' xlabelText '$' ];
       end
-      env.options = appendOptions( env.options, sprintf( 'xlabel={%s}', xlabelText ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xlabel={%s}', xlabelText ) );
   end
   if ~isempty( axisLabels.y )
       ylabelText = sprintf( '%s', axisLabels.y );
       if  m2t.cmdOpts.Results.mathmode
           ylabelText = [ '$' ylabelText '$' ];
       end
-      env.options = appendOptions( env.options, sprintf( 'ylabel={%s}', ylabelText ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ylabel={%s}', ylabelText ) );
   end
   if ~isempty( axisLabels.z )
       zlabelText = sprintf( '%s', axisLabels.z );
       if m2t.cmdOpts.Results.mathmode
           zlabelText = [ '$' zlabelText '$' ];
       end
-      env.options = appendOptions( env.options, sprintf( 'zlabel={%s}', zlabelText ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zlabel={%s}', zlabelText ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get title
@@ -702,33 +693,33 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       if  m2t.cmdOpts.Results.mathmode
           titleText = [ '$' titleText '$' ];
       end
-      env.options = appendOptions( env.options, sprintf( 'title={%s}', titleText ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'title={%s}', titleText ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids
   isGrid = 0;
   if strcmp( get( handle, 'XGrid'), 'on' );
-      env.options = appendOptions( env.options, 'xmajorgrids' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'xmajorgrids' );
       isGrid = 1;
   end
   if strcmp( get( handle, 'XMinorGrid'), 'on' );
-      env.options = appendOptions( env.options, 'xminorgrids' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'xminorgrids' );
       isGrid = 1;
   end
   if strcmp( get( handle, 'YGrid'), 'on' )
-      env.options = appendOptions( env.options, 'ymajorgrids' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'ymajorgrids' );
       isGrid = 1;
   end
   if strcmp( get( handle, 'YMinorGrid'), 'on' );
-      env.options = appendOptions( env.options, 'yminorgrids' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'yminorgrids' );
       isGrid = 1;
   end
   if strcmp( get( handle, 'ZGrid'), 'on' )
-      env.options = appendOptions( env.options, 'zmajorgrids' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zmajorgrids' );
       isGrid = 1;
   end
   if strcmp( get( handle, 'ZMinorGrid'), 'on' );
-      env.options = appendOptions( env.options, 'zminorgrids' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zminorgrids' );
       isGrid = 1;
   end
 
@@ -743,7 +734,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
          || ~strcmp(matlabGridLineStyle,defaultMatlabGridLineStyle)
          gls = translateLineStyle( matlabGridLineStyle );
          axisGridOpts = sprintf( 'grid style={%s}', gls );
-         env.options = appendOptions( env.options, axisGridOpts );
+         m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, axisGridOpts );
       end
   else
       % When specifying 'axis on top', the axes stay above all graphs (which is
@@ -752,7 +743,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       % To date (Dec 12, 2009) pgfplots is not able to handle those things
       % separately.
       % As a prelimary compromise, only pull this option if no grid is in use.
-      env.options = appendOptions( env.options, 'axis on top' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'axis on top' );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % See if there are any legends that need to be plotted.
@@ -769,7 +760,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
       legendHandle = legend(handle);
       if ~isempty(legendHandle)
           [ m2t, legendOpts ] = getLegendOpts( m2t, legendHandle );
-          env.options = appendOptions( env.options, legendOpts );
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, legendOpts );
       end
   else
       % TODO: How to uniquely connect a legend with a pair of axes in Octave?
@@ -796,7 +787,7 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
     %                     && legLeft+legWid < axisLeft+axisWid ...
     %                     && legBot+legHei  < axisBot+axisHei )
                       [ m2t, legendOpts ] = getLegendOpts( m2t, legendHandle );
-                      env.options = appendOptions( env.options, legendOpts );
+                      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, legendOpts );
     %                end
               end
           end
@@ -807,8 +798,9 @@ function [m2t,env] = drawAxes( m2t, handle, alignmentOptions )
 
   % recurse into the children of this environment
   [ m2t, childrenEnvs ] = handleAllChildren( m2t, handle );
-  env = addChildren( env, childrenEnvs );
+  m2t.currentAxesContainer = addChildren( m2t.currentAxesContainer, childrenEnvs );
 
+  return
 end
 % ---------------------------------------------------------------------------
 function tag = getTag( handle )
@@ -2516,15 +2508,13 @@ function [ m2t, str ] = drawBarseries( m2t, h )
               end
               bWFactor = get( h, 'BarWidth' );
               ulength   = normalized2physical( m2t );
-              % TODO Adding this to m2t.content.options are the TikZ environment
-              %      options whereas this is supposed to go with the options
-              %      of the current axes environment. Fix this.
-%                m2t.content.options = appendOptions( m2t.content.options, ...
-%                                                     { 'ybar stacked',                          ...
-%                                                       sprintf( 'bar width=%g%s',               ...
-%                                                       ulength.value*bWFactor, ulength.unit ) } ...
-%                                                   );
-              m2t.addedAxisOption = 1;
+              % Add 'ybar stacked' to the containing axes environment.
+              m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                                                { 'ybar stacked',                          ...
+                                                                  sprintf( 'bar width=%g%s',               ...
+                                                                           ulength.value*bWFactor, ulength.unit ) } ...
+                                                              );
+              m2t.addedAxisOption = true;
           end
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
