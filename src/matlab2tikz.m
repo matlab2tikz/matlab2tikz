@@ -31,7 +31,7 @@
 % ***
 % =========================================================================
 % ***
-% *** Copyright (c) 2008--2011, Nico SchlÃ¶mer <nico.schloemer@gmail.com>
+% *** Copyright (c) 2008--2011, Nico SchlÃƒÂ¶mer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without
@@ -60,17 +60,17 @@
 function matlab2tikz( varargin )
 
   % Check if we are in MATLAB or Octave.
-  [m2t.env versionString] = getEnvironment();
+  m2t.env = getEnvironment();
   switch m2t.env
       case 'MATLAB'
           % Make sure we're running MATLAB >= 2008b.
-          if str2double(versionString(1))<7 || (str2double(versionString(1))==7 && str2double(versionString(3:end))<7)
-              error( 'You need at least   MATLAB R2008b   to run this script.');
+          if isVersionBelow( m2t.env, 7, 7)
+              error( 'You need at least MATLAB R2008b to run this script.');
           end
       case 'Octave'
           % Make sure we're running Octave >= 3.4.0.
-          if str2double(versionString(1))<3 || (str2double(versionString(1))==3 && str2double(versionString(3))<4)
-              error( 'You need at least   Octave 3.4.0   to run this script.');
+          if isVersionBelow( m2t.env, 3, 4)
+              error( 'You need at least Octave 3.4.0 to run this script.');
           end
       otherwise
           error( 'Unknown environment. Need MATLAB(R) or Octave.' )
@@ -82,7 +82,7 @@ function matlab2tikz( varargin )
 
   m2t.name = 'matlab2tikz';
   m2t.version = '0.1.2';
-  m2t.author = 'Nico SchlÃ¶mer';
+  m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2011';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
@@ -281,7 +281,7 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   axesHandles = findobj( fh, 'type', 'axes' );
 
   % remove all legend handles as they are treated separately
-  rmList = zeros(numel(axesHandles ),1);
+  rmList = zeros(numel(axesHandles),1);
   for k = 1:length(axesHandles)
      if strcmp( get(axesHandles(k),'Tag'), 'legend' )
 		rmList(k) = 1;
@@ -1350,7 +1350,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
       end
 
       % If vector does not have to be split, take a shortcut
-      if length(xData < newArraySize) % Should this be: if length(xData) < newArraySize ?
+      if length(xData) < newArraySize
           cellIndexNew = cellIndexNew + 1;
           xDataCellNew{cellIndexNew} = xData;
           yDataCellNew{cellIndexNew} = yData;
@@ -2151,9 +2151,9 @@ end
 % *** FUNCTION drawSurface
 % =========================================================================
 function [m2t,env] = drawSurface( m2t, handle )
-   
-    % Just need to figure out how the updated pgfAxis can be written 
-	% to the already existing one.
+    
+    % Can probably be stored in a more conventient place, but as for now
+    % this works together with the hack in saveToFile(). 
 	pgfAxis = m2t.currentHandles.pgfAxis.options;
     
 	% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -2194,6 +2194,9 @@ function [m2t,env] = drawSurface( m2t, handle )
             str = [str, sprintf('\n\n')];
         end
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        % Is this what is meant by "grid=none" under the TODO in
+        % drawSurface() ?
+        pgfAxis = appendOptions( pgfAxis, sprintf( 'grid=none' ) );
     else
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         % plot is 'surf'
@@ -2213,8 +2216,13 @@ function [m2t,env] = drawSurface( m2t, handle )
     %   or adding: 'grid=none' from/in axis options
     % - using a "real" colorbar instead of colorbar-png-file
     % - handling of huge data amounts in LaTeX.
-    % - correcting wrong colors
-
+    % - change the order of data in tikz file when surface with contours is
+    %   used. As it is now, contours are written at the end, and thus
+    %   "overwrite" the surface plot (as in the surface plot is on some
+    %   background layer and the contours on a main/foreground layer).
+    %   Maybe not so easy to fix and is definitely a TikZ/PGF problem
+    
+    m2t.currentHandles.pgfAxis.options = pgfAxis;
     str = [str, sprintf('};\n\n')];
     env = str;
 
@@ -2322,7 +2330,7 @@ function [ m2t, surfOpts, plotType ] = surfaceOpts( m2t, handle )
   end
   
   % Get colormap used to plot with the correct colours
-  [m2t,cmapOtps] = getColorMap( m2t, handle );
+  [m2t, cmapOtps] = getColorMap( m2t, handle );
   surfOptions = appendOptions( surfOptions, cmapOtps );
   
   surfOpts = collapse( surfOptions , ',\n' );
@@ -3018,7 +3026,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
 
           % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'),
           % in Octave small cased ('northoutside').
-          if strcmp( lower( loc ), 'northoutside' )
+          if strcmpi( loc, 'northoutside' )
               cbarOptions = [ cbarOptions,                            ...
                               'xticklabel pos=right, ytick=\empty' ];
                               % we actually wanted to set pos=top here,
@@ -3041,7 +3049,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                            sprintf( 'xmin=%g, xmax=%g', [0,1] ),        ...
                            sprintf( 'ymin=%g, ymax=%g', clim )          ...
                          ];
-          if strcmp( lower( loc ), 'eastoutside' )
+          if strcmpi( loc, 'eastoutside' )
                cbarOptions = [ cbarOptions,                           ...
                                'xtick=\empty, yticklabel pos=right' ];
            else
@@ -4162,7 +4170,7 @@ function out = extractValueUnit( str )
     if length(t{1}) == 1
         out.value = 1.0; % such as in '1.0\figurewidth'
         out.unit  = strtrim( t{1}{1} );
-    elseif length(t{1}) == 2 && length(t{1}{1}) == 0
+    elseif length(t{1}) == 2 && isempty(t{1}{1})
         % MATLAB(R) does this:
         % length(t{1})==2 always, but the first field may be empty.
         out.value = 1.0;
@@ -4380,7 +4388,7 @@ end
 % *** the graph starting from a node (AXES) with maximal connections.
 % ***
 % *** TODO:
-% ***     - diagonal connections Ã  la
+% ***     - diagonal connections ÃƒÂ  la
 % ***              [ AXES1       ]
 % ***              [       AXES2 ]
 % ***
@@ -5038,22 +5046,61 @@ end
 % =========================================================================
 % *** FUNCTION getEnvironment
 % =========================================================================
-function [env version] = getEnvironment()
-    versionData = ver;
-    env = ''; % Initialize so error for unknown environment can be used
-    for k = 1:max( size( versionData ) )
-        if strcmpi( versionData(k).Name, 'MATLAB' )
-            env = 'MATLAB';
-            version = versionData(k).Version;
-            break;
-        elseif strcmpi( versionData(k).Name, 'Octave' )
-            env = 'Octave';
-            version = versionData(k).Version;
-            break;
-        end
-    end
+function env = getEnvironment
+  env = '';
+  % Check if we are in MATLAB or Octave.
+  % `ver' in MATLAB gives versioning information on all installed packages
+  % separately, and there is no guarantee that MATLAB itself is listed first.
+  % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
+  versionData = ver;
+  for k = 1:max(size(versionData))
+      if strcmp( versionData(k).Name, 'MATLAB' )
+          env = 'MATLAB';
+          break;
+      elseif strcmp( versionData(k).Name, 'Octave' )
+          env = 'Octave';
+          break;
+      end
+  end
 end
 % =========================================================================
 % *** END FUNCTION getEnvironment
 % =========================================================================
-            
+
+% =========================================================================
+% *** FUNCTION isVersionBelow
+% =========================================================================
+function [below, error] = isVersionBelow ( env, threshMajor, threshMinor )
+  % get version string for `env' by iterating over all toolboxes
+  versionData = ver;
+  versionString = '';
+  for k = 1:max(size(versionData))
+      if strcmp( versionData(k).Name, env )
+          % found it: store and exit the loop
+          versionString = versionData(k).Version;
+          break
+      end
+  end
+  
+  if isempty( versionString )
+      % couldn't find `env'
+      below = true;
+      error = true;
+      return
+  end
+
+  majorVer = str2double(regexprep( versionString, '^(\d+)\..*', '$1' ));
+  minorVer = str2double(regexprep( versionString, '^\d+\.(\d+)[^\d]*.*', '$1' ));
+  
+  if (majorVer < threshMajor) || (majorVer == threshMajor && minorVer < threshMinor)
+      % version of `env' is below threshold
+      below = true;
+  else
+      % version of `env' is same as or above threshold
+      below = false;
+  end
+  error = false;
+end
+% =========================================================================
+% *** END FUNCTION isVersionBelow
+% =========================================================================
