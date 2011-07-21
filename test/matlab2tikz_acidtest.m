@@ -1,5 +1,5 @@
 % =========================================================================
-% *** FUNCTION matlab2xxx_acidtest
+% *** FUNCTION matlab2tikz_acidtest
 % ***
 % *** Choose the EPS output driver as the PDF will yield a the plot on a
 % *** full page, rather than nicely cropped around the figure.
@@ -129,8 +129,8 @@ function matlab2tikz_acidtest( varargin )
           continue
       end
 
-      pdf_file = sprintf( 'data/test%d-reference' , k );
-      gen_file = sprintf( 'data/test%d-converted.tikz', k );
+      pdf_file = sprintf( 'data/test%d-reference' , i );
+      gen_file = sprintf( 'data/test%d-converted.tikz', i );
 
       tic;
 
