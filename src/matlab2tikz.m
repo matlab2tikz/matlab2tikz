@@ -1990,6 +1990,11 @@ function [ m2t, str ] = drawImage( m2t, handle )
       [pathstr, name ] = fileparts( m2t.tikzFileName );
       pngFileName = fullfile( pathstr, [name '.png'] );
       pngReferencePath = fullfile( m2t.relativePngPath, [name '.png'] );
+      if strcmp( filesep, '\' )
+          % We're on a Windows system with the directory separator
+          % character "\". It has to be changed into "/" for the TeX output
+          pngReferencePath = regexprep( pngReferencePath, filesep, '/' );
+      end
 
       % Get color indices for indexed color images and truecolor values otherwise.
       if ndims( cdata ) == 2
@@ -2961,7 +2966,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   loc = get( handle, 'Location' );
 
   % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() to unification.
+  % small cased ('northoutside'). Hence, use lower() for uniformity.
   switch lower( loc )
       case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
@@ -2979,7 +2984,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
 
           % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'),
           % in Octave small cased ('northoutside').
-          if strcmp( lower( loc ), 'northoutside' )
+          if strcmpi( loc, 'northoutside' )
               cbarOptions = [ cbarOptions,                            ...
                               'xticklabel pos=right, ytick=\empty' ];
                               % we actually wanted to set pos=top here,
@@ -3002,7 +3007,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                            sprintf( 'xmin=%g, xmax=%g', [0,1] ),        ...
                            sprintf( 'ymin=%g, ymax=%g', clim )          ...
                          ];
-          if strcmp( lower( loc ), 'eastoutside' )
+          if strcmpi( loc, 'eastoutside' )
                cbarOptions = [ cbarOptions,                           ...
                                'xtick=\empty, yticklabel pos=right' ];
            else
@@ -3052,9 +3057,14 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
       [pathstr,name]   = fileparts( m2t.tikzFileName );
       pngFileName      = fullfile( pathstr, [name '-colorbar' num2str(m2t.colorbarNo) '.png'] );
       pngReferencePath = fullfile( m2t.relativePngPath, [name '-colorbar' num2str(m2t.colorbarNo) '.png'] );
+      if strcmp( filesep, '\' )
+          % We're on a Windows system with the directory separator
+          % character "\". It has to be changed into "/" for the TeX output
+          pngReferencePath = regexprep( pngReferencePath, filesep, '/' );
+      end
       strip = 1:length(cmap);
       % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-      % small cased ('northoutside'). Hence, use lower() to unification.
+      % small cased ('northoutside'). Hence, use lower() for uniformity.
       switch lower( loc )
           case {'northoutside','southoutside'}
               xLim = clim;
@@ -3077,7 +3087,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
           [m2t, badgeColor] = rgb2tikzcol( m2t, cmap(i,:) );
 
           % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-          % small cased ('northoutside'). Hence, use lower() to unification.
+          % small cased ('northoutside'). Hence, use lower() for uniformity.
           switch lower( loc )
               case {'northoutside','southoutside'}
                   x1 = clim(1) + cbarLength/m *(i-1);
@@ -3421,7 +3431,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   dist = 0.03;  % distance to to axes in normalized coordinated
   anchor = [];
   % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() to unification.
+  % small cased ('northoutside'). Hence, use lower() for uniformity.
   switch lower( loc )
       case 'northeast'
           % don't anything in this (default) case
@@ -4740,7 +4750,7 @@ function pos = correctColorbarPos( colBarHandle, axesHandlesPos )
   refAxesPos = axesHandlesPos(refAxesId,:);
 
   % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() to unification.
+  % small cased ('northoutside'). Hence, use lower() for uniformity.
   switch lower( loc )
       case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'alignSubPlots:getColorbarPos',                     ...
@@ -4778,7 +4788,7 @@ function refAxesId = getReferenceAxes( loc, colBarPos, axesHandlesPos )
   end
 
   % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() to unification.
+  % small cased ('northoutside'). Hence, use lower() for uniformity.
   switch lower( loc )
       case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
