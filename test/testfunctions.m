@@ -674,7 +674,7 @@ end
 % =========================================================================
 function description = mandrillImage()
   data = load( 'mandrill' );
-  figure('color','k')
+  set( gcf, 'color', 'k' )
   image( data.X )
   colormap( data.map )
   axis off
@@ -743,7 +743,7 @@ function description = zplanePlot2()
 
   [b,a] = ellip(4,3,30,200/500);
   Hd = dfilt.df1(b,a);
-  zplane(Hd)
+  zplane(Hd) % FIXME: This opens a new figure that doesn't get closed automatically
 
   description = 'Representation of the complex plane with zplane.';
 end
@@ -759,7 +759,7 @@ function description = freqResponsePlot()
 
   b  = fir1(80,0.5,kaiser(81,8));
   hd = dfilt.dffir(b);
-  freqz(hd);
+  freqz(hd); % FIXME: This opens a new figure that doesn't get closed automatically
 
   description = 'Frequency response plot.';
 end
@@ -882,7 +882,7 @@ end
 % =========================================================================
 function description = mixedBarLine()
 
-    x = round(rand(1000,1)*10);
+    x = rand(1000,1)*10;
     hist(x,10)
     y = ylim;
     hold on;

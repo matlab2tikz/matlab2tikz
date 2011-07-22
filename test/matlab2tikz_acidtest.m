@@ -67,7 +67,6 @@ function matlab2tikz_acidtest( varargin )
       indices = 1:n;
   end
 
-  k = 0;
   ploterrmsg = cell( length(indices), 1 );
   tikzerrmsg = cell( length(indices), 1 );
   pdferrmsg  = cell( length(indices), 1 );
@@ -76,17 +75,15 @@ function matlab2tikz_acidtest( varargin )
   pdferror  = false( length(indices), 1 );
   desc = cell( length(indices), 1 );
   funcName = cell( length(indices), 1 );
-  for i = indices
-      k = k+1;
-
-      fprintf('Treating test function no. %d...\n', i );
+  for k = 1:length(indices)
+      fprintf('Executing test case no. %d...\n', indices(k) );
 
       % open a window
       fig_handle = figure;
 
       % plot the figure
       try
-          [desc{k}, funcName{k}] = testfunctions( i );
+          [desc{k}, funcName{k}] = testfunctions( indices(k) );
       catch
           e = lasterror( 'reset' );
           if ~isempty( e.message )
@@ -129,14 +126,14 @@ function matlab2tikz_acidtest( varargin )
           continue
       end
 
-      pdf_file = sprintf( 'data/test%d-reference' , i );
-      gen_file = sprintf( 'data/test%d-converted.tikz', i );
+      pdf_file = sprintf( 'data/test%d-reference' , indices(k) );
+      gen_file = sprintf( 'data/test%d-converted.tikz', indices(k) );
 
       tic;
 
-      % now, test matlab2xxx
+      % now, test matlab2tikz
       try
-          matlab2tikz( gen_file, 'silent', true,...
+          matlab2tikz( gen_file, 'showInfo', false, ...
                                  'relativePngPath', '../data/', ...
                                  'width', '\figurewidth' );
       catch
@@ -237,16 +234,14 @@ function matlab2tikz_acidtest( varargin )
 
   % Write the summary table to the LaTeX file
   texfile_tab_completion_init( fh )
-  k = 0;
-  for i = indices
-      k = k+1;
+  for k = 1:length(indices)
       % Break table up into pieces if it gets too long for one page
       if ~mod(k,35)
           texfile_tab_completion_finish( fh );
           texfile_tab_completion_init( fh );
       end
 
-      fprintf( fh, '%d & \\texttt{%s}', i, funcName{k} );
+      fprintf( fh, '%d & \\texttt{%s}', indices(k), funcName{k} );
       if isempty( desc{k} )
           fprintf( fh, ' & --- & skipped & ---' );
       else
@@ -265,12 +260,10 @@ function matlab2tikz_acidtest( varargin )
   % Write the error messages to the LaTeX file if there are any
   if any( [ploterror ; tikzerror ; pdferror ] )
       fprintf( fh, '\\section*{Error messages}\n\\scriptsize\n' );
-      k = 0;
-      for i = indices
-          k = k+1;
+      for k = 1:length(indices)
           if ~isempty( ploterrmsg{k} ) || ~isempty( tikzerrmsg{k} ) || ~isempty( pdferrmsg{k} )
               % There are error messages for this test case
-              fprintf( fh, '\n\\subsection*{Test case %d}\n', i );
+              fprintf( fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), funcName{k} );
           else
               % No error messages for this test case
               continue
