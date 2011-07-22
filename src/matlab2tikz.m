@@ -129,8 +129,14 @@ function matlab2tikz( varargin )
   % whether to strictly stick to the default MATLAB plot appearance:
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'strict', 0, @islogical );
 
-  % don't plot warning messages
+  % don't print any messages
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'silent', 0, @islogical );
+
+  % don't print warning messages
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'showInfo', 1, @islogical );
+
+  % don't print informational messages
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'showWarnings', 1, @islogical );
 
   % Whether to save images in PNG format or to natively draw filled squares
   % using TikZ itself.
@@ -215,26 +221,24 @@ function matlab2tikz( varargin )
   end
 
   % print some version info to the screen
-  userWarning( m2t, [ '\nThis is %s v%s.\n' , ...
-                 'The latest updates can be retrieved from\n\n', ...
-                 '  %s\n\n', ...
-                 'where you can also make suggestions and rate %s.\n' ], ...
-                 m2t.name, m2t.version, m2t.website, m2t.name );
+  userInfo( m2t, [ '\nThis is %s v%s.\n' , ...
+                   'The latest updates can be retrieved from\n\n', ...
+                   '  %s\n\n', ...
+                   'where you can also make suggestions and rate %s.\n' ], ...
+                   m2t.name, m2t.version, m2t.website, m2t.name );
 
-  userWarning( m2t, [ 'matlab2tikz uses features of Pgfplots which may be available only in recent version.\n', ...
-                 'Make sure you have at least Pgfplots 1.3 available.\n', ...
-                 'For best results, use \\pgfplotsset{compat=newest}, and for speed ', ...
-                 'use \\pgfplotsset{plot coordinates/math parser=false} .\n' ] );
-  if ~m2t.cmdOpts.Results.silent
-      fprintf( '\n' );
-  end
+  userInfo( m2t, [ 'matlab2tikz uses features of Pgfplots which may only be available in recent versions.\n', ...
+                   'Make sure you have at least Pgfplots 1.3 available.\n', ...
+                   'For best results, use \\pgfplotsset{compat=newest},\n', ...
+                   'and for speed ', ...
+                   'use \\pgfplotsset{plot coordinates/math parser=false} .\n' ] );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
   saveToFile( m2t, fid, fileWasOpen );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  sprintf( '\nRemember to load \\usepackage{pgfplots} in the preamble of your LaTeX document.\n\n' );
+  userInfo( m2t, '\nRemember to load \\usepackage{pgfplots} in the preamble of your LaTeX document.\n' );
 
 end
 % -------------------------------------------------------------------------
@@ -1780,7 +1784,7 @@ switch ( matlabMarker )
         tikzMarker = 'x';
     otherwise  % the following markers are only available with PGF's
                % plotmarks library
-        userWarning( m2t, 'Make sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
+        userInfo( m2t, '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n' );
         switch ( matlabMarker )
 
             case '*'
@@ -1839,7 +1843,7 @@ switch ( matlabMarker )
                 end
 
             case {'h','hexagram'}
-                userWarning( 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
+                userWarning( m2t, 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.' );
                 if faceColorToggle
                     tikzMarker = 'star*';
                 else
@@ -1986,6 +1990,11 @@ function [ m2t, str ] = drawImage( m2t, handle )
       [pathstr, name ] = fileparts( m2t.tikzFileName );
       pngFileName = fullfile( pathstr, [name '.png'] );
       pngReferencePath = fullfile( m2t.relativePngPath, [name '.png'] );
+      if strcmp( filesep, '\' )
+          % We're on a Windows system with the directory separator
+          % character "\". It has to be changed into "/" for the TeX output
+          pngReferencePath = regexprep( pngReferencePath, filesep, '/' );
+      end
 
       % Get color indices for indexed color images and truecolor values otherwise.
       if ndims( cdata ) == 2
@@ -2022,10 +2031,11 @@ function [ m2t, str ] = drawImage( m2t, handle )
       str = [ str, ...
               sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
                        xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ];
-      userWarning( m2t, [ 'The PNG file is stored at ''%s'', the TikZ file contains ', ...
-                     'a reference to ''%s''.\nDepending on where the TeX file ', ...
-                     'is located into with TikZ gets included, you may need to adapt this.' ], ...
-                   pngFileName, pngReferencePath );
+      userInfo( m2t, [ '\nA PNG file is stored at ''%s'' for which\n', ...
+                       'the TikZ file contains a reference to ''%s''.\n', ...
+                       'You may need to adapt this, depending on the relative\n', ...
+                       'locations of the master TeX file and the included TikZ file.\n' ], ...
+                     pngFileName, pngReferencePath );
   else
       % ------------------------------------------------------------------------
       % draw the thing
@@ -2505,6 +2515,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
                   userWarning( m2t, [ 'Pgfplots can''t deal with stacked bar plots', ...
                                  ' and non-bar plots in one axis environment.', ...
                                  ' There *may* be unexpected results.'         ] );
+                      % Should this be a userInfo() instead?
               end
               bWFactor = get( h, 'BarWidth' );
               ulength   = normalized2physical( m2t );
@@ -2955,7 +2966,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   loc = get( handle, 'Location' );
 
   % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() to unification.
+  % small cased ('northoutside'). Hence, use lower() for uniformity.
   switch lower( loc )
       case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
@@ -2973,7 +2984,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
 
           % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'),
           % in Octave small cased ('northoutside').
-          if strcmp( lower( loc ), 'northoutside' )
+          if strcmpi( loc, 'northoutside' )
               cbarOptions = [ cbarOptions,                            ...
                               'xticklabel pos=right, ytick=\empty' ];
                               % we actually wanted to set pos=top here,
@@ -2996,7 +3007,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                            sprintf( 'xmin=%g, xmax=%g', [0,1] ),        ...
                            sprintf( 'ymin=%g, ymax=%g', clim )          ...
                          ];
-          if strcmp( lower( loc ), 'eastoutside' )
+          if strcmpi( loc, 'eastoutside' )
                cbarOptions = [ cbarOptions,                           ...
                                'xtick=\empty, yticklabel pos=right' ];
            else
@@ -3046,9 +3057,14 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
       [pathstr,name]   = fileparts( m2t.tikzFileName );
       pngFileName      = fullfile( pathstr, [name '-colorbar' num2str(m2t.colorbarNo) '.png'] );
       pngReferencePath = fullfile( m2t.relativePngPath, [name '-colorbar' num2str(m2t.colorbarNo) '.png'] );
+      if strcmp( filesep, '\' )
+          % We're on a Windows system with the directory separator
+          % character "\". It has to be changed into "/" for the TeX output
+          pngReferencePath = regexprep( pngReferencePath, filesep, '/' );
+      end
       strip = 1:length(cmap);
       % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-      % small cased ('northoutside'). Hence, use lower() to unification.
+      % small cased ('northoutside'). Hence, use lower() for uniformity.
       switch lower( loc )
           case {'northoutside','southoutside'}
               xLim = clim;
@@ -3071,7 +3087,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
           [m2t, badgeColor] = rgb2tikzcol( m2t, cmap(i,:) );
 
           % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-          % small cased ('northoutside'). Hence, use lower() to unification.
+          % small cased ('northoutside'). Hence, use lower() for uniformity.
           switch lower( loc )
               case {'northoutside','southoutside'}
                   x1 = clim(1) + cbarLength/m *(i-1);
@@ -3415,7 +3431,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   dist = 0.03;  % distance to to axes in normalized coordinated
   anchor = [];
   % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() to unification.
+  % small cased ('northoutside'). Hence, use lower() for uniformity.
   switch lower( loc )
       case 'northeast'
           % don't anything in this (default) case
@@ -4734,7 +4750,7 @@ function pos = correctColorbarPos( colBarHandle, axesHandlesPos )
   refAxesPos = axesHandlesPos(refAxesId,:);
 
   % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() to unification.
+  % small cased ('northoutside'). Hence, use lower() for uniformity.
   switch lower( loc )
       case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'alignSubPlots:getColorbarPos',                     ...
@@ -4772,7 +4788,7 @@ function refAxesId = getReferenceAxes( loc, colBarPos, axesHandlesPos )
   end
 
   % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() to unification.
+  % small cased ('northoutside'). Hence, use lower() for uniformity.
   switch lower( loc )
       case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
@@ -4815,6 +4831,45 @@ end
 
 
 % =========================================================================
+% *** FUNCTION userInfo
+% ***
+% *** Display usage information.
+% ***
+% =========================================================================
+function userInfo( m2t, message, varargin )
+
+  if m2t.cmdOpts.Results.silent || ~m2t.cmdOpts.Results.showInfo
+      return
+  end
+
+  n = length(varargin);
+  switch n
+      case 0;
+         mess = sprintf( message );
+      case 1;
+         mess = sprintf( message, varargin{1} );
+      case 2;
+         mess = sprintf( message, varargin{1}, varargin{2} );
+      case 3;
+         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3} );
+      case 4;
+         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3}, varargin{4} );
+      otherwise
+         error( 'userInfo:longVarargin', ...
+                'Can''t deal with length(varargin)>4 yet.' );
+  end
+
+  % Replace '\n' by '\n *** ' and print.
+  mess = regexprep( mess, '(\n)', '$1 *** ' );
+  fprintf( ' *** %s\n', mess );
+
+end
+% =========================================================================
+% *** END FUNCTION userInfo
+% =========================================================================
+
+
+% =========================================================================
 % *** FUNCTION userWarning
 % ***
 % *** Drop-in replacement for warning().
@@ -4822,7 +4877,7 @@ end
 % =========================================================================
 function userWarning( m2t, message, varargin )
 
-  if m2t.cmdOpts.Results.silent
+  if m2t.cmdOpts.Results.silent || ~m2t.cmdOpts.Results.showWarnings
       return
   end
 
@@ -4843,9 +4898,7 @@ function userWarning( m2t, message, varargin )
                 'Can''t deal with length(varargin)>4 yet.' );
   end
 
-  % Replace '\n' by '\n *** ' and print.
-  mess = regexprep( mess, '(\n)', '$1 *** ' );
-  fprintf( '\n *** %s', mess );
+  warning( 'matlab2tikz:userWarning', mess )
 
 end
 % =========================================================================
