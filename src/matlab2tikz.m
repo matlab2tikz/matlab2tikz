@@ -4634,7 +4634,8 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   for k = 1:n
       [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion( plotOrder, plotNumber, C, alignmentOptions, ix(k), [] );
   end
-  
+
+  % Burkhart, July 23, 2011:
   % Now let's rearrange the plot order.
   % Theoretically this should be harmful in that it would result in
   % subplots that refer to another named subplot to be drawn before the
@@ -4656,6 +4657,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   end
   plotOrder=newPlotOrder;
 
+  return
 end
 % -----------------------------------------------------------------------
 % sets the alignment options for a specific node
