@@ -164,7 +164,19 @@ function matlab2tikz( varargin )
 
   m2t.cmdOpts = m2t.cmdOpts.parse( m2t.cmdOpts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % warn for deprecated options
+  if any( ismember( m2t.cmdOpts.Parameters, 'silent' ) )
+      tmp = m2t.cmdOpts.Results.silent;
+      m2t.cmdOpts.Results.silent = 0;
+      userInfo( m2t, ...
+                [ '===============================================================================\n', ...
+                  'You are using the deprecated parameter ''silent''.\n', ...
+                  'From now, please use ''showInfo'' and ''showWarnings'' to control the output.\n', ...
+                  '===============================================================================' ] );
+      m2t.cmdOpts.Results.silent = tmp;
+  end
 
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add global elements
   m2t.currentHandles.gcf      = m2t.cmdOpts.Results.figurehandle;
   m2t.currentHandles.colormap = get(m2t.currentHandles.gcf,'colormap');

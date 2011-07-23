@@ -6,7 +6,7 @@ function parser = matlab2tikzInputParser ()
   parser.Results = {};
   % Enabel/disable parameters case sensitivity.
   parser.CaseSensitive = false;
-  % Enable/disable error for parmaters not defined by the constructor.
+  % Enable/disable error for parameters not defined by the constructor.
   parser.KeepUnmatched = false;
   % Enable/disable passing arguments in a structure.
   parser.StructExpand = true;
