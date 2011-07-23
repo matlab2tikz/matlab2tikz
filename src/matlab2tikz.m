@@ -317,7 +317,8 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
                                    m2t.name, m2t.version, ...
                                    m2t.years, m2t.author, m2t.authorEmail );
 
-  if ~m2t.cmdOpts.Results.silent
+  if ~m2t.cmdOpts.Results.silent && m2t.cmdOpts.Results.showInfo
+      % disable this info if silent=true or showInfo=false
       m2t.content.comment = [ m2t.content.comment, ...
                               sprintf( [ '\n',...
                                          'The latest updates can be retrieved from\n', ...
@@ -484,7 +485,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       case 'legend'
           % Don't handle the legend here, but further below in the 'axis'
           % environment.
-          % In MATLAB, an axes environment and it's corresponding legend are
+          % In MATLAB, an axes environment and its corresponding legend are
           % children of the same figure (siblings), while in pgfplots, the
           % \legend (or \addlegendentry) command must appear within the axis
           % environment.
@@ -2241,7 +2242,7 @@ function [ m2t, str ] = drawText( m2t, handle)
   switch VerticalAlignment
     case {'top', 'cap'},         style = 'below';
     case {'baseline', 'bottom'}, style = 'above';
-    otherwise,    style = '';
+    otherwise,                   style = '';
   end
   switch HorizontalAlignment
     case 'left',  style = [style, ' right'];
@@ -3816,7 +3817,7 @@ end
 function newstr = collapse( cellstr, delimiter )
 
   if ~iscellstr( cellstr ) && ~isnumeric( cellstr{1} )
-      cellstr
+      cellstr  % display value of cellstr as debug information
       error( 'Expected cellstr or numeric.' );
   end
 
@@ -4434,7 +4435,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   % we want no. 2 to align below no. 1, and no. 3 below no. 2
   % (and not no. 1 again).
   %
-  % There are eight alignments this algorithm can deal with:
+  % There are nine alignments this algorithm can deal with:
   %
   %    3|             |4
   %  __  _____________   __
@@ -4447,7 +4448,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   %
   %   -3|             |-4
   %
-  % They are coded in numbers 1 to 8. The matrix C will contain the
+  % They are coded in numbers -4 through 5. The matrix C will contain the
   % corresponding code at position (i,j), if plot number i and j are
   % aligned in such a way.
   % If two plots happen to coincide at both left and right axes, for
@@ -4595,10 +4596,10 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
                              'Illegal alignment code %d.', C(i,j) );
               end
 
-              [m,idx]   = min( dist ); % `idx` holds the index of the minimum.
-                                       % If there is more than one, then
-                                       % `idx` has twins. min returns the one
-                                       % with the lowest index.
+              [dummy,idx] = min( dist ); % `idx` holds the index of the minimum.
+                                         % If there is more than one, then
+                                         % `idx` has twins. min returns the one
+                                         % with the lowest index.
 
               % delete the index from the 'remove list'
               doub(idx) = [];
@@ -4627,12 +4628,33 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
 
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
-  [s,ix] = sort( sum(C~=0, 2), 'descend' );
+  [dummy,ix] = sort( sum(C~=0, 2), 'descend' );
   plotOrder = zeros(1,n);
   plotNumber = 0;
   for k = 1:n
       [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion( plotOrder, plotNumber, C, alignmentOptions, ix(k), [] );
   end
+  
+  % Now let's rearrange the plot order.
+  % Theoretically this should be harmful in that it would result in
+  % subplots that refer to another named subplot to be drawn before the
+  % named subplot itself is drawn. However, this reordering actually fixes
+  % one such problem that only occurred in Octave with test case
+  % subplot2x2b. Oddly enough the error only showed when certain other test
+  % cases (including subplot2x2b itself) had been run beforehand and not if
+  % subplot2x2b was the first / only test case to be run or if a harmless
+  % test case like one_point preceded subplot2x2b.
+  % The exact mechanism that led to this bug was not uncovered but a
+  % differently ordered axesPos near the top of this function eventually
+  % led to the wrong plotOrder and thus to a subplot referring to one that
+  % came later in the TikZ output.
+  % The reordering was tested against the test suite and didn't break any
+  % of the test cases, neither on Octave nor on MATLAB.
+  newPlotOrder = zeros(1,n);
+  for k = 1:n
+      newPlotOrder(plotOrder(k)) = k;
+  end
+  plotOrder=newPlotOrder;
 
 end
 % -----------------------------------------------------------------------
@@ -4649,7 +4671,7 @@ function [plotOrder, plotNumber, alignmentOptions] = setOptionsRecursion( plotOr
     plotNumber = plotNumber + 1;
 
     % TODO not looking at twins is probably not the right thing to do
-    % find the non-zeros elements in the k-th row
+    % find the non-zero elements in the k-th row
     unprocessedFriends = find( C(k,:)~=0 & ~plotOrder );
 
     unprocessedChildren = unprocessedFriends( abs(C(k,unprocessedFriends))~=5 );
