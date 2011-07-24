@@ -62,24 +62,26 @@ function matlab2tikz( varargin )
   % Check if we are in MATLAB or Octave.
   m2t.env = getEnvironment();
   warningMessage = [ '\n',...
-                     '==========================================================================================\n', ...
-                     '  matlab2tikz is tested and developed on %s versions of   %s   and later.\n', ...
-                     '  This script may still be able to handle your plots, but\n', ...
-                     '  if you hit a bug, please consider upgrading your environment first.\n', ...
+                     '================================================================================\n\n', ...
+                     '  matlab2tikz is tested and developed on   %s   and\n', ...
+                     '  later versions of %s.\n', ...
+                     '  This script may still be able to handle your plots, but if you\n', ...
+                     '  hit a bug, please consider upgrading your environment first.\n', ...
                      '\n', ...
-                     '  Every time you submit a bug report with a deprecated environment... God kills a kitten.\n', ...
+                     '  Every time you submit a bug report with a deprecated environment...\n', ...
+                     '  God kills a kitten.\n', ...
                      '\n', ...
-                     '==========================================================================================' ];
+                     '================================================================================' ];
   switch m2t.env
       case 'MATLAB'
           % Make sure we're running MATLAB >= 2008b.
           if isVersionBelow( m2t.env, 7, 7)
-              warning( sprintf( warningMessage, 'MATLAB', 'MATLAB 2008b' ) );
+              warning( sprintf( warningMessage, 'MATLAB 2008b', 'MATLAB' ) );
           end
       case 'Octave'
           % Make sure we're running Octave >= 3.4.0.
           if isVersionBelow( m2t.env, 3, 4)
-              warning( sprintf( warningMessage, 'Octave', 'Octave 3.4.0' ) );
+              warning( sprintf( warningMessage, 'Octave 3.4.0', 'Octave' ) );
           end
       otherwise
           error( 'Unknown environment. Need MATLAB(R) or Octave.' )
@@ -1186,6 +1188,19 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByVisibility( m
           edges = find(datapoints == 1) + 1;
           vis_indices = find(segvis==1);
           if ~isempty(vis_indices)
+              if strcmp( getEnvironment(), 'Octave' ) && isVersionBelow( 'Octave', 3, 4 )
+                  % Octave 3.2 contains a bug that affects empty matrices with
+                  % dimensions 1x0 or 0x1 (as opposed to 0x0). Whenever the
+                  % find operation above returned a 1x0 matrix, the following
+                  % error occurs at the concatenation operation below:
+                  %
+                  %   error: number of rows must match (0 != 1)
+                  %
+                  % To fix this, the matrix dimensions are changed to 0x0.
+                  if isequal( size(edges), [1 0] )
+                      edges = [];
+                  end
+              end
               edges = [ vis_indices(1) edges' vis_indices(end)+1 ];
           end
           edges = unique(edges);
@@ -1887,7 +1902,7 @@ end
 % *** example).
 % ***
 % *** TODO: Declare common patch properties (like `draw=none`) once for
-% ***       for all patches.
+% ***       all patches.
 % ***
 % =========================================================================
 function [ m2t, str ] = drawPatch( m2t, handle )
@@ -4652,7 +4667,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
       [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion( plotOrder, plotNumber, C, alignmentOptions, ix(k), [] );
   end
 
-  % Burkhart, July 23, 2011:
+  % Burkart, July 23, 2011:
   % Now let's rearrange the plot order.
   % Theoretically this should be harmful in that it would result in
   % subplots that refer to another named subplot to be drawn before the
