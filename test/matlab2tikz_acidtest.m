@@ -113,7 +113,7 @@ function matlab2tikz_acidtest( varargin )
           % be applied constantly as the string that's saved to the LaTeX
           % output must have only one backslash.
           if strcmp( env, 'MATLAB' )
-              fprintf( regexprep( ploterrmsg{k}, '\', '\\\\' ) )
+              fprintf( strrep( ploterrmsg{k}, '\', '\\' ) )
           else
               fprintf( ploterrmsg{k} )
           end
@@ -157,7 +157,7 @@ function matlab2tikz_acidtest( varargin )
           % be applied constantly as the string that's saved to the LaTeX
           % output must have only one backslash.
           if strcmp( env, 'MATLAB' )
-              fprintf( regexprep( tikzerrmsg{k}, '\', '\\\\' ) )
+              fprintf( strrep( tikzerrmsg{k}, '\', '\\' ) )
           else
               fprintf( tikzerrmsg{k} )
           end
@@ -198,22 +198,15 @@ function matlab2tikz_acidtest( varargin )
           % be applied constantly as the string that's saved to the LaTeX
           % output must have only one backslash.
           if strcmp( env, 'MATLAB' )
-              fprintf( regexprep( pdferrmsg{k}, '\', '\\\\' ) )
+              fprintf( strrep( pdferrmsg{k}, '\', '\\' ) )
           else
               fprintf( pdferrmsg{k} )
           end
           pdferror(k) = true;
       end
 
-      % Octave would treat '\\' as two backslashes outside of *printf() whereas
-      % MATLAB would treat it as one backslash. Generate a '\_' string that
-      % works for both environments.
-      tex_uscore = '\\_';
-      if strcmp( env, 'Octave' )
-          tex_uscore = sprintf( tex_uscore );
-      end
       % Make underscores in function names TeX compatible
-      funcName{k} = regexprep( funcName{k}, '_', tex_uscore );
+      funcName{k} = strrep( funcName{k}, '_', '\_' );
 
       % ...and finally write the bits to the LaTeX file
       texfile_addtest( fh, pdf_file, gen_file, desc{k}, funcName{k}, ...
