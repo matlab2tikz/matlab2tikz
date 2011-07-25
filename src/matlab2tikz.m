@@ -31,7 +31,7 @@
 % ***
 % =========================================================================
 % ***
-% *** Copyright (c) 2008--2011, Nico SchlÃƒÂ¶mer <nico.schloemer@gmail.com>
+% *** Copyright (c) 2008--2011, Nico SchlÃƒÆ’Ã‚Â¶mer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without
@@ -2152,22 +2152,17 @@ end
 % =========================================================================
 function [m2t,env] = drawSurface( m2t, handle )
     
-    % Can probably be stored in a more conventient place, but as for now
-    % this works together with the hack in saveToFile(). 
-	pgfAxis = m2t.currentHandles.pgfAxis.options;
-    
 	% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 	% get z-limits
     zLim = get( m2t.currentHandles.gca, 'ZLim' );
-    pgfAxis = appendOptions( pgfAxis , sprintf( 'zmin=%g, zmax=%g', zLim ) );
+    m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options , sprintf( 'zmin=%g, zmax=%g', zLim ) );
     
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get box
     box = get( m2t.currentHandles.gca, 'Box' ); % Check for 3D box
     if strcmpi( box, 'on' )
-      pgfAxis = appendOptions( pgfAxis, sprintf( '3d box' ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( '3d box' ) );
     end
-    m2t.currentHandles.pgfAxis.options = pgfAxis;
 	
     str = [];
     [m2t, opts, plotType] = surfaceOpts( m2t, handle );
@@ -2196,7 +2191,7 @@ function [m2t,env] = drawSurface( m2t, handle )
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         % Is this what is meant by "grid=none" under the TODO in
         % drawSurface() ?
-        pgfAxis = appendOptions( pgfAxis, sprintf( 'grid=none' ) );
+        m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'grid=none' ) );
     else
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         % plot is 'surf'
@@ -2222,7 +2217,6 @@ function [m2t,env] = drawSurface( m2t, handle )
     %   background layer and the contours on a main/foreground layer).
     %   Maybe not so easy to fix and is definitely a TikZ/PGF problem
     
-    m2t.currentHandles.pgfAxis.options = pgfAxis;
     str = [str, sprintf('};\n\n')];
     env = str;
 
@@ -3600,7 +3594,7 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
 
   zTickLabel = get( handle, 'ZTickLabel' );
   zTickMode = get( handle, 'ZTickMode' );
-  if strcmp(yTickMode,'auto') && ~m2t.opts.Results.strict
+  if strcmp(zTickMode,'auto') && ~m2t.opts.Results.strict
       % If the ticks are set automatically, and strict conversion is
       % not required, then let pgfplots take care of the ticks.
       % In most cases, this looks a lot better anyway.
@@ -4388,7 +4382,7 @@ end
 % *** the graph starting from a node (AXES) with maximal connections.
 % ***
 % *** TODO:
-% ***     - diagonal connections ÃƒÂ  la
+% ***     - diagonal connections ÃƒÆ’Ã‚Â  la
 % ***              [ AXES1       ]
 % ***              [       AXES2 ]
 % ***
@@ -5104,3 +5098,6 @@ end
 % =========================================================================
 % *** END FUNCTION isVersionBelow
 % =========================================================================
+
+
+
