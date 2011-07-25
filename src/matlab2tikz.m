@@ -2026,7 +2026,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       if strcmp( filesep, '\' )
           % We're on a Windows system with the directory separator
           % character "\". It has to be changed into "/" for the TeX output
-          pngReferencePath = regexprep( pngReferencePath, filesep, '/' );
+          pngReferencePath = strrep( pngReferencePath, filesep, '/' );
       end
 
       % Get color indices for indexed color images and truecolor values otherwise.
@@ -2280,6 +2280,8 @@ function [ m2t, str ] = drawText( m2t, handle)
     case 'left',  style = [style, ' right'];
     case 'right', style = [style, ' left'];
   end
+  % remove invisible border around \node to make the text align precisely
+  style = [style, ', inner sep=0mm'];
 
   style = [style ', text=' tcolor];
   if ~strcmp(EdgeColor, 'none')
@@ -3093,7 +3095,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
       if strcmp( filesep, '\' )
           % We're on a Windows system with the directory separator
           % character "\". It has to be changed into "/" for the TeX output
-          pngReferencePath = regexprep( pngReferencePath, filesep, '/' );
+          pngReferencePath = strrep( pngReferencePath, filesep, '/' );
       end
       strip = 1:length(cmap);
       % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
@@ -4916,7 +4918,7 @@ function userInfo( m2t, message, varargin )
   end
 
   % Replace '\n' by '\n *** ' and print.
-  mess = regexprep( mess, '(\n)', '$1 *** ' );
+  mess = strrep( mess, sprintf('\n'), sprintf('\n *** ') );
   fprintf( ' *** %s\n', mess );
 
 end
@@ -5049,7 +5051,7 @@ end
 function printAll( env, fid )
 
     if ~isempty(env.comment)
-        fprintf( fid, '%% %s\n', regexprep( env.comment, '(\n)', '$1% ' ) );
+        fprintf( fid, '%% %s\n', strrep( env.comment, sprintf('\n'), sprintf('\n%% ') ) );
     end
 
     if isempty( env.options )
