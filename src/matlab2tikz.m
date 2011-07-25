@@ -2280,6 +2280,8 @@ function [ m2t, str ] = drawText( m2t, handle)
     case 'left',  style = [style, ' right'];
     case 'right', style = [style, ' left'];
   end
+  % remove invisible border around \node to make the text align precisely
+  style = [style, ', inner sep=0mm'];
 
   style = [style ', text=' tcolor];
   if ~strcmp(EdgeColor, 'none')
