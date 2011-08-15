@@ -82,7 +82,12 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @meshPlot            , ...
                            @ylabels             , ...
                       ...% @spectro             , ... % easily exceeds TeX's memory
-                           @mixedBarLine
+                           @mixedBarLine        , ...
+                           @decayingharmonic    , ...
+                           @texcolor            , ...
+                           @textext             , ...
+                           @latexmath1          , ...
+                           @latexmath2
                          };
 
   numFunctions = length( testfunction_handles );
@@ -889,6 +894,98 @@ function description = mixedBarLine()
     hold off;
 
     description = 'Mixed bar/line plot.';
+end
+% =========================================================================
+function description = decayingharmonic()
+  % Based on an example from
+  % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
+  A = 0.25;
+  alpha = 0.007;
+  beta = 0.17;
+  t = 0:901;
+  y = A * exp(-alpha*t) .* sin(beta*t);
+  plot(t, y)
+  title('{\itAe}^{-\alpha\itt}sin\beta{\itt}, \alpha<<\beta')
+  xlabel('Time \musec.')
+  ylabel('Amplitude')
+
+  description = 'Decaying harmonic oscillation with \TeX{} title.';
+end
+% =========================================================================
+function description = texcolor()
+  % Taken from an example at
+  % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
+  text(.1, .5, ['\fontsize{16}black {\color{magenta}magenta '...
+                '\color[rgb]{0 .5 .5}teal \color{red}red} black again'])
+
+  description = 'Multi-colored text using \TeX{} commands.';
+end
+% =========================================================================
+function description = textext()
+  % Taken from an example at
+  % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
+  txstr(1) = { 'Each cell is a quoted string' };
+  txstr(2) = { 'You can specify how the string is aligned' };
+  txstr(3) = { 'You can use LaTeX symbols like \pi \chi \Xi' };
+  txstr(4) = { '\bfOr use bold \rm\itor italic font\rm' };
+  txstr(5) = { '\fontname{courier}Or even change fonts' };
+  plot( 0:6, sin(0:6) )
+  text( 5.75, sin(2.5), txstr, 'HorizontalAlignment', 'right' )
+
+  description = 'Formatted text and special characters using \TeX{}.';
+end
+% =========================================================================
+function description = latexmath1()
+  % Adapted from an example at
+  % http://www.mathworks.com/help/techdoc/ref/text_props.html#Interpreter
+  axes
+  text( 0.5, 0.5, '$$\int_0^x\!\int_y dF(u,v)$$', ...
+        'Interpreter', 'latex',                   ...
+        'FontSize', 16                            )
+
+  description = 'A formula typeset using the \LaTeX{} interpreter.';
+end
+% =========================================================================
+function description = latexmath2()
+  % Adapted from an example at
+  % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
+  set(gcf, 'color', 'white')
+  set(gcf, 'units', 'inches')
+  set(gcf, 'position', [2 2 4 6.5])
+  set(gca, 'visible', 'off')
+
+  % Note: Most likely due to a bug in matlab2tikz the pgfplots output will
+  %       appear empty even though the LaTeX strings are contained in the
+  %       output file. This is because the following (or something like it)
+  %       is missing from the axis environment properties:
+  %       xmin=0, xmax=4, ymin=-1, ymax=6
+  % Note: The matrices in h(1) and h(2) cannot be compiled inside pgfplots.
+  %       They are therefore disabled.
+% h(1) = text( 'units', 'inch', 'position', [.2 5],                    ...
+%       'fontsize', 14, 'interpreter', 'latex', 'string',              ...
+%       [ '$$\hbox {magic(3) is } \left( {\matrix{ 8 & 1 & 6 \cr'      ...
+%         '3 & 5 & 7 \cr 4 & 9 & 2 } } \right)$$'                      ]);
+% h(2) = text( 'units', 'inch', 'position', [.2 4],                    ...
+%       'fontsize', 14, 'interpreter', 'latex', 'string',              ...
+%       [ '$$\left[ {\matrix{\cos(\phi) & -\sin(\phi) \cr'             ...
+%         '\sin(\phi) & \cos(\phi) \cr}} \right]'                      ...
+%         '\left[ \matrix{x \cr y} \right]$$'                          ]);
+  h(3) = text( 'units', 'inch', 'position', [.2 3],                    ...
+        'fontsize', 14, 'interpreter', 'latex', 'string',              ...
+        [ '$$L\{f(t)\}  \equiv  F(s) = \int_0^\infty\!\!{e^{-st}'      ...
+          'f(t)dt}$$'                                                  ]);
+  h(4) = text( 'units', 'inch', 'position', [.2 2],                    ...
+        'fontsize', 14, 'interpreter', 'latex', 'string',              ...
+        '$$e = \sum_{k=0}^\infty {1 \over {k!} } $$'                   );
+  h(5) = text( 'units', 'inch', 'position', [.2 1],                    ...
+        'fontsize', 14, 'interpreter', 'latex', 'string',              ...
+        [ '$$m \ddot y = -m g + C_D \cdot {1 \over 2}'                 ...
+          '\rho {\dot y}^2 \cdot A$$'                                  ]);
+  h(6) = text( 'units', 'inch', 'position', [.2 0],                    ...
+        'fontsize', 14, 'interpreter', 'latex', 'string',              ...
+        '$$\int_{0}^{\infty} x^2 e^{-x^2} dx = \frac{\sqrt{\pi}}{4}$$' );
+
+  description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
 end
 % =========================================================================
 

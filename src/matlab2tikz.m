@@ -179,7 +179,7 @@ function matlab2tikz( varargin )
   if any( ismember( m2t.cmdOpts.Parameters, 'silent' ) )
       warning( sprintf( [ '\n===============================================================================\n', ...
                           'You are using the deprecated parameter ''silent''.\n', ...
-                          'From now, please use ''showInfo'' and ''showWarnings'' to control the output.\n', ...
+                          'From now on, please use ''showInfo'' and ''showWarnings'' to control the output.\n', ...
                           '===============================================================================' ] ) );
   end
 
@@ -690,23 +690,17 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   axisLabels = getAxisLabels( handle );
   if ~isempty( axisLabels.x )
       xlabelText = sprintf( '%s', axisLabels.x );
-      if m2t.cmdOpts.Results.mathmode
-          xlabelText = [ '$' xlabelText '$' ];
-      end
+      xlabelText = prettyPrint( m2t, xlabelText, axisLabels.xInterpreter );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xlabel={%s}', xlabelText ) );
   end
   if ~isempty( axisLabels.y )
       ylabelText = sprintf( '%s', axisLabels.y );
-      if  m2t.cmdOpts.Results.mathmode
-          ylabelText = [ '$' ylabelText '$' ];
-      end
+      ylabelText = prettyPrint( m2t, ylabelText, axisLabels.yInterpreter );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ylabel={%s}', ylabelText ) );
   end
   if ~isempty( axisLabels.z )
       zlabelText = sprintf( '%s', axisLabels.z );
-      if m2t.cmdOpts.Results.mathmode
-          zlabelText = [ '$' zlabelText '$' ];
-      end
+      zlabelText = prettyPrint( m2t, zlabelText, axisLabels.zInterpreter );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zlabel={%s}', zlabelText ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -714,9 +708,8 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   title = get( get( handle, 'Title' ), 'String' );
   if ~isempty(title)
       titleText = sprintf( '%s', title );
-      if  m2t.cmdOpts.Results.mathmode
-          titleText = [ '$' titleText '$' ];
-      end
+      titleInterpreter = get( get( handle, 'Title' ), 'Interpreter' );
+      titleText = prettyPrint( m2t, titleText, titleInterpreter );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'title={%s}', titleText ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2261,14 +2254,13 @@ function [ m2t, str ] = drawText( m2t, handle)
   % get required properties
   color  = get( handle, 'Color' );
   [ m2t, tcolor ] = getColor( m2t, handle, color, 'patch' );
-  EdgeColor = get(handle, 'EdgeColor');
-  HorizontalAlignment = get(handle, 'HorizontalAlignment');
-  pos = get (handle, 'Position');
-  String = get(handle, 'String');
-  if m2t.cmdOpts.Results.mathmode
-      String = [ '$' String '$' ];
-  end
-  VerticalAlignment = get(handle, 'VerticalAlignment');
+  EdgeColor = get( handle, 'EdgeColor' );
+  HorizontalAlignment = get( handle, 'HorizontalAlignment' );
+  pos = get( handle, 'Position' );
+  String = get( handle, 'String' );
+  Interpreter = get( handle, 'Interpreter' );
+  String = prettyPrint( m2t, String, Interpreter );
+  VerticalAlignment = get( handle, 'VerticalAlignment' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % translate them to pgf style
   switch VerticalAlignment
@@ -3435,19 +3427,29 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
 
   n = length( entries );
 
+  switch m2t.env
+      case 'MATLAB'
+         interpreter = get( handle, 'Interpreter' );
+      case 'Octave'
+          % TODO: The MATLAB way to acquire the interpreter for legend
+          %       entries always yields 'none' even if Octave (or gnuplot)
+          %       itself interprets the strings as 'tex' strings. Maybe the
+          %       value is stored somewhere else or maybe Octave doesn't
+          %       store it at all. For now the quick'n'dirty solution is to
+          %       forcefully set the interpreter for all legend entries to
+          %       'tex' -- which is the default value anyway.
+          interpreter = 'tex';
+      otherwise
+          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+  end
+
   lOpts = cell( 0 );
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle legend entries
   if n
       for k=1:n
-          % Escape all legend entries to math mode for now if not otherwise
-          % specified.
-          % The reason for this is that entries as "cos_x" are legal MATLAB
-          % code, but won't compile in (La)TeX except in Math mode.
-          if m2t.cmdOpts.Results.mathmode
-              entries{k} = [ '$', entries{k}, '$' ];
-          end
+          entries{k} = prettyPrint( m2t, entries{k}, interpreter );
           % Surround the entry by braces if a comma is contained.
           if strfind( entries{k}, ',' )
               entries{k} = [ '{', entries{k}, '}' ];
@@ -3891,16 +3893,19 @@ function axisLabels = getAxisLabels( handle )
   if iscell(axisLabels.x)
       axisLabels.x = axisLabels.x{:};
   end
+  axisLabels.xInterpreter = get( get( handle, 'XLabel' ), 'Interpreter' );
 
   axisLabels.y = get( get( handle, 'YLabel' ), 'String' );
   if iscell(axisLabels.y)
       axisLabels.y = axisLabels.y{:};
   end
+  axisLabels.yInterpreter = get( get( handle, 'YLabel' ), 'Interpreter' );
 
   axisLabels.z = get( get( handle, 'ZLabel' ), 'String' );
   if iscell(axisLabels.z)
       axisLabels.z = axisLabels.z{:};
   end
+  axisLabels.zInterpreter = get( get( handle, 'ZLabel' ), 'Interpreter' );
 
 end
 % =========================================================================
@@ -5162,4 +5167,304 @@ function [below, error] = isVersionBelow ( env, threshMajor, threshMinor )
 end
 % =========================================================================
 % *** END FUNCTION isVersionBelow
+% =========================================================================
+
+% =========================================================================
+% *** FUNCTION prettyPrint
+% =========================================================================
+% Some resources on how MATLAB handles rich (TeX) markup:
+% http://www.mathworks.com/help/techdoc/ref/text_props.html#String
+% http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
+% http://www.mathworks.com/help/techdoc/ref/text_props.html#Interpreter
+% http://www.mathworks.com/help/techdoc/ref/text.html#f68-481120
+% =========================================================================
+function string = prettyPrint ( m2t, string, interpreter )
+
+  % Make sure we have a valid interpreter set up
+  if ~any( strcmpi( interpreter, {'latex', 'tex', 'none'} ))
+      userWarning( m2t, 'Don''t know interpreter ''%s''. Default handling.', interpreter );
+      interpreter = 'tex';
+  end
+
+  % The interpreter property of the text element defines how the string
+  % is parsed
+  switch lower( interpreter )
+      case 'latex' % Basic subset of the LaTeX markup language
+
+          % Replace $$...$$ with $...$ but otherwise leave untouched
+          string = regexprep( string, '^\$\$([^$].*)\$\$$', '$$1$' );
+
+      case 'tex' % Subset of plain TeX markup language
+
+          % Parse string piece-wise in separate function
+          string = parseTexString( m2t, string );
+
+      case 'none' % Literal characters
+
+          % Only make special characters TeX compatible
+          string = strrep( string, '\', '\textbackslash ' );
+          string = strrep( string, '{', '\{' );
+          string = strrep( string, '}', '\}' );
+          string = strrep( string, '$', '\$' );
+          string = strrep( string, '_', '\_' );
+          string = strrep( string, '^', '\textasciicircum{}' );
+
+  end
+
+end
+% =========================================================================
+% *** END FUNCTION prettyPrint
+% =========================================================================
+
+% =========================================================================
+% *** FUNCTION parseTexString
+% =========================================================================
+function parsed = parseTexString ( m2t, string )
+
+  % Convert cell string to regular string, otherwise MATLAB complains
+  if iscell( string )
+      string = string{:};
+  end
+
+  bracesPos = regexp( string, '\{|\}' ); % get the position of all braces
+  % Exclude braces that are part of any of these TeX commands:
+  % \color{...}  \color[...]{...}  \fontname{...}  \fontsize{...}
+  [sCmd, eCmd] = regexp( string, '\\(color(\[[^\]]*\])?|fontname|fontsize)\{[^}]*\}' );
+  for i = 1:length(sCmd)
+      bracesPos( bracesPos >= sCmd(i) & bracesPos <= eCmd(i) ) = [];
+  end
+
+  parsed = '';
+  % Have a virtual brace one character left of where the actual string
+  % begins (remember, MATLAB strings start counting at 1, not 0). This is
+  % to make sure substrings left of the first brace get parsed, too.
+  prevBracePos = 0;
+  % Iterate over all the brace positions in order to split up `string'
+  % at those positions and then parse the substrings. A virtual brace is
+  % added right of where the actual string ends to make sure substrings
+  % right of the right-most brace get parsed as well.
+  for currBracePos = [ bracesPos, length(string)+1 ]
+      if (prevBracePos + 1) < currBracePos
+          % Parse the substring between (but not including) prevBracePos
+          % and currBracePos, i.e. between the previous brace and the
+          % current one (but only if there actually is a non-empty
+          % substring). Then append it to the output string.
+          substring = string( prevBracePos+1 : currBracePos-1 );
+          parsed = [ parsed, parseTexSubstring( m2t, substring ) ];
+      end
+      if currBracePos <= length(string)
+          % Append the brace itself to the output string, but only if the
+          % current brace position is within the limits of the string, i.e.
+          % don't append anything for the last, virtual brace that is only
+          % there to enable parsing of substrings beyond the right-most
+          % actual brace.
+          brace = string( currBracePos );
+          parsed = [ parsed, brace ];
+      end
+      % The current brace position will be next iteration's previous one
+      prevBracePos = currBracePos;
+  end
+
+  % Enclose everything in $...$ to use math mode
+  parsed = [ '$' parsed '$' ];
+  % ...except when everything is text
+  parsed = regexprep( parsed, '^\$\\text\{([^}]*)\}\$$', '$1' );
+
+end
+% =========================================================================
+% *** END FUNCTION parseTexString
+% =========================================================================
+
+% =========================================================================
+% *** FUNCTION parseTexSubstring
+% =========================================================================
+function string = parseTexSubstring ( m2t, string )
+
+  % Font families (italic, bold, etc.) get a trailing '{}' because in
+  % MATLAB they may be followed by a letter which would produce an error
+  % in (La)TeX.
+  for i = {'it', 'bf', 'rm', 'sl'}
+      string = strrep( string, ['\' i{:}], ['\' i{:} '{}'] );
+  end
+
+  % The same holds true for special characters like \alpha
+  % The list of MATLAB-supported TeX characters was taken from
+  % http://www.mathworks.com/help/techdoc/ref/text_props.html#String
+  for i = {'alpha', 'angle', 'ast', 'beta', 'gamma', 'delta',     ...
+           'epsilon', 'zeta', 'eta', 'theta', 'vartheta', 'iota', ...
+           'kappa', 'lambda', 'mu', 'nu', 'xi', 'pi', 'rho',      ...
+           'sigma', 'varsigma', 'tau', 'equiv', 'Im', 'otimes',   ...
+           'cap', 'supset', 'int', 'rfloor', 'lfloor', 'perp',    ...
+           'wedge', 'rceil', 'vee', 'langle', 'upsilon', 'phi',   ...
+           'chi', 'psi', 'omega', 'Gamma', 'Delta', 'Theta',      ...
+           'Lambda', 'Xi', 'Pi', 'Sigma', 'Upsilon', 'Phi',       ...
+           'Psi', 'Omega', 'forall', 'exists', 'ni', 'cong',      ...
+           'approx', 'Re', 'oplus', 'cup', 'subseteq', 'in',      ...
+           'lceil', 'cdot', 'neg', 'times', 'surd', 'varpi',      ...
+           'rangle', 'sim', 'leq', 'infty', 'clubsuit',           ...
+           'diamondsuit', 'heartsuit', 'spadesuit',               ...
+           'leftrightarrow', 'leftarrow', 'Leftarrow', 'uparrow', ...
+           'rightarrow', 'Rightarrow', 'downarrow', 'circ', 'pm', ...
+           'geq', 'propto', 'partial', 'bullet', 'div', 'neq',    ...
+           'aleph', 'wp', 'oslash', 'supsetep', 'subset', 'o',    ...
+           'nabla', 'ldots', 'prime', '0', 'mid', 'copyright'     }
+      string = strrep( string, ['\' i{:}], ['\' i{:} '{}'] );
+  end
+
+  % Convert '\0{}' (TeX text mode) to '\emptyset{}' (TeX math mode)
+  string = strrep( string, '\0{}', '\emptyset{}' );
+
+  % Add skip to \fontsize
+  % This is required for a successful LaTeX run on the output as in contrast
+  % to MATLAB/Octave it requires the skip parameter (even if it's zero)
+  string = regexprep( string, '(\\fontsize\{[^}]*\})', '$1{0}' );
+
+  % Mark non-TeX commands as \text{...}
+  expr = '(\\[a-zA-Z]+(\[[^\]]*\])?(\{[^}]*\}){1,2})';
+        % |(  \cmd   )(  [...]?   )(  {...}{1,2}  )|
+        % (               subset $1                )
+  switch m2t.env
+      case 'MATLAB'
+          repl = '}$1\\text{';
+      case 'Octave'
+          repl = '}$1\text{';
+      otherwise
+          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+  end
+  string = regexprep( string, expr, repl );
+      % ...\alpha{}... -> ...}\alpha{}\text{...
+  string = [ '\text{' string '}' ];
+      % ...}\alpha{}\text{... -> \text{...}\alpha{}\text{...}
+
+  % '_' has to be in math mode
+  expr = '(\\text)\{([^}]*)_([^}]*)\}';
+       %  ( \text) {(non-})_(non-}) }
+       %  (  $1  )  ( $2  ) ( $3  )
+  while regexp( string, expr )
+      % Iterating is necessary to catch all occurrences in cases like
+      % 'ab_cd_ef' which should produce '\text{ab}_\text{cd}_\text{ef}'
+      % but actually would produce '\text{ab_cd}_\text{ef}' if the
+      % regexprep() was executed only once.
+
+      string = regexprep( string, expr, '$1{$2}_$1{$3}' );
+  end
+  % Undo conversion to math mode if '_' is escaped as '\_'
+  % This has to happen outside the previous while loop to prevent endless loops
+  expr = '(\\text)\{([^}]*\\)\}_';
+       %  ( \text) {(non-} \) }_
+       %  (  $1  )  (  $2   )
+  while regexp( string, expr )
+      string = regexprep( string, expr, '$1{$2_}' );
+        % \text{...\}_ -> \text{...\_}
+  end
+
+  % '^' has to be in math mode
+  expr = '(\\text)\{([^}]*)\^([^}]*)\}';
+  while regexp( string, expr )
+      % Iterating is necessary to catch all occurrences. See above.
+
+      string = regexprep( string, expr, '$1{$2}^$1{$3}' );
+
+      % Undo conversion to math mode if '^' is escaped as '\^'
+      string = regexprep( string, '(\\text)\{([^}]*\\)\}\^', '$1{$2textasciicircum{}}' );
+                                %  ( \text) {(non-} \) } ^
+                                %  (  $1  )  (  $2   )
+  end
+
+  % '\' inside \text{} has to be escaped to \textbackslash
+  expr = '(\\text)\{([^}]*)\\([^}]*)\}';
+  while regexp( string, expr )
+      % Iterating is necessary to catch all occurrences. See above.
+
+      % This text replacement is a bit tricky as replacing '\' straight with
+      % '\textbackslash{}' results in an endless loop which tries to replace
+      % the '\' at the beginning of '\textbackslash{}' with another long form.
+      % To keep conversion simple, backslashes are first converted to
+      % '///textbackslash{}' in this loop. This replacement string is then
+      % once more replaced with a strrep() command _after_ the loop. As strrep()
+      % now works on the entire string at once there's no more endless loop.
+      % The only problem with this approach is that if someone manually
+      % entered '///textbackslash{}' on purpose, in order to come out just like
+      % that, the output would instead be a single escaped backslash. This
+      % doesn't seem at all likely, though, so it seems like a reasonable
+      % approach.
+
+      string = regexprep( string, expr, '$1{$2///textbackslash{}$3}' );
+  end
+  string = strrep( string, '///textbackslash{}', '\textbackslash{}' );
+  % Revert '\textbackslash{}' back to '\' if it was used to escape an underscore
+  % as '\_'
+  string = strrep( string, '\textbackslash{}_', '\_' );
+  % Revert '\textbackslash{}' back to '\' if it was used to escape a circumflex
+  % as '\^'
+  string = strrep( string, '\textbackslash{}textasciicircum', '\textasciicircum' );
+
+  % Convert '..._\text{abc}' and '...^\text{abc}' to '..._a\text{bc}' and
+  % '...^a\text{bc}', respectively
+  expr = '(_|\^)(\\text)\{([^}])([^}]*)\}';
+       %  (_/^ )( \text) {(no-})(non-}) }
+       %  ( $1 )(  $2  )  ( $3 )( $4  )
+  while regexp( string, expr )
+      string = regexprep( string, expr, '$1$3$2{$4}' );
+  end
+
+  % Some further processing makes the output behave more like TeX math mode,
+  % but only if the matlab2tikz parameter mathmode=true.
+  if m2t.cmdOpts.Results.mathmode
+
+      % Some characters should be in math mode: =-+/,.()<>0-9
+      expr = '(\\text)\{([^}=\-+/,.()<>0-9]*)([=\-+/,.()<>0-9]+)([^}]*)\}';
+           %    \text  {(any non-"x"/'}'char)(  any "x" char   )(non-}) }
+           %  (  $1  )  (        $2         )(       $3        )(  $4 )
+      while regexp( string, expr )
+          % Iterating is necessary to catch all occurrences. See above.
+          string = regexprep( string, expr, '$1{$2}$3$1{$4}' );
+      end
+
+      % \text{ } should be a math-mode space
+      string = regexprep( string, '\\text\{(\s+)}', '$1' );
+
+      % '<<' probably means 'much smaller than', i.e. '\ll'
+      switch m2t.env
+          case 'MATLAB'
+              repl = '$1\\ll{}$2';
+          case 'Octave'
+              repl = '$1\ll{}$2';
+          otherwise
+              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+      end
+      string = regexprep( string, '([^<])<<([^<])', repl );
+
+      % Single letters are most likely variables and thus should be in math mode
+      string = regexprep( string, '\\text\{([a-zA-Z])\}', '$1' );
+
+  end
+
+  % Clean up: remove \text{}
+  string = strrep( string, '\text{}', '' );
+      % \text{}\alpha{}\text{...} -> \alpha{}\text{...}
+
+  % Clean up: concatenate \text{abc}\text{def} to one \text{abcdef}
+  % If instead of 'abc' it's, say, 'abc\textasciicircum{}' the concatenation
+  % also works (thanks to $3 in `expr') but only for one '{}' in the whole chain
+  expr = '(\\text)\{([^}]*)(\{\})?\}\\text\{([^}]*)(\{\})?\}';
+       %  ( \text) {(non-})( {} )  } \text{ (non-})( {} )  }
+       %  (  $1  )  ( $2  )( $3 )           ( $4  )( $5 )
+  while regexp( string, expr )
+      string = regexprep( string, expr, '$1{$2$3$4$5}' );
+  end
+
+  % Clean up: convert '{}\' to '\'
+  string = strrep( string, '{}\', '\' );
+      % \alpha{}\text{...} -> \alpha\text{...}
+
+  % Clean up: convert '{}}' to '}'
+  string = strrep( string, '{}}', '}' );
+
+  % Clean up: convert '{}' at the end of `string' to '' (empty string)
+  string = regexprep( string, '\{\}$', '' );
+
+end
+% =========================================================================
+% *** END FUNCTION parseTexSubstring
 % =========================================================================
