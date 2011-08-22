@@ -1,3 +1,13 @@
+2011-08-22  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.1.3.
+	* Greatly overhauled text handling.
+	* Better Octave compatibility.
+	* Several bugfixes:
+	    - subplot order
+	    - environment detection
+
+
 2011-06-02  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.1.2.
