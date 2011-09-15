@@ -3562,7 +3562,13 @@ end
 % =========================================================================
 function [ ticks, tickLabels ] = getTicks( m2t, handle )
 
+  % The tick labels are neve LaTeX interpreted. (Really?)
+  labelInterpreter = 'none';
+
   xTickLabel = get( handle, 'XTickLabel' );
+  for k = 1:length(xTickLabel)
+      xTickLabel(k) = prettyPrint( m2t, xTickLabel(k), labelInterpreter);
+  end
   xTickMode = get( handle, 'XTickMode' );
   if strcmp(xTickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
@@ -3581,6 +3587,9 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
   end
 
   yTickLabel = get( handle, 'YTickLabel' );
+  for k = 1:length(yTickLabel)
+      yTickLabel(k) = prettyPrint( m2t, yTickLabel(k), labelInterpreter);
+  end
   yTickMode = get( handle, 'YTickMode' );
   if strcmp(yTickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
@@ -3599,6 +3608,9 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
   end
 
   zTickLabel = get( handle, 'ZTickLabel' );
+  for k = 1:length(zTickLabel)
+      zTickLabel(k) = prettyPrint( m2t, zTickLabel(k), labelInterpreter);
+  end
   zTickMode = get( handle, 'ZTickMode' );
   if strcmp(yTickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
@@ -5178,7 +5190,7 @@ end
 % http://www.mathworks.com/help/techdoc/ref/text_props.html#Interpreter
 % http://www.mathworks.com/help/techdoc/ref/text.html#f68-481120
 % =========================================================================
-function string = prettyPrint ( m2t, string, interpreter )
+function string = prettyPrint( m2t, string, interpreter )
 
   % Make sure we have a valid interpreter set up
   if ~any( strcmpi( interpreter, {'latex', 'tex', 'none'} ))
@@ -5206,6 +5218,7 @@ function string = prettyPrint ( m2t, string, interpreter )
           string = strrep( string, '{', '\{' );
           string = strrep( string, '}', '\}' );
           string = strrep( string, '$', '\$' );
+          string = strrep( string, '%', '\%' );
           string = strrep( string, '_', '\_' );
           string = strrep( string, '^', '\textasciicircum{}' );
 
