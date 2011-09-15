@@ -351,6 +351,8 @@ function description = bars ()
   x = -2.9:0.2:2.9;
   bar(x,exp(-x.*x),'r')
 
+  legend( 'exp(-x^2)' )
+
   description = 'Plot with bars.' ;
 
 end

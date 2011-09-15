@@ -2560,14 +2560,10 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           error( 'matlab2tikz:drawBarseries',                          ...
                  'Don''t know how to handle BarLayout ''%s''.', barlayout );
   end
-
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define edge color
   edgeColor  = get( h, 'EdgeColor' );
   [ m2t, xEdgeColor ] = getColor( m2t, h, edgeColor, 'patch' );
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define face color;
   % quite oddly, this value is not coded in the handle itself, but in its
@@ -2575,8 +2571,6 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   child      = get( h, 'Children' );
   faceColor  = get( child, 'FaceColor');
   [ m2t, xFaceColor ] = getColor( m2t, h, faceColor, 'patch' );
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % gather the draw options
   lineStyle = get( h, 'LineStyle' );
@@ -2589,8 +2583,11 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   end
   drawOpts = collapse( drawOptions, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
+  % Add 'area legend' to the options as otherwise the legend indicators
+  % will just highlight the edges.
+  m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                                    'area legend' ...
+                                                  );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = [ str, ...
