@@ -2357,8 +2357,10 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   zData = get( h, 'ZData' );
   cData = get( h, 'CData' );
 
-  matlabMarker = get( h, 'Marker' );
-  tikzMarker = translateMarker( m2t, matlabMarker, [], false );
+  matlabMarker    = get( h, 'Marker' );
+  markerFaceColor = get( h, 'MarkerFaceColor' );
+  hasFaceColor    = ~strcmp(markerFaceColor,'none');
+  [tikzMarker,markOptions] = translateMarker( m2t, matlabMarker, [], hasFaceColor );
 
   if length(cData) == 3
       % No special treatment for the colors or markers are needed.
@@ -2366,12 +2368,18 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
       drawOptions = { 'only marks', ...
                       ['mark=' tikzMarker], ...
                       ['color=' xcolor ] };
-
   else
+      if hasFaceColor
+          colorWhere = 'fill';
+      else
+          colorWhere = 'draw';
+      end
+      markerOptions = { ['mark=', tikzMarker], ...
+                        sprintf('%s=mapped color',colorWhere) };
       drawOptions = { 'scatter', ...
                       'only marks', ...
                       'scatter src=explicit', ...
-                      ['scatter/use mapped color={mark=', tikzMarker,',draw=mapped color}'] };
+                      ['scatter/use mapped color={', collapse(markerOptions,','), '}'] };
   end
 
 
