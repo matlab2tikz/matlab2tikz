@@ -2354,6 +2354,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
 
   xData = get( h, 'XData' );
   yData = get( h, 'YData' );
+  zData = get( h, 'ZData' );
   cData = get( h, 'CData' );
 
   matlabMarker = get( h, 'Marker' );
@@ -2377,18 +2378,27 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   drawOpts = collapse( drawOptions, ',' );
-  str = [ str, ...
-          sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
-
-  if length(cData) == 3
-      for k=1:length(xData)
-          str = strcat( str, ...
-                        sprintf( ' (%g,%g)\n', xData(k), yData(k) ) );
-      end
+  if isempty(zData)
+      env = 'addplot';
   else
-      for k=1:length(xData)
+      env = 'addplot3';
+  end
+
+  str = [ str, ...
+          sprintf( '\\%s[%s] plot coordinates{', env, drawOpts ) ];
+
+  for k = 1:length(xData)
+      if isempty(zData)
           str = strcat( str, ...
-                        sprintf( ' (%g,%g) [%d]\n', xData(k), yData(k), cData(k) ) );
+                        sprintf( ' (%g,%g)', xData(k), yData(k) ) );
+      else
+          str = strcat( str, ...
+                        sprintf( ' (%g,%g,%g)', xData(k), yData(k), zData(k) ) );
+      end
+      if length(cData) == 3
+          str = strcat( str, sprintf('\n') );
+      else
+          str = strcat( str, sprintf( ' [%d]\n', cData(k) ) );
       end
   end
 

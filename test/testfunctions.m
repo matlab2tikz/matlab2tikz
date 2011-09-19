@@ -77,6 +77,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @multipleAxes        , ...
                            @scatterPlotRandom   , ...
                            @scatterPlot         , ...
+                           @scatter3Plot        , ...
                            @surfPlot            , ...
                            @surfPlot2           , ...
                            @meshPlot            , ...
@@ -812,6 +813,21 @@ function description = scatterPlot()
   data = load( 'seamount' );
   scatter( data.x, data.y, 5, data.z, '^' );
   description = 'Scatter plot with MATLAB(R) data.';
+
+end
+% =========================================================================
+function description = scatter3Plot()
+
+  [x,y,z] = sphere(16);
+  X = [x(:)*.5 x(:)*.75 x(:)];
+  Y = [y(:)*.5 y(:)*.75 y(:)];
+  Z = [z(:)*.5 z(:)*.75 z(:)];
+  S = repmat([1 .75 .5]*10,numel(x),1);
+  C = repmat([1 2 3],numel(x),1);
+  scatter3(X(:),Y(:),Z(:),S(:),C(:),'filled'), view(-60,60)
+  view(40,35)
+
+  description = 'Scatter3 plot with MATLAB(R) data.';
 
 end
 % =========================================================================
