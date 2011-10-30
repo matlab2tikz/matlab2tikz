@@ -2010,12 +2010,17 @@ function [ m2t, str ] = drawImage( m2t, handle )
   end
 
   if ( m2t.cmdOpts.Results.imagesAsPng )
+      if ~isfield( m2t, 'imageAsPngNo' )
+          m2t.imageAsPngNo = 1;
+      else
+          m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
+      end
       % ------------------------------------------------------------------------
       % draw a png image
       % Take the TikZ file base name and change the extension .png.
       [pathstr, name ] = fileparts( m2t.tikzFileName );
-      pngFileName = fullfile( pathstr, [name '.png'] );
-      pngReferencePath = fullfile( m2t.relativePngPath, [name '.png'] );
+      pngFileName = fullfile( pathstr, [name '-' num2str(m2t.imageAsPngNo) '.png'] );
+      pngReferencePath = fullfile( m2t.relativePngPath, [name '-' num2str(m2t.imageAsPngNo) '.png'] );
       if strcmp( filesep, '\' )
           % We're on a Windows system with the directory separator
           % character "\". It has to be changed into "/" for the TeX output
