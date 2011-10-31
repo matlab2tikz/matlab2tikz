@@ -2362,7 +2362,12 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   hasFaceColor    = ~strcmp(markerFaceColor,'none');
   [tikzMarker,markOptions] = translateMarker( m2t, matlabMarker, [], hasFaceColor );
 
-  if length(cData) == 3
+
+  if size(cData,2) == 3
+      % TODO Get this in order as soon as pgfplots can do "scatter rgb".
+%        drawOptions = { 'scatter rgb', ...
+%                        'only marks' };
+  elseif length(cData) == 3
       % No special treatment for the colors or markers are needed.
       [ m2t, xcolor ] = getColor( m2t, h, cData, 'patch' );
       drawOptions = { 'only marks', ...
@@ -2402,7 +2407,9 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
           str = strcat( str, ...
                         sprintf( ' (%g,%g,%g)', xData(k), yData(k), zData(k) ) );
       end
-      if length(cData) == 3
+      if size(cData,2) == 3
+          str = strcat( str, sprintf( ' [%d,%d,%d]\n', cData(k,:) ) );
+      elseif length(cData) == 3
           str = strcat( str, sprintf('\n') );
       else
           str = strcat( str, sprintf( ' [%d]\n', cData(k) ) );

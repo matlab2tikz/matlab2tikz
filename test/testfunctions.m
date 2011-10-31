@@ -78,6 +78,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @scatterPlotRandom   , ...
                            @scatterPlot         , ...
                            @scatter3Plot        , ...
+                           @scatter3Plot2       , ...
                            @surfPlot            , ...
                            @surfPlot2           , ...
                            @meshPlot            , ...
@@ -463,6 +464,12 @@ function description = imageplot ()
 
   n       = 10;
   density = 0.5;
+
+  subplot( 1, 2, 1 );
+  A       = sprand( n, n, density );
+  imagesc( A );
+
+  subplot( 1, 2, 2 );
   A       = sprand( n, n, density );
   imagesc( A );
 
@@ -829,6 +836,32 @@ function description = scatter3Plot()
 
   description = 'Scatter3 plot with MATLAB(R) data.';
 
+end
+% =========================================================================
+function description = scatter3Plot2()
+
+  % Read image (Note: "peppers.png" is available with MATLAB)
+  InpImg_RGB = imread('peppers.png');
+
+  % Subsample image ("scatter3" can't cope with too many points)
+  InpImg_RGB = InpImg_RGB(1:20:end, 1:20:end );
+
+  InpImg_RGB = reshape(InpImg_RGB, [], 1, 3);
+
+  % Split up into single components
+  r = InpImg_RGB(:,:,1);
+  g = InpImg_RGB(:,:,2);
+  b = InpImg_RGB(:,:,3);
+
+  % Scatter-plot points
+  scatter3(r,g,b,15,[r g b]);
+  xlabel('R');
+  ylabel('G');
+  zlabel('B');
+
+  description = 'Another Scatter3 plot.'
+
+  return
 end
 % =========================================================================
 function description = surfPlot()
