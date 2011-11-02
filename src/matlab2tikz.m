@@ -518,10 +518,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % get the view angle
   view = get( handle, 'View' );
+  is3dPlot = false;
   if any( view ~= [0,90] )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                                         sprintf( 'view={%g}{%g}', get( handle, 'View') ) ...
                                                       );
+      is3dPlot = true;
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -567,9 +569,15 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % get scales
   xScale = get( handle, 'XScale' );
   yScale = get( handle, 'YScale' );
+  if is3dPlot
+      zScale = get( handle, 'ZScale' );
+  end
 
   isXLog = strcmp( xScale, 'log' );
   isYLog = strcmp( yScale, 'log' );
+  if is3dPlot
+      isZLog = strcmp( zScale, 'log' );
+  end
 
   if  ~isXLog && ~isYLog
       m2t.currentAxesContainer.name = 'axis';
@@ -606,6 +614,16 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                                      [ 'every y tick label/.append style={font=\color{',col,'}}' ] } ...
                                  );
   end
+  if is3dPlot
+      zColor = get( handle, 'ZColor' );
+      if ( any(zColor) ) % color not black [0,0,0]
+          [ m2t, col ] = getColor( m2t, handle, zColor, 'patch' );
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                      { [ 'every outer z axis line/.append style={',col, '}' ], ...
+                                          [ 'every z tick label/.append style={font=\color{',col,'}}' ] } ...
+                                      );
+      end
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % background color
   backgroundColor = get( handle, 'Color' );
@@ -637,16 +655,24 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle the orientation
-  m2t.xAxisReversed = 0;
+  m2t.xAxisReversed = false;
   if strcmp( get(handle,'XDir'), 'reverse' )
-      m2t.xAxisReversed = 1;
+      m2t.xAxisReversed = true;
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'x dir=reverse' );
   end
 
-  m2t.yAxisReversed = 0;
+  m2t.yAxisReversed = false;
   if strcmp( get(handle,'YDir'), 'reverse' )
-      m2t.yAxisReversed = 1;
+      m2t.yAxisReversed = true;
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'y dir=reverse' );
+  end
+
+  if is3dPlot
+      m2t.zAxisReversed = false;
+      if strcmp( get(handle,'ZDir'), 'reverse' )
+          m2t.yAxisReversed = true;
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'z dir=reverse' );
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % for double axes pairs, unconditionally put the ordinate left for the
@@ -664,6 +690,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                                { sprintf('xmin=%g, xmax=%g', xLim ), ...
                                  sprintf('ymin=%g, ymax=%g', yLim ) } ...
                              );
+  if is3dPlot
+      zLim = get( handle, 'ZLim' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options,  ...
+                                                        sprintf('zmin=%g, zmax=%g', zLim ) ...
+                                                      );
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
   [ ticks, tickLabels ] = getTicks( m2t, handle );
@@ -679,11 +711,13 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if ~isempty( tickLabels.y )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'yticklabels={%s}', tickLabels.y ) );
   end
-  if ~isempty( ticks.z )
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ztick={%s}', ticks.z ) );
-  end
-  if ~isempty( tickLabels.z )
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zticklabels={%s}', tickLabels.z ) );
+  if is3dPlot
+      if ~isempty( ticks.z )
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ztick={%s}', ticks.z ) );
+      end
+      if ~isempty( tickLabels.z )
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zticklabels={%s}', tickLabels.z ) );
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis labels
@@ -698,10 +732,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       ylabelText = prettyPrint( m2t, ylabelText, axisLabels.yInterpreter );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ylabel={%s}', ylabelText ) );
   end
-  if ~isempty( axisLabels.z )
-      zlabelText = sprintf( '%s', axisLabels.z );
-      zlabelText = prettyPrint( m2t, zlabelText, axisLabels.zInterpreter );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zlabel={%s}', zlabelText ) );
+  if is3dPlot
+      if ~isempty( axisLabels.z )
+          zlabelText = sprintf( '%s', axisLabels.z );
+          zlabelText = prettyPrint( m2t, zlabelText, axisLabels.zInterpreter );
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zlabel={%s}', zlabelText ) );
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get title
@@ -714,30 +750,32 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids
-  isGrid = 0;
+  isGrid = false;
   if strcmp( get( handle, 'XGrid'), 'on' );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'xmajorgrids' );
-      isGrid = 1;
+      isGrid = true;
   end
   if strcmp( get( handle, 'XMinorGrid'), 'on' );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'xminorgrids' );
-      isGrid = 1;
+      isGrid = true;
   end
   if strcmp( get( handle, 'YGrid'), 'on' )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'ymajorgrids' );
-      isGrid = 1;
+      isGrid = true;
   end
   if strcmp( get( handle, 'YMinorGrid'), 'on' );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'yminorgrids' );
-      isGrid = 1;
+      isGrid = true;
   end
-  if strcmp( get( handle, 'ZGrid'), 'on' )
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zmajorgrids' );
-      isGrid = 1;
-  end
-  if strcmp( get( handle, 'ZMinorGrid'), 'on' );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zminorgrids' );
-      isGrid = 1;
+  if is3dPlot
+      if strcmp( get( handle, 'ZGrid'), 'on' )
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zmajorgrids' );
+          isGrid = true;
+      end
+      if strcmp( get( handle, 'ZMinorGrid'), 'on' );
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zminorgrids' );
+          isGrid = true;
+      end
   end
 
   % set the line style
@@ -920,36 +958,47 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   p      = m2t.currentHandles.gca;
   xLim   = get( p, 'XLim' );
   yLim   = get( p, 'YLim' );
+  zLim   = get( p, 'ZLim' );
   xData  = get( handle, 'XData' );
   yData  = get( handle, 'YData' );
+  zData  = get( handle, 'ZData' );
 
-  % split the data into logical chunks
-  if errorbarMode
-      [xDataCell, yDataCell, yDeviationCell ] = splitLine( m2t, xData, yData, xLim, yLim, yDeviation );
+  is3dPlot = ~isempty( zData );
+
+  if is3dPlot
+      % Don't try to be smart in parametric 3d plots: Just plot all the data.
+      opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
+      str = [ str, ...
+              plotLine3d( opts, xData, yData, zData ) ];
   else
-      [xDataCell, yDataCell] = splitLine( m2t, xData, yData, xLim, yLim );
-  end
-
-  % plot them
-  for k = 1:length(xDataCell)
-      mask = pointReduction( m2t, xDataCell{k}, yDataCell{k} );
-
-      % If the line has been broken up into separate pieces, make sure that
-      % they appear as one in the legend. The following makes sure that all
-      % the segments, except for the last one, are discarded from the legend.
-      if k < length(xDataCell)
-          myDrawOptions = appendOptions( drawOptions, 'forget plot' );
-          opts = [ '\n', collapse( myDrawOptions, ',\n' ), '\n' ];
+      % split the data into logical chunks
+      if errorbarMode
+          [xDataCell, yDataCell, yDeviationCell ] = splitLine( m2t, xData, yData, xLim, yLim, yDeviation );
       else
-          opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
+          [xDataCell, yDataCell] = splitLine( m2t, xData, yData, xLim, yLim );
       end
 
-      if errorbarMode
-          str = [ str, ...
-                  plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) ) ];
-      else
-          str = [ str, ...
-                  plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask) ) ];
+      % plot them
+      for k = 1:length(xDataCell)
+          mask = pointReduction( m2t, xDataCell{k}, yDataCell{k} );
+
+          % If the line has been broken up into separate pieces, make sure that
+          % they appear as one in the legend. The following makes sure that all
+          % the segments, except for the last one, are discarded from the legend.
+          if k < length(xDataCell)
+              myDrawOptions = appendOptions( drawOptions, 'forget plot' );
+              opts = [ '\n', collapse( myDrawOptions, ',\n' ), '\n' ];
+          else
+              opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
+          end
+
+          if errorbarMode
+              str = [ str, ...
+                      plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) ) ];
+          else
+              str = [ str, ...
+                      plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask) ) ];
+          end
       end
   end
 
@@ -985,14 +1034,10 @@ function str = plotLine( opts, xData, yData, yDeviation )
             sprintf('coordinates{\n') ];
 
     % Make sure data is in column vectors
-    if size(xData,2) > 1
-        xData = xData';
-    end
-    if size(yData,2) > 1
-        yData = yData';
-    end
-    if errorbarMode && size(yDeviation,2) > 1
-        yDeviation = yDeviation';
+    xData = xData(:);
+    yData = yData(:);
+    if errorbarMode
+        yDeviation = yDeviation(:);
     end
 
     % Convert to string array then cell to call sprintf once (and no loops).
@@ -1010,6 +1055,39 @@ function str = plotLine( opts, xData, yData, yDeviation )
 end
 % ---------------------------------------------------------------------------
 % END FUNCTION plotLine
+% ---------------------------------------------------------------------------
+
+% ---------------------------------------------------------------------------
+% FUNCTION plotLine3d
+% ---------------------------------------------------------------------------
+function str = plotLine3d( opts, xData, yData, zData )
+
+    str = [];
+
+    n = length(xData);
+
+    str = [ str, ...
+            sprintf( ['\\addplot3 [',opts,']\n'] ) ];
+
+    str = [ str, ...
+            sprintf('coordinates{\n') ];
+
+    % Make sure data is in column vectors
+    xData = xData(:);
+    yData = yData(:);
+    zData = zData(:);
+
+    % Convert to string array then cell to call sprintf once (and no loops).
+    str_data = cellstr(num2str([xData yData,zData],'(%g,%g,%g)'));
+    str_data = sprintf('%s', str_data{:});
+
+    % The process above adds extra white spaces, remove them all
+    str_data = str_data(~isspace(str_data));
+    str = sprintf('%s %s \n};\n\n', str, str_data);
+
+end
+% ---------------------------------------------------------------------------
+% END FUNCTION plotLine3d
 % ---------------------------------------------------------------------------
 
 
