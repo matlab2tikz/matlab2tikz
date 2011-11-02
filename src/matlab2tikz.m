@@ -2020,34 +2020,58 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   % within the barplot framework).
   xData = get( handle, 'XData' );
   yData = get( handle, 'YData' );
+  zData = get( handle, 'ZData' );
 
   % filter out the NaNs
   xData = xData( ~isnan(xData) );
   yData = yData( ~isnan(yData) );
+  zData = zData( ~isnan(zData) );
 
-  m = size(xData,1);
   n = size(xData,2); % is n ever ~=1? if yes, think about replacing
                      % the drawOpts by one \pgfplotsset{}
 
-  for j = 1:n
-      str = strcat( str, ...
-                    sprintf(['\\addplot [',drawOpts,'] coordinates{']) );
-
-      for i = 1:m
+  if isempty( zData )
+      % 2d patch
+      for j = 1:n
           str = strcat( str, ...
-                        sprintf( ' (%g,%g)', xData(i,j), yData(i,j) ) );
-      end
+                        sprintf(['\\addplot [',drawOpts,'] coordinates{']) );
 
-      % make sure the path is closed
-      if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j)
+          % Convert to string array then cell to call sprintf once (and no loops).
+          str_data = cellstr(num2str([xData(:,j),yData(:,j)],'(%g,%g)'));
+          str_data = sprintf('%s', str_data{:});
+          % The process adds extra white spaces, remove them all
+          str_data = str_data(~isspace(str_data));
+          str = sprintf('%s %s', str, str_data);
+
+          % make sure the path is closed
+          if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j)
+              str = strcat( str, ...
+                            sprintf( ' (%g,%g)', xData(1,j), yData(1,j) ) );
+          end
+      end
+   else % ~isempty( zData )
+      % 3d patch
+      for j = 1:n
           str = strcat( str, ...
-                        sprintf( ' (%g,%g)', xData(1,j), yData(1,j) ) );
-      end
+                        sprintf(['\\addplot3 [',drawOpts,'] coordinates{']) );
 
-      % close it
-      str = strcat( str, sprintf('};\n') );
-  end
-  str = [ str, sprintf('\n') ];
+          % Convert to string array then cell to call sprintf once (and no loops).
+          str_data = cellstr(num2str([xData(:,j),yData(:,j),zData(:,j)],'(%g,%g,%g)'));
+          str_data = sprintf('%s', str_data{:});
+          % The process adds extra white spaces, remove them all
+          str_data = str_data(~isspace(str_data));
+          str = sprintf('%s %s', str, str_data);
+
+          % make sure the path is closed
+          if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j) || zData(1,j)~=zData(end,j)
+              str = strcat( str, ...
+                            sprintf( ' (%g,%g,%g)', xData(1,j), yData(1,j), zData(1,j) ) );
+          end
+      end
+   end
+   % close it
+   str = strcat( str, sprintf('};\n') );
+   str = [ str, sprintf('\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
