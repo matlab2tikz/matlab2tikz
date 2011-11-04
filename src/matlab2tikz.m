@@ -5464,24 +5464,24 @@ function string = parseTexSubstring ( m2t, string )
            'downarrow', 'circ', 'pm', 'geq', 'propto', 'partial', ...
            'bullet', 'div', 'neq', 'aleph', 'wp', 'oslash',       ...
            'supseteq', 'nabla', 'ldots', 'prime', '0', 'mid',     ...
-           'copyright',                                           ...
-           'supset', 'in', 'o', 'subset' ... % subsets must be last, see below
-          } 
+           'copyright'                                            } 
       string = strrep( string, ['\' i{:}], ['\' i{:} '{}'] );
   end
 
   % Some special characters' names are subsets of others, e.g. '\o' is
-  % a subset of '\omega'. This produces some undesired double-escapes
-  % which are now corrected. For that to be successful, the subsets
-  % have to be last in the array of special characters above.
-  string = strrep( string, '\o{}mega{}', '\omega{}' );
-  string = strrep( string, '\o{}times{}', '\otimes{}' );
-  string = strrep( string, '\in{}t{}', '\int{}' );
-  string = strrep( string, '\o{}plus{}', '\oplus{}' );
-  string = strrep( string, '\subset{}eq{}', '\subseteq{}' );
-  string = strrep( string, '\in{}fty{}', '\infty{}' );
-  string = strrep( string, '\o{}slash{}', '\oslash{}' );
-  string = strrep( string, '\supset{}eq{}', '\supseteq{}' );
+  % a subset of '\omega'. This would produce undesired double-escapes.
+  % For example if '\o' was converted to '\o{}' after '\omega' has been
+  % converted to '\omega{}' this would result in '\o{}mega{}' instead of
+  % '\omega{}'. Had '\o' been converted to '\o{}' _before_ '\omega' is
+  % converted then the result would be '\o{}mega' and thus also wrong.
+  % To circumvent the problem all those special character names that are
+  % subsets of others are now converted using a regular expression that
+  % uses negative lookahead. The special handling of the backslash is
+  % required for MATLAB/Octave compatibility.
+  string = regexprep(string, '(\\)o(?!mega|times|plus|slash)', '$1o{}');
+  string = regexprep(string, '(\\)in(?!t|fty)', '$1in{}');
+  string = regexprep(string, '(\\)subset(?!eq)', '$1subset{}');
+  string = regexprep(string, '(\\)supset(?!eq)', '$1supset{}');
 
   % Convert '\0{}' (TeX text mode) to '\emptyset{}' (TeX math mode)
   string = strrep( string, '\0{}', '\emptyset{}' );
