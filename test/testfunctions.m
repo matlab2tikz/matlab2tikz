@@ -89,7 +89,9 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @texcolor            , ...
                            @textext             , ...
                            @latexmath1          , ...
-                           @latexmath2
+                           @latexmath2          , ...
+                           @parameterCurve3d    , ...
+                           @fill3plot
                          };
 
   numFunctions = length( testfunction_handles );
@@ -120,7 +122,6 @@ end
 % *** Most simple example.
 % ***
 function description = plain_cos ()
-
 
   fplot( @cos, [0,2*pi] );
 
@@ -859,7 +860,7 @@ function description = scatter3Plot2()
   ylabel('G');
   zlabel('B');
 
-  description = 'Another Scatter3 plot.'
+  description = 'Another Scatter3 plot.';
 
   return
 end
@@ -990,7 +991,8 @@ function description = latexmath1()
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/ref/text_props.html#Interpreter
   axes
-  text( 0.5, 0.5, '$$\int_0^x\!\int_y dF(u,v)$$', ...
+  title( '\omega\subseteq\Omega' );
+  text( 0.5, 0.5, '$$\int_0^x\!\int_{\Omega} dF(u,v) d\omega$$', ...
         'Interpreter', 'latex',                   ...
         'FontSize', 16                            )
 
@@ -1039,9 +1041,24 @@ function description = latexmath2()
   description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
 end
 % =========================================================================
-
+function description = parameterCurve3d()
+    ezplot3('sin(t)','cos(t)','t',[0,6*pi])
+    description = 'Parameter curve in 3D.';
+end
 % =========================================================================
-% *** FUNCTION getEnvironment
+function description = fill3plot()
+    x1 = -10:0.1:10;
+    x2 = -10:0.1:10;
+    p = sin(x1);
+    d = zeros(1,numel(p));
+    d(2:2:end) = 1;
+    h = p.*d;
+    grid on;
+    fill3(x1,x2,h,'k');
+    view(45,22.5);
+
+    description = 'fill3 plot.';
+end
 % =========================================================================
 function env = getEnvironment
   env = '';
@@ -1060,12 +1077,6 @@ function env = getEnvironment
       end
   end
 end
-% =========================================================================
-% *** END FUNCTION getEnvironment
-% =========================================================================
-
-% =========================================================================
-% *** FUNCTION isVersionBelow
 % =========================================================================
 function [below, error] = isVersionBelow ( env, threshMajor, threshMinor )
   % get version string for `env' by iterating over all toolboxes
@@ -1098,6 +1109,4 @@ function [below, error] = isVersionBelow ( env, threshMajor, threshMinor )
   end
   error = false;
 end
-% =========================================================================
-% *** END FUNCTION isVersionBelow
 % =========================================================================
