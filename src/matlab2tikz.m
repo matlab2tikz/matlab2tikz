@@ -173,6 +173,11 @@ function matlab2tikz( varargin )
   % in there.
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'mathmode', 1, @islogical );
 
+  % As opposed to titles, axis labels and such, MATLAB(R) does not interpret tick
+  % labels as TeX. matlab2tikz retains this behavior, but if it is desired to
+  % interpret the tick labels as TeX, set this option to true.
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'interpretTickLabelsAsTex', 0, @islogical );
+
   m2t.cmdOpts = m2t.cmdOpts.parse( m2t.cmdOpts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % warn for deprecated options
@@ -3690,12 +3695,16 @@ end
 % =========================================================================
 function [ ticks, tickLabels ] = getTicks( m2t, handle )
 
-  % The tick labels are neve LaTeX interpreted. (Really?)
-  labelInterpreter = 'none';
+  if m2t.cmdOpts.Results.interpretTickLabelsAsTex
+      labelInterpreter = 'tex';
+  else
+      % By default, the tick labels are neve LaTeX interpreted. (Really?i)
+      labelInterpreter = 'none';
+  end
 
-  xTickLabel = get( handle, 'XTickLabel' );
+  xTickLabel = cellstr( get( handle, 'XTickLabel' ) );
   for k = 1:length(xTickLabel)
-      xTickLabel(k) = prettyPrint( m2t, xTickLabel(k), labelInterpreter);
+      xTickLabel(k) = { prettyPrint( m2t, xTickLabel(k), labelInterpreter) };
   end
   xTickMode = get( handle, 'XTickMode' );
   if strcmp(xTickMode,'auto') && ~m2t.cmdOpts.Results.strict
@@ -3714,9 +3723,9 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
       end
   end
 
-  yTickLabel = get( handle, 'YTickLabel' );
+  yTickLabel = cellstr( get( handle, 'YTickLabel' ) );
   for k = 1:length(yTickLabel)
-      yTickLabel(k) = prettyPrint( m2t, yTickLabel(k), labelInterpreter);
+      yTickLabel(k) = { prettyPrint( m2t, yTickLabel(k), labelInterpreter) };
   end
   yTickMode = get( handle, 'YTickMode' );
   if strcmp(yTickMode,'auto') && ~m2t.cmdOpts.Results.strict
@@ -3735,9 +3744,9 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
       end
   end
 
-  zTickLabel = get( handle, 'ZTickLabel' );
+  zTickLabel = cellstr( get( handle, 'ZTickLabel' ) );
   for k = 1:length(zTickLabel)
-      zTickLabel(k) = prettyPrint( m2t, zTickLabel(k), labelInterpreter);
+      zTickLabel(k) = { prettyPrint( m2t, zTickLabel(k), labelInterpreter) };
   end
   zTickMode = get( handle, 'ZTickMode' );
   if strcmp(yTickMode,'auto') && ~m2t.cmdOpts.Results.strict
@@ -5336,7 +5345,7 @@ function string = prettyPrint( m2t, string, interpreter )
 
       case 'tex' % Subset of plain TeX markup language
 
-          % Parse string piece-wise in separate function
+          % Parse string piece-wise in separate function.
           string = parseTexString( m2t, string );
 
       case 'none' % Literal characters
@@ -5349,6 +5358,11 @@ function string = prettyPrint( m2t, string, interpreter )
           string = strrep( string, '%', '\%' );
           string = strrep( string, '_', '\_' );
           string = strrep( string, '^', '\textasciicircum{}' );
+
+          % Make sure to return a string and not a cellstr.
+          if iscellstr( string )
+              string = string{1};
+          end
 
   end
 
