@@ -40,6 +40,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @sine_with_markers   , ...
                            @sine_with_annotation, ...
                            @peaks_contour       , ...
+                           @contourPenny        , ...
                            @peaks_contourf      , ...
                            @many_random_points  , ...
                            @logplot             , ...
@@ -209,6 +210,16 @@ function description = peaks_contour ()
   colormap winter;
 
   description = 'Test contour plots.';
+
+end
+% =========================================================================
+function description = contourPenny()
+
+  load penny;
+  contour(flipud(P));
+  axis square;
+
+  description = 'Contour plot of a US\$ Penny.';
 
 end
 % =========================================================================
