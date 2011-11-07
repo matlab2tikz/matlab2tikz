@@ -2048,11 +2048,13 @@ function [ m2t, str ] = drawPatch( m2t, handle )
           str_data = str_data(~isspace(str_data));
           str = sprintf('%s %s', str, str_data);
 
-          % make sure the path is closed
-          if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j)
-              str = strcat( str, ...
-                            sprintf( ' (%g,%g)', xData(1,j), yData(1,j) ) );
-          end
+          % 2011-11-07 Nico:
+          % Do we need to make sure that the path is closed?
+          % Let's keep an eye on this.
+%          if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j)
+%              str = strcat( str, ...
+%                            sprintf( ' (%g,%g)', xData(1,j), yData(1,j) ) );
+%          end
       end
    else % ~isempty( zData )
       % 3d patch
