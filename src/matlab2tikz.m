@@ -716,7 +716,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if ~isempty( tickLabels.x )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xticklabels={%s}', tickLabels.x ) );
   end
-  if ~isempty( hasMinorTicks.x )
+  if hasMinorTicks.x
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'xminorticks=true' );
       if m2t.cmdOpts.Results.strict
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor x tick num={%d}', matlabDefaultNumMinorTicks ) );
@@ -728,7 +728,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if ~isempty( tickLabels.y )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'yticklabels={%s}', tickLabels.y ) );
   end
-  if ~isempty( hasMinorTicks.y )
+  if hasMinorTicks.y
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'yminorticks=true' );
       if m2t.cmdOpts.Results.strict
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor y tick num={%d}', matlabDefaultNumMinorTicks ) );
@@ -741,7 +741,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       if ~isempty( tickLabels.z )
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zticklabels={%s}', tickLabels.z ) );
       end
-      if ~isempty( hasMinorTicks.z )
+      if hasMinorTicks.z
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zminorticks=true' );
           if m2t.cmdOpts.Results.strict
               m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor z tick num={%d}', matlabDefaultNumMinorTicks ) );
