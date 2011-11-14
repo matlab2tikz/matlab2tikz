@@ -703,12 +703,24 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
-  [ ticks, tickLabels ] = getTicks( m2t, handle );
+  [ ticks, tickLabels, hasMinorTicks ] = getTicks( m2t, handle );
+
+  % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
+  % the number of minor ticks is automatically determined by MATLAB(R) to
+  % fit the size of the axis. Until we know how to extract this number, use
+  % a reasonable default.
+  matlabDefaultNumMinorTicks = 3;
   if ~isempty( ticks.x )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xtick={%s}', ticks.x ) );
   end
   if ~isempty( tickLabels.x )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xticklabels={%s}', tickLabels.x ) );
+  end
+  if ~isempty( hasMinorTicks.x )
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'xminorticks=true' );
+      if m2t.cmdOpts.Results.strict
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor x tick num={%d}', matlabDefaultNumMinorTicks ) );
+      end
   end
   if ~isempty( ticks.y )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ytick={%s}', ticks.y ) );
@@ -716,12 +728,24 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if ~isempty( tickLabels.y )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'yticklabels={%s}', tickLabels.y ) );
   end
+  if ~isempty( hasMinorTicks.y )
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'yminorticks=true' );
+      if m2t.cmdOpts.Results.strict
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor y tick num={%d}', matlabDefaultNumMinorTicks ) );
+      end
+  end
   if is3dPlot
       if ~isempty( ticks.z )
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ztick={%s}', ticks.z ) );
       end
       if ~isempty( tickLabels.z )
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zticklabels={%s}', tickLabels.z ) );
+      end
+      if ~isempty( hasMinorTicks.z )
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zminorticks=true' );
+          if m2t.cmdOpts.Results.strict
+              m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor z tick num={%d}', matlabDefaultNumMinorTicks ) );
+          end
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3695,7 +3719,7 @@ end
 % *** details are taken care of by Pgfplots.
 % ***
 % =========================================================================
-function [ ticks, tickLabels ] = getTicks( m2t, handle )
+function [ ticks, tickLabels, hasMinorTicks ] = getTicks( m2t, handle )
 
   if m2t.cmdOpts.Results.interpretTickLabelsAsTex
       labelInterpreter = 'tex';
@@ -3724,6 +3748,7 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
           tickLabels.x = '\empty';
       end
   end
+  hasMinorTicks.x = strcmp( get( handle, 'XMinorTick' ), 'on' );
 
   yTickLabel = cellstr( get( handle, 'YTickLabel' ) );
   for k = 1:length(yTickLabel)
@@ -3745,6 +3770,7 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
           tickLabels.y = '\empty';
       end
   end
+  hasMinorTicks.y = strcmp( get( handle, 'YMinorTick' ), 'on' );
 
   zTickLabel = cellstr( get( handle, 'ZTickLabel' ) );
   for k = 1:length(zTickLabel)
@@ -3766,7 +3792,9 @@ function [ ticks, tickLabels ] = getTicks( m2t, handle )
           tickLabels.z = '\empty';
       end
   end
+  hasMinorTicks.z = strcmp( get( handle, 'ZMinorTick' ), 'on' );
 
+  return;
 end
 % -------------------------------------------------------------------------
 % *** FUNCTION getAxisTicks

@@ -126,6 +126,9 @@ function description = plain_cos ()
 
   fplot( @cos, [0,2*pi] );
 
+  % add some minor ticks
+  set( gca, 'XMinorTick', 'on' );
+
   % Adjust the aspect ratio when in MATLAB(R) or Octave >= 3.4.
   env = getEnvironment();
   switch env
