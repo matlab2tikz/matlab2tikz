@@ -1,3 +1,19 @@
+2011-11-22  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.1.4.
+	* Support for scatter 3D plots.
+	* Support for 3D parameter curves.
+	* Support for 3D patches.
+	* Support for minor ticks.
+	* Add option interpretTickLabelsAsTex (default false).
+	* Several bugfixes:
+	   - %-sign in annotations
+	   - fixed \omega and friends in annotations
+	   - proper legend for bar plots
+	   - don't override PNG files if there is
+	     more than one image plot
+	   - don't always close patch paths
+
 2011-08-22  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.1.3.

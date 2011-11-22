@@ -28,6 +28,7 @@
 % ***
 % ***
 % *** TODO: * Replace slow strcat() in loops with Julien Ridoux' idea.
+% ***         (See function plotLine().)
 % ***
 % =========================================================================
 % ***
@@ -92,7 +93,7 @@ function matlab2tikz( varargin )
   m2t.currentHandles = [];
 
   m2t.name = 'matlab2tikz';
-  m2t.version = '0.1.3';
+  m2t.version = '0.1.4';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2011';
@@ -434,7 +435,6 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
               % don't to anything for these handles and its children
               env = [];
-              % TODO bail out with warning in case of a 3D-plot (parameter plots!)
 
           otherwise
               error( 'matlab2tikz:handleAllChildren',                 ...
