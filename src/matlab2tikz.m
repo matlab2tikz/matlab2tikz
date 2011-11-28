@@ -523,12 +523,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % get the view angle
   view = get( handle, 'View' );
-  is3dPlot = false;
+  m2t.is3dPlot = false;
   if any( view ~= [0,90] )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                                         sprintf( 'view={%g}{%g}', get( handle, 'View') ) ...
                                                       );
-      is3dPlot = true;
+      m2t.is3dPlot = true;
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -574,13 +574,13 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % get scales
   xScale = get( handle, 'XScale' );
   yScale = get( handle, 'YScale' );
-  if is3dPlot
+  if m2t.is3dPlot
       zScale = get( handle, 'ZScale' );
   end
 
   isXLog = strcmp( xScale, 'log' );
   isYLog = strcmp( yScale, 'log' );
-  if is3dPlot
+  if m2t.is3dPlot
       isZLog = strcmp( zScale, 'log' );
   end
 
@@ -619,7 +619,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                                      [ 'every y tick label/.append style={font=\color{',col,'}}' ] } ...
                                  );
   end
-  if is3dPlot
+  if m2t.is3dPlot
       zColor = get( handle, 'ZColor' );
       if ( any(zColor) ) % color not black [0,0,0]
           [ m2t, col ] = getColor( m2t, handle, zColor, 'patch' );
@@ -672,7 +672,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'y dir=reverse' );
   end
 
-  if is3dPlot
+  if m2t.is3dPlot
       m2t.zAxisReversed = false;
       if strcmp( get(handle,'ZDir'), 'reverse' )
           m2t.yAxisReversed = true;
@@ -695,7 +695,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                                { sprintf('xmin=%g, xmax=%g', xLim ), ...
                                  sprintf('ymin=%g, ymax=%g', yLim ) } ...
                              );
-  if is3dPlot
+  if m2t.is3dPlot
       zLim = get( handle, 'ZLim' );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options,  ...
                                                         sprintf('zmin=%g, zmax=%g', zLim ) ...
@@ -734,7 +734,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor y tick num={%d}', matlabDefaultNumMinorTicks ) );
       end
   end
-  if is3dPlot
+  if m2t.is3dPlot
       if ~isempty( ticks.z )
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ztick={%s}', ticks.z ) );
       end
@@ -761,7 +761,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       ylabelText = prettyPrint( m2t, ylabelText, axisLabels.yInterpreter );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ylabel={%s}', ylabelText ) );
   end
-  if is3dPlot
+  if m2t.is3dPlot
       if ~isempty( axisLabels.z )
           zlabelText = sprintf( '%s', axisLabels.z );
           zlabelText = prettyPrint( m2t, zlabelText, axisLabels.zInterpreter );
@@ -796,7 +796,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'yminorgrids' );
       isGrid = true;
   end
-  if is3dPlot
+  if m2t.is3dPlot
       if strcmp( get( handle, 'ZGrid'), 'on' )
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zmajorgrids' );
           isGrid = true;
@@ -3721,6 +3721,23 @@ end
 % =========================================================================
 function [ ticks, tickLabels, hasMinorTicks ] = getTicks( m2t, handle )
 
+  [ticks.x, tickLabels.x, hasMinorTicks.x] = getIndividualAxisTicks( m2t, handle, 'x' );
+  [ticks.y, tickLabels.y, hasMinorTicks.y] = getIndividualAxisTicks( m2t, handle, 'y' );
+  if m2t.is3dPlot
+     [ticks.z, tickLabels.z, hasMinorTicks.z] = getIndividualAxisTicks( m2t, handle, 'z' );
+  end
+
+  return;
+end
+% -------------------------------------------------------------------------
+% *** FUNCTION getIndividualAxisTicks
+% -------------------------------------------------------------------------
+function [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handle, axis )
+
+  if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
+      error( 'Illegal axis specifier ''%s''.', axis );
+  end
+
   if m2t.cmdOpts.Results.interpretTickLabelsAsTex
       labelInterpreter = 'tex';
   else
@@ -3728,82 +3745,45 @@ function [ ticks, tickLabels, hasMinorTicks ] = getTicks( m2t, handle )
       labelInterpreter = 'none';
   end
 
-  xTickLabel = cellstr( get( handle, 'XTickLabel' ) );
-  for k = 1:length(xTickLabel)
-      xTickLabel(k) = { prettyPrint( m2t, xTickLabel(k), labelInterpreter) };
-  end
-  xTickMode = get( handle, 'XTickMode' );
-  if strcmp(xTickMode,'auto') && ~m2t.cmdOpts.Results.strict
-      % If the ticks are set automatically, and strict conversion is
-      % not required, then let pgfplots take care of the ticks.
-      % In most cases, this looks a lot better anyway.
-      ticks.x      = [];
-      tickLabels.x = [];
-  else % strcmp(xTickMode,'manual') || m2t.cmdOpts.Results.strict
-      xTick      = get( handle, 'XTick' );
-      isXAxisLog = strcmp( get(handle,'XScale'), 'log' );
-      [ticks.x, tickLabels.x] = getAxisTicks( m2t, xTick, xTickLabel, isXAxisLog );
-      % overwrite if empty
-      if isempty(xTickLabel)
-          tickLabels.x = '\empty';
-      end
-  end
-  hasMinorTicks.x = strcmp( get( handle, 'XMinorTick' ), 'on' );
+  % Create the keywords, e.g., 'XTickLabel', 'XScale', etc., that are used to
+  % extract the information from the figure.
+  keywordTickLabel = [ upper(axis), 'TickLabel' ];
+  keywordTickMode  = [ upper(axis), 'TickMode' ];
+  keywordTick      = [ upper(axis), 'Tick' ];
+  keywordScale     = [ upper(axis), 'Scale' ];
+  keywordMinorTick = [ upper(axis), 'MinorTick' ];
 
-  yTickLabel = cellstr( get( handle, 'YTickLabel' ) );
-  for k = 1:length(yTickLabel)
-      yTickLabel(k) = { prettyPrint( m2t, yTickLabel(k), labelInterpreter) };
+  tickLabel = cellstr( get( handle, keywordTickLabel ) );
+  for k = 1:length(tickLabel)
+      tickLabel(k) = { prettyPrint( m2t, tickLabel(k), labelInterpreter) };
   end
-  yTickMode = get( handle, 'YTickMode' );
-  if strcmp(yTickMode,'auto') && ~m2t.cmdOpts.Results.strict
+  tickMode = get( handle, keywordTickMode );
+  if strcmp(tickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
       % not required, then let pgfplots take care of the ticks.
       % In most cases, this looks a lot better anyway.
-      ticks.y      = [];
-      tickLabels.y = [];
-  else % strcmp(yTickMode,'manual') || m2t.cmdOpts.Results.strict
-      yTick      = get( handle, 'YTick' );
-      isYAxisLog = strcmp( get(handle,'YScale'), 'log' );
-      [ticks.y, tickLabels.y] = getAxisTicks( m2t, yTick, yTickLabel, isYAxisLog );
-      % overwrite if empty
-      if isempty(yTickLabel)
-          tickLabels.y = '\empty';
-      end
-  end
-  hasMinorTicks.y = strcmp( get( handle, 'YMinorTick' ), 'on' );
-
-  zTickLabel = cellstr( get( handle, 'ZTickLabel' ) );
-  for k = 1:length(zTickLabel)
-      zTickLabel(k) = { prettyPrint( m2t, zTickLabel(k), labelInterpreter) };
-  end
-  zTickMode = get( handle, 'ZTickMode' );
-  if strcmp(yTickMode,'auto') && ~m2t.cmdOpts.Results.strict
-      % If the ticks are set automatically, and strict conversion is
-      % not required, then let pgfplots take care of the ticks.
-      % In most cases, this looks a lot better anyway.
-      ticks.z      = [];
-      tickLabels.z = [];
+      ticks      = [];
+      tickLabels = [];
   else % strcmp(zTickMode,'manual') || m2t.cmdOpts.Results.strict
-      zTick      = get( handle, 'ZTick' );
-      isZAxisLog = strcmp( get(handle,'ZScale'), 'log' );
-      [ticks.z, tickLabels.z] = getAxisTicks( m2t, zTick, zTickLabel, isZAxisLog );
+      tick      = get( handle, keywordTick );
+      isAxisLog = strcmp( get(handle,keywordScale), 'log' );
+      [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, isAxisLog );
       % overwrite if empty
-      if isempty(zTickLabel)
-          tickLabels.z = '\empty';
+      if length(tickLabel)==1 && isempty(tickLabel{1})
+          tickLabels = '\empty';
       end
   end
-  hasMinorTicks.z = strcmp( get( handle, 'ZMinorTick' ), 'on' );
+  hasMinorTicks = strcmp( get( handle, keywordMinorTick ), 'on' );
 
-  return;
 end
 % -------------------------------------------------------------------------
-% *** FUNCTION getAxisTicks
+% *** FUNCTION matlabticks2tikzTicks
 % ***
 % *** Converts MATLAB style ticks and tick labels to pgfplots style
 % *** ticks and tick labels (if at all necessary).
 % ***
 % -------------------------------------------------------------------------
-function [ticks, tickLabels] = getAxisTicks( m2t, tick, tickLabel, isLogAxis )
+function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, isLogAxis )
 
   if isempty( tick )
       ticks      = [];

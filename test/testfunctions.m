@@ -210,6 +210,10 @@ function description = peaks_contour ()
 
   contour(peaks(20),10);
 
+  % remove y-ticks
+  set(gca,'YTickLabel',[]);
+  set(gca,'YTick',[]);
+
   colormap winter;
 
   description = 'Test contour plots.';
