@@ -863,7 +863,7 @@ function description = scatter3Plot2()
   InpImg_RGB = imread('peppers.png');
 
   % Subsample image ("scatter3" can't cope with too many points)
-  InpImg_RGB = InpImg_RGB(1:20:end, 1:20:end );
+  InpImg_RGB = InpImg_RGB(1:100:end, 1:100:end );
 
   InpImg_RGB = reshape(InpImg_RGB, [], 1, 3);
 
