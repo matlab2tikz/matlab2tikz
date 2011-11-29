@@ -5372,6 +5372,8 @@ function string = prettyPrint( m2t, string, interpreter )
           string = strrep( string, '%', '\%' );
           string = strrep( string, '_', '\_' );
           string = strrep( string, '^', '\textasciicircum{}' );
+          string = strrep( string, '#', '\#' );
+          string = strrep( string, '&', '\&' );
 
           % Make sure to return a string and not a cellstr.
           if iscellstr( string )
