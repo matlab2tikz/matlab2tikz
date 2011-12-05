@@ -167,6 +167,8 @@ function description = sine_with_markers ()
             'YTickLabel', [] ...
      );
 
+  set(gca,'XTick',[0]);
+  set(gca,'XTickLabel',{'null'});
 
   description = [ 'Twisted plot of the sine function. '                   ,...
                   'Pay particular attention to how markers are treated.'    ];

@@ -3819,7 +3819,8 @@ function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, 
   % the tick values themselves).
   plotLabelsNecessary = 0;
 
-  if isLogAxis
+  k = find( tick, 1 ); % get an index with non-zero tick value
+  if isLogAxis || isempty( k ) % only a 0-tick
       scalingFactor = 1;
   else
       % When plotting axis, MATLAB might scale the axes by a factor of ten,
@@ -3832,7 +3833,6 @@ function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, 
       % value t.
       % Try to find the scaling factor here. This is then used to check
       % whether or not explicit {x,y}TickLabels are really necessary.
-      k = find( tick, 1 ); % get an index with non-zero tick value
       s = str2double( tickLabel{k} );
       scalingFactor = tick(k)/s;
       % check if the factor is indeed a power of 10
@@ -3853,7 +3853,7 @@ function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, 
       end
       if isnan(s)  ||  abs(tick(k)-s*scalingFactor) > m2t.tol
           plotLabelsNecessary = 1;
-          break
+          break;
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
