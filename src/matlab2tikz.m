@@ -3963,6 +3963,9 @@ function [xcolorLiteral,errorcode] = rgb2xcolor( rgb )
   elseif isequal( rgb, [0,0,0] )
       xcolorLiteral = 'black';
       errorcode = 0;
+  elseif isequal( rgb, [0.75,0.75,0.75] )
+      xcolorLiteral = 'darkgray';
+      errorcode = 0;
   elseif isequal( rgb, [0.5,0.5,0.5] )
       xcolorLiteral = 'gray';
       errorcode = 0;
