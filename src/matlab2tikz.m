@@ -179,6 +179,9 @@ function matlab2tikz( varargin )
   % interpret the tick labels as TeX, set this option to true.
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'interpretTickLabelsAsTex', 0, @islogical );
 
+  % Allow a string to be added to the header of the generated TikZ file.
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'tikzFileComment', '', @ischar );
+
   m2t.cmdOpts = m2t.cmdOpts.parse( m2t.cmdOpts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % warn for deprecated options
@@ -338,7 +341,7 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   % actually print the stuff
   m2t.content.comment = sprintf( [ 'This file was created by %s v%s.\n', ...
                                    'Copyright (c) %s, %s <%s>\n', ...
-                                   'All rights reserved.\n' ],              ...
+                                   'All rights reserved.\n' ], ...
                                    m2t.name, m2t.version, ...
                                    m2t.years, m2t.author, m2t.authorEmail );
 
@@ -352,6 +355,11 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
                                        m2t.website, m2t.name  ) ...
                             ];
   end
+
+  % Add custom comment.
+  m2t.content.comment = [ m2t.content.comment, ...
+                          sprintf( '\n%s\n', m2t.cmdOpts.Results.tikzFileComment )
+                        ];
 
   m2t.content.name = 'tikzpicture';
 
