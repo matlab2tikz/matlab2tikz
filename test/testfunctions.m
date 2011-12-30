@@ -316,7 +316,8 @@ function description = legendplot ()
   title( '{tikz test}' )
   xlabel( '{x-Values}' )
   ylabel( '{y-Values}' )
-  legend( '\sin(x)', '\cos(x)', 'Location','SouthWestOutside' );
+  legend( '\sin(x)', '\cos(x)', 'Location','NorthOutside', ...
+                                'Orientation', 'Horizontal' );
   grid on
 
   description = 'Test inserting of legends.';

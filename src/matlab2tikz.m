@@ -3697,7 +3697,20 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
                          ' Choosing default.' ] );
       otherwise
           userWarning( m2t, [ ' Unknown legend location ''',loc,''''           ...
-                         '. Choosing default.' ] );
+                              '. Choosing default.' ] );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % handle orientation
+  ori  = get( handle, 'Orientation' );
+  cols = [];
+  switch lower( ori )
+      case 'horizontal'
+          cols = length(entries);
+      case 'vertical'
+          % Use default.
+      otherwise
+          userWarning( m2t, [ ' Unknown legend orientation ''',ori,''''           ...
+                              '. Choosing default.' ] );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -3709,6 +3722,11 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
                               { sprintf( 'at={(%g,%g)}',position ), ...
                                 sprintf( 'anchor=%s', anchor ) ...
                               } ...
+                            );
+  end
+  if ~isempty(cols)
+      lStyle = appendOptions( lStyle, ...
+                              sprintf( 'legend columns=%d', cols) ...
                             );
   end
 
