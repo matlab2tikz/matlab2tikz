@@ -59,6 +59,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @stemplot            , ...
                            @groupbars           , ...
                            @bars                , ...
+                           @hbars                , ...
                            @stackbars           , ...
                            @xAxisReversed       , ...
                            @errorBars           , ...
@@ -343,9 +344,6 @@ function description = legendplotBoxoff ()
 
 end
 % =========================================================================
-% *** FUNCTION zoom
-% ***
-% =========================================================================
 function description = zoom ()
 
   fplot( @sin, [0,2*pi], '-*' );
@@ -365,26 +363,19 @@ function description = zoom ()
 
 end
 % =========================================================================
-% *** FUNCTION bars
-% ***
-% *** Bar plot.
-% ***
-% =========================================================================
 function description = bars ()
-
   x = -2.9:0.2:2.9;
   bar(x,exp(-x.*x),'r')
-
   legend( 'exp(-x^2)' )
-
   description = 'Plot with bars.' ;
-
 end
 % =========================================================================
-% *** FUNCTION groupbars
-% ***
-% *** Bar plot.
-% ***
+function description = hbars ()
+  y = [75.995 91.972 105.711 123.203 131.669 ...
+     150.697 179.323 203.212 226.505 249.633 281.422];
+  barh(y);
+  description = 'Horizontal bars.' ;
+end
 % =========================================================================
 function description = groupbars ()
   X = [1,2,3,4,5];

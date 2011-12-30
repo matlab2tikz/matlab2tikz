@@ -2695,8 +2695,14 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           % whereas pgfplots requires physical units (pt,cm,...); hence
           % have the units converted.
           ulength = normalized2physical( m2t );
+          isHoriz = strcmp( get( h, 'Horizontal' ), 'on' );
+          if (isHoriz)
+              barType = 'xbar';
+          else
+              barType = 'ybar';
+          end
           drawOptions = [ drawOptions,                                    ...
-                          'ybar',                                                      ...
+                          barType,                                                      ...
                           sprintf( 'bar width=%g%s, bar shift=%g%s',                   ...
                                     m2t.barWidth                *ulength.value, ulength.unit , ...
                                     m2t.barShifts(m2t.barplotId)*ulength.value, ulength.unit  ) ];
@@ -2767,9 +2773,17 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   str = [ str, ...
           sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
 
-  for k=1:length(xData)
-      str = strcat( str, ...
-                    sprintf( ' (%g,%g)', xData(k), yData(k) ) );
+  if isHoriz
+      % If the bars are horizontal, the values x and y are exchanged.
+      for k=1:length(xData)
+          str = strcat( str, ...
+                        sprintf( ' (%g,%g)', yData(k), xData(k) ) );
+      end
+  else
+      for k=1:length(xData)
+          str = strcat( str, ...
+                        sprintf( ' (%g,%g)', xData(k), yData(k) ) );
+      end
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
