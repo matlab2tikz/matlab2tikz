@@ -3664,23 +3664,36 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
       case 'west'
           position = [dist, 0.5];
           anchor   = 'west';
+      case 'northoutside'
+          position = [0.5, 1+dist];
+          anchor = 'south';
+      case 'southoutside'
+          position = [0.5, -dist];
+          anchor = 'north';
+      case 'eastoutside'
+          position = [1+dist, 0.5];
+          anchor = 'west';
+      case 'westoutside'
+          position = [-dist, 0.5];
+          anchor = 'east';
       case 'northeastoutside'
           position = [1+dist, 1];
           anchor = 'north west';
+      case 'northwestoutside'
+          position = [-dist, 1];
+          anchor = 'north east';
       case 'southeastoutside'
           position = [1+dist, 0];
           anchor = 'south west';
-      case 'best'
-          % TODO: Implement this one.
+      case 'southwestoutside'
+          position = [-dist, 0];
+          anchor = 'south east';
+      case {'best','bestoutside'}
+          % TODO: Implement these.
           % The position could be determined by means of 'Position' and/or
           % 'OuterPosition' of the legend handle; in fact, this could be made
           % a general principle for all legend placements.
-          userWarning( m2t, [ ' Option ''Best'' not yet implemented.',         ...
-                         ' Choosing default.' ] );
-      case 'bestoutside'
-          % TODO: Implement this one.
-          % For comments see above.
-          userWarning( m2t, [ ' Option ''BestOutside'' not yet implemented.',  ...
+          userWarning( m2t, [ sprintf(' Option ''%s'' not yet implemented.',loc),         ...
                          ' Choosing default.' ] );
       otherwise
           userWarning( m2t, [ ' Unknown legend location ''',loc,''''           ...
