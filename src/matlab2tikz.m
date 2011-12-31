@@ -1359,8 +1359,12 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
   cellIndexNew = 0;
   delta = 0.5; % Distance around a plotbox within the range of which points
                 % will be considered close enough, and not moved.
-  xLimLarger = [ xLim(1)-delta, xLim(2)+delta ];
-  yLimLarger = [ yLim(1)-delta, yLim(2)+delta ];
+  % The TeX register limit is 16384, but that doesn't seem to work as a limit.
+  % 164 has experimentally been found as the largest integer to work.
+  % Possibly not very reliable.
+  texRegisterLimit = 164;
+  xLimLarger = [ -texRegisterLimit, texRegisterLimit ];
+  yLimLarger = [ -texRegisterLimit, texRegisterLimit ];
 
   for cellIndex = 1:length(xDataCell);
       % Code clarity and to make sure we deal with column vectors
@@ -1377,7 +1381,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
 
       % The largest positive value of v determines where the point sits,
       % and to which boundary it must be normalized.
-      v = [ xLim(1)-x, x-xLim(2), yLim(1)-y, y-yLim(2) ];
+      v = [ xLimLarger(1)-x, x-xLimLarger(2), yLimLarger(1)-y, y-yLimLarger(2) ];
       maxVal = max(v,[],2);
       outliers = find( maxVal > delta);
 
@@ -1399,12 +1403,12 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
           outData = [ x(out); y(out) ];
           if out > 1
               ref = [ x(out-1); y(out-1) ];
-              new = moveCloser( outData, ref, xLimLarger, yLimLarger );
+              new = moveToBoundingBox( outData, ref, xLimLarger, yLimLarger );
               outDataNew(kk, 1:2) = new;
           end
           if out < length(x)
               ref = [ x(out+1); y(out+1) ];
-              new = moveCloser( outData, ref, xLimLarger, yLimLarger );
+              new = moveToBoundingBox( outData, ref, xLimLarger, yLimLarger );
               outDataNew(kk, 3:4) = new;
           end
       end
@@ -1554,13 +1558,13 @@ end
 % -------------------------------------------------------------------------
 
 % -------------------------------------------------------------------------
-% FUNCTION moveCloser
+% FUNCTION moveToBoundingBox
 % Takes one point x outside of a box defined by xLim, yLim, and one other
 % point xRef inside of it.
 % Returns a point xNew that sits on the line xRef---x *and* on the
 % boundary box.
 % -------------------------------------------------------------------------
-function xNew = moveCloser( x, xRef, xLim, yLim )
+function xNew = moveToBoundingBox( x, xRef, xLim, yLim )
 
   % Find out with which border the line x---xRef intersects, and determine
   % the parameter alpha such that x+alpha(xRef-x) sits on the boundary.
@@ -1586,7 +1590,7 @@ function xNew = moveCloser( x, xRef, xLim, yLim )
   xNew = x + alpha*(xRef-x);
 end
 % -------------------------------------------------------------------------
-% END FUNCTION moveCloser
+% END FUNCTION moveToBoundingBox
 % -------------------------------------------------------------------------
 
 
