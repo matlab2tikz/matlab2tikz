@@ -1562,35 +1562,28 @@ end
 % -------------------------------------------------------------------------
 function xNew = moveCloser( x, xRef, xLim, yLim )
 
-  alpha = inf;
-
   % Find out with which border the line x---xRef intersects, and determine
   % the parameter alpha such that x+alpha(xRef-x) sits on the boundary.
   if segmentsIntersect( [x(1), xRef(1), xLim(1), xLim(1)], ... % left boundary
                         [x(2), xRef(2), yLim            ] )
-      alpha = min( alpha, (xLim(1)-x(1)) / (xRef(1)-x(1)) );
-  end
-  if segmentsIntersect( [x(1), xRef(1), xLim            ], ... % bottom boundary
+      alpha = (xLim(1)-x(1)) / (xRef(1)-x(1));
+  elseif segmentsIntersect( [x(1), xRef(1), xLim            ], ... % bottom boundary
                         [x(2), xRef(2), yLim(1), yLim(1)] )
-      alpha = min( alpha, (yLim(1)-x(2)) / (xRef(2)-x(2)) );
-  end
-  if segmentsIntersect( [x(1), xRef(1), xLim(2), xLim(2)], ... % right boundary
+      alpha = (yLim(1)-x(2)) / (xRef(2)-x(2));
+  elseif segmentsIntersect( [x(1), xRef(1), xLim(2), xLim(2)], ... % right boundary
                         [x(2), xRef(2), yLim            ] )
-      alpha = min( alpha, (xLim(2)-x(1)) / (xRef(1)-x(1)) );
-  end
-  if segmentsIntersect( [x(1), xRef(1), xLim            ], ... % top boundary
+      alpha = (xLim(2)-x(1)) / (xRef(1)-x(1));
+  elseif segmentsIntersect( [x(1), xRef(1), xLim            ], ... % top boundary
                         [x(2), xRef(2), yLim(2), yLim(2)] )
-      alpha = min( alpha, (yLim(2)-x(2)) / (xRef(2)-x(2)) );
-  end
-
-  if isinf(alpha)
+      alpha = (yLim(2)-x(2)) / (xRef(2)-x(2));
+  else
       error( 'matlab2tikz:noIntersecton', ...
               [ 'Could not determine were the outside point sits with ', ...
                 'respect to the box. Both x and xRef outside the box?' ] );
   end
 
   % create the new point
-  xNew = xRef + alpha*(x-xRef);
+  xNew = x + alpha*(xRef-x);
 end
 % -------------------------------------------------------------------------
 % END FUNCTION moveCloser
@@ -1649,7 +1642,7 @@ end
 % -------------------------------------------------------------------------
 function out = segmentsIntersect( x, y )
 
-  % Technically, one writes down the 2x2 equation system to solve the
+  % Technically, one needs to solve the 2x2 equation system
   %
   %   x1 + lambda (x2-x1)  =  x3 + mu (x4-x3)
   %   y1 + lambda (y2-y1)  =  y3 + mu (y4-y3)
@@ -1658,15 +1651,15 @@ function out = segmentsIntersect( x, y )
 
   det = (x(4)-x(3))*(y(2)-y(1)) - (y(4)-y(3))*(x(2)-x(1));
 
-  out = det;
-
-  if det % otherwise the segments are parallel
+  if (det ~= 0.0)
       rhs1   = x(3) - x(1);
       rhs2   = y(3) - y(1);
       lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
       mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
-      out    =  0<lambda && lambda<1 ...
-             && 0<mu     && mu    <1;
+      out    =  0.0<=lambda && lambda<=1.0 ...
+             && 0.0<=mu     && mu    <=1.0;
+  else % segments are parallel
+      out = false;
   end
 
 end
@@ -2649,7 +2642,6 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   end
   % -----------------------------------------------------------------------
 
-
   xData = get( h, 'XData' );
   yData = get( h, 'YData' );
 
@@ -2657,6 +2649,12 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   drawOptions = cell(0);
 
   barlayout = get( h, 'BarLayout' );
+  isHoriz = strcmp( get( h, 'Horizontal' ), 'on' );
+  if (isHoriz)
+      barType = 'xbar';
+  else
+      barType = 'ybar';
+  end
   switch barlayout
       case 'grouped'
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2695,12 +2693,6 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           % whereas pgfplots requires physical units (pt,cm,...); hence
           % have the units converted.
           ulength = normalized2physical( m2t );
-          isHoriz = strcmp( get( h, 'Horizontal' ), 'on' );
-          if (isHoriz)
-              barType = 'xbar';
-          else
-              barType = 'ybar';
-          end
           drawOptions = [ drawOptions,                                    ...
                           barType,                                                      ...
                           sprintf( 'bar width=%g%s, bar shift=%g%s',                   ...
@@ -2725,10 +2717,10 @@ function [ m2t, str ] = drawBarseries( m2t, h )
                       % Should this be a userInfo() instead?
               end
               bWFactor = get( h, 'BarWidth' );
-              ulength   = normalized2physical( m2t );
+              ulength  = normalized2physical( m2t );
               % Add 'ybar stacked' to the containing axes environment.
               m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                                                { 'ybar stacked',                          ...
+                                                                { [barType,' stacked'],                          ...
                                                                   sprintf( 'bar width=%g%s',               ...
                                                                            ulength.value*bWFactor, ulength.unit ) } ...
                                                               );
