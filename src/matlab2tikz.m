@@ -1357,8 +1357,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
       yDeviationCellNew = cell(0);
   end
   cellIndexNew = 0;
-  delta = 0.5; % Distance around a plotbox within the range of which points
-                % will be considered close enough, and not moved.
+
   % The TeX register limit is 16384, but that doesn't seem to work as a limit.
   % 164 has experimentally been found as the largest integer to work.
   % Possibly not very reliable.
@@ -1383,7 +1382,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
       % and to which boundary it must be normalized.
       v = [ xLimLarger(1)-x, x-xLimLarger(2), yLimLarger(1)-y, y-yLimLarger(2) ];
       maxVal = max(v,[],2);
-      outliers = find( maxVal > delta);
+      outliers = find(maxVal > 0.0);
 
       % if nothing to do in this cell, take a shortcut
       if isempty(outliers)
