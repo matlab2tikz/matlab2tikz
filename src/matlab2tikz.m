@@ -373,7 +373,7 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
                           );
       for k = 1:size(m2t.requiredRgbColors,1)
           m2t.content = append( m2t.content, ...
-                                sprintf('\\definecolor{mycolor%d}{rgb}{%g,%g,%g}\n', k,     ...
+                                sprintf('\\definecolor{mycolor%d}{rgb}{%.15g,%.15g,%.15g}\n', k,     ...
                                                           m2t.requiredRgbColors(k,:)) ...
                               );
       end
@@ -534,7 +534,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   m2t.is3dPlot = false;
   if any( view ~= [0,90] )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                                        sprintf( 'view={%g}{%g}', get( handle, 'View') ) ...
+                                                        sprintf( 'view={%.15g}{%.15g}', get( handle, 'View') ) ...
                                                       );
       m2t.is3dPlot = true;
   end
@@ -561,7 +561,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
           m2t.currentAxesContainer.name = 'axis';
           m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                                             { 'hide x axis, hide y axis', ...
-                                                               sprintf('width=%g%s, height=%g%s', dim.x.value, dim.x.unit,   ...
+                                                               sprintf('width=%.15g%s, height=%.15g%s', dim.x.value, dim.x.unit,   ...
                                                                                                   dim.y.value, dim.y.unit ), ...
                                                               'scale only axis' } ...
                                      );
@@ -656,7 +656,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                                    sprintf( 'width=%s', dim.x.unit ) );
   else
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                   sprintf( 'width=%g%s', dim.x.value, dim.x.unit ) );
+                                   sprintf( 'width=%.15g%s', dim.x.value, dim.x.unit ) );
   end
   if dim.y.unit(1)=='\' && dim.y.value==1.0
       % only return \figureheight instead of 1.0\figureheight
@@ -664,7 +664,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                                    sprintf( 'height=%s', dim.y.unit ) );
   else
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                   sprintf( 'height=%g%s' , dim.y.value, dim.y.unit ) );
+                                   sprintf( 'height=%.15g%s' , dim.y.value, dim.y.unit ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle the orientation
@@ -700,13 +700,13 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   xLim = get( handle, 'XLim' );
   yLim = get( handle, 'YLim' );
   m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                               { sprintf('xmin=%g, xmax=%g', xLim ), ...
-                                 sprintf('ymin=%g, ymax=%g', yLim ) } ...
+                               { sprintf('xmin=%.15g, xmax=%.15g', xLim ), ...
+                                 sprintf('ymin=%.15g, ymax=%.15g', yLim ) } ...
                              );
   if m2t.is3dPlot
       zLim = get( handle, 'ZLim' );
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options,  ...
-                                                        sprintf('zmin=%g, zmax=%g', zLim ) ...
+                                                        sprintf('zmin=%.15g, zmax=%.15g', zLim ) ...
                                                       );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1079,9 +1079,9 @@ function str = plotLine( opts, xData, yData, yDeviation )
 
     % Convert to string array then cell to call sprintf once (and no loops).
     if errorbarMode
-        str_data = cellstr(num2str([xData yData yDeviation],'(%g,%g) +- (0.0,%g)'));
+        str_data = cellstr(num2str([xData yData yDeviation],'(%.15g,%.15g) +- (0.0,%.15g)'));
     else
-        str_data = cellstr(num2str([xData yData],'(%g,%g)'));
+        str_data = cellstr(num2str([xData yData],'(%.15g,%.15g)'));
     end
     str_data = sprintf('%s', str_data{:});
 
@@ -1115,7 +1115,7 @@ function str = plotLine3d( opts, xData, yData, zData )
     zData = zData(:);
 
     % Convert to string array then cell to call sprintf once (and no loops).
-    str_data = cellstr(num2str([xData yData,zData],'(%g,%g,%g)'));
+    str_data = cellstr(num2str([xData yData,zData],'(%.15g,%.15g,%.15g)'));
     str_data = sprintf('%s', str_data{:});
 
     % The process above adds extra white spaces, remove them all
@@ -2070,7 +2070,7 @@ function [ m2t, str ] = drawPatch( m2t, handle )
                         sprintf(['\\addplot [',drawOpts,'] coordinates{']) );
 
           % Convert to string array then cell to call sprintf once (and no loops).
-          str_data = cellstr(num2str([xData(:,j),yData(:,j)],'(%g,%g)'));
+          str_data = cellstr(num2str([xData(:,j),yData(:,j)],'(%.15g,%.15g)'));
           str_data = sprintf('%s', str_data{:});
           % The process adds extra white spaces, remove them all
           str_data = str_data(~isspace(str_data));
@@ -2081,7 +2081,7 @@ function [ m2t, str ] = drawPatch( m2t, handle )
           % Let's keep an eye on this.
 %          if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j)
 %              str = strcat( str, ...
-%                            sprintf( ' (%g,%g)', xData(1,j), yData(1,j) ) );
+%                            sprintf( ' (%.15g,%.15g)', xData(1,j), yData(1,j) ) );
 %          end
       end
    else % ~isempty( zData )
@@ -2091,7 +2091,7 @@ function [ m2t, str ] = drawPatch( m2t, handle )
                         sprintf(['\\addplot3 [',drawOpts,'] coordinates{']) );
 
           % Convert to string array then cell to call sprintf once (and no loops).
-          str_data = cellstr(num2str([xData(:,j),yData(:,j),zData(:,j)],'(%g,%g,%g)'));
+          str_data = cellstr(num2str([xData(:,j),yData(:,j),zData(:,j)],'(%.15g,%.15g,%.15g)'));
           str_data = sprintf('%s', str_data{:});
           % The process adds extra white spaces, remove them all
           str_data = str_data(~isspace(str_data));
@@ -2100,7 +2100,7 @@ function [ m2t, str ] = drawPatch( m2t, handle )
           % make sure the path is closed
           if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j) || zData(1,j)~=zData(end,j)
               str = strcat( str, ...
-                            sprintf( ' (%g,%g,%g)', xData(1,j), yData(1,j), zData(1,j) ) );
+                            sprintf( ' (%.15g,%.15g,%.15g)', xData(1,j), yData(1,j), zData(1,j) ) );
           end
       end
    end
@@ -2248,7 +2248,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       for i = 1:m
           for j = 1:n
               str = strcat( str, ...
-                            sprintf( '\\fill [%s] (axis cs:%g,%g) rectangle (axis cs:%g,%g);\n', ...
+                            sprintf( '\\fill [%s] (axis cs:%.15g,%.15g) rectangle (axis cs:%.15g,%.15g);\n', ...
                                      xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2  ) );
           end
       end
@@ -2343,7 +2343,7 @@ function [m2t,env] = drawSurface( m2t, handle )
         for i = 1:col
             for j = 1:row
                 str = [ str, ...
-                        sprintf('(%g,%g,%g)', dx(j), dy(i), dz(i,j) ) ];
+                        sprintf('(%.15g,%.15g,%.15g)', dx(j), dy(i), dz(i,j) ) ];
             end
             % insert an empty line to tell Pgfplots about one row ending here
             str = [str, sprintf('\n\n')];
@@ -2355,7 +2355,7 @@ function [m2t,env] = drawSurface( m2t, handle )
         for i = 1:col
             for j = 1:row
                 str = [ str, ...
-                        sprintf('(%g,%g,%g)', dx(i,j), dy(i,j), dz(i,j) ) ];
+                        sprintf('(%.15g,%.15g,%.15g)', dx(i,j), dy(i,j), dz(i,j) ) ];
             end
             % insert an empty line to tell Pgfplots about one row ending here
             str = [str, sprintf('\n\n')];
@@ -2424,7 +2424,7 @@ function [ m2t, str ] = drawText( m2t, handle)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  str = sprintf( '\\node[%s]\nat (axis cs:%g, %g) {%s};\n', ...
+  str = sprintf( '\\node[%s]\nat (axis cs:%.15g, %.15g) {%s};\n', ...
                  style, pos(1), pos(2), String );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
@@ -2455,7 +2455,7 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   % Set opacity if FaceAlpha < 1 in MATLAB
   faceAlpha = get( handle, 'FaceAlpha');
   if faceAlpha ~= 1 && isnumeric( faceAlpha )
-    surfOptions = appendOptions( surfOptions, sprintf( 'opacity=%g', faceAlpha ) );
+    surfOptions = appendOptions( surfOptions, sprintf( 'opacity=%.15g', faceAlpha ) );
   end
   
   if strcmpi( plotType, 'surf' )
@@ -2545,10 +2545,10 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   for k = 1:length(xData)
       if isempty(zData)
           str = strcat( str, ...
-                        sprintf( ' (%g,%g)', xData(k), yData(k) ) );
+                        sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
       else
           str = strcat( str, ...
-                        sprintf( ' (%g,%g,%g)', xData(k), yData(k), zData(k) ) );
+                        sprintf( ' (%.15g,%.15g,%.15g)', xData(k), yData(k), zData(k) ) );
       end
       if length(cData) == 3
           % If size(cData,1)==1, then all the colors are the same and have
@@ -2698,7 +2698,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           ulength = normalized2physical( m2t );
           drawOptions = [ drawOptions,                                    ...
                           barType,                                                      ...
-                          sprintf( 'bar width=%g%s, bar shift=%g%s',                   ...
+                          sprintf( 'bar width=%.15g%s, bar shift=%.15g%s',                   ...
                                     m2t.barWidth                *ulength.value, ulength.unit , ...
                                     m2t.barShifts(m2t.barplotId)*ulength.value, ulength.unit  ) ];
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2724,7 +2724,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
               % Add 'ybar stacked' to the containing axes environment.
               m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                                                 { [barType,' stacked'],                          ...
-                                                                  sprintf( 'bar width=%g%s',               ...
+                                                                  sprintf( 'bar width=%.15g%s',               ...
                                                                            ulength.value*bWFactor, ulength.unit ) } ...
                                                               );
               m2t.addedAxisOption = true;
@@ -2772,12 +2772,12 @@ function [ m2t, str ] = drawBarseries( m2t, h )
       % If the bars are horizontal, the values x and y are exchanged.
       for k=1:length(xData)
           str = strcat( str, ...
-                        sprintf( ' (%g,%g)', yData(k), xData(k) ) );
+                        sprintf( ' (%.15g,%.15g)', yData(k), xData(k) ) );
       end
   else
       for k=1:length(xData)
           str = strcat( str, ...
-                        sprintf( ' (%g,%g)', xData(k), yData(k) ) );
+                        sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
       end
   end
   str = [ str, sprintf(' };\n\n') ];
@@ -2843,7 +2843,7 @@ function [ m2t, str ] = drawStemseries( m2t, h )
 
   for k=1:length(xData)
       str = strcat( str, ...
-                    sprintf( ' (%g,%g)', xData(k), yData(k) ) );
+                    sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2906,7 +2906,7 @@ function [ m2t, str ] = drawStairSeries( m2t, h )
 
   for k=1:length(xData)
       str = strcat( str, ...
-                    sprintf( ' (%g,%g)', xData(k), yData(k) ) );
+                    sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
   end
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3002,7 +3002,7 @@ function [ m2t, str ] = drawQuiverGroup( m2t, h )
   % return the vector field code
   str = [ str, ...
           sprintf( [ '\\addplot [arrow',num2str(m2t.quiverId)  ,...
-                     '] coordinates{ (%g,%g) (%g,%g) };\n'],...
+                     '] coordinates{ (%.15g,%.15g) (%.15g,%.15g) };\n'],...
                    XY ) ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -3066,7 +3066,7 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
 
       if abs(upDev-loDev) >= 1e-10 % don't use 'm2t.tol' here as is seems somewhat too strict
           error( 'drawErrorBars:uneqDeviations', ...
-                 'Upper and lower error deviations not equal (%g ~= %g); matlab2tikz can''t deal with that yet. Using upper deviations.', upDev, loDev );
+                 'Upper and lower error deviations not equal (%.15g ~= %.15g); matlab2tikz can''t deal with that yet. Using upper deviations.', upDev, loDev );
       end
 
       yDeviations(k) = upDev;
@@ -3181,12 +3181,12 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
 
       case {'northoutside','southoutside'}
           cbarOptions = [ cbarOptions,                          ...
-                           sprintf( 'width=%g%s, height=%g%s',  ...
+                           sprintf( 'width=%.15g%s, height=%.15g%s',  ...
                                      parentDim.x.value, parentDim.x.unit,   ...
                                      width.value      , width.unit           ), ...
                            'scale only axis',                           ...
-                           sprintf( 'xmin=%g, xmax=%g', clim ),         ...
-                           sprintf( 'ymin=%g, ymax=%g', [0,1] )         ...
+                           sprintf( 'xmin=%.15g, xmax=%.15g', clim ),         ...
+                           sprintf( 'ymin=%.15g, ymax=%.15g', [0,1] )         ...
                          ];
 
           % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'),
@@ -3207,12 +3207,12 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
 
       case {'eastoutside','westoutside'}
           cbarOptions = [ cbarOptions,                          ...
-                           sprintf( 'width=%g%s, height=%g%s',  ...
+                           sprintf( 'width=%.15g%s, height=%.15g%s',  ...
                                      width.value      , width.unit,  ...
                                      parentDim.y.value, parentDim.y.unit ), ...
                            'scale only axis',                           ...
-                           sprintf( 'xmin=%g, xmax=%g', [0,1] ),        ...
-                           sprintf( 'ymin=%g, ymax=%g', clim )          ...
+                           sprintf( 'xmin=%.15g, xmax=%.15g', [0,1] ),        ...
+                           sprintf( 'ymin=%.15g, ymax=%.15g', clim )          ...
                          ];
           if strcmpi( loc, 'eastoutside' )
                cbarOptions = [ cbarOptions,                           ...
@@ -3308,7 +3308,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                   y2 = clim(1) + cbarLength/m *i;
           end
           env = append( env, ...
-                        sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%g,%g) (%g,%g) (%g,%g) (%g,%g) };\n', ...
+                        sprintf( '\\addplot [fill=%s,draw=none] coordinates{ (%.15g,%.15g) (%.15g,%.15g) (%.15g,%.15g) (%.15g,%.15g) };\n', ...
                                  badgeColor, x1, y1, x2, y1, x2, y2, x1, y2  ) ...
                       );
       end
@@ -3728,7 +3728,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   % append to legend options
   if ~isempty(anchor)
       lStyle = appendOptions( lStyle, ...
-                              { sprintf( 'at={(%g,%g)}',position ), ...
+                              { sprintf( 'at={(%.15g,%.15g)}',position ), ...
                                 sprintf( 'anchor=%s', anchor ) ...
                               } ...
                             );
@@ -4140,7 +4140,7 @@ function str = my_num2str( num )
       error( 'num2str_short: Invalid input.' )
   end
 
-  str = num2str( num, '%g' );
+  str = num2str( num, '%.15g' );
 
 end
 % =========================================================================
@@ -4203,8 +4203,8 @@ end
 %    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %
 %    % finally, set the scaling
-%    scaling.x = sprintf( '%gmm', physicalLength.x / q.x );
-%    scaling.y = sprintf( '%gmm', physicalLength.y / q.y );
+%    scaling.x = sprintf( '%.15gmm', physicalLength.x / q.x );
+%    scaling.y = sprintf( '%.15gmm', physicalLength.y / q.y );
 %
 %
 %    % The only way to reliably get the aspect ratio of the axes is
