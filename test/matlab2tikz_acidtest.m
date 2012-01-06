@@ -127,7 +127,7 @@ function matlab2tikz_acidtest( varargin )
       end
 
       pdf_file = sprintf( 'data/test%d-reference' , indices(k) );
-      gen_file = sprintf( 'data/test%d-converted.tikz', indices(k) );
+      gen_file = sprintf( 'data/test%d-converted.tex', indices(k) );
 
       tic;
 
