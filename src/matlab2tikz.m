@@ -32,7 +32,7 @@
 % ***
 % =========================================================================
 % ***
-% *** Copyright (c) 2008--2011, Nico Schlömer <nico.schloemer@gmail.com>
+% *** Copyright (c) 2008--2012, Nico Schlömer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without
@@ -96,7 +96,7 @@ function matlab2tikz( varargin )
   m2t.version = '0.1.4';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
-  m2t.years = '2008--2011';
+  m2t.years = '2008--2012';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
 
   m2t.tikzOptions = cell(0); % for the arrow style -- TODO: see if we can get this removed
@@ -2405,27 +2405,32 @@ function [ m2t, str ] = drawText( m2t, handle)
   VerticalAlignment = get( handle, 'VerticalAlignment' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % translate them to pgf style
+  style = cell(0)
   switch VerticalAlignment
-    case {'top', 'cap'},         style = 'below';
-    case {'baseline', 'bottom'}, style = 'above';
-    otherwise,                   style = '';
+      case {'top', 'cap'}
+          style = appendOptions( style, 'below' );
+      case {'baseline', 'bottom'}
+          style = appendOptions( style, 'above' );
   end
   switch HorizontalAlignment
-    case 'left',  style = [style, ' right'];
-    case 'right', style = [style, ' left'];
+      case 'left'
+          style = appendOptions( style, 'right' );
+      case 'right'
+          style = appendOptions( style, 'left' );
   end
   % remove invisible border around \node to make the text align precisely
-  style = [style, ', inner sep=0mm'];
+  style = appendOptions( style, 'inner sep=0mm' );
 
-  style = [style ', text=' tcolor];
+  style = appendOptions( style, ['text=' tcolor] );
   if ~strcmp(EdgeColor, 'none')
     [ m2t, ecolor ] = getColor( m2t, handle, EdgeColor, 'patch' );
-    style = [style ', draw=', ecolor];
+    style = appendOptions( style, ['draw=', ecolor] );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
+  style
   str = sprintf( '\\node[%s]\nat (axis cs:%.15g, %.15g) {%s};\n', ...
-                 style, pos(1), pos(2), String );
+                 collapse(style,', '), pos(1), pos(2), String );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
