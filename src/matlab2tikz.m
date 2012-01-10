@@ -1365,8 +1365,8 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
   % This could be extended for log-plots.
   xWidth = xLim(2) - xLim(1);
   yWidth = yLim(2) - yLim(1);
-  xLimLarger = [ -40*xWidth, 40*xWidth ];
-  yLimLarger = [ -40*yWidth, 40*yWidth ];
+  xLimLarger = xLim + [ -40*xWidth, 40*xWidth ];
+  yLimLarger = yLim + [ -40*yWidth, 40*yWidth ];
 
   for cellIndex = 1:length(xDataCell);
       % Code clarity and to make sure we deal with column vectors
