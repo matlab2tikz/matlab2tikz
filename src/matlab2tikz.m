@@ -1358,12 +1358,15 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByOutliers( xDa
   end
   cellIndexNew = 0;
 
-  % The TeX register limit is 16384, but that doesn't seem to work as a limit.
-  % 164 has experimentally been found as the largest integer to work.
-  % Possibly not very reliable.
-  texRegisterLimit = 164;
-  xLimLarger = [ -texRegisterLimit, texRegisterLimit ];
-  yLimLarger = [ -texRegisterLimit, texRegisterLimit ];
+  % The TeX register limit is 16384, and may be exhausted if an outlier is too
+  % far outside of the plot. It's not the absolute value that is key here, but
+  % the relative distance from the bounding box w.r.t. the size of the box.
+  % Deliberately take a factor of 40 here.
+  % This could be extended for log-plots.
+  xWidth = xLim(2) - xLim(1);
+  yWidth = yLim(2) - yLim(1);
+  xLimLarger = [ -40*xWidth, 40*xWidth ];
+  yLimLarger = [ -40*yWidth, 40*yWidth ];
 
   for cellIndex = 1:length(xDataCell);
       % Code clarity and to make sure we deal with column vectors
@@ -1582,7 +1585,7 @@ function xNew = moveToBoundingBox( x, xRef, xLim, yLim )
   else
       error( 'matlab2tikz:noIntersecton', ...
               [ 'Could not determine were the outside point sits with ', ...
-                'respect to the box. Both x and xRef outside the box?' ] );
+                'respect to the box. Both x and xRef {in,out}side the box?' ] );
   end
 
   % create the new point
@@ -2428,7 +2431,6 @@ function [ m2t, str ] = drawText( m2t, handle)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  style
   str = sprintf( '\\node[%s]\nat (axis cs:%.15g, %.15g) {%s};\n', ...
                  collapse(style,', '), pos(1), pos(2), String );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -5449,7 +5451,7 @@ end
 function parsed = parseTexString ( m2t, string )
 
   % Convert cell string to regular string, otherwise MATLAB complains
-  if iscell( string )
+  if iscellstr( string )
       string = string{:};
   end
 
