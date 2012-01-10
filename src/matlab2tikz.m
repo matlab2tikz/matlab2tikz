@@ -439,6 +439,9 @@ function  [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
           case 'text'
               [m2t, env] = drawText( m2t, child );
 
+          case 'rectangle'
+              [m2t, env] = drawRectangle( m2t, child );
+
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
               % don't to anything for these handles and its children
@@ -2437,6 +2440,65 @@ function [ m2t, str ] = drawText( m2t, handle)
 end
 % =========================================================================
 % *** END FUNCTION drawText
+% =========================================================================
+
+
+% =========================================================================
+% *** FUNCTION drawRectangle
+% =========================================================================
+function [ m2t, str ] = drawRectangle( m2t, handle )
+  str = [];
+
+  % there may be some text objects floating around a Matlab figure which
+  % are handled by other subfunctions (labels etc.) or don't need to be
+  % handled at all
+  if     strcmp(get(handle, 'Visible'), 'off') ...
+      || strcmp(get(handle, 'HandleVisibility'), 'off')
+    return;
+  end
+
+  % TODO handle Curvature = [0.8 0.4]
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  lineStyle = get( handle, 'LineStyle' );
+  lineWidth = get( handle, 'LineWidth' );
+  if ( strcmp(lineStyle,'none') || lineWidth==0 )
+      return
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % Get draw options.
+  lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
+
+  colorOptions = cell(0);
+  % fill color
+  faceColor  = get( handle, 'FaceColor' );
+  if ~strcmp( faceColor, 'none' )
+      [ m2t, xFaceColor ] = getColor( m2t, handle, faceColor, 'patch' );
+      colorOptions = appendOptions( colorOptions, ...
+                      sprintf( 'fill=%s', xFaceColor ) );
+  end
+  % draw color
+  edgeColor = get( handle, 'EdgeColor' );
+  lineStyle = get( handle, 'LineStyle' );
+  if strcmp( lineStyle, 'none' ) || strcmp( edgeColor, 'none' )
+      colorOptions = appendOptions( colorOptions, 'draw=none' );
+  else
+      [ m2t, xEdgeColor ] = getColor( m2t, handle, edgeColor, 'patch' );
+      colorOptions = appendOptions( colorOptions, sprintf( 'draw=%s', xEdgeColor ) );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  pos = get( handle, 'Position' );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  drawOptions = [ lineOptions, colorOptions ];
+  pos
+  % plot the thing
+  str = sprintf( '\\draw[%s] (axis cs:%.15g, %.15g) rectangle (axis cs:%.15g, %.15g);\n', ...
+                 collapse(drawOptions,', '), pos(1), pos(2), pos(1)+pos(3), pos(2)+pos(4) ...
+               );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+end
+% =========================================================================
+% *** END FUNCTION drawRectangle
 % =========================================================================
 
 

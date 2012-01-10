@@ -94,7 +94,8 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @latexmath1          , ...
                            @latexmath2          , ...
                            @parameterCurve3d    , ...
-                           @fill3plot
+                           @fill3plot           , ...
+                           @rectanglePlot
                          };
 
   numFunctions = length( testfunction_handles );
@@ -1081,6 +1082,18 @@ function description = fill3plot()
     view(45,22.5);
 
     description = 'fill3 plot.';
+end
+% =========================================================================
+function description = rectanglePlot()
+    rectangle('Position', [0.59,0.35,3.75,1.37],...
+              'Curvature', [0.8,0.4],...
+              'LineWidth', 2, ...
+              'LineStyle', '--' ...
+             );
+    daspect([1,1,1]);
+
+    description = 'Rectangle handle.';
+
 end
 % =========================================================================
 function env = getEnvironment
