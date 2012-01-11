@@ -580,7 +580,10 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if ~isempty( m2t.cmdOpts.Results.extraAxisOptions )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, m2t.cmdOpts.Results.extraAxisOptions );
   end
-
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  if strcmp( get( handle, 'Box' ), 'off' )
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'axis lines=left' );
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get scales
   xScale = get( handle, 'XScale' );
