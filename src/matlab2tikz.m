@@ -660,7 +660,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % grid line style
-  if hasXGrid || hasYGrid || (exist('hasZGrid') && hasZGrid )
+  if hasXGrid || hasYGrid || (exist('hasZGrid','var') && hasZGrid )
       matlabGridLineStyle = get( handle, 'GridLineStyle' );
       % Take over the grid line style in any case when in strict mode.
       % If not, don't add anything in case of default line grid line style
@@ -1408,7 +1408,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
       end
 
       % If vector does not have to be split, take a shortcut
-      if length(xData < newArraySize)
+      if length(xData) < newArraySize
           cellIndexNew = cellIndexNew + 1;
           xDataCellNew{cellIndexNew} = xData;
           yDataCellNew{cellIndexNew} = yData;
@@ -1459,7 +1459,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
                   yDeviationCellNew{cellIndexNew} = [ yDeviationReshaped(:,kk); yDeviationExtra(kk) ];
           end
       end
-      if cols ~= length(xData) ./ newArraySize
+      if cols ~= length(xData) / newArraySize
           cellIndexNew = cellIndexNew + 1;
           xDataCellNew{cellIndexNew} = xDataLeft;
           yDataCellNew{cellIndexNew} = yDataLeft;
@@ -2492,9 +2492,9 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
                       ['mark=' tikzMarker], ...
                       ['color=' xcolor ] };
   elseif size(cData,2) == 3
-      drawOptions = { 'only marks', ...
+      drawOptions = { 'only marks' ...
       % TODO Get this in order as soon as pgfplots can do "scatter rgb".
-%                        'scatter rgb', ...
+%                        'scatter rgb' ...
                     };
   else
       markerOptions = { ['mark=', tikzMarker], ...
@@ -4031,7 +4031,8 @@ end
 function newstr = collapse( cellstr, delimiter )
 
   if ~iscellstr( cellstr ) && ~isnumeric( cellstr{1} )
-      cellstr  % display value of cellstr as debug information
+      % display value of cellstr as debug information
+      disp( cellstr )
       error( 'Expected cellstr or numeric.' );
   end
 
@@ -4322,7 +4323,7 @@ function out = extractValueUnit( str )
     if length(t{1}) == 1
         out.value = 1.0; % such as in '1.0\figurewidth'
         out.unit  = strtrim( t{1}{1} );
-    elseif length(t{1}) == 2 && length(t{1}{1}) == 0
+    elseif length(t{1}) == 2 && isempty(t{1}{1})
         % MATLAB(R) does this:
         % length(t{1})==2 always, but the first field may be empty.
         out.value = 1.0;
