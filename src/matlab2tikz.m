@@ -494,10 +494,6 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   m2t.currentAxesContainer.content  = cell(0);
   m2t.currentAxesContainer.children = cell(0);
 
-  % pass on information about reversed axis (to drawImage)
-  m2t.xAxisReversed = [];
-  m2t.yAxisReversed = [];
-
   % Handle special cases.
   % MATLAB(R) uses 'Tag', Octave 'tag' for their tags. :/
   if strcmp( m2t.env, 'MATLAB' );
@@ -512,7 +508,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   switch get( handle, tagKeyword )
       case colorbarKeyword
           % Handle a colorbar separately.
-          % Note how m2t.currentHandles.gca does *not* get updated.
+          % Note that m2t.currentHandles.gca does *not* get updated.
           % Within drawColorbar(), m2t.currentHandles.gca is assumed to point
           % to the parent axes.
           [m2t, m2t.currentAxesContainer] = drawColorbar( m2t, handle, alignmentOptions );
@@ -541,14 +537,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                                                       );
       m2t.is3dPlot = true;
   end
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
   dim = getAxesDimensions( handle, ...
                            m2t.cmdOpts.Results.width, ...
                            m2t.cmdOpts.Results.height );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   if ~isVisible( handle )
       % An invisible axes container *can* have visible children, so don't
       % immediately bail out here.
@@ -575,30 +569,17 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       m2t.currentAxesContainer = addChildren( m2t.currentAxesContainer, childrenEnvs );
       return
   end
-
-  % add manually given extra axis options
-  if ~isempty( m2t.cmdOpts.Results.extraAxisOptions )
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, m2t.cmdOpts.Results.extraAxisOptions );
-  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if strcmp( get( handle, 'Box' ), 'off' )
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'axis lines=left' );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get scales
-  xScale = get( handle, 'XScale' );
-  yScale = get( handle, 'YScale' );
+  isXLog = strcmp( get( handle, 'XScale' ), 'log' );
+  isYLog = strcmp( get( handle, 'YScale' ), 'log' );
   if m2t.is3dPlot
-      zScale = get( handle, 'ZScale' );
-  end
-
-  isXLog = strcmp( xScale, 'log' );
-  isYLog = strcmp( yScale, 'log' );
-  if m2t.is3dPlot
-      isZLog = strcmp( zScale, 'log' );
-  end
-
-  if  ~isXLog && ~isYLog
+      m2t.currentAxesContainer.name = 'axis';
+  elseif  ~isXLog && ~isYLog
       m2t.currentAxesContainer.name = 'axis';
   elseif isXLog && ~isYLog
       m2t.currentAxesContainer.name = 'semilogxaxis';
@@ -615,45 +596,6 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % the following is general MATLAB behavior
   m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'scale only axis' );
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % axis colors
-  xColor = get( handle, 'XColor' );
-  if ( any(xColor) ) % color not black [0,0,0]
-       [ m2t, col ] = getColor( m2t, handle, xColor, 'patch' );
-       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                    { ['every outer x axis line/.append style={',col, '}'], ...
-                                      ['every x tick label/.append style={font=\color{',col,'}}' ] } ...
-                                  );
-  end
-  yColor = get( handle, 'YColor' );
-  if ( any(yColor) ) % color not black [0,0,0]
-      [ m2t, col ] = getColor( m2t, handle, yColor, 'patch' );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                   { [ 'every outer y axis line/.append style={',col, '}' ], ...
-                                     [ 'every y tick label/.append style={font=\color{',col,'}}' ] } ...
-                                 );
-  end
-  if m2t.is3dPlot
-      zColor = get( handle, 'ZColor' );
-      if ( any(zColor) ) % color not black [0,0,0]
-          [ m2t, col ] = getColor( m2t, handle, zColor, 'patch' );
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                      { [ 'every outer z axis line/.append style={',col, '}' ], ...
-                                          [ 'every z tick label/.append style={font=\color{',col,'}}' ] } ...
-                                      );
-      end
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % background color
-  backgroundColor = get( handle, 'Color' );
-  if ~strcmp( backgroundColor, 'none' )
-      [ m2t, col ] = getColor( m2t, handle, backgroundColor, 'patch' );
-      if ~strcmp( col, 'white' )
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                       sprintf( 'axis background/.style={fill=%s}', col ) ...
-                                     );
-      end
-  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set the width
   if dim.x.unit(1)=='\' && dim.x.value==1.0
@@ -673,156 +615,52 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                                    sprintf( 'height=%.15g%s' , dim.y.value, dim.y.unit ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % handle the orientation
-  m2t.xAxisReversed = false;
-  if strcmp( get(handle,'XDir'), 'reverse' )
-      m2t.xAxisReversed = true;
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'x dir=reverse' );
-  end
-
-  m2t.yAxisReversed = false;
-  if strcmp( get(handle,'YDir'), 'reverse' )
-      m2t.yAxisReversed = true;
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'y dir=reverse' );
-  end
-
-  if m2t.is3dPlot
-      m2t.zAxisReversed = false;
-      if strcmp( get(handle,'ZDir'), 'reverse' )
-          m2t.yAxisReversed = true;
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'z dir=reverse' );
+  % background color
+  backgroundColor = get( handle, 'Color' );
+  if ~strcmp( backgroundColor, 'none' )
+      [ m2t, col ] = getColor( m2t, handle, backgroundColor, 'patch' );
+      if ~strcmp( col, 'white' )
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                       sprintf( 'axis background/.style={fill=%s}', col ) ...
+                                     );
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % for double axes pairs, unconditionally put the ordinate left for the
-  % first one, right for the second one.
-  if alignmentOptions.isElderTwin
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, {'axis y line*=left', 'axis x line*=bottom'} );
-  elseif alignmentOptions.isYoungerTwin
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, {'axis y line*=right', 'axis x line*=top'} );
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get axis limits
-  xLim = get( handle, 'XLim' );
-  yLim = get( handle, 'YLim' );
-  m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                               { sprintf('xmin=%.15g, xmax=%.15g', xLim ), ...
-                                 sprintf('ymin=%.15g, ymax=%.15g', yLim ) } ...
-                             );
-  if m2t.is3dPlot
-      zLim = get( handle, 'ZLim' );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options,  ...
-                                                        sprintf('zmin=%.15g, zmax=%.15g', zLim ) ...
-                                                      );
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get ticks along with the labels
-  [ ticks, tickLabels, hasMinorTicks ] = getTicks( m2t, handle );
-
-  % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
-  % the number of minor ticks is automatically determined by MATLAB(R) to
-  % fit the size of the axis. Until we know how to extract this number, use
-  % a reasonable default.
-  matlabDefaultNumMinorTicks = 3;
-  if ~isempty( ticks.x )
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xtick={%s}', ticks.x ) );
-  end
-  if ~isempty( tickLabels.x )
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xticklabels={%s}', tickLabels.x ) );
-  end
-  if hasMinorTicks.x
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'xminorticks=true' );
-      if m2t.cmdOpts.Results.strict
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor x tick num={%d}', matlabDefaultNumMinorTicks ) );
-      end
-  end
-  if ~isempty( ticks.y )
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ytick={%s}', ticks.y ) );
-  end
-  if ~isempty( tickLabels.y )
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'yticklabels={%s}', tickLabels.y ) );
-  end
-  if hasMinorTicks.y
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'yminorticks=true' );
-      if m2t.cmdOpts.Results.strict
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor y tick num={%d}', matlabDefaultNumMinorTicks ) );
-      end
-  end
-  if m2t.is3dPlot
-      if ~isempty( ticks.z )
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ztick={%s}', ticks.z ) );
-      end
-      if ~isempty( tickLabels.z )
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zticklabels={%s}', tickLabels.z ) );
-      end
-      if hasMinorTicks.z
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zminorticks=true' );
-          if m2t.cmdOpts.Results.strict
-              m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor z tick num={%d}', matlabDefaultNumMinorTicks ) );
-          end
-      end
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get axis labels
-  axisLabels = getAxisLabels( handle );
-  if ~isempty( axisLabels.x )
-      xlabelText = sprintf( '%s', axisLabels.x );
-      xlabelText = prettyPrint( m2t, xlabelText, axisLabels.xInterpreter );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'xlabel={%s}', xlabelText ) );
-  end
-  if ~isempty( axisLabels.y )
-      ylabelText = sprintf( '%s', axisLabels.y );
-      ylabelText = prettyPrint( m2t, ylabelText, axisLabels.yInterpreter );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'ylabel={%s}', ylabelText ) );
-  end
-  if m2t.is3dPlot
-      if ~isempty( axisLabels.z )
-          zlabelText = sprintf( '%s', axisLabels.z );
-          zlabelText = prettyPrint( m2t, zlabelText, axisLabels.zInterpreter );
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'zlabel={%s}', zlabelText ) );
-      end
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get title
+  % title
   title = get( get( handle, 'Title' ), 'String' );
   if ~isempty(title)
       titleText = sprintf( '%s', title );
       titleInterpreter = get( get( handle, 'Title' ), 'Interpreter' );
       titleText = prettyPrint( m2t, titleText, titleInterpreter );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'title={%s}', titleText ) );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                                        sprintf( 'title={%s}', titleText ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get grids
-  isGrid = false;
-  if strcmp( get( handle, 'XGrid'), 'on' );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'xmajorgrids' );
-      isGrid = true;
+  % For double axes pairs, unconditionally put the ordinate left for the
+  % first one, right for the second one.
+  if alignmentOptions.isElderTwin
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                                        {'axis y line*=left', 'axis x line*=bottom'} );
+  elseif alignmentOptions.isYoungerTwin
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                                        {'axis y line*=right', 'axis x line*=top'} );
   end
-  if strcmp( get( handle, 'XMinorGrid'), 'on' );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'xminorgrids' );
-      isGrid = true;
-  end
-  if strcmp( get( handle, 'YGrid'), 'on' )
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'ymajorgrids' );
-      isGrid = true;
-  end
-  if strcmp( get( handle, 'YMinorGrid'), 'on' );
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'yminorgrids' );
-      isGrid = true;
-  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % all other axis options (ticks, axis color, label,...)
+  [ m2t, hasXGrid ] = getAxisOptions( m2t, handle, 'x' );
+  [ m2t, hasYGrid ] = getAxisOptions( m2t, handle, 'y' );
   if m2t.is3dPlot
-      if strcmp( get( handle, 'ZGrid'), 'on' )
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zmajorgrids' );
-          isGrid = true;
-      end
-      if strcmp( get( handle, 'ZMinorGrid'), 'on' );
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'zminorgrids' );
-          isGrid = true;
-      end
+      [ m2t, hasZGrid ] = getAxisOptions( m2t, handle, 'z' );
   end
-
-  % set the line style
-  if isGrid
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % add manually given extra axis options
+  if ~isempty( m2t.cmdOpts.Results.extraAxisOptions )
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                                        m2t.cmdOpts.Results.extraAxisOptions );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % grid line style
+  if hasXGrid || hasYGrid || (exist('hasZGrid') && hasZGrid )
       matlabGridLineStyle = get( handle, 'GridLineStyle' );
       % Take over the grid line style in any case when in strict mode.
       % If not, don't add anything in case of default line grid line style
@@ -845,15 +683,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % See if there are any legends that need to be plotted.
-  c = get( get(handle,'Parent'), 'Children' ); % siblings of this handle
-
   % Since the legends are at the same level as axes in the hierarchy,
   % we can't work out which relates to which using the tree
   % so we have to do it by looking for a plot inside which the legend sits.
   % This could be done better with a heuristic of finding
   % the nearest legend to a plot, which would cope with legends outside
   % plot boundaries.
-
   if strcmp( m2t.env, 'MATLAB' )
       legendHandle = legend(handle);
       if ~isempty(legendHandle)
@@ -867,27 +702,25 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       axisBot  = axisDims(2);
       axisWid  = axisDims(3);
       axisHei  = axisDims(4);
-      for k = 1:size(c)
-          if  strcmp( get(c(k),'Type'), 'axes'   ) && ...
-              strcmp( get(c(k),'Tag' ), 'legend' )
-              legendHandle = c(k);
-              if (legendHandle)
-                  legDims = get( legendHandle, 'Position' );
-                  legLeft = legDims(1);
-                  legBot  = legDims(2);
-                  legWid  = legDims(3);
-                  legHei  = legDims(4);
-                  % TODO The following logic does not work for 3D plots.
-                  %      => Commented out.
-                  %      This creates problems though for stacked plots with legends.
-    %                if (    legLeft > axisLeft ...
-    %                     && legBot > axisBot ...
-    %                     && legLeft+legWid < axisLeft+axisWid ...
-    %                     && legBot+legHei  < axisBot+axisHei )
-                      [ m2t, legendOpts ] = getLegendOpts( m2t, legendHandle );
-                      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, legendOpts );
-    %                end
-              end
+      % siblings of this handle:
+      siblings = get( get(handle,'Parent'), 'Children' );
+      for sibling = siblings
+          if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag' ), 'legend')
+              legDims = get( sibling, 'Position' );
+              legLeft = legDims(1);
+              legBot  = legDims(2);
+              legWid  = legDims(3);
+              legHei  = legDims(4);
+              % TODO The following logic does not work for 3D plots.
+              %      => Commented out.
+              %      This creates problems though for stacked plots with legends.
+%                if (    legLeft > axisLeft ...
+%                     && legBot > axisBot ...
+%                     && legLeft+legWid < axisLeft+axisWid ...
+%                     && legBot+legHei  < axisBot+axisHei )
+                  [ m2t, legendOpts ] = getLegendOpts( m2t, sibling );
+                  m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, legendOpts );
+%                end
           end
       end
   end
@@ -913,6 +746,82 @@ function tag = getTag( handle )
 
 end
 % ---------------------------------------------------------------------------
+function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
+      error( 'Illegal axis specifier ''%s''.', axis );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % axis colors
+  color = get( handle, [upper(axis),'Color'] );
+  if ( any(color) ) % color not black [0,0,0]
+       [ m2t, col ] = getColor( m2t, handle, color, 'patch' );
+       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                    { ['every outer ',axis,' axis line/.append style={',col, '}'], ...
+                                      ['every ',axis,' tick label/.append style={font=\color{',col,'}}' ] } ...
+                                  );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % handle the orientation
+  isAxisReversed = strcmp( get(handle,[upper(axis),'Dir']), 'reverse' );
+  m2t = setfield( m2t, [axis,'AxisReversed'], isAxisReversed );
+  if isAxisReversed
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                                                        [axis,' dir=reverse'] );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % get axis limits
+  limits = get( handle, [upper(axis),'Lim'] );
+  m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
+                               sprintf( [axis,'min=%.15g, ',axis,'max=%.15g'], limits ) ...
+                             );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % get ticks along with the labels
+  [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handle, axis );
+
+  % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
+  % the number of minor ticks is automatically determined by MATLAB(R) to
+  % fit the size of the axis. Until we know how to extract this number, use
+  % a reasonable default.
+  matlabDefaultNumMinorTicks = 3;
+  if ~isempty( ticks )
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( [axis,'tick={%s}'], ticks ) );
+  end
+  if ~isempty( tickLabels )
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( [axis,'ticklabels={%s}'], tickLabels ) );
+  end
+  if hasMinorTicks
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, [axis,'minorticks=true'] );
+      if m2t.cmdOpts.Results.strict
+          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( 'minor %s tick num={%d}', axis, matlabDefaultNumMinorTicks ) );
+      end
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % get axis label
+  axisLabel = get( get( handle, [upper(axis),'Label'] ), 'String' );
+  if iscell(axisLabel)
+      axisLabel = axisLabel{:};
+  end
+  if ~isempty( axisLabel )
+      labelText = sprintf( '%s', axisLabel );
+      axisLabelInterpreter = get( get( handle, [upper(axis),'Label'] ), 'Interpreter' );
+      labelText = prettyPrint( m2t, labelText, axisLabelInterpreter );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, sprintf( [axis,'label={%s}'], labelText ) );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % get grids
+  hasGrid = false;
+  if strcmp( get( handle, [upper(axis),'Grid']), 'on' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, [axis,'majorgrids'] );
+      hasGrid = true;
+  end
+  if strcmp( get( handle, [upper(axis),'MinorGrid']), 'on' );
+      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, [axis,'minorgrids'] );
+      hasGrid = true;
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  return;
+end
 % =========================================================================
 % *** END OF FUNCTION drawAxes
 % =========================================================================
@@ -2414,7 +2323,7 @@ function [ m2t, str ] = drawText( m2t, handle)
   VerticalAlignment = get( handle, 'VerticalAlignment' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % translate them to pgf style
-  style = cell(0)
+  style = cell(0);
   switch VerticalAlignment
       case {'top', 'cap'}
           style = appendOptions( style, 'below' );
@@ -2493,7 +2402,6 @@ function [ m2t, str ] = drawRectangle( m2t, handle )
   pos = get( handle, 'Position' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   drawOptions = [ lineOptions, colorOptions ];
-  pos
   % plot the thing
   str = sprintf( '\\draw[%s] (axis cs:%.15g, %.15g) rectangle (axis cs:%.15g, %.15g);\n', ...
                  collapse(drawOptions,', '), pos(1), pos(2), pos(1)+pos(3), pos(2)+pos(4) ...
@@ -3299,22 +3207,23 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
-  [ ticks, tickLabels ] = getTicks( m2t, handle );
-  if ~isempty( ticks.x )
+  [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'x' );
+  if ~isempty( ticks )
       cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'xtick={%s}', ticks.x ) ];
+                       sprintf( 'xtick={%s}', ticks ) ];
   end
-  if ~isempty( tickLabels.x )
+  if ~isempty( tickLabels )
       cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'xticklabels={%s}', tickLabels.x ) ];
+                       sprintf( 'xticklabels={%s}', tickLabels ) ];
   end
-  if ~isempty( ticks.y )
+  [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'y' );
+  if ~isempty( ticks )
       cbarOptions = [ cbarOptions,                                    ...
-                      sprintf( 'ytick={%s}', ticks.y ) ];
+                      sprintf( 'ytick={%s}', ticks ) ];
   end
-  if ~isempty( tickLabels.y )
+  if ~isempty( tickLabels )
       cbarOptions = [ cbarOptions,                                    ...
-                       sprintf( 'yticklabels={%s}', tickLabels.y ) ];
+                      sprintf( 'yticklabels={%s}', tickLabels ) ];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set the options
@@ -3835,26 +3744,12 @@ end
 % =========================================================================
 
 
-
-% =========================================================================
-% *** FUNCTION getTicks
+% -------------------------------------------------------------------------
+% *** FUNCTION getIndividualAxisTicks
 % ***
 % *** Return axis tick marks pgfplot style. Nice: Tick lengths and such
 % *** details are taken care of by Pgfplots.
 % ***
-% =========================================================================
-function [ ticks, tickLabels, hasMinorTicks ] = getTicks( m2t, handle )
-
-  [ticks.x, tickLabels.x, hasMinorTicks.x] = getIndividualAxisTicks( m2t, handle, 'x' );
-  [ticks.y, tickLabels.y, hasMinorTicks.y] = getIndividualAxisTicks( m2t, handle, 'y' );
-  if m2t.is3dPlot
-     [ticks.z, tickLabels.z, hasMinorTicks.z] = getIndividualAxisTicks( m2t, handle, 'z' );
-  end
-
-  return;
-end
-% -------------------------------------------------------------------------
-% *** FUNCTION getIndividualAxisTicks
 % -------------------------------------------------------------------------
 function [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handle, axis )
 
@@ -4000,9 +3895,6 @@ end
 % -------------------------------------------------------------------------
 % *** END FUNCTION getAxisTicks
 % -------------------------------------------------------------------------
-% =========================================================================
-% *** END FUNCTION getTicks
-% =========================================================================
 
 
 % =========================================================================
@@ -4171,36 +4063,6 @@ end
 
 
 % =========================================================================
-% *** FUNCTION getAxisLabels
-% =========================================================================
-function axisLabels = getAxisLabels( handle )
-
-  axisLabels.x = get( get( handle, 'XLabel' ), 'String' );
-  if iscell(axisLabels.x)
-      axisLabels.x = axisLabels.x{:};
-  end
-  axisLabels.xInterpreter = get( get( handle, 'XLabel' ), 'Interpreter' );
-
-  axisLabels.y = get( get( handle, 'YLabel' ), 'String' );
-  if iscell(axisLabels.y)
-      axisLabels.y = axisLabels.y{:};
-  end
-  axisLabels.yInterpreter = get( get( handle, 'YLabel' ), 'Interpreter' );
-
-  axisLabels.z = get( get( handle, 'ZLabel' ), 'String' );
-  if iscell(axisLabels.z)
-      axisLabels.z = axisLabels.z{:};
-  end
-  axisLabels.zInterpreter = get( get( handle, 'ZLabel' ), 'Interpreter' );
-
-end
-% =========================================================================
-% *** END FUNCTION getAxisLabels
-% =========================================================================
-
-
-
-% =========================================================================
 % *** FUNCTION my_num2str
 % ***
 % *** Returns a number to a string in a *short* form.
@@ -4348,6 +4210,7 @@ function dimension = getAxesDimensions( handle, ...
       dimension.y.value = height;
   end
 
+  return;
 end
 % ---------------------------------------------------------------------------
 function [width, height, unit] = getNaturalAxesDimensions( handle )
@@ -4357,16 +4220,16 @@ function [width, height, unit] = getNaturalAxesDimensions( handle )
 
       % Convert the MATLAB unit strings into TeX unit strings.
       switch units
-              case 'pixels'
-                      units = 'px';
-              case 'centimeters'
-                      units = 'cm';
-              case 'inches'
-                      units = 'in';
-              case 'points'
-                      units = 'pt';
-              case 'characters'
-                      units = 'em';
+          case 'pixels'
+                  units = 'px';
+          case 'centimeters'
+                  units = 'cm';
+          case 'inches'
+                  units = 'in';
+          case 'points'
+                  units = 'pt';
+          case 'characters'
+                  units = 'em';
       end
 
   switch daspectmode
