@@ -1408,7 +1408,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
       end
 
       % If vector does not have to be split, take a shortcut
-      if length(xData) < newArraySize
+      if length(xData) <= newArraySize
           cellIndexNew = cellIndexNew + 1;
           xDataCellNew{cellIndexNew} = xData;
           yDataCellNew{cellIndexNew} = yData;
