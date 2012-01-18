@@ -907,22 +907,17 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   % plot the actual line data
   % -- Check for any node if it needs to be included at all. For zoomed
   %    plots, lots can be omitted.
-  p      = m2t.currentHandles.gca;
-  xLim   = get( p, 'XLim' );
-  yLim   = get( p, 'YLim' );
-  zLim   = get( p, 'ZLim' );
   xData  = get( handle, 'XData' );
   yData  = get( handle, 'YData' );
   zData  = get( handle, 'ZData' );
-
-  is3dPlot = ~isempty( zData );
-
-  if is3dPlot
+  if ~isempty( zData )
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
       opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
       str = [ str, ...
               plotLine3d( opts, xData, yData, zData ) ];
   else
+      xLim = get( m2t.currentHandles.gca, 'XLim' );
+      yLim = get( m2t.currentHandles.gca, 'YLim' );
       % split the data into logical chunks
       if errorbarMode
           [xDataCell, yDataCell, yDeviationCell ] = splitLine( m2t, xData, yData, xLim, yLim, yDeviation );
@@ -1365,8 +1360,11 @@ end
 % -------------------------------------------------------------------------
 % FUNCTION splitByArraySize
 %   TeX parses files line by line with a buffer of size buf_size. If the
-%   plot has too many data points, we may exceed the size of the buffer.
-%   Splitting 'large' plots makes TeX happier. What is a "large" array?
+%   plot has too many data points, the buffer size may be exceeded.
+%   As a work-around, the plot is split into several smaller plots, and this
+%   function does the job.
+%
+%   What is a "large" array?
 %   TeX parser buffer is buf_size=200000 char on Mac TeXLive, let's say 
 %   100000 to be on the safe side.
 %   1 point is represented by 25 characters (estimation): 2 coordinates (10
@@ -1380,13 +1378,18 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
       errorbarMode = 1;
   end
 
+  % Unconditionally set this to true. This results in one extra point to be
+  % plotted per chunk, which probably doesn't hurt too much. Anways,
+  % TODO Take hasLines as argument to splitByArraySize().
+  hasLines = true;
+
   newArraySize = 4000;
   xDataCellNew = cell(0);
   yDataCellNew = cell(0);
   if errorbarMode
       yDeviationCellNew = cell(0);
   end
-  cellIndexNew = 0;
+  cellIndexNew = 1;
 
   for cellIndex = 1:length(xDataCell);
 
@@ -1396,76 +1399,35 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
           yDeviation = yDeviationCell{cellIndex};
       end
 
-      % Assuming data is never a matrix
-      if (size(xData, 2) > 1)
-          xData = xData';
-      end
-      if (size(yData, 2) > 1)
-          yData = yData';
-      end
-      if errorbarMode && (size(yDeviation, 2) > 1)
-          yDeviation = yDeviation';
-      end
+      chunkStart = 1;
+      len = length(xData);
+      while chunkStart < len
+          chunkEnd = min( chunkStart + newArraySize - 1, len );
+          chunkStart
+          chunkEnd
 
-      % If vector does not have to be split, take a shortcut
-      if length(xData) <= newArraySize
-          cellIndexNew = cellIndexNew + 1;
-          xDataCellNew{cellIndexNew} = xData;
-          yDataCellNew{cellIndexNew} = yData;
+          % Copy over the data to the new containers.
+          xDataCellNew{cellIndexNew} = xData(chunkStart:chunkEnd);
+          yDataCellNew{cellIndexNew} = yData(chunkStart:chunkEnd);
           if errorbarMode
-                  yDeviationCellNew{cellIndexNew} = yDeviation;
+              yDeviationCellNew{cellIndexNew} = yDeviation(chunkStart:chunkEnd);
           end
-          continue;
-      end
 
-      % mod(length(xData),newArraySize) may not be 0, so need to take care of
-      % remaining data points that fall out of the reshaped array
-      cols = floor(length(xData) ./ newArraySize);
-      xDataReshaped = reshape(xData(1:cols*newArraySize), newArraySize, []);
-      yDataReshaped = reshape(yData(1:cols*newArraySize), newArraySize, []);
-      if errorbarMode
-          yDeviationReshaped = reshape(yDeviation(1:cols*newArraySize), newArraySize, []);
-      end
-      xDataLeft = xData(cols*newArraySize+1:end);
-      yDataLeft = yData(cols*newArraySize+1:end);
-      if errorbarMode
-          yDeviationLeft = yDeviation(cols*newArraySize+1:end);
-      end
+          % If the plot has lines, add an extra (overlap) point to the data
+          % stream; otherwise the line between two data chunks would be broken.
+          if hasLines && chunkEnd~=len
+              xDataCellNew{cellIndexNew} = [ xDataCellNew{cellIndexNew}, ...
+                                             xData(chunkEnd+1) ];
+              yDataCellNew{cellIndexNew} = [ yDataCellNew{cellIndexNew}, ...
+                                             yData(chunkEnd+1) ];
+              if errorbarMode
+                  yDeviationCellNew{cellIndexNew} = [ yDeviationCellNew{cellIndexNew}, ...
+                                                      yDeviation(chunkEnd+1) ];
+              end
+          end
 
-      % Need to add one point to each reshaped row otherwise tikz won't draw
-      % continuous lines (missing interval).
-      xDataExtra= zeros(1,cols);
-      yDataExtra = zeros(1,cols);
-      if errorbarMode
-          yDeviationExtra = zeros(1,cols);
-      end
-      xDataExtra(1:end-1) = xDataReshaped(1,2:end);
-      yDataExtra(1:end-1) = yDataReshaped(1,2:end);
-      if errorbarMode
-          yDeviationExtra(1:end-1) = yDeviationReshaped(1,2:end);
-      end
-      xDataExtra(end) = xDataLeft(1,1);
-      yDataExtra(end) = yDataLeft(1,1);
-      if errorbarMode
-          yDeviationExtra(end) = yDeviationLeft(1,1);
-      end
-
-      % Push split arrays in new cells, with extra point
-      for kk=1:cols
           cellIndexNew = cellIndexNew + 1;
-          xDataCellNew{cellIndexNew} = [ xDataReshaped(:,kk); xDataExtra(kk) ];
-          yDataCellNew{cellIndexNew} = [ yDataReshaped(:,kk); yDataExtra(kk) ];
-          if errorbarMode
-                  yDeviationCellNew{cellIndexNew} = [ yDeviationReshaped(:,kk); yDeviationExtra(kk) ];
-          end
-      end
-      if cols ~= length(xData) / newArraySize
-          cellIndexNew = cellIndexNew + 1;
-          xDataCellNew{cellIndexNew} = xDataLeft;
-          yDataCellNew{cellIndexNew} = yDataLeft;
-          if errorbarMode
-                  yDeviationCellNew{cellIndexNew} = yDeviationLeft;
-          end
+          chunkStart = chunkEnd + 1;
       end
   end
 
@@ -3363,8 +3325,8 @@ function [ m2t, xcolor ] = rgb2tikzcol( m2t, rgbcol )
   % make sure rgbcol has shape (1,3), and not (1,1,3) or similar
   rgbcol = rgbcol(:)';
 
-  [xcolor,errorcode] = rgb2xcolor( rgbcol );
-  if errorcode
+  xcolor = rgb2xcolor( rgbcol );
+  if isempty(xcolor)
 
       % check if the color has appeared before
       n  = size(m2t.requiredRgbColors,1);
@@ -3411,10 +3373,8 @@ function [ m2t, xcolor ] = colorindex2tikzcol( m2t, colorindex )
   cmap = m2t.currentHandles.colormap;
 
   rgbcol = cmap( colorindex, : );
-  [xcolor,errorcode] = rgb2xcolor( rgbcol );
-
-  if errorcode % non-standard xcolor
-
+  xcolor = rgb2xcolor( rgbcol );
+  if isempty(xcolor)
       if isempty(m2t.requiredRgbColors)
           % initialize the matrix
           m2t.requiredRgbColors = [];
@@ -3796,7 +3756,7 @@ function [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handl
 
 end
 % -------------------------------------------------------------------------
-% *** FUNCTION matlabticks2tikzTicks
+% *** FUNCTION matlabTicks2pgfplotsTicks
 % ***
 % *** Converts MATLAB style ticks and tick labels to pgfplots style
 % *** ticks and tick labels (if at all necessary).
@@ -3940,56 +3900,40 @@ end
 % *** Take a look at xcolor.sty for the color definitions.
 % ***
 % =========================================================================
-function [xcolorLiteral,errorcode] = rgb2xcolor( rgb )
+function xcolorLiteral = rgb2xcolor( rgb )
 
   if isequal( rgb, [1,0,0] )
       xcolorLiteral = 'red';
-      errorcode = 0;
   elseif isequal( rgb, [0,1,0] )
       xcolorLiteral = 'green';
-      errorcode = 0;
   elseif isequal( rgb, [0,0,1] )
       xcolorLiteral = 'blue';
-      errorcode = 0;
   elseif isequal( rgb, [0.75,0.5,0.25] )
       xcolorLiteral = 'brown';
-      errorcode = 0;
   elseif isequal( rgb, [0.75,1,0] )
       xcolorLiteral = 'lime';
-      errorcode = 0;
   elseif isequal( rgb, [1,0.5,0] )
       xcolorLiteral = 'orange';
-      errorcode = 0;
   elseif isequal( rgb, [1,0.75,0.75] )
       xcolorLiteral = 'pink';
-      errorcode = 0;
   elseif isequal( rgb, [0.75,0,0.25] )
       xcolorLiteral = 'purple';
-      errorcode = 0;
   elseif isequal( rgb, [0,0.5,0.5] )
       xcolorLiteral = 'teal';
-      errorcode = 0;
   elseif isequal( rgb, [0.5,0,0.5] )
       xcolorLiteral = 'violet';
-      errorcode = 0;
   elseif isequal( rgb, [0,0,0] )
       xcolorLiteral = 'black';
-      errorcode = 0;
   elseif isequal( rgb, [0.75,0.75,0.75] )
       xcolorLiteral = 'darkgray';
-      errorcode = 0;
   elseif isequal( rgb, [0.5,0.5,0.5] )
       xcolorLiteral = 'gray';
-      errorcode = 0;
   elseif isequal( rgb, [0.75,0.75,0.75] )
       xcolorLiteral = 'lightgray';
-      errorcode = 0;
   elseif isequal( rgb, [1,1,1] )
       xcolorLiteral = 'white';
-      errorcode = 0;
   else
-      xcolorLiteral = '';
-      errorcode = 1;
+      xcolorLiteral = [];
   end
 
 % The colors 'cyan', 'magenta', 'yellow', and 'olive' within xcolor.sty
@@ -5260,7 +5204,7 @@ end
 % =========================================================================
 % *** FUNCTION getEnvironment
 % =========================================================================
-function env = getEnvironment
+function env = getEnvironment()
   env = '';
   % Check if we are in MATLAB or Octave.
   % `ver' in MATLAB gives versioning information on all installed packages
