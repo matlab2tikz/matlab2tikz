@@ -1403,8 +1403,6 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
       len = length(xData);
       while chunkStart < len
           chunkEnd = min( chunkStart + newArraySize - 1, len );
-          chunkStart
-          chunkEnd
 
           % Copy over the data to the new containers.
           xDataCellNew{cellIndexNew} = xData(chunkStart:chunkEnd);
