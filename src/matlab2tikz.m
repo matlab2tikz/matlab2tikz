@@ -704,6 +704,11 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       axisHei  = axisDims(4);
       % siblings of this handle:
       siblings = get( get(handle,'Parent'), 'Children' );
+      % "siblings" always(?) is a column vector. Iterating over the column
+      % with the for statement below wouldn't return the individual vector
+      % elements but the same column vector, resulting in no legends exported.
+      % So let's make sure "siblings" is a row vector by reshaping it:
+      siblings = reshape( siblings, 1, [] );
       for sibling = siblings
           if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag' ), 'legend')
               legDims = get( sibling, 'Position' );
