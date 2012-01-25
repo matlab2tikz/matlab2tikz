@@ -3666,6 +3666,28 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
                               '. Choosing default.' ] );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % handle alignment of legend text and pictograms
+  textalign = [];
+  pictalign = [];
+  % Other than MATLAB, Octave allows to change the alignment of legend text and
+  % pictograms using legend('left') and legend('right')
+  if strcmp( m2t.env, 'Octave' )
+      textpos = get( handle, 'textposition' );
+      switch lower( textpos )
+          case 'left'
+              % pictogram right of flush right text
+              textalign = 'left';
+              pictalign = 'right';
+          case 'right'
+              % pictogram left of flush left text (default)
+              textalign = 'right';
+              pictalign = 'left';
+          otherwise
+              userWarning( m2t, [ ' Unknown legend text position ''',textpos,'''' ...
+                                  '. Choosing default.' ] );
+      end
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   lStyle = cell(0);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3692,8 +3714,17 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  % make sure the entries are flush left (default MATLAB behavior)
-  lStyle = appendOptions( lStyle, 'nodes=right' );
+  % alignment of legend text and pictograms, if available
+  if ~isempty( textalign ) && ~isempty( pictalign )
+      lStyle = appendOptions( lStyle, ...
+                              { sprintf( 'nodes=%s', textalign ), ...
+                                sprintf( 'legend plot pos=%s', pictalign ), ...
+                              } ...
+                            );
+  else
+      % make sure the entries are flush left (default MATLAB behavior)
+      lStyle = appendOptions( lStyle, 'nodes=right' );
+  end
 
   if ~isempty( lStyle )
       lOpts = appendOptions( lOpts, ...
