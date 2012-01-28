@@ -1198,18 +1198,18 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
 
       % By default, don't plot any points.
       shouldPlot = false(numPoints,1);
-      % Get which points are insided a (slightly larger) box.
-      relaxedXLim = xLim + [-m2t.tol, m2t.tol];
-      relaxedYLim = yLim + [-m2t.tol, m2t.tol];
-      dataIsInBox = isInBox( [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
-                              relaxedXLim, relaxedYLim );
       if hasMarkers
+          % Get which points are insided a (slightly larger) box.
+          relaxedXLim = xLim + [-m2t.tol, m2t.tol];
+          relaxedYLim = yLim + [-m2t.tol, m2t.tol];
+          dataIsInBox = isInBox( [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
+                                  relaxedXLim, relaxedYLim );
           shouldPlot = shouldPlot | dataIsInBox;
       end
       if hasLines
           % Check if the connecting line is in the box.
           segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
-                                   dataIsInBox, xLim, yLim );
+                                   xLim, yLim );
           % Plot points which are next to an edge which is in the box.
           shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
       end
@@ -1485,12 +1485,14 @@ end
 % -------------------------------------------------------------------------
 % FUNCTION segmentVisible
 % -------------------------------------------------------------------------
-function out = segmentVisible( m2t, p, dataIsInBox, xLim, yLim )
+function out = segmentVisible( m2t, p, xLim, yLim )
     % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
     % in p and determine whether the line between the pair crosses the box.
 
     n = size(p, 1); % number of points
     out = false(n-1, 1);
+
+    dataIsInBox = isInBox( p, xLim, yLim );
 
     for kk = 1:n-1
         if dataIsInBox(kk) || dataIsInBox(kk+1) % one of the two is inside the box
@@ -1506,6 +1508,7 @@ function out = segmentVisible( m2t, p, dataIsInBox, xLim, yLim )
                                           [p(kk:kk+1,2)',yLim] ) ...
                     || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the top?
                                           [p(kk:kk+1,2)',yLim(2),yLim(2)] );
+
         end
     end
 
@@ -1537,8 +1540,8 @@ function out = segmentsIntersect( x, y )
       rhs2   = y(3) - y(1);
       lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
       mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
-      out    =  0.0<=lambda && lambda<=1.0 ...
-             && 0.0<=mu     && mu    <=1.0;
+      out    =  0.0<lambda && lambda<1.0 ...
+             && 0.0<mu     && mu    <1.0;
   else % segments are parallel
       out = false;
   end
@@ -2656,8 +2659,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
               if m2t.nonbarPlotPresent
                   userWarning( m2t, [ 'Pgfplots can''t deal with stacked bar plots', ...
                                  ' and non-bar plots in one axis environment.', ...
-                                 ' There *may* be unexpected results.'         ] );
-                      % Should this be a userInfo() instead?
+                                 ' The file will probably not compile.'         ] );
               end
               bWFactor = get( h, 'BarWidth' );
               ulength  = normalized2physical( m2t );

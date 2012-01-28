@@ -409,7 +409,7 @@ function description = groupbars ()
 
 end
 % =========================================================================
-function description = stackbars ()
+function description = stackbars()
 
   Y = round(rand(5,3)*10);
   bar(Y,'stack');
