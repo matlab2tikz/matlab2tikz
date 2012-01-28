@@ -891,7 +891,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   lineWidth = get( handle, 'LineWidth' );
   marker    = get( handle, 'Marker' );
 
-  if ( strcmp(lineStyle,'none') || lineWidth==0 ) && strcmp(marker,'none')
+  hasLines = ~strcmp(lineStyle,'none') & lineWidth>0.0;
+  hasMarkers = ~strcmp(marker,'none');
+  if ~hasLines && ~hasMarkers
       return
   end
 
@@ -925,9 +927,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
       yLim = get( m2t.currentHandles.gca, 'YLim' );
       % split the data into logical chunks
       if errorbarMode
-          [xDataCell, yDataCell, yDeviationCell ] = splitLine( m2t, xData, yData, xLim, yLim, yDeviation );
+          [xDataCell, yDataCell, yDeviationCell ] = splitLine( m2t, hasLines, hasMarkers, xData, yData, xLim, yLim, yDeviation );
       else
-          [xDataCell, yDataCell] = splitLine( m2t, xData, yData, xLim, yLim );
+          [xDataCell, yDataCell] = splitLine( m2t, hasLines, hasMarkers, xData, yData, xLim, yLim );
       end
 
       % plot them
@@ -1055,11 +1057,11 @@ end
 %    * Data set too large.
 %
 % ---------------------------------------------------------------------------
-function [xDataCell, yDataCell, yDeviationCell] = splitLine( m2t, xData, yData, xLim, yLim, yDeviation )
+function [xDataCell, yDataCell, yDeviationCell] = splitLine( m2t, hasLines, hasMarkers, xData, yData, xLim, yLim, yDeviation )
 
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = 0;
-  if nargin>5
+  if nargin>7
       errorbarMode = 1;
   end
 
@@ -1079,9 +1081,11 @@ function [xDataCell, yDataCell, yDeviationCell] = splitLine( m2t, xData, yData, 
 
   % Split each of the chunks further up along visible segments
   if errorbarMode
-      [xDataCell , yDataCell, yDeviationCell] = splitByVisibility( m2t, xDataCell, yDataCell, xLim, yLim, yDeviationCell );
+      [xDataCell , yDataCell, yDeviationCell] = ...
+         splitByVisibility( m2t, hasLines, hasMarkers, xDataCell, yDataCell, xLim, yLim, yDeviationCell );
   else
-      [xDataCell , yDataCell] = splitByVisibility( m2t, xDataCell, yDataCell, xLim, yLim );
+      [xDataCell , yDataCell] = ...
+         splitByVisibility( m2t, hasLines, hasMarkers, xDataCell, yDataCell, xLim, yLim );
   end
 
   % Split each of the current chunks further with respect to outliers
@@ -1172,10 +1176,11 @@ end
 %      to be opened.
 %
 % -------------------------------------------------------------------------
-function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByVisibility( m2t, xDataCell, yDataCell, xLim, yLim, yDeviationCell )
+function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
+    splitByVisibility( m2t, hasLines, hasMarkers, xDataCell, yDataCell, xLim, yLim, yDeviationCell )
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = 0;
-  if nargin>5
+  if nargin > 7
       errorbarMode = 1;
   end
 
@@ -1187,60 +1192,45 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByVisibility( m
 
   cellIndexNew = 0;
   for cellIndex = 1:length(xDataCell)
-      if length( xDataCell{cellIndex} ) == 1 % the "line" is actually just one point
-          % print it unconditionally
+      numPoints = length( xDataCell{cellIndex} );
+
+      % By default, don't plot any points.
+      shouldPlot = false(numPoints,1);
+      % Get which points are insided a (slightly larger) box.
+      relaxedXLim = xLim + [-m2t.tol, m2t.tol];
+      relaxedYLim = yLim + [-m2t.tol, m2t.tol];
+      dataIsInBox = isInBox( [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
+                              relaxedXLim, relaxedYLim );
+      if hasMarkers
+          shouldPlot = shouldPlot | dataIsInBox;
+      end
+      if hasLines
+          % Check if the connecting line is in the box.
+          segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
+                                   dataIsInBox, xLim, yLim );
+          % Plot points which are next to an edge which is in the box.
+          shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
+      end
+
+      % Split the data in chunks of where 'shouldPlot' is 'true'.
+      k = 1;
+      while k <= numPoints
+          % fast forward to shouldPlot==True
+          while k<=numPoints && ~shouldPlot(k)
+              k = k+1;
+          end
+          kStart = k;
+          % fast forward to shouldPlot==False
+          while k<=numPoints && shouldPlot(k)
+              k = k+1;
+          end
+          kEnd = k-1;
+
           cellIndexNew = cellIndexNew + 1;
-          xDataCellNew{cellIndexNew}(1) = xDataCell{cellIndex}(1);
-          yDataCellNew{cellIndexNew}(1) = yDataCell{cellIndex}(1);
+          xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(kStart:kEnd);
+          yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(kStart:kEnd);
           if errorbarMode
-              yDeviationCellNew{cellIndexNew}(1) = yDeviationCell{cellIndex}(1);
-          end
-
-      else % more than one node in the line -- this is usually the case
-          segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], xLim, yLim );
-
-          % find data points that compose two invisible segments, by adding
-          % segvis to itself. Value in datapoints are:
-          % 2 if both segment visible
-          % 1 if one segment crosses the boundary
-          % 0 if both segment are not visible
-          % '1's are the edges of visible segments. We may miss the first and
-          % last edges of corresponding visible segments. Plus some magic to
-          % deal with indices off by one (segvis is about intervals, not points)
-          datapoints = segvis(2:end) + segvis(1:end-1);
-          edges = find(datapoints == 1) + 1;
-          vis_indices = find(segvis==1);
-          if ~isempty(vis_indices)
-              if strcmp( getEnvironment(), 'Octave' ) && isVersionBelow( 'Octave', 3, 4 )
-                  % Octave 3.2 contains a bug that affects empty matrices with
-                  % dimensions 1x0 or 0x1 (as opposed to 0x0). Whenever the
-                  % find operation above returned a 1x0 matrix, the following
-                  % error occurs at the concatenation operation below:
-                  %
-                  %   error: number of rows must match (0 != 1)
-                  %
-                  % To fix this, the matrix dimensions are changed to 0x0.
-                  if isequal( size(edges), [1 0] )
-                      edges = [];
-                  end
-              end
-              edges = [ vis_indices(1) edges' vis_indices(end)+1 ];
-          end
-          edges = unique(edges);
-
-          % Sanity check, make sure we have an even number of edges.
-          if mod(length(edges), 2)
-              error('Number of edges is not even. Something went really wrong.\n');
-          end
-
-          % Split data along edges
-          for ee=1:2:length(edges)
-              cellIndexNew = cellIndexNew + 1;
-              xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(edges(ee):edges(ee+1));
-              yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(edges(ee):edges(ee+1));
-              if errorbarMode
-                  yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex}(edges(ee):edges(ee+1));
-              end
+              yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex}(kStart:kEnd);
           end
       end
   end
@@ -1249,6 +1239,19 @@ end
 % -------------------------------------------------------------------------
 % END FUNCTION splitByVisibility
 % -------------------------------------------------------------------------
+
+% =========================================================================
+% *** FUNCTION isInBox
+% =========================================================================
+function out = isInBox( p, xLim, yLim )
+
+  out = p(:,1) > xLim(1) & p(:,1) < xLim(2) ...
+      & p(:,2) > yLim(1) & p(:,2) < yLim(2);
+
+end
+% =========================================================================
+% *** END FUNCTION isInBox
+% =========================================================================
 
 % -------------------------------------------------------------------------
 % FUNCTION splitByOutliers
@@ -1376,7 +1379,8 @@ end
 %   char), 2 brackets, commma and white space, + 1 extra char.
 %   That gives a magic arbitrary number of 4000 data points per array.
 % -------------------------------------------------------------------------
-function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xDataCell, yDataCell, yDeviationCell )
+function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
+    splitByArraySize( xDataCell, yDataCell, yDeviationCell )
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = 0;
   if nargin>2
@@ -1406,7 +1410,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = splitByArraySize( xD
 
       chunkStart = 1;
       len = length(xData);
-      while chunkStart < len
+      while chunkStart <= len
           chunkEnd = min( chunkStart + newArraySize - 1, len );
 
           % Copy over the data to the new containers.
@@ -1478,26 +1482,20 @@ end
 
 % -------------------------------------------------------------------------
 % FUNCTION segmentVisible
-%
-% Given a series of points 'p', this routines determines which inter-'p'
-% connections are visible in the box given by 'xLim', 'yLim'.
-%
 % -------------------------------------------------------------------------
-function out = segmentVisible( m2t, p, xLim, yLim )
+function out = segmentVisible( m2t, p, dataIsInBox, xLim, yLim )
+    % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
+    % in p and determine whether the line between the pair crosses the box.
 
-    n   = size( p, 1 ); % number of points
-    out = zeros( n-1, 1 );
-
-    % Find out where (with respect the the box) the points 'p' sit.
-    % Consider the documentation for 'boxWhere' to find out about
-    % the meaning of the return values.
-    boxpos = boxWhere( m2t, p, xLim, yLim );
+    n = size(p, 1); % number of points
+    out = false(n-1, 1);
 
     for kk = 1:n-1
-        if any(boxpos{kk}==1) || any(boxpos{kk+1}==1) % one of the two is strictly inside the box
-            out(kk) = 1;
-        elseif any(boxpos{kk}==2) || any(boxpos{kk+1}==2) % one of the two is strictly outside the box
-            % does the segment intersect with any of the four boundaries?
+        if dataIsInBox(kk) || dataIsInBox(kk+1) % one of the two is inside the box
+            out(kk) = true;
+        else % both are outside
+            % Does the connecting segment intersect with any of the four
+            % boundaries?
             out(kk) =  segmentsIntersect( [p(kk:kk+1,1)',xLim(1),xLim(1)], ...   % with the left?
                                           [p(kk:kk+1,2)',yLim] ) ...
                     || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the bottom?
@@ -1506,11 +1504,6 @@ function out = segmentVisible( m2t, p, xLim, yLim )
                                           [p(kk:kk+1,2)',yLim] ) ...
                     || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the top?
                                           [p(kk:kk+1,2)',yLim(2),yLim(2)] );
-        else % both neighboring points lie on the boundary
-            % This is kind of tricky as there may be nodes *exactly*
-            % in a corner of the domain. boxpos & commonEntry handle
-            % this, though.
-            out(kk) = ~commonEntry( boxpos{kk},boxpos{kk+1} );
         end
     end
 
@@ -4320,8 +4313,6 @@ end
 % =========================================================================
 
 
-
-
 % =========================================================================
 % *** FUNCTION escapeCharacters
 % ***
@@ -4339,69 +4330,6 @@ function newstr = escapeCharacters( str )
 end
 % =========================================================================
 % *** END FUNCTION escapeCharacters
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION boxWhere
-% ***
-% *** Given one or more points in 2D space 'p' and a retangular box given
-% *** by 'xLim', 'yLim', this routine determines where the point sits with
-% *** respect to the box.
-% ***
-% *** Possibilities:
-% ***      1 ...... inside
-% ***      2 ...... outside
-% ***     -1 ...... left boundary
-% ***     -2 ...... lower boundary
-% ***     -3 ...... right boundary
-% ***     -4 ...... top boundary
-% ***
-% *** If a node happens to sit in the corner of a box, return *two* values.
-% ***
-% =========================================================================
-function l = boxWhere( m2t, p, xLim, yLim )
-
-  n = size(p,1);
-
-  l = cell(n,1);
-
-  for k = 1:n
-
-      if    p(k,1)>xLim(1) && p(k,1)<xLim(2) ...   % inside
-         && p(k,2)>yLim(1) && p(k,2)<yLim(2);
-          l{k} = 1;
-      elseif    p(k,1)<xLim(1) || p(k,1)>xLim(2) ...  % outside
-             || p(k,2)<yLim(1) || p(k,2)>yLim(2);
-          l{k} = 2;
-      else % is on boundary -- but which one?
-
-          if abs(p(k,1)-xLim(1)) < m2t.tol
-              l{k} = [ l{k}, -1 ];
-          end
-          if abs(p(k,2)-yLim(1)) < m2t.tol
-              l{k} = [ l{k}, -2 ];
-          end
-          if abs(p(k,1)-xLim(2)) < m2t.tol
-              l{k} = [ l{k}, -3 ];
-          end
-          if abs(p(k,2)-yLim(2)) < m2t.tol
-              l{k} = [ l{k}, -4 ];
-          end
-
-          if isempty(l{k})
-              error( 'matlab2tikz:boxWhere',                    ...
-                     [ 'Point appears to neither sit inside, ', ...
-                       'nor outside, nor on the boundary of the box.' ] );
-          end
-      end
-
-  end
-
-end
-% =========================================================================
-% *** END FUNCTION boxWhere
 % =========================================================================
 
 

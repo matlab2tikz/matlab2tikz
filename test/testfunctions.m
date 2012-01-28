@@ -115,7 +115,7 @@ end
 % *** FUNCTION one_point
 function description = one_point ()
 
-  plot(0.1, 0.1, 'x')
+  plot(0.123, 0.145, 'x')
 
   description = 'Plot only one single point.' ;
 
@@ -356,20 +356,30 @@ function description = legendplotBoxoff ()
 
 end
 % =========================================================================
-function description = zoom ()
+function description = zoom()
 
   fplot( @sin, [0,2*pi], '-*' );
   hold on;
-  eps = pi/10;
+  delta = pi/10;
 
-  plot( [pi/2, pi/2], [1-2*eps, 1+2*eps], 'r' ); % vertical line
-  plot( [pi/2-2*eps, pi/2+2*eps], [1, 1], 'g' ); % horizontal line
+  plot( [pi/2, pi/2], [1-2*delta, 1+2*delta], 'r' ); % vertical line
+  plot( [pi/2-2*delta, pi/2+2*delta], [1, 1], 'g' ); % horizontal line
 
-  plot( [ pi/2-eps, pi/2 , pi/2+eps, pi/2 , pi/2-eps ], ...
-        [ 1       , 1-eps,        1, 1+eps, 1        ], 'y'      );
+  % diamond
+  plot( [ pi/2-delta, pi/2 , pi/2+delta, pi/2 , pi/2-delta ], ...
+        [ 1       , 1-delta,        1, 1+delta, 1        ], 'y'      );
+
+  % boundary lines with markers
+  plot([ pi/2-delta, pi/2 , pi/2+delta, pi/2+delta pi/2+delta, pi/2, pi/2-delta, pi/2-delta ], ...
+       [ 1-delta, 1-delta, 1-delta, 1, 1+delta, 1+delta, 1+delta, 1 ], ...
+       'ok', ...
+       'MarkerSize', 20, ...
+       'MarkerFaceColor', 'g' ...
+       );
+
   hold off;
   
-  axis([ pi/2-eps, pi/2+eps, 1-eps, 1+eps] );
+  axis([pi/2-delta, pi/2+delta, 1-delta, 1+delta] );
 
   description = 'Plain cosine function, zoomed in.' ;
 
