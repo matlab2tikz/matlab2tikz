@@ -543,6 +543,15 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                            m2t.cmdOpts.Results.width, ...
                            m2t.cmdOpts.Results.height );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % Get other axis options (ticks, axis color, label,...).
+  % This is set here such that the axis orientation indicator in m2t is set
+  % before -- if ~isVisible(handle) -- the handle's children are called.
+  [ m2t, hasXGrid ] = getAxisOptions( m2t, handle, 'x' );
+  [ m2t, hasYGrid ] = getAxisOptions( m2t, handle, 'y' );
+  if m2t.is3dPlot
+      [ m2t, hasZGrid ] = getAxisOptions( m2t, handle, 'z' );
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if ~isVisible( handle )
       % An invisible axes container *can* have visible children, so don't
       % immediately bail out here.
@@ -644,13 +653,6 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   elseif alignmentOptions.isYoungerTwin
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
                                                         {'axis y line*=right', 'axis x line*=top'} );
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % all other axis options (ticks, axis color, label,...)
-  [ m2t, hasXGrid ] = getAxisOptions( m2t, handle, 'x' );
-  [ m2t, hasYGrid ] = getAxisOptions( m2t, handle, 'y' );
-  if m2t.is3dPlot
-      [ m2t, hasZGrid ] = getAxisOptions( m2t, handle, 'z' );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add manually given extra axis options
@@ -2067,7 +2069,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       cmap = get(m2t.currentHandles.gcf, 'ColorMap');
 
       % write the image
-      imwriteWrapperPNG ( colorData, cmap, pngFileName );
+      imwriteWrapperPNG( colorData, cmap, pngFileName );
       % ------------------------------------------------------------------------
 
       xLim = get( m2t.currentHandles.gca, 'XLim' );
