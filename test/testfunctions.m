@@ -61,7 +61,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @groupbars           , ...
                            @bars                , ...
                            @hbars                , ...
-                           @stackbars           , ...
+...%                             @stackbars           , ...
                            @xAxisReversed       , ...
                            @errorBars           , ...
                            @errorBars2          , ...
@@ -409,15 +409,15 @@ function description = groupbars ()
 
 end
 % =========================================================================
-function description = stackbars()
-
-  Y = round(rand(5,3)*10);
-  bar(Y,'stack');
-  title 'Stack';
-
-  description = 'Plot of stacked bars.' ;
-
-end
+%  function description = stackbars()
+%
+%    Y = round(rand(5,3)*10);
+%    bar(Y,'stack');
+%    title 'Stack';
+%
+%    description = 'Plot of stacked bars.' ;
+%
+%  end
 % =========================================================================
 function description = stemplot ()
 

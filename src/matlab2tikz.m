@@ -1196,20 +1196,21 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
   for cellIndex = 1:length(xDataCell)
       numPoints = length( xDataCell{cellIndex} );
 
+      % Get which points are insided a (slightly larger) box.
+      relaxedXLim = xLim + [-m2t.tol, m2t.tol];
+      relaxedYLim = yLim + [-m2t.tol, m2t.tol];
+      dataIsInBox = isInBox( [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
+                              relaxedXLim, relaxedYLim );
+
       % By default, don't plot any points.
       shouldPlot = false(numPoints,1);
       if hasMarkers
-          % Get which points are insided a (slightly larger) box.
-          relaxedXLim = xLim + [-m2t.tol, m2t.tol];
-          relaxedYLim = yLim + [-m2t.tol, m2t.tol];
-          dataIsInBox = isInBox( [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
-                                  relaxedXLim, relaxedYLim );
           shouldPlot = shouldPlot | dataIsInBox;
       end
       if hasLines
           % Check if the connecting line is in the box.
           segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
-                                   xLim, yLim );
+                                   dataIsInBox, xLim, yLim );
           % Plot points which are next to an edge which is in the box.
           shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
       end
@@ -1485,14 +1486,12 @@ end
 % -------------------------------------------------------------------------
 % FUNCTION segmentVisible
 % -------------------------------------------------------------------------
-function out = segmentVisible( m2t, p, xLim, yLim )
+function out = segmentVisible( m2t, p, dataIsInBox, xLim, yLim )
     % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
     % in p and determine whether the line between the pair crosses the box.
 
     n = size(p, 1); % number of points
     out = false(n-1, 1);
-
-    dataIsInBox = isInBox( p, xLim, yLim );
 
     for kk = 1:n-1
         if dataIsInBox(kk) || dataIsInBox(kk+1) % one of the two is inside the box
