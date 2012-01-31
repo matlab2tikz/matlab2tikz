@@ -5524,7 +5524,7 @@ function string = parseTexSubstring ( m2t, string )
   end
 
   % Some further processing makes the output behave more like TeX math mode,
-  % but only if the matlab2tikz parameter mathmode=true.
+  % but only if the matlab2tikz parameter parseStringsAsMath=true.
   if m2t.cmdOpts.Results.parseStringsAsMath
 
       % Some characters should be in math mode: =-+/,.()<>0-9
