@@ -1,3 +1,95 @@
+%MATLAB2TIKZ    Save figure in native LaTeX (TikZ/Pgfplots).
+%   MATLAB2TIKZ() saves the current figure as LaTeX file.
+%   MATLAB2TIKZ comes with several options that can be combined at will.
+%
+%   MATLAB2TIKZ(FILENAME,...) or MATLAB2TIKZ('filename',FILENAME,...)
+%   stores the LaTeX code in FILENAME.
+%
+%   MATLAB2TIKZ('filehandle',FIGUREHANDLE,...) explicitly specifies the
+%   handle of the figure that is to be stored (default: gcf).
+%
+%   MATLAB2TIKZ('strict',BOOL,...) tells MATLAB2TIKZ to adhere to MATLAB(R)
+%   conventions wherever there is room for relaxation (default: FALSE).
+%
+%   MATLAB2TIKZ('showInfo',BOOL,...) turns informational output on or off
+%   (default: true).
+%
+%   MATLAB2TIKZ('showWarning',BOOL,...) turns warnings on or off
+%   (default: true).
+%
+%   MATLAB2TIKZ('imagesAsPng',BOOL,...) store MATLAB(R) images as (lossless)
+%   PNG files. This is more efficient than storing the image color data as TikZ
+%   matrix. (default: true)
+%
+%   MATLAB2TIKZ('relativePngPath',CHAR, ...) tells MATLAB2TIKZ to use the given
+%   path to follow the PNG file. If LaTeX source and PNG file will reside in
+%   the same directory, this can be set to '.'. (default: [])
+%
+%   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be any
+%   LaTeX-compatible length, e.g., '3in' or '5cm' or '0.5\textwidth'.
+%   If unset, MATLAB2TIKZ tries to make a reasonable guess.
+%
+%   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
+%   If unset, MATLAB2TIKZ tries to make a reasonable guess.
+%
+%   MATLAB2TIKZ('minimumPointsDistance',double,...) gives a minimum distance at
+%   which two nodes are considered different. This can help with plots that
+%   have contain a large amount of data points not all of which need to be
+%   plotted. (default: 0.0)
+%
+%   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
+%   options to the Pgfplots axis environment. (default: [])
+%
+%   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
+%
+%   MATLAB2TIKZ('parseStrings',BOOL,...) determines whether title, axes labels
+%   and the like are parsed into LaTeX by MATLAB2TIKZ's parser.
+%   If you want greater flexibility, set this to false and use straight LaTeX
+%   for your labels. (default: true)
+%
+%   MATLAB2TIKZ('parseStringsAsMath',BOOL,...) determines whether to use TeX's
+%   math mode for more charecters (such as sin, lim, argmax). (default: false)
+%
+%   MATLAB2TIKZ('interpretTickLabelsAsTex',BOOL,...) determines whether to
+%   to interpret tick labels as TeX. MATLAB(R) doesn't to that by default.
+%   (default: false)
+%
+%   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
+%   of the output file.
+%
+%   Example
+%      x = -pi:pi/10:pi;
+%      y = tan(sin(x)) - sin(tan(x));
+%      plot(x,y,'--rs');
+%      matlab2tikz( 'myfile.tex' );
+%
+%   See also PRINT.
+
+%   Copyright (c) 2008--2012, Nico Schlömer <nico.schloemer@gmail.com>
+%   All rights reserved.
+%
+%   Redistribution and use in source and binary forms, with or without
+%   modification, are permitted provided that the following conditions are
+%   met:
+%
+%      * Redistributions of source code must retain the above copyright
+%        notice, this list of conditions and the following disclaimer.
+%      * Redistributions in binary form must reproduce the above copyright
+%        notice, this list of conditions and the following disclaimer in
+%        the documentation and/or other materials provided with the distribution
+%
+%   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+%   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+%   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+%   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+%   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+%   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+%   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+%   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+%   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+%   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+%   POSSIBILITY OF SUCH DAMAGE.
+
 % =========================================================================
 % *** FUNCTION matlab2tikz
 % ***
@@ -11,6 +103,7 @@
 % ***    2.) Invoke matlab2tikz by
 % ***
 % ***        >> matlab2tikz( 'test.tikz' );
+
 % ***
 % ***
 % *** -------
@@ -32,31 +125,7 @@
 % ***
 % =========================================================================
 % ***
-% *** Copyright (c) 2008--2012, Nico Schlömer <nico.schloemer@gmail.com>
-% *** All rights reserved.
-% ***
-% *** Redistribution and use in source and binary forms, with or without
-% *** modification, are permitted provided that the following conditions are
-% *** met:
-% ***
-% ***    * Redistributions of source code must retain the above copyright
-% ***      notice, this list of conditions and the following disclaimer.
-% ***    * Redistributions in binary form must reproduce the above copyright
-% ***      notice, this list of conditions and the following disclaimer in
-% ***      the documentation and/or other materials provided with the distribution
-% ***
-% *** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-% *** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-% *** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-% *** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-% *** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-% *** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-% *** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-% *** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-% *** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-% *** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-% *** POSSIBILITY OF SUCH DAMAGE.
-% ***
+
 % =========================================================================
 function matlab2tikz( varargin )
 
@@ -139,21 +208,21 @@ function matlab2tikz( varargin )
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'colormap', colormap, @isnumeric );
 
   % whether to strictly stick to the default MATLAB plot appearance:
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'strict', 0, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'strict', false, @islogical );
 
   % deprecated parameter -- keep it to allow warning further down
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'silent', 0, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'silent', false, @islogical );
 
   % don't print warning messages
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'showInfo', 1, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'showInfo', true, @islogical );
 
   % don't print informational messages
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'showWarnings', 1, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'showWarnings', true, @islogical );
 
   % Whether to save images in PNG format or to natively draw filled squares
   % using TikZ itself.
   % Default it PNG.
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'imagesAsPng', 1, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'imagesAsPng', true, @islogical );
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'relativePngPath', [], @ischar );
 
   % width and height of the figure
