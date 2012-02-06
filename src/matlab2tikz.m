@@ -180,10 +180,11 @@ function matlab2tikz( varargin )
                      % used, for example, in equality test for doubles
   m2t.relativePngPath = [];
 
-  % The color RBG-values which will need to be redefined.
-  % Each row of 'm2t.requiredRgbColors' contains the RGB
-  % values of a needed color.
-  m2t.requiredRgbColors = [];
+  % The following color RBG-values which will need to be defined.
+  % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
+  % their specifications.
+  m2t.extraRgbColorSpecs = cell(0);
+  m2t.extraRgbColorNames = cell(0);
 
   % the actual contents of the TikZ file go here
   m2t.content = struct( 'name',     [], ...
@@ -471,14 +472,14 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
                                        m2t.tikzOptions );
 
   % don't forget to define the colors
-  if size(m2t.requiredRgbColors,1)
+  if length(m2t.extraRgbColorNames)
       m2t.content = append( m2t.content, ...
                             sprintf('\n%% defining custom colors\n') ...
                           );
-      for k = 1:size(m2t.requiredRgbColors,1)
+      for k = 1:length(m2t.extraRgbColorNames)
           m2t.content = append( m2t.content, ...
-                                sprintf('\\definecolor{mycolor%d}{rgb}{%.15g,%.15g,%.15g}\n', k,     ...
-                                                          m2t.requiredRgbColors(k,:)) ...
+                                sprintf('\\definecolor{%s}{rgb}{%.15g,%.15g,%.15g}\n', ...
+                                        m2t.extraRgbColorNames{k}, m2t.extraRgbColorSpecs{k}) ...
                               );
       end
       m2t.content = append( m2t.content, sprintf('\n') );
@@ -2602,7 +2603,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
           % already been accounted for above.
           str = strcat( str, sprintf('\n') );
       elseif size(cData,2) == 3
-          [m2t, col] = rgb2tikzcol( m2t, cData(k,:) );
+          [m2t, col] = rgb2colorliteral( m2t, cData(k,:) );
           str = strcat( str, sprintf( ' [%s]\n', col ) );
       else
           str = strcat( str, sprintf( ' [%d]\n', cData(k) ) );
@@ -3338,7 +3339,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       % plot tiny little badges for the respective colors
       for i=1:m
-          [m2t, badgeColor] = rgb2tikzcol( m2t, cmap(i,:) );
+          [m2t, badgeColor] = rgb2colorliteral( m2t, cmap(i,:) );
 
           % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
           % small cased ('northoutside'). Hence, use lower() for uniformity.
@@ -3390,20 +3391,21 @@ function [m2t, xcolor] = getColor( m2t, handle, color, mode )
   %    below
   if isreal(color) && length(color)==3 && ~any(isnan(color))
       % everything alright: rgb color here
-      [m2t, xcolor] = rgb2tikzcol( m2t, color );
+      [m2t, xcolor] = rgb2colorliteral( m2t, color );
   else
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       switch mode
           case 'patch'
-              [ m2t, colorindex ] = patchcolor2colorindex ( m2t, color, handle );
+              [m2t, colorindex] = patchcolor2colorindex(m2t, color, handle);
           case 'image'
-              [ m2t, colorindex ] = imagecolor2colorindex ( m2t, color, handle );
+              [m2t, colorindex] = imagecolor2colorindex(m2t, color, handle);
           otherwise
               error( [ 'matlab2tikz:getColor',                          ...
                        'Argument ''mode'' has illegal value ''%s''.' ], ...
                        mode );
       end
-      [ m2t, xcolor ] = colorindex2tikzcol( m2t, colorindex );
+      cmap = m2t.currentHandles.colormap;
+      [m2t, xcolor] = rgb2colorliteral(m2t, cmap(colorindex, :));
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
 
@@ -3411,101 +3413,6 @@ end
 % =========================================================================
 % *** END FUNCTION getColor
 % =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION rgb2tikzcol
-% ***
-% *** This function takes and RGB coded color as input and returns a string
-% *** describing the color that can be used in the TikZ file.
-% *** It checks if the color is predefined (by xcolor.sty) or if it needs
-% *** to be custom defined. It keeps all the self-defined colors in
-% *** 'm2t.requiredRgbColors' to avoid redundant definitions.
-% ***
-% =========================================================================
-function [ m2t, xcolor ] = rgb2tikzcol( m2t, rgbcol )
-
-  % make sure rgbcol has shape (1,3), and not (1,1,3) or similar
-  rgbcol = rgbcol(:)';
-
-  xcolor = rgb2xcolor( rgbcol );
-  if isempty(xcolor)
-
-      % check if the color has appeared before
-      n  = size(m2t.requiredRgbColors,1);
-      for k = 1:n
-          if isequal( m2t.requiredRgbColors(k,:), rgbcol )
-              % take that former color and return
-              xcolor = sprintf( 'mycolor%d', k );
-              return
-          end
-      end
-
-      % color not found: have a new one defined;
-      m2t.requiredRgbColors = [ m2t.requiredRgbColors; ...
-                                rgbcol ];
-      xcolor = sprintf( 'mycolor%d', n+1 );
-  end
-
-end
-% =========================================================================
-% *** FUNCTION rgb2tikzcol
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION colorindex2tikzcol
-% ***
-% *** This function takes a color index of the active MATLAB(R) color map
-% *** and returns a string describing the color that can be used in the
-% *** TikZ file.
-% ***
-% *** Does caching, too.
-% ***
-% =========================================================================
-function [ m2t, xcolor ] = colorindex2tikzcol( m2t, colorindex )
-
-  if ~isfield( m2t, 'colorindex_cache' )
-      % Remember the color rbgvalues which will need to be redefined.
-      % Each row of 'm2t.requiredRgbColors' contains the RGB values of a needed
-      % color.
-      m2t.colorindex_cache = [];
-  end
-
-  cmap = m2t.currentHandles.colormap;
-
-  rgbcol = cmap( colorindex, : );
-  xcolor = rgb2xcolor( rgbcol );
-  if isempty(xcolor)
-      if isempty(m2t.requiredRgbColors)
-          % initialize the matrix
-          m2t.requiredRgbColors = [];
-      end
-      if isempty(m2t.colorindex_cache)
-          m2t.colorindex_cache = zeros( size(cmap,1), 1 );
-      end
-
-      % check if the color has appeared before
-      if m2t.colorindex_cache(colorindex)
-          xcolor = sprintf( 'mycolor%d', m2t.colorindex_cache(colorindex) );
-      else
-          % color not found: have a new one defined
-          n  = size(m2t.requiredRgbColors,1);
-          m2t.requiredRgbColors = [ m2t.requiredRgbColors; ...
-                                    rgbcol ];
-          xcolor = sprintf( 'mycolor%d', n+1 );
-          m2t.colorindex_cache(colorindex) = n+1;
-      end
-
-  end
-
-end
-% =========================================================================
-% *** FUNCTION colorindex2tikzcol
-% =========================================================================
-
 
 
 % =========================================================================
@@ -4025,7 +3932,7 @@ end
 
 
 % =========================================================================
-% *** FUNCTION rgb2xcolor
+% *** FUNCTION rgb2colorliteral
 % ***
 % *** Translates and rgb value to a xcolor literal -- if possible!
 % *** If not, it returns the empty string.
@@ -4035,64 +3942,65 @@ end
 % *** Take a look at xcolor.sty for the color definitions.
 % ***
 % =========================================================================
-function xcolorLiteral = rgb2xcolor( rgb )
+function [m2t, colorLiteral] = rgb2colorliteral( m2t, rgb )
+  % TODO Implement mixtures with colors other than 'black' such as red!50!green.
 
-  if isequal( rgb, [1,0,0] )
-      xcolorLiteral = 'red';
-  elseif isequal( rgb, [0,1,0] )
-      xcolorLiteral = 'green';
-  elseif isequal( rgb, [0,0,1] )
-      xcolorLiteral = 'blue';
-  elseif isequal( rgb, [0.75,0.5,0.25] )
-      xcolorLiteral = 'brown';
-  elseif isequal( rgb, [0.75,1,0] )
-      xcolorLiteral = 'lime';
-  elseif isequal( rgb, [1,0.5,0] )
-      xcolorLiteral = 'orange';
-  elseif isequal( rgb, [1,0.75,0.75] )
-      xcolorLiteral = 'pink';
-  elseif isequal( rgb, [0.75,0,0.25] )
-      xcolorLiteral = 'purple';
-  elseif isequal( rgb, [0,0.5,0.5] )
-      xcolorLiteral = 'teal';
-  elseif isequal( rgb, [0.5,0,0.5] )
-      xcolorLiteral = 'violet';
-  elseif isequal( rgb, [0,0,0] )
-      xcolorLiteral = 'black';
-  elseif isequal( rgb, [0.75,0.75,0.75] )
-      xcolorLiteral = 'darkgray';
-  elseif isequal( rgb, [0.5,0.5,0.5] )
-      xcolorLiteral = 'gray';
-  elseif isequal( rgb, [0.75,0.75,0.75] )
-      xcolorLiteral = 'lightgray';
-  elseif isequal( rgb, [1,1,1] )
-      xcolorLiteral = 'white';
-  else
-      xcolorLiteral = [];
-  end
+  xcolColorNames = { 'red', 'green', 'blue', 'brown', ...
+                     'lime', 'orange', 'pink', 'purple', ...
+                     'teal', 'violet', 'black', 'darkgray', ...
+                     'gray', 'lightgray', 'white' };
+  xcolColorSpecs = { [1,0,0], [0,1,0], [0,0,1], [0.75,0.5,0.25], ...
+                     [0.75,1,0], [1,0.5,0], [1,0.75,0.75], [0.75,0,0.25], ...
+                     [0,0.5,0.5], [0.5,0,0.5], [0,0,0], [0.75,0.75,0.75], ...
+                     [0.5,0.5,0.5], [0.75,0.75,0.75], [1,1,1] };
 
 % The colors 'cyan', 'magenta', 'yellow', and 'olive' within xcolor.sty
 % are defined in the CMYK color space, with an approximation in RGB.
 % Unfortunately, the approximation is not very close (particularly for
 % cyan), so just redefine those colors.
-% ------------------------------------
-%    elseif isequal( rgb, [0,1,1] )
-%        xcolorLiteral = 'cyan';
-%        errorcode = 0;
-%    elseif isequal( rgb, [1,0,1] )
-%        xcolorLiteral = 'magenta';
-%        errorcode = 0;
-%    elseif isequal( rgb, [1,1,0] )
-%        xcolorLiteral = 'yellow';
-%        errorcode = 0;
-%    elseif isequal( rgb, [0.5,0.5,0] )
-%        xcolorLiteral = 'olive';
-%        errorcode = 0;
-% ------------------------------------
+%    'cyan', 'magenta', 'yellow', 'olive'
+%    [0,1,1], [1,0,1], [1,1,0], [0.5,0.5,0]
+
+  % Check 'rgb' against all xcolor literals and the already defined colors.
+  colorNames = [xcolColorNames, m2t.extraRgbColorNames];
+  colorSpecs = [xcolColorSpecs, m2t.extraRgbColorSpecs];
+
+  numCols = length(colorSpecs);
+
+  % Check if RGB is a multiple of a predefined color.
+  for k = 1:numCols
+      if colorSpecs{k}(1) ~= 0.0
+          alpha = rgb(1) / colorSpecs{k}(1);
+      elseif colorSpecs{k}(2) ~= 0.0
+          alpha = rgb(2) / colorSpecs{k}(2);
+      elseif colorSpecs{k}(3) ~= 0.0
+          alpha = rgb(3) / colorSpecs{k}(3);
+      else % colorSpecs{k} = [0,0,0]
+          alpha = 0.0;
+      end
+      if isequal( rgb, alpha * colorSpecs{k} )
+          if alpha == 1.0
+              colorLiteral = colorNames{k};
+              return
+          elseif alpha == 0.0
+              colorLiteral = 'black';
+              return
+          elseif 0.0 < alpha && alpha < 1.0 && round(alpha*100) == alpha*100
+              % Not sure if that last condition is necessary.
+              colorLiteral = [ colorNames{k}, sprintf('!%g!black', alpha*100) ];
+              return
+          end
+      end
+  end
+
+  % Color was not found in the default set. Need to define it.
+  colorLiteral = sprintf( 'mycolor%d', length(m2t.extraRgbColorNames)+1 );
+  m2t.extraRgbColorNames = [ m2t.extraRgbColorNames, colorLiteral ];
+  m2t.extraRgbColorSpecs = [ m2t.extraRgbColorSpecs, rgb ];
 
 end
 % =========================================================================
-% *** FUNCTION rgb2xcolor
+% *** FUNCTION rgb2colorliteral
 % =========================================================================
 
 
