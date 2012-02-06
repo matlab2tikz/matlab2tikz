@@ -5,19 +5,25 @@
 %   MATLAB2TIKZ(FILENAME,...) or MATLAB2TIKZ('filename',FILENAME,...)
 %   stores the LaTeX code in FILENAME.
 %
-%   MATLAB2TIKZ('filehandle',FIGUREHANDLE,...) explicitly specifies the
-%   handle of the figure that is to be stored (default: gcf).
+%   MATLAB2TIKZ('filehandle',FILEHANDLE,...) stores the LaTeX code in the file
+%   referenced by FILEHANDLE. (default: [])
+%
+%   MATLAB2TIKZ('figurehandle',FIGUREHANDLE,...) explicitly specifies the
+%   handle of the figure that is to be stored. (default: gcf)
+%
+%   MATLAB2TIKZ('colormap',DOUBLE,...) explicitly specifies the colormap to be
+%   used. (default: current color map)
 %
 %   MATLAB2TIKZ('strict',BOOL,...) tells MATLAB2TIKZ to adhere to MATLAB(R)
-%   conventions wherever there is room for relaxation (default: FALSE).
+%   conventions wherever there is room for relaxation. (default: FALSE)
 %
-%   MATLAB2TIKZ('showInfo',BOOL,...) turns informational output on or off
-%   (default: true).
+%   MATLAB2TIKZ('showInfo',BOOL,...) turns informational output on or off.
+%   (default: true)
 %
-%   MATLAB2TIKZ('showWarning',BOOL,...) turns warnings on or off
-%   (default: true).
+%   MATLAB2TIKZ('showWarning',BOOL,...) turns warnings on or off.
+%   (default: true)
 %
-%   MATLAB2TIKZ('imagesAsPng',BOOL,...) store MATLAB(R) images as (lossless)
+%   MATLAB2TIKZ('imagesAsPng',BOOL,...) stores MATLAB(R) images as (lossless)
 %   PNG files. This is more efficient than storing the image color data as TikZ
 %   matrix. (default: true)
 %
@@ -27,15 +33,15 @@
 %
 %   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be any
 %   LaTeX-compatible length, e.g., '3in' or '5cm' or '0.5\textwidth'.
-%   If unset, MATLAB2TIKZ tries to make a reasonable guess.
+%   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
 %   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
-%   If unset, MATLAB2TIKZ tries to make a reasonable guess.
+%   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
-%   MATLAB2TIKZ('minimumPointsDistance',double,...) gives a minimum distance at
+%   MATLAB2TIKZ('minimumPointsDistance',DOUBLE,...) gives a minimum distance at
 %   which two nodes are considered different. This can help with plots that
-%   have contain a large amount of data points not all of which need to be
-%   plotted. (default: 0.0)
+%   contain a large amount of data points not all of which need to be plotted.
+%   (default: 0.0)
 %
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
@@ -48,10 +54,11 @@
 %   for your labels. (default: true)
 %
 %   MATLAB2TIKZ('parseStringsAsMath',BOOL,...) determines whether to use TeX's
-%   math mode for more charecters (such as sin, lim, argmax). (default: false)
+%   math mode for more characters (such as operators and figures).
+%   (default: false)
 %
 %   MATLAB2TIKZ('interpretTickLabelsAsTex',BOOL,...) determines whether to
-%   to interpret tick labels as TeX. MATLAB(R) doesn't to that by default.
+%   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
 %   (default: false)
 %
 %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
@@ -292,6 +299,7 @@ function matlab2tikz( varargin )
   % add global elements
   m2t.currentHandles.gcf      = m2t.cmdOpts.Results.figurehandle;
   m2t.currentHandles.colormap = get(m2t.currentHandles.gcf,'colormap');
+    % TODO: Shouldn't this use m2t.cmdOpts.Results.colormap, if specified?
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle output file handle/file name
@@ -2165,6 +2173,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       end
 
       cmap = get(m2t.currentHandles.gcf, 'ColorMap');
+        % TODO: Shouldn't this be m2t.currentHandles.colormap?
 
       % write the image
       imwriteWrapperPNG( colorData, cmap, pngFileName );
