@@ -386,10 +386,20 @@ function description = zoom()
 
 end
 % =========================================================================
-function description = bars ()
-  x = -2.9:0.2:2.9;
-  bar(x,exp(-x.*x),'r')
-  legend( 'exp(-x^2)' )
+function description = bars()
+  bins = -0.5:0.1:0.5;
+  hist1 = [0,6,9,14,12,5,3,1,0,0,0];
+  hist2 = [0,0,0,0,0,4,9,27,16,20,10];
+  bar(bins,[hist1;hist2]',2);
+  legend( 'hist1', 'hist2' );
+
+%  bins = -0.5:0.1:0.5;
+%  hist1 = [1,2,4,2,1,0,0,0,0,0,0];
+%  bar(bins,hist1);
+%  hold on;
+%  hist2 = [0,0,0,0,0,1,2,4,2,1,0];
+%  bar(bins,hist2);
+
   description = 'Plot with bars.' ;
 end
 % =========================================================================

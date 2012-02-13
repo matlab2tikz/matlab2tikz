@@ -647,6 +647,41 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   dim = getAxesDimensions( handle, ...
                            m2t.cmdOpts.Results.width, ...
                            m2t.cmdOpts.Results.height );
+  % set the width
+  if dim.x.unit(1)=='\' && dim.x.value==1.0
+      % only return \figurewidth instead of 1.0\figurewidth
+      m2t.currentAxesContainer.options = ...
+          appendOptions( m2t.currentAxesContainer.options, ...
+                         sprintf('width=%s', dim.x.unit));
+  else
+      m2t.currentAxesContainer.options = ...
+          appendOptions( m2t.currentAxesContainer.options, ...
+                         sprintf('width=%.15g%s', dim.x.value, dim.x.unit));
+  end
+  if dim.y.unit(1)=='\' && dim.y.value==1.0
+      % only return \figureheight instead of 1.0\figureheight
+      m2t.currentAxesContainer.options = ...
+          appendOptions( m2t.currentAxesContainer.options, ...
+                         sprintf('height=%s', dim.y.unit));
+  else
+      m2t.currentAxesContainer.options = ...
+          appendOptions( m2t.currentAxesContainer.options, ...
+                         sprintf('height=%.15g%s', dim.y.value, dim.y.unit ));
+  end
+
+  % Add the physical dimension of one unit of length in the coordinate system.
+  % This is used later on to translate lenghts to physical units where
+  % necessary (e.g., in bar plots).
+  m2t.unitlength.x.unit = dim.x.unit;
+  xLim = get( m2t.currentHandles.gca, 'XLim' );
+  m2t.unitlength.x.value = dim.x.value / (xLim(2)-xLim(1));
+  m2t.unitlength.y.unit = dim.y.unit;
+  yLim = get( m2t.currentHandles.gca, 'YLim' );
+  m2t.unitlength.y.value = dim.y.value / (yLim(2)-yLim(1));
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % the following is general MATLAB behavior
+  m2t.currentAxesContainer.options = ...
+      appendOptions( m2t.currentAxesContainer.options, 'scale only axis' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Get other axis options (ticks, axis color, label,...).
   % This is set here such that the axis orientation indicator in m2t is set
@@ -661,22 +696,18 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       % An invisible axes container *can* have visible children, so don't
       % immediately bail out here.
       c = get(handle,'Children');
-      containsVisibleChild = 0;
-      for k=1:length(c)
+      for k = 1:length(c)
           if isVisible( c(k) )
-              containsVisibleChild = 1;
+              % If the axes contain something that's visible, add an invisible
+              % axes pair.
+              m2t.currentAxesContainer.name = 'axis';
+              m2t.currentAxesContainer.options = ...
+                  appendOptions(m2t.currentAxesContainer.options, ...
+                                {'hide x axis', 'hide y axis'} ...
+                                );
+              m2t.currentAxesContainer.comment = getTag( handle );
               break;
           end
-      end
-      if containsVisibleChild
-          m2t.currentAxesContainer.name = 'axis';
-          m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                                            { 'hide x axis, hide y axis', ...
-                                                               sprintf('width=%.15g%s, height=%.15g%s', dim.x.value, dim.x.unit,   ...
-                                                                                                  dim.y.value, dim.y.unit ), ...
-                                                              'scale only axis' } ...
-                                     );
-          m2t.currentAxesContainer.comment = getTag( handle );
       end
       % recurse into the children of this environment
       [ m2t, childrenEnvs ] = handleAllChildren( m2t, handle );
@@ -706,27 +737,6 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % set alignment options
   if ~isempty(alignmentOptions.opts)
       m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, alignmentOptions.opts );
-  end
-
-  % the following is general MATLAB behavior
-  m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, 'scale only axis' );
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % set the width
-  if dim.x.unit(1)=='\' && dim.x.value==1.0
-      % only return \figurewidth instead of 1.0\figurewidth
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                   sprintf( 'width=%s', dim.x.unit ) );
-  else
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                   sprintf( 'width=%.15g%s', dim.x.value, dim.x.unit ) );
-  end
-  if dim.y.unit(1)=='\' && dim.y.value==1.0
-      % only return \figureheight instead of 1.0\figureheight
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                   sprintf( 'height=%s', dim.y.unit ) );
-  else
-      m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                   sprintf( 'height=%.15g%s' , dim.y.value, dim.y.unit ) );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % background color
@@ -2636,7 +2646,6 @@ function [ m2t, str ] = drawBarseries( m2t, h )
       % barseries plot. This allows for properly handling multiple bars.
       m2t.barplotId = [];
       m2t.barplotTotalNumber = [];
-      m2t.barWidth = [];
       m2t.barShifts = [];
       m2t.addedAxisOption = [];
       m2t.nonbarPlotPresent = [];
@@ -2711,8 +2720,6 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           % grouped plots
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-          groupWidth = 0.8; % MATLAB's default value, see makebars.m
-
           % set ID
           if isempty(m2t.barplotId)
               m2t.barplotId = 1;
@@ -2720,35 +2727,52 @@ function [ m2t, str ] = drawBarseries( m2t, h )
               m2t.barplotId = m2t.barplotId + 1;
           end
 
+          % From http://www.mathworks.com/help/techdoc/ref/bar.html:
+          % bar(...,width) sets the relative bar width and controls the
+          % separation of bars within a group. The default width is 0.8, so if
+          % you do not specify X, the bars within a group have a slight
+          % separation. If width is 1, the bars within a group touch one
+          % another. The value of width must be a scalar.
+          barWidth = get(h, 'BarWidth');
+
           % ---------------------------------------------------------------
           % Calculate the width of each bar and the center point shift.
           % The following is taken from MATLAB (see makebars.m) without
           % the special handling for hist plots or other fancy options.
           % ---------------------------------------------------------------
-          if isempty( m2t.barWidth ) || isempty( m2t.barShifts )
+          if isempty( m2t.barShifts )
               dx = min( diff(xData) );
-              groupWidth = dx * groupWidth;
+              groupWidth = dx * barWidth;
 
-              % this is the barWidth with no interbar spacing yet
-              m2t.barWidth = groupWidth / m2t.barplotTotalNumber;
-
-              m2t.barShifts = -0.5* groupWidth                              ...
-                            + ( (0:m2t.barplotTotalNumber-1)+0.5) * m2t.barWidth;
-
-              bWFactor = get( h, 'BarWidth' );
-              m2t.barWidth  = bWFactor* m2t.barWidth;
+              m2t.barShifts = -0.5* groupWidth ...
+                            + ((0:m2t.barplotTotalNumber - 1) + 0.5) * barWidth;
           end
           % ---------------------------------------------------------------
 
           % MATLAB treats shift and width in normalized coordinate units,
           % whereas pgfplots requires physical units (pt,cm,...); hence
           % have the units converted.
-          ulength = normalized2physical( m2t );
-          drawOptions = [ drawOptions,                                    ...
-                          barType,                                                      ...
-                          sprintf( 'bar width=%.15g%s, bar shift=%.15g%s',                   ...
-                                    m2t.barWidth                *ulength.value, ulength.unit , ...
-                                    m2t.barShifts(m2t.barplotId)*ulength.value, ulength.unit  ) ];
+          if (isHoriz)
+              physicalBarWidth = barWidth * m2t.unitlength.y.value;
+              physicalBarShift = m2t.barShifts(m2t.barplotId) * m2t.unitlength.y.value;
+              phyicalBarUnit = m2t.unitlength.y.unit;
+          else
+              physicalBarWidth = barWidth * m2t.unitlength.x.value;
+              physicalBarShift = m2t.barShifts(m2t.barplotId) * m2t.unitlength.x.value;
+              phyicalBarUnit = m2t.unitlength.x.unit;
+          end
+          drawOptions = ...
+              appendOptions(drawOptions, ...
+                            {barType, ...
+                             sprintf('bar width=%.15g%s', physicalBarWidth, phyicalBarUnit), ...
+                             }...
+                            );
+          if physicalBarShift ~= 0.0
+              drawOptions = ...
+                  appendOptions(drawOptions, ...
+                                sprintf('bar shift=%.15g%s', physicalBarShift, phyicalBarUnit)...
+                                );
+          end
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           % end grouped plots
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2767,12 +2791,11 @@ function [ m2t, str ] = drawBarseries( m2t, h )
                                  ' The file will probably not compile.'         ] );
               end
               bWFactor = get( h, 'BarWidth' );
-              ulength  = normalized2physical( m2t );
               % Add 'ybar stacked' to the containing axes environment.
-              m2t.currentAxesContainer.options = appendOptions( m2t.currentAxesContainer.options, ...
-                                                                { [barType,' stacked'],                          ...
-                                                                  sprintf( 'bar width=%.15g%s',               ...
-                                                                           ulength.value*bWFactor, ulength.unit ) } ...
+              m2t.currentAxesContainer.options = appendOptions(m2t.currentAxesContainer.options, ...
+                                                               {[barType,' stacked'],                          ...
+                                                                sprintf('bar width=%.15g%s',               ...
+                                                                        m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit ) } ...
                                                               );
               m2t.addedAxisOption = true;
           end
@@ -4349,41 +4372,6 @@ end
 % =========================================================================
 
 
-
-% =========================================================================
-% *** FUNCTION commonEntry
-% ***
-% *** Returns TRUE if and only if the two vectors u, v have at least one
-% *** common entry.
-% ***
-% =========================================================================
-function out = commonEntry( u, v )
-
-  out = 0;
-
-  usort = sort(u);
-  vsort = sort(v);
-
-  k = 1;
-  l = 1;
-  while k<=length(u) && l<=length(v)
-      if usort(k) < vsort(l)
-          k = k+1;
-      elseif usort(k) > vsort(l)
-          l = l+1;
-      else
-          out = 1;
-          return
-      end
-  end
-
-end
-% =========================================================================
-% *** END FUNCTION commonEntry
-% =========================================================================
-
-
-
 % =========================================================================
 % *** FUNCTION isVisible
 % ***
@@ -4395,42 +4383,6 @@ function out = isVisible( handle )
 end
 % =========================================================================
 % *** END FUNCTION isVisible
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION normalized2physical
-% ***
-% *** Determines the physical width of one unit on the x-axis.
-% ***
-% =========================================================================
-function out = normalized2physical( m2t )
-
-  fig  = m2t.currentHandles.gcf;
-  axes = m2t.currentHandles.gca;
-
-  % width of the full window
-  fpos = get( fig, 'Position' );
-
-  % width of the axes inside the window
-  apos = get( axes, 'Position' );
-
-  % width of the x-axis in pixels
-  pwidth = fpos(3) * apos(3);
-
-  % width of one unit on the x-axis on pixels
-  xLim = get( axes, 'XLim' );
-  unitpwidth = pwidth / (xLim(2)-xLim(1));
-
-  dpi = get( 0, 'ScreenPixelsPerInch' );
-
-  out.unit  = 'in';
-  out.value = unitpwidth / dpi;
-
-end
-% =========================================================================
-% *** END FUNCTION normalized2physical
 % =========================================================================
 
 
