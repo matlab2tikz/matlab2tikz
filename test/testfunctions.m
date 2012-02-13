@@ -382,8 +382,7 @@ function description = zoom()
   
   axis([pi/2-delta, pi/2+delta, 1-delta, 1+delta] );
 
-  description = 'Plain cosine function, zoomed in.' ;
-
+  description = 'Plain cosine function, zoomed in.';
 end
 % =========================================================================
 function description = bars()
@@ -400,24 +399,24 @@ function description = bars()
 %  hist2 = [0,0,0,0,0,1,2,4,2,1,0];
 %  bar(bins,hist2);
 
-  description = 'Plot with bars.' ;
+  description = 'Plot with bars.';
 end
 % =========================================================================
-function description = hbars ()
+function description = hbars()
   y = [75.995 91.972 105.711 123.203 131.669 ...
      150.697 179.323 203.212 226.505 249.633 281.422];
   barh(y);
-  description = 'Horizontal bars.' ;
+  description = 'Horizontal bars.';
 end
 % =========================================================================
-function description = groupbars ()
+function description = groupbars()
   X = [1,2,3,4,5];
-  Y = round(rand(5,3)*20);
-  bar(X,Y,'group','BarWidth',1)
-  title 'Group'
-
-  description = 'Plot with bars in groups.' ;
-
+  Y = round(rand(5,2)*20);
+%    bar(X,Y,'group','BarWidth',1.0);
+  makebars(X,Y,1.0,'grouped');
+%    set(gca,'XTick',[4,4.2,4.25,4.3,4.4,4.45,4.5]);
+  title 'Group';
+  description = 'Plot with bars in groups.';
 end
 % =========================================================================
 %  function description = stackbars()
