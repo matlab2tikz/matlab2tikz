@@ -389,8 +389,10 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
 
   % remove all legend handles as they are treated separately
   rmList = [];
+  m2t.legendHandles = [];
   for k = 1:length(axesHandles)
      if strcmp( get(axesHandles(k),'Tag'), 'legend' )
+        m2t.legendHandles = [m2t.legendHandles, axesHandles(k)];
         rmList = [ rmList, k ];
      end
   end
@@ -962,6 +964,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
                   markerOptions ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the actual line data
@@ -972,7 +975,6 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   zData  = get( handle, 'ZData' );
   if ~isempty( zData )
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
-      opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
       str = [ str, ...
               plotLine3d( opts, xData, yData, zData ) ];
   else
@@ -985,20 +987,11 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
           [xDataCell, yDataCell] = splitLine( m2t, hasLines, hasMarkers, xData, yData, xLim, yLim );
       end
 
+      % TODO Add 'forget plot' here or have pgfplots bug fixed.
+
       % plot them
       for k = 1:length(xDataCell)
           mask = pointReduction( m2t, xDataCell{k}, yDataCell{k} );
-
-          % If the line has been broken up into separate pieces, make sure that
-          % they appear as one in the legend. The following makes sure that all
-          % the segments, except for the last one, are discarded from the legend.
-          if k < length(xDataCell)
-              myDrawOptions = {drawOptions{:}, 'forget plot'};
-              opts = [ '\n', collapse( myDrawOptions, ',\n' ), '\n' ];
-          else
-              opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
-          end
-
           if errorbarMode
               str = [ str, ...
                       plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) ) ];
@@ -1006,6 +999,33 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
               str = [ str, ...
                       plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask) ) ];
           end
+      end
+  end
+
+  % Conditional \addlegendentry.
+  if ~isempty(m2t.legendHandles)
+      % Check if current handle is referenced in a legend.
+      ud = get(m2t.legendHandles(1),'UserData');
+      k = find(handle == ud.handles);
+      if ~isempty(k)
+          % Legend entry found. Add it to the plot
+          switch m2t.env
+              case 'MATLAB'
+                interpreter = get( m2t.legendHandles(1), 'Interpreter' );
+              case 'Octave'
+                  % TODO: The MATLAB way to acquire the interpreter for legend
+                  %       entries always yields 'none' even if Octave (or gnuplot)
+                  %       itself interprets the strings as 'tex' strings. Maybe the
+                  %       value is stored somewhere else or maybe Octave doesn't
+                  %       store it at all. For now the quick'n'dirty solution is to
+                  %       forcefully set the interpreter for all legend entries to
+                  %       'tex' -- which is the default value anyway.
+                  interpreter = 'tex';
+              otherwise
+                  error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+          end
+          legendString = [ '\addlegendentry{', prettyPrint( m2t, ud.lstrings(k), interpreter ), sprintf('};\n\n')];
+          str = [str, legendString];
       end
   end
 
@@ -3213,45 +3233,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
       return
   end
 
-  % read the legend text
-  entries = get( handle, 'String' );
-
-  n = length( entries );
-
-  switch m2t.env
-      case 'MATLAB'
-         interpreter = get( handle, 'Interpreter' );
-      case 'Octave'
-          % TODO: The MATLAB way to acquire the interpreter for legend
-          %       entries always yields 'none' even if Octave (or gnuplot)
-          %       itself interprets the strings as 'tex' strings. Maybe the
-          %       value is stored somewhere else or maybe Octave doesn't
-          %       store it at all. For now the quick'n'dirty solution is to
-          %       forcefully set the interpreter for all legend entries to
-          %       'tex' -- which is the default value anyway.
-          interpreter = 'tex';
-      otherwise
-          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-  end
-
   lOpts = cell( 0 );
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % handle legend entries
-  if n
-      for k=1:n
-          entries{k} = prettyPrint( m2t, entries{k}, interpreter );
-          % Surround the entry by braces if a comma is contained.
-          if strfind( entries{k}, ',' )
-              entries{k} = [ '{', entries{k}, '}' ];
-          end
-      end
-
-      lOpts = {lOpts{:}, ['legend entries={', collapse(entries,','), '}']};
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle legend location
   loc  = get( handle, 'Location' );
@@ -3319,19 +3301,6 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
                               '. Choosing default.' ] );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % handle orientation
-  ori  = get( handle, 'Orientation' );
-  cols = [];
-  switch lower( ori )
-      case 'horizontal'
-          cols = length(entries);
-      case 'vertical'
-          % Use default.
-      otherwise
-          userWarning( m2t, [ ' Unknown legend orientation ''',ori,''''           ...
-                              '. Choosing default.' ] );
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle alignment of legend text and pictograms
   textalign = [];
   pictalign = [];
@@ -3363,8 +3332,17 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
                 sprintf( 'at={(%.15g,%.15g)}',position ), ...
                 sprintf( 'anchor=%s', anchor )};
   end
-  if ~isempty(cols)
-      lStyle = {lStyle{:}, sprintf( 'legend columns=%d', cols)};
+  % handle orientation
+  ori = get( handle, 'Orientation' );
+  switch lower( ori )
+      case 'horizontal'
+          numLegendEntries = length(get(handle, 'String'));
+          lStyle = {lStyle{:}, sprintf( 'legend columns=%d', numLegendEntries)};
+      case 'vertical'
+          % Use default.
+      otherwise
+          userWarning( m2t, [ ' Unknown legend orientation ''',ori,'''' ...
+                              '. Choosing default (vertical).' ] );
   end
 
   % If the plot has 'legend boxoff', we have the 'not visible'
