@@ -190,12 +190,12 @@ function description = sine_with_annotation ()
   y = sin(x);
   plot(x,y);
   set(gca,'XTick',-pi:pi/2:pi);
-  set(gca,'XTickLabel',{'-{pi}','-pi/2','0#&\','\pi/2','\pi'});
+  set(gca,'XTickLabel',{'-{pi}','-pi/2','\{}$%_^#&','\pi/2','\pi'});
 
-  xlabel('-\pi \leq \Theta \leq \pi');
+  xlabel('-\pi \leq \Theta \leq \pi \{}$%_^#&');
   ylabel('sin(\Theta)');
-  title('Plot of sin(\Theta)');
-  text(-pi/4,sin(-pi/4),'\leftarrow sin(-\pi\div4)',...
+  title('Plot of sin(\Theta) \{}$%_^#&');
+  text(-pi/4,sin(-pi/4),'\leftarrow sin(-\pi\div4) \{}$%_^#&',...
       'HorizontalAlignment','left');
 
   set(findobj(gca,'Type','line','Color',[0 0 1]),...
