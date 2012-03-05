@@ -2471,7 +2471,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   else
       barType = 'ybar';
   end
-  groupWidth = 0.8;
+  numBars = m2t.barplotTotalNumber;
   switch barlayout
       case 'grouped'
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2483,14 +2483,6 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           else
               m2t.barplotId = m2t.barplotId + 1;
           end
-
-          % From http://www.mathworks.com/help/techdoc/ref/bar.html:
-          % bar(...,width) sets the relative bar width and controls the
-          % separation of bars within a group. The default width is 0.8, so if
-          % you do not specify X, the bars within a group have a slight
-          % separation. If width is 1, the bars within a group touch one
-          % another. The value of width must be a scalar.
-          barWidth = get(h, 'BarWidth');
 
 %            % From <MATLAB>/toolbox/matlab/specgraph/makebars.m
 %            % plottype==0 means 'grouped'
@@ -2506,33 +2498,54 @@ function [ m2t, str ] = drawBarseries( m2t, h )
 %                xx = (xx-0.5)*barwidth*groupwidth;
 %            end
 
+          % Maximum group with relative to the minumum distance between to
+          % x-values.
+          groupWidth = 0.8;
+          if numBars == 1
+              groupWidth = 1.0;
+          else
+              groupWidth = min(groupWidth, numBars/(numBars+1.5));
+          end
+
           % ---------------------------------------------------------------
           % Calculate the width of each bar and the center point shift.
           % The following is taken from MATLAB (see makebars.m) without
           % the special handling for hist plots or other fancy options.
           % ---------------------------------------------------------------
           if isempty( m2t.barShifts )
-              % The minimum distance between two x-values determines the width
-              % and shift scale of each bar.
-              dx = min( diff(xData) );
-
-              groupWidth = dx * barWidth;
-
-              m2t.barShifts = -0.5* groupWidth ...
-                            + ((0:m2t.barplotTotalNumber - 1) + 0.5) * barWidth;
+              % Get the shifts of the bar centers.
+              % In case of numBars==1, this returns 0,
+              % In case of numBars==2, this returns [-1/4, 1/4],
+              % In case of numBars==2, this returns [-1/3, 0, 1/3],
+              % and so forth.
+              % The bar width is assumed to be groupWidth/numBars.
+              m2t.barShifts = ((1:numBars) - 0.5) * groupWidth / numBars ...
+                            - 0.5* groupWidth;
           end
           % ---------------------------------------------------------------
+
+          % From http://www.mathworks.com/help/techdoc/ref/bar.html:
+          % bar(...,width) sets the relative bar width and controls the
+          % separation of bars within a group. The default width is 0.8, so if
+          % you do not specify X, the bars within a group have a slight
+          % separation. If width is 1, the bars within a group touch one
+          % another. The value of width must be a scalar.
+          barWidth = get(h, 'BarWidth') * groupWidth / numBars;
+
+          % The minimum distance between two x-values. This is the scaling
+          % factor for all other lengths about the bars.
+          dx = min( diff(xData) );
 
           % MATLAB treats shift and width in normalized coordinate units,
           % whereas pgfplots requires physical units (pt,cm,...); hence
           % have the units converted.
           if (isHoriz)
-              physicalBarWidth = barWidth * m2t.unitlength.y.value;
-              physicalBarShift = m2t.barShifts(m2t.barplotId) * m2t.unitlength.y.value;
+              physicalBarWidth = dx * barWidth * m2t.unitlength.y.value;
+              physicalBarShift = dx * m2t.barShifts(m2t.barplotId) * m2t.unitlength.y.value;
               phyicalBarUnit = m2t.unitlength.y.unit;
           else
-              physicalBarWidth = barWidth * m2t.unitlength.x.value;
-              physicalBarShift = m2t.barShifts(m2t.barplotId) * m2t.unitlength.x.value;
+              physicalBarWidth = dx * barWidth * m2t.unitlength.x.value;
+              physicalBarShift = dx * m2t.barShifts(m2t.barplotId) * m2t.unitlength.x.value;
               phyicalBarUnit = m2t.unitlength.x.unit;
           end
           drawOptions = {drawOptions{:}, ...
