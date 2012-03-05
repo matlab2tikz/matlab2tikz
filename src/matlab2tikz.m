@@ -963,8 +963,34 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
                   lineOptions, ...
                   markerOptions ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  opts = [ '\n', collapse( drawOptions, ',\n' ), '\n' ];
+  % Conditional \addlegendentry.
+  legendString = [];
+  if ~isempty(m2t.legendHandles)
+      % Check if current handle is referenced in a legend.
+      ud = get(m2t.legendHandles(1), 'UserData');
+      k = find(handle == ud.handles);
+      if ~isempty(k)
+          % Legend entry found. Add it to the plot.
+          switch m2t.env
+              case 'MATLAB'
+                interpreter = get( m2t.legendHandles(1), 'Interpreter' );
+              case 'Octave'
+                  % TODO: The MATLAB way to acquire the interpreter for legend
+                  %       entries always yields 'none' even if Octave (or gnuplot)
+                  %       itself interprets the strings as 'tex' strings. Maybe the
+                  %       value is stored somewhere else or maybe Octave doesn't
+                  %       store it at all. For now the quick'n'dirty solution is to
+                  %       forcefully set the interpreter for all legend entries to
+                  %       'tex' -- which is the default value anyway.
+                  interpreter = 'tex';
+              otherwise
+                  error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+          end
+          legendString = [ '\addlegendentry{', prettyPrint( m2t, ud.lstrings(k), interpreter ), sprintf('};\n\n')];
+          % insert it below after plotting the data
+      end
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the actual line data
@@ -987,11 +1013,19 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
           [xDataCell, yDataCell] = splitLine( m2t, hasLines, hasMarkers, xData, yData, xLim, yLim );
       end
 
-      % TODO Add 'forget plot' here or have pgfplots bug fixed.
-
       % plot them
       for k = 1:length(xDataCell)
           mask = pointReduction( m2t, xDataCell{k}, yDataCell{k} );
+          % If the line has a legend string, make sure to only include a legend
+          % entry for the last occurence of the plot series.
+          % If there is a legend and this \addplot is not be be included, add
+          % 'forget plot' to its options.
+          if ~isempty(legendString) && (k < length(xDataCell) || isempty(m2t.legendHandles))
+              % No legend entry found. Don't include plot in legend.
+              opts = [ '\n', collapse({drawOptions{:}, 'forget plot'}, ',\n' ), '\n' ];
+          else
+              opts = [ '\n', collapse(drawOptions, ',\n' ), '\n' ];
+          end
           if errorbarMode
               str = [ str, ...
                       plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) ) ];
@@ -1002,31 +1036,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
       end
   end
 
-  % Conditional \addlegendentry.
-  if ~isempty(m2t.legendHandles)
-      % Check if current handle is referenced in a legend.
-      ud = get(m2t.legendHandles(1),'UserData');
-      k = find(handle == ud.handles);
-      if ~isempty(k)
-          % Legend entry found. Add it to the plot
-          switch m2t.env
-              case 'MATLAB'
-                interpreter = get( m2t.legendHandles(1), 'Interpreter' );
-              case 'Octave'
-                  % TODO: The MATLAB way to acquire the interpreter for legend
-                  %       entries always yields 'none' even if Octave (or gnuplot)
-                  %       itself interprets the strings as 'tex' strings. Maybe the
-                  %       value is stored somewhere else or maybe Octave doesn't
-                  %       store it at all. For now the quick'n'dirty solution is to
-                  %       forcefully set the interpreter for all legend entries to
-                  %       'tex' -- which is the default value anyway.
-                  interpreter = 'tex';
-              otherwise
-                  error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-          end
-          legendString = [ '\addlegendentry{', prettyPrint( m2t, ud.lstrings(k), interpreter ), sprintf('};\n\n')];
-          str = [str, legendString];
-      end
+  % add legend after the plot data
+  if ~isempty(legendString)
+      str = [str, legendString];
   end
 
 end
