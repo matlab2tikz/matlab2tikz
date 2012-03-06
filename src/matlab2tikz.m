@@ -969,6 +969,13 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
       % Check if current handle is referenced in a legend.
       ud = get(m2t.legendHandles(1), 'UserData');
       k = find(handle == ud.handles);
+      if isempty(k)
+          % Lines of error bar plots are not referenced directly in legends
+          % as an error bars plot contains two "lines": the data and the
+          % deviations. Here, the legends refer to the specgraph.errorbarseries
+          % handle which is 'Parent' to the line handle.
+          k = find(get(handle,'Parent') == ud.handles);
+      end
       if ~isempty(k)
           % Legend entry found. Add it to the plot.
           switch m2t.env
@@ -1001,6 +1008,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   zData  = get( handle, 'ZData' );
   if ~isempty( zData )
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
+      opts = [ '\n', collapse(drawOptions, ',\n' ), '\n' ];
       str = [ str, ...
               plotLine3d( opts, xData, yData, zData ) ];
   else
@@ -1017,10 +1025,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
       for k = 1:length(xDataCell)
           mask = pointReduction( m2t, xDataCell{k}, yDataCell{k} );
           % If the line has a legend string, make sure to only include a legend
-          % entry for the last occurence of the plot series.
-          % If there is a legend and this \addplot is not be be included, add
-          % 'forget plot' to its options.
-          if ~isempty(legendString) && (k < length(xDataCell) || isempty(m2t.legendHandles))
+          % entry for the *last* occurence of the plot series.
+          % Hence the condition k<length(xDataCell).
+          if (~isempty(m2t.legendHandles) && isempty(legendString)) || k < length(xDataCell)
               % No legend entry found. Don't include plot in legend.
               opts = [ '\n', collapse({drawOptions{:}, 'forget plot'}, ',\n' ), '\n' ];
           else
@@ -2838,14 +2845,14 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
   % is only needed by MATLAB itself to explicitly draw the error bars.
   c = get( h, 'Children' );
 
+  % Find out which contains the data and which the deviations.
   n1 = length( get(c(1),'XData') );
   n2 = length( get(c(2),'XData') );
-
-  if n2 - 9*n1 == 0
+  if n2 == 9*n1
       % n1 contains centerpoint info
       dataIdx  = 1;
       errorIdx = 2;
-  elseif n1 - 9*n2 == 0
+  elseif n1 == 9*n2
       % n2 contains centerpoint info
       dataIdx  = 2;
       errorIdx = 1;
@@ -2878,10 +2885,9 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
       end
 
       yDeviations(k) = upDev;
-
   end
 
-  % now, pull line plot with deviation information
+  % Now, pull drawLine() with deviation information.
   [ m2t, str ] = drawLine( m2t, c(dataIdx), yDeviations );
 
 end
