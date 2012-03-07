@@ -1027,7 +1027,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
           % If the line has a legend string, make sure to only include a legend
           % entry for the *last* occurence of the plot series.
           % Hence the condition k<length(xDataCell).
-          if (~isempty(m2t.legendHandles) && isempty(legendString)) || k < length(xDataCell)
+          if ~isempty(m2t.legendHandles) && (isempty(legendString) || k < length(xDataCell))
               % No legend entry found. Don't include plot in legend.
               opts = [ '\n', collapse({drawOptions{:}, 'forget plot'}, ',\n' ), '\n' ];
           else
