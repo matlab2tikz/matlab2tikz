@@ -933,7 +933,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = 0;
   if nargin>2
-      errorbarMode = 1;
+      errorbarMode = true;
   end
 
   str = [];
@@ -1057,7 +1057,7 @@ function str = plotLine( opts, xData, yData, yDeviation )
     % check if the *optional* argument 'yDeviation' was given
     errorbarMode = 0;
     if nargin>3
-        errorbarMode = 1;
+        errorbarMode = true;
     end
 
     n = length(xData);
@@ -1138,7 +1138,7 @@ function [xDataCell, yDataCell, yDeviationCell] = ...
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = 0;
   if nargin>7
-      errorbarMode = 1;
+      errorbarMode = true;
   end
 
   xDataCell{1} = xData;
@@ -1233,7 +1233,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = 0;
   if nargin > 7
-      errorbarMode = 1;
+      errorbarMode = true;
   end
 
   xDataCellNew = cell(0);
@@ -1298,7 +1298,7 @@ function out = isInBox( p, xLim, yLim )
 end
 % =========================================================================
 function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
-    splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell )
+    splitByOutliers(xDataCell, yDataCell, xLim, yLim, yDeviationCell)
   % Connected points may sit outside the plot, but their connecting
   % line may not. The values of the outside plot may be too large for
   % LaTeX to handle. Move those points closer to the bounding box,
@@ -1306,8 +1306,8 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
 
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = 0;
-  if nargin>4
-      errorbarMode = 1;
+  if nargin > 4
+      errorbarMode = true;
   end
 
   xDataCellNew = cell(0);
@@ -1320,14 +1320,18 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
   % The TeX register limit is 16384, and may be exhausted if an outlier is too
   % far outside of the plot. It's not the absolute value that is key here, but
   % the relative distance from the bounding box w.r.t. the size of the box.
-  % Deliberately take a factor of 40 here.
+  % In physical dimensions of the plot, the coordinates cannot exceed a certain
+  % threshold, so actually the figure{width,height} should be considererd here.
+  % For now, deliberately take a factor of 20.
   % This could be extended for log-plots.
   xWidth = xLim(2) - xLim(1);
   yWidth = yLim(2) - yLim(1);
-  xLimLarger = xLim + [ -40*xWidth, 40*xWidth ];
-  yLimLarger = yLim + [ -40*yWidth, 40*yWidth ];
+  extendFactor = 20;
+  xLimLarger = xLim + extendFactor * [-xWidth, xWidth];
+  yLimLarger = yLim + extendFactor * [-yWidth, yWidth];
 
   for cellIndex = 1:length(xDataCell);
+      numPoints = length( xDataCell{cellIndex} );
       % Code clarity and to make sure we deal with column vectors
       if size(xDataCell{cellIndex},2) > 1
           x = xDataCell{cellIndex}';
@@ -1340,63 +1344,84 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
           y = yDataCell{cellIndex};
       end
 
-      % The largest positive value of v determines where the point sits,
-      % and to which boundary it must be normalized.
-      v = [ xLimLarger(1)-x, x-xLimLarger(2), yLimLarger(1)-y, y-yLimLarger(2) ];
-      maxVal = max(v,[],2);
-      outliers = find(maxVal > 0.0);
+      % 'v' is a kx4-array which for each point (x(k),y(k)) holds information
+      % about which limits are exceeded.
+      v = [ xLimLarger(1)-x, x-xLimLarger(2), ...
+            yLimLarger(1)-y, y-yLimLarger(2) ];
+      isOutlier = any(v>0.0, 2);
 
-      % if nothing to do in this cell, take a shortcut
-      if isempty(outliers)
+      % Split the data in chunks of where 'shouldPlot' is 'true'.
+      k = 1;
+      while k <= numPoints
+          % Get start and end indices of the next non-outlier chunk.
+          % Fast forward to outlier==false.
+          while k<=numPoints && isOutlier(k)
+              k = k+1;
+          end
+          kStart = k;
+          % Fast forward to outlier==true.
+          while k<=numPoints && ~isOutlier(k)
+              k = k+1;
+          end
+          kEnd = k-1;
+
+          % In case kStart > kEnd, kStart:kEnd is a 1x0 matrix.
+          % It may possible to include this case in the code below, but
+          % for now bail out early.
+          if kStart > kEnd
+             continue;
+          end
+
+          % Prepare the new arrays.
           cellIndexNew = cellIndexNew + 1;
-          xDataCellNew{cellIndexNew} = xDataCell{cellIndex};
-          yDataCellNew{cellIndexNew} = yDataCell{cellIndex};
+          xDataCellNew{cellIndexNew} = [];
+          yDataCellNew{cellIndexNew} = [];
           if errorbarMode
-              yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex};
+              yDeviationCellNew{cellIndexNew} = [];
           end
-          continue
-      end
-
-      % Compute the two new points that will replace the outlier after split
-      outDataNew = zeros(length(outliers),4);
-      for kk=1:length(outliers)
-          out = outliers(kk);
-          outData = [ x(out); y(out) ];
-          if out > 1
-              ref = [ x(out-1); y(out-1) ];
-              new = moveToBoundingBox( outData, ref, xLimLarger, yLimLarger );
-              outDataNew(kk, 1:2) = new;
+          if kStart > 1
+              % Prepend the previous point (an outlier), shifted to the
+              % larger bounding box.
+              outlier = [xDataCell{cellIndex}(kStart-1), ...
+                         yDataCell{cellIndex}(kStart-1)];
+              ref = [xDataCell{cellIndex}(kStart), ...
+                     yDataCell{cellIndex}(kStart)];
+              prependix = moveToBoundingBox(outlier, ref, xLimLarger, yLimLarger);
+              xDataCellNew{cellIndexNew} = [prependix(1)];
+              yDataCellNew{cellIndexNew} = [prependix(2)];
+              if errorbarMode
+                  % Deliberately set the deviation of the shifted point to 0.
+                  yDeviationCellNew{cellIndexNew} = [0];
+              end
           end
-          if out < length(x)
-              ref = [ x(out+1); y(out+1) ];
-              new = moveToBoundingBox( outData, ref, xLimLarger, yLimLarger );
-              outDataNew(kk, 3:4) = new;
-          end
-      end
 
-      % Split the data at outliers indices, need to include first and last data
-      % points if not there already
-      if ~ismember(1,outliers)
-          outliers = [1 outliers];
-          outDataNew = [ [0 0 x(1) y(1) ]; outDataNew ];
-      end
-      if ~ismember(length(x),outliers)
-          outliers = [outliers length(x)];
-          outDataNew = [ outDataNew; [x(end) y(end) 0 0] ];
-      end
-
-      for kk=1:length(outliers)-1
-          cellIndexNew = cellIndexNew + 1;
-
-          xDataCellNew{cellIndexNew} = [ outDataNew(kk,3) ...
-                                        xDataCell{cellIndex}(outliers(kk)+1:outliers(kk+1)-1) ...
-                                        outDataNew(kk+1,1) ];
-          yDataCellNew{cellIndexNew} = [ outDataNew(kk,4) ...
-                                        yDataCell{cellIndex}(outliers(kk)+1:outliers(kk+1)-1) ...
-                                        outDataNew(kk+1,2) ];
+          % Append the chunk.
+          xDataCellNew{cellIndexNew} = [xDataCellNew{cellIndexNew}, ...
+                                        xDataCell{cellIndex}(kStart:kEnd)];
+          yDataCellNew{cellIndexNew} = [yDataCellNew{cellIndexNew}, ...
+                                        yDataCell{cellIndex}(kStart:kEnd)];
           if errorbarMode
-              yDeviationCellNew{cellIndexNew} = ...
-                            yDataCell{cellIndex}(outliers(kk):outliers(kk+1));
+              yDeviationCellNew{cellIndexNew} = [yDeviationCellNew{cellIndexNew}, ...
+                                                 yDeviationCell{cellIndex}(kStart:kEnd)];
+          end
+
+          if kEnd < numPoints
+              % Append the next point (an outlier), shifted to the
+              % larger bounding box.
+              outlier = [xDataCell{cellIndex}(kEnd+1), ...
+                         yDataCell{cellIndex}(kEnd+1)];
+              ref = [ xDataCell{cellIndex}(kEnd), ...
+                      yDataCell{cellIndex}(kEnd)];
+              appendix = moveToBoundingBox(outlier, ref, xLimLarger, yLimLarger);
+              xDataCellNew{cellIndexNew} = [xDataCellNew{cellIndexNew}, ...
+                                            appendix(1)];
+              yDataCellNew{cellIndexNew} = [yDataCellNew{cellIndexNew}, ...
+                                            appendix(2)];
+              if errorbarMode
+                  % Deliberately set the deviation of the shifted point to 0.
+                  yDeviationCellNew{cellIndexNew} = [yDeviationCellNew{cellIndexNew}, ...
+                                                     0];
+              end
           end
       end
   end
@@ -1420,7 +1445,7 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = 0;
   if nargin>2
-      errorbarMode = 1;
+      errorbarMode = true;
   end
 
   % Unconditionally set this to true. This results in one extra point to be
@@ -1488,13 +1513,13 @@ function xNew = moveToBoundingBox( x, xRef, xLim, yLim )
                         [x(2), xRef(2), yLim            ] )
       alpha = (xLim(1)-x(1)) / (xRef(1)-x(1));
   elseif segmentsIntersect( [x(1), xRef(1), xLim            ], ... % bottom boundary
-                        [x(2), xRef(2), yLim(1), yLim(1)] )
+                            [x(2), xRef(2), yLim(1), yLim(1)] )
       alpha = (yLim(1)-x(2)) / (xRef(2)-x(2));
   elseif segmentsIntersect( [x(1), xRef(1), xLim(2), xLim(2)], ... % right boundary
-                        [x(2), xRef(2), yLim            ] )
+                            [x(2), xRef(2), yLim            ] )
       alpha = (xLim(2)-x(1)) / (xRef(1)-x(1));
   elseif segmentsIntersect( [x(1), xRef(1), xLim            ], ... % top boundary
-                        [x(2), xRef(2), yLim(2), yLim(2)] )
+                            [x(2), xRef(2), yLim(2), yLim(2)] )
       alpha = (yLim(2)-x(2)) / (xRef(2)-x(2));
   else
       error( 'matlab2tikz:noIntersecton', ...
