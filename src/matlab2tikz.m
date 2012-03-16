@@ -3608,7 +3608,7 @@ function tikzLineStyle = translateLineStyle( matlabLineStyle )
 end
 % =========================================================================
 function [m2t, colorLiteral] = rgb2colorliteral( m2t, rgb )
-  % Translates and rgb value to a xcolor literal -- if possible!
+  % Translates an rgb value to an xcolor literal -- if possible!
   % If not, it returns the empty string.
   % This allows for a cleaner output in cases where predefined colors are
   % being used.
@@ -4758,6 +4758,7 @@ function parsed = parseTexString ( m2t, string )
   parsed = [ '$' parsed '$' ];
   % ...except when everything is text
   parsed = regexprep( parsed, '^\$\\text\{([^}]*)\}\$$', '$1' );
+                       % start-> $ \text {(non-}) } $<-end
 
 end
 % =========================================================================

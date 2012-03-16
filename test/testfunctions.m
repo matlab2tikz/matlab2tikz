@@ -1339,6 +1339,11 @@ function description = latexmath2()
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
         '$$\int_{0}^{\infty} x^2 e^{-x^2} dx = \frac{\sqrt{\pi}}{4}$$' );
 
+  % TODO: On processing the matlab2tikz_acidtest output, LaTeX complains
+  %       about the use of \over:
+  %         Package amsmath Warning: Foreign command \over;
+  %         (amsmath)                \frac or \genfrac should be used instead
+
   description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
 end
 % =========================================================================
