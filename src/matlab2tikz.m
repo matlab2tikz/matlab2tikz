@@ -3881,11 +3881,10 @@ function out = extractValueUnit( str )
 end
 % =========================================================================
 function newstr = escapeCharacters( str )
-  % Replaces the single characters %, ', \ by their escaped versions
-  % \'', %%, \\, respectively.
+  % Replaces the single characters % and \ by their escaped versions
+  % %% and \\, respectively.
 
   newstr = str;
-  newstr = strrep( newstr, '''', '\''''' );
   newstr = strrep( newstr, '%' , '%%'    );
   newstr = strrep( newstr, '\' , '\\'    );
 
