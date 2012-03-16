@@ -91,6 +91,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @decayingharmonic    , ...
                            @texcolor            , ...
                            @textext             , ...
+                           @texrandom           , ...
                            @latexmath1          , ...
                            @latexmath2          , ...
                            @parameterCurve3d    , ...
@@ -1025,6 +1026,266 @@ function description = textext()
   text( 5.75, sin(2.5), txstr, 'HorizontalAlignment', 'right' )
 
   description = 'Formatted text and special characters using \TeX{}.';
+end
+% =========================================================================
+function description = texrandom()
+
+  num = 20; % number of symbols per line
+  symbols = {'\it', '\bf', '\rm', '\sl',                                ...
+             '\alpha', '\angle', '\ast', '\beta', '\gamma', '\delta',   ...
+             '\epsilon', '\zeta', '\eta', '\theta', '\vartheta',        ...
+             '\iota', '\kappa', '\lambda', '\mu', '\nu', '\xi', '\pi',  ...
+             '\rho', '\sigma', '\varsigma', '\tau', '\equiv', '\Im',    ...
+             '\otimes', '\cap', '{\int}', '\rfloor', '\lfloor', '\perp',...
+             '\wedge', '\rceil', '\vee', '\langle', '\upsilon', '\phi', ...
+             '\chi', '\psi', '\omega', '\Gamma', '\Delta', '\Theta',    ...
+             '\Lambda', '\Xi', '\Pi', '\Sigma', '\Upsilon', '\Phi',     ...
+             '\Psi', '\Omega', '\forall', '\exists', '\ni', '{\cong}',  ...
+             '\approx', '\Re', '\oplus', '\cup', '\subseteq', '\lceil', ...
+             '\cdot', '\neg', '\times', '\surd', '\varpi', '\rangle',   ...
+             '\sim', '\leq', '\infty', '\clubsuit', '\diamondsuit',     ...
+             '\heartsuit', '\spadesuit', '\leftrightarrow',             ...
+             '\leftarrow', '\Leftarrow', '\uparrow', '\rightarrow',     ...
+             '\Rightarrow', '\downarrow', '\circ', '\pm', '\geq',       ...
+             '\propto', '\partial', '\bullet', '\div', '\neq',          ...
+             '\aleph', '\wp', '\oslash', '\supseteq', '\nabla',         ...
+             '{\ldots}', '\prime', '\0', '\mid', '\copyright',          ...
+             '\o', '\in', '\subset', '\supset',                         ...
+             '\_', '\^', '\{', '\}', '$', '%', '#',                     ...
+             '(', ')', '+', '-', '=', '/', ',', '.', '<', '>',          ...
+             '!', '?', ':', ';', '*', '[', ']', '§', '"', '''',         ...
+             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',          ...
+             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',     ...
+             'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',     ...
+             'w', 'x', 'y', 'z',                                        ...
+             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',     ...
+             'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',     ...
+             'W', 'X', 'Y', 'Z'                                         ...
+            };
+      % Note: Instead of '\ldots' the list of symbols contains the entry
+      %       '{\ldots}'. This is because TeX gives an error if it
+      %       encounters the sequence '$a_\ldots$' or '$a^\ldots$'. It
+      %       looks like that is a TeX bug. Nevertheless this sequence
+      %       could appear in the random output, therefore \ldots is
+      %       wrapped in braces since '$a_{\ldots}$' and '$a^{\ldots}$'
+      %       don't crash TeX.
+      %       Same thing with '\cong' and '\int'.
+      % \color{red} etc. isn't included
+      % \fontname{Times} etc. isn't included
+      % \fontsize{12} etc. isn't included
+
+  switch getEnvironment()
+      case 'MATLAB'
+          % MATLAB expects tilde and ampersand to be un-escaped and backslashes
+          % to be escaped
+          symbols = [ symbols, {'~', '&', '\\'} ];
+      case 'Octave'
+          % Octave expects tilde and ampersand to be escaped for regular
+          % output. If either are used un-escaped, that creates odd output in
+          % Octave itself, but since matlab2tikz should be able to handle
+          % those cases, let's include the un-escaped symbols in the list.
+          symbols = [ symbols, {'\~', '\&', '~', '&'} ];
+          % Octave's backslash handling is weird to say the least. However,
+          % matlab2tikz treats backslashes the same in Octave as it does in
+          % MATLAB. Therefore, let's add an escaped backslash to the list
+          symbols = [ symbols, {'\\'} ];
+      otherwise
+          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+  end
+
+  for ypos = [0.9:-.2:.1]
+      % Generate `num' random indices to the list of symbols
+      index = max(ceil(rand(1, num)*length(symbols)), 1);
+      % Assemble symbols into one cell string array
+      string = symbols(index);
+
+      % Add random amount of balanced braces in random positions to `string'.
+      % By potentially generating more than one set of braces randomly, it's
+      % possible to create more complex patterns of nested braces. Increase
+      % `braceprob' to get more braces, but don't use values greater than or
+      % equal 1 which would result in an infinite loop.
+      braceprob = 0.6;
+      while rand(1,1) < braceprob
+          % Generate two random numbers ranging from 1 to n with n = number
+          % of symbols in `string'
+          bracepos = max(ceil(rand(1, 2)*length(string)), 1);
+          % Modify `string' so that an opening brace is inserted before
+          % min(bracepos) symbols and a closing brace after max(bracepos)
+          % symbols. That way any number of symbols from one to all in
+          % `string' are wrapped in braces for min(bracepos) == max(bracepos)
+          % and min(bracepos) == 1 && max(bracepos) == length(string),
+          % respectively.
+          string = [string(1:min(bracepos)-1), {'{'},    ...
+                    string(min(bracepos):max(bracepos)), ...
+                    {'}'}, string(max(bracepos)+1:end)   ];
+      end
+      % Clean up: remove '{}', '{{}}', etc.
+      clean = false;
+      while clean == false
+          clean = true;
+          for i = 1:length(string)-1
+              if strcmp( string(i), '{' ) && strcmp( string(i+1), '}' )
+                  string = [string(1:i-1), string(i+2:end)];
+                  clean = false;
+                  break
+              end
+          end
+      end
+
+      % Subscripts '_' and superscripts '^' in TeX are tricky in that certain
+      % combinations are not allowed and there are some subtleties in regard
+      % to more complicated combinations of sub/superscripts:
+      % - ^a or _a at the beginning of a TeX math expression is permitted.
+      % - a^ or a_ at the end of a TeX math expression is not.
+      % - a__b, a_^b, a^_b, or a^^b is not allowed, as is any number of
+      %   consecutive sub/superscript operators. Actually a^^b does not
+      %   crash TeX, but it produces seemingly random output instead of `b',
+      %   therefore it should be avoided, too.
+      % - a^b^c or a_b_c is not allowed as it results in a "double subscript/
+      %   superscript" error.
+      % - a^b_c or a_b^c, however, does work.
+      % - a^bc^d or a_bc_d also works.
+      % - a^b_c^d or a_b^c_d is not allowed and results in a "double
+      %   subscript/superscript" error.
+      % - a{_}b, a{^}b, {a_}b or {a^}b is not permitted.
+      % - a{_b} or a{^b} is valid TeX code.
+      % - {a_b}_c produces the same output as a_{bc}. Likewise for '^'.
+      % - a_{b_c} results in "a index b sub-index c". Likewise for '^'.
+      % - a^{b}^c or a_{b}_c is not allowed as it results in a "double
+      %   subscript/superscript" error.
+      %
+      % From this we can derive a number of rules:
+      % 1)  The last symbol in a TeX string must not be '^' or '_'.
+      % 2a) There must be at least one non-brace symbol between any '^' and '_'.
+      % 2b) There must be at least one non-brace symbol between any '_' and '^'.
+      % 3a) There must either be at least two non-brace, non-'_' symbols or at
+      %     least one non-brace, non-'_' symbol and one brace (opening or
+      %     closing) between any two '^'.
+      % 3b) There must either be at least two non-brace, non-'^' symbols or at
+      %     least one brace (opening or closing) between any two '_'.
+      % 4)  '^' or '_' must not appear directly before '}'.
+      % 5)  '^' or '_' must not appear directly after '}'.
+      % 6)  Whenever braces were mentioned, that refers to non-empty braces,
+      %     i.e. '{}' counts as nothing. Printable/escaped braces '\{' and '\}'
+      %     also don't count as braces but as regular symbols.
+      % 7)  '^' or '_' must not appear directly before '\it', '\bf', '\rm', or
+      %     '\sl'.
+      % 8)  '^' or '_' must not appear directly after '\it', '\bf', '\rm', or
+      %     '\sl'.
+      %
+      % A few test cases:
+      % Permitted: ^a...  _a...  a^b_c  a_b^c  a^bc^d  a_bc_d  a{_b}  a{^b}
+      %            {a_b}_c  a_{bc}  {a^b}^c  a^{bc}  a_{b_c}  a^{b^c}
+      % Forbidden: ...z^  ...z_  a__b  a_^b  a^_b  [a^^b]  a^b^c  a_b_c
+      %            a^b_c^d  a_b^c_d  a{_}b  a{^}b  {a_}b  {a^}b
+      %            a^{_b}  a_{^b}  a^{b}^c  a_{b}_c
+      %
+      % Now add sub/superscripts according to these rules
+      subsupprob   = 0.1;  % Probability for insertion of a sub/superscript
+      caretdist    = Inf;  % Distance to the last caret
+      underscdist  = Inf;  % Distance to the last underscore
+      bracedist    = Inf;  % Distance to the last brace (opening or closing)
+      pos = 0;
+      % Making sure the post-update `pos' in the while loop is less than the
+      % number of symbols in `string' enforces rule 1: The last symbol in
+      % a TeX string must not be '^' or '_'.
+      while pos+1 < length(string)
+         % Move one symbol further
+         pos = pos + 1;
+         % Enforce rule 7: No sub/superscript directly before '\it', '\bf',
+         %                 '\rm', or '\sl'.
+         if strcmp( string(pos), '\it' ) || strcmp( string(pos), '\bf' ) ...
+         || strcmp( string(pos), '\rm' ) || strcmp( string(pos), '\sl' )
+             continue
+         end
+         % Enforce rule 8: No sub/superscript directly after '\it', '\bf',
+         %                 '\rm', or '\sl'.
+         if (pos > 1)                           ...
+         && (    strcmp( string(pos-1), '\it' ) ...
+              || strcmp( string(pos-1), '\bf' ) ...
+              || strcmp( string(pos-1), '\rm' ) ...
+              || strcmp( string(pos-1), '\sl' ) ...
+            )
+             continue
+         end
+         bracedist = bracedist + 1;
+         % Enforce rule 4: No sub/superscript directly before '}'
+         if strcmp( string(pos), '}' )
+             bracedist = 0; % Also update braces distance
+             continue
+         end
+         % Enforce rule 5: No sub/superscript directly after '}'
+         if (pos > 1) && strcmp( string(pos-1), '}' )
+             continue
+         end
+         % Update distances for either braces or caret/underscore depending
+         % on whether the symbol currently under scrutiny is a brace or not.
+         if strcmp( string(pos), '{' )
+             bracedist = 0;
+         else
+             caretdist = caretdist + 1;
+             underscdist = underscdist + 1;
+         end
+         % Generate two random numbers, then check if any of them is low
+         % enough, so that with probability `subsupprob' a sub/superscript
+         % operator is inserted into `string' at the current position. In
+         % case both random numbers are below the threshold, whether a
+         % subscript or superscript operator is to be inserted depends on
+         % which of the two numbers is smaller.
+         randomnums = rand(1, 2);
+         if min(randomnums) < subsupprob
+             if randomnums(1) < randomnums(2)
+                 % Enforce rule 2b: There must be at least one non-brace
+                 % symbol between previous '_' and to-be-inserted '^'.
+                 if underscdist < 1
+                     continue
+                 end
+                 % Enforce rule 3a: There must either be at least two
+                 % non-brace, non-'_' symbols or at least one brace (opening
+                 % or closing) between any two '^'.
+                 if ~( ((caretdist >= 2) && (underscdist >= 2)) ...
+                       || ((bracedist < 2) && (caretdist >= 2)) )
+                     continue
+                 end
+                 % Insert '^' before `pos'th symbol in `string' now that
+                 % we've made sure all rules are honored.
+                 string = [ string(1:pos-1), {'^'}, string(pos:end) ];
+                 caretdist = 0;
+                 pos = pos + 1;
+             else
+                 % Enforce rule 2a: There must be at least one non-brace
+                 % symbol between previous '^' and to-be-inserted '_'.
+                 if caretdist < 1
+                     continue
+                 end
+                 % Enforce rule 3b: There must either be at least two
+                 % non-brace, non-'^' symbols or at least one brace (opening
+                 % or closing) between any two '_'.
+                 if ~( ((caretdist >= 2) && (underscdist >= 2)) ...
+                       || ((bracedist < 2) && (underscdist >= 2)) )
+                     continue
+                 end
+                 % Insert '_' before `pos'th symbol in `string' now that
+                 % we've made sure all rules are honored.
+                 string = [ string(1:pos-1), {'_'}, string(pos:end) ];
+                 underscdist = 0;
+                 pos = pos + 1;
+             end
+         end
+      end % while pos+1 < length(string)
+
+      % Now convert the cell string array of symbols into one regular string
+      string = [string{:}];
+      % Print the string in the figure to be converted by matlab2tikz
+      text( .05, ypos, string, 'interpreter', 'tex' )
+      % And print it to the console, too, in order to enable analysis of
+      % failed tests
+      fprintf( 'Original string: %s\n', string )
+  end
+
+  title('Random TeX symbols \\\{\}\_\^$%#&')
+
+  description = 'Random TeX symbols';
 end
 % =========================================================================
 function description = latexmath1()
