@@ -192,12 +192,12 @@ function description = sine_with_annotation ()
   y = sin(x);
   plot(x,y);
   set(gca,'XTick',-pi:pi/2:pi);
-  set(gca,'XTickLabel',{'-{pi}','-pi/2','\{}$%_^#&','\pi/2','\pi'});
+  set(gca,'XTickLabel',{'-pi','-pi/2','0','pi/2','pi'});
 
-  xlabel('-\pi \leq \Theta \leq \pi \{}$%_^#&');
+  xlabel('-\pi \leq \Theta \leq \pi');
   ylabel('sin(\Theta)');
-  title('Plot of sin(\Theta) \{}$%_^#&');
-  text(-pi/4,sin(-pi/4),'\leftarrow sin(-\pi\div4) \{}$%_^#&',...
+  title('Plot of sin(\Theta)');
+  text(-pi/4,sin(-pi/4),'\leftarrow sin(-\pi\div4)',...
       'HorizontalAlignment','left');
 
   set(findobj(gca,'Type','line','Color',[0 0 1]),...
@@ -332,8 +332,8 @@ function description = legendplot ()
   title( '{tikz test}' )
   xlabel( '{x-Values}' )
   ylabel( '{y-Values}' )
-  legend( '\sin(x)', '\cos(x)', 'Location','NorthOutside', ...
-                                'Orientation', 'Horizontal' );
+  legend( 'sin(x)', 'cos(x)', 'Location','NorthOutside', ...
+                              'Orientation', 'Horizontal' );
   grid on
 
   description = 'Test inserting of legends.';
