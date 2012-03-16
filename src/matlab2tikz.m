@@ -4599,6 +4599,20 @@ function [below, error] = isVersionBelow ( env, threshMajor, threshMinor )
   error = false;
 end
 % =========================================================================
+function [retval] = switchMatOct ( m2t, matlabValue, octaveValue )
+  % Returns one of two provided values depending on whether matlab2tikz is
+  % run on MATLAB or on Octave.
+
+  switch m2t.env
+      case 'MATLAB'
+          retval = matlabValue;
+      case 'Octave'
+          retval = octaveValue;
+      otherwise
+          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+  end
+end
+% =========================================================================
 function string = prettyPrint( m2t, string, interpreter )
   % Some resources on how MATLAB handles rich (TeX) markup:
   % http://www.mathworks.com/help/techdoc/ref/text_props.html#String
@@ -4660,12 +4674,35 @@ function parsed = parseTexString ( m2t, string )
       string = string{:};
   end
 
-  bracesPos = regexp( string, '\{|\}' ); % get the position of all braces
-  % Exclude braces that are part of any of these TeX commands:
+  % Get the position of all braces
+  bracesPos = regexp( string, '\{|\}' );
+
+  % Exclude braces that are part of any of these MATLAB-supported TeX commands:
   % \color{...}  \color[...]{...}  \fontname{...}  \fontsize{...}
   [sCmd, eCmd] = regexp( string, '\\(color(\[[^\]]*\])?|fontname|fontsize)\{[^}]*\}' );
   for i = 1:length(sCmd)
       bracesPos( bracesPos >= sCmd(i) & bracesPos <= eCmd(i) ) = [];
+  end
+
+  % Exclude braces that are preceded by an odd number of backslashes which
+  % means the brace is escaped and thus to be printed, not a grouping brace
+  expr = '(?<!\\)(\\\\)*\\(\{|\})';
+  escaped = regexp( string, expr, ['end'] );
+  % It's necessary to go over `string' with the same RegEx again to catch
+  % overlapping matches, e.g. string == '\{\}'. In such a case the simple
+  % regexp(...) above only finds the first brace. What we have to do is look
+  % only at the part of `string' that starts with the first brace but doesn't
+  % encompass its escaping backslash. Iterating over all previously found
+  % matches makes sure all overlapping matches are found, too. That way even
+  % cases like string == '\{\} \{\}' are handled correctly.
+  % The call to unique(...) is not necessary to get the behavior described, but
+  % by removing duplicates in `escaped' it's cleaner than without.
+  for i = escaped
+      escaped = unique( [escaped, regexp( string(i:end), expr, 'end' ) + i-1] );
+  end
+  % Now do the actual removal of escaped braces
+  for i = 1:length(escaped)
+      bracesPos( bracesPos == escaped(i) ) = [];
   end
 
   parsed = '';
@@ -4708,6 +4745,12 @@ end
 % =========================================================================
 function string = parseTexSubstring ( m2t, string )
 
+  % Keep a copy of the original input string for potential warning messages
+  % referring to the string as it was originally used in MATLAB/Octave and
+  % not the current value of the variable `string' halfway into the m2t
+  % conversion.
+  origstr = string;
+
   % Font families (italic, bold, etc.) get a trailing '{}' because in
   % MATLAB they may be followed by a letter which would produce an error
   % in (La)TeX.
@@ -4718,7 +4761,7 @@ function string = parseTexSubstring ( m2t, string )
   % The same holds true for special characters like \alpha
   % The list of MATLAB-supported TeX characters was taken from
   % http://www.mathworks.com/help/techdoc/ref/text_props.html#String
-  for i = {'alpha', 'angle', 'ast', 'beta', 'gamma', 'delta',     ...
+  named = {'alpha', 'angle', 'ast', 'beta', 'gamma', 'delta',     ...
            'epsilon', 'zeta', 'eta', 'theta', 'vartheta', 'iota', ...
            'kappa', 'lambda', 'mu', 'nu', 'xi', 'pi', 'rho',      ...
            'sigma', 'varsigma', 'tau', 'equiv', 'Im', 'otimes',   ...
@@ -4735,10 +4778,14 @@ function string = parseTexSubstring ( m2t, string )
            'downarrow', 'circ', 'pm', 'geq', 'propto', 'partial', ...
            'bullet', 'div', 'neq', 'aleph', 'wp', 'oslash',       ...
            'supseteq', 'nabla', 'ldots', 'prime', '0', 'mid',     ...
-           'copyright'                                            } 
+           'copyright'                                            };
+  for i = named
       string = strrep( string, ['\' i{:}], ['\' i{:} '{}'] );
+      % FIXME: Only append '{}' if there's an odd number of backslashes
+      %        in front of the items from `named'. If it's an even
+      %        number instead, that means there's an escaped (printable)
+      %        backslash and some text like "alpha" after that.
   end
-
   % Some special characters' names are subsets of others, e.g. '\o' is
   % a subset of '\omega'. This would produce undesired double-escapes.
   % For example if '\o' was converted to '\o{}' after '\omega' has been
@@ -4762,94 +4809,148 @@ function string = parseTexSubstring ( m2t, string )
   % to MATLAB/Octave it requires the skip parameter (even if it's zero)
   string = regexprep( string, '(\\fontsize\{[^}]*\})', '$1{0}' );
 
-  % Mark non-TeX commands as \text{...}
+  % Put '\o{}' inside \text{...} as it is a text mode symbol that does not
+  % exist in math mode (and LaTeX gives a warning if you use it in math mode)
+  string = strrep( string, '\o{}', '\text{\o{}}' );
+
+  % Put everything that isn't a TeX command inside \text{...}
   expr = '(\\[a-zA-Z]+(\[[^\]]*\])?(\{[^}]*\}){1,2})';
         % |(  \cmd   )(  [...]?   )(  {...}{1,2}  )|
         % (               subset $1                )
-  switch m2t.env
-      case 'MATLAB'
-          repl = '}$1\\text{';
-      case 'Octave'
-          repl = '}$1\text{';
-      otherwise
-          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-  end
+  repl = switchMatOct( m2t, '}$1\\text{', '}$1\text{' );
   string = regexprep( string, expr, repl );
       % ...\alpha{}... -> ...}\alpha{}\text{...
   string = [ '\text{' string '}' ];
       % ...}\alpha{}\text{... -> \text{...}\alpha{}\text{...}
 
-  % '_' has to be in math mode
-  expr = '(\\text)\{([^}]*)_([^}]*)\}';
-       %  ( \text) {(non-})_(non-}) }
-       %  (  $1  )  ( $2  ) ( $3  )
-  while regexp( string, expr )
-      % Iterating is necessary to catch all occurrences in cases like
-      % 'ab_cd_ef' which should produce '\text{ab}_\text{cd}_\text{ef}'
-      % but actually would produce '\text{ab_cd}_\text{ef}' if the
-      % regexprep() was executed only once.
+  % '_' has to be in math mode so long as it's not escaped as '\_' in which
+  % case it remains as-is. Extra care has to be taken to make sure any
+  % backslashes in front of the underscore are not themselves escaped and
+  % thus printable backslashes. This is the case if there's an even number
+  % of backslashes in a row.
+  repl = switchMatOct( m2t, '$1}_\\text{', '$1}_\text{' );
+  string = regexprep( string, '(?<!\\)((\\\\)*)_', repl );
 
-      string = regexprep( string, expr, '$1{$2}_$1{$3}' );
+  % '^' has to be in math mode so long as it's not escaped as '\^' in which
+  % case it is expressed as '\textasciicircum{}' for compatibility with
+  % regular TeX. Same thing here regarding even/odd number of backslashes
+  % as in the case of underscores above.
+  repl = switchMatOct( m2t, '$1\\textasciicircum{}', '$1\textasciicircum{}' );
+  string = regexprep( string, '(?<!\\)((\\\\)*)\\\^', repl );
+  repl = switchMatOct( m2t, '$1}^\\text{', '$1}^\text{' );
+  string = regexprep( string, '(?<!\\)((\\\\)*)\^', repl );
+
+  % '\\' has to be escaped to '\textbackslash{}'
+  % This cannot be done with strrep(...) as it would replace e.g. 4 backslashes
+  % with three times the replacement string because it finds overlapping matches
+  % (see http://www.mathworks.de/help/techdoc/ref/strrep.html)
+  % Note: Octave's backslash handling is broken. Even though its output does
+  % not resemble MATLAB's, the same m2t code is used for either software. That
+  % way MATLAB-compatible code produces the same matlab2tikz output no matter
+  % which software it's executed in. So long as this MATLAB incompatibility
+  % remains in Octave you're probably better off not using backslashes in TeX
+  % text anyway.
+  string = regexprep( string, '(\\)\\', '$1textbackslash{}' );
+
+  % '_', '^', '{', and '}' are already escaped properly, even in MATLAB's TeX
+  % dialect (and if they're not, that's intentional)
+
+  % Escape "$", "%", and "#" to make them compatible to true TeX while in
+  % MATLAB/Octave they are not escaped
+  string = strrep( string, '$', '\$' );
+  string = strrep( string, '%', '\%' );
+  string = strrep( string, '#', '\#' );
+
+  % Escape "§" as "\S" since it can give UTF-8 problems otherwise.
+  % The TeX string 'a_§' in particular lead to problems in Octave 3.6.0.
+  % m2t transcoded that string into '$\text{a}_\text{*}\text{#}$' with
+  % * = 0xC2 and # = 0xA7 which corresponds with the two-byte UTF-8
+  % encoding. Even though this looks like an Octave bug that shows
+  % during the '..._\text{abc}' to '..._\text{a}\text{bc}' conversion,
+  % it's best to include the workaround here.
+  string = strrep( string, '§', '\S{}' );
+
+  % Escape plain "&" in MATLAB and replace it and the following character with
+  % a space in Octave unless the "&" is already escaped
+  switch m2t.env
+      case 'MATLAB'
+          string = strrep( string, '&', '\&' );
+      case 'Octave'
+          % Ampersands should already be escaped in Octave.
+          % Octave (tested with 3.6.0) handles un-escaped ampersands a little
+          % funny in that it removes the following character, if there is one:
+          % 'abc&def'      -> 'abc ef'
+          % 'abc&\deltaef' -> 'abc ef'
+          % 'abc&$ef'      -> 'abc ef'
+          % 'abcdef&'      -> 'abcdef'
+          % Don't remove closing brace after '&' as this would result in
+          % unbalanced braces
+          string = regexprep( string, '(?<!\\)&(?!})', ' ' );
+          string = regexprep( string, '(?<!\\)&}', '}' );
+          if regexp( string, '(?<!\\)&\\' )
+              % If there's a backslash after the ampersand, that means not only
+              % the backslash should be removed but the whole escape sequence,
+              % e.g. '\delta' or '\$'. Actually the '\delta' case is the
+              % trickier one since by now `string' would have been turned from
+              % 'abc&\deltaef' into '\text{abc&}\delta{}\text{ef}', i.e. after
+              % the ampersand first comes a closing brace and then '\delta';
+              % the latter as well as the ampersand itself should be removed
+              % while the brace must remain in place to avoid unbalanced braces.
+              userWarning( m2t,                                                ...
+                           ['TeX string ''%s'' contains a special character '  ...
+                            'after an un-escaped ''&''. The output generated ' ...
+                            'by matlab2tikz will not precisely match that '    ...
+                            'which you see in Octave itself in that the '      ...
+                            'special character and the preceding ''&'' is '    ...
+                            'not replaced with a space.'], origstr )
+          end
+      otherwise
+          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
-  % Undo conversion to math mode if '_' is escaped as '\_'
-  % This has to happen outside the previous while loop to prevent endless loops
-  expr = '(\\text)\{([^}]*\\)\}_';
-       %  ( \text) {(non-} \) }_
-       %  (  $1  )  (  $2   )
-  while regexp( string, expr )
-      string = regexprep( string, expr, '$1{$2_}' );
-        % \text{...\}_ -> \text{...\_}
+  % Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
+  % escape sequence. An un-escaped "~" produces weird output in Octave, thus
+  % give a warning in that case
+  switch m2t.env
+      case 'MATLAB'
+          string = strrep( string, '~', '\textasciitilde{}' ); % or '\~{}'
+      case 'Octave'
+          string = strrep( string, '\~', '\textasciitilde{}' ); % ditto
+          if regexp( string, '(?<!\\)~' )
+              userWarning( m2t,                                             ...
+                           ['TeX string ''%s'' contains un-escaped ''~''. ' ...
+                            'For proper display in Octave you probably '    ...
+                            'want to escape it even though that''s '        ...
+                            'incompatible with MATLAB. '                    ...
+                            'In the matlab2tikz output it will have its '   ...
+                            'usual TeX function as a non-breaking space.'], ...
+                           origstr )
+          end
+      otherwise
+          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
 
-  % '^' has to be in math mode
-  expr = '(\\text)\{([^}]*)\^([^}]*)\}';
-  while regexp( string, expr )
-      % Iterating is necessary to catch all occurrences. See above.
-
-      string = regexprep( string, expr, '$1{$2}^$1{$3}' );
-
-      % Undo conversion to math mode if '^' is escaped as '\^'
-      string = regexprep( string, '(\\text)\{([^}]*\\)\}\^', '$1{$2textasciicircum{}}' );
-                                %  ( \text) {(non-} \) } ^
-                                %  (  $1  )  (  $2   )
-  end
-
-  % '\' inside \text{} has to be escaped to \textbackslash
-  expr = '(\\text)\{([^}]*)\\([^}]*)\}';
-  while regexp( string, expr )
-      % Iterating is necessary to catch all occurrences. See above.
-
-      % This text replacement is a bit tricky as replacing '\' straight with
-      % '\textbackslash{}' results in an endless loop which tries to replace
-      % the '\' at the beginning of '\textbackslash{}' with another long form.
-      % To keep conversion simple, backslashes are first converted to
-      % '///textbackslash{}' in this loop. This replacement string is then
-      % once more replaced with a strrep() command _after_ the loop. As strrep()
-      % now works on the entire string at once there's no more endless loop.
-      % The only problem with this approach is that if someone manually
-      % entered '///textbackslash{}' on purpose, in order to come out just like
-      % that, the output would instead be a single escaped backslash. This
-      % doesn't seem at all likely, though, so it seems like a reasonable
-      % approach.
-
-      string = regexprep( string, expr, '$1{$2///textbackslash{}$3}' );
-  end
-  string = strrep( string, '///textbackslash{}', '\textbackslash{}' );
-  % Revert '\textbackslash{}' back to '\' if it was used to escape an underscore
-  % as '\_'
-  string = strrep( string, '\textbackslash{}_', '\_' );
-  % Revert '\textbackslash{}' back to '\' if it was used to escape a circumflex
-  % as '\^'
-  string = strrep( string, '\textbackslash{}textasciicircum', '\textasciicircum' );
-
-  % Convert '..._\text{abc}' and '...^\text{abc}' to '..._a\text{bc}' and
-  % '...^a\text{bc}', respectively
-  expr = '(_|\^)(\\text)\{([^}])([^}]*)\}';
-       %  (_/^ )( \text) {(no-})(non-}) }
-       %  ( $1 )(  $2  )  ( $3 )( $4  )
-  while regexp( string, expr )
-      string = regexprep( string, expr, '$1$3$2{$4}' );
-  end
+  % Convert '..._\text{abc}' and '...^\text{abc}' to '..._\text{a}\text{bc}'
+  % and '...^\text{a}\text{bc}', respectively.
+  % Things get a little more complicated if instead of 'a' it's e.g. '$'. The
+  % latter has been converted to '\$' by now and simply extracting the first
+  % character from '\text{\$bc}' would result in '\text{$}\text{$bc}' which
+  % is syntactically wrong. Instead the whole command '\$' has to be moved in
+  % front of the \text{...} block, e.g. '..._\text{\$bc}' -> '..._\$\text{bc}'.
+  % Note that the problem does not occur for the majority of special characters
+  % like '\alpha' because they use math mode and therefore are never inside a
+  % \text{...} block to begin with. This means that the number of special
+  % characters affected by this issue is actually quite small:
+  %   $ # % & _ { } \o § ~ \ ^
+  expr = ['(_|\^)(\\text)\{([^}\\]|\\\$|\\#|\\%|\\&|\\_|\\\{|\\\}|', ...
+   ... %   (_/^ )( \text) {(non-}\| \$ | \#| \%| \&| \_| \{ | \} |
+   ... %   ( $1 )(  $2  )  (                  $3                      ->
+          '\\o\{\}|\\S\{\}|\\textasciitilde\{\}|\\textbackslash\{\}|', ...
+   ... %    \o{}  | \S{}  | \textasciitilde{}  | \textbackslash{}  |
+   ... %  <-                         $3                                 ->
+          '\\textasciicircum\{\})'];
+       %    \textasciicircum{}  )
+       %  <-      $3            )
+  string = regexprep( string, expr, '$1$2{$3}$2{' );
 
   % Some further processing makes the output behave more like TeX math mode,
   % but only if the matlab2tikz parameter parseStringsAsMath=true.
@@ -4868,44 +4969,30 @@ function string = parseTexSubstring ( m2t, string )
       string = regexprep( string, '\\text\{(\s+)}', '$1' );
 
       % '<<' probably means 'much smaller than', i.e. '\ll'
-      switch m2t.env
-          case 'MATLAB'
-              repl = '$1\\ll{}$2';
-          case 'Octave'
-              repl = '$1\ll{}$2';
-          otherwise
-              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-      end
+      repl = switchMatOct( m2t, '$1\\ll{}$2', '$1\ll{}$2' );
       string = regexprep( string, '([^<])<<([^<])', repl );
 
       % Single letters are most likely variables and thus should be in math mode
       string = regexprep( string, '\\text\{([a-zA-Z])\}', '$1' );
 
-  end
+  end % parseStringsAsMath
 
-  % Clean up: remove \text{}
+  % Clean up: remove empty \text{}
   string = strrep( string, '\text{}', '' );
       % \text{}\alpha{}\text{...} -> \alpha{}\text{...}
 
-  % Clean up: concatenate \text{abc}\text{def} to one \text{abcdef}
-  % If instead of 'abc' it's, say, 'abc\textasciicircum{}' the concatenation
-  % also works (thanks to $3 in `expr') but only for one '{}' in the whole chain
-  expr = '(\\text)\{([^}]*)(\{\})?\}\\text\{([^}]*)(\{\})?\}';
-       %  ( \text) {(non-})( {} )  } \text{ (non-})( {} )  }
-       %  (  $1  )  ( $2  )( $3 )           ( $4  )( $5 )
-  while regexp( string, expr )
-      string = regexprep( string, expr, '$1{$2$3$4$5}' );
-  end
-
-  % Clean up: convert '{}\' to '\'
-  string = strrep( string, '{}\', '\' );
+  % Clean up: convert '{}\' to '\' unless it's prefixed by a backslash which
+  % means the opening brace is escaped and thus a printable character instead
+  % of a grouping brace.
+  string = regexprep( string, '(?<!\\)\{\}(\\)', '$1' );
       % \alpha{}\text{...} -> \alpha\text{...}
 
-  % Clean up: convert '{}}' to '}'
-  string = strrep( string, '{}}', '}' );
+  % Clean up: convert '{}}' to '}' unless it's prefixed by a backslash
+  string = regexprep( string, '(?<!\\)\{\}\}', '}' );
 
-  % Clean up: convert '{}' at the end of `string' to '' (empty string)
-  string = regexprep( string, '\{\}$', '' );
+  % Clean up: remove '{}' at the end of `string' unless it's prefixed by a
+  % backslash
+  string = regexprep( string, '(?<!\\)\{\}$', '' );
 
 end
 % =========================================================================
