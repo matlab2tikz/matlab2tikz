@@ -4566,7 +4566,7 @@ function env = getEnvironment()
   end
 end
 % =========================================================================
-function [below, error] = isVersionBelow ( env, threshMajor, threshMinor )
+function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
   % get version string for `env' by iterating over all toolboxes
   versionData = ver;
   versionString = '';
@@ -4581,12 +4581,12 @@ function [below, error] = isVersionBelow ( env, threshMajor, threshMinor )
   if isempty( versionString )
       % couldn't find `env'
       below = true;
-      error = true;
+      noenv = true;
       return
   end
 
   majorVer = str2double(regexprep( versionString, '^(\d+)\..*', '$1' ));
-  minorVer = str2double(regexprep( versionString, '^\d+\.(\d+)[^\d]*.*', '$1' ));
+  minorVer = str2double(regexprep( versionString, '^\d+\.(\d+\.?\d*)[^\d]*.*', '$1' ));
   
   if (majorVer < threshMajor) || (majorVer == threshMajor && minorVer < threshMinor)
       % version of `env' is below threshold
@@ -4595,7 +4595,7 @@ function [below, error] = isVersionBelow ( env, threshMajor, threshMinor )
       % version of `env' is same as or above threshold
       below = false;
   end
-  error = false;
+  noenv = false;
 end
 % =========================================================================
 function [retval] = switchMatOct ( m2t, matlabValue, octaveValue )
