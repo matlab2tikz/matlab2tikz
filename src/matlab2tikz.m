@@ -4647,15 +4647,34 @@ function string = prettyPrint( m2t, string, interpreter )
       case 'none' % Literal characters
 
           % Only make special characters TeX compatible
-          string = strrep( string, '\', '\textbackslash ' );
-          string = strrep( string, '{', '\{' );
-          string = strrep( string, '}', '\}' );
+
+          string = strrep( string, '\', '\textbackslash{}' );
+          % Note: '{' and '}' can't be converted to '\{' and '\}',
+          %       respectively, via strrep(...) as this would lead to
+          %       backslashes converted to '\textbackslash\{\}' because
+          %       the backslash was converted to '\textbackslash{}' in
+          %       the previous step. Using regular expressions with
+          %       negative look-behind makes sure any braces in `string'
+          %       were not introduced by escaped backslashes.
+          %       Also keep in mind that escaping braces before backslashes
+          %       would not remedy the issue -- in that case `string' would
+          %       contain backslashes introduced by brace escaping that are
+          %       not supposed to be printable characters.
+          repl = switchMatOct( m2t, '\\{', '\{' );
+          string = regexprep( string, '(?<!\\textbackslash){', repl );
+          repl = switchMatOct( m2t, '\\}', '\}' );
+          string = regexprep( string, '(?<!\\textbackslash{)}', repl );
           string = strrep( string, '$', '\$' );
           string = strrep( string, '%', '\%' );
           string = strrep( string, '_', '\_' );
           string = strrep( string, '^', '\textasciicircum{}' );
           string = strrep( string, '#', '\#' );
           string = strrep( string, '&', '\&' );
+          string = strrep( string, '~', '\textasciitilde{}' ); % or '\~{}'
+          % Clean up: remove superfluous '{}' if it's followed by a backslash
+          string = strrep( string, '{}\', '\' );
+          % Clean up: remove superfluous '{}' at the end of `string'
+          string = regexprep( string, '\{\}$', '' );
 
           % Make sure to return a string and not a cellstr.
           if iscellstr( string )
