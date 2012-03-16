@@ -222,6 +222,7 @@ function matlab2tikz_acidtest( varargin )
       close( fig_handle );
 
       elapsedTime = toc;
+      fprintf( '%s ', strrep( funcName{k}, '\_', '_' ) )
       fprintf( 'done (%4.2fs).\n\n', elapsedTime );
   end
 
