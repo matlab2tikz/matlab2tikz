@@ -1,21 +1,21 @@
 This is matlab2tikz, a MATLAB(R) script for converting MATLAB(R) figures into native
-TikZ figures.
+TikZ/pgfplots figures.
 
 To download and rate matlab2tikz, go to its page on MathWorks 
 http://www.mathworks.com/matlabcentral/fileexchange/22022.
 
-As of now, matlab2tikz does by far not support the conversion of all possible
-MATLAB figures. In particular, 3D plots are not yet supported. However, if
-you have a nice 2D plot, matlab2tikz might just do what you want it to.
+matlab2tikz does not support the conversion of all possible
+MATLAB figures. In particular, some 3D plots may not by amongst
+its capabilites.
 
-The plots that matlab2tikz handles properly are, but are not limited to
+Some of the plots that matlab2tikz can handle are
 
   * most axes properties (including logarithmic scaling),
   * grids,
   * line plots (including markers line styles),
   * error bars,
   * contour(f) plots,
-  * bar plots (stacked, grouped, histgrams),
+  * bar plots (stacked, grouped, histograms),
   * stem plots,
   * stairs plots,
   * quiver (arrow) plots,
@@ -29,7 +29,8 @@ The plots that matlab2tikz handles properly are, but are not limited to
   * zplane plots,
   * frequency response plots,
   * scatter plots,
-  * surf plots.
+  * surf plots,
+  * 3D parameter plots.
 
 
 The workflow is as follows.

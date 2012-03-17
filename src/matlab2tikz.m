@@ -152,7 +152,7 @@ function matlab2tikz( varargin )
   m2t.currentHandles = [];
 
   m2t.name = 'matlab2tikz';
-  m2t.version = '0.1.4';
+  m2t.version = '0.2.0';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2012';
@@ -2567,7 +2567,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
               % Get the shifts of the bar centers.
               % In case of numBars==1, this returns 0,
               % In case of numBars==2, this returns [-1/4, 1/4],
-              % In case of numBars==2, this returns [-1/3, 0, 1/3],
+              % In case of numBars==3, this returns [-1/3, 0, 1/3],
               % and so forth.
               % The bar width is assumed to be groupWidth/numBars.
               m2t.barShifts = ((1:numBars) - 0.5) * groupWidth / numBars ...

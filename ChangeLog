@@ -1,3 +1,23 @@
+2012-03-17  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.2.0.
+	* Greatly overhauled text handling. (Burkhart Lingner)
+	* Added option 'tikzFileComment'.
+	* Added option 'parseStrings'.
+	* Added option 'extraTikzpictureSettings'.
+	* Added proper documetion (for 'help matlab2tikz').
+	* Improved legend positioning, orientation.
+	* Support for horizontal bar plots.
+	* Get bar widths right.
+	* Doubles are plottet with 15-digit precision now.
+	* Support for rectangle objects.
+	* Better color handling.
+	* Testing framework improvements.
+	* Several bugfixes:
+	   - ticks handled more concisely
+	   - line splitting bugs
+	   - ...
+
 2011-11-22  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.1.4.
