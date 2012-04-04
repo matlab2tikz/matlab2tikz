@@ -549,7 +549,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % Input arguments:
   %    handle.................The axes environment handle.
   %    alignmentOptions.......The alignment options as defined in the
-  %                           function `alignSubPlots()`.
+  %                           function 'alignSubPlots()'.
   %                           This argument is optional.
 
   % Initialize empty enviroment.
@@ -1878,7 +1878,7 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   % Draws a 'patch' graphics object (as found in contourf plots, for
   % example).
   %
-  % TODO: Declare common patch properties (like `draw=none`) once for
+  % TODO: Declare common patch properties (like 'draw=none') once for
   %       all patches.
 
   str = [];
@@ -2937,7 +2937,7 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
 end
 % =========================================================================
 function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
-  % TODO: * Declare common properties (like `draw=none`) once for
+  % TODO: * Declare common properties (like 'draw=none') once for
   %         all badges.
   %       * Look into original pgfplots color bars.
 
@@ -3895,17 +3895,18 @@ function out = isVisible( handle )
   out = strcmp( get(handle,'Visible'), 'on' );
 end
 % =========================================================================
-function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, axesHandles )
+function [visibleAxesHandles,alignmentOptions,plotOrder] =...
+    alignSubPlots( m2t, axesHandles )
   % Returns the alignment options for all the axes enviroments.
-  % The question whether two plots are aligns on left, right, top, or
+  % The question whether two plots are aligned on the left, right, top, or
   % bottom is answered by looking at the 'Position' property of the
   % axes object.
   %
-  % The second output argument `ix` is the order in which the axes
+  % The second output argument 'ix' is the order in which the axes
   % environments need to be created. This is to make sure that plots
   % which act as a reference are processed first.
   %
-  % The output vector `alignmentOptions` contains:
+  % The output vector 'alignmentOptions' contains:
   %     - whether or not it is a reference (.isRef)
   %     - axes name  (.name), only set if .isRef is true
   %     - the actual pgfplots options (.opts)
@@ -3921,33 +3922,32 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   % the graph starting from a node (AXES) with maximal connections.
   %
   % TODO:
-  %     - diagonal connections à la
+  %     - diagonal connections 'a la
   %              [ AXES1       ]
   %              [       AXES2 ]
   %
-
   % TODO: fix this function
-  % TODO: look for unique IDs of the axes env. which could be returned along
-  %       with its properties
+  % TODO: look for unique IDs of the axes enviroments
+  %       which could be returned along with its properties
 
-  n = 0; % number of visible axes handles
+  numVisibleHandles = 0;
   for k = 1:length(axesHandles)
       if axisIsVisible( axesHandles(k) )
-          n = n+1;
-          visibleAxesHandles(n) = axesHandles(k);
+          numVisibleHandles = numVisibleHandles+1;
+          visibleAxesHandles(numVisibleHandles) = axesHandles(k);
       end
   end
 
   % initialize alignmentOptions
   alignmentOptions = struct([]);
-  for k = 1:n
+  for k = 1:numVisibleHandles
       alignmentOptions(k).isElderTwin   = 0;
       alignmentOptions(k).isYoungerTwin = 0;
       alignmentOptions(k).opts          = cell(0);
   end
 
   % return immediately if nothing is to be aligned
-  if n<=1
+  if numVisibleHandles <= 1
       plotOrder = 1;
       return
   end
@@ -3956,26 +3956,26 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   % Contains 0's where the axes environments are not aligned, and
   % positive integers where they are. The integer encodes how the axes
   % are aligned (top right:bottom left, and so on).
-  C = zeros(n,n);
+  C = zeros(numVisibleHandles,numVisibleHandles);
 
-  % `isRef` tells whether the respective plot acts as a position reference
+  % 'isRef' tells whether the respective plot acts as a position reference
   % for another plot.
   % TODO: preallocate this
   % Also, gather all the positions.
-  axesPos     = zeros(n,4);
+  axesPos     = zeros(numVisibleHandles,4);
   cbarHandles = [];  % indices of color bar handles;
                      % they need to be treated separately
-  for k = 1:n
+  for k = 1:numVisibleHandles
       % treat color bars later
       if strcmp( get(visibleAxesHandles(k),'Tag'), 'Colorbar' )
           cbarHandles = [ cbarHandles, k ];
           continue
       end
 
-      % `axesPos(i,:)` contains
+      % 'axesPos(i,:)' contains
       %     (indices 1,3): the x-value of the left and the right axis, and
       %     (indices 2,4): the y-value of the bottom and top axis,
-      % of plot no. `i`
+      % of plot no. 'i'
       axesPos(k,:) = get( visibleAxesHandles(k), 'Position' );
       axesPos(k,3) = axesPos(k,1) + axesPos(k,3);
       axesPos(k,4) = axesPos(k,2) + axesPos(k,4);
@@ -3983,7 +3983,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
 
   % Unfortunately, MATLAB doesn't seem to exactly align color bars
   % to its parent plot. Hence, some quirking is needed.
-  nonCbarHandles              = (1:n);
+  nonCbarHandles              = (1:numVisibleHandles);
   nonCbarHandles(cbarHandles) = [];
   for k = cbarHandles
       axesPos(k,:) = correctColorbarPos( visibleAxesHandles(k), ...
@@ -4021,8 +4021,8 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   % If two plots happen to coincide at both left and right axes, for
   % example, only one relation is stored.
   %
-  for i = 1:n
-      for j = i+1:n
+  for i = 1:numVisibleHandles
+      for j = i+1:numVisibleHandles
           if max(abs(axesPos(i,:)-axesPos(j,:))) < m2t.tol
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % twins
@@ -4044,7 +4044,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
 
           elseif abs( axesPos(i,1)-axesPos(j,3) ) < m2t.tol
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % left axis of `i` aligns with right axis of `j`
+              % left axis of 'i' aligns with right axis of 'j'
               if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -3;
                   C(j,i) =  4;
@@ -4056,7 +4056,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
 
           elseif abs( axesPos(i,3)-axesPos(j,1) ) < m2t.tol
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % right axis of `i` aligns with left axis of `j`
+              % right axis of 'i' aligns with left axis of 'j'
               if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -4;
                   C(j,i) =  3;
@@ -4068,7 +4068,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
 
           elseif abs( axesPos(i,3)-axesPos(j,1) ) < m2t.tol
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % right axes of `i` and `j` align
+              % right axes of 'i' and 'j' align
               if axesPos(i,2) > axesPos(j,2)
                   C(i,j) = -4;
                   C(j,i) =  4;
@@ -4080,7 +4080,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
 
           elseif abs( axesPos(i,2)-axesPos(j,2) ) < m2t.tol
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % lower axes of `i` and `j` align
+              % lower axes of 'i' and 'j' align
               if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -1;
                   C(j,i) =  1;
@@ -4092,7 +4092,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
 
           elseif abs( axesPos(i,2)-axesPos(j,4) ) < m2t.tol
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % lower axis of `i` aligns with upper axis of `j`
+              % lower axis of 'i' aligns with upper axis of 'j'
               if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -1;
                   C(j,i) =  2;
@@ -4104,7 +4104,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
 
           elseif abs( axesPos(i,4)-axesPos(j,2) ) < m2t.tol
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % upper axis of `i` aligns with lower axis of `j`
+              % upper axis of 'i' aligns with lower axis of 'j'
               if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -2;
                   C(j,i) =  1;
@@ -4116,7 +4116,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
 
           elseif abs( axesPos(i,4)-axesPos(j,4) ) < m2t.tol
               % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % upper axes of `i` and `j` align
+              % upper axes of 'i' and 'j' align
               if axesPos(i,1) > axesPos(j,1)
                   C(i,j) = -2;
                   C(j,i) =  2;
@@ -4134,15 +4134,15 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   % If, for any node, there is more than one plot that aligns with it in the
   % same way (e.g., upper left), then pick exactly *one* of them.
   % Take the one that is closest to the correspondig plot.
-  for i = 1:n
-      for j = 1:n % everything except `i`
+  for i = 1:numVisibleHandles
+      for j = 1:numVisibleHandles % everything except 'i'
 
           if C(i,j)==0 || abs(C(i,j))==5 % don't check for double zeros (aka "no relation"'s) or triplets, quadruplets,...
               continue
           end
 
           % find doubles, and count C(i,j) in
-          doub = find( C(i,j:n)==C(i,j) ) ...
+          doub = find( C(i,j:numVisibleHandles)==C(i,j) ) ...
                + j-1; % to get the actual index
 
           if length(doub)>1
@@ -4150,22 +4150,22 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
               % Pick the one with the minimal distance, delete the other
               % relations.
               switch C(i,j)
-                  case {1,2}    % all plots sit right of `i`
+                  case {1,2}    % all plots sit right of 'i'
                       dist = axesPos(doub,1) - axesPos(i,3);
-                  case {-1,-2}  % all plots sit left of `i`
+                  case {-1,-2}  % all plots sit left of 'i'
                       dist = axesPos(i,1) - axesPos(doub,3);
-                  case {3,4}    % all plots sit above `i`
+                  case {3,4}    % all plots sit above 'i'
                       dist = axesPos(doub,2) - axesPos(i,4);
-                  case {-3,-4}  % all plots sit below `i`
+                  case {-3,-4}  % all plots sit below 'i'
                       dist = axesPos(i,2) - axesPos(doub,4);
                   otherwise
                       error( 'alignSubPlots:illCode', ...
                              'Illegal alignment code %d.', C(i,j) );
               end
 
-              [dummy,idx] = min( dist ); % `idx` holds the index of the minimum.
+              [dummy,idx] = min( dist ); % 'idx' holds the index of the minimum.
                                          % If there is more than one, then
-                                         % `idx` has twins. min returns the one
+                                         % 'idx' has twins. min returns the one
                                          % with the lowest index.
 
               % delete the index from the 'remove list'
@@ -4177,7 +4177,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
       end
   end
 
-  % Alright. The matrix `C` now contains exactly the alignment info that
+  % Alright. The matrix 'C' now contains exactly the alignment info that
   % we are looking for.
 
   % Is each axes environment connected to at least one other?
@@ -4196,9 +4196,9 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
   [dummy,ix] = sort( sum(C~=0, 2), 'descend' );
-  plotOrder = zeros(1,n);
+  plotOrder = zeros(1,numVisibleHandles);
   plotNumber = 0;
-  for k = 1:n
+  for k = 1:numVisibleHandles
       [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion( plotOrder, plotNumber, C, alignmentOptions, ix(k), [] );
   end
 
@@ -4218,11 +4218,11 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] = alignSubPlots( m2t, a
   % came later in the TikZ output.
   % The reordering was tested against the test suite and didn't break any
   % of the test cases, neither on Octave nor on MATLAB.
-  newPlotOrder = zeros(1,n);
-  for k = 1:n
+  newPlotOrder = zeros(1,numVisibleHandles);
+  for k = 1:numVisibleHandles
       newPlotOrder(plotOrder(k)) = k;
   end
-  plotOrder=newPlotOrder;
+  plotOrder = newPlotOrder;
 
   return
 end
@@ -4317,8 +4317,8 @@ function pgfOpt = cornerCode2pgfplotOption( code )
 end
 % =========================================================================
 function pos = correctColorbarPos( colBarHandle, axesHandlesPos )
-  % The handle `colBarHandle` is the handle of a color bar,
-  % `axesHandlesPos` a (nx4)-matrix containing the positions of all
+  % The handle 'colBarHandle' is the handle of a color bar,
+  % 'axesHandlesPos' a (nx4)-matrix containing the positions of all
   % *non-colorbar* handles.
   % The function looks for the color bar's parent and returnes the position
   % "as it should be".
@@ -4376,25 +4376,25 @@ function refAxesId = getReferenceAxes( loc, colBarPos, axesHandlesPos )
           return;
 
       case {'northoutside'}
-          % scan in `axesHandlesPos` for the handle number that lies
+          % scan in 'axesHandlesPos' for the handle number that lies
           % directly below colBarHandle
           [m,refAxesId]  = min( colBarPos(2) ...
                                 - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
 
       case {'southoutside'}
-          % scan in `axesHandlesPos` for the handle number that lies
+          % scan in 'axesHandlesPos' for the handle number that lies
           % directly above colBarHandle
           [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
                             - colBarPos(4) );
 
       case {'eastoutside'}
-          % scan in `axesHandlesPos` for the handle number that lies
+          % scan in 'axesHandlesPos' for the handle number that lies
           % directly left of colBarHandle
           [m,refAxesId]  = min( colBarPos(1) ...
                             - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
 
       case {'westoutside'}
-          % scan in `axesHandlesPos` for the handle number that lies
+          % scan in 'axesHandlesPos' for the handle number that lies
           % directly right of colBarHandle
           [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
                             - colBarPos(3)  );
@@ -4551,7 +4551,7 @@ end
 function env = getEnvironment()
   env = '';
   % Check if we are in MATLAB or Octave.
-  % `ver' in MATLAB gives versioning information on all installed packages
+  % 'ver' in MATLAB gives versioning information on all installed packages
   % separately, and there is no guarantee that MATLAB itself is listed first.
   % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
   versionData = ver;
@@ -4567,7 +4567,7 @@ function env = getEnvironment()
 end
 % =========================================================================
 function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
-  % get version string for `env' by iterating over all toolboxes
+  % get version string for 'env' by iterating over all toolboxes
   versionData = ver;
   versionString = '';
   for k = 1:max(size(versionData))
@@ -4579,7 +4579,7 @@ function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
   end
   
   if isempty( versionString )
-      % couldn't find `env'
+      % couldn't find 'env'
       below = true;
       noenv = true;
       return
@@ -4589,10 +4589,10 @@ function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
   minorVer = str2double(regexprep( versionString, '^\d+\.(\d+\.?\d*)[^\d]*.*', '$1' ));
   
   if (majorVer < threshMajor) || (majorVer == threshMajor && minorVer < threshMinor)
-      % version of `env' is below threshold
+      % version of 'env' is below threshold
       below = true;
   else
-      % version of `env' is same as or above threshold
+      % version of 'env' is same as or above threshold
       below = false;
   end
   noenv = false;
@@ -4654,10 +4654,10 @@ function string = prettyPrint( m2t, string, interpreter )
           %       backslashes converted to '\textbackslash\{\}' because
           %       the backslash was converted to '\textbackslash{}' in
           %       the previous step. Using regular expressions with
-          %       negative look-behind makes sure any braces in `string'
+          %       negative look-behind makes sure any braces in 'string'
           %       were not introduced by escaped backslashes.
           %       Also keep in mind that escaping braces before backslashes
-          %       would not remedy the issue -- in that case `string' would
+          %       would not remedy the issue -- in that case 'string' would
           %       contain backslashes introduced by brace escaping that are
           %       not supposed to be printable characters.
           repl = switchMatOct( m2t, '\\{', '\{' );
@@ -4673,7 +4673,7 @@ function string = prettyPrint( m2t, string, interpreter )
           string = strrep( string, '~', '\textasciitilde{}' ); % or '\~{}'
           % Clean up: remove superfluous '{}' if it's followed by a backslash
           string = strrep( string, '{}\', '\' );
-          % Clean up: remove superfluous '{}' at the end of `string'
+          % Clean up: remove superfluous '{}' at the end of 'string'
           string = regexprep( string, '\{\}$', '' );
 
           % Make sure to return a string and not a cellstr.
@@ -4706,15 +4706,15 @@ function parsed = parseTexString ( m2t, string )
   % means the brace is escaped and thus to be printed, not a grouping brace
   expr = '(?<!\\)(\\\\)*\\(\{|\})';
   escaped = regexp( string, expr, ['end'] );
-  % It's necessary to go over `string' with the same RegEx again to catch
+  % It's necessary to go over 'string' with the same RegEx again to catch
   % overlapping matches, e.g. string == '\{\}'. In such a case the simple
   % regexp(...) above only finds the first brace. What we have to do is look
-  % only at the part of `string' that starts with the first brace but doesn't
+  % only at the part of 'string' that starts with the first brace but doesn't
   % encompass its escaping backslash. Iterating over all previously found
   % matches makes sure all overlapping matches are found, too. That way even
   % cases like string == '\{\} \{\}' are handled correctly.
   % The call to unique(...) is not necessary to get the behavior described, but
-  % by removing duplicates in `escaped' it's cleaner than without.
+  % by removing duplicates in 'escaped' it's cleaner than without.
   for i = escaped
       escaped = unique( [escaped, regexp( string(i:end), expr, 'end' ) + i-1] );
   end
@@ -4728,7 +4728,7 @@ function parsed = parseTexString ( m2t, string )
   % begins (remember, MATLAB strings start counting at 1, not 0). This is
   % to make sure substrings left of the first brace get parsed, too.
   prevBracePos = 0;
-  % Iterate over all the brace positions in order to split up `string'
+  % Iterate over all the brace positions in order to split up 'string'
   % at those positions and then parse the substrings. A virtual brace is
   % added right of where the actual string ends to make sure substrings
   % right of the right-most brace get parsed as well.
@@ -4766,7 +4766,7 @@ function string = parseTexSubstring ( m2t, string )
 
   % Keep a copy of the original input string for potential warning messages
   % referring to the string as it was originally used in MATLAB/Octave and
-  % not the current value of the variable `string' halfway into the m2t
+  % not the current value of the variable 'string' halfway into the m2t
   % conversion.
   origstr = string;
 
@@ -4801,7 +4801,7 @@ function string = parseTexSubstring ( m2t, string )
   for i = named
       string = strrep( string, ['\' i{:}], ['\' i{:} '{}'] );
       % FIXME: Only append '{}' if there's an odd number of backslashes
-      %        in front of the items from `named'. If it's an even
+      %        in front of the items from 'named'. If it's an even
       %        number instead, that means there's an escaped (printable)
       %        backslash and some text like "alpha" after that.
   end
@@ -4910,7 +4910,7 @@ function string = parseTexSubstring ( m2t, string )
               % If there's a backslash after the ampersand, that means not only
               % the backslash should be removed but the whole escape sequence,
               % e.g. '\delta' or '\$'. Actually the '\delta' case is the
-              % trickier one since by now `string' would have been turned from
+              % trickier one since by now 'string' would have been turned from
               % 'abc&\deltaef' into '\text{abc&}\delta{}\text{ef}', i.e. after
               % the ampersand first comes a closing brace and then '\delta';
               % the latter as well as the ampersand itself should be removed
@@ -5009,7 +5009,7 @@ function string = parseTexSubstring ( m2t, string )
   % Clean up: convert '{}}' to '}' unless it's prefixed by a backslash
   string = regexprep( string, '(?<!\\)\{\}\}', '}' );
 
-  % Clean up: remove '{}' at the end of `string' unless it's prefixed by a
+  % Clean up: remove '{}' at the end of 'string' unless it's prefixed by a
   % backslash
   string = regexprep( string, '(?<!\\)\{\}$', '' );
 

@@ -3,8 +3,7 @@
 # ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
 
 ECHOCMD:=/bin/echo -e
-PDFLATEX:=pdflatex
-#PDFLATEX:=lualatex # not compatible with pgfplots yet
+PDFLATEX:=lualatex
 
 # ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
 

@@ -117,7 +117,27 @@ end
 % *** FUNCTION one_point
 function description = one_point ()
 
-  plot(0.123, 0.145, 'x')
+close all;
+figsize = [ 4 3] * 60;
+figure('Position', [0 0 figsize]);
+clf;
+
+xrange = linspace(-3,4,2*1024);
+
+axes('Position', [0.1 0.1 0.85 0.15]);
+plot(xrange)
+ylabel('$n$');
+xlabel('$x$');
+
+axes('Position', [0.1 0.25 0.85 0.6]);
+plot(xrange)
+set(gca,'XTick',[]);
+
+%  name = 'm2tikztest';
+%  matlab2tikz( sprintf('%s/%s.tex',figdir,name), 'parseStrings', false, ...
+%    'height', '3cm', 'width', '5cm');
+
+%    plot(0.123, 0.145, 'x')
 
   description = 'Plot only one single point.' ;
 
