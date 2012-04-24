@@ -735,12 +735,6 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                                           'axis y line*=right', 'axis x line*=top'};
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % add manually given extra axis options
-  if ~isempty( m2t.cmdOpts.Results.extraAxisOptions )
-      m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:}, ...
-                                          m2t.cmdOpts.Results.extraAxisOptions{:}};
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % grid line style
   if hasXGrid || hasYGrid || (exist('hasZGrid','var') && hasZGrid )
       matlabGridLineStyle = get( handle, 'GridLineStyle' );
@@ -761,6 +755,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       % behavior).
       % To date (Dec 12, 2009) pgfplots is not able to handle those things
       % separately.
+      % See also http://sourceforge.net/tracker/index.php?func=detail&aid=3510455&group_id=224188&atid=1060657
       % As a prelimary compromise, only pull this option if no grid is in use.
       m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:},...
                                           'axis on top'};
@@ -812,6 +807,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 %                end
           end
       end
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % add manually given extra axis options
+  if ~isempty( m2t.cmdOpts.Results.extraAxisOptions )
+      m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:}, ...
+                                          m2t.cmdOpts.Results.extraAxisOptions{:}};
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
