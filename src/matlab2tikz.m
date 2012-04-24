@@ -744,10 +744,10 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       defaultMatlabGridLineStyle = ':';
       if m2t.cmdOpts.Results.strict ...
          || ~strcmp(matlabGridLineStyle,defaultMatlabGridLineStyle)
-         gls = translateLineStyle( matlabGridLineStyle );
-         axisGridOpts = sprintf( 'grid style={%s}', gls );
-         m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:},...
-                                             axisGridOpts{:}};
+          gls = translateLineStyle( matlabGridLineStyle );
+          axisGridOpts = sprintf( 'grid style={%s}', gls );
+          m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:},...
+                                              axisGridOpts{:}};
       end
   else
       % When specifying 'axis on top', the axes stay above all graphs (which is
@@ -757,8 +757,10 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       % separately.
       % See also http://sourceforge.net/tracker/index.php?func=detail&aid=3510455&group_id=224188&atid=1060657
       % As a prelimary compromise, only pull this option if no grid is in use.
-      m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:},...
-                                          'axis on top'};
+      if m2t.cmdOpts.Results.strict
+          m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:},...
+                                              'axis on top'};
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % See if there are any legends that need to be plotted.
