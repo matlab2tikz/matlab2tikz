@@ -933,6 +933,8 @@ function description = surfPlot()
   colormap hsv
   axis([-3 3 -3 3 -10 5])
 
+  colorbar
+
   xlabel( 'x' )
   ylabel( 'y' )
   zlabel( 'z' )

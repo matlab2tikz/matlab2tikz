@@ -196,7 +196,7 @@ function matlab2tikz( varargin )
   
   % explicitly specify which figure to use
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'figurehandle', gcf, @ishandle );
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'colormap', colormap, @isnumeric );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'colormap', [], @isnumeric );
 
   % whether to strictly stick to the default MATLAB plot appearance:
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'strict', false, @islogical );
@@ -284,9 +284,12 @@ function matlab2tikz( varargin )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add global elements
-  m2t.currentHandles.gcf      = m2t.cmdOpts.Results.figurehandle;
-  m2t.currentHandles.colormap = get(m2t.currentHandles.gcf,'colormap');
-    % TODO: Shouldn't this use m2t.cmdOpts.Results.colormap, if specified?
+  m2t.currentHandles.gcf = m2t.cmdOpts.Results.figurehandle;
+  if m2t.cmdOpts.Results.colormap
+      m2t.currentHandles.colormap = m2t.cmdOpts.Results.colormap;
+  else
+      m2t.currentHandles.colormap = get(m2t.currentHandles.gcf, 'colormap');
+  end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle output file handle/file name
@@ -327,7 +330,6 @@ function matlab2tikz( varargin )
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   m2t.tikzFileName = fopen( fid );
 
   % By default, reference the PNG (if required) from the TikZ file
@@ -1030,7 +1032,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   zData  = get( handle, 'ZData' );
   if ~isempty( zData )
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
-      opts = [ '\n', collapse(drawOptions, ',\n' ), '\n' ];
+      opts = [ '\n', join(drawOptions, ',\n' ), '\n' ];
       str = [ str, ...
               plotLine3d( opts, xData, yData, zData ) ];
   else
@@ -1051,9 +1053,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
           % Hence the condition k<length(xDataCell).
           if ~isempty(m2t.legendHandles) && (isempty(legendString) || k < length(xDataCell))
               % No legend entry found. Don't include plot in legend.
-              opts = [ '\n', collapse({drawOptions{:}, 'forget plot'}, ',\n' ), '\n' ];
+              opts = [ '\n', join({drawOptions{:}, 'forget plot'}, ',\n' ), '\n' ];
           else
-              opts = [ '\n', collapse(drawOptions, ',\n' ), '\n' ];
+              opts = [ '\n', join(drawOptions, ',\n' ), '\n' ];
           end
           if errorbarMode
               str = [ str, ...
@@ -1708,7 +1710,7 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
       drawOptions = {drawOptions{:}, sprintf('mark=%s', tikzMarker)};
 
       if ~isempty( markOptions )
-          mo = collapse( markOptions, ',' );
+          mo = join( markOptions, ',' );
           drawOptions = {drawOptions{:}, ['mark options={', mo, '}']};
       end
   end
@@ -1915,7 +1917,7 @@ function [ m2t, str ] = drawPatch( m2t, handle )
       drawOptions = {drawOptions{:}, sprintf( 'draw=%s', xEdgeColor)};
   end
 
-  drawOpts = collapse( drawOptions, ',' );
+  drawOpts = join( drawOptions, ',' );
   % -----------------------------------------------------------------------
 
   % MATLAB's patch elements are matrices in which each column represents a
@@ -2049,11 +2051,8 @@ function [ m2t, str ] = drawImage( m2t, handle )
           colorData = colorData(m:-1:1,:,:);
       end
 
-      cmap = get(m2t.currentHandles.gcf, 'ColorMap');
-        % TODO: Shouldn't this be m2t.currentHandles.colormap?
-
       % write the image
-      imwriteWrapperPNG( colorData, cmap, pngFileName );
+      imwriteWrapperPNG( colorData, m2t.currentHandles.colormap, pngFileName );
       % ------------------------------------------------------------------------
 
       xLim = get( m2t.currentHandles.gca, 'XLim' );
@@ -2268,7 +2267,7 @@ function [ m2t, str ] = drawText( m2t, handle)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = sprintf( '\\node[%s]\nat (axis cs:%.15g, %.15g) {%s};\n', ...
-                 collapse(style,', '), pos(1), pos(2), String );
+                 join(style,', '), pos(1), pos(2), String );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -2317,7 +2316,7 @@ function [ m2t, str ] = drawRectangle( m2t, handle )
   drawOptions = [ lineOptions, colorOptions ];
   % plot the thing
   str = sprintf( '\\draw[%s] (axis cs:%.15g, %.15g) rectangle (axis cs:%.15g, %.15g);\n', ...
-                 collapse(drawOptions,', '), pos(1), pos(2), pos(1)+pos(3), pos(2)+pos(4) ...
+                 join(drawOptions,', '), pos(1), pos(2), pos(1)+pos(3), pos(2)+pos(4) ...
                );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
@@ -2359,12 +2358,16 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
       else
           surfOptions = {surfOptions{:}, sprintf( 'shader=faceted' )};
       end
-      surfOpts = collapse( surfOptions , ',\n' );
+      % Get color map.
+      cmap = matlab2pgfplotsColormap( m2t.currentHandles.colormap );
+      surfOptions = {surfOptions{:}, cmap};
   else % default for mesh plot is shader=flat
       surfOptions = {surfOptions{:}, sprintf( 'shader=flat' )};
-      surfOpts = collapse( surfOptions , ',\n' );
   end
-  
+
+  surfOpts = join( surfOptions , ',\n' );
+
+  return
 end
 % =========================================================================
 function [ m2t, str ] = drawScatterPlot( m2t, h )
@@ -2404,13 +2407,13 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
       drawOptions = { 'scatter', ...
                       'only marks', ...
                       'scatter src=explicit', ...
-                      ['scatter/use mapped color={', collapse(markerOptions,','), '}'] };
+                      ['scatter/use mapped color={', join(markerOptions,','), '}'] };
   end
 
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  drawOpts = collapse( drawOptions, ',' );
+  drawOpts = join( drawOptions, ',' );
   if isempty(zData)
       env = 'addplot';
   else
@@ -2661,7 +2664,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   else
       drawOptions = {drawOptions{:}, sprintf( 'draw=%s', xEdgeColor )};
   end
-  drawOpts = collapse( drawOptions, ',' );
+  drawOpts = join( drawOptions, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Add 'area legend' to the options as otherwise the legend indicators
   % will just highlight the edges.
@@ -2721,7 +2724,7 @@ function [ m2t, str ] = drawStemseries( m2t, h )
                    markerOptions ];
 
   % insert draw options
-  drawOpts =  collapse( drawOptions, ',' );
+  drawOpts =  join( drawOptions, ',' );
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 
@@ -2774,7 +2777,7 @@ function [ m2t, str ] = drawStairSeries( m2t, h )
                    markerOptions ];
 
   % insert draw options
-  drawOpts =  collapse( drawOptions, ',' );
+  drawOpts =  join( drawOptions, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -2861,7 +2864,7 @@ function [ m2t, str ] = drawQuiverGroup( m2t, h )
                ];
 
   % define arrow style
-  arrowOptions = collapse( arrowOpts, ',' );
+  arrowOptions = join( arrowOpts, ',' );
 
   % Append the arrow style to the TikZ options themselves.
   % TODO: Look into replacing this by something more 'local',
@@ -2937,6 +2940,129 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
   % Now, pull drawLine() with deviation information.
   [ m2t, str ] = drawLine( m2t, c(dataIdx), yDeviations );
 
+end
+% ==============================================================================
+function out = linearFunction(X, Y)
+    % Return the linear function that goes through (X[1], Y[1]), (X[2], Y[2]).
+    out = @(x) ( Y(2,:)*(x-X(1)) + Y(1,:)*(X(2)-x) ) / ( X(2)-X(1) );
+    return
+end
+% ==============================================================================
+function matlabColormap = pgfplots2matlabColormap(points, rgb)
+    % Translates a Pgfplots colormap to a MATLAB color map.
+
+    matlabColormap = zeros(64, 3);
+    % Point indices between which to interpolate.
+    I = [1, 2];
+    f = linearFunction(points(I), rgb(I,:));
+    for k = 1:64
+        x = (k-1)/63 * points(end);
+        if x > points(I(2))
+            I = I + 1;
+            f = linearFunction(points(I), rgb(I,:));
+        end
+        matlabColormap(k,:) = f(x);
+    end
+
+    return
+end
+% ==============================================================================
+function pgfplotsColormap = matlab2pgfplotsColormap( matlabColormap )
+    % Translates a MATLAB color map into a Pgfplots colormap.
+
+    % First check if we could use a default Pgfplots color map.
+    % Unfortunately, MATLAB and Pgfplots color maps will never exactly coincide
+    % except to the most simple cases such as blackwhite. This is because of a
+    % slight incompatibility of Pgfplots and MATLAB colormaps:
+    % In MATLAB, indexing goes from 1 through 64, whereas in Pgfplots you can
+    % specify any range, the default ones having something like
+    % (0: red, 1: yellow, 2: blue).
+    % To specify this exact color map in MATLAB, one would have to put 'red' at
+    % 1, blue at 64, and yellow in the middle of the two, 32.5 that is.
+    % Not really sure how MATLAB rounds here: 32, 33? Anyways, it will be
+    % slightly off and hence not match the Pgfplots color map.
+    % As a workaround, build the MATLAB-formatted colormaps of Pgfplots default
+    % color maps, and check if matlabColormap is close to it. If yes, take it.
+
+    pgfmaps = { struct('name', 'colormap/hot', ...
+                       'points', [0,1,2,3], ...
+                       'values', [[0,0,1];[1,1,0];[1,0.5,0];[1,0,0]]), ... % TODO check this
+                struct('name', 'colormap/hot2', ...
+                       'points', [0,3,6,8], ...
+                       'values', [[0,0,0];[1,0,0];[1,1,0];[1,1,1]]), ...
+                struct('name', 'colormap/jet', ...
+                       'points', [0,1,3,5,7,8], ...
+                       'values', [[0,0,128];[0,0,255];[0,255,255];[255,255,0];[255,0,0];[128,0,0]]/255), ...
+                struct('name', 'colormap/blackwhite', ...
+                       'points', [0,1], ...
+                       'values', [[0,0,0];[1,1,1]]), ...
+                struct('name', 'colormap/bluered', ...
+                       'points', [0,1,2,3,4,5], ...
+                       'values', [[0,0,180];[0,255,255];[100,255,0];[255,255,0];[255,0,0];[128,0,0]]/255), ...
+                struct('name', 'colormap/cool', ...
+                       'points', [0,1,2], ...
+                       'values', [[255,255,255];[0,128,255];[255,0,255]]/255), ...
+                struct('name', 'colormap/greenyellow', ...
+                       'points', [0,1], ...
+                       'values', [[0,128,0];[255,255,0]]/255), ...
+                struct('name', 'colormap/redyellow', ...
+                       'points', [0,1], ...
+                       'values', [[255,0,0];[255,255,0]]/255), ...
+                struct('name', 'colormap/violet', ...
+                       'points', [0,1,2], ...
+                       'values', [[25,25,122];[255,255,255];[238,140,238]]/255), ...
+              };
+
+    % The tolerance is a subjective matter of course.
+    % Some figures:
+    %    * The norm-distance between MATLAB's gray and bone is 0.545077.
+    %    * The norm-distance between MATLAB's jet and Pgfplots's jet is 0.22427.
+    %    * The norm-distance between MATLAB's hot and Pgfplots's hot2 is 0.168364.
+    tol = 0.5;
+
+    for map = pgfmaps
+        mmap = pgfplots2matlabColormap(map{1}.points, map{1}.values);
+        alpha = norm(matlabColormap - mmap);
+        if alpha < tol
+            disp( sprintf('Found %s to be a pretty good match for your color map (%g).', map{1}.name, alpha) );
+            pgfplotsColormap = map{1}.name;
+            return
+        end
+    end
+
+    % Build a custom color map.
+    % Loop over the data, stop at each spot where the linear
+    % interpolation is interrupted, and set a color mark there.
+    steps = [1, 2];
+    colors = [matlabColormap(1,:); matlabColormap(2,:)];
+    f = linearFunction(steps, colors);
+    k = 3;
+    m = size(matlabColormap, 1);
+    while k <= m
+        if norm(matlabColormap(k,:) - f(k)) > 1.0e-10
+            % Add the previous step to the color list
+            steps(end) = k-1;
+            colors(end,:) = matlabColormap(k-1,:);
+            steps = [steps, k];
+            colors = [colors; matlabColormap(k,:)];
+            f = linearFunction(steps(end-1:end), colors(end-1:end,:));
+        end
+        k = k+1;
+    end
+    steps(end) = m;
+    colors(end,:) = matlabColormap(m,:);
+
+    % Get it in Pgfplots-readable form.
+    unit = 'pt';
+    colSpecs = {};
+    for k = 1:length(steps)
+        x = steps(k)-1;
+        sprintf( 'rgb(%d%s)=(%g, %g, %g)', x, unit, colors(k) );
+        colSpecs{k} = sprintf( 'rgb(%d%s)=(%g,%g,%g)', x, unit, colors(k,:) );
+    end
+    pgfplotsColormap = sprintf('colormap={mymap}{[1%s] %s}', unit, join(colSpecs, '; '));
+
+    return
 end
 % =========================================================================
 function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
@@ -3169,7 +3295,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % do _not_ handle colorbar's children
-
+  return
 end
 % =========================================================================
 function [m2t, xcolor] = getColor( m2t, handle, color, mode )
@@ -3198,8 +3324,7 @@ function [m2t, xcolor] = getColor( m2t, handle, color, mode )
                        'Argument ''mode'' has illegal value ''%s''.' ], ...
                        mode );
       end
-      cmap = m2t.currentHandles.colormap;
-      [m2t, xcolor] = rgb2colorliteral(m2t, cmap(colorindex, :));
+      [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
 
@@ -3268,8 +3393,6 @@ function [ m2t, colorindex ] = cdata2colorindex ( m2t, cdata, imagehandle )
 
   axeshandle = m2t.currentHandles.gca;
 
-  cmap = m2t.currentHandles.colormap;
-
   % -----------------------------------------------------------------------
   % For the following, see, for example, the MATLAB help page for 'image',
   % section 'Image CDataMapping'.
@@ -3278,7 +3401,7 @@ function [ m2t, colorindex ] = cdata2colorindex ( m2t, cdata, imagehandle )
           % need to scale within clim
           % see MATLAB's manual page for caxis for details
           clim = get( axeshandle, 'clim' );
-          m = size( cmap, 1 );
+          m = size( m2t.currentHandles.colormap, 1 );
           if cdata<=clim(1)
               colorindex = 1;
           elseif cdata>=clim(2)
@@ -3441,7 +3564,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   end
 
   if ~isempty( lStyle )
-      lOpts = {lOpts{:}, ['legend style={' collapse(lStyle,',') '}']};
+      lOpts = {lOpts{:}, ['legend style={' join(lStyle,',') '}']};
   end
 
 end
@@ -3504,7 +3627,7 @@ function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, 
   end
 
   % set ticks + labels
-  ticks = collapse( num2cell(tick), ',' );
+  ticks = join( num2cell(tick), ',' );
 
   % if there's no specific labels, return empty
   if isempty( tickLabel )
@@ -3579,7 +3702,7 @@ function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, 
               tickLabel{k} = sprintf( '$10^{%s}$', str );
           end
       end
-      tickLabels = collapse( tickLabel, ',' );
+      tickLabels = join( tickLabel, ',' );
   else
       tickLabels = [];
   end
@@ -3674,12 +3797,12 @@ function [m2t, colorLiteral] = rgb2colorliteral( m2t, rgb )
 
 end
 % =========================================================================
-function newstr = collapse( cellstr, delimiter )
-  % This function collapses a cell of strings to a single string (with a
+function newstr = join( cellstr, delimiter )
+  % This function joins a cell of strings to a single string (with a
   % given delimiter inbetween two strings, if desired).
   %
   % Example of usage:
-  %              collapse( cellstr, ',' )
+  %              join( cellstr, ',' )
 
   if ~iscellstr( cellstr ) && ~isnumeric( cellstr{1} )
       % display value of cellstr as debug information
@@ -4515,7 +4638,7 @@ function printAll( env, fid )
     if isempty( env.options )
         fprintf( fid, '\\begin{%s}\n', env.name );
     else
-        fprintf( fid, '\\begin{%s}[%%\n%s]\n', env.name, collapse(env.options, sprintf(',\n')) );
+        fprintf( fid, '\\begin{%s}[%%\n%s]\n', env.name, join(env.options, sprintf(',\n')) );
     end
 
     for k = 1:length(env.content)
