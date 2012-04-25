@@ -95,6 +95,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @latexmath1          , ...
                            @latexmath2          , ...
                            @parameterCurve3d    , ...
+                           @parameterSurf       , ...
                            @fill3plot           , ...
                            @rectanglePlot       , ...
                            @herrorbarPlot
@@ -1368,8 +1369,33 @@ function description = latexmath2()
 end
 % =========================================================================
 function description = parameterCurve3d()
-    ezplot3('sin(t)','cos(t)','t',[0,6*pi])
+    ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
     description = 'Parameter curve in 3D.';
+end
+% =========================================================================
+function description = parameterSurf()
+    x = rand(100,1)*4-2;
+    y = rand(100,1)*4-2;
+    z = x.*exp(-x.^2-y.^2);
+
+    % Construct the interpolant
+    % F = TriScatteredInterp(x,y,z,'nearest');
+    % F = TriScatteredInterp(x,y,z,'natural');
+    F = TriScatteredInterp(x,y,z,'linear');
+
+    % Evaluate the interpolant at the locations (qx, qy), qz
+    % is the corresponding value at these locations.
+    ti = -2:.25:2;
+    [qx,qy] = meshgrid(ti,ti);
+    qz = F(qx,qy);
+
+    hold on
+    surf(qx,qy,qz)
+    plot3(x,y,z,'o')
+    view(gca,[-69 14]);
+    hold off
+
+    description = 'Parameter and surface plot.';
 end
 % =========================================================================
 function description = fill3plot()
