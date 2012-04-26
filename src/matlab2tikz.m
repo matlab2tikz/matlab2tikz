@@ -3455,7 +3455,7 @@ function [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handl
   if m2t.cmdOpts.Results.interpretTickLabelsAsTex
       labelInterpreter = 'tex';
   else
-      % By default, the tick labels are neve LaTeX interpreted. (Really?i)
+      % By default, MATLAB never interprets tick labels as TeX
       labelInterpreter = 'none';
   end
 
@@ -4760,6 +4760,8 @@ function parsed = parseTexString ( m2t, string )
   % ...except when everything is text
   parsed = regexprep( parsed, '^\$\\text\{([^}]*)\}\$$', '$1' );
                        % start-> $ \text {(non-}) } $<-end
+  % ...or when the parsed string is empty
+  parsed = regexprep( parsed, '^\$\$$', '' );
 
 end
 % =========================================================================
