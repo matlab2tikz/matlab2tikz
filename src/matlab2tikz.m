@@ -573,15 +573,8 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % Handle special cases.
   % MATLAB(R) uses 'Tag', Octave 'tag' for their tags. :/
-  if strcmp( m2t.env, 'MATLAB' );
-      tagKeyword = 'Tag';
-      colorbarKeyword = 'Colorbar';
-  elseif strcmp( m2t.env, 'Octave' );
-      tagKeyword = 'tag';
-      colorbarKeyword = 'colorbar';
-  else
-      error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
-  end
+  tagKeyword      = switchMatOct(m2t,'Tag','tag');
+  colorbarKeyword = switchMatOct(m2t,'Colorbar','colorbar');
   switch get( handle, tagKeyword )
       case colorbarKeyword
           % Handle a colorbar separately.
