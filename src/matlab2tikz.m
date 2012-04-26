@@ -4514,22 +4514,7 @@ function userInfo( m2t, message, varargin )
       return
   end
 
-  n = length(varargin);
-  switch n
-      case 0;
-         mess = sprintf( message );
-      case 1;
-         mess = sprintf( message, varargin{1} );
-      case 2;
-         mess = sprintf( message, varargin{1}, varargin{2} );
-      case 3;
-         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3} );
-      case 4;
-         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3}, varargin{4} );
-      otherwise
-         error( 'userInfo:longVarargin', ...
-                'Can''t deal with length(varargin)>4 yet.' );
-  end
+  mess = sprintf(message, varargin{:});
 
   % Replace '\n' by '\n *** ' and print.
   mess = strrep( mess, sprintf('\n'), sprintf('\n *** ') );
