@@ -250,20 +250,8 @@ function matlab2tikz( varargin )
   m2t.cmdOpts = m2t.cmdOpts.parse( m2t.cmdOpts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % warn for deprecated options
-  if any( ismember( m2t.cmdOpts.Parameters, 'silent' ) )
-      warning( sprintf( [ '\n===============================================================================\n', ...
-                          'You are using the deprecated parameter ''silent''.\n', ...
-                          'From now on, please use ''showInfo'' and ''showWarnings'' to control the output.\n', ...
-                          '===============================================================================' ] ) );
-  end
-
-  if any( ismember( m2t.cmdOpts.Parameters, 'mathmode' ) )
-      warning( sprintf( [ '\n===============================================================================\n', ...
-                          'You are using the deprecated parameter ''mathmode''.\n', ...
-                          'From now on, please use ''parseStrings'' and ''parseStringsAsMath'' to control\n', ...
-                          'the output.\n', ...
-                          '===============================================================================' ] ) );
-  end
+  deprecatedParameter(m2t,'silent'  ,'showInfo'    ,'showWarnings');
+  deprecatedParameter(m2t,'mathmode','parseStrings','parseStringsAsMath');
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % inform users of potentially dangerous options
@@ -5096,4 +5084,28 @@ function newStruct = structWithCell(varargin)
   for iKV = 1:numel(keys)
       newStruct.(keys{iKV}) = values{iKV};
   end
+end
+% =========================================================================
+function deprecatedParameter(m2t, oldParameter, varargin)
+if any( ismember( m2t.cmdOpts.Parameters, oldParameter ) )
+      switch numel(varargin)
+        case 0
+          replacements = '';
+        case 1
+          replacements = ['''' varargin{1} ''''];
+        otherwise
+          replacements = deblank(sprintf('''%s'' and ',varargin{:}));
+          replacements = regexprep(replacements,' and$','');
+      end
+      if ~isempty(replacements)
+        replacements = sprintf('From now on, please use %s to control the output.\n',replacements);
+      end
+      
+      message = ['\n===============================================================================\n', ...
+                 'You are using the deprecated parameter ''%s''.\n', ...
+                 '%s', ...
+                 '===============================================================================' ];
+      warning('matlab2tikz:deprecatedParameter', ...
+               message, oldParameter, replacements);         
+end
 end
