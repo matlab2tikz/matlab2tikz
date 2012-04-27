@@ -68,6 +68,11 @@ function matlab2tikz( varargin )
 %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
 %   of the output file.
 %
+%   MATLAB2TIKZ('keepNan',BOOL,...) determines whether to keep NaN
+%   values in the TikZ output. When set, plots will no longer be split at
+%   NaN values. This also sets the TikZ property 'unbounded coords=jump'.
+%   (default: false)
+%
 %   Example
 %      x = -pi:pi/10:pi;
 %      y = tan(sin(x)) - sin(tan(x));
@@ -215,6 +220,9 @@ function matlab2tikz( varargin )
 
   % minimum distance for two points to be plotted separately
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'minimumPointsDistance', 0.0, @isnumeric );
+
+  % keep NaNs in TikZ output (and don't split the plots there)
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'keepNan', false, @islogical);
 
   % extra axis options
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'extraAxisOptions', {}, @isCellOrChar );
@@ -618,6 +626,10 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % the following is general MATLAB behavior
   m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:}, ...
                                       'scale only axis'};
+  if m2t.cmdOpts.Results.keepNan
+    m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:}, ...
+                                      'unbounded coords=jump'};
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Get other axis options (ticks, axis color, label,...).
   % This is set here such that the axis orientation indicator in m2t is set
@@ -1122,7 +1134,7 @@ function [xDataCell, yDataCell, yDeviationCell] = ...
   % Split the xData, yData into several chunks of data for each of which
   % an \addplot will be generated.
   % Splitting criteria are:
-  %    * NaNs.
+  %    * Infs and NaNs.
   %    * Visibility.
   %    * Dimension too large.
   %    * Data set too large.
@@ -1140,7 +1152,7 @@ function [xDataCell, yDataCell, yDeviationCell] = ...
   end
 
   % Split up at Infs and NaNs.
-  mask      = infsNaNs2mask( xDataCell, yDataCell );
+  mask      = infsNaNs2mask( m2t, xDataCell, yDataCell );
   xDataCell = splitByMask( xDataCell, mask );
   yDataCell = splitByMask( yDataCell, mask );
   if errorbarMode
@@ -1198,16 +1210,24 @@ function newDataCell = splitByMask( dataCell, mask )
 
 end
 % =========================================================================
-function mask = infsNaNs2mask( xDataCell, yDataCell  )
-  % If xData or yData contain a NaN at position K, the data gets
-  % split up into index groups [1:k-1],[k+1:end].
+function mask = infsNaNs2mask( m2t, xDataCell, yDataCell  )
+  % If xData or yData contain an undefined value at position K,
+  % the data gets split up into index groups [1:k-1],[k+1:end].
+  % When 'keepNaN' is set, only Infs will be detected, otherwise also NaN
+  % is detected.
 
   n = length(xDataCell);
   mask = cell(n,1);
 
+  if m2t.cmdOpts.Results.keepNan
+    isValue = @(x)(~isinf(x)); %only detects Inf
+  else
+    isValue = @isfinite; %detects NaN and Inf
+  end
+
   for cellIndex = 1:n
-      mask{cellIndex} = isfinite(xDataCell{cellIndex}) ...
-                      & isfinite(yDataCell{cellIndex});
+      mask{cellIndex} = isValue(xDataCell{cellIndex}) ...
+                      & isValue(yDataCell{cellIndex});
   end
 
 end
