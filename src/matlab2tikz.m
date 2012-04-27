@@ -170,19 +170,12 @@ function matlab2tikz( varargin )
   m2t.extraRgbColorNames = cell(0);
 
   % the actual contents of the TikZ file go here
-  m2t.content = struct( 'name',     [], ...
-                        'comment',  [], ...
-                        'options',  [], ...
-                        'content',  [], ...
-                        'children', []  ...
-                      );
-  % Setting the following to cell(0) straight away doesn't work unfortunately
-  % as MATLAB(R) interprets structs with cell values as a cell array of structs.
-  m2t.content.options  = cell(0);
-  m2t.content.content  = cell(0);
-  m2t.content.children = cell(0);
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+  m2t.content = structWithCell( 'name',     [], ...
+                                'comment',  [], ...
+                                'options',  cell(0), ...
+                                'content',  cell(0), ...
+                                'children', cell(0)  ...
+                              );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % scan the options
   m2t.cmdOpts = matlab2tikzInputParser;
@@ -257,20 +250,8 @@ function matlab2tikz( varargin )
   m2t.cmdOpts = m2t.cmdOpts.parse( m2t.cmdOpts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % warn for deprecated options
-  if any( ismember( m2t.cmdOpts.Parameters, 'silent' ) )
-      warning( sprintf( [ '\n===============================================================================\n', ...
-                          'You are using the deprecated parameter ''silent''.\n', ...
-                          'From now on, please use ''showInfo'' and ''showWarnings'' to control the output.\n', ...
-                          '===============================================================================' ] ) );
-  end
-
-  if any( ismember( m2t.cmdOpts.Parameters, 'mathmode' ) )
-      warning( sprintf( [ '\n===============================================================================\n', ...
-                          'You are using the deprecated parameter ''mathmode''.\n', ...
-                          'From now on, please use ''parseStrings'' and ''parseStringsAsMath'' to control\n', ...
-                          'the output.\n', ...
-                          '===============================================================================' ] ) );
-  end
+  deprecatedParameter(m2t,'silent'  ,'showInfo'    ,'showWarnings');
+  deprecatedParameter(m2t,'mathmode','parseStrings','parseStringsAsMath');
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % inform users of potentially dangerous options
@@ -558,30 +539,17 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % Use a struct instead of a custom subclass of hgsetget (which would
   % facilitate writing clean code) as structs are more portable (old MATLAB(R)
   % versions, GNU Octave).
-  m2t.currentAxesContainer = struct( 'name',     [], ...
-                                     'comment',  [], ...
-                                     'options',  [], ...
-                                     'content',  [], ...
-                                     'children', []  ...
-                                   );
-
-  % Setting the following to cell(0) straight away doesn't work unfortunately
-  % as MATLAB(R) interprets structs with cell values as a cell array of structs.
-  m2t.currentAxesContainer.options  = cell(0);
-  m2t.currentAxesContainer.content  = cell(0);
-  m2t.currentAxesContainer.children = cell(0);
+  m2t.currentAxesContainer = structWithCell( 'name',     [], ...
+                                             'comment',  [], ...
+                                             'options',  cell(0), ...
+                                             'content',  cell(0), ...
+                                             'children', cell(0)  ...
+                                            );
 
   % Handle special cases.
   % MATLAB(R) uses 'Tag', Octave 'tag' for their tags. :/
-  if strcmp( m2t.env, 'MATLAB' );
-      tagKeyword = 'Tag';
-      colorbarKeyword = 'Colorbar';
-  elseif strcmp( m2t.env, 'Octave' );
-      tagKeyword = 'tag';
-      colorbarKeyword = 'colorbar';
-  else
-      error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
-  end
+  tagKeyword      = switchMatOct(m2t,'Tag','tag');
+  colorbarKeyword = switchMatOct(m2t,'Colorbar','colorbar');
   switch get( handle, tagKeyword )
       case colorbarKeyword
           % Handle a colorbar separately.
@@ -3075,17 +3043,12 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   end
 
   % the actual contents of the TikZ file go here
-  env = struct( 'name',     'axis', ...
-                'comment',  'colorbar', ...
-                'options',  [], ...
-                'content',  [], ...
-                'children', []  ...
-              );
-  % Setting the following to cell(0) straight away doesn't work unfortunately
-  % as MATLAB(R) interprets structs with cell values as a cell array of structs.
-  env.options  = cell(0);
-  env.content  = cell(0);
-  env.children = cell(0);
+  env = structWithCell( 'name',     'axis', ...
+                        'comment',  'colorbar', ...
+                        'options',  cell(0), ...
+                        'content',  cell(0), ...
+                        'children', cell(0)  ...
+                       );
 
   % Do log handling for color bars, too.
   xScale = get( handle, 'XScale' );
@@ -4539,22 +4502,7 @@ function userInfo( m2t, message, varargin )
       return
   end
 
-  n = length(varargin);
-  switch n
-      case 0;
-         mess = sprintf( message );
-      case 1;
-         mess = sprintf( message, varargin{1} );
-      case 2;
-         mess = sprintf( message, varargin{1}, varargin{2} );
-      case 3;
-         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3} );
-      case 4;
-         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3}, varargin{4} );
-      otherwise
-         error( 'userInfo:longVarargin', ...
-                'Can''t deal with length(varargin)>4 yet.' );
-  end
+  mess = sprintf(message, varargin{:});
 
   % Replace '\n' by '\n *** ' and print.
   mess = strrep( mess, sprintf('\n'), sprintf('\n *** ') );
@@ -4569,24 +4517,7 @@ function userWarning( m2t, message, varargin )
       return
   end
 
-  n = length(varargin);
-  switch n
-      case 0;
-         mess = sprintf( message );
-      case 1;
-         mess = sprintf( message, varargin{1} );
-      case 2;
-         mess = sprintf( message, varargin{1}, varargin{2} );
-      case 3;
-         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3} );
-      case 4;
-         mess = sprintf( message, varargin{1}, varargin{2}, varargin{3}, varargin{4} );
-      otherwise
-         error( 'userWarning:longVarargin', ...
-                'Can''t deal with length(varargin)>4 yet.' );
-  end
-
-  warning( 'matlab2tikz:userWarning', mess )
+  warning( 'matlab2tikz:userWarning', message, varargin{:} );
 
 end
 % =========================================================================
@@ -5143,3 +5074,40 @@ function string = parseTexSubstring ( m2t, string )
 
 end
 % =========================================================================
+function newStruct = structWithCell(varargin)
+  % Constructs a structure with cell variables as MATLAB would make a struct
+  % array by using the equivalent struct() call
+  % Setting values to cell() straight away doesn't work unfortunately
+  % as MATLAB(R) interprets structs with cell values as a cell array of structs.
+  assert(mod(nargin,2)==0,'An even number of arguments is expected');
+  newStruct = struct();
+  keys      = varargin(1:2:end-1);
+  values    = varargin(2:2:end);
+  for iKV = 1:numel(keys)
+      newStruct.(keys{iKV}) = values{iKV};
+  end
+end
+% =========================================================================
+function deprecatedParameter(m2t, oldParameter, varargin)
+if any( ismember( m2t.cmdOpts.Parameters, oldParameter ) )
+      switch numel(varargin)
+        case 0
+          replacements = '';
+        case 1
+          replacements = ['''' varargin{1} ''''];
+        otherwise
+          replacements = deblank(sprintf('''%s'' and ',varargin{:}));
+          replacements = regexprep(replacements,' and$','');
+      end
+      if ~isempty(replacements)
+        replacements = sprintf('From now on, please use %s to control the output.\n',replacements);
+      end
+      
+      message = ['\n===============================================================================\n', ...
+                 'You are using the deprecated parameter ''%s''.\n', ...
+                 '%s', ...
+                 '===============================================================================' ];
+      warning('matlab2tikz:deprecatedParameter', ...
+               message, oldParameter, replacements);         
+end
+end
