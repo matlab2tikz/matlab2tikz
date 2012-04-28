@@ -2140,6 +2140,10 @@ function [m2t,env] = drawSurface( m2t, handle )
     dx = get(handle,'XData');
     dy = get(handle,'YData');
     dz = get(handle,'ZData');
+    if any(any(~isfinite(dx))) || any(any(~isfinite(dy))) || any(any(~isfinite(dz)))
+        m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:}, ...
+                                          'unbounded coords=jump'};
+    end
     [col, row] = size(dz);
 
     % Check if surf plot is 'spectrogram' or 'surf' and run corresponding
@@ -2159,14 +2163,21 @@ function [m2t,env] = drawSurface( m2t, handle )
     else
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         % plot is 'surf'
-        for i = 1:col
-            for j = 1:row
+	dx = dx';
+	dy = dy';
+	dz = dz';
+        for i = 1:row
+            for j = 1:col
                 str = [ str, ...
                         sprintf('(%.15g,%.15g,%.15g)', dx(i,j), dy(i,j), dz(i,j) ) ];
             end
             % insert an empty line to tell Pgfplots about one row ending here
             str = [str, sprintf('\n\n')];
         end
+        %str_data = sprintf('%s', num2str([dx(:) dy(:) dz(:)],'(%.15g,%.15g,%.15g)')');
+        %% Remove the white space.
+        %str_data = str_data(~isspace(str_data));
+        %str = [str, str_data];
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     end %if-else
 
@@ -2175,8 +2186,6 @@ function [m2t,env] = drawSurface( m2t, handle )
     %   or adding: 'grid=none' from/in axis options
     % - using a "real" colorbar instead of colorbar-png-file
     % - handling of huge data amounts in LaTeX.
-    % - correcting wrong colors
-
     str = [str, sprintf('};\n\n')];
     env = str;
 
