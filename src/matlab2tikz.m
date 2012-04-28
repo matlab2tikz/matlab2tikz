@@ -761,7 +761,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       % So let's make sure "siblings" is a row vector by reshaping it:
       siblings = reshape( siblings, 1, [] );
       for sibling = siblings
-          if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag' ), 'legend')
+          if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
               legDims = get( sibling, 'Position' );
               legLeft = legDims(1);
               legBot  = legDims(2);
@@ -998,6 +998,12 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   xData  = get( handle, 'XData' );
   yData  = get( handle, 'YData' );
   zData  = get( handle, 'ZData' );
+  % Check if any value is infinite/NaN. In that case, add appropriate option.
+  if any(~isfinite(xData)) || any(~isfinite(yData)) || any(~isfinite(zData))
+      m2t.currentAxesContainer.options = {m2t.currentAxesContainer.options{:}, ...
+                                          'unbounded coords=jump'};
+  end
+
   if ~isempty( zData )
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
       opts = [ '\n', join(drawOptions, ',\n' ), '\n' ];
@@ -1086,6 +1092,9 @@ function str = plotLine( opts, xData, yData, yDeviation )
 
     % The process above adds extra white spaces, remove them all
     str_data = str_data(~isspace(str_data));
+    % Also, replace "Inf" by the Pgfplots-recognized "inf".
+    % Remove this as soon as Pgfplots knows "Inf".
+    str_data = strrep(str_data, 'Inf', 'inf');
     str = sprintf('%s %s \n};\n\n', str, str_data);
 
 end
@@ -1139,15 +1148,7 @@ function [xDataCell, yDataCell, yDeviationCell] = ...
       yDeviationCell{1} = yDeviation;
   end
 
-  % Split up at Infs and NaNs.
-  mask      = infsNaNs2mask( xDataCell, yDataCell );
-  xDataCell = splitByMask( xDataCell, mask );
-  yDataCell = splitByMask( yDataCell, mask );
-  if errorbarMode
-      yDeviationCell = splitByMask( yDeviationCell, mask );
-  end
-
-  % Split each of the chunks further up along visible segments
+  % Split up each of the chunks along visible segments
   if errorbarMode
       [xDataCell , yDataCell, yDeviationCell] = ...
          splitByVisibility( m2t, hasLines, hasMarkers, xDataCell, yDataCell, xLim, yLim, yDeviationCell );
@@ -1325,22 +1326,16 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
   for cellIndex = 1:length(xDataCell);
       numPoints = length( xDataCell{cellIndex} );
       % Code clarity and to make sure we deal with column vectors
-      if size(xDataCell{cellIndex},2) > 1
-          x = xDataCell{cellIndex}';
-      else
-          x = xDataCell{cellIndex};
-      end
-      if size(yDataCell{cellIndex},2) > 1
-          y = yDataCell{cellIndex}';
-      else
-          y = yDataCell{cellIndex};
-      end
+      x = xDataCell{cellIndex}(:);
+      y = yDataCell{cellIndex}(:);
 
       % 'v' is a kx4-array which for each point (x(k),y(k)) holds information
       % about which limits are exceeded.
+      % Don't treat Infs as outliers, though, as they are automatically
+      % omitted when occuring in Pgfplots (option 'unbounded coords=...').
       v = [ xLimLarger(1)-x, x-xLimLarger(2), ...
             yLimLarger(1)-y, y-yLimLarger(2) ];
-      isOutlier = any(v>0.0, 2);
+      isOutlier = any(isfinite(v) & v>0.0, 2);
 
       % Split the data in chunks of where 'shouldPlot' is 'true'.
       k = 1;

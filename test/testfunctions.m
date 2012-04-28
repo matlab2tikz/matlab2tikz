@@ -183,6 +183,9 @@ function description = sine_with_markers ()
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
+  y(3) = NaN;
+  y(7) = Inf;
+  y(11) = -Inf;
   plot(x,y,'--o', 'Color', [0.6,0.2,0.0], ...
                   'LineWidth', 1*360/127,...
                   'MarkerEdgeColor','k',...
@@ -198,7 +201,7 @@ function description = sine_with_markers ()
   set(gca,'XTickLabel',{'null'});
 
   description = [ 'Twisted plot of the sine function. '                   ,...
-                  'Pay particular attention to how markers are treated.'    ];
+                  'Pay particular attention to how markers and Infs/NaNs are treated.' ];
 
 end
 % =========================================================================
