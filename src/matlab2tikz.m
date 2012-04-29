@@ -607,9 +607,8 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   view = get( handle, 'View' );
   m2t.is3dPlot = false;
   if any( view ~= [0,90] )
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                        sprintf( 'view={%.15g}{%.15g}', get( handle, 'View') ) ...
-                                       };
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf( 'view={%.15g}{%.15g}', get( handle, 'View') );
       m2t.is3dPlot = true;
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -620,19 +619,18 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % set the width
   if dim.x.unit(1)=='\' && dim.x.value==1.0
       % only return \figurewidth instead of 1.0\figurewidth
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:},...
-                                          sprintf('width=%s', dim.x.unit)};
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('width=%s', dim.x.unit);
   else
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:},...
-                                          sprintf('width=%.15g%s', dim.x.value, dim.x.unit)};
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('width=%.15g%s', dim.x.value, dim.x.unit);
   end
   if dim.y.unit(1)=='\' && dim.y.value==1.0
       % only return \figureheight instead of 1.0\figureheight
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          sprintf('height=%s', dim.y.unit)};
+      m2t.axesContainers{end}.options = sprintf('height=%s', dim.y.unit);
   else
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:},...
-                                          sprintf('height=%.15g%s', dim.y.value, dim.y.unit)};
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('height=%.15g%s', dim.y.value, dim.y.unit);
   end
 
   % Add the physical dimension of one unit of length in the coordinate system.
@@ -646,8 +644,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   m2t.unitlength.y.value = dim.y.value / (yLim(2)-yLim(1));
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % the following is general MATLAB behavior
-  m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                      'scale only axis'};
+  m2t.axesContainers{end}.options{end+1} = 'scale only axis';
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Get other axis options (ticks, axis color, label,...).
   % This is set here such that the axis orientation indicator in m2t is set
@@ -680,8 +677,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if strcmp( get( handle, 'Box' ), 'off' )
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:},...
-                                          'axis lines=left'};
+      m2t.axesContainers{end}.options{end+1} = 'axis lines=left';
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get scales
@@ -710,8 +706,8 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if ~strcmp( backgroundColor, 'none' )
       [ m2t, col ] = getColor( m2t, handle, backgroundColor, 'patch' );
       if ~strcmp( col, 'white' )
-          m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                              sprintf( 'axis background/.style={fill=%s}', col)};
+          m2t.axesContainers{end}.options{end+1} = ...
+              sprintf( 'axis background/.style={fill=%s}', col);
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -721,8 +717,8 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       titleText = sprintf( '%s', title );
       titleInterpreter = get( get( handle, 'Title' ), 'Interpreter' );
       titleText = prettyPrint( m2t, titleText, titleInterpreter );
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          sprintf( 'title={%s}', titleText)};
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('title={%s}', titleText);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % For double axes pairs, unconditionally put the ordinate left for the
@@ -758,8 +754,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       % See also http://sourceforge.net/tracker/index.php?func=detail&aid=3510455&group_id=224188&atid=1060657
       % As a prelimary compromise, only pull this option if no grid is in use.
       if m2t.cmdOpts.Results.strict
-          m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:},...
-                                              'axis on top'};
+          m2t.axesContainers{end}.options{end+1} = 'axis on top';
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -814,7 +809,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % add manually given extra axis options
   if ~isempty( m2t.cmdOpts.Results.extraAxisOptions )
       m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          m2t.cmdOpts.Results.extraAxisOptions{:}};
+                                         m2t.cmdOpts.Results.extraAxisOptions{:}};
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -857,14 +852,13 @@ function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
   isAxisReversed = strcmp( get(handle,[upper(axis),'Dir']), 'reverse' );
   m2t = setfield( m2t, [axis,'AxisReversed'], isAxisReversed );
   if isAxisReversed
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          [axis,' dir=reverse']};
+      m2t.axesContainers{end}.options{end+1} = [axis,' dir=reverse'];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
   limits = get( handle, [upper(axis),'Lim'] );
-  m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                      sprintf( [axis,'min=%.15g, ',axis,'max=%.15g'], limits)};
+  m2t.axesContainers{end}.options{end+1} = ...
+      sprintf([axis,'min=%.15g, ',axis,'max=%.15g'], limits);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
   [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handle, axis );
@@ -875,19 +869,18 @@ function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
   % a reasonable default.
   matlabDefaultNumMinorTicks = 3;
   if ~isempty( ticks )
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:},...
-                                          sprintf( [axis,'tick={%s}'], ticks )};
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf( [axis,'tick={%s}'], ticks );
   end
   if ~isempty( tickLabels )
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          sprintf([axis,'ticklabels={%s}'], tickLabels)};
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf([axis,'ticklabels={%s}'], tickLabels);
   end
   if hasMinorTicks
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          [axis,'minorticks=true']};
+      m2t.axesContainers{end}.options{end+1} = [axis,'minorticks=true'];
       if m2t.cmdOpts.Results.strict
-          m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                              sprintf('minor %s tick num={%d}', axis, matlabDefaultNumMinorTicks)};
+          m2t.axesContainers{end}.options{end+1} = ...
+              sprintf('minor %s tick num={%d}', axis, matlabDefaultNumMinorTicks);
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -900,20 +893,18 @@ function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
       labelText = sprintf( '%s', axisLabel );
       axisLabelInterpreter = get( get( handle, [upper(axis),'Label'] ), 'Interpreter' );
       labelText = prettyPrint( m2t, labelText, axisLabelInterpreter );
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          sprintf([axis,'label={%s}'], labelText)};
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf([axis,'label={%s}'], labelText);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids
   hasGrid = false;
   if strcmp( get( handle, [upper(axis),'Grid']), 'on' );
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          [axis,'majorgrids']};
+      m2t.axesContainers{end}.options{end+1} = [axis,'majorgrids'];
       hasGrid = true;
   end
   if strcmp( get( handle, [upper(axis),'MinorGrid']), 'on' );
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          [axis,'minorgrids']};
+      m2t.axesContainers{end}.options{end+1} = [axis,'minorgrids'];
       hasGrid = true;
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1029,8 +1020,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   zData  = get( handle, 'ZData' );
   % Check if any value is infinite/NaN. In that case, add appropriate option.
   if any(~isfinite(xData)) || any(~isfinite(yData)) || any(~isfinite(zData))
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          'unbounded coords=jump'};
+      m2t.axesContainers{end}.options{end+1} = 'unbounded coords=jump';
   end
 
   if ~isempty( zData )
@@ -1621,7 +1611,7 @@ function lineOpts = getLineOptions( m2t, lineStyle, lineWidth )
 
   if ~strcmp(lineStyle,'none') && abs(lineWidth-m2t.tol)>0
 
-      lineOpts = {lineOpts{:}, sprintf('%s', translateLineStyle(lineStyle))};
+      lineOpts{end+1} = sprintf('%s', translateLineStyle(lineStyle));
 
       % take over the line width in any case when in strict mode;
       % if not, don't add anything in case of default line width
@@ -1629,7 +1619,7 @@ function lineOpts = getLineOptions( m2t, lineStyle, lineWidth )
       matlabDefaultLineWidth = 0.5;
       if m2t.cmdOpts.Results.strict ...
          || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
-          lineOpts = {lineOpts{:}, sprintf('line width=%.1fpt', lineWidth)};
+          lineOpts{end+1} = sprintf('line width=%.1fpt', lineWidth);
       end
 
   end
@@ -1655,19 +1645,19 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
       % if not, don't add anything in case of default marker size
       % and effectively take pgfplots' default
       if m2t.cmdOpts.Results.strict || ~isDefault
-         drawOptions = {drawOptions{:}, sprintf('mark size=%.1fpt', tikzMarkerSize)};
+         drawOptions{end+1} = sprintf('mark size=%.1fpt', tikzMarkerSize);
       end
 
       markOptions = cell(0);
       % make sure that the markers get painted in solid (and not dashed)
       % if the 'lineStyle' is not solid (otherwise there is no problem)
       if ~strcmp( lineStyle, 'solid' )
-          markOptions = {markOptions{:}, 'solid'};
+          markOptions{end+1} = 'solid';
       end
 
       % print no lines
       if strcmp(lineStyle,'none') || lineWidth==0
-          drawOptions = {drawOptions{:}, 'only marks'};
+          drawOptions{end+1} = 'only marks';
       end
 
       % get the marker color right
@@ -1677,19 +1667,19 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
                            markOptions, ~strcmp(markerFaceColor,'none') );
       if ~strcmp(markerFaceColor,'none')
           [ m2t, xcolor ] = getColor( m2t, h, markerFaceColor, 'patch' );
-          markOptions = {markOptions{:}, sprintf('fill=%s', xcolor)};
+          markOptions{end+1} = sprintf('fill=%s', xcolor);
       end
       if ~strcmp(markerEdgeColor,'none') && ~strcmp(markerEdgeColor,'auto')
           [ m2t, xcolor ] = getColor( m2t, h, markerEdgeColor, 'patch' );
-          markOptions = {markOptions{:}, sprintf('draw=%s', xcolor)};
+          markOptions{end+1} = sprintf('draw=%s', xcolor);
       end
 
       % add it all to drawOptions
-      drawOptions = {drawOptions{:}, sprintf('mark=%s', tikzMarker)};
+      drawOptions{end+1} = sprintf('mark=%s', tikzMarker);
 
       if ~isempty( markOptions )
           mo = join( markOptions, ',' );
-          drawOptions = {drawOptions{:}, ['mark options={', mo, '}']};
+          drawOptions{end+1} = ['mark options={', mo, '}'];
       end
   end
 
@@ -1878,10 +1868,10 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   faceColor  = get( handle, 'FaceColor' );
   if ~strcmp( faceColor, 'none' )
       [ m2t, xFaceColor ] = getColor( m2t, handle, faceColor, 'patch' );
-      drawOptions = {drawOptions{:}, sprintf( 'fill=%s', xFaceColor )};
+      drawOptions{end+1} = sprintf( 'fill=%s', xFaceColor );
       xFaceAlpha = get( handle, 'FaceAlpha' );
       if abs(xFaceAlpha-1.0)>m2t.tol
-          drawOptions = {drawOptions{:}, sprintf('opacity=%s', xFaceAlpha)};
+          drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
       end
   end
 
@@ -1889,10 +1879,10 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   edgeColor = get( handle, 'EdgeColor' );
   lineStyle = get( handle, 'LineStyle' );
   if strcmp( lineStyle, 'none' ) || strcmp( edgeColor, 'none' )
-      drawOptions = {drawOptions{:}, 'draw=none'};
+      drawOptions{end+1} = 'draw=none';
   else
       [ m2t, xEdgeColor ] = getColor( m2t, handle, edgeColor, 'patch' );
-      drawOptions = {drawOptions{:}, sprintf( 'draw=%s', xEdgeColor)};
+      drawOptions{end+1} = sprintf( 'draw=%s', xEdgeColor);
   end
 
   drawOpts = join( drawOptions, ',' );
@@ -2156,8 +2146,7 @@ function [m2t,env] = drawSurface( m2t, handle )
     dy = get(handle,'YData');
     dz = get(handle,'ZData');
     if any(any(~isfinite(dx))) || any(any(~isfinite(dy))) || any(any(~isfinite(dz)))
-        m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          'unbounded coords=jump'};
+        m2t.axesContainers{end}.options{end+1} = 'unbounded coords=jump';
     end
     [col, row] = size(dz);
 
@@ -2233,23 +2222,23 @@ function [ m2t, str ] = drawText( m2t, handle)
   style = cell(0);
   switch VerticalAlignment
       case {'top', 'cap'}
-          style = {style{:}, 'below'};
+          style{end+1} = 'below';
       case {'baseline', 'bottom'}
-          style = {style{:}, 'above'};
+          style{end+1} = 'above';
   end
   switch HorizontalAlignment
       case 'left'
-          style = {style{:}, 'right'};
+          style{end+1} = 'right';
       case 'right'
-          style = {style{:}, 'left'};
+          style{end+1} = 'left';
   end
   % remove invisible border around \node to make the text align precisely
-  style = {style{:}, 'inner sep=0mm'};
+  style{end+1} = 'inner sep=0mm';
 
-  style = {style{:}, ['text=' tcolor]};
+  style{end+1} = ['text=' tcolor];
   if ~strcmp(EdgeColor, 'none')
     [ m2t, ecolor ] = getColor( m2t, handle, EdgeColor, 'patch' );
-    style = {style{:}, ['draw=', ecolor]};
+    style{end+1} = ['draw=', ecolor];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
@@ -2286,16 +2275,16 @@ function [ m2t, str ] = drawRectangle( m2t, handle )
   faceColor  = get( handle, 'FaceColor' );
   if ~strcmp( faceColor, 'none' )
       [ m2t, xFaceColor ] = getColor( m2t, handle, faceColor, 'patch' );
-      colorOptions = {colorOptions{:}, sprintf('fill=%s', xFaceColor)};
+      colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
   end
   % draw color
   edgeColor = get( handle, 'EdgeColor' );
   lineStyle = get( handle, 'LineStyle' );
   if strcmp( lineStyle, 'none' ) || strcmp( edgeColor, 'none' )
-      colorOptions = {colorOptions{:}, 'draw=none'};
+      colorOptions{end+1} = 'draw=none';
   else
       [ m2t, xEdgeColor ] = getColor( m2t, handle, edgeColor, 'patch' );
-      colorOptions = {colorOptions{:}, sprintf( 'draw=%s', xEdgeColor )};
+      colorOptions{end+1} = sprintf( 'draw=%s', xEdgeColor );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   pos = get( handle, 'Position' );
@@ -2327,29 +2316,28 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   % Set opacity if FaceAlpha < 1 in MATLAB
   faceAlpha = get( handle, 'FaceAlpha');
   if faceAlpha ~= 1 && isnumeric( faceAlpha )
-    surfOptions = {surfOptions{:}, sprintf( 'opacity=%.15g', faceAlpha )};
+    surfOptions{end+1} = sprintf( 'opacity=%.15g', faceAlpha );
   end
   
   if strcmpi( plotType, 'surf' )
       % Set shader for surface plot. 
       % TODO: find MATLAB equivalents for flat corner and flat mean  
       if strcmpi( edgeColor, 'none' ) && strcmpi( faceColor, 'flat' )
-          surfOptions = {surfOptions{:}, sprintf( 'shader=flat' )};
+          surfOptions{end+1} = 'shader=flat';
       elseif isnumeric( edgeColor) && strcmpi( faceColor, 'flat' )
           [ m2t, xEdgeColor ] = getColor( m2t, handle, edgeColor, 'patch' );
           % same as shader=flat,draw=\pgfkeysvalueof{/pgfplots/faceted color}
-          surfOptions = {surfOptions{:}, sprintf( 'shader=faceted' )};
-          surfOptions = {surfOptions{:}, sprintf( 'draw=%s', xEdgeColor)};
+          surfOptions{end+1} = 'shader=faceted';
+          surfOptions{end+1} = sprintf( 'draw=%s', xEdgeColor);
       elseif strcmpi( edgeColor, 'none') && strcmpi( faceColor, 'interp' )
-          surfOptions = {surfOptions{:}, sprintf( 'shader=interp')};
+          surfOptions{end+1} = 'shader=interp';
       else
-          surfOptions = {surfOptions{:}, sprintf( 'shader=faceted' )};
+          surfOptions{end+1} = 'shader=faceted';
       end
       % Get color map.
-      cmap = matlab2pgfplotsColormap( m2t.currentHandles.colormap );
-      surfOptions = {surfOptions{:}, cmap};
+      surfOptions{end+1} = matlab2pgfplotsColormap( m2t.currentHandles.colormap );
   else % default for mesh plot is shader=flat
-      surfOptions = {surfOptions{:}, sprintf( 'shader=flat' )};
+      surfOptions{end+1} = 'shader=flat';
   end
 
   surfOpts = join( surfOptions , ',\n' );
@@ -2389,7 +2377,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
       markerOptions = { ['mark=', tikzMarker], ...
                         sprintf('draw=mapped color') };
       if hasFaceColor
-          markerOptions = {markerOptions{:}, sprintf('fill=mapped color')};
+          markerOptions{end+1} = 'fill=mapped color';
       end
       drawOptions = { 'scatter', ...
                       'only marks', ...
@@ -2596,8 +2584,8 @@ function [ m2t, str ] = drawBarseries( m2t, h )
                          barType, ...
                          sprintf('bar width=%.15g%s', physicalBarWidth, phyicalBarUnit)};
           if physicalBarShift ~= 0.0
-              drawOptions = {drawOptions{:}, ...
-                             sprintf('bar shift=%.15g%s', physicalBarShift, phyicalBarUnit)};
+              drawOptions{end+1} = ...
+                  sprintf('bar shift=%.15g%s', physicalBarShift, phyicalBarUnit);
           end
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           % end grouped plots
@@ -2645,18 +2633,17 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   % gather the draw options
   lineStyle = get( h, 'LineStyle' );
 
-  drawOptions = {drawOptions{:}, sprintf( 'fill=%s', xFaceColor )};
+  drawOptions{end+1} = sprintf( 'fill=%s', xFaceColor );
   if strcmp( lineStyle, 'none' )
-      drawOptions = {drawOptions{:}, 'draw=none'};
+      drawOptions{end+1} = 'draw=none';
   else
-      drawOptions = {drawOptions{:}, sprintf( 'draw=%s', xEdgeColor )};
+      drawOptions{end+1} = sprintf( 'draw=%s', xEdgeColor );
   end
   drawOpts = join( drawOptions, ',' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Add 'area legend' to the options as otherwise the legend indicators
   % will just highlight the edges.
-  m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                      'area legend'};
+  m2t.axesContainers{end}.options{end+1} = 'area legend';
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = [ str, ...
@@ -3556,7 +3543,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   switch lower( ori )
       case 'horizontal'
           numLegendEntries = length(get(handle, 'String'));
-          lStyle = {lStyle{:}, sprintf( 'legend columns=%d', numLegendEntries)};
+          lStyle{end+1} = sprintf('legend columns=%d', numLegendEntries);
       case 'vertical'
           % Use default.
       otherwise
@@ -3578,11 +3565,11 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
                 sprintf( 'legend plot pos=%s', pictalign )};
   else
       % make sure the entries are flush left (default MATLAB behavior)
-      lStyle = {lStyle{:}, 'nodes=right'};
+      lStyle{end+1} = 'nodes=right';
   end
 
   if ~isempty( lStyle )
-      lOpts = {lOpts{:}, ['legend style={' join(lStyle,',') '}']};
+      lOpts{end+1} = ['legend style={' join(lStyle,',') '}'];
   end
 
 end
@@ -4399,8 +4386,7 @@ function [plotOrder, plotNumber, alignmentOptions] = setOptionsRecursion( plotOr
 
     if ~isempty(unprocessedChildren) % Are there unprocessed children?
         % Give these axes a name.
-        alignmentOptions(k).opts = {alignmentOptions(k).opts{:}, ...
-                                    sprintf( 'name=plot%d', k )};
+        alignmentOptions(k).opts{end+1} = sprintf( 'name=plot%d', k );
     end
 
     if ~isempty( parent ) % if a parent is given
@@ -4413,9 +4399,8 @@ function [plotOrder, plotNumber, alignmentOptions] = setOptionsRecursion( plotOr
             refPos = cornerCode2pgfplotOption( C(parent,k) );
 
             % add the option
-            alignmentOptions(k).opts = {alignmentOptions(k).opts{:}, ...
-                                        sprintf('at=(plot%d.%s), anchor=%s', ...
-                                                parent, refPos, anchor)};
+            alignmentOptions(k).opts{end+1} = ...
+                sprintf('at=(plot%d.%s), anchor=%s', parent, refPos, anchor);
         end
     end
 
@@ -4584,7 +4569,7 @@ function root = append( root, appendix )
         error( 'Argument must be of class ''string''.' );
     end
 
-    root.content = {root.content{:}, appendix};
+    root.content{end+1} = appendix;
     return;
 end
 % =========================================================================
