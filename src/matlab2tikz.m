@@ -74,7 +74,6 @@ function matlab2tikz( varargin )
 %      plot(x,y,'--rs');
 %      matlab2tikz( 'myfile.tex' );
 %
-%   See also PRINT.
 
 %   Copyright (c) 2008--2012, Nico Schlömer <nico.schloemer@gmail.com>
 %   All rights reserved.
@@ -358,6 +357,30 @@ end
 % =========================================================================
 function l = isCellOrChar( x, p )
     l = iscell(x) || ischar(x);
+end
+% =========================================================================
+function deprecatedParameter(m2t, oldParameter, varargin)
+  if any( ismember( m2t.cmdOpts.Parameters, oldParameter ) )
+	switch numel(varargin)
+	  case 0
+	    replacements = '';
+	  case 1
+	    replacements = ['''' varargin{1} ''''];
+	  otherwise
+	    replacements = deblank(sprintf('''%s'' and ',varargin{:}));
+	    replacements = regexprep(replacements,' and$','');
+	end
+	if ~isempty(replacements)
+	  replacements = sprintf('From now on, please use %s to control the output.\n',replacements);
+	end
+
+	message = ['\n===============================================================================\n', ...
+		   'You are using the deprecated parameter ''%s''.\n', ...
+		   '%s', ...
+		   '===============================================================================' ];
+	warning('matlab2tikz:deprecatedParameter', ...
+		 message, oldParameter, replacements);
+  end
 end
 % =========================================================================
 function m2t = saveToFile( m2t, fid, fileWasOpen )
@@ -1131,7 +1154,6 @@ function [xDataCell, yDataCell, yDeviationCell] = ...
   % Split the xData, yData into several chunks of data for each of which
   % an \addplot will be generated.
   % Splitting criteria are:
-  %    * NaNs.
   %    * Visibility.
   %    * Dimension too large.
   %    * Data set too large.
@@ -1199,20 +1221,6 @@ function newDataCell = splitByMask( dataCell, mask )
 
 end
 % =========================================================================
-function mask = infsNaNs2mask( xDataCell, yDataCell  )
-  % If xData or yData contain a NaN at position K, the data gets
-  % split up into index groups [1:k-1],[k+1:end].
-
-  n = length(xDataCell);
-  mask = cell(n,1);
-
-  for cellIndex = 1:n
-      mask{cellIndex} = isfinite(xDataCell{cellIndex}) ...
-                      & isfinite(yDataCell{cellIndex});
-  end
-
-end
-% =========================================================================
 function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
     splitByVisibility( m2t, hasLines, hasMarkers, xDataCell, yDataCell, xLim, yLim, yDeviationCell )
   % Parts of the line data may sit outside the plotbox.
@@ -1240,15 +1248,16 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
       numPoints = length( xDataCell{cellIndex} );
 
       % Get which points are insided a (slightly larger) box.
-      relaxedXLim = xLim + [-m2t.tol, m2t.tol];
-      relaxedYLim = yLim + [-m2t.tol, m2t.tol];
+      tol = 1.0e-10;
+      relaxedXLim = xLim + [-tol, tol];
+      relaxedYLim = yLim + [-tol, tol];
       dataIsInBox = isInBox( [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
                               relaxedXLim, relaxedYLim );
 
       % By default, don't plot any points.
       shouldPlot = false(numPoints,1);
       if hasMarkers
-          shouldPlot = shouldPlot | dataIsInBox;
+          shouldPlot = dataIsInBox;
       end
       if hasLines
           % Check if the connecting line is in the box.
@@ -5092,26 +5101,3 @@ function newStruct = structWithCell(varargin)
   end
 end
 % =========================================================================
-function deprecatedParameter(m2t, oldParameter, varargin)
-if any( ismember( m2t.cmdOpts.Parameters, oldParameter ) )
-      switch numel(varargin)
-        case 0
-          replacements = '';
-        case 1
-          replacements = ['''' varargin{1} ''''];
-        otherwise
-          replacements = deblank(sprintf('''%s'' and ',varargin{:}));
-          replacements = regexprep(replacements,' and$','');
-      end
-      if ~isempty(replacements)
-        replacements = sprintf('From now on, please use %s to control the output.\n',replacements);
-      end
-      
-      message = ['\n===============================================================================\n', ...
-                 'You are using the deprecated parameter ''%s''.\n', ...
-                 '%s', ...
-                 '===============================================================================' ];
-      warning('matlab2tikz:deprecatedParameter', ...
-               message, oldParameter, replacements);         
-end
-end

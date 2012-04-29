@@ -44,6 +44,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @contourPenny        , ...
                            @peaks_contourf      , ...
                            @many_random_points  , ...
+                           @randomWithLines     , ...
                            @logplot             , ...
                            @colorbarLogplot     , ...
                            @legendplot          , ...
@@ -118,21 +119,22 @@ end
 % *** FUNCTION one_point
 function description = one_point ()
 
-close all;
-figsize = [ 4 3] * 60;
-figure('Position', [0 0 figsize]);
-clf;
 
-xrange = linspace(-3,4,2*1024);
+%close all;
+%figsize = [ 4 3] * 60;
+%figure('Position', [0 0 figsize]);
+%clf;
 
-axes('Position', [0.1 0.1 0.85 0.15]);
-plot(xrange)
-ylabel('$n$');
-xlabel('$x$');
+%xrange = linspace(-3,4,2*1024);
 
-axes('Position', [0.1 0.25 0.85 0.6]);
-plot(xrange)
-set(gca,'XTick',[]);
+%axes('Position', [0.1 0.1 0.85 0.15]);
+%plot(xrange)
+%ylabel('$n$');
+%xlabel('$x$');
+%
+%axes('Position', [0.1 0.25 0.85 0.6]);
+%plot(xrange)
+%set(gca,'XTick',[]);
 
 %  name = 'm2tikztest';
 %  matlab2tikz( sprintf('%s/%s.tex',figdir,name), 'parseStrings', false, ...
@@ -290,6 +292,22 @@ function description = peaks_contourf ()
 
   description = 'Test the contourfill plots.';
 
+end
+% =========================================================================
+function description = randomWithLines()
+
+  X = randn(150,2);
+  X(:,1) = (X(:,1) * 90) + 75;
+  plot(X(:,1),X(:,2),'o');
+  hold on;
+  M(1)=min(X(:,1));
+  M(2)=max(X(:,1));
+  plot(M,[mean(X(:,2)) mean(X(:,2))],'k-');
+  plot(M,[2*std(X(:,2)) 2*std(X(:,2))],'k--');
+  plot(M,[-2*std(X(:,2)) -2*std(X(:,2))],'k--');
+  axis('tight');
+
+  description = 'Random points with lines.';
 end
 % =========================================================================
 % *** FUNCTION many_random_points
