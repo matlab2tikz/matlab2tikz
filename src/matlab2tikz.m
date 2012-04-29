@@ -549,7 +549,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       end
 
       % append the environment
-      pgfEnvironments = [ pgfEnvironments, {env} ];
+      pgfEnvironments{end+1} = env;
   end
 
 end
@@ -1379,11 +1379,11 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
               ref = [xDataCell{cellIndex}(kStart), ...
                      yDataCell{cellIndex}(kStart)];
               prependix = moveToBoundingBox(outlier, ref, xLimLarger, yLimLarger);
-              xDataCellNew{cellIndexNew} = [prependix(1)];
-              yDataCellNew{cellIndexNew} = [prependix(2)];
+              xDataCellNew{cellIndexNew} = prependix(1);
+              yDataCellNew{cellIndexNew} = prependix(2);
               if errorbarMode
                   % Deliberately set the deviation of the shifted point to 0.
-                  yDeviationCellNew{cellIndexNew} = [0];
+                  yDeviationCellNew{cellIndexNew} = 0;
               end
           end
 
@@ -2348,8 +2348,6 @@ end
 function [ m2t, str ] = drawScatterPlot( m2t, h )
 
   str = [];
-
-  drawOptions = cell(0);
 
   xData = get( h, 'XData' );
   yData = get( h, 'YData' );
