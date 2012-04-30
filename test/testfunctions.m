@@ -68,6 +68,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @errorBars2          , ...
                            @subplot2x2          , ...
                            @subplot2x2b         , ...
+                           @manualAlignment     , ...
                            @subplot3x1          , ...
                            @subplotCustom       , ...
                            @legendsubplots      , ...
@@ -118,27 +119,6 @@ end
 % =========================================================================
 % *** FUNCTION one_point
 function description = one_point ()
-
-
-%close all;
-%figsize = [ 4 3] * 60;
-%figure('Position', [0 0 figsize]);
-%clf;
-
-%xrange = linspace(-3,4,2*1024);
-
-%axes('Position', [0.1 0.1 0.85 0.15]);
-%plot(xrange)
-%ylabel('$n$');
-%xlabel('$x$');
-%
-%axes('Position', [0.1 0.25 0.85 0.6]);
-%plot(xrange)
-%set(gca,'XTick',[]);
-
-%  name = 'm2tikztest';
-%  matlab2tikz( sprintf('%s/%s.tex',figdir,name), 'parseStrings', false, ...
-%    'height', '3cm', 'width', '5cm');
 
   plot(0.123, 0.145, 'x');
   set(gca, 'YTick', []);
@@ -632,6 +612,23 @@ function description = subplot2x2b ()
 
 
   description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
+
+end
+% =========================================================================
+function description = manualAlignment()
+
+  xrange = linspace(-3,4,2*1024);
+
+  axes('Position', [0.1 0.1 0.85 0.15]);
+  plot(xrange);
+  ylabel('$n$');
+  xlabel('$x$');
+
+  axes('Position', [0.1 0.25 0.85 0.6]);
+  plot(xrange);
+  set(gca,'XTick',[]);
+
+  description = 'Manually aligned figures.'
 
 end
 % =========================================================================

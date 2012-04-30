@@ -24,6 +24,10 @@ The workflow is as follows.
 
   2.) Invoke matlab2tikz by
 
+        >> matlab2tikz();
+
+      or
+
         >> matlab2tikz( 'myfile.tikz' );
 
   3.) Add the contents of myfile.tikz into your LaTeX source code; a
