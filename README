@@ -4,34 +4,9 @@ TikZ/pgfplots figures.
 To download and rate matlab2tikz, go to its page on MathWorks 
 http://www.mathworks.com/matlabcentral/fileexchange/22022.
 
-matlab2tikz does not support the conversion of all possible
-MATLAB figures. In particular, some 3D plots may not by amongst
-its capabilites.
-
-Some of the plots that matlab2tikz can handle are
-
-  * most axes properties (including logarithmic scaling),
-  * grids,
-  * line plots (including markers line styles),
-  * error bars,
-  * contour(f) plots,
-  * bar plots (stacked, grouped, histograms),
-  * stem plots,
-  * stairs plots,
-  * quiver (arrow) plots,
-  * colorbars,
-  * legends,
-  * images,
-  * (rose plots),
-  * (compass plots),
-  * (polar plots),
-  * subplots,
-  * zplane plots,
-  * frequency response plots,
-  * scatter plots,
-  * surf plots,
-  * 3D parameter plots.
-
+matlab2tikz supports the conversion of most MATLAB figures,
+including 2D and 3D plots. For plots constructed with third-
+party packages, your mileage may vary.
 
 The workflow is as follows.
 
@@ -51,23 +26,6 @@ The workflow is as follows.
 
         >> matlab2tikz( 'myfile.tikz' );
 
-      Optional:
-      The scripts accepts several options, for example 'height', 'width', 'encoding', and some more. Invoke by
-
-        >> matlab2tikz( 'myfile.tikz', 'height', '4cm', 'width', '3in' );
-
-      To specify the dimension of the plot from within the LaTeX document, try
-        
-	>> matlab2tikz( 'myfile.tikz', 'height', '\figureheight', 'width', '\figurewidth' );
-
-      and in the LaTeX source
- 
-        \newlength\figureheight
-        \newlength\figurewith
-        \setlength\figureheight{4cm}
-	\setlength\figurewidth{6cm}
-	\input{myfile.tikz}
-
   3.) Add the contents of myfile.tikz into your LaTeX source code; a
       convenient way of doing so is to use \input{/path/to/myfile.tikz}.
       Also make sure that at the header of your document the packages tikz and
@@ -79,6 +37,27 @@ The workflow is as follows.
 
           \pgfplotsset{compat=newest}
           \pgfplotsset{plot coordinates/math parser=false}
+
+  Note:
+    The script accepts several options; check them out by invoking the help,
+
+      >> help matlab2tikz
+
+    for example 'height', 'width', 'encoding', and some more. Invoke by
+
+      >> matlab2tikz( 'myfile.tikz', 'height', '4cm', 'width', '3in' );
+
+    To specify the dimension of the plot from within the LaTeX document, try
+
+      >> matlab2tikz( 'myfile.tikz', 'height', '\figureheight', 'width', '\figurewidth' );
+
+    and in the LaTeX source
+
+      \newlength\figureheight
+      \newlength\figurewith
+      \setlength\figureheight{4cm}
+      \setlength\figurewidth{6cm}
+      \input{myfile.tikz}
 
 There are reported incompatibilties with the follwing LaTeX packages:
    * signalflowdiagram <http://www.texample.net/tikz/examples/signal-flow-building-blocks/>

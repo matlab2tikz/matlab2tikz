@@ -140,7 +140,8 @@ function description = one_point ()
 %  matlab2tikz( sprintf('%s/%s.tex',figdir,name), 'parseStrings', false, ...
 %    'height', '3cm', 'width', '5cm');
 
-%    plot(0.123, 0.145, 'x')
+  plot(0.123, 0.145, 'x');
+  set(gca, 'YTick', []);
 
   description = 'Plot only one single point.' ;
 
