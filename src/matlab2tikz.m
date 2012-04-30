@@ -3595,7 +3595,7 @@ function [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handl
 
   tickLabel = cellstr( get( handle, keywordTickLabel ) );
   for k = 1:length(tickLabel)
-      tickLabel(k) = { prettyPrint( m2t, tickLabel(k), labelInterpreter) };
+      tickLabel{k} = prettyPrint( m2t, tickLabel{k}, labelInterpreter);
   end
   tickMode = get( handle, keywordTickMode );
   if strcmp(tickMode,'auto') && ~m2t.cmdOpts.Results.strict
