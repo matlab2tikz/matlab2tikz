@@ -2149,13 +2149,16 @@ function [m2t,env] = drawSurface( m2t, handle )
 
     % Check if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
+    dz = dz';
     if isvector(dx)
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        % plot is 'spectrogram'
-        for i = 1:col
-            for j = 1:row
+        % Plot is 'spectrogram'.
+        % Manually remove the grid in this case.
+        m2t.axesContainers{end}.options{end+1} = 'grid=none';
+        for i = 1:row
+            for j = 1:col
                 str = [ str, ...
-                        sprintf('(%.15g,%.15g,%.15g)', dx(j), dy(i), dz(i,j) ) ];
+                        sprintf('(%.15g,%.15g,%.15g)', dx(i), dy(j), dz(i,j) ) ];
             end
             % insert an empty line to tell Pgfplots about one row ending here
             str = [str, sprintf('\n\n')];
@@ -2166,7 +2169,6 @@ function [m2t,env] = drawSurface( m2t, handle )
         % plot is 'surf'
         dx = dx';
         dy = dy';
-        dz = dz';
         for i = 1:row
             for j = 1:col
                 str = [ str, ...
@@ -2185,7 +2187,6 @@ function [m2t,env] = drawSurface( m2t, handle )
     % TODO:
     % - remove grids in spectrogram by either removing grid command
     %   or adding: 'grid=none' from/in axis options
-    % - using a "real" colorbar instead of colorbar-png-file
     % - handling of huge data amounts in LaTeX.
     str = [str, sprintf('};\n\n')];
     env = str;
