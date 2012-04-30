@@ -605,11 +605,14 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % get the view angle
   view = get( handle, 'View' );
-  m2t.is3dPlot = false;
-  if any( view ~= [0,90] )
+  % This is not a good way of finding out whether a plot is supposed to
+  % be 2D or 3D. For example, spectrogram plots are surfs, viewed from
+  % above (i.e., [0,90]).
+  % TODO Find something better.
+  m2t.is3dPlot = any(view ~= [0,90]);
+  if m2t.is3dPlot
       m2t.axesContainers{end}.options{end+1} = ...
-          sprintf( 'view={%.15g}{%.15g}', get( handle, 'View') );
-      m2t.is3dPlot = true;
+          sprintf('view={%.15g}{%.15g}', view);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
@@ -1120,12 +1123,7 @@ end
 % =========================================================================
 function str = plotLine3d( opts, xData, yData, zData )
 
-    str = [];
-
-    n = length(xData);
-
-    str = [ str, ...
-            sprintf( ['\\addplot3 [',opts,']\n'] ) ];
+    str = sprintf( ['\\addplot3 [',opts,']\n'] );
 
     str = [ str, ...
             sprintf('coordinates{\n') ];

@@ -88,7 +88,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @surfPlot2           , ...
                            @meshPlot            , ...
                            @ylabels             , ...
-                      ...% @spectro             , ... % easily exceeds TeX's memory
+                           @spectro             , ... % takes pretty long to LuaLaTeX-compile
                            @mixedBarLine        , ...
                            @decayingharmonic    , ...
                            @texcolor            , ...
@@ -1000,15 +1000,14 @@ function description = ylabels()
 end
 % =========================================================================
 function description = spectro()
-  % check of the signal processing toolbox is installed
-  if length(ver('signal')) ~= 1
-      fprintf( 'Signal toolbox not found. Abort.\n\n' );
-      description = [];
-      return
-  end
 
-  load chirp; %audio-file in vector 'y'
-  spectrogram( y, hann(1024), 512, 1024, Fs, 'yaxis' )
+  % In the original test case, this is 0:0.001:2, but that takes forever
+  % for LaTeX to process.
+  T = 0:0.005:2;
+  X = chirp(T,100,1,200,'q');
+  spectrogram(X,128,120,128,1E3);
+  title('Quadratic Chirp');
+
   description = 'Spectrogram plot';
 end
 % =========================================================================
