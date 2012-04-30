@@ -605,15 +605,14 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % get the view angle
   view = get( handle, 'View' );
-  % This is not a good way of finding out whether a plot is supposed to
-  % be 2D or 3D. For example, spectrogram plots are surfs, viewed from
-  % above (i.e., [0,90]).
-  % TODO Find something better.
-  m2t.is3dPlot = any(view ~= [0,90]);
-  if m2t.is3dPlot
-      m2t.axesContainers{end}.options{end+1} = ...
-          sprintf('view={%.15g}{%.15g}', view);
-  end
+  isViewFromAbove = any(view ~= [0,90]);
+
+  % Unconditionally add the view specfication. This is unnecessary for
+  % 2D plots as both MATLAB's and Pgfplots' default is [0,90] here.
+  % At this point, it's hard to say whether or not we're dealing with a 3D
+  % plot though.
+  m2t.axesContainers{end}.options{end+1} = ...
+      sprintf('view={%.15g}{%.15g}', view);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
   dim = getAxesDimensions( handle, ...
@@ -654,7 +653,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % before -- if ~isVisible(handle) -- the handle's children are called.
   [ m2t, hasXGrid ] = getAxisOptions( m2t, handle, 'x' );
   [ m2t, hasYGrid ] = getAxisOptions( m2t, handle, 'y' );
-  if m2t.is3dPlot
+  if ~isViewFromAbove
       [ m2t, hasZGrid ] = getAxisOptions( m2t, handle, 'z' );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -668,7 +667,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
               % axes pair.
               m2t.axesContainers{end}.name = 'axis';
               m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                                  'hide x axis', 'hide y axis'};
+                                                 'hide x axis', 'hide y axis'};
               m2t.axesContainers{end}.comment = getTag( handle );
               break;
           end
@@ -686,7 +685,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % get scales
   isXLog = strcmp( get( handle, 'XScale' ), 'log' );
   isYLog = strcmp( get( handle, 'YScale' ), 'log' );
-  if m2t.is3dPlot
+  if ~isViewFromAbove % 3D plot
       m2t.axesContainers{end}.name = 'axis';
   elseif  ~isXLog && ~isYLog
       m2t.axesContainers{end}.name = 'axis';
@@ -3064,8 +3063,8 @@ function cbarOptions = getColorbarOptions( m2t, handle )
 
   % get the upper and lower limit of the colorbar
   clim = caxis;
-  cbarOptions{end+1} = sprintf('point meta min=%g', clim(1));
-  cbarOptions{end+1} = sprintf('point meta max=%g', clim(2));
+  cbarOptions{end+1} = sprintf('point meta min=%.15g', clim(1));
+  cbarOptions{end+1} = sprintf('point meta max=%.15g', clim(2));
 
   % do _not_ handle colorbar's children
   return
