@@ -3062,6 +3062,10 @@ function cbarOptions = getColorbarOptions( m2t, handle )
           error( 'drawColorbar: Unknown ''Location'' %s.', loc )
   end
 
+  if strcmp( get(handle, 'YScale'), 'log' )
+      cbarOptions{end+1} = 'colorbar style={ymode=log}';
+  end
+
   % get the upper and lower limit of the colorbar
   clim = caxis;
   cbarOptions{end+1} = sprintf('point meta min=%.15g', clim(1));
