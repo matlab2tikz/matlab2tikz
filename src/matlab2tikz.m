@@ -944,12 +944,6 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   %     % draw unit circle and axes
   % end
 
-  % check if the *optional* argument 'yDeviation' was given
-  errorbarMode = 0;
-  if nargin>2
-      errorbarMode = true;
-  end
-
   str = [];
 
   if ~isVisible( handle )
@@ -1014,14 +1008,21 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % plot the actual line data
-  % -- Check for any node if it needs to be included at all. For zoomed
-  %    plots, lots can be omitted.
+  % Plot the actual line data.
+  % First put them all together in one multiarray.
+  % This also implicitly makes sure that the lengths match.
   xData  = get( handle, 'XData' );
   yData  = get( handle, 'YData' );
   zData  = get( handle, 'ZData' );
+  data = [xData(:), yData(:), zData(:)];
+
+  % check if the *optional* argument 'yDeviation' was given
+  if nargin>2
+      data = [data, yDeviation(:)];
+  end
+
   % Check if any value is infinite/NaN. In that case, add appropriate option.
-  if any(~isfinite(xData)) || any(~isfinite(yData)) || any(~isfinite(zData))
+  if any(~isfinite(data(:)))
       m2t.axesContainers{end}.options{end+1} = 'unbounded coords=jump';
   end
 
@@ -1029,36 +1030,27 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
       opts = [ '\n', join(drawOptions, ',\n' ), '\n' ];
       str = [ str, ...
-              plotLine3d( opts, xData, yData, zData ) ];
+              plotLine3d( opts, data ) ];
   else
       xLim = get( m2t.currentHandles.gca, 'XLim' );
       yLim = get( m2t.currentHandles.gca, 'YLim' );
       % split the data into logical chunks
-      if errorbarMode
-          [xDataCell, yDataCell, yDeviationCell ] = splitLine( m2t, hasLines, hasMarkers, xData, yData, xLim, yLim, yDeviation );
-      else
-          [xDataCell, yDataCell] = splitLine( m2t, hasLines, hasMarkers, xData, yData, xLim, yLim );
-      end
+      dataCell = splitLine( m2t, hasLines, hasMarkers, data, xLim, yLim );
 
       % plot them
-      for k = 1:length(xDataCell)
-          mask = pointReduction( m2t, xDataCell{k}, yDataCell{k} );
+      for k = 1:length(dataCell)
+          mask = pointReduction( m2t, dataCell{k}(:,1:2) );
           % If the line has a legend string, make sure to only include a legend
           % entry for the *last* occurence of the plot series.
           % Hence the condition k<length(xDataCell).
-          if ~isempty(m2t.legendHandles) && (isempty(legendString) || k < length(xDataCell))
+          if ~isempty(m2t.legendHandles) && (isempty(legendString) || k < length(dataCell))
               % No legend entry found. Don't include plot in legend.
               opts = [ '\n', join({drawOptions{:}, 'forget plot'}, ',\n' ), '\n' ];
           else
               opts = [ '\n', join(drawOptions, ',\n' ), '\n' ];
           end
-          if errorbarMode
-              str = [ str, ...
-                      plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask), yDeviationCell{k}(mask) ) ];
-          else
-              str = [ str, ...
-                      plotLine( opts, xDataCell{k}(mask), yDataCell{k}(mask) ) ];
-          end
+          str = [ str, ...
+                  plotLine2d( opts, dataCell{k}(mask,:) ) ];
       end
   end
 
@@ -1069,21 +1061,14 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
 
 end
 % =========================================================================
-function str = plotLine( opts, xData, yData, yDeviation )
+function str = plotLine2d(opts, data)
 
     str = [];
 
     % check if the *optional* argument 'yDeviation' was given
-    errorbarMode = 0;
-    if nargin>3
+    errorbarMode = false;
+    if size(data,2) == 3
         errorbarMode = true;
-    end
-
-    n = length(xData);
-
-    if errorbarMode && n~=length(yDeviation)
-        error( 'drawLine:arrayLengthsMismatch', ...
-              '''drawline'' was called with errors bars turned on, but array lengths do not match.' );
     end
 
     str = [ str, ...
@@ -1096,18 +1081,11 @@ function str = plotLine( opts, xData, yData, yDeviation )
     str = [ str, ...
             sprintf('coordinates{\n') ];
 
-    % Make sure data is in column vectors
-    xData = xData(:);
-    yData = yData(:);
-    if errorbarMode
-        yDeviation = yDeviation(:);
-    end
-
     % Convert to string array then cell to call sprintf once (and no loops).
     if errorbarMode
-        str_data = cellstr(num2str([xData yData yDeviation],'(%.15g,%.15g) +- (0.0,%.15g)'));
+        str_data = cellstr(num2str(data, '(%.15g,%.15g) +- (0.0,%.15g)'));
     else
-        str_data = cellstr(num2str([xData yData],'(%.15g,%.15g)'));
+        str_data = cellstr(num2str(data, '(%.15g,%.15g)'));
     end
     str_data = sprintf('%s', str_data{:});
 
@@ -1120,30 +1098,27 @@ function str = plotLine( opts, xData, yData, yDeviation )
 
 end
 % =========================================================================
-function str = plotLine3d( opts, xData, yData, zData )
+function str = plotLine3d(opts, data)
 
     str = sprintf( ['\\addplot3 [',opts,']\n'] );
 
     str = [ str, ...
             sprintf('coordinates{\n') ];
 
-    % Make sure data is in column vectors
-    xData = xData(:);
-    yData = yData(:);
-    zData = zData(:);
-
     % Convert to string array then cell to call sprintf once (and no loops).
-    str_data = cellstr(num2str([xData yData,zData],'(%.15g,%.15g,%.15g)'));
+    str_data = cellstr(num2str(data, '(%.15g,%.15g,%.15g)'));
     str_data = sprintf('%s', str_data{:});
 
     % The process above adds extra white spaces, remove them all
     str_data = str_data(~isspace(str_data));
+    % Also, replace "Inf" by the Pgfplots-recognized "inf".
+    % Remove this as soon as Pgfplots knows "Inf".
+    str_data = strrep(str_data, 'Inf', 'inf');
     str = sprintf('%s %s \n};\n\n', str, str_data);
 
 end
 % =========================================================================
-function [xDataCell, yDataCell, yDeviationCell] = ...
-    splitLine( m2t, hasLines, hasMarkers, xData, yData, xLim, yLim, yDeviation )
+function dataCell = splitLine( m2t, hasLines, hasMarkers, data, xLim, yLim )
   % Split the xData, yData into several chunks of data for each of which
   % an \addplot will be generated.
   % Splitting criteria are:
@@ -1151,40 +1126,16 @@ function [xDataCell, yDataCell, yDeviationCell] = ...
   %    * Dimension too large.
   %    * Data set too large.
 
-  % check if the *optional* argument 'yDeviation' was given
-  errorbarMode = 0;
-  if nargin>7
-      errorbarMode = true;
-  end
+  dataCell{1} = data;
 
-  xDataCell{1} = xData;
-  yDataCell{1} = yData;
-  if errorbarMode
-      yDeviationCell{1} = yDeviation;
-  end
+  % Split up each of the chunks along visible segments.
+  dataCell = splitByVisibility(m2t, hasLines, hasMarkers, dataCell, xLim, yLim);
 
-  % Split up each of the chunks along visible segments
-  if errorbarMode
-      [xDataCell , yDataCell, yDeviationCell] = ...
-         splitByVisibility( m2t, hasLines, hasMarkers, xDataCell, yDataCell, xLim, yLim, yDeviationCell );
-  else
-      [xDataCell , yDataCell] = ...
-         splitByVisibility( m2t, hasLines, hasMarkers, xDataCell, yDataCell, xLim, yLim );
-  end
+  % Split each of the current chunks further with respect to outliers.
+  dataCell = splitByOutliers(dataCell, xLim, yLim);
 
-  % Split each of the current chunks further with respect to outliers
-  if errorbarMode
-      [xDataCell , yDataCell, yDeviationCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim, yDeviationCell );
-  else
-      [xDataCell , yDataCell] = splitByOutliers( xDataCell, yDataCell, xLim, yLim );
-  end
-
-  % Split each of the current chunks further to limit size of coordinate arrays
-  if errorbarMode
-      [xDataCell , yDataCell, yDeviationCell] = splitByArraySize( xDataCell, yDataCell, yDeviationCell );
-  else
-      [xDataCell , yDataCell] = splitByArraySize( xDataCell, yDataCell );
-  end
+  % Split each of the current chunks further with respect to outliers.
+  dataCell = splitByArraySize(dataCell);
 
 end
 % =========================================================================
@@ -1214,8 +1165,8 @@ function newDataCell = splitByMask( dataCell, mask )
 
 end
 % =========================================================================
-function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
-    splitByVisibility( m2t, hasLines, hasMarkers, xDataCell, yDataCell, xLim, yLim, yDeviationCell )
+function dataCellNew = ...
+    splitByVisibility( m2t, hasLines, hasMarkers, dataCell, xLim, yLim )
   % Parts of the line data may sit outside the plotbox.
   % 'segvis' tells us which segment are actually visible, and the
   % following construction loops through it and makes sure that each
@@ -1224,37 +1175,27 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
   % this information is used for determining when a new 'addplot' needs
   % to be opened.
 
-  % check if the *optional* argument 'yDeviation' was given
-  errorbarMode = 0;
-  if nargin > 7
-      errorbarMode = true;
-  end
+  dataCellNew = cell(0);
 
-  xDataCellNew = cell(0);
-  yDataCellNew = cell(0);
-  if errorbarMode
-      yDeviationCellNew = cell(0);
-  end
-
-  cellIndexNew = 0;
-  for cellIndex = 1:length(xDataCell)
-      numPoints = length( xDataCell{cellIndex} );
+  for cellIndex = 1:length(dataCell)
+      numPoints = size(dataCell{cellIndex}, 1);
 
       % Get which points are insided a (slightly larger) box.
       tol = 1.0e-10;
       relaxedXLim = xLim + [-tol, tol];
       relaxedYLim = yLim + [-tol, tol];
-      dataIsInBox = isInBox( [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
-                              relaxedXLim, relaxedYLim );
+      dataIsInBox = isInBox(dataCell{cellIndex}(:,1:2), ...
+                            relaxedXLim, relaxedYLim );
 
-      % By default, don't plot any points.
-      shouldPlot = false(numPoints,1);
       if hasMarkers
           shouldPlot = dataIsInBox;
+      else
+          % By default, don't plot any points.
+          shouldPlot = false(numPoints,1);
       end
       if hasLines
           % Check if the connecting line is in the box.
-          segvis = segmentVisible( m2t, [xDataCell{cellIndex}', yDataCell{cellIndex}'], ...
+          segvis = segmentVisible( m2t, dataCell{cellIndex}(:,1:2), ...
                                    dataIsInBox, xLim, yLim );
           % Plot points which are next to an edge which is in the box.
           shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
@@ -1274,43 +1215,26 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
           end
           kEnd = k-1;
 
-          cellIndexNew = cellIndexNew + 1;
-          xDataCellNew{cellIndexNew} = xDataCell{cellIndex}(kStart:kEnd);
-          yDataCellNew{cellIndexNew} = yDataCell{cellIndex}(kStart:kEnd);
-          if errorbarMode
-              yDeviationCellNew{cellIndexNew} = yDeviationCell{cellIndex}(kStart:kEnd);
-          end
+          dataCellNew{end+1} = dataCell{cellIndex}(kStart:kEnd,:);
       end
   end
 
 end
 % =========================================================================
-function out = isInBox( p, xLim, yLim )
+function out = isInBox( data, xLim, yLim )
 
-  out = p(:,1) > xLim(1) & p(:,1) < xLim(2) ...
-      & p(:,2) > yLim(1) & p(:,2) < yLim(2);
+  out = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
+      & data(:,2) > yLim(1) & data(:,2) < yLim(2);
 
 end
 % =========================================================================
-function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
-    splitByOutliers(xDataCell, yDataCell, xLim, yLim, yDeviationCell)
+function dataCellNew = splitByOutliers(dataCell, xLim, yLim)
   % Connected points may sit outside the plot, but their connecting
   % line may not. The values of the outside plot may be too large for
   % LaTeX to handle. Move those points closer to the bounding box,
   % and possibly split them up in two.
 
-  % check if the *optional* argument 'yDeviation' was given
-  errorbarMode = 0;
-  if nargin > 4
-      errorbarMode = true;
-  end
-
-  xDataCellNew = cell(0);
-  yDataCellNew = cell(0);
-  if errorbarMode
-      yDeviationCellNew = cell(0);
-  end
-  cellIndexNew = 0;
+  dataCellNew = cell(0);
 
   % The TeX register limit is 16384, and may be exhausted if an outlier is too
   % far outside of the plot. It's not the absolute value that is key here, but
@@ -1325,21 +1249,17 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
   xLimLarger = xLim + extendFactor * [-xWidth, xWidth];
   yLimLarger = yLim + extendFactor * [-yWidth, yWidth];
 
-  for cellIndex = 1:length(xDataCell);
-      numPoints = length( xDataCell{cellIndex} );
-      % Code clarity and to make sure we deal with column vectors
-      x = xDataCell{cellIndex}(:);
-      y = yDataCell{cellIndex}(:);
-
+  for data = dataCell
       % 'v' is a kx4-array which for each point (x(k),y(k)) holds information
       % about which limits are exceeded.
-      % Don't treat Infs as outliers, though, as they are automatically
+      v = [ xLimLarger(1)-data{1}(:,1), data{1}(:,1)-xLimLarger(2), ...
+            yLimLarger(1)-data{1}(:,2), data{1}(:,2)-yLimLarger(2) ];
+      % Don't treat Infs as outliers as they are automatically
       % omitted when occuring in Pgfplots (option 'unbounded coords=...').
-      v = [ xLimLarger(1)-x, x-xLimLarger(2), ...
-            yLimLarger(1)-y, y-yLimLarger(2) ];
       isOutlier = any(isfinite(v) & v>0.0, 2);
 
       % Split the data in chunks of where 'shouldPlot' is 'true'.
+      numPoints = size(data{1}, 1);
       k = 1;
       while k <= numPoints
           % Get start and end indices of the next non-outlier chunk.
@@ -1362,63 +1282,33 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
           end
 
           % Prepare the new arrays.
-          cellIndexNew = cellIndexNew + 1;
-          xDataCellNew{cellIndexNew} = [];
-          yDataCellNew{cellIndexNew} = [];
-          if errorbarMode
-              yDeviationCellNew{cellIndexNew} = [];
-          end
+          dataCellNew{end+1} = [];
           if kStart > 1
               % Prepend the previous point (an outlier), shifted to the
               % larger bounding box.
-              outlier = [xDataCell{cellIndex}(kStart-1), ...
-                         yDataCell{cellIndex}(kStart-1)];
-              ref = [xDataCell{cellIndex}(kStart), ...
-                     yDataCell{cellIndex}(kStart)];
-              prependix = moveToBoundingBox(outlier, ref, xLimLarger, yLimLarger);
-              xDataCellNew{cellIndexNew} = prependix(1);
-              yDataCellNew{cellIndexNew} = prependix(2);
-              if errorbarMode
-                  % Deliberately set the deviation of the shifted point to 0.
-                  yDeviationCellNew{cellIndexNew} = 0;
-              end
+              outlier = data{1}(kStart-1,1:2);
+              ref = data{1}(kStart,1:2);
+              dataCellNew{end} = moveToBoundingBox(outlier, ref, xLimLarger, yLimLarger);
           end
 
           % Append the chunk.
-          xDataCellNew{cellIndexNew} = [xDataCellNew{cellIndexNew}, ...
-                                        xDataCell{cellIndex}(kStart:kEnd)];
-          yDataCellNew{cellIndexNew} = [yDataCellNew{cellIndexNew}, ...
-                                        yDataCell{cellIndex}(kStart:kEnd)];
-          if errorbarMode
-              yDeviationCellNew{cellIndexNew} = [yDeviationCellNew{cellIndexNew}, ...
-                                                 yDeviationCell{cellIndex}(kStart:kEnd)];
-          end
+          dataCellNew{end} = [dataCellNew{end}; ...
+                              data{1}(kStart:kEnd,:)];
 
           if kEnd < numPoints
               % Append the next point (an outlier), shifted to the
               % larger bounding box.
-              outlier = [xDataCell{cellIndex}(kEnd+1), ...
-                         yDataCell{cellIndex}(kEnd+1)];
-              ref = [ xDataCell{cellIndex}(kEnd), ...
-                      yDataCell{cellIndex}(kEnd)];
-              appendix = moveToBoundingBox(outlier, ref, xLimLarger, yLimLarger);
-              xDataCellNew{cellIndexNew} = [xDataCellNew{cellIndexNew}, ...
-                                            appendix(1)];
-              yDataCellNew{cellIndexNew} = [yDataCellNew{cellIndexNew}, ...
-                                            appendix(2)];
-              if errorbarMode
-                  % Deliberately set the deviation of the shifted point to 0.
-                  yDeviationCellNew{cellIndexNew} = [yDeviationCellNew{cellIndexNew}, ...
-                                                     0];
-              end
+              outlier = data{1}(kEnd+1,1:2);
+              ref = data{1}(kEnd,1:2);
+              dataCellNew{end} = [dataCellNew{end}; ...
+                                  moveToBoundingBox(outlier, ref, xLimLarger, yLimLarger)];
           end
       end
   end
 
 end
 % =========================================================================
-function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
-    splitByArraySize( xDataCell, yDataCell, yDeviationCell )
+function dataCellNew = splitByArraySize(dataCell)
   % TeX parses files line by line with a buffer of size buf_size. If the
   % plot has too many data points, the buffer size may be exceeded.
   % As a work-around, the plot is split into several smaller plots, and this
@@ -1431,59 +1321,31 @@ function [xDataCellNew , yDataCellNew, yDeviationCellNew] = ...
   % char), 2 brackets, commma and white space, + 1 extra char.
   % That gives a magic arbitrary number of 4000 data points per array.
 
-  % check if the *optional* argument 'yDeviation' was given
-  errorbarMode = 0;
-  if nargin>2
-      errorbarMode = true;
-  end
-
   % Unconditionally set this to true. This results in one extra point to be
-  % plotted per chunk, which probably doesn't hurt too much. Anways,
+  % plotted per chunk, which probably doesn't hurt too much. Anyways,
   % TODO Take hasLines as argument to splitByArraySize().
   hasLines = true;
 
-  newArraySize = 4000;
-  xDataCellNew = cell(0);
-  yDataCellNew = cell(0);
-  if errorbarMode
-      yDeviationCellNew = cell(0);
-  end
-  cellIndexNew = 1;
+  chunkLength = 4000;
 
-  for cellIndex = 1:length(xDataCell);
+  dataCellNew = cell(0);
 
-      xData = xDataCell{cellIndex};
-      yData = yDataCell{cellIndex};
-      if errorbarMode
-          yDeviation = yDeviationCell{cellIndex};
-      end
+  for data = dataCell
 
       chunkStart = 1;
-      len = length(xData);
+      len = size(data{1}, 1);
       while chunkStart <= len
-          chunkEnd = min( chunkStart + newArraySize - 1, len );
+          chunkEnd = min( chunkStart + chunkLength - 1, len );
 
           % Copy over the data to the new containers.
-          xDataCellNew{cellIndexNew} = xData(chunkStart:chunkEnd);
-          yDataCellNew{cellIndexNew} = yData(chunkStart:chunkEnd);
-          if errorbarMode
-              yDeviationCellNew{cellIndexNew} = yDeviation(chunkStart:chunkEnd);
-          end
+          dataCellNew{end+1} = data{1}(chunkStart:chunkEnd,:);
 
           % If the plot has lines, add an extra (overlap) point to the data
           % stream; otherwise the line between two data chunks would be broken.
           if hasLines && chunkEnd~=len
-              xDataCellNew{cellIndexNew} = [ xDataCellNew{cellIndexNew}, ...
-                                             xData(chunkEnd+1) ];
-              yDataCellNew{cellIndexNew} = [ yDataCellNew{cellIndexNew}, ...
-                                             yData(chunkEnd+1) ];
-              if errorbarMode
-                  yDeviationCellNew{cellIndexNew} = [ yDeviationCellNew{cellIndexNew}, ...
-                                                      yDeviation(chunkEnd+1) ];
-              end
+              dataCellNew{end} = [ dataCellNew{end}, data{1}(:,chunkEnd+1) ];
           end
 
-          cellIndexNew = cellIndexNew + 1;
           chunkStart = chunkEnd + 1;
       end
   end
@@ -1573,13 +1435,13 @@ function out = segmentsIntersect( x, y )
 
 end
 % =========================================================================
-function mask = pointReduction( m2t, xData, yData )
+function mask = pointReduction( m2t, data )
   % Generates a mask which is true for the first point, and all
   % subsequent points which have a greater norm2-distance from
   % the previous point than 'threshold'.
 
   threshold = m2t.cmdOpts.Results.minimumPointsDistance;
-  n = length(xData);
+  n = size(data, 1);
 
   if ( threshold==0.0 )
       % bail out early
@@ -1589,12 +1451,11 @@ function mask = pointReduction( m2t, xData, yData )
 
   mask = false(n,1);
 
-  XRef = [ xData(1), yData(1) ];
+  XRef = data(1,:);
   mask(1) = true;
   for kk = 2:n
-      X0 = [ xData(kk), yData(kk) ];
-      if norm(XRef-X0,2) > threshold
-          XRef = X0;
+      if norm(XRef - data(kk,:)) > threshold
+          XRef = data(kk,:);
           mask(kk) = true;
       end
   end
@@ -1893,7 +1754,8 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   yData = get( handle, 'YData' );
   zData = get( handle, 'ZData' );
 
-  % filter out the NaNs
+  % Filter out the NaNs.
+  % TODO Remove?
   xData = xData( ~isnan(xData) );
   yData = yData( ~isnan(yData) );
   zData = zData( ~isnan(zData) );

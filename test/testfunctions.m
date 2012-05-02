@@ -628,7 +628,7 @@ function description = manualAlignment()
   plot(xrange);
   set(gca,'XTick',[]);
 
-  description = 'Manually aligned figures.'
+  description = 'Manually aligned figures.';
 
 end
 % =========================================================================
@@ -1461,7 +1461,7 @@ function description = herrorbarPlot()
   end
   legend([h1 h2], {'test1', 'test2'})
 
-  description = 'herrorbar plot.'
+  description = 'herrorbar plot.';
 end
 % =========================================================================
 function env = getEnvironment
