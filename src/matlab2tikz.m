@@ -3499,6 +3499,9 @@ function [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handl
       isAxisLog = strcmp( get(handle,keywordScale), 'log' );
       [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, isAxisLog );
       % overwrite if empty
+      if length(ticks)==0
+          ticks = '\empty';
+      end
       if length(tickLabel)==1 && isempty(tickLabel{1})
           tickLabels = '\empty';
       end
