@@ -629,7 +629,8 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
   if dim.y.unit(1)=='\' && dim.y.value==1.0
       % only return \figureheight instead of 1.0\figureheight
-      m2t.axesContainers{end}.options = sprintf('height=%s', dim.y.unit);
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('height=%s', dim.y.unit);
   else
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('height=%.15g%s', dim.y.value, dim.y.unit);
