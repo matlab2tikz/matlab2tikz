@@ -2780,15 +2780,15 @@ function out = linearFunction(X, Y)
     return
 end
 % ==============================================================================
-function matlabColormap = pgfplots2matlabColormap(points, rgb)
+function matlabColormap = pgfplots2matlabColormap(points, rgb, numColors)
     % Translates a Pgfplots colormap to a MATLAB color map.
 
-    matlabColormap = zeros(64, 3);
+    matlabColormap = zeros(numColors, 3);
     % Point indices between which to interpolate.
     I = [1, 2];
     f = linearFunction(points(I), rgb(I,:));
-    for k = 1:64
-        x = (k-1)/63 * points(end);
+    for k = 1:numColors
+        x = (k-1)/(numColors-1) * points(end);
         if x > points(I(2))
             I = I + 1;
             f = linearFunction(points(I), rgb(I,:));
@@ -2847,14 +2847,15 @@ function pgfplotsColormap = matlab2pgfplotsColormap( matlabColormap )
 
     % The tolerance is a subjective matter of course.
     % Some figures:
-    %    * The norm-distance between MATLAB's gray and bone is 0.545077.
-    %    * The norm-distance between MATLAB's jet and Pgfplots's jet is 0.22427.
-    %    * The norm-distance between MATLAB's hot and Pgfplots's hot2 is 0.168364.
-    tol = 0.5;
+    %    * The norm-distance between MATLAB's gray and bone is 6.8e-2.
+    %    * The norm-distance between MATLAB's jet and Pgfplots's jet is 2.8e-2.
+    %    * The norm-distance between MATLAB's hot and Pgfplots's hot2 is 2.1e-2.
+    tol = 5.0e-2;
 
     for map = pgfmaps
-        mmap = pgfplots2matlabColormap(map{1}.points, map{1}.values);
-        alpha = norm(matlabColormap - mmap);
+        numColors = size(matlabColormap, 1);
+        mmap = pgfplots2matlabColormap(map{1}.points, map{1}.values, numColors);
+        alpha = norm(matlabColormap - mmap) / sqrt(numColors);
         if alpha < tol
             disp( sprintf('Found %s to be a pretty good match for your color map (%g).', map{1}.name, alpha) );
             pgfplotsColormap = map{1}.name;
@@ -2897,10 +2898,12 @@ function pgfplotsColormap = matlab2pgfplotsColormap( matlabColormap )
     return
 end
 % =========================================================================
-function cbarOptions = getColorbarOptions( m2t, handle )
+function axisOptions = getColorbarOptions( m2t, handle )
 
   % begin collecting axes options
+  axisOptions = {};
   cbarOptions = {};
+  cbarStyleOptions = {};
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set position, ticks etc. of the colorbar
@@ -2913,25 +2916,46 @@ function cbarOptions = getColorbarOptions( m2t, handle )
           userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
           return;
       case 'eastoutside'
-          cbarOptions{end+1} = 'colorbar right';
+          %cbarOptions{end+1} = 'right';
       case 'westoutside'
-          cbarOptions{end+1} = 'colorbar left';
+          cbarOptions{end+1} = 'left';
       case 'northoutside'
-          cbarOptions{end+1} = 'colorbar top';
+          cbarOptions{end+1} = 'top';
       case 'southoutside'
-          cbarOptions{end+1} = 'colorbar bottom';
+          cbarOptions{end+1} = 'bottom';
       otherwise
           error( 'drawColorbar: Unknown ''Location'' %s.', loc )
   end
 
   if strcmp( get(handle, 'YScale'), 'log' )
-      cbarOptions{end+1} = 'colorbar style={ymode=log}';
+      cbarStyleOptions{end+1} = 'ymode=log';
   end
 
-  % get the upper and lower limit of the colorbar
+  if m2t.cmdOpts.Results.strict
+      % Sampled colors.
+      numColors = size(m2t.currentHandles.colormap, 1);
+      cbarOptions{end+1} = 'sampled';
+      cbarStyleOptions{end+1} = sprintf('samples=%d', numColors+1);
+  end
+
+  % Merge them together in axisOptions.
+  if isempty(cbarOptions)
+      axisOptions{end+1} = 'colorbar';
+  else
+      if length(cbarOptions) > 1
+          userWarning('Pgfplots cannot deal with more than one colorbar options yet.');
+      end
+      axisOptions{end+1} = ['colorbar ', cbarOptions{1}];
+  end
+
+  if ~isempty(cbarStyleOptions)
+      axisOptions{end+1} = ['colorbar style={', join(cbarStyleOptions, ','), '}'];
+  end
+
+  % Append upper and lower limit of the colorbar.
   clim = caxis;
-  cbarOptions{end+1} = sprintf('point meta min=%.15g', clim(1));
-  cbarOptions{end+1} = sprintf('point meta max=%.15g', clim(2));
+  axisOptions{end+1} = sprintf('point meta min=%.15g', clim(1));
+  axisOptions{end+1} = sprintf('point meta max=%.15g', clim(2));
 
   % do _not_ handle colorbar's children
   return

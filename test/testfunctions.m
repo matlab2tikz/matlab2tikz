@@ -231,7 +231,7 @@ end
 % *** Standard example plot from MATLAB's help pages.
 % ***
 % =========================================================================
-function description = peaks_contour ()
+function description = peaks_contour()
 
   contour(peaks(20),10);
 
@@ -268,8 +268,7 @@ function description = peaks_contourf ()
 %    colorbar('SouthOutside');
 %    colorbar('WestOutside');
 
-%    colormap autumn;
-  colormap jet;
+  colormap([0:0.1:1; 1:-0.1:0; 0:0.1:1]')
 
   description = 'Test the contourfill plots.';
 
