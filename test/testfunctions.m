@@ -1472,12 +1472,12 @@ function description = hist3d()
       return
   end
 
-  load carbig
-  X = [MPG,Weight];
-  hist3(X,[7 7]);
-  xlabel('MPG'); ylabel('Weight');
-  set(gcf,'renderer','opengl');
-  set(get(gca,'child'),'FaceColor','interp','CDataMode','auto');
+%    load carbig
+%    X = [MPG,Weight];
+%    hist3(X,[7 7]);
+%    xlabel('MPG'); ylabel('Weight');
+%    set(gcf,'renderer','opengl');
+%    set(get(gca,'child'),'FaceColor','interp','CDataMode','auto');
 
 %    load carbig
 %    X = [MPG,Weight];
@@ -1488,15 +1488,12 @@ function description = hist3d()
 %    xlabel('MPG'); ylabel('Weight');
 %    set(gcf,'renderer','opengl');
 
-%    load seamount
-%    dat = [-y,x]; % Grid corrected for negative y-values
-%    hold on
-%    hist3(dat) % Draw histogram in 2D
-%  
-%    n = hist3(dat); % Extract histogram data;
-%                    % default to 10x10 bins
-%    n1 = n';
-%    n1( size(n,1) + 1 ,size(n,2) + 1 ) = 0;
+  load seamount
+  dat = [-y,x]; % Grid corrected for negative y-values
+  hist3(dat) % Draw histogram in 2D
+  n = hist3(dat); % Extract histogram data;
+                  % default to 10x10 bins
+  view([-37.5, 30]);
 
   description = '3D histogram plot.';
 

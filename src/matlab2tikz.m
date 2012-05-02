@@ -605,7 +605,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % get the view angle
   view = get( handle, 'View' );
-  isViewFromAbove = any(view ~= [0,90]);
+  isViewFromAbove = all(view == [0,90]);
 
   % Unconditionally add the view specfication. This is unnecessary for
   % 2D plots as both MATLAB's and Pgfplots' default is [0,90] here.
