@@ -2004,7 +2004,7 @@ function [m2t,env] = drawSurface( m2t, handle )
     dx = get(handle,'XData');
     dy = get(handle,'YData');
     dz = get(handle,'ZData');
-    if any(any(~isfinite(dx))) || any(any(~isfinite(dy))) || any(any(~isfinite(dz)))
+    if any(~isfinite(dx(:))) || any(~isfinite(dy(:))) || any(~isfinite(dz(:)))
         m2t.axesContainers{end}.options{end+1} = 'unbounded coords=jump';
     end
     [col, row] = size(dz);
@@ -2964,7 +2964,6 @@ end
 function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   % TODO: * Declare common properties (like 'draw=none') once for
   %         all badges.
-  %       * Look into original pgfplots color bars.
 
   if ~isVisible( handle )
       return

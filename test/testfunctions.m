@@ -100,7 +100,8 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @parameterSurf       , ...
                            @fill3plot           , ...
                            @rectanglePlot       , ...
-                           @herrorbarPlot
+                           @herrorbarPlot       , ...
+                           @hist3d
                          };
 
   numFunctions = length( testfunction_handles );
@@ -1461,6 +1462,44 @@ function description = herrorbarPlot()
   legend([h1 h2], {'test1', 'test2'})
 
   description = 'herrorbar plot.';
+end
+% =========================================================================
+function description = hist3d()
+
+  if ~exist('hist3')
+      fprintf( 'Statistics toolbox not found. Abort.\n\n' );
+      description = [];
+      return
+  end
+
+  load carbig
+  X = [MPG,Weight];
+  hist3(X,[7 7]);
+  xlabel('MPG'); ylabel('Weight');
+  set(gcf,'renderer','opengl');
+  set(get(gca,'child'),'FaceColor','interp','CDataMode','auto');
+
+%    load carbig
+%    X = [MPG,Weight];
+%    hist3(X,[7 7]);
+%    xlabel('MPG'); ylabel('Weight');
+%  
+%    hist3(X,[7 7],'FaceAlpha',.65);
+%    xlabel('MPG'); ylabel('Weight');
+%    set(gcf,'renderer','opengl');
+
+%    load seamount
+%    dat = [-y,x]; % Grid corrected for negative y-values
+%    hold on
+%    hist3(dat) % Draw histogram in 2D
+%  
+%    n = hist3(dat); % Extract histogram data;
+%                    % default to 10x10 bins
+%    n1 = n';
+%    n1( size(n,1) + 1 ,size(n,2) + 1 ) = 0;
+
+  description = '3D histogram plot.';
+
 end
 % =========================================================================
 function env = getEnvironment
