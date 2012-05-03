@@ -2050,7 +2050,7 @@ function [m2t,env] = drawSurface( m2t, handle )
 
 end
 % =========================================================================
-function [ m2t, str ] = drawText( m2t, handle)
+function [ m2t, str ] = drawText(m2t, handle)
   str = [];
 
   % there may be some text objects floating around a Matlab figure which
@@ -2089,6 +2089,12 @@ function [ m2t, str ] = drawText( m2t, handle)
   end
   % remove invisible border around \node to make the text align precisely
   style{end+1} = 'inner sep=0mm';
+
+  % Add rotation
+  rot = get(handle, 'Rotation');
+  if rot ~= 0.0
+    style{end+1} = sprintf('rotate=%.15g', rot);
+  end
 
   style{end+1} = ['text=' tcolor];
   if ~strcmp(EdgeColor, 'none')
