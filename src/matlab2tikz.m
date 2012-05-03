@@ -1755,12 +1755,6 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   yData = get( handle, 'YData' );
   zData = get( handle, 'ZData' );
 
-  % Filter out the NaNs.
-  % TODO Remove?
-  xData = xData( ~isnan(xData) );
-  yData = yData( ~isnan(yData) );
-  zData = zData( ~isnan(zData) );
-
   n = size(xData,2); % is n ever ~=1? if yes, think about replacing
                      % the drawOpts by one \pgfplotsset{}
 

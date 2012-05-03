@@ -235,7 +235,8 @@ end
 % =========================================================================
 function description = peaks_contour()
 
-  contour(peaks(20),10);
+  [C, h] = contour(peaks(20),10);
+  clabel(C, h);
 
   % remove y-ticks
   set(gca,'YTickLabel',[]);
