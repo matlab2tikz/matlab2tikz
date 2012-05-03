@@ -1755,6 +1755,21 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   yData = get( handle, 'YData' );
   zData = get( handle, 'ZData' );
 
+  if any(~isfinite(xData)) || any(~isfinite(yData)) || any(~isfinite(zData))
+      ucOpt = 'unbounded coords=jump';
+      % Check if the option was already added.
+      ucIsThere = false;
+      for item = m2t.axesContainers{end}.options
+          if strcmp(item, ucOpt)
+              ucIsThere = true;
+              break;
+          end
+      end
+      if ~ucIsThere
+          m2t.axesContainers{end}.options{end+1} = ucOpt;
+      end
+  end
+
   n = size(xData,2); % is n ever ~=1? if yes, think about replacing
                      % the drawOpts by one \pgfplotsset{}
 
