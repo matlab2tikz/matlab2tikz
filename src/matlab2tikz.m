@@ -3460,7 +3460,8 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
 
 end
 % =========================================================================
-function [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handle, axis )
+function [pTicks, pTickLabels, hasMinorTicks] = ...
+    getIndividualAxisTicks( m2t, handle, axis )
   % Return axis tick marks pgfplot style. Nice: Tick lengths and such
   % details are taken care of by Pgfplots.
 
@@ -3483,55 +3484,56 @@ function [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handl
   keywordScale     = [ upper(axis), 'Scale' ];
   keywordMinorTick = [ upper(axis), 'MinorTick' ];
 
-  tickLabel = cellstr( get( handle, keywordTickLabel ) );
-  for k = 1:length(tickLabel)
-      tickLabel{k} = prettyPrint( m2t, tickLabel{k}, labelInterpreter);
+  tickLabels = cellstr( get( handle, keywordTickLabel ) );
+  for k = 1:length(tickLabels)
+      tickLabels{k} = prettyPrint(m2t, tickLabels{k}, labelInterpreter);
   end
   tickMode = get( handle, keywordTickMode );
   if strcmp(tickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
       % not required, then let pgfplots take care of the ticks.
       % In most cases, this looks a lot better anyway.
-      ticks      = [];
-      tickLabels = [];
-  else % strcmp(zTickMode,'manual') || m2t.cmdOpts.Results.strict
-      tick      = get( handle, keywordTick );
-      isAxisLog = strcmp( get(handle,keywordScale), 'log' );
-      [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, isAxisLog );
-      % overwrite if empty
-      if length(tickLabel)==1 && isempty(tickLabel{1})
-          tickLabels = '\empty';
+      pTicks      = [];
+      if length(tickLabels) == 1 && isempty(tickLabels{1})
+          pTickLabels = '\empty';
+      else
+          pTickLabels = [];
       end
+  else % strcmp(zTickMode,'manual') || m2t.cmdOpts.Results.strict
+      ticks     = get( handle, keywordTick );
+      isAxisLog = strcmp( get(handle,keywordScale), 'log' );
+      [pTicks, pTickLabels] = matlabTicks2pgfplotsTicks( m2t, ticks, tickLabels, isAxisLog );
   end
   hasMinorTicks = strcmp( get( handle, keywordMinorTick ), 'on' );
 
 end
 % =========================================================================
-function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, isLogAxis )
+function [pTicks, pTickLabels] = ...
+    matlabTicks2pgfplotsTicks( m2t, ticks, tickLabels, isLogAxis )
   % Converts MATLAB style ticks and tick labels to pgfplots style
   % ticks and tick labels (if at all necessary).
 
-  if isempty( tick )
-      ticks      = [];
-      tickLabels = [];
+  if isempty( ticks )
+      pTicks      = '\empty';
+      pTickLabels = [];
       return
   end
 
   % set ticks + labels
-  ticks = join( num2cell(tick), ',' );
+  pTicks = join( num2cell(ticks), ',' );
 
   % if there's no specific labels, return empty
-  if isempty( tickLabel )
-      tickLabels = [];
+  if isempty( tickLabels )
+      pTickLabels = [];
       return
   end
 
   % sometimes tickLabels are cells, sometimes plain arrays
   % -- unify this to cells
-  if ischar( tickLabel )
-      tickLabel = strtrim( mat2cell( tickLabel,                    ...
-                                     ones( size(tickLabel,1), 1 ), ...
-                                     size( tickLabel, 2 )          ...
+  if ischar( tickLabels )
+      tickLabels = strtrim( mat2cell( tickLabels,                    ...
+                                     ones( size(tickLabels,1), 1 ), ...
+                                     size( tickLabels, 2 )          ...
                                    ) ...
                          );
   end
@@ -3539,9 +3541,9 @@ function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Check if tickLabels are really necessary (and not already covered by
   % the tick values themselves).
-  plotLabelsNecessary = 0;
+  plotLabelsNecessary = false;
 
-  k = find( tick, 1 ); % get an index with non-zero tick value
+  k = find( ticks, 1 ); % get an index with non-zero tick value
   if isLogAxis || isempty( k ) % only a 0-tick
       scalingFactor = 1;
   else
@@ -3555,26 +3557,26 @@ function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, 
       % value t.
       % Try to find the scaling factor here. This is then used to check
       % whether or not explicit {x,y}TickLabels are really necessary.
-      s = str2double( tickLabel{k} );
-      scalingFactor = tick(k)/s;
+      s = str2double( tickLabels{k} );
+      scalingFactor = ticks(k)/s;
       % check if the factor is indeed a power of 10
       S = log10(scalingFactor);
       if abs(round(S)-S) > m2t.tol
-          scalingFactor = 1;
+          scalingFactor = 1.0;
       end
   end
 
-  for k = 1:min(length(tick),length(tickLabel))
+  for k = 1:min(length(ticks),length(tickLabels))
       % Don't use str2num here as then, literal strings as 'pi' get
       % legally transformed into 3.14... and the need for an explicit
       % label will not be recognized. str2double returns a NaN for 'pi'.
       if isLogAxis
-          s = 10^( str2double(tickLabel{k}) );
+          s = 10^( str2double(tickLabels{k}) );
       else
-          s = str2double( tickLabel{k} );
+          s = str2double( tickLabels{k} );
       end
-      if isnan(s)  ||  abs(tick(k)-s*scalingFactor) > m2t.tol
-          plotLabelsNecessary = 1;
+      if isnan(s)  ||  abs(ticks(k)-s*scalingFactor) > m2t.tol
+          plotLabelsNecessary = true;
           break;
       end
   end
@@ -3584,18 +3586,18 @@ function [ticks, tickLabels] = matlabTicks2pgfplotsTicks( m2t, tick, tickLabel, 
       % if the axis is logscaled, MATLAB does not store the labels,
       % but the exponents to 10
       if isLogAxis
-          for k = 1:length(tickLabel)
-              if isnumeric( tickLabel{k} )
-                  str = num2str( tickLabel{k} );
+          for k = 1:length(tickLabels)
+              if isnumeric( tickLabels{k} )
+                  str = num2str( tickLabels{k} );
               else
-                  str = tickLabel{k};
+                  str = tickLabels{k};
               end
-              tickLabel{k} = sprintf( '$10^{%s}$', str );
+              tickLabels{k} = sprintf( '$10^{%s}$', str );
           end
       end
-      tickLabels = join( tickLabel, ',' );
+      pTickLabels = join( tickLabels, ',' );
   else
-      tickLabels = [];
+      pTickLabels = [];
   end
 
 end

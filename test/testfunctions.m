@@ -132,12 +132,13 @@ end
 % ***
 % *** Most simple example.
 % ***
-function description = plain_cos ()
+function description = plain_cos()
 
   fplot( @cos, [0,2*pi] );
 
   % add some minor ticks
   set( gca, 'XMinorTick', 'on' );
+  set( gca, 'YTick', [] );
 
   % Adjust the aspect ratio when in MATLAB(R) or Octave >= 3.4.
   env = getEnvironment();
