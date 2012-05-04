@@ -953,6 +953,7 @@ function description = surfPlot()
   surf(X,Y,Z)
   colormap hsv
   axis([-3 3 -3 3 -10 5])
+  set(gca,'View',[-37.5,36]);
 
   colorbar
 
