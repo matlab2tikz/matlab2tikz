@@ -131,19 +131,25 @@ function matlab2tikz( varargin )
                      '  God kills a kitten.\n', ...
                      '\n', ...
                      '================================================================================' ];
-  switch m2t.env
-      case 'MATLAB'
-          % Make sure we're running MATLAB >= 2008b.
-          if isVersionBelow( m2t.env, 7, 7)
-              warning( warningMessage, 'MATLAB 2008b', 'MATLAB' );
-          end
-      case 'Octave'
-          % Make sure we're running Octave >= 3.4.0.
-          if isVersionBelow( m2t.env, 3, 4)
-              warning( warningMessage, 'Octave 3.4.0', 'Octave' );
-          end
-      otherwise
-          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+
+  envVersion = findEnvironmentVersion( m2t.env );
+  if isempty( envVersion )
+      warning( 'Could not determine enviroment version. Continuing and hoping for the best.' );
+  else
+      switch m2t.env
+          case 'MATLAB'
+              % Make sure we're running MATLAB >= 2008b.
+              if isVersionBelow(envVersion, [7, 7])
+                  warning(warningMessage, 'MATLAB 2008b', 'MATLAB');
+              end
+          case 'Octave'
+              % Make sure we're running Octave >= 3.4.0.
+              if isVersionBelow(envVersion, [3, 4, 0])
+                  warning(warningMessage, 'Octave 3.4.0', 'Octave');
+              end
+          otherwise
+              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   m2t.cmdOpts = [];
@@ -260,6 +266,29 @@ function matlab2tikz( varargin )
                        'This may produce undesirable string output. For full control over output\n', ...
                        'strings please set the parameter ''parseStrings'' to false.\n', ...
                        '==========================================================================' ] );
+  end
+
+  if m2t.cmdOpts.Results.showInfo
+      try
+          html = urlread([m2t.website, '/all_files']);
+      catch
+          % Couldn't load the URL -- never mind.
+          html = [];
+      end
+      if ~isempty(html)
+          % Extract the version information from the html.
+          m2tMostRecent = regexp(html, 'matlab2tikz-([\d,\.]*)/src/matlab2tikz.m', 'tokens');
+          m2t.version = '0.1.9';
+          if ~isempty(m2tMostRecent)
+              if isVersionBelow( m2t.version, m2tMostRecent{1}{1})
+                  fprintf('\n**********************************************\n');
+                  fprintf('\nNew matlab2tikz (version %s) available!\n', m2tMostRecent{1}{1});
+                  fprintf('\n**********************************************\n');
+                  fprintf('\nGet it now from %s', m2t.website);
+                  fprintf('\nor disable this message by passing [''checkVersion'', false] to matlab2tikz.\n\n');
+              end
+          end
+      end
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4539,39 +4568,43 @@ function env = getEnvironment()
   end
 end
 % =========================================================================
-function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
-  % get version string for 'env' by iterating over all toolboxes
-  versionData = ver;
-  versionString = '';
-  for k = 1:max(size(versionData))
-      if strcmp( versionData(k).Name, env )
+function versionString = findEnvironmentVersion( env )
+  % Get version string for 'env' by iterating over all toolboxes.
+  versionString = [];
+  for versionDatum = ver
+      if strcmp( versionDatum.Name, env )
           % found it: store and exit the loop
-          versionString = versionData(k).Version;
+          versionString = versionDatum.Version;
           break
       end
   end
-  
-  if isempty( versionString )
-      % couldn't find 'env'
-      below = true;
-      noenv = true;
-      return
-  end
-
-  majorVer = str2double(regexprep( versionString, '^(\d+)\..*', '$1' ));
-  minorVer = str2double(regexprep( versionString, '^\d+\.(\d+\.?\d*)[^\d]*.*', '$1' ));
-  
-  if (majorVer < threshMajor) || (majorVer == threshMajor && minorVer < threshMinor)
-      % version of 'env' is below threshold
-      below = true;
-  else
-      % version of 'env' is same as or above threshold
-      below = false;
-  end
-  noenv = false;
 end
 % =========================================================================
-function [retval] = switchMatOct ( m2t, matlabValue, octaveValue )
+function isBelow = isVersionBelow(versionA, versionB)
+  % Checks if version string or vector versionA is smaller than
+  % version string or vector versionB.
+
+  if ischar(versionA)
+      % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
+      vA = str2num(char(regexp(versionA, '\.', 'split')));
+  else
+      vA = versionA;
+  end
+
+  if ischar(versionB)
+      % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
+      vB = str2num(char(regexp(versionB, '\.', 'split')));
+  else
+      vB = versionB;
+  end
+
+  m = min(length(vA), length(vB));
+  vA = vA(1:m);
+  vB = vB(1:m);
+  isBelow = any(vA(:) < vB(:));
+end
+% =========================================================================
+function [retval] = switchMatOct( m2t, matlabValue, octaveValue )
   % Returns one of two provided values depending on whether matlab2tikz is
   % run on MATLAB or on Octave.
 
