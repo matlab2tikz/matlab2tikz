@@ -1,3 +1,17 @@
+2012-05-04  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.2.1.
+	* Support for color maps.
+	* Support for native color bars.
+	* Partial support for hist3 plots.
+	* Support for spectrogram plots.
+	* Support for rotated text.
+	* Native handling of Infs/NaNs.
+	* Better info text.
+	* matlab2tikz version checking.
+	* Line plotting code cleanup.
+	* About 10 bugfixes.
+
 2012-03-17  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.2.0.
