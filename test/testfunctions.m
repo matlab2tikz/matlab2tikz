@@ -1005,6 +1005,12 @@ function description = spectro()
 
   % In the original test case, this is 0:0.001:2, but that takes forever
   % for LaTeX to process.
+  if ~exist('chirp')
+      fprintf( 'chirp() not found. Abort.\n\n' );
+      description = [];
+      return
+  end
+
   T = 0:0.005:2;
   X = chirp(T,100,1,200,'q');
   spectrogram(X,128,120,128,1E3);

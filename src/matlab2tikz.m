@@ -1124,7 +1124,6 @@ function dataCell = splitLine( m2t, hasLines, hasMarkers, data, xLim, yLim )
   % an \addplot will be generated.
   % Splitting criteria are:
   %    * Visibility.
-  %    * Dimension too large.
   %    * Data set too large.
 
   dataCell{1} = data;
@@ -1132,37 +1131,12 @@ function dataCell = splitLine( m2t, hasLines, hasMarkers, data, xLim, yLim )
   % Split up each of the chunks along visible segments.
   dataCell = splitByVisibility(m2t, hasLines, hasMarkers, dataCell, xLim, yLim);
 
-  % Split each of the current chunks further with respect to outliers.
-  dataCell = splitByOutliers(dataCell, xLim, yLim);
+  % Move some points closer to the box to avoid TeX:DimensionTooLarge errors.
+  % This may involve inserting extra points.
+  dataCell = movePointsCloser(m2t, dataCell, xLim, yLim);
 
   % Split each of the current chunks further with respect to outliers.
   dataCell = splitByArraySize(dataCell);
-
-end
-% =========================================================================
-function newDataCell = splitByMask( dataCell, mask )
-  % Splits a dataCell up into cells along contiguous 'true' chunks of
-  % mask.
-  n = length(dataCell);
-
-  if ( length(mask)~=n )
-      error( 'splitByMask:illegalInput', ...
-              'Input arguments do not match.' );
-  end
-
-  newDataCell = cell(0);
-  newField = 0;
-  for cellIndex = 1:n
-      m = length(mask{cellIndex});
-      outIndices = [0 find(~mask{cellIndex}) m+1 ];
-      for kk = 1:length(outIndices)-1
-          I = ( outIndices(kk)+1 : outIndices(kk+1)-1 ) ;
-          if ~isempty(I)
-              newField = newField+1;
-              newDataCell{newField} = dataCell{cellIndex}(I);
-          end
-      end
-  end
 
 end
 % =========================================================================
@@ -1178,14 +1152,15 @@ function dataCellNew = ...
 
   dataCellNew = cell(0);
 
-  for cellIndex = 1:length(dataCell)
-      numPoints = size(dataCell{cellIndex}, 1);
+  tol = 1.0e-10;
+  relaxedXLim = xLim + [-tol, tol];
+  relaxedYLim = yLim + [-tol, tol];
 
-      % Get which points are insided a (slightly larger) box.
-      tol = 1.0e-10;
-      relaxedXLim = xLim + [-tol, tol];
-      relaxedYLim = yLim + [-tol, tol];
-      dataIsInBox = isInBox(dataCell{cellIndex}(:,1:2), ...
+  for data = dataCell
+      numPoints = size(data{1}, 1);
+
+      % Get which points are inside a (slightly larger) box.
+      dataIsInBox = isInBox(data{1}(:,1:2), ...
                             relaxedXLim, relaxedYLim );
 
       if hasMarkers
@@ -1196,7 +1171,7 @@ function dataCellNew = ...
       end
       if hasLines
           % Check if the connecting line is in the box.
-          segvis = segmentVisible( m2t, dataCell{cellIndex}(:,1:2), ...
+          segvis = segmentVisible( m2t, data{1}(:,1:2), ...
                                    dataIsInBox, xLim, yLim );
           % Plot points which are next to an edge which is in the box.
           shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
@@ -1216,8 +1191,75 @@ function dataCellNew = ...
           end
           kEnd = k-1;
 
-          dataCellNew{end+1} = dataCell{cellIndex}(kStart:kEnd,:);
+          if kStart <= kEnd
+              dataCellNew{end+1} = data{1}(kStart:kEnd,:);
+          end
       end
+  end  
+
+end
+% =========================================================================
+function dataCellNew = movePointsCloser(m2t, dataCell, xLim, yLim)
+  % Move all points outside a box much larger than the visible one
+  % to the boundary of that box and make sure that lines in the visible
+  % box are preserved. This typically involved replacing one point by
+  % two new ones.
+
+  xWidth = xLim(2) - xLim(1);
+  yWidth = yLim(2) - yLim(1);
+  extendFactor = 20;
+  largeXLim = xLim + extendFactor * [-xWidth, xWidth];
+  largeYLim = yLim + extendFactor * [-yWidth, yWidth];
+
+  dataCellNew = {};
+  for data = dataCell
+      % Get which points are in an extended box (the limits of which
+      % don't exceed TeX's memory).
+      dataIsInLargeBox = isInBox(data{1}(:,1:2), ...
+                                 largeXLim, largeYLim );
+
+      % Loop through all points which are to be included in the plot
+      % yet do not fit into the extended box, and gather the points
+      % by which they are to be replaced.
+      replaceIndices = find(~dataIsInLargeBox)';
+      m = length(replaceIndices);
+      r = cell(m, 1);
+      for k = 1:m
+          i = replaceIndices(k);
+          r{k} = [];
+          if i > 1 && all(isfinite(data{1}(i-1,:)))
+              newPoint = moveToBox(data{1}(i,:), data{1}(i-1,:), largeXLim, largeYLim);
+              % Don't bother if the point is inf:
+              % There's no intersection with the large box, so even the
+              % connection between the two after they have been moved
+              % won't be probably be visible.
+              if all(isfinite(newPoint))
+                  r{k} = [r{k}; newPoint];
+              end
+          end
+          if i < size(data{1},1) && all(isfinite(data{1}(i+1,:)))
+              newPoint = moveToBox(data{1}(i,:), data{1}(i+1,:), largeXLim, largeYLim);
+              % Don't bother if the point is inf:
+              % There's no intersection with the large box, so even the
+              % connection between the two after they have been moved
+              % won't be probably be visible.
+              if all(isfinite(newPoint))
+                  r{k} = [r{k}; newPoint];
+              end
+          end
+      end
+
+      % Insert all r{k}{:} at replaceIndices[k].
+      dataCellNew{end+1} = [];
+      lastReplIndex = 0;
+      for k = 1:m
+         dataCellNew{end} = [dataCellNew{end}; ...
+                             data{1}(lastReplIndex+1:replaceIndices(k)-1,:);...
+                             r{k}];
+         lastReplIndex = replaceIndices(k);
+      end
+      dataCellNew{end} = [dataCellNew{end}; ...
+                          data{1}(lastReplIndex+1:end,:)];
   end
 
 end
@@ -1226,86 +1268,6 @@ function out = isInBox( data, xLim, yLim )
 
   out = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
       & data(:,2) > yLim(1) & data(:,2) < yLim(2);
-
-end
-% =========================================================================
-function dataCellNew = splitByOutliers(dataCell, xLim, yLim)
-  % Connected points may sit outside the plot, but their connecting
-  % line may not. The values of the outside plot may be too large for
-  % LaTeX to handle. Move those points closer to the bounding box,
-  % and possibly split them up in two.
-
-  dataCellNew = cell(0);
-
-  % The TeX register limit is 16384, and may be exhausted if an outlier is too
-  % far outside of the plot. It's not the absolute value that is key here, but
-  % the relative distance from the bounding box w.r.t. the size of the box.
-  % In physical dimensions of the plot, the coordinates cannot exceed a certain
-  % threshold, so actually the figure{width,height} should be considererd here.
-  % For now, deliberately take a factor of 20.
-  % This could be extended for log-plots.
-  xWidth = xLim(2) - xLim(1);
-  yWidth = yLim(2) - yLim(1);
-  extendFactor = 20;
-  xLimLarger = xLim + extendFactor * [-xWidth, xWidth];
-  yLimLarger = yLim + extendFactor * [-yWidth, yWidth];
-
-  for data = dataCell
-      % 'v' is a kx4-array which for each point (x(k),y(k)) holds information
-      % about which limits are exceeded.
-      v = [ xLimLarger(1)-data{1}(:,1), data{1}(:,1)-xLimLarger(2), ...
-            yLimLarger(1)-data{1}(:,2), data{1}(:,2)-yLimLarger(2) ];
-      % Don't treat Infs as outliers as they are automatically
-      % omitted when occuring in Pgfplots (option 'unbounded coords=...').
-      isOutlier = any(isfinite(v) & v>0.0, 2);
-
-      % Split the data in chunks of where 'shouldPlot' is 'true'.
-      numPoints = size(data{1}, 1);
-      k = 1;
-      while k <= numPoints
-          % Get start and end indices of the next non-outlier chunk.
-          % Fast forward to outlier==false.
-          while k<=numPoints && isOutlier(k)
-              k = k+1;
-          end
-          kStart = k;
-          % Fast forward to outlier==true.
-          while k<=numPoints && ~isOutlier(k)
-              k = k+1;
-          end
-          kEnd = k-1;
-
-          % In case kStart > kEnd, kStart:kEnd is a 1x0 matrix.
-          % It may possible to include this case in the code below, but
-          % for now bail out early.
-          if kStart > kEnd
-             continue;
-          end
-
-          % Prepare the new arrays.
-          dataCellNew{end+1} = [];
-          if kStart > 1
-              % Prepend the previous point (an outlier), shifted to the
-              % larger bounding box.
-              outlier = data{1}(kStart-1,1:2);
-              ref = data{1}(kStart,1:2);
-              dataCellNew{end} = moveToBoundingBox(outlier, ref, xLimLarger, yLimLarger);
-          end
-
-          % Append the chunk.
-          dataCellNew{end} = [dataCellNew{end}; ...
-                              data{1}(kStart:kEnd,:)];
-
-          if kEnd < numPoints
-              % Append the next point (an outlier), shifted to the
-              % larger bounding box.
-              outlier = data{1}(kEnd+1,1:2);
-              ref = data{1}(kEnd,1:2);
-              dataCellNew{end} = [dataCellNew{end}; ...
-                                  moveToBoundingBox(outlier, ref, xLimLarger, yLimLarger)];
-          end
-      end
-  end
 
 end
 % =========================================================================
@@ -1353,86 +1315,101 @@ function dataCellNew = splitByArraySize(dataCell)
 
 end
 % =========================================================================
-function xNew = moveToBoundingBox( x, xRef, xLim, yLim )
-  % Takes one point x outside of a box defined by xLim, yLim, and one other
-  % point xRef inside of it.
-  % Returns a point xNew that sits on the line xRef---x *and* on the
-  % boundary box.
+function xNew = moveToBox(x, xRef, xLim, yLim)
+  % Takes a box defined by xLim, yLim, one point x and a reference point
+  % xRef.
+  % Returns the point xNew that sits on the line segment between x and xRef
+  % *and* on the box. If several such points exist, take the closest one
+  % to x.
 
   % Find out with which border the line x---xRef intersects, and determine
-  % the parameter alpha such that x+alpha(xRef-x) sits on the boundary.
-  if segmentsIntersect( [x(1), xRef(1), xLim(1), xLim(1)], ... % left boundary
-                        [x(2), xRef(2), yLim            ] )
-      alpha = (xLim(1)-x(1)) / (xRef(1)-x(1));
-  elseif segmentsIntersect( [x(1), xRef(1), xLim            ], ... % bottom boundary
-                            [x(2), xRef(2), yLim(1), yLim(1)] )
-      alpha = (yLim(1)-x(2)) / (xRef(2)-x(2));
-  elseif segmentsIntersect( [x(1), xRef(1), xLim(2), xLim(2)], ... % right boundary
-                            [x(2), xRef(2), yLim            ] )
-      alpha = (xLim(2)-x(1)) / (xRef(1)-x(1));
-  elseif segmentsIntersect( [x(1), xRef(1), xLim            ], ... % top boundary
-                            [x(2), xRef(2), yLim(2), yLim(2)] )
-      alpha = (yLim(2)-x(2)) / (xRef(2)-x(2));
-  else
-      error( 'matlab2tikz:noIntersecton', ...
-              [ 'Could not determine were the outside point sits with ', ...
-                'respect to the box. Both x and xRef {in,out}side the box?' ] );
+  % the smallest parameter alpha such that x + alpha*(xRef-x)
+  % sits on the boundary.
+  minAlpha = inf;
+  % left boundary:
+  lambda = crossLines(x(:), xRef(:), [xLim(1);yLim(1)], [xLim(1);yLim(2)]);
+  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
+      minAlpha = lambda(1);
+  end
+
+  % bottom boundary:
+  lambda = crossLines(x(:), xRef(:), [xLim(1);yLim(1)], [xLim(2);yLim(1)]);
+  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
+      minAlpha = lambda(1);
+  end
+
+  % right boundary:
+  lambda = crossLines(x(:), xRef(:), [xLim(2);yLim(1)], [xLim(2);yLim(2)]);
+  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
+      minAlpha = lambda(1);
+  end
+
+  % top boundary:
+  lambda = crossLines(x(:), xRef(:), [xLim(1);yLim(2)], [xLim(2);yLim(2)]);
+  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
+      minAlpha = lambda(1);
   end
 
   % create the new point
-  xNew = x + alpha*(xRef-x);
+  xNew = x + minAlpha*(xRef-x);
 end
 % =========================================================================
-function out = segmentVisible( m2t, p, dataIsInBox, xLim, yLim )
+function out = segmentVisible( m2t, data, dataIsInBox, xLim, yLim )
     % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
     % in p and determine whether the line between the pair crosses the box.
 
-    n = size(p, 1); % number of points
+    n = size(data, 1);
     out = false(n-1, 1);
-
-    for kk = 1:n-1
-        if dataIsInBox(kk) || dataIsInBox(kk+1) % one of the two is inside the box
-            out(kk) = true;
-        else % both are outside
-            % Does the connecting segment intersect with any of the four
-            % boundaries?
-            out(kk) =  segmentsIntersect( [p(kk:kk+1,1)',xLim(1),xLim(1)], ...   % with the left?
-                                          [p(kk:kk+1,2)',yLim] ) ...
-                    || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the bottom?
-                                          [p(kk:kk+1,2)',yLim(1),yLim(1)] ) ...
-                    || segmentsIntersect( [p(kk:kk+1,1)',xLim(2),xLim(2)],  ...  % with the right?
-                                          [p(kk:kk+1,2)',yLim] ) ...
-                    || segmentsIntersect( [p(kk:kk+1,1)',xLim],  ...             % with the top?
-                                          [p(kk:kk+1,2)',yLim(2),yLim(2)] );
-
-        end
+    for k = 1:n-1
+        out(k) =  ( dataIsInBox(k) && all(isfinite(data(k+1,:))) ) ... % one of the neighbors is inside the box
+               || ( dataIsInBox(k+1) && all(isfinite(data(k,:))) ) ... % and the other is finite
+               || segmentsIntersect( [data(k:k+1,1)',xLim(1),xLim(1)], ...   % insection with left border
+                                     [data(k:k+1,2)',yLim] ) ...
+               || segmentsIntersect( [data(k:k+1,1)',xLim],  ...             % insection with bottom border
+                                     [data(k:k+1,2)',yLim(1),yLim(1)] ) ...
+               || segmentsIntersect( [data(k:k+1,1)',xLim(2),xLim(2)],  ...  % insection with right border
+                                     [data(k:k+1,2)',yLim] ) ...
+               || segmentsIntersect( [data(k:k+1,1)',xLim],  ...             % insection with top border
+                                     [data(k:k+1,2)',yLim(2),yLim(2)] );
     end
 
 end
 % =========================================================================
-function out = segmentsIntersect( x, y )
+function out = segmentsIntersect(x, y)
   % Checks whether the segments P1--P2 and P3--P4 intersect.
   % The x- and y- coordinates of Pi are in x(i), y(i), respectively.
-
+  X1 = [x(1); y(1)];
+  X2 = [x(2); y(2)];
+  X3 = [x(3); y(3)];
+  X4 = [x(4); y(4)];
+  alpha = crossLines(X1, X2, X3, X4);
+  out = all(alpha > 0.0 & alpha < 1.0);
+  return 
+end
+% =========================================================================
+function lambda = crossLines(X1, X2, X3, X4)
+  % Given four points X_k=(x_k,y_k), k\in{1,2,3,4}, and the two lines defined
+  % by those,
+  %
+  %  L1(lambda) = X1 + lambda (X2 - X1)
+  %  L2(lambda) = X3 + lambda (X4 - X3)
+  %
+  % returns the lambda for which they intersect (and Inf
+  % if they are parallel).
   % Technically, one needs to solve the 2x2 equation system
   %
-  %   x1 + lambda (x2-x1)  =  x3 + mu (x4-x3)
-  %   y1 + lambda (y2-y1)  =  y3 + mu (y4-y3)
+  %   x1 + lambda1 (x2-x1)  =  x3 + lambda2 (x4-x3)
+  %   y1 + lambda1 (y2-y1)  =  y3 + lambda2 (y4-y3)
   %
-  % for lambda and mu. If a solution exists, check if   0 < lambda,mu < 1.
+  % for lambda and mu.
 
-  det = (x(4)-x(3))*(y(2)-y(1)) - (y(4)-y(3))*(x(2)-x(1));
-
-  if (det ~= 0.0)
-      rhs1   = x(3) - x(1);
-      rhs2   = y(3) - y(1);
-      lambda = ( -rhs1* (y(4)-y(3)) + rhs2* (x(4)-x(3)) ) / det;
-      mu     = ( -rhs1* (y(2)-y(1)) + rhs2* (x(2)-x(1)) ) / det;
-      out    =  0.0<lambda && lambda<1.0 ...
-             && 0.0<mu     && mu    <1.0;
-  else % segments are parallel
-      out = false;
-  end
+  rhs = X3 - X1;
+  % Divide by det even if it's 0: Infs are returned.
+  % A = [X2-X1, -(X4-X3)];
+  detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1));
+  invA = [-(X4(2)-X3(2)), X4(1)-X3(1);...
+          -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
+  lambda = invA * rhs;
 
 end
 % =========================================================================
@@ -1823,7 +1800,7 @@ end
 % =========================================================================
 function [ m2t, str ] = drawImage( m2t, handle )
   % Draws an 'image' graphics object (which is essentially just a matrix
-  % containing the RGB color values for a spot).
+%    % containing the RGB color values for a spot).
 
   str = [];
 
@@ -2181,7 +2158,7 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   % Check for surf or mesh plot. Second argument in if-check corresponds to
   % default values for mesh plot in MATLAB.
   if strcmpi( faceColor, 'none') || ...
-     ( strcmpi( edgeColor, 'flat' ) && isequal( faceColor, [1 1 1]))
+     (strcmpi( edgeColor, 'flat' ) && isequal(faceColor, [1 1 1]))
       plotType = 'mesh';
   else
       plotType = 'surf';
@@ -2191,28 +2168,29 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   
   % Set opacity if FaceAlpha < 1 in MATLAB
   faceAlpha = get( handle, 'FaceAlpha');
-  if faceAlpha ~= 1 && isnumeric( faceAlpha )
+  if isnumeric( faceAlpha ) && faceAlpha ~= 1.0
     surfOptions{end+1} = sprintf( 'opacity=%.15g', faceAlpha );
   end
-  
-  if strcmpi( plotType, 'surf' )
+
+  % Get color map.
+  surfOptions{end+1} = matlab2pgfplotsColormap( m2t.currentHandles.colormap );
+
+  if strcmpi(plotType, 'surf')
       % Set shader for surface plot. 
       % TODO: find MATLAB equivalents for flat corner and flat mean  
       if strcmpi( edgeColor, 'none' ) && strcmpi( faceColor, 'flat' )
           surfOptions{end+1} = 'shader=flat';
-      elseif isnumeric( edgeColor) && strcmpi( faceColor, 'flat' )
+      elseif isnumeric(edgeColor) && strcmpi(faceColor, 'flat')
           [ m2t, xEdgeColor ] = getColor( m2t, handle, edgeColor, 'patch' );
           % same as shader=flat,draw=\pgfkeysvalueof{/pgfplots/faceted color}
           surfOptions{end+1} = 'shader=faceted';
-          surfOptions{end+1} = sprintf( 'draw=%s', xEdgeColor);
-      elseif strcmpi( edgeColor, 'none') && strcmpi( faceColor, 'interp' )
+          surfOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+      elseif strcmpi(edgeColor, 'none') && strcmpi(faceColor, 'interp')
           surfOptions{end+1} = 'shader=interp';
       else
           surfOptions{end+1} = 'shader=faceted';
       end
-      % Get color map.
-      surfOptions{end+1} = matlab2pgfplotsColormap( m2t.currentHandles.colormap );
-  else % default for mesh plot is shader=flat
+  elseif strcmpi(plotType, 'mesh')
       surfOptions{end+1} = 'shader=flat';
   end
 
@@ -2873,7 +2851,7 @@ function pgfplotsColormap = matlab2pgfplotsColormap( matlabColormap )
         mmap = pgfplots2matlabColormap(map{1}.points, map{1}.values, numColors);
         alpha = norm(matlabColormap - mmap) / sqrt(numColors);
         if alpha < tol
-            disp( sprintf('Found %s to be a pretty good match for your color map (%g).', map{1}.name, alpha) );
+            fprintf('Found %s to be a pretty good match for your color map (%g).', map{1}.name, alpha);
             pgfplotsColormap = map{1}.name;
             return
         end
@@ -3236,7 +3214,7 @@ function [m2t, xcolor] = getColor( m2t, handle, color, mode )
 
 end
 % =========================================================================
-function [ m2t, colorindex ] = patchcolor2colorindex ( m2t, color, patchhandle )
+function [ m2t, colorindex ] = patchcolor2colorindex( m2t, color, patchhandle )
   % Transforms a color of the edge or the face of a patch to a 1x3 rgb
   % color vector.
 
@@ -4705,7 +4683,7 @@ function parsed = parseTexString ( m2t, string )
   % Exclude braces that are preceded by an odd number of backslashes which
   % means the brace is escaped and thus to be printed, not a grouping brace
   expr = '(?<!\\)(\\\\)*\\(\{|\})';
-  escaped = regexp( string, expr, ['end'] );
+  escaped = regexp( string, expr, 'end' );
   % It's necessary to go over 'string' with the same RegEx again to catch
   % overlapping matches, e.g. string == '\{\}'. In such a case the simple
   % regexp(...) above only finds the first brace. What we have to do is look
