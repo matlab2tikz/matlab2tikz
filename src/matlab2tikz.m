@@ -268,6 +268,7 @@ function matlab2tikz( varargin )
                        '==========================================================================' ] );
   end
 
+  % Conditionally check for a new matlab2tikz version.
   if m2t.cmdOpts.Results.showInfo
       try
           html = urlread([m2t.website, '/all_files']);
@@ -277,7 +278,7 @@ function matlab2tikz( varargin )
       end
       if ~isempty(html)
           % Extract the version information from the html.
-          m2tMostRecent = regexp(html, 'matlab2tikz-([\d,\.]*)/src/matlab2tikz.m', 'tokens');
+          m2tMostRecent = regexp(html, 'matlab2tikz-(\d+\.\d+\.\d+)', 'tokens');
           if ~isempty(m2tMostRecent)
               if isVersionBelow(m2t.version, m2tMostRecent{1}{1})
                   fprintf('\n**********************************************\n');
@@ -1755,9 +1756,10 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   yData = get( handle, 'YData' );
   zData = get( handle, 'ZData' );
 
-  if any(~isfinite(xData)) || any(~isfinite(yData)) || any(~isfinite(zData))
+  if any(~isfinite(xData(:))) || any(~isfinite(yData(:))) || any(~isfinite(zData(:)))
+      % Add 'unbounded coords=jump' to the axis options if it's not there
+      % already.
       ucOpt = 'unbounded coords=jump';
-      % Check if the option was already added.
       ucIsThere = false;
       for item = m2t.axesContainers{end}.options
           if strcmp(item, ucOpt)
@@ -1770,14 +1772,14 @@ function [ m2t, str ] = drawPatch( m2t, handle )
       end
   end
 
-  n = size(xData,2); % is n ever ~=1? if yes, think about replacing
-                     % the drawOpts by one \pgfplotsset{}
+  % n > 1 for certain patch plots, for example.
+  n = size(xData,2);
 
   if isempty( zData )
       % 2d patch
       for j = 1:n
           str = strcat( str, ...
-                        sprintf(['\\addplot [',drawOpts,'] coordinates{']) );
+                        sprintf(['\n\\addplot [',drawOpts,'] coordinates{']) );
 
           % Convert to string array then cell to call sprintf once (and no loops).
           str_data = cellstr(num2str([xData(:,j),yData(:,j)],'(%.15g,%.15g)'));
@@ -1786,19 +1788,17 @@ function [ m2t, str ] = drawPatch( m2t, handle )
           str_data = str_data(~isspace(str_data));
           str = sprintf('%s %s', str, str_data);
 
-          % 2011-11-07 Nico:
-          % Do we need to make sure that the path is closed?
-          % Let's keep an eye on this.
-%          if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j)
-%              str = strcat( str, ...
-%                            sprintf( ' (%.15g,%.15g)', xData(1,j), yData(1,j) ) );
-%          end
+          % This path isn't necessarily closed, but Pgfplots
+          % can deal with that.
+
+          % Close environment.
+          str = strcat( str, sprintf('};') );
       end
    else % ~isempty( zData )
       % 3d patch
       for j = 1:n
           str = strcat( str, ...
-                        sprintf(['\\addplot3 [',drawOpts,'] coordinates{']) );
+                        sprintf(['\n\\addplot3 [',drawOpts,'] coordinates{']) );
 
           % Convert to string array then cell to call sprintf once (and no loops).
           str_data = cellstr(num2str([xData(:,j),yData(:,j),zData(:,j)],'(%.15g,%.15g,%.15g)'));
@@ -1812,10 +1812,10 @@ function [ m2t, str ] = drawPatch( m2t, handle )
               str = strcat( str, ...
                             sprintf( ' (%.15g,%.15g,%.15g)', xData(1,j), yData(1,j), zData(1,j) ) );
           end
+          % close it
+          str = strcat( str, sprintf('};\n') );
       end
    end
-   % close it
-   str = strcat( str, sprintf('};\n') );
    str = [ str, sprintf('\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
