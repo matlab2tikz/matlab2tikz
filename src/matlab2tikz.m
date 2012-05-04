@@ -278,14 +278,13 @@ function matlab2tikz( varargin )
       if ~isempty(html)
           % Extract the version information from the html.
           m2tMostRecent = regexp(html, 'matlab2tikz-([\d,\.]*)/src/matlab2tikz.m', 'tokens');
-          m2t.version = '0.1.9';
           if ~isempty(m2tMostRecent)
-              if isVersionBelow( m2t.version, m2tMostRecent{1}{1})
+              if isVersionBelow(m2t.version, m2tMostRecent{1}{1})
                   fprintf('\n**********************************************\n');
                   fprintf('\nNew matlab2tikz (version %s) available!\n', m2tMostRecent{1}{1});
                   fprintf('\n**********************************************\n');
                   fprintf('\nGet it now from %s', m2t.website);
-                  fprintf('\nor disable this message by passing [''checkVersion'', false] to matlab2tikz.\n\n');
+                  fprintf('\nor disable this message by passing [''showInfo'', false] to matlab2tikz.\n\n');
               end
           end
       end
