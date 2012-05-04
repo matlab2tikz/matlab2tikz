@@ -268,29 +268,6 @@ function matlab2tikz( varargin )
                        '==========================================================================' ] );
   end
 
-  % Conditionally check for a new matlab2tikz version.
-  if m2t.cmdOpts.Results.showInfo
-      try
-          html = urlread([m2t.website, '/all_files']);
-      catch
-          % Couldn't load the URL -- never mind.
-          html = [];
-      end
-      if ~isempty(html)
-          % Extract the version information from the html.
-          m2tMostRecent = regexp(html, 'matlab2tikz-(\d+\.\d+\.\d+)', 'tokens');
-          if ~isempty(m2tMostRecent)
-              if isVersionBelow(m2t.version, m2tMostRecent{1}{1})
-                  fprintf('\n**********************************************\n');
-                  fprintf('\nNew matlab2tikz (version %s) available!\n', m2tMostRecent{1}{1});
-                  fprintf('\n**********************************************\n');
-                  fprintf('\nGet it now from %s', m2t.website);
-                  fprintf('\nor disable this message by passing [''showInfo'', false] to matlab2tikz.\n\n');
-              end
-          end
-      end
-  end
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add global elements
   m2t.currentHandles.gcf = m2t.cmdOpts.Results.figurehandle;
@@ -350,25 +327,49 @@ function matlab2tikz( varargin )
       m2t.relativePngPath = m2t.cmdOpts.Results.relativePngPath;
   end
 
+  userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2tikz.)\n', ...
+                 '(For all other options, type ''help matlab2tikz''.)\n']);
+
+  userInfo( m2t, '\nThis is %s v%s.\n', m2t.name, m2t.version)
+
+  % Conditionally check for a new matlab2tikz version.
+  updateNotePrinted = false;
+  if m2t.cmdOpts.Results.showInfo
+      try
+          html = urlread([m2t.website, '/all_files']);
+      catch
+          % Couldn't load the URL -- never mind.
+          html = [];
+      end
+      if ~isempty(html)
+          % Extract the version information from the html.
+          m2tMostRecent = regexp(html, 'matlab2tikz-(\d+\.\d+\.\d+)', 'tokens');
+          if ~isempty(m2tMostRecent)
+              if isVersionBelow(m2t.version, m2tMostRecent{1}{1})
+                  userInfo(m2t, '**********************************************\n');
+                  userInfo(m2t, 'New version available! (%s)\n', m2tMostRecent{1}{1});
+                  userInfo(m2t, '**********************************************\n');
+                  userInfo(m2t, 'Get it now from\n   %s', m2t.website);
+                  updateNotePrinted = true;
+              end
+          end
+      end
+  end
+  if ~updateNotePrinted
+      % print some version info to the screen
+      userInfo( m2t, [ 'The latest updates can be retrieved from\n   %s' ], m2t.website );
+  end
+
   % print some version info to the screen
-  userInfo( m2t, [ '\nThis is %s v%s.\n' , ...
-                   'The latest updates can be retrieved from\n\n', ...
-                   '  %s\n\n', ...
-                   'where you can also make suggestions and rate %s.\n' ], ...
-                   m2t.name, m2t.version, m2t.website, m2t.name );
-
-  userInfo( m2t, [ 'matlab2tikz uses features of Pgfplots which may only be available in recent versions.\n', ...
-                   'Make sure you have at least Pgfplots 1.3 available.\n', ...
-                   'For best results, use \\pgfplotsset{compat=newest},\n', ...
-                   'and for speed ', ...
-                   'use \\pgfplotsset{plot coordinates/math parser=false} .\n' ] );
-
+  userInfo( m2t, 'where you can also make suggestions and rate %s.\n', m2t.name );
+  userInfo( m2t, ['For usage instructions, bug reports, the latest development versions and more, see\n',...
+                  '   https://github.com/nschloe/matlab2tikz,\n', ...
+                  '   https://github.com/nschloe/matlab2tikz/wiki,\n', ...
+                  '   https://github.com/nschloe/matlab2tikz/issues.\n']);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
   saveToFile( m2t, fid, fileWasOpen );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  userInfo( m2t, '\nRemember to load \\usepackage{pgfplots} in the preamble of your LaTeX document.\n' );
 
 end
 % =========================================================================
@@ -2874,7 +2875,7 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
         mmap = pgfplots2matlabColormap(map{1}.points, map{1}.values, numColors);
         alpha = norm(matlabColormap - mmap) / sqrt(numColors);
         if alpha < tol
-            userInfo(m2t, 'Found %s to be a pretty good match for your color map (%g).', ...
+            userInfo(m2t, 'Found %s to be a pretty good match for your color map (||diff||=%g).', ...
                      map{1}.name, alpha);
             pgfplotsColormap = map{1}.name;
             return
