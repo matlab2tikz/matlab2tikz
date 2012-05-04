@@ -598,7 +598,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       case colorbarKeyword
           % Handle a colorbar separately.
           m2t.axesContainers{end}.options{end+1} = ...
-              matlab2pgfplotsColormap( m2t.currentHandles.colormap );
+              matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
           m2t.axesContainers{end}.options = ...
               [m2t.axesContainers{end}.options,  getColorbarOptions(m2t, handle)];
           % Note that m2t.currentHandles.gca does *not* get updated.
@@ -2196,7 +2196,7 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   end
 
   % Get color map.
-  surfOptions{end+1} = matlab2pgfplotsColormap( m2t.currentHandles.colormap );
+  surfOptions{end+1} = matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
 
   if strcmpi(plotType, 'surf')
       % Set shader for surface plot. 
@@ -2816,7 +2816,7 @@ function matlabColormap = pgfplots2matlabColormap(points, rgb, numColors)
     return
 end
 % ==============================================================================
-function pgfplotsColormap = matlab2pgfplotsColormap( matlabColormap )
+function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     % Translates a MATLAB color map into a Pgfplots colormap.
 
     % First check if we could use a default Pgfplots color map.
@@ -2874,7 +2874,8 @@ function pgfplotsColormap = matlab2pgfplotsColormap( matlabColormap )
         mmap = pgfplots2matlabColormap(map{1}.points, map{1}.values, numColors);
         alpha = norm(matlabColormap - mmap) / sqrt(numColors);
         if alpha < tol
-            fprintf('Found %s to be a pretty good match for your color map (%g).', map{1}.name, alpha);
+            userInfo(m2t, 'Found %s to be a pretty good match for your color map (%g).', ...
+                     map{1}.name, alpha);
             pgfplotsColormap = map{1}.name;
             return
         end
