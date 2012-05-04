@@ -1171,8 +1171,8 @@ function dataCellNew = ...
       end
       if hasLines
           % Check if the connecting line is in the box.
-          segvis = segmentVisible( m2t, data{1}(:,1:2), ...
-                                   dataIsInBox, xLim, yLim );
+          segvis = segmentVisible(data{1}(:,1:2), ...
+                                  dataIsInBox, xLim, yLim);
           % Plot points which are next to an edge which is in the box.
           shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
       end
@@ -1327,25 +1327,25 @@ function xNew = moveToBox(x, xRef, xLim, yLim)
   % sits on the boundary.
   minAlpha = inf;
   % left boundary:
-  lambda = crossLines(x(:), xRef(:), [xLim(1);yLim(1)], [xLim(1);yLim(2)]);
+  lambda = crossLines(x, xRef, [xLim(1);yLim(1)], [xLim(1);yLim(2)]);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
 
   % bottom boundary:
-  lambda = crossLines(x(:), xRef(:), [xLim(1);yLim(1)], [xLim(2);yLim(1)]);
+  lambda = crossLines(x, xRef, [xLim(1);yLim(1)], [xLim(2);yLim(1)]);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
 
   % right boundary:
-  lambda = crossLines(x(:), xRef(:), [xLim(2);yLim(1)], [xLim(2);yLim(2)]);
+  lambda = crossLines(x, xRef, [xLim(2);yLim(1)], [xLim(2);yLim(2)]);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
 
   % top boundary:
-  lambda = crossLines(x(:), xRef(:), [xLim(1);yLim(2)], [xLim(2);yLim(2)]);
+  lambda = crossLines(x, xRef, [xLim(1);yLim(2)], [xLim(2);yLim(2)]);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
@@ -1354,7 +1354,7 @@ function xNew = moveToBox(x, xRef, xLim, yLim)
   xNew = x + minAlpha*(xRef-x);
 end
 % =========================================================================
-function out = segmentVisible( m2t, data, dataIsInBox, xLim, yLim )
+function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
     % in p and determine whether the line between the pair crosses the box.
 
@@ -1363,27 +1363,22 @@ function out = segmentVisible( m2t, data, dataIsInBox, xLim, yLim )
     for k = 1:n-1
         out(k) =  ( dataIsInBox(k) && all(isfinite(data(k+1,:))) ) ... % one of the neighbors is inside the box
                || ( dataIsInBox(k+1) && all(isfinite(data(k,:))) ) ... % and the other is finite
-               || segmentsIntersect( [data(k:k+1,1)',xLim(1),xLim(1)], ...   % insection with left border
-                                     [data(k:k+1,2)',yLim] ) ...
-               || segmentsIntersect( [data(k:k+1,1)',xLim],  ...             % insection with bottom border
-                                     [data(k:k+1,2)',yLim(1),yLim(1)] ) ...
-               || segmentsIntersect( [data(k:k+1,1)',xLim(2),xLim(2)],  ...  % insection with right border
-                                     [data(k:k+1,2)',yLim] ) ...
-               || segmentsIntersect( [data(k:k+1,1)',xLim],  ...             % insection with top border
-                                     [data(k:k+1,2)',yLim(2),yLim(2)] );
+               || segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(1);yLim(1)], [xLim(1);yLim(2)]) ... % left border
+               || segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(1);yLim(1)], [xLim(2);yLim(1)]) ... % bottom border
+               || segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(2);yLim(1)], [xLim(2);yLim(2)]) ... % right border
+               || segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(1);yLim(2)], [xLim(2);yLim(2)]); % top border
     end
 
 end
 % =========================================================================
-function out = segmentsIntersect(x, y)
-  % Checks whether the segments P1--P2 and P3--P4 intersect.
-  % The x- and y- coordinates of Pi are in x(i), y(i), respectively.
-  X1 = [x(1); y(1)];
-  X2 = [x(2); y(2)];
-  X3 = [x(3); y(3)];
-  X4 = [x(4); y(4)];
-  alpha = crossLines(X1, X2, X3, X4);
-  out = all(alpha > 0.0 & alpha < 1.0);
+function out = segmentsIntersect(X1, X2, X3, X4)
+  % Checks whether the segments X1--X2 and X3--X4 intersect.
+  lambda = crossLines(X1, X2, X3, X4);
+  out = all(lambda > 0.0) && all(lambda < 1.0);
   return 
 end
 % =========================================================================
@@ -1403,7 +1398,7 @@ function lambda = crossLines(X1, X2, X3, X4)
   %
   % for lambda and mu.
 
-  rhs = X3 - X1;
+  rhs = X3(:) - X1(:);
   % Divide by det even if it's 0: Infs are returned.
   % A = [X2-X1, -(X4-X3)];
   detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1));
