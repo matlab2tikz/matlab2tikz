@@ -139,12 +139,12 @@ function matlab2tikz( varargin )
       switch m2t.env
           case 'MATLAB'
               % Make sure we're running MATLAB >= 2008b.
-              if isVersionBelow(envVersion, [7, 7])
+              if isVersionBelow(m2t.env, envVersion, [7, 7])
                   warning(warningMessage, 'MATLAB 2008b', 'MATLAB');
               end
           case 'Octave'
               % Make sure we're running Octave >= 3.4.0.
-              if isVersionBelow(envVersion, [3, 4, 0])
+              if isVersionBelow(m2t.env, envVersion, [3, 4, 0])
                   warning(warningMessage, 'Octave 3.4.0', 'Octave');
               end
           otherwise
@@ -345,7 +345,7 @@ function matlab2tikz( varargin )
           % Extract the version information from the html.
           m2tMostRecent = regexp(html, 'matlab2tikz-(\d+\.\d+\.\d+)', 'tokens');
           if ~isempty(m2tMostRecent)
-              if isVersionBelow(m2t.version, m2tMostRecent{1}{1})
+              if isVersionBelow(m2t.env, m2t.version, m2tMostRecent{1}{1})
                   userInfo(m2t, '**********************************************\n');
                   userInfo(m2t, 'New version available! (%s)\n', m2tMostRecent{1}{1});
                   userInfo(m2t, '**********************************************\n');
@@ -4581,20 +4581,30 @@ function versionString = findEnvironmentVersion( env )
   end
 end
 % =========================================================================
-function isBelow = isVersionBelow(versionA, versionB)
+function isBelow = isVersionBelow(env, versionA, versionB)
   % Checks if version string or vector versionA is smaller than
   % version string or vector versionB.
 
   if ischar(versionA)
       % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
-      vA = str2num(char(regexp(versionA, '\.', 'split')));
+      if strcmpi(env, 'MATLAB')
+          split = char(regexp(versionA, '\.', 'split'));
+      elseif strcmpi(env, 'Octave')
+          split = split(versionA, '.');
+      end
+      vA = str2num(split);
   else
       vA = versionA;
   end
 
   if ischar(versionB)
       % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
-      vB = str2num(char(regexp(versionB, '\.', 'split')));
+      if strcmpi(env, 'MATLAB')
+          split = char(regexp(versionB, '\.', 'split'));
+      elseif strcmpi(env, 'Octave')
+          split = split(versionB, '.');
+      end
+      vB = str2num(split);
   else
       vB = versionB;
   end
