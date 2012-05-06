@@ -250,6 +250,12 @@ end
 % =========================================================================
 function description = contourPenny()
 
+  if ~exist('penny')
+      fprintf( 'penny data set not found. Abort.\n\n' );
+      description = [];
+      return
+  end
+
   load penny;
   contour(flipud(P));
   axis square;

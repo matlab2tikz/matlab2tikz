@@ -1045,7 +1045,14 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   xData  = get( handle, 'XData' );
   yData  = get( handle, 'YData' );
   zData  = get( handle, 'ZData' );
-  data = [xData(:), yData(:), zData(:)];
+  % We would like to do
+  %   data = [xData(:), yData(:), zData(:)],
+  % but Octave fails. Hence this isempty() construction.
+  if isempty(zData)
+      data = [xData(:), yData(:)];
+  else
+      data = [xData(:), yData(:), zData(:)];
+  end
 
   % check if the *optional* argument 'yDeviation' was given
   if nargin>2
@@ -3703,8 +3710,8 @@ function [m2t, colorLiteral] = rgb2colorliteral( m2t, rgb )
 
   % Color was not found in the default set. Need to define it.
   colorLiteral = sprintf( 'mycolor%d', length(m2t.extraRgbColorNames)+1 );
-  m2t.extraRgbColorNames = [ m2t.extraRgbColorNames, colorLiteral ];
-  m2t.extraRgbColorSpecs = [ m2t.extraRgbColorSpecs, rgb ];
+  m2t.extraRgbColorNames{end+1} = colorLiteral;
+  m2t.extraRgbColorSpecs{end+1} = rgb;
 
 end
 % =========================================================================
