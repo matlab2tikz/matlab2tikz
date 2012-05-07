@@ -204,7 +204,8 @@ function savefig(fname, varargin)
 	% Generate the gs command.
 	switch(computer)													% Get gs command.
 		case {'MAC','MACI'},			gs= '/usr/local/bin/gs';
-		case {'PCWIN','PCWIN64'},		gs= 'gswin32c.exe';
+		case 'PCWIN',           		gs= 'gswin32c.exe';
+        case 'PCWIN64',                 gs= 'gswin64c.exe';
 		otherwise,						gs= 'gs';
 	end
 	gs=		[gs		' -q -dNOPAUSE -dBATCH -dEPSCrop'];					% Essential.
