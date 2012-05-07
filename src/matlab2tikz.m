@@ -501,16 +501,12 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
 
   % Don't forget to define the colors.
   if ~isempty(m2t.extraRgbColorNames)
-      m2t.content = append( m2t.content, ...
-                            sprintf('\n%% defining custom colors\n') ...
-                          );
+      m2t.content.colors = sprintf('\n%% defining custom colors\n');
       for k = 1:length(m2t.extraRgbColorNames)
-          m2t.content = append( m2t.content, ...
-                                sprintf('\\definecolor{%s}{rgb}{%.15g,%.15g,%.15g}\n', ...
-                                        m2t.extraRgbColorNames{k}, m2t.extraRgbColorSpecs{k}) ...
-                              );
+          m2t.content.colors = [m2t.content.colors sprintf('\\definecolor{%s}{rgb}{%.15g,%.15g,%.15g}\n', ...
+                                        m2t.extraRgbColorNames{k}', m2t.extraRgbColorSpecs{k})];
       end
-      m2t.content = append( m2t.content, sprintf('\n') );
+      m2t.content.colors = [m2t.content.colors sprintf('\n')];
   end
 
   % finally print it to the file
@@ -4517,6 +4513,10 @@ function printAll( env, fid )
 
     if ~isempty(env.comment)
         fprintf( fid, '%% %s\n', strrep( env.comment, sprintf('\n'), sprintf('\n%% ') ) );
+    end
+    
+    if isfield(env, 'colors') && ~isempty(env.colors)
+        fprintf( fid, '%s', env.colors);
     end
 
     if isempty( env.options )
