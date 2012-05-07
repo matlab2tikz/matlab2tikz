@@ -777,6 +777,13 @@ function description = bodeplots()
 end
 % =========================================================================
 function description = mandrillImage()
+
+  if ~exist('mandrill')
+      fprintf( 'mandrill data set not found. Abort.\n\n' );
+      description = [];
+      return
+  end
+
   data = load( 'mandrill' );
   set( gcf, 'color', 'k' )
   image( data.X )
@@ -813,6 +820,13 @@ function description = besselImage()
 end
 % =========================================================================
 function description = clownImage()
+
+  if ~exist('clown')
+      fprintf( 'clown data set not found. Abort.\n\n' );
+      description = [];
+      return
+  end
+
   data = load( 'clown' );
   imagesc( data.X )
   colormap( gray )
@@ -906,6 +920,12 @@ function description = scatterPlotRandom()
 end
 % =========================================================================
 function description = scatterPlot()
+
+  if ~exist('seamount')
+      fprintf( 'seamount data set not found. Abort.\n\n' );
+      description = [];
+      return
+  end
 
   data = load( 'seamount' );
   scatter( data.x, data.y, 5, data.z, '^' );
@@ -1434,17 +1454,24 @@ function description = parameterSurf()
 end
 % =========================================================================
 function description = fill3plot()
-    x1 = -10:0.1:10;
-    x2 = -10:0.1:10;
-    p = sin(x1);
-    d = zeros(1,numel(p));
-    d(2:2:end) = 1;
-    h = p.*d;
-    grid on;
-    fill3(x1,x2,h,'k');
-    view(45,22.5);
 
-    description = 'fill3 plot.';
+  if ~exist('fill3')
+      fprintf( 'fill3() not found. Abort.\n\n' );
+      description = [];
+      return
+  end
+
+  x1 = -10:0.1:10;
+  x2 = -10:0.1:10;
+  p = sin(x1);
+  d = zeros(1,numel(p));
+  d(2:2:end) = 1;
+  h = p.*d;
+  grid on;
+  fill3(x1,x2,h,'k');
+  view(45,22.5);
+
+  description = 'fill3 plot.';
 end
 % =========================================================================
 function description = rectanglePlot()

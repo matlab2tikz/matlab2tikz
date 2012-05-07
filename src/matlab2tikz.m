@@ -3548,7 +3548,7 @@ function [pTicks, pTickLabels] = ...
   pTicks = join( num2cell(ticks), ',' );
 
   % if there's no specific labels, return empty
-  if isempty( tickLabels )
+  if isempty( tickLabels ) || (length(tickLabels)==1 && isempty(tickLabels{1}))
       pTickLabels = [];
       return
   end
@@ -3568,7 +3568,7 @@ function [pTicks, pTickLabels] = ...
   % the tick values themselves).
   plotLabelsNecessary = false;
 
-  k = find( ticks, 1 ); % get an index with non-zero tick value
+  k = find( ticks ~= 0.0, 1 ); % get an index with non-zero tick value
   if isLogAxis || isempty( k ) % only a 0-tick
       scalingFactor = 1;
   else
