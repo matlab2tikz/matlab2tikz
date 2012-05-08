@@ -510,7 +510,8 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   end
 
   % finally print it to the file
-  printAll( m2t.content, fid );
+  printAll( m2t.content, fid );  
+ 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % close the file if necessary
@@ -1870,16 +1871,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
 
       % Get color indices for indexed color images and truecolor values otherwise.
       if ndims( cdata ) == 2
-          colorData = zeros( m, n );
-          % TODO Make imagecolor2colorindex (or getColor for that matter) take matrix
-          %      arguments.
-          for i = 1:m
-              for j = 1:n
-                  % Don't use getImage() here to avoid 'mycolorX' constructions;
-                  % exclusively color index data needed here.
-                  [ m2t, colorData(i,j) ] = imagecolor2colorindex ( m2t, cdata(i,j), handle );
-              end
-          end
+          [ m2t, colorData ] = imagecolor2colorindex ( m2t, cdata, handle );
       else
           colorData = cdata;
       end
@@ -1936,13 +1928,8 @@ function [ m2t, str ] = drawImage( m2t, handle )
 
       m = length(X);
       n = length(Y);
-      xcolor = cell(m,n);
-      for i = 1:m
-          for j = 1:n
-              [ m2t, xcolor{i,j} ] = getColor( m2t, handle, cdata(i,j,:), 'image' );
-          end
-      end
-
+      [m2t xcolor] = getColor(m2t, handle, cdata, 'image' );
+      
       % The following section takes pretty long to execute, although in principle it is
       % discouraged to use TikZ for those; LaTeX will take forever to compile.
       % Still, a bug has been filed on MathWorks to allow for one-line sprintf'ing with
@@ -3284,12 +3271,6 @@ end
 function [ m2t, colorindex ] = imagecolor2colorindex ( m2t, color, imagehandle )
   % Transforms a color in image color format to a 1x3 rgb color vector.
 
-  if ~isnumeric( color ) && length(color)==1
-      error( 'imagecolor2colorindex:illegalInput', ...
-             'Input argument ''color'' is not a scalar.' );
-  end
-
-  % color *must* be a single cdata value already
   [ m2t, colorindex ] = cdata2colorindex( m2t, color, imagehandle );
 
 end
@@ -3314,15 +3295,14 @@ function [ m2t, colorindex ] = cdata2colorindex ( m2t, cdata, imagehandle )
           % see MATLAB's manual page for caxis for details
           clim = get( axeshandle, 'clim' );
           m = size( m2t.currentHandles.colormap, 1 );
-          if cdata<=clim(1)
-              colorindex = 1;
-          elseif cdata>=clim(2)
-              colorindex = m;
-          else
-              colorindex = fix( (cdata-clim(1))/(clim(2)-clim(1)) *m ) ...
-                         + 1;
-          end
-
+          colorindex = zeros( size( cdata ) );
+          idx1 = cdata <= clim(1);
+          idx2 = cdata >= clim(2);
+          idx3 = ~idx1 & ~idx2;
+          colorindex(idx1) = 1;
+          colorindex(idx2) = m;
+          colorindex(idx3) = fix( (cdata(idx3)-clim(1)) / ( clim(2)-clim(1)) *m ) ...
+                          + 1;
       case 'direct'
           % direct index
           colorindex = cdata;
@@ -4496,13 +4476,7 @@ function parent = addChildren( parent, children )
         if isempty( parent.children )
             parent.children = {children};
         else
-            % TODO Get something simpler here.
-            tmp = cell( length(parent.children), 1 );
-            for k = 1:length(parent.children)
-                tmp{k} = parent.children{k};
-            end
-            tmp{length(parent.children)+1} = children;
-            parent.children = tmp;
+            parent.children = {parent.children{:} children};
         end
     end
 
@@ -4528,10 +4502,10 @@ function printAll( env, fid )
     for k = 1:length(env.content)
         fprintf( fid, '%s', env.content{k} );
     end
-
+    
     for k = 1:length( env.children )
         if ischar( env.children{k} )
-            fprintf( fid, escapeCharacters(env.children{k}) );
+            fprintf( fid, escapeCharacters( env.children{k}) );
         else
             fprintf( fid, '\n' );
             printAll( env.children{k}, fid );
