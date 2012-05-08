@@ -1032,7 +1032,7 @@ function description = spectro()
 
   % In the original test case, this is 0:0.001:2, but that takes forever
   % for LaTeX to process.
-  if ~exist('chirp.mat','file')
+  if ~exist('chirp', 'builtin')
       fprintf( 'chirp() not found. Abort.\n\n' );
       description = [];
       return
