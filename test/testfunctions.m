@@ -250,7 +250,7 @@ end
 % =========================================================================
 function description = contourPenny()
 
-  if ~exist('penny')
+  if ~exist('penny.mat','file')
       fprintf( 'penny data set not found. Abort.\n\n' );
       description = [];
       return
@@ -778,7 +778,7 @@ end
 % =========================================================================
 function description = mandrillImage()
 
-  if ~exist('mandrill')
+  if ~exist('mandrill.mat','file')
       fprintf( 'mandrill data set not found. Abort.\n\n' );
       description = [];
       return
@@ -821,7 +821,7 @@ end
 % =========================================================================
 function description = clownImage()
 
-  if ~exist('clown')
+  if ~exist('clown.mat','file')
       fprintf( 'clown data set not found. Abort.\n\n' );
       description = [];
       return
@@ -921,7 +921,7 @@ end
 % =========================================================================
 function description = scatterPlot()
 
-  if ~exist('seamount')
+  if ~exist('seamount.mat','file')
       fprintf( 'seamount data set not found. Abort.\n\n' );
       description = [];
       return
@@ -954,7 +954,7 @@ function description = scatter3Plot2()
   InpImg_RGB = imread('peppers.png');
 
   % Subsample image ("scatter3" can't cope with too many points)
-  InpImg_RGB = InpImg_RGB(1:100:end, 1:100:end );
+  InpImg_RGB = InpImg_RGB(1:100:end, 1:100:end, 1:100:end );
 
   InpImg_RGB = reshape(InpImg_RGB, [], 1, 3);
 
@@ -1032,7 +1032,7 @@ function description = spectro()
 
   % In the original test case, this is 0:0.001:2, but that takes forever
   % for LaTeX to process.
-  if ~exist('chirp')
+  if ~exist('chirp.mat','file')
       fprintf( 'chirp() not found. Abort.\n\n' );
       description = [];
       return
@@ -1455,7 +1455,7 @@ end
 % =========================================================================
 function description = fill3plot()
 
-  if ~exist('fill3')
+  if ~exist('fill3','builtin')
       fprintf( 'fill3() not found. Abort.\n\n' );
       description = [];
       return
@@ -1508,7 +1508,7 @@ end
 % =========================================================================
 function description = hist3d()
 
-  if ~exist('hist3')
+  if ~exist('hist3','file')
       fprintf( 'Statistics toolbox not found. Abort.\n\n' );
       description = [];
       return
