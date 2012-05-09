@@ -430,15 +430,9 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   axesHandles = findobj( fh, 'type', 'axes' );
 
   % remove all legend handles as they are treated separately
-  rmList = [];
-  m2t.legendHandles = [];
-  for k = 1:length(axesHandles)
-      if strcmp( get(axesHandles(k),'Tag'), 'legend' )
-          m2t.legendHandles = [m2t.legendHandles, axesHandles(k)];
-          rmList = [ rmList, k ];
-      end
-  end
-  axesHandles(rmList) = [];
+  legendHandleIdx = strcmp( get(axesHandles,'Tag'), 'legend' );
+  m2t.legendHandles = axesHandles(legendHandleIdx);
+  axesHandles = axesHandles(~legendHandleIdx);
 
   % Turn around the handles vector to make sure that plots that appeared
   % first also appear first in the vector. This has effects on the alignment
@@ -523,15 +517,18 @@ end
 function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
   % Draw all children of a graphics object (if they need to be drawn).
 
-  % prepare cell array of pgfEnvironments
-  pgfEnvironments = cell(0);
-
   children = get( handle, 'Children' );
+  
+  % prepare cell array of pgfEnvironments
+  pgfEnvironments = cell(length(children),1);
 
   % It's important that we go from back to front here, as this is
   % how MATLAB does it, too. Significant for patch (contour) plots,
   % and the order of plotting the colored patches.
 
+  % initialize counter to store environments in reverse order so that it's
+  % consistent with the comment above.
+  n = 1;
   for i = length(children):-1:1
       child = children(i);
       switch get( child, 'Type' )
@@ -576,7 +573,8 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       end
 
       % append the environment
-      pgfEnvironments{end+1} = env;
+      pgfEnvironments{n} = env;
+      n = n+1;
   end
 
 end
@@ -880,7 +878,7 @@ function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle the orientation
   isAxisReversed = strcmp( get(handle,[upper(axis),'Dir']), 'reverse' );
-  m2t = setfield( m2t, [axis,'AxisReversed'], isAxisReversed );
+  m2t.([axis 'AxisReversed']) = isAxisReversed;
   if isAxisReversed
       m2t.axesContainers{end}.options{end+1} = [axis,' dir=reverse'];
   end
@@ -2225,7 +2223,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   matlabMarker    = get( h, 'Marker' );
   markerFaceColor = get( h, 'MarkerFaceColor' );
   hasFaceColor    = ~strcmp(markerFaceColor,'none');
-  [tikzMarker,markOptions] = translateMarker( m2t, matlabMarker, [], hasFaceColor );
+  [tikzMarker, markOptions] = translateMarker( m2t, matlabMarker, [], hasFaceColor );
 
   if length(cData) == 3
       % No special treatment for the colors or markers are needed.
