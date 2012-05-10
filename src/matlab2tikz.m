@@ -2034,17 +2034,13 @@ function [m2t,env] = drawSurface( m2t, handle )
         dx = dx';
         dy = dy';
         for i = 1:row
-            for j = 1:col
-                str = [ str, ...
-                        sprintf('(%.15g,%.15g,%.15g)', dx(i,j), dy(i,j), dz(i,j) ) ];
-            end
+            str_data = sprintf('%s', num2str([dx(i,:) dy(i,:) dz(i,:)],'(%.15g,%.15g,%.15g)')');
+            % Remove the white space.
+            str_data = str_data(~isspace(str_data));
+            str = [str, str_data];
             % insert an empty line to tell Pgfplots about one row ending here
             str = [str, sprintf('\n\n')];
         end
-        %str_data = sprintf('%s', num2str([dx(:) dy(:) dz(:)],'(%.15g,%.15g,%.15g)')');
-        %% Remove the white space.
-        %str_data = str_data(~isspace(str_data));
-        %str = [str, str_data];
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     end %if-else
 
