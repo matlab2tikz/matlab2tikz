@@ -429,9 +429,10 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   fh          = m2t.currentHandles.gcf;
   axesHandles = findobj( fh, 'type', 'axes' );
 
-  % remove all legend handles as they are treated separately
+  % Find all legend handles. This is MATLAB-only.
   legendHandleIdx = strcmp( get(axesHandles,'Tag'), 'legend' );
   m2t.legendHandles = axesHandles(legendHandleIdx);
+  % Remove all legend handles as they are treated separately.
   axesHandles = axesHandles(~legendHandleIdx);
 
   % Turn around the handles vector to make sure that plots that appeared
