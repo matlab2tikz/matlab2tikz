@@ -4569,7 +4569,7 @@ function isBelow = isVersionBelow(env, versionA, versionB)
       if strcmpi(env, 'MATLAB')
           split = char(regexp(versionA, '\.', 'split'));
       elseif strcmpi(env, 'Octave')
-          split = split(versionA, '.');
+          split = strsplit(versionA, '.');
       end
       vA = str2num(split);
   else
@@ -4581,7 +4581,7 @@ function isBelow = isVersionBelow(env, versionA, versionB)
       if strcmpi(env, 'MATLAB')
           split = char(regexp(versionB, '\.', 'split'));
       elseif strcmpi(env, 'Octave')
-          split = split(versionB, '.');
+          split = strsplit(versionB, '.');
       end
       vB = str2num(split);
   else
