@@ -531,11 +531,49 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
   n = 1;
   for i = length(children):-1:1
       child = children(i);
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      % First of all, check if 'child' is referenced in a legend.
+      % If yes, some plot types may want to add stuff (e.g. 'forget plot').
+      % Add '\addlegendentry{...}' then after the plot.
+      legendString = [];
+      if ~isempty(m2t.legendHandles)
+          % Check if current handle is referenced in a legend.
+          ud = get(m2t.legendHandles(1), 'UserData');
+          k = find(child == ud.handles);
+          if isempty(k)
+              % Lines of error bar plots are not referenced directly in legends
+              % as an error bars plot contains two "lines": the data and the
+              % deviations. Here, the legends refer to the specgraph.errorbarseries
+              % handle which is 'Parent' to the line handle.
+              k = find(get(child,'Parent') == ud.handles);
+          end
+          if ~isempty(k)
+              % Legend entry found. Add it to the plot.
+              switch m2t.env
+                  case 'MATLAB'
+                    interpreter = get( m2t.legendHandles(1), 'Interpreter' );
+                  case 'Octave'
+                      % TODO: The MATLAB way to acquire the interpreter for legend
+                      %       entries always yields 'none' even if Octave (or gnuplot)
+                      %       itself interprets the strings as 'tex' strings. Maybe the
+                      %       value is stored somewhere else or maybe Octave doesn't
+                      %       store it at all. For now the quick'n'dirty solution is to
+                      %       forcefully set the interpreter for all legend entries to
+                      %       'tex' -- which is the default value anyway.
+                      interpreter = 'tex';
+                  otherwise
+                      error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+              end
+              legendString = [ '\addlegendentry{', prettyPrint( m2t, ud.lstrings(k), interpreter ), sprintf('};\n\n')];
+              % insert it below after plotting the data
+          end
+      end
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       switch get( child, 'Type' )
           % 'axes' environments are treated separately.
 
           case 'line'
-              [m2t, env] = drawLine( m2t, child );
+              [m2t, env] = drawLine( m2t, child, ~isempty(legendString) );
 
           case 'patch'
               [m2t, env] = drawPatch( m2t, child );
@@ -570,6 +608,11 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                      'I don''t know how to handle this object: %s\n', ...
                                                        get(child,'Type') );
 
+      end
+
+      % add legend after the plot data
+      if ~isempty(legendString)
+          env = [env, legendString];
       end
 
       % append the environment
@@ -958,7 +1001,7 @@ function bool = axisIsVisible( axisHandle )
 
 end
 % =========================================================================
-function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
+function [ m2t, str ] = drawLine( m2t, handle, hasLegend, yDeviation )
   % Returns the code for drawing a regular line.
   % This is an extremely common operation and takes place in most of the
   % not too fancy plots.
@@ -980,7 +1023,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   lineWidth = get( handle, 'LineWidth' );
   marker    = get( handle, 'Marker' );
 
-  hasLines = ~strcmp(lineStyle,'none') & lineWidth>0.0;
+  hasLines = ~strcmp(lineStyle,'none') && lineWidth>0.0;
   hasMarkers = ~strcmp(marker,'none');
   if ~hasLines && ~hasMarkers
       return
@@ -996,41 +1039,6 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   drawOptions = [ {sprintf( 'color=%s', xcolor )}, ... % color
                   lineOptions, ...
                   markerOptions ];
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % Conditional \addlegendentry.
-  legendString = [];
-  if ~isempty(m2t.legendHandles)
-      % Check if current handle is referenced in a legend.
-      ud = get(m2t.legendHandles(1), 'UserData');
-      k = find(handle == ud.handles);
-      if isempty(k)
-          % Lines of error bar plots are not referenced directly in legends
-          % as an error bars plot contains two "lines": the data and the
-          % deviations. Here, the legends refer to the specgraph.errorbarseries
-          % handle which is 'Parent' to the line handle.
-          k = find(get(handle,'Parent') == ud.handles);
-      end
-      if ~isempty(k)
-          % Legend entry found. Add it to the plot.
-          switch m2t.env
-              case 'MATLAB'
-                interpreter = get( m2t.legendHandles(1), 'Interpreter' );
-              case 'Octave'
-                  % TODO: The MATLAB way to acquire the interpreter for legend
-                  %       entries always yields 'none' even if Octave (or gnuplot)
-                  %       itself interprets the strings as 'tex' strings. Maybe the
-                  %       value is stored somewhere else or maybe Octave doesn't
-                  %       store it at all. For now the quick'n'dirty solution is to
-                  %       forcefully set the interpreter for all legend entries to
-                  %       'tex' -- which is the default value anyway.
-                  interpreter = 'tex';
-              otherwise
-                  error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-          end
-          legendString = [ '\addlegendentry{', prettyPrint( m2t, ud.lstrings(k), interpreter ), sprintf('};\n\n')];
-          % insert it below after plotting the data
-      end
-  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1050,7 +1058,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   end
 
   % check if the *optional* argument 'yDeviation' was given
-  if nargin>2
+  if nargin>3
       data = [data, yDeviation(:)];
   end
 
@@ -1076,7 +1084,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
           % If the line has a legend string, make sure to only include a legend
           % entry for the *last* occurence of the plot series.
           % Hence the condition k<length(xDataCell).
-          if ~isempty(m2t.legendHandles) && (isempty(legendString) || k < length(dataCell))
+          if ~isempty(m2t.legendHandles) && (~hasLegend || k < length(dataCell))
               % No legend entry found. Don't include plot in legend.
               opts = [ '\n', join({drawOptions{:}, 'forget plot'}, ',\n' ), '\n' ];
           else
@@ -1085,11 +1093,6 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
           str = [ str, ...
                   plotLine2d( opts, dataCell{k}(mask,:) ) ];
       end
-  end
-
-  % add legend after the plot data
-  if ~isempty(legendString)
-      str = [str, legendString];
   end
 
 end
@@ -2776,7 +2779,7 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
   end
 
   % Now, pull drawLine() with deviation information.
-  [ m2t, str ] = drawLine( m2t, c(dataIdx), yDeviations );
+  [ m2t, str ] = drawLine( m2t, c(dataIdx), false, yDeviations );
 
 end
 % ==============================================================================
