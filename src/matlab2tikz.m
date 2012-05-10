@@ -4567,11 +4567,11 @@ function isBelow = isVersionBelow(env, versionA, versionB)
   if ischar(versionA)
       % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
       if strcmpi(env, 'MATLAB')
-          split = char(regexp(versionA, '\.', 'split'));
+          split = regexp(versionA, '\.', 'split');
       elseif strcmpi(env, 'Octave')
           split = strsplit(versionA, '.');
       end
-      vA = str2num(split);
+      vA = str2num(char(split));
   else
       vA = versionA;
   end
@@ -4579,11 +4579,11 @@ function isBelow = isVersionBelow(env, versionA, versionB)
   if ischar(versionB)
       % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
       if strcmpi(env, 'MATLAB')
-          split = char(regexp(versionB, '\.', 'split'));
+          split = regexp(versionB, '\.', 'split');
       elseif strcmpi(env, 'Octave')
           split = strsplit(versionB, '.');
       end
-      vB = str2num(split);
+      vB = str2num(char(split));
   else
       vB = versionB;
   end
