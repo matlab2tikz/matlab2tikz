@@ -540,6 +540,13 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       if ~isempty(m2t.legendHandles)
           % Check if current handle is referenced in a legend.
           ud = get(m2t.legendHandles(1), 'UserData');
+          % Octave names the structure member in singular and not in plural.
+          % Do not distinguish between Octave and Matlab to not break when
+          % Octave adapts the naming.
+          if ~isfield('ud', 'handles')
+              ud.handles = ud.handle;
+          end
+
           k = find(child == ud.handles);
           if isempty(k)
               % Lines of error bar plots are not referenced directly in legends
@@ -553,6 +560,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               switch m2t.env
                   case 'MATLAB'
                     interpreter = get( m2t.legendHandles(1), 'Interpreter' );
+                    legendString = ud.lstrings(k);
                   case 'Octave'
                       % TODO: The MATLAB way to acquire the interpreter for legend
                       %       entries always yields 'none' even if Octave (or gnuplot)
@@ -562,11 +570,19 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                       %       forcefully set the interpreter for all legend entries to
                       %       'tex' -- which is the default value anyway.
                       interpreter = 'tex';
+                      % In Octave there is no ud.lstrings property, so use this
+                      % approach to get the legend's content.
+                      legendString = get(child, 'displayname');
                   otherwise
                       error( 'Unknown environment. Need MATLAB(R) or Octave.' )
               end
-              legendString = [ '\addlegendentry{', prettyPrint( m2t, ud.lstrings(k), interpreter ), sprintf('};\n\n')];
-              % insert it below after plotting the data
+              % The legend finding logic above generates some empty legends in
+              % addition to the correct legend for Octave.
+              % As this confuses TikZ, do not print empty legends.
+              if ~isempty(legendString)
+                  legendString = [ '\addlegendentry{', prettyPrint( m2t, legendString, interpreter ), sprintf('};\n\n')];
+                  % insert it below after plotting the data
+              end
           end
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
