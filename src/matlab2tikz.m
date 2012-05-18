@@ -191,7 +191,7 @@ function matlab2tikz( varargin )
 
   % possibility to give a file handle as argument
   m2t.cmdOpts = m2t.cmdOpts.addOptional( m2t.cmdOpts, 'filehandle', [], @filehandleValidation );
-  
+
   % explicitly specify which figure to use
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'figurehandle', gcf, @ishandle );
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'colormap', [], @isnumeric );
@@ -505,8 +505,8 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   end
 
   % finally print it to the file
-  printAll( m2t.content, fid );  
- 
+  printAll( m2t.content, fid );
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % close the file if necessary
@@ -519,7 +519,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
   % Draw all children of a graphics object (if they need to be drawn).
 
   children = get( handle, 'Children' );
-  
+
   % prepare cell array of pgfEnvironments
   pgfEnvironments = cell(length(children),1);
 
@@ -540,6 +540,13 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       if ~isempty(m2t.legendHandles)
           % Check if current handle is referenced in a legend.
           ud = get(m2t.legendHandles(1), 'UserData');
+          % Octave names the structure member in singular and not in plural.
+          % Do not distinguish between Octave and Matlab to not break when
+          % Octave adapts the naming.
+          if ~isfield('ud', 'handles')
+              ud.handles = ud.handle;
+          end
+
           k = find(child == ud.handles);
           if isempty(k)
               % Lines of error bar plots are not referenced directly in legends
@@ -553,6 +560,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               switch m2t.env
                   case 'MATLAB'
                     interpreter = get( m2t.legendHandles(1), 'Interpreter' );
+                    legendString = ud.lstrings(k);
                   case 'Octave'
                       % TODO: The MATLAB way to acquire the interpreter for legend
                       %       entries always yields 'none' even if Octave (or gnuplot)
@@ -562,11 +570,19 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                       %       forcefully set the interpreter for all legend entries to
                       %       'tex' -- which is the default value anyway.
                       interpreter = 'tex';
+                      % In Octave there is no ud.lstrings property, so use this
+                      % approach to get the legend's content.
+                      legendString = get(child, 'displayname');
                   otherwise
                       error( 'Unknown environment. Need MATLAB(R) or Octave.' )
               end
-              legendString = [ '\addlegendentry{', prettyPrint( m2t, ud.lstrings(k), interpreter ), sprintf('};\n\n')];
-              % insert it below after plotting the data
+              % The legend finding logic above generates some empty legends in
+              % addition to the correct legend for Octave.
+              % As this confuses TikZ, do not print empty legends.
+              if ~isempty(legendString)
+                  legendString = [ '\addlegendentry{', prettyPrint( m2t, legendString, interpreter ), sprintf('};\n\n')];
+                  % insert it below after plotting the data
+              end
           end
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1231,7 +1247,7 @@ function dataCellNew = ...
               dataCellNew{end+1} = data{1}(kStart:kEnd,:);
           end
       end
-  end  
+  end
 
 end
 % =========================================================================
@@ -1415,7 +1431,7 @@ function out = segmentsIntersect(X1, X2, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect.
   lambda = crossLines(X1, X2, X3, X4);
   out = all(lambda > 0.0) && all(lambda < 1.0);
-  return 
+  return
 end
 % =========================================================================
 function lambda = crossLines(X1, X2, X3, X4)
@@ -1931,7 +1947,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       m = length(X);
       n = length(Y);
       [m2t xcolor] = getColor(m2t, handle, cdata, 'image' );
-      
+
       % The following section takes pretty long to execute, although in principle it is
       % discouraged to use TikZ for those; LaTeX will take forever to compile.
       % Still, a bug has been filed on MathWorks to allow for one-line sprintf'ing with
@@ -2166,7 +2182,7 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
 
   faceColor = get( handle, 'FaceColor');
   edgeColor = get( handle, 'EdgeColor');
-  
+
   % Check for surf or mesh plot. Second argument in if-check corresponds to
   % default values for mesh plot in MATLAB.
   if strcmpi( faceColor, 'none') || ...
@@ -2175,9 +2191,9 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   else
       plotType = 'surf';
   end
-      
+
   surfOptions = cell(0);
-  
+
   % Set opacity if FaceAlpha < 1 in MATLAB
   faceAlpha = get( handle, 'FaceAlpha');
   if isnumeric( faceAlpha ) && faceAlpha ~= 1.0
@@ -2188,8 +2204,8 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   surfOptions{end+1} = matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
 
   if strcmpi(plotType, 'surf')
-      % Set shader for surface plot. 
-      % TODO: find MATLAB equivalents for flat corner and flat mean  
+      % Set shader for surface plot.
+      % TODO: find MATLAB equivalents for flat corner and flat mean
       if strcmpi( edgeColor, 'none' ) && strcmpi( faceColor, 'flat' )
           surfOptions{end+1} = 'shader=flat';
       elseif isnumeric(edgeColor) && strcmpi(faceColor, 'flat')
@@ -4486,7 +4502,7 @@ function printAll( env, fid )
     if ~isempty(env.comment)
         fprintf( fid, '%% %s\n', strrep( env.comment, sprintf('\n'), sprintf('\n%% ') ) );
     end
-    
+
     if isfield(env, 'colors') && ~isempty(env.colors)
         fprintf( fid, '%s', env.colors);
     end
@@ -4500,7 +4516,7 @@ function printAll( env, fid )
     for k = 1:length(env.content)
         fprintf( fid, '%s', env.content{k} );
     end
-    
+
     for k = 1:length( env.children )
         if ischar( env.children{k} )
             fprintf( fid, escapeCharacters( env.children{k}) );
@@ -4510,7 +4526,16 @@ function printAll( env, fid )
         end
     end
 
-    fprintf( fid, '\\end{%s}\n', env.name );
+    % End the tikpicture environment with an empty comment and no newline.
+    % Thus no additional space is generated by the tikzpicture in TeX.
+    % This is useful if something should immediately follow the picture,
+    % e.g. another picture, with a separately defined spacing or without
+    % any spacing at all between both pictures.
+    if strcmp(env.name, 'tikzpicture')
+        fprintf( fid, '\\end{%s}%%', env.name );
+    else
+        fprintf( fid, '\\end{%s}\n', env.name );
+    end
 end
 % =========================================================================
 function imwriteWrapperPNG( colorData, cmap, fileName )
