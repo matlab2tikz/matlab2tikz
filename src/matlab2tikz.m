@@ -569,14 +569,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
           case 'Octave'
               % Octave handles legend entries on a per-axes basis.
               hasLegend = m2t.gcaHasLegend;
-              % TODO: The MATLAB way to acquire the interpreter for legend
-              %       entries always yields 'none' even if Octave (or gnuplot)
-              %       itself interprets the strings as 'tex' strings. Maybe the
-              %       value is stored somewhere else or maybe Octave doesn't
-              %       store it at all. For now the quick'n'dirty solution is to
-              %       forcefully set the interpreter for all legend entries to
-              %       'tex' -- which is the default value anyway.
-              interpreter = 'tex';
+              interpreter = get( m2t.legendHandles(1), 'interpreter');
               legendString = get(child, 'displayname');
           otherwise
               error( 'Unknown environment. Need MATLAB(R) or Octave.' )
