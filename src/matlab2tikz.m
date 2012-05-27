@@ -536,61 +536,57 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       % First of all, check if 'child' is referenced in a legend.
       % If yes, some plot types may want to add stuff (e.g. 'forget plot').
       % Add '\addlegendentry{...}' then after the plot.
+      switch m2t.env
+          case 'MATLAB'
+              fieldName = 'handles';
+          case 'Octave'
+              fieldName = 'handle';
+          otherwise
+              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+      end
       legendString = [];
-      if ~isempty(m2t.legendHandles)
-          % Check if current handle is referenced in a legend.
-          ud = get(m2t.legendHandles(1), 'UserData');
-          % Octave names the structure member in singular and not in plural.
-          % Do not distinguish between Octave and Matlab to not break when
-          % Octave adapts the naming.
-          if ~isfield('ud', 'handles')
-              ud.handles = ud.handle;
-          end
-
-          k = find(child == ud.handles);
-          if isempty(k)
-              % Lines of error bar plots are not referenced directly in legends
-              % as an error bars plot contains two "lines": the data and the
-              % deviations. Here, the legends refer to the specgraph.errorbarseries
-              % handle which is 'Parent' to the line handle.
-              k = find(get(child,'Parent') == ud.handles);
-          end
-          if ~isempty(k)
-              % Legend entry found. Add it to the plot.
-              switch m2t.env
-                  case 'MATLAB'
-                    interpreter = get( m2t.legendHandles(1), 'Interpreter' );
-                    legendString = ud.lstrings(k);
-                  case 'Octave'
-                      % TODO: The MATLAB way to acquire the interpreter for legend
-                      %       entries always yields 'none' even if Octave (or gnuplot)
-                      %       itself interprets the strings as 'tex' strings. Maybe the
-                      %       value is stored somewhere else or maybe Octave doesn't
-                      %       store it at all. For now the quick'n'dirty solution is to
-                      %       forcefully set the interpreter for all legend entries to
-                      %       'tex' -- which is the default value anyway.
-                      interpreter = 'tex';
-                      % In Octave there is no ud.lstrings property, so use this
-                      % approach to get the legend's content.
-                      legendString = get(child, 'displayname');
-                  otherwise
-                      error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+      hasLegend = false;
+      switch m2t.env
+          case 'MATLAB'
+              if ~isempty(m2t.legendHandles)
+                  % Check if current handle is referenced in a legend.
+                  ud = get(m2t.legendHandles(1), 'UserData');
+                  k = find(child == getfield(ud, fieldName));
+                  if isempty(k)
+                      % Lines of error bar plots are not referenced directly in legends
+                      % as an error bars plot contains two "lines": the data and the
+                      % deviations. Here, the legends refer to the specgraph.errorbarseries
+                      % handle which is 'Parent' to the line handle.
+                      k = find(get(child,'Parent') == getfield(ud, fieldName));
+                  end
+                  if ~isempty(k)
+                      % Legend entry found. Add it to the plot.
+                      hasLegend = true;
+                      interpreter = get( m2t.legendHandles(1), 'Interpreter' );
+                      legendString = ud.lstrings(k);
+                  end
               end
-              % The legend finding logic above generates some empty legends in
-              % addition to the correct legend for Octave.
-              % As this confuses TikZ, do not print empty legends.
-              if ~isempty(legendString)
-                  legendString = [ '\addlegendentry{', prettyPrint( m2t, legendString, interpreter ), sprintf('};\n\n')];
-                  % insert it below after plotting the data
-              end
-          end
+          case 'Octave'
+              % Octave handles legend entries on a per-axes basis.
+              hasLegend = m2t.gcaHasLegend;
+              % TODO: The MATLAB way to acquire the interpreter for legend
+              %       entries always yields 'none' even if Octave (or gnuplot)
+              %       itself interprets the strings as 'tex' strings. Maybe the
+              %       value is stored somewhere else or maybe Octave doesn't
+              %       store it at all. For now the quick'n'dirty solution is to
+              %       forcefully set the interpreter for all legend entries to
+              %       'tex' -- which is the default value anyway.
+              interpreter = 'tex';
+              legendString = get(child, 'displayname');
+          otherwise
+              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       switch get( child, 'Type' )
           % 'axes' environments are treated separately.
 
           case 'line'
-              [m2t, env] = drawLine( m2t, child, ~isempty(legendString) );
+              [m2t, env] = drawLine( m2t, child, hasLegend );
 
           case 'patch'
               [m2t, env] = drawPatch( m2t, child );
@@ -628,8 +624,9 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       end
 
       % add legend after the plot data
-      if ~isempty(legendString)
-          env = [env, legendString];
+      if hasLegend && ~isempty(legendString)
+          env = [env, ...
+                 '\addlegendentry{', prettyPrint(m2t, legendString, interpreter), sprintf('};\n\n')];
       end
 
       % append the environment
@@ -687,6 +684,14 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % update gca
   m2t.currentHandles.gca = handle;
+
+  % Octave:
+  % Check if this axis environment is referenced by a legend.
+  m2t.gcaHasLegend = false;
+  if strcmp(m2t.env, 'Octave')
+      ud = get(m2t.legendHandles(1), 'UserData');
+      m2t.gcaHasLegend = ~isempty(find(handle == getfield(ud, 'handle')));
+  end
 
   % get the view angle
   view = get( handle, 'View' );
@@ -2110,11 +2115,27 @@ function [ m2t, str ] = drawText(m2t, handle)
   % remove invisible border around \node to make the text align precisely
   style{end+1} = 'inner sep=0mm';
 
-  % Add rotation
+  % Add rotation.
   rot = get(handle, 'Rotation');
   if rot ~= 0.0
     style{end+1} = sprintf('rotate=%.15g', rot);
   end
+
+  % Don't try and mess around with the font sizes: MATLAB and LaTeX have
+  % a very different approach for the two.
+  % While MATLAB determines the font sizes in points (pt), the font size
+  % in LaTeX is determined globally by the font in use and the environment
+  % specs (What you mean is what you get).
+  % MATLAB's default font size is 10pt which is way to small for usual
+  % plots, but fits quite okay for annoated contours, for example.
+  % It's a mess.
+%    switch get(handle, 'FontSize')
+%       case 10
+%           % This setting comes out quite okay for contour annotations.
+%           style{end+1} = sprintf('font=\\tiny');
+%       case 12
+%           style{end+1} = sprintf('font=\\footnotesize');
+%    end
 
   style{end+1} = ['text=' tcolor];
   if ~strcmp(EdgeColor, 'none')

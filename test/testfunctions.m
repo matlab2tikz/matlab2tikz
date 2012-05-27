@@ -921,15 +921,24 @@ end
 % =========================================================================
 function description = scatterPlot()
 
-  if ~exist('seamount.mat','file')
-      fprintf( 'seamount data set not found. Abort.\n\n' );
-      description = [];
-      return
-  end
-
-  data = load( 'seamount' );
-  scatter( data.x, data.y, 5, data.z, '^' );
+%    if ~exist('seamount.mat','file')
+%        fprintf( 'seamount data set not found. Abort.\n\n' );
+%        description = [];
+%        return
+%    end
+%  
+%    data = load( 'seamount' );
+%    scatter( data.x, data.y, 5, data.z, '^' );
   description = 'Scatter plot with MATLAB(R) data.';
+
+load seamount
+dat = [-y,x]; % Grid corrected for negative y-values
+hist3(dat) % Draw histogram in 2D
+n = hist3(dat); % Extract histogram data;
+               % default to 10x10 bins
+view([-37.5, 30]);
+set(get(gca,'child'),'FaceColor','interp','CDataMode',...
+'auto');
 
 end
 % =========================================================================
