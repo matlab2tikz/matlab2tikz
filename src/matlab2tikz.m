@@ -71,6 +71,10 @@ function matlab2tikz( varargin )
 %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
 %   of the output file.
 %
+%   MATLAB2TIKZ('tikzExternalize',BOOL,...) adds \tikzsetnextfilename{filename}
+%   outside the TikZ-picture environment for externalization of the
+%   figures. Requires \usetikzlibrary{external} to be loaded.
+%
 %   Example
 %      x = -pi:pi/10:pi;
 %      y = tan(sin(x)) - sin(tan(x));
@@ -268,6 +272,9 @@ function matlab2tikz( varargin )
 
   % Allow a string to be added to the header of the generated TikZ file.
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'tikzFileComment', '', @ischar );
+  
+  % Add a tikzsetfilename for externalizing figure.
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'tikzExternalize', false, @islogical );
 
   m2t.cmdOpts = m2t.cmdOpts.parse( m2t.cmdOpts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -509,6 +516,11 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
                                 sprintf('%s\n', m2t.cmdOpts.Results.extraTikzpictureSettings{k}) ...
                               );
       end
+  end
+  
+  if ~isempty(m2t.cmdOpts.Results.tikzExternalize)
+      filename = regexp(m2t.tikzFileName,'\.','split');
+      m2t.content.externalize = sprintf('\\tikzsetnextfilename{%s}\n\n', filename{1} );
   end
 
   % Don't forget to define the colors.
@@ -4524,6 +4536,10 @@ function printAll( env, fid )
 
     if ~isempty(env.comment)
         fprintf( fid, '%% %s\n', strrep( env.comment, sprintf('\n'), sprintf('\n%% ') ) );
+    end
+    
+    if isfield(env, 'externalize')
+        fprintf( fid, '%s', env.externalize);
     end
 
     if isfield(env, 'colors') && ~isempty(env.colors)
