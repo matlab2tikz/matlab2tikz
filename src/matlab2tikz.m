@@ -1356,7 +1356,7 @@ function dataCellNew = splitByArraySize(dataCell)
           % If the plot has lines, add an extra (overlap) point to the data
           % stream; otherwise the line between two data chunks would be broken.
           if hasLines && chunkEnd~=len
-              dataCellNew{end} = [ dataCellNew{end}, data{1}(chunkEnd+1,:) ];
+              dataCellNew{end} = [ dataCellNew{end}; data{1}(chunkEnd+1,:) ];
           end
 
           chunkStart = chunkEnd + 1;
