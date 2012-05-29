@@ -52,6 +52,9 @@ function matlab2tikz( varargin )
 %
 %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
 %
+%   MATLAB2TIKZ('maxChunkLength',INT,...) sets maximum number of data points
+%   per \addplot (default: 4000).
+%
 %   MATLAB2TIKZ('parseStrings',BOOL,...) determines whether title, axes labels
 %   and the like are parsed into LaTeX by MATLAB2TIKZ's parser.
 %   If you want greater flexibility, set this to false and use straight LaTeX
@@ -229,6 +232,20 @@ function matlab2tikz( varargin )
 
   % file encoding
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'encoding' , '', @ischar );
+
+  % Maximum chunk length.
+  % TeX parses files line by line with a buffer of size buf_size. If the
+  % plot has too many data points, pdfTeX's buffer size may be exceeded.
+  % As a work-around, the plot is split into several smaller plots, and this
+  % function does the job.
+  %
+  % What is a "large" array?
+  % TeX parser buffer is buf_size=200000 char on Mac TeXLive, let's say
+  % 100000 to be on the safe side.
+  % 1 point is represented by 25 characters (estimation): 2 coordinates (10
+  % char), 2 brackets, commma and white space, + 1 extra char.
+  % That gives a magic arbitrary number of 4000 data points per array.
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'maxChunkLength', 4000, @isnumeric );
 
   % deprecated parameter -- keep it to allow warning further down
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'mathmode', true, @islogical );
@@ -1186,7 +1203,7 @@ function dataCell = splitLine( m2t, hasLines, hasMarkers, data, xLim, yLim )
   dataCell = movePointsCloser(m2t, dataCell, xLim, yLim);
 
   % Split each of the current chunks further with respect to outliers.
-  dataCell = splitByArraySize(dataCell);
+  dataCell = splitByArraySize(m2t, dataCell);
 
 end
 % =========================================================================
@@ -1321,25 +1338,16 @@ function out = isInBox( data, xLim, yLim )
 
 end
 % =========================================================================
-function dataCellNew = splitByArraySize(dataCell)
+function dataCellNew = splitByArraySize(m2t, dataCell)
   % TeX parses files line by line with a buffer of size buf_size. If the
-  % plot has too many data points, the buffer size may be exceeded.
+  % plot has too many data points, pdfTeX's buffer size may be exceeded.
   % As a work-around, the plot is split into several smaller plots, and this
   % function does the job.
-  %
-  % What is a "large" array?
-  % TeX parser buffer is buf_size=200000 char on Mac TeXLive, let's say
-  % 100000 to be on the safe side.
-  % 1 point is represented by 25 characters (estimation): 2 coordinates (10
-  % char), 2 brackets, commma and white space, + 1 extra char.
-  % That gives a magic arbitrary number of 4000 data points per array.
 
   % Unconditionally set this to true. This results in one extra point to be
   % plotted per chunk, which probably doesn't hurt too much. Anyways,
   % TODO Take hasLines as argument to splitByArraySize().
   hasLines = true;
-
-  chunkLength = 4000;
 
   dataCellNew = cell(0);
 
@@ -1348,7 +1356,7 @@ function dataCellNew = splitByArraySize(dataCell)
       chunkStart = 1;
       len = size(data{1}, 1);
       while chunkStart <= len
-          chunkEnd = min( chunkStart + chunkLength - 1, len );
+          chunkEnd = min( chunkStart + m2t.cmdOpts.Results.maxChunkLength - 1, len );
 
           % Copy over the data to the new containers.
           dataCellNew{end+1} = data{1}(chunkStart:chunkEnd,:);
