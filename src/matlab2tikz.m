@@ -191,7 +191,7 @@ function matlab2tikz( varargin )
 
   % possibility to give a file handle as argument
   m2t.cmdOpts = m2t.cmdOpts.addOptional( m2t.cmdOpts, 'filehandle', [], @filehandleValidation );
-  
+
   % explicitly specify which figure to use
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'figurehandle', gcf, @ishandle );
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'colormap', [], @isnumeric );
@@ -429,9 +429,10 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   fh          = m2t.currentHandles.gcf;
   axesHandles = findobj( fh, 'type', 'axes' );
 
-  % remove all legend handles as they are treated separately
+  % Find all legend handles. This is MATLAB-only.
   legendHandleIdx = strcmp( get(axesHandles,'Tag'), 'legend' );
   m2t.legendHandles = axesHandles(legendHandleIdx);
+  % Remove all legend handles as they are treated separately.
   axesHandles = axesHandles(~legendHandleIdx);
 
   % Turn around the handles vector to make sure that plots that appeared
@@ -504,8 +505,8 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   end
 
   % finally print it to the file
-  printAll( m2t.content, fid );  
- 
+  printAll( m2t.content, fid );
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % close the file if necessary
@@ -518,7 +519,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
   % Draw all children of a graphics object (if they need to be drawn).
 
   children = get( handle, 'Children' );
-  
+
   % prepare cell array of pgfEnvironments
   pgfEnvironments = cell(length(children),1);
 
@@ -531,11 +532,54 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
   n = 1;
   for i = length(children):-1:1
       child = children(i);
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      % First of all, check if 'child' is referenced in a legend.
+      % If yes, some plot types may want to add stuff (e.g. 'forget plot').
+      % Add '\addlegendentry{...}' then after the plot.
+      switch m2t.env
+          case 'MATLAB'
+              fieldName = 'handles';
+          case 'Octave'
+              fieldName = 'handle';
+          otherwise
+              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+      end
+      legendString = [];
+      hasLegend = false;
+      switch m2t.env
+          case 'MATLAB'
+              if ~isempty(m2t.legendHandles)
+                  % Check if current handle is referenced in a legend.
+                  ud = get(m2t.legendHandles(1), 'UserData');
+                  k = find(child == getfield(ud, fieldName));
+                  if isempty(k)
+                      % Lines of error bar plots are not referenced directly in legends
+                      % as an error bars plot contains two "lines": the data and the
+                      % deviations. Here, the legends refer to the specgraph.errorbarseries
+                      % handle which is 'Parent' to the line handle.
+                      k = find(get(child,'Parent') == getfield(ud, fieldName));
+                  end
+                  if ~isempty(k)
+                      % Legend entry found. Add it to the plot.
+                      hasLegend = true;
+                      interpreter = get( m2t.legendHandles(1), 'Interpreter' );
+                      legendString = ud.lstrings(k);
+                  end
+              end
+          case 'Octave'
+              % Octave handles legend entries on a per-axes basis.
+              hasLegend = m2t.gcaHasLegend;
+              interpreter = get( m2t.legendHandles(1), 'interpreter');
+              legendString = get(child, 'displayname');
+          otherwise
+              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+      end
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       switch get( child, 'Type' )
           % 'axes' environments are treated separately.
 
           case 'line'
-              [m2t, env] = drawLine( m2t, child );
+              [m2t, env] = drawLine( m2t, child, hasLegend );
 
           case 'patch'
               [m2t, env] = drawPatch( m2t, child );
@@ -570,6 +614,12 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                      'I don''t know how to handle this object: %s\n', ...
                                                        get(child,'Type') );
 
+      end
+
+      % add legend after the plot data
+      if hasLegend && ~isempty(legendString)
+          env = [env, ...
+                 '\addlegendentry{', prettyPrint(m2t, legendString, interpreter), sprintf('};\n\n')];
       end
 
       % append the environment
@@ -627,6 +677,14 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % update gca
   m2t.currentHandles.gca = handle;
+
+  % Octave:
+  % Check if this axis environment is referenced by a legend.
+  m2t.gcaHasLegend = false;
+  if strcmp(m2t.env, 'Octave')
+      ud = get(m2t.legendHandles(1), 'UserData');
+      m2t.gcaHasLegend = ~isempty(find(handle == getfield(ud, 'handle')));
+  end
 
   % get the view angle
   view = get( handle, 'View' );
@@ -958,7 +1016,7 @@ function bool = axisIsVisible( axisHandle )
 
 end
 % =========================================================================
-function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
+function [ m2t, str ] = drawLine( m2t, handle, hasLegend, yDeviation )
   % Returns the code for drawing a regular line.
   % This is an extremely common operation and takes place in most of the
   % not too fancy plots.
@@ -980,7 +1038,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   lineWidth = get( handle, 'LineWidth' );
   marker    = get( handle, 'Marker' );
 
-  hasLines = ~strcmp(lineStyle,'none') & lineWidth>0.0;
+  hasLines = ~strcmp(lineStyle,'none') && lineWidth>0.0;
   hasMarkers = ~strcmp(marker,'none');
   if ~hasLines && ~hasMarkers
       return
@@ -996,41 +1054,6 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   drawOptions = [ {sprintf( 'color=%s', xcolor )}, ... % color
                   lineOptions, ...
                   markerOptions ];
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % Conditional \addlegendentry.
-  legendString = [];
-  if ~isempty(m2t.legendHandles)
-      % Check if current handle is referenced in a legend.
-      ud = get(m2t.legendHandles(1), 'UserData');
-      k = find(handle == ud.handles);
-      if isempty(k)
-          % Lines of error bar plots are not referenced directly in legends
-          % as an error bars plot contains two "lines": the data and the
-          % deviations. Here, the legends refer to the specgraph.errorbarseries
-          % handle which is 'Parent' to the line handle.
-          k = find(get(handle,'Parent') == ud.handles);
-      end
-      if ~isempty(k)
-          % Legend entry found. Add it to the plot.
-          switch m2t.env
-              case 'MATLAB'
-                interpreter = get( m2t.legendHandles(1), 'Interpreter' );
-              case 'Octave'
-                  % TODO: The MATLAB way to acquire the interpreter for legend
-                  %       entries always yields 'none' even if Octave (or gnuplot)
-                  %       itself interprets the strings as 'tex' strings. Maybe the
-                  %       value is stored somewhere else or maybe Octave doesn't
-                  %       store it at all. For now the quick'n'dirty solution is to
-                  %       forcefully set the interpreter for all legend entries to
-                  %       'tex' -- which is the default value anyway.
-                  interpreter = 'tex';
-              otherwise
-                  error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-          end
-          legendString = [ '\addlegendentry{', prettyPrint( m2t, ud.lstrings(k), interpreter ), sprintf('};\n\n')];
-          % insert it below after plotting the data
-      end
-  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1050,7 +1073,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   end
 
   % check if the *optional* argument 'yDeviation' was given
-  if nargin>2
+  if nargin>3
       data = [data, yDeviation(:)];
   end
 
@@ -1076,7 +1099,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
           % If the line has a legend string, make sure to only include a legend
           % entry for the *last* occurence of the plot series.
           % Hence the condition k<length(xDataCell).
-          if ~isempty(m2t.legendHandles) && (isempty(legendString) || k < length(dataCell))
+          if ~isempty(m2t.legendHandles) && (~hasLegend || k < length(dataCell))
               % No legend entry found. Don't include plot in legend.
               opts = [ '\n', join({drawOptions{:}, 'forget plot'}, ',\n' ), '\n' ];
           else
@@ -1085,11 +1108,6 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
           str = [ str, ...
                   plotLine2d( opts, dataCell{k}(mask,:) ) ];
       end
-  end
-
-  % add legend after the plot data
-  if ~isempty(legendString)
-      str = [str, legendString];
   end
 
 end
@@ -1227,7 +1245,7 @@ function dataCellNew = ...
               dataCellNew{end+1} = data{1}(kStart:kEnd,:);
           end
       end
-  end  
+  end
 
 end
 % =========================================================================
@@ -1411,7 +1429,7 @@ function out = segmentsIntersect(X1, X2, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect.
   lambda = crossLines(X1, X2, X3, X4);
   out = all(lambda > 0.0) && all(lambda < 1.0);
-  return 
+  return
 end
 % =========================================================================
 function lambda = crossLines(X1, X2, X3, X4)
@@ -1927,7 +1945,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       m = length(X);
       n = length(Y);
       [m2t xcolor] = getColor(m2t, handle, cdata, 'image' );
-      
+
       % The following section takes pretty long to execute, although in principle it is
       % discouraged to use TikZ for those; LaTeX will take forever to compile.
       % Still, a bug has been filed on MathWorks to allow for one-line sprintf'ing with
@@ -2031,17 +2049,13 @@ function [m2t,env] = drawSurface( m2t, handle )
         dx = dx';
         dy = dy';
         for i = 1:row
-            for j = 1:col
-                str = [ str, ...
-                        sprintf('(%.15g,%.15g,%.15g)', dx(i,j), dy(i,j), dz(i,j) ) ];
-            end
+            str_data = sprintf('%s', num2str([dx(i,:)' dy(i,:)' dz(i,:)'],'(%.15g,%.15g,%.15g)')');
+            % Remove the white space.
+            str_data = str_data(~isspace(str_data));
+            str = [str, str_data];
             % insert an empty line to tell Pgfplots about one row ending here
             str = [str, sprintf('\n\n')];
         end
-        %str_data = sprintf('%s', num2str([dx(:) dy(:) dz(:)],'(%.15g,%.15g,%.15g)')');
-        %% Remove the white space.
-        %str_data = str_data(~isspace(str_data));
-        %str = [str, str_data];
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     end %if-else
 
@@ -2094,11 +2108,27 @@ function [ m2t, str ] = drawText(m2t, handle)
   % remove invisible border around \node to make the text align precisely
   style{end+1} = 'inner sep=0mm';
 
-  % Add rotation
+  % Add rotation.
   rot = get(handle, 'Rotation');
   if rot ~= 0.0
     style{end+1} = sprintf('rotate=%.15g', rot);
   end
+
+  % Don't try and mess around with the font sizes: MATLAB and LaTeX have
+  % a very different approach for the two.
+  % While MATLAB determines the font sizes in points (pt), the font size
+  % in LaTeX is determined globally by the font in use and the environment
+  % specs (What you mean is what you get).
+  % MATLAB's default font size is 10pt which is way to small for usual
+  % plots, but fits quite okay for annoated contours, for example.
+  % It's a mess.
+%    switch get(handle, 'FontSize')
+%       case 10
+%           % This setting comes out quite okay for contour annotations.
+%           style{end+1} = sprintf('font=\\tiny');
+%       case 12
+%           style{end+1} = sprintf('font=\\footnotesize');
+%    end
 
   style{end+1} = ['text=' tcolor];
   if ~strcmp(EdgeColor, 'none')
@@ -2166,7 +2196,7 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
 
   faceColor = get( handle, 'FaceColor');
   edgeColor = get( handle, 'EdgeColor');
-  
+
   % Check for surf or mesh plot. Second argument in if-check corresponds to
   % default values for mesh plot in MATLAB.
   if strcmpi( faceColor, 'none') || ...
@@ -2175,9 +2205,9 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   else
       plotType = 'surf';
   end
-      
+
   surfOptions = cell(0);
-  
+
   % Set opacity if FaceAlpha < 1 in MATLAB
   faceAlpha = get( handle, 'FaceAlpha');
   if isnumeric( faceAlpha ) && faceAlpha ~= 1.0
@@ -2188,8 +2218,8 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   surfOptions{end+1} = matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
 
   if strcmpi(plotType, 'surf')
-      % Set shader for surface plot. 
-      % TODO: find MATLAB equivalents for flat corner and flat mean  
+      % Set shader for surface plot.
+      % TODO: find MATLAB equivalents for flat corner and flat mean
       if strcmpi( edgeColor, 'none' ) && strcmpi( faceColor, 'flat' )
           surfOptions{end+1} = 'shader=flat';
       elseif isnumeric(edgeColor) && strcmpi(faceColor, 'flat')
@@ -2776,7 +2806,7 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
   end
 
   % Now, pull drawLine() with deviation information.
-  [ m2t, str ] = drawLine( m2t, c(dataIdx), yDeviations );
+  [ m2t, str ] = drawLine( m2t, c(dataIdx), false, yDeviations );
 
 end
 % ==============================================================================
@@ -4486,7 +4516,7 @@ function printAll( env, fid )
     if ~isempty(env.comment)
         fprintf( fid, '%% %s\n', strrep( env.comment, sprintf('\n'), sprintf('\n%% ') ) );
     end
-    
+
     if isfield(env, 'colors') && ~isempty(env.colors)
         fprintf( fid, '%s', env.colors);
     end
@@ -4500,7 +4530,7 @@ function printAll( env, fid )
     for k = 1:length(env.content)
         fprintf( fid, '%s', env.content{k} );
     end
-    
+
     for k = 1:length( env.children )
         if ischar( env.children{k} )
             fprintf( fid, escapeCharacters( env.children{k}) );
@@ -4510,7 +4540,16 @@ function printAll( env, fid )
         end
     end
 
-    fprintf( fid, '\\end{%s}\n', env.name );
+    % End the tikpicture environment with an empty comment and no newline.
+    % Thus no additional space is generated by the tikzpicture in TeX.
+    % This is useful if something should immediately follow the picture,
+    % e.g. another picture, with a separately defined spacing or without
+    % any spacing at all between both pictures.
+    if strcmp(env.name, 'tikzpicture')
+        fprintf( fid, '\\end{%s}%%', env.name );
+    else
+        fprintf( fid, '\\end{%s}\n', env.name );
+    end
 end
 % =========================================================================
 function imwriteWrapperPNG( colorData, cmap, fileName )
@@ -4567,11 +4606,11 @@ function isBelow = isVersionBelow(env, versionA, versionB)
   if ischar(versionA)
       % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
       if strcmpi(env, 'MATLAB')
-          split = char(regexp(versionA, '\.', 'split'));
+          split = regexp(versionA, '\.', 'split');
       elseif strcmpi(env, 'Octave')
           split = strsplit(versionA, '.');
       end
-      vA = str2num(split);
+      vA = str2num(char(split));
   else
       vA = versionA;
   end
@@ -4579,11 +4618,11 @@ function isBelow = isVersionBelow(env, versionA, versionB)
   if ischar(versionB)
       % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
       if strcmpi(env, 'MATLAB')
-          split = char(regexp(versionB, '\.', 'split'));
+          split = regexp(versionB, '\.', 'split');
       elseif strcmpi(env, 'Octave')
           split = strsplit(versionB, '.');
       end
-      vB = str2num(split);
+      vB = str2num(char(split));
   else
       vB = versionB;
   end

@@ -10,8 +10,8 @@ party packages, your mileage may vary.
 
 The workflow is as follows.
 
-  0.) a) Place the matlab2tikz script in a directory where MATLAB can find it
-         (the current directory, for example).
+  0.) a) Place the matlab2tikz scripts (contents of src/ folder) in a directory where 
+         MATLAB can find it (the current directory, for example).
       b) Make sure that your LaTeX installation includes the packages
 
             tikz (aka pgf, >=2.00)
@@ -58,7 +58,7 @@ The workflow is as follows.
     and in the LaTeX source
 
       \newlength\figureheight
-      \newlength\figurewith
+      \newlength\figurewidth
       \setlength\figureheight{4cm}
       \setlength\figurewidth{6cm}
       \input{myfile.tikz}
