@@ -518,7 +518,7 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
       end
   end
   
-  if ~isempty(m2t.cmdOpts.Results.tikzExternalize)
+  if m2t.cmdOpts.Results.tikzExternalize
       filename = regexp(m2t.tikzFileName,'\.','split');
       m2t.content.externalize = sprintf('\\tikzsetnextfilename{%s}\n\n', filename{1} );
   end
