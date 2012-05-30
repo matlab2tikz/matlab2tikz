@@ -562,7 +562,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               error( 'Unknown environment. Need MATLAB(R) or Octave.' )
       end
       legendString = [];
-      hasLegend = false;
+      m2t.currentHandleHasLegend = false;
       switch m2t.env
           case 'MATLAB'
               if ~isempty(m2t.legendHandles)
@@ -578,14 +578,14 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                   end
                   if ~isempty(k)
                       % Legend entry found. Add it to the plot.
-                      hasLegend = true;
+                      m2t.currentHandleHasLegend = true;
                       interpreter = get( m2t.legendHandles(1), 'Interpreter' );
                       legendString = ud.lstrings(k);
                   end
               end
           case 'Octave'
               % Octave handles legend entries on a per-axes basis.
-              hasLegend = m2t.gcaHasLegend;
+              m2t.currentHandleHasLegend = m2t.gcaHasLegend;
               interpreter = get( m2t.legendHandles(1), 'interpreter');
               legendString = get(child, 'displayname');
           otherwise
@@ -596,7 +596,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
           % 'axes' environments are treated separately.
 
           case 'line'
-              [m2t, env] = drawLine( m2t, child, hasLegend );
+              [m2t, env] = drawLine( m2t, child );
 
           case 'patch'
               [m2t, env] = drawPatch( m2t, child );
@@ -634,7 +634,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       end
 
       % add legend after the plot data
-      if hasLegend && ~isempty(legendString)
+      if m2t.currentHandleHasLegend && ~isempty(legendString)
           env = [env, ...
                  '\addlegendentry{', prettyPrint(m2t, legendString, interpreter), sprintf('};\n\n')];
       end
@@ -1033,7 +1033,7 @@ function bool = axisIsVisible( axisHandle )
 
 end
 % =========================================================================
-function [ m2t, str ] = drawLine( m2t, handle, hasLegend, yDeviation )
+function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   % Returns the code for drawing a regular line.
   % This is an extremely common operation and takes place in most of the
   % not too fancy plots.
@@ -1095,7 +1095,7 @@ function [ m2t, str ] = drawLine( m2t, handle, hasLegend, yDeviation )
   end
 
   % Check if any value is infinite/NaN. In that case, add appropriate option.
-  if any(~isfinite(data(:)))
+  if any(~isfinite(data(:))) && ~strInCellstr('unbounded coords=jump', m2t.axesContainers{end}.options)
       m2t.axesContainers{end}.options{end+1} = 'unbounded coords=jump';
   end
 
@@ -1116,7 +1116,8 @@ function [ m2t, str ] = drawLine( m2t, handle, hasLegend, yDeviation )
           % If the line has a legend string, make sure to only include a legend
           % entry for the *last* occurence of the plot series.
           % Hence the condition k<length(xDataCell).
-          if ~isempty(m2t.legendHandles) && (~hasLegend || k < length(dataCell))
+          %if ~isempty(m2t.legendHandles) && (~m2t.currentHandleHasLegend || k < length(dataCell))
+          if ~m2t.currentHandleHasLegend || k < length(dataCell)
               % No legend entry found. Don't include plot in legend.
               opts = [ '\n', join({drawOptions{:}, 'forget plot'}, ',\n' ), '\n' ];
           else
@@ -2815,7 +2816,7 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
   end
 
   % Now, pull drawLine() with deviation information.
-  [ m2t, str ] = drawLine( m2t, c(dataIdx), false, yDeviations );
+  [ m2t, str ] = drawLine( m2t, c(dataIdx), yDeviations );
 
 end
 % ==============================================================================
@@ -5073,5 +5074,15 @@ function newStruct = structWithCell(varargin)
   for iKV = 1:numel(keys)
       newStruct.(keys{iKV}) = values{iKV};
   end
+end
+% =========================================================================
+function out = strInCellstr(str, cellStr)
+    out = false;
+    for x = cellStr
+        if strcmp(x{1}, str)
+            out = true;
+            break
+        end
+    end
 end
 % =========================================================================
