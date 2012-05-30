@@ -1095,7 +1095,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   end
 
   % Check if any value is infinite/NaN. In that case, add appropriate option.
-  if any(~isfinite(data(:))) && ~strInCellstr('unbounded coords=jump', m2t.axesContainers{end}.options)
+  if any(~isfinite(data(:))) && ~ismember('unbounded coords=jump', m2t.axesContainers{end}.options)
       m2t.axesContainers{end}.options{end+1} = 'unbounded coords=jump';
   end
 
@@ -5074,15 +5074,5 @@ function newStruct = structWithCell(varargin)
   for iKV = 1:numel(keys)
       newStruct.(keys{iKV}) = values{iKV};
   end
-end
-% =========================================================================
-function out = strInCellstr(str, cellStr)
-    out = false;
-    for x = cellStr
-        if strcmp(x{1}, str)
-            out = true;
-            break
-        end
-    end
 end
 % =========================================================================
