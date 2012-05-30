@@ -1090,7 +1090,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   end
 
   % check if the *optional* argument 'yDeviation' was given
-  if nargin>3
+  if nargin>2
       data = [data, yDeviation(:)];
   end
 
@@ -2809,7 +2809,7 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
 
       if abs(upDev-loDev) >= 1e-10 % don't use 'm2t.tol' here as is seems somewhat too strict
           error( 'drawErrorBars:uneqDeviations', ...
-                 'Upper and lower error deviations not equal (%.15g ~= %.15g); matlab2tikz can''t deal with that yet. Using upper deviations.', upDev, loDev );
+                 'Upper and lower error deviations not equal (%.15g ~= %.15g). Pgfplots can''t deal with that yet. Using upper deviations.', upDev, loDev );
       end
 
       yDeviations(k) = upDev;
