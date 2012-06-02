@@ -71,6 +71,10 @@ function matlab2tikz( varargin )
 %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
 %   of the output file.
 %
+%   MATLAB2TIKZ('automaticLabels',BOOL,...) determines whether to automatically
+%   add labels to plots (where applicable) which make it possible to refer
+%   to them using \ref{...} (e.g., in the caption of a figure).
+%
 %   Example
 %      x = -pi:pi/10:pi;
 %      y = tan(sin(x)) - sin(tan(x));
@@ -269,6 +273,10 @@ function matlab2tikz( varargin )
   % Allow a string to be added to the header of the generated TikZ file.
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'tikzFileComment', '', @ischar );
 
+  % Add support for automatic labels.
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'automaticLabels', false, @islogical );
+
+  % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse( m2t.cmdOpts, varargin{:} );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % warn for deprecated options
@@ -334,6 +342,10 @@ function matlab2tikz( varargin )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   m2t.tikzFileName = fopen( fid );
+
+  if m2t.cmdOpts.Results.automaticLabels
+      m2t.automaticLabelIndex = 0;
+  end
 
   % By default, reference the PNG (if required) from the TikZ file
   % as the file path of the TikZ file itself. This works if the MATLAB script
@@ -1128,6 +1140,22 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
       end
   end
 
+  if m2t.cmdOpts.Results.automaticLabels
+      [m2t, label] = addLabel(m2t);
+      str = [str, label];
+  end
+
+end
+% =========================================================================
+function [m2t, str] = addLabel(m2t)
+
+  [pathstr, name, ext] = fileparts(m2t.cmdOpts.Results.filename);
+  label = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
+  str = sprintf('\\label{%s}\n', label);
+  m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
+
+  userWarning(m2t, 'Automatically added label ''%s'' for line plot.', label);
+
 end
 % =========================================================================
 function str = plotLine2d(opts, data)
@@ -1163,7 +1191,7 @@ function str = plotLine2d(opts, data)
     % Also, replace "Inf" by the Pgfplots-recognized "inf".
     % Remove this as soon as Pgfplots knows "Inf".
     str_data = strrep(str_data, 'Inf', 'inf');
-    str = sprintf('%s %s \n};\n\n', str, str_data);
+    str = sprintf('%s %s \n};\n', str, str_data);
 
 end
 % =========================================================================
@@ -2073,8 +2101,13 @@ function [m2t,env] = drawSurface( m2t, handle )
     % - remove grids in spectrogram by either removing grid command
     %   or adding: 'grid=none' from/in axis options
     % - handling of huge data amounts in LaTeX.
-    str = [str, sprintf('};\n\n')];
+    str = [str, sprintf('};\n')];
     env = str;
+
+    if m2t.cmdOpts.Results.automaticLabels
+        [m2t, label] = addLabel(m2t);
+        str = [str, label];
+    end
 
 end
 % =========================================================================
