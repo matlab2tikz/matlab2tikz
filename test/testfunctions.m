@@ -460,8 +460,10 @@ end
 function description = stemplot ()
 
   x = 0:25;
-  y = [exp(-.07*x).*cos(x);exp(.05*x).*cos(x)]';
+  y = [exp(-.07*x).*cos(x);
+       exp(.05*x).*cos(x)]';
   h = stem(x,y);
+  legend( 'exp(-.07x)*cos(x)', 'exp(.05*x)*cos(x)', 'Location', 'NorthWest');
   set(h(1),'MarkerFaceColor','blue')
   set(h(2),'MarkerFaceColor','red','Marker','square')
 
