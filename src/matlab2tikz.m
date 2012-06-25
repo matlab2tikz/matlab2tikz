@@ -2112,6 +2112,11 @@ function [m2t,env] = drawSurface( m2t, handle )
 end
 % =========================================================================
 function [ m2t, str ] = drawText(m2t, handle)
+  % Adding text node anywhere in the axex environment.
+  % Not that, in Pgfplots, long texts get cut off at the axes. This is
+  % Different from the default MATLAB behavior. To fix this, one could
+  % use /pgfplots/after end axis/.code.
+
   str = [];
 
   % there may be some text objects floating around a Matlab figure which
