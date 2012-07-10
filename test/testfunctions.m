@@ -205,7 +205,7 @@ function description = sine_with_annotation ()
 
   xlabel('-\pi \leq \Theta \leq \pi');
   ylabel('sin(\Theta)');
-  title('Plot of sin(\Theta)');
+  title({'Plot of sin(\Theta)','subtitle','and here''s one really long subtitle' });
   text(-pi/4,sin(-pi/4),'\leftarrow sin(-\pi\div4)',...
       'HorizontalAlignment','left');
 
@@ -277,7 +277,8 @@ function description = peaks_contourf ()
 %    colorbar('SouthOutside');
 %    colorbar('WestOutside');
 
-  colormap([0:0.1:1; 1:-0.1:0; 0:0.1:1]')
+%  colormap([0:0.1:1; 1:-0.1:0; 0:0.1:1]')
+  colormap hsv;
 
   description = 'Test the contourfill plots.';
 
