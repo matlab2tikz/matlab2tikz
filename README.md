@@ -1,5 +1,5 @@
 This is matlab2tikz, a MATLAB(R) script for converting MATLAB(R) figures into native
-TikZ/pgfplots figures.
+TikZ/Pgfplots figures.
 
 To download and rate matlab2tikz, go to its page on MathWorks 
 http://www.mathworks.com/matlabcentral/fileexchange/22022.
@@ -43,7 +43,7 @@ The workflow is as follows.
    convenient way of doing so is to use `\input{/path/to/myfile.tex}`.
    Also make sure that at the header of your document the Pgfplots package
    is included:
-```
+```latex
 \documentclass{article}
 \usepackage{pgfplots}
 % and optionally (as of Pgfplots 1.3):
