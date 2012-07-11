@@ -792,7 +792,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if strcmp( get( handle, 'Box' ), 'off' )
-      m2t.axesContainers{end}.options{end+1} = 'axis lines=left';
+      m2t.axesContainers{end}.options{end+1} = 'axis lines*=left';
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get scales
@@ -2081,14 +2081,13 @@ function [m2t,env] = drawSurface( m2t, handle )
     end
     [col, row] = size(dz);
 
-    % Check if surf plot is 'spectrogram' or 'surf' and run corresponding
+    % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
+    % Spectrograms need to have the grid removed,
+    % m2t.axesContainers{end}.options{end+1} = 'grid=none';
     dz = dz';
     if isvector(dx)
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        % Plot is 'spectrogram'.
-        % Manually remove the grid in this case.
-        m2t.axesContainers{end}.options{end+1} = 'grid=none';
         for i = 1:row
             for j = 1:col
                 str = [ str, ...
@@ -2100,11 +2099,8 @@ function [m2t,env] = drawSurface( m2t, handle )
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     else
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        % plot is 'surf'
-        dx = dx';
-        dy = dy';
         for i = 1:row
-            str_data = sprintf('%s', num2str([dx(i,:)' dy(i,:)' dz(i,:)'],'(%.15g,%.15g,%.15g)')');
+            str_data = sprintf('%s', num2str([dx(:,i) dy(:,i) dz(i,:)'],'(%.15g,%.15g,%.15g)')');
             % Remove the white space.
             str_data = str_data(~isspace(str_data));
             str = [str, str_data];
@@ -3054,9 +3050,10 @@ function axisOptions = getColorbarOptions( m2t, handle )
           error( 'drawColorbar: Unknown ''Location'' %s.', loc )
   end
 
-  if strcmp( get(handle, 'YScale'), 'log' )
-      cbarStyleOptions{end+1} = 'ymode=log';
-  end
+  % Activate this as soon as it's available in Pgfplots.
+  %if strcmp( get(handle, 'YScale'), 'log' )
+      %cbarStyleOptions{end+1} = 'ymode=log';
+  %end
 
   if m2t.cmdOpts.Results.strict
       % Sampled colors.
