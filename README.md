@@ -13,8 +13,8 @@ The workflow is as follows.
 0. a. Place the matlab2tikz scripts (contents of src/ folder) in a directory where 
          MATLAB can find it (the current directory, for example).
    b. Make sure that your LaTeX installation includes the packages
-      * TikZ (aka PGF, >=2.00) and
-	    * Pgfplots (>=1.3).
+     * TikZ (aka PGF, >=2.00) and
+     * Pgfplots (>=1.3).
 
 1. Generate your plot in MATLAB.
 
@@ -43,26 +43,25 @@ The workflow is as follows.
    convenient way of doing so is to use `\input{/path/to/myfile.tex}`.
    Also make sure that at the header of your document the Pgfplots package
    is included:
-```
-\documentclass{article}
 
-\usepackage{pgfplots}
-% and optionally (as of Pgfplots 1.3):
-\pgfplotsset{compat=newest}
-\pgfplotsset{plot coordinates/math parser=false}
+    \documentclass{article}
 
-\newlength\figureheight
-\newlength\figurewidth
+    \usepackage{pgfplots}
+    % and optionally (as of Pgfplots 1.3):
+    \pgfplotsset{compat=newest}
+    \pgfplotsset{plot coordinates/math parser=false}
 
-\begin{document}
+    \newlength\figureheight
+    \newlength\figurewidth
 
-% Setting the figure dimensions is optional (see above).
-\setlength\figureheight{4cm}
-\setlength\figurewidth{6cm}
-\input{myfile.tex}
+    \begin{document}
 
-\end{document}
-```
+    % Setting the figure dimensions is optional (see above).
+    \setlength\figureheight{4cm}
+    \setlength\figurewidth{6cm}
+    \input{myfile.tex}
+
+    \end{document}
 
 
 There are reported incompatibilties with the follwing LaTeX packages:
