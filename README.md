@@ -1,10 +1,6 @@
 This is matlab2tikz, a MATLAB(R) script for converting MATLAB(R) figures into native
 TikZ/pgfplots figures.
 
-* one
-* two
-* three
-
 To download and rate matlab2tikz, go to its page on MathWorks 
 http://www.mathworks.com/matlabcentral/fileexchange/22022.
 
@@ -14,31 +10,28 @@ party packages, your mileage may vary.
 
 The workflow is as follows.
 
-  0.) a) Place the matlab2tikz scripts (contents of src/ folder) in a directory where 
+0. a. Place the matlab2tikz scripts (contents of src/ folder) in a directory where 
          MATLAB can find it (the current directory, for example).
-      b) Make sure that your LaTeX installation includes the packages
-
+   b. Make sure that your LaTeX installation includes the packages
             TikZ (aka PGF, >=2.00)
-
 	 and
-
 	    Pgfplots (>=1.3).
 
-  1.) Generate your plot in MATLAB.
+1. Generate your plot in MATLAB.
 
-  2.) Invoke matlab2tikz by
+2. Invoke matlab2tikz by
 ```
-        >> matlab2tikz();
+>> matlab2tikz();
+```
+   or
+```
+>> matlab2tikz( 'myfile.tikz' );
 ```
 
-      or
-
-        >> matlab2tikz( 'myfile.tikz' );
-
-  3.) Add the contents of myfile.tikz into your LaTeX source code; a
-      convenient way of doing so is to use \input{/path/to/myfile.tikz}.
-      Also make sure that at the header of your document the packages tikz and
-      pgfplots are included:
+3. Add the contents of myfile.tikz into your LaTeX source code; a
+   convenient way of doing so is to use \input{/path/to/myfile.tikz}.
+   Also make sure that at the header of your document the packages tikz and
+   pgfplots are included:
 
           \usepackage{pgfplots}
 
