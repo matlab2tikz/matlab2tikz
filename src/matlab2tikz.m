@@ -1527,12 +1527,36 @@ function mask = pointReduction( m2t, data )
       return
   end
 
+  % Get info about log scaling.
+  isXlog = false;
+  isYlog = false;
+  if strcmp(m2t.axesContainers{end}.name, 'loglogaxis')
+      isXlog = true;
+      isYlog = true;
+  elseif strcmp(m2t.axesContainers{end}.name, 'semilogx')
+      isXlog = true;
+  elseif strcmp(m2t.axesContainers{end}.name, 'semilogy')
+      isYlog = true;
+  end
+
   mask = false(n,1);
 
   XRef = data(1,:);
   mask(1) = true;
   for kk = 2:n
-      if norm(XRef - data(kk,:)) > threshold
+      % Compute the visible distance of those points,
+      % incorporating possible log-scaling of the axes.
+      visDiff = XRef - data(kk,:);
+      if isXlog
+          % visDiff(1) = log10(XRef(1)) - log10(data(kk,1));
+          visDiff(1) = log10(visDiff(1));
+      end
+      if isYlog
+          visDiff(2) = log10(visDiff(2));
+      end
+      % Check if it's larger than the threshold and
+      % update the reference point in that case.
+      if norm(visualDiff) > threshold
           XRef = data(kk,:);
           mask(kk) = true;
       end
