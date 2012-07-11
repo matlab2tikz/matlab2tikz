@@ -13,9 +13,8 @@ The workflow is as follows.
 0. a. Place the matlab2tikz scripts (contents of src/ folder) in a directory where 
          MATLAB can find it (the current directory, for example).
    b. Make sure that your LaTeX installation includes the packages
-            TikZ (aka PGF, >=2.00)
-	 and
-	    Pgfplots (>=1.3).
+      * TikZ (aka PGF, >=2.00) and
+	    * Pgfplots (>=1.3).
 
 1. Generate your plot in MATLAB.
 
@@ -29,17 +28,17 @@ The workflow is as follows.
 ```
 
 3. Add the contents of myfile.tikz into your LaTeX source code; a
-   convenient way of doing so is to use \input{/path/to/myfile.tikz}.
+   convenient way of doing so is to use `\input{/path/to/myfile.tikz}`.
    Also make sure that at the header of your document the packages tikz and
    pgfplots are included:
-
-      \usepackage{pgfplots}
-
+```
+\usepackage{pgfplots}
+```
   and optionally (as of Pgfplots 1.3)
-
-      \pgfplotsset{compat=newest}
-      \pgfplotsset{plot coordinates/math parser=false}
-
+```
+\pgfplotsset{compat=newest}
+\pgfplotsset{plot coordinates/math parser=false}
+```
   Note:
   The script accepts several options; check them out by invoking the help,
 ```
@@ -54,13 +53,13 @@ The workflow is as follows.
 >> matlab2tikz( 'myfile.tikz', 'height', '\figureheight', 'width', '\figurewidth' );
 ```
   and in the LaTeX source
-
-      \newlength\figureheight
-      \newlength\figurewidth
-      \setlength\figureheight{4cm}
-      \setlength\figurewidth{6cm}
-      \input{myfile.tikz}
-
+```
+\newlength\figureheight
+\newlength\figurewidth
+\setlength\figureheight{4cm}
+\setlength\figurewidth{6cm}
+\input{myfile.tikz}
+```
 There are reported incompatibilties with the follwing LaTeX packages:
    * signalflowdiagram <http://www.texample.net/tikz/examples/signal-flow-building-blocks/>
      (Check out <http://sourceforge.net/tracker/?func=detail&aid=3312653&group_id=224188&atid=1060656>.)
@@ -68,5 +67,3 @@ There are reported incompatibilties with the follwing LaTeX packages:
 If you experience bugs, have nice examples of what matlab2tikz can do, or if
 you are just looking for more information, please visit the web page of
 matlab2tikz <https://github.com/nschloe/matlab2tikz>.
-
-There's also a matlab2tikz forum at http://win.ua.ac.be/~nschloe/forum/12/.
