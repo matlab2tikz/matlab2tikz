@@ -45,6 +45,7 @@ function [ desc, funcName, numFunctions ] = testfunctions ( k )
                            @peaks_contourf      , ...
                            @many_random_points  , ...
                            @randomWithLines     , ...
+                           @double_axes         , ...
                            @logplot             , ...
                            @colorbarLogplot     , ...
                            @legendplot          , ...
@@ -315,6 +316,68 @@ function description = many_random_points ()
 
   description = 'Test the performance when drawing many points.';
 
+end
+% =========================================================================
+function description = double_axes()
+  dyb = 0.1;   % normalized units, bottom offset
+  dyt = 0.1;   % separation between subsequent axes bottoms
+
+  x = [0; 24; 48; 72; 96;];   
+  y = [7.653 7.473 7.637 7.652 7.651];
+
+  figure(1)
+  grid on
+  h1 = plot(x,y,'Color','k');
+
+  % following code is taken from `floatAxisX.m'
+
+  % get position of axes
+  allAxes = get(gcf,'Children');
+  naxes = length(allAxes);
+  ax1Pos = get(allAxes(naxes),'position');
+
+  % rescale and reposition all axes to handle additional axes
+  for an=1:naxes-1
+     if isequal(rem(an,2),0) 
+        % even ones in array of axes handles represent axes on which lines are plotted
+        set(allAxes(an),'Position',[ax1Pos(1,1) ax1Pos(1,2)+dyb ax1Pos(1,3) ax1Pos(1,4)-dyt])
+     else
+        % odd ones in array of axes handles represent axes on which floating x-axss exist
+        axPos = get(allAxes(an),'Position');
+        set(allAxes(an),'Position',[axPos(1,1) axPos(1,2)+dyb axPos(1,3) axPos(1,4)])
+     end
+  end
+  % first axis a special case (doesn't fall into even/odd scenario of figure children)
+  set(allAxes(naxes),'Position',[ax1Pos(1,1) ax1Pos(1,2)+dyb ax1Pos(1,3) ax1Pos(1,4)-dyt])
+  ylimit1 = get(allAxes(naxes),'Ylim');
+
+  % get new position for plotting area of figure
+  ax1Pos = get(allAxes(naxes),'position');
+
+  % axis to which the floating axes will be referenced
+  ref_axis = allAxes(1);
+  refPosition = get(ref_axis,'position');
+
+  % overlay new axes on the existing one
+  ax2 = axes('Position',ax1Pos);
+  % plot data and return handle for the line
+  hl1 = plot(x,y,'k');
+  % make the new axes invisible, leaving only the line visible
+  set(ax2,'visible','off','ylim',ylimit1)
+
+  % set the axis limit mode so that it does not change if the
+  % user resizes the figure window
+  set(ax2,'xLimMode','manual')
+
+  % set up another set of axes to act as floater
+  ax3 = axes('Position',[refPosition(1) refPosition(2)-dyb refPosition(3) 0.01]);
+
+  set(ax3,'box','off','ycolor','w','yticklabel',[],'ytick',[])
+  set(ax3,'XMinorTick','on','color','none','xcolor',get(hl1,'color'))
+
+  xlabel('secondary axis')
+
+  description = 'Double axes';
 end
 % =========================================================================
 % *** FUNCTION logplot
