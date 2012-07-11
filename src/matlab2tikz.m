@@ -849,14 +849,18 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % For double axes pairs, unconditionally put the ordinate left for the
-  % first one, right for the second one.
+  % For double axes pairs, unconditionally put the ordinate labels
+  % left for the first one, right for the second one.
   if alignmentOptions.isElderTwin
       m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          'axis y line*=left', 'axis x line*=bottom'};
+                                         'yticklabel pos=left', ...
+                                         'xticklabel pos=left' ... % aka bottom
+                                         };
   elseif alignmentOptions.isYoungerTwin
       m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                          'axis y line*=right', 'axis x line*=top'};
+                                         'yticklabel pos=right', ...
+                                         'xticklabel pos=right' ... % aka top
+                                          };
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % grid line style
