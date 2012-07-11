@@ -33,27 +33,27 @@ The workflow is as follows.
    Also make sure that at the header of your document the packages tikz and
    pgfplots are included:
 
-          \usepackage{pgfplots}
+      \usepackage{pgfplots}
 
-      and optionally (as of Pgfplots 1.3)
+  and optionally (as of Pgfplots 1.3)
 
-          \pgfplotsset{compat=newest}
-          \pgfplotsset{plot coordinates/math parser=false}
+      \pgfplotsset{compat=newest}
+      \pgfplotsset{plot coordinates/math parser=false}
 
   Note:
-    The script accepts several options; check them out by invoking the help,
-
-      >> help matlab2tikz
-
-    for example 'height', 'width', 'encoding', and some more. Invoke by
-
-      >> matlab2tikz( 'myfile.tikz', 'height', '4cm', 'width', '3in' );
-
-    To specify the dimension of the plot from within the LaTeX document, try
-
-      >> matlab2tikz( 'myfile.tikz', 'height', '\figureheight', 'width', '\figurewidth' );
-
-    and in the LaTeX source
+  The script accepts several options; check them out by invoking the help,
+```
+>> help matlab2tikz
+```
+  for example 'height', 'width', 'encoding', and some more. Invoke by
+```
+>> matlab2tikz( 'myfile.tikz', 'height', '4cm', 'width', '3in' );
+```
+  To specify the dimension of the plot from within the LaTeX document, try
+```
+>> matlab2tikz( 'myfile.tikz', 'height', '\figureheight', 'width', '\figurewidth' );
+```
+  and in the LaTeX source
 
       \newlength\figureheight
       \newlength\figurewidth
