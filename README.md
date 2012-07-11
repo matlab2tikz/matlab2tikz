@@ -19,23 +19,23 @@ The workflow is as follows.
 1. Generate your plot in MATLAB.
 
 2. Invoke matlab2tikz by
-```
+```matlab
 >> matlab2tikz();
 ```
    or
-```
+```matlab
 >> matlab2tikz( 'myfile.tex' );
 ```
   The script accepts numerous options; check them out by invoking the help,
-```
+```matlab
 >> help matlab2tikz
 ```
   for example 'height', 'width', 'encoding', and some more. Invoke by
-```
+```matlab
 >> matlab2tikz( 'myfile.tex', 'height', '4cm', 'width', '3in' );
 ```
   To specify the dimension of the plot from within the LaTeX document, try
-```
+```matlab
 >> matlab2tikz( 'myfile.tex', 'height', '\figureheight', 'width', '\figurewidth' );
 ```
 
