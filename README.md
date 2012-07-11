@@ -43,26 +43,21 @@ The workflow is as follows.
    convenient way of doing so is to use `\input{/path/to/myfile.tex}`.
    Also make sure that at the header of your document the Pgfplots package
    is included:
-
-    \documentclass{article}
-
-    \usepackage{pgfplots}
-    % and optionally (as of Pgfplots 1.3):
-    \pgfplotsset{compat=newest}
-    \pgfplotsset{plot coordinates/math parser=false}
-
-    \newlength\figureheight
-    \newlength\figurewidth
-
-    \begin{document}
-
-    % Setting the figure dimensions is optional (see above).
-    \setlength\figureheight{4cm}
-    \setlength\figurewidth{6cm}
-    \input{myfile.tex}
-
-    \end{document}
-
+```
+\documentclass{article}
+\usepackage{pgfplots}
+% and optionally (as of Pgfplots 1.3):
+\pgfplotsset{compat=newest}
+\pgfplotsset{plot coordinates/math parser=false}
+\newlength\figureheight
+\newlength\figurewidth
+\begin{document}
+% Setting the figure dimensions is optional (see above).
+\setlength\figureheight{4cm}
+\setlength\figurewidth{6cm}
+\input{myfile.tex}
+\end{document}
+```
 
 There are reported incompatibilties with the follwing LaTeX packages:
    * signalflowdiagram <http://www.texample.net/tikz/examples/signal-flow-building-blocks/>
