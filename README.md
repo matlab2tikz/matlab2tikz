@@ -24,42 +24,47 @@ The workflow is as follows.
 ```
    or
 ```
->> matlab2tikz( 'myfile.tikz' );
+>> matlab2tikz( 'myfile.tex' );
 ```
-
-3. Add the contents of myfile.tikz into your LaTeX source code; a
-   convenient way of doing so is to use `\input{/path/to/myfile.tikz}`.
-   Also make sure that at the header of your document the packages tikz and
-   pgfplots are included:
-```
-\usepackage{pgfplots}
-```
-  and optionally (as of Pgfplots 1.3)
-```
-\pgfplotsset{compat=newest}
-\pgfplotsset{plot coordinates/math parser=false}
-```
-  Note:
-  The script accepts several options; check them out by invoking the help,
+  The script accepts numerous options; check them out by invoking the help,
 ```
 >> help matlab2tikz
 ```
   for example 'height', 'width', 'encoding', and some more. Invoke by
 ```
->> matlab2tikz( 'myfile.tikz', 'height', '4cm', 'width', '3in' );
+>> matlab2tikz( 'myfile.tex', 'height', '4cm', 'width', '3in' );
 ```
   To specify the dimension of the plot from within the LaTeX document, try
 ```
->> matlab2tikz( 'myfile.tikz', 'height', '\figureheight', 'width', '\figurewidth' );
+>> matlab2tikz( 'myfile.tex', 'height', '\figureheight', 'width', '\figurewidth' );
 ```
-  and in the LaTeX source
+
+3. Add the contents of `myfile.tex` into your LaTeX source code; a
+   convenient way of doing so is to use `\input{/path/to/myfile.tex}`.
+   Also make sure that at the header of your document the Pgfplots package
+   is included:
 ```
+\documentclass{article}
+
+\usepackage{pgfplots}
+% and optionally (as of Pgfplots 1.3):
+\pgfplotsset{compat=newest}
+\pgfplotsset{plot coordinates/math parser=false}
+
 \newlength\figureheight
 \newlength\figurewidth
+
+\begin{document}
+
+% Setting the figure dimensions is optional (see above).
 \setlength\figureheight{4cm}
 \setlength\figurewidth{6cm}
-\input{myfile.tikz}
+\input{myfile.tex}
+
+\end{document}
 ```
+
+
 There are reported incompatibilties with the follwing LaTeX packages:
    * signalflowdiagram <http://www.texample.net/tikz/examples/signal-flow-building-blocks/>
      (Check out <http://sourceforge.net/tracker/?func=detail&aid=3312653&group_id=224188&atid=1060656>.)
