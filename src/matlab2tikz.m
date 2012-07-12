@@ -2622,7 +2622,9 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Add 'area legend' to the options as otherwise the legend indicators
   % will just highlight the edges.
-  m2t.axesContainers{end}.options{end+1} = 'area legend';
+  if ~ismember('area legend', m2t.axesContainers{end}.options)
+      m2t.axesContainers{end}.options{end+1} = 'area legend';
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = [ str, ...
