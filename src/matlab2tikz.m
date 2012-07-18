@@ -791,10 +791,6 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       return
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  if strcmp( get( handle, 'Box' ), 'off' )
-      m2t.axesContainers{end}.options{end+1} = 'axis lines*=left';
-  end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get scales
   isXLog = strcmp( get( handle, 'XScale' ), 'log' );
   isYLog = strcmp( get( handle, 'YScale' ), 'log' );
@@ -850,20 +846,17 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('title={%s}', title);
   end
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % Axes left or right?
   % For double axes pairs, unconditionally put the ordinate labels
   % left for the first one, right for the second one.
   if alignmentOptions.isElderTwin
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                         'yticklabel pos=left', ...
-                                         'xticklabel pos=left' ... % aka bottom
-                                         };
+      m2t.axesContainers{end}.options{end+1} = 'axis lines*=left';
   elseif alignmentOptions.isYoungerTwin
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                         'yticklabel pos=right', ...
-                                         'xticklabel pos=right' ... % aka top
-                                          };
+      m2t.axesContainers{end}.options{end+1} = 'axis lines*=right';
+  elseif strcmp( get( handle, 'Box' ), 'off' )
+      % Box off and only one axex pair present.
+      m2t.axesContainers{end}.options{end+1} = 'axis lines*=left';
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % grid line style
@@ -1864,6 +1857,11 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   else
       [ m2t, xEdgeColor ] = getColor( m2t, handle, edgeColor, 'patch' );
       drawOptions{end+1} = sprintf( 'draw=%s', xEdgeColor);
+  end
+
+  if ~m2t.currentHandleHasLegend
+      % No legend entry found. Don't include plot in legend.
+      drawOptions{end+1} = 'forget plot';
   end
 
   drawOpts = join( drawOptions, ',' );
