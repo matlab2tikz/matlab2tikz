@@ -828,6 +828,11 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % title
   title = get( get( handle, 'Title' ), 'String' );
+  if iscellstr(title) && length(title) > 1
+      % See comment in corresponding axis label code.
+      m2t.axesContainers{end}.options{end+1} = ...
+          'title style={align=center}';
+  end
   if ~isempty(title)
       titleInterpreter = get( get( handle, 'Title' ), 'Interpreter' );
       if isstr(title)
@@ -838,9 +843,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
           for i = 1:length(title)
               title{i} = prettyPrint(m2t, title{i}, titleInterpreter);
           end
-          % Join them up with a comma as line breaks in Pgfplot titles
-          % aren't possible yet.
-          title = join(title,', ');
+          title = join(title,'\\[1ex]');
       else
           userWarning(m2t, 'Don''t know how to handle this title object.')
       end
@@ -1018,15 +1021,33 @@ function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis label
   axisLabel = get( get( handle, [upper(axis),'Label'] ), 'String' );
-  if iscell(axisLabel)
-      axisLabel = axisLabel{:};
+  if iscellstr(axisLabel) && length(axisLabel) > 1
+      % If there's more than one cell item, the list
+      % is displayed multi-row in MATLAB(R).
+      % To replicate the same in Pgfplots, one can
+      % use xlabel={first\\second\\third} only if the
+      % alignment or the width of the "label box"
+      % is defined. This is a restriction that comes with
+      % TikZ nodes.
+      m2t.axesContainers{end}.options{end+1} = ...
+          [axis, 'label style={align=center}'];
   end
   if ~isempty( axisLabel )
-      labelText = sprintf( '%s', axisLabel );
-      axisLabelInterpreter = get( get( handle, [upper(axis),'Label'] ), 'Interpreter' );
-      labelText = prettyPrint( m2t, labelText, axisLabelInterpreter );
+      axisLabelInterpreter = ...
+          get( get( handle, [upper(axis),'Label'] ), 'Interpreter' );
+      if isstr(axisLabel)
+          label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
+      elseif iscellstr(axisLabel)
+          % Pretty-print first.
+          for i = 1:length(axisLabel)
+              label{i} = prettyPrint(m2t, axisLabel{i}, axisLabelInterpreter);
+          end
+          label = join(label,'\\[1ex]');
+      else
+          userWarning(m2t, 'Don''t know how to handle this axis label object.')
+      end
       m2t.axesContainers{end}.options{end+1} = ...
-          sprintf([axis,'label={%s}'], labelText);
+          sprintf([axis,'label={%s}'], label);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids

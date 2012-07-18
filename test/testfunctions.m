@@ -125,6 +125,10 @@ function description = one_point ()
   plot(0.123, 0.145, 'x');
   set(gca, 'YTick', []);
 
+  xlabel({'one','two','three'});
+  ylabel({'one','two','three'});
+  title({'one','two','three'});
+
   description = 'Plot only one single point.' ;
 
 end
