@@ -1,3 +1,12 @@
+2012-07-19  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.2.2.
+	* Support for multiline titles and axis labels.
+	* Respect log-scaled axes for minimumPointsDistance.
+	* Add support for automatic graph labels via
+	  new option.
+	* About 5 bugfixes.
+
 2012-05-04  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.2.1.
