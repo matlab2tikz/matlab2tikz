@@ -379,8 +379,8 @@ function matlab2tikz( varargin )
                   userInfo(m2t, 'New version available! (%s)\n', m2tMostRecent{1}{1});
                   userInfo(m2t, '**********************************************\n');
 
-                  reply = input(' *** Would you like matlab2tikz to self-upgrade? y/n [y]:','s');
-                  if strcmp(reply, 'y') || isempty(reply)
+                  reply = input(' *** Would you like matlab2tikz to self-upgrade? y/n [n]:','s');
+                  if strcmp(reply, 'y')
                       % Download and unzip the new version it the system's temporary directory.
                       url = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz?download=true';
                       % Download the files and unzip its contents into the folder
@@ -398,7 +398,7 @@ function matlab2tikz( varargin )
                       % and that matlab2tikz.m is not symlinked from some other place.
                       [pathstr, name, ext] = fileparts(mfilename('fullpath'));
                       targetPath = [pathstr, filesep, '..', filesep];
-                      userInfo(m2t, ['Downloading and unzipping to ', targetPath,'...']);
+                      userInfo(m2t, ['Downloading and unzipping to ', targetPath, '...']);
                       filenames = unzip(url, targetPath);
                       userInfo(m2t, 'done.');
                       error('Upgrade successful. Please re-execute.');
