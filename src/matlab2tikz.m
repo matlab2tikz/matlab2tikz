@@ -4763,7 +4763,15 @@ function isBelow = isVersionBelow(env, versionA, versionB)
   m = min(length(vA), length(vB));
   vA = vA(1:m);
   vB = vB(1:m);
-  isBelow = any(vA(:) < vB(:));
+  
+  isBelow = true;
+  for i = 1:m
+    if vA(i) > vB(i)
+      isBelow = false;
+      break;
+    end
+  end
+  
   function arr = versionArray(env,str)
     if ischar(str)
       % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
