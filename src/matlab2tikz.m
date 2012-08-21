@@ -4757,34 +4757,26 @@ function isBelow = isVersionBelow(env, versionA, versionB)
   % Checks if version string or vector versionA is smaller than
   % version string or vector versionB.
 
-  if ischar(versionA)
-      % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
-      if strcmpi(env, 'MATLAB')
-          split = regexp(versionA, '\.', 'split');
-      elseif strcmpi(env, 'Octave')
-          split = strsplit(versionA, '.');
-      end
-      vA = str2num(char(split));
-  else
-      vA = versionA;
-  end
-
-  if ischar(versionB)
-      % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
-      if strcmpi(env, 'MATLAB')
-          split = regexp(versionB, '\.', 'split');
-      elseif strcmpi(env, 'Octave')
-          split = strsplit(versionB, '.');
-      end
-      vB = str2num(char(split));
-  else
-      vB = versionB;
-  end
+  vA = versionArray(env,versionA);
+  vB = versionArray(env,versionB);
 
   m = min(length(vA), length(vB));
   vA = vA(1:m);
   vB = vB(1:m);
   isBelow = any(vA(:) < vB(:));
+  function arr = versionArray(env,str)
+    if ischar(str)
+      % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
+      if strcmpi(env, 'MATLAB')
+          split = regexp(str, '\.', 'split');
+      elseif strcmpi(env, 'Octave')
+          split = strsplit(str, '.');
+      end
+      arr = str2num(char(split)); %#ok
+    else
+      arr = str;
+    end
+  end
 end
 % =========================================================================
 function [retval] = switchMatOct( m2t, matlabValue, octaveValue )
