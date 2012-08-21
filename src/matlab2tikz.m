@@ -64,6 +64,11 @@ function matlab2tikz( varargin )
 %   math mode for more characters (such as operators and figures).
 %   (default: false)
 %
+%   MATLAB2TIKZ('showHiddenStrings',BOOL,...) determines whether to show strings
+%   whose were deliberately hidden. This is usually unnecessary, but can come
+%   in handy for unusual plot types (e.g., polar plots).
+%   (default: false)
+%
 %   MATLAB2TIKZ('interpretTickLabelsAsTex',BOOL,...) determines whether to
 %   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
 %   (default: false)
@@ -265,6 +270,9 @@ function matlab2tikz( varargin )
   % In addition to regular string parsing, an additional stage can be enabled
   % which uses TeX's math mode for more characters like figures and operators.
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'parseStringsAsMath', false, @islogical );
+
+  % Whether or not to show handles with HandleVisibility==false.
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'showHiddenStrings', false, @islogical);
 
   % As opposed to titles, axis labels and such, MATLAB(R) does not interpret tick
   % labels as TeX. matlab2tikz retains this behavior, but if it is desired to
@@ -2198,11 +2206,17 @@ function [ m2t, str ] = drawText(m2t, handle)
 
   str = [];
 
-  % there may be some text objects floating around a Matlab figure which
+  % There may be some text objects floating around a MATLAB figure which
   % are handled by other subfunctions (labels etc.) or don't need to be
-  % handled at all
-  if     strcmp(get(handle, 'Visible'), 'off') ...
-      || strcmp(get(handle, 'HandleVisibility'), 'off')
+  % handled at all.
+  % The HandleVisibility says something about whether the text handle is
+  % visible as a data structure or now. Typically, a handle is hidden
+  % if the graphics aren't supposed to be altered, e.g., axis labels.
+  % Most of those entities are captured by matlab2tikz one way or
+  % another, but sometimes this logic fails. This is the case, for
+  % example, with polar plots and the axis descriptions therein.
+  if strcmp(get(handle, 'Visible'), 'off') ...
+     || (strcmp(get(handle, 'HandleVisibility'), 'off') && ~m2t.cmdOpts.Results.showHiddenStrings)
     return;
   end
 
