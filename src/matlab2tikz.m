@@ -678,8 +678,12 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
 
       % add legend after the plot data
       if m2t.currentHandleHasLegend && ~isempty(legendString)
+          c = prettyPrint(m2t, legendString, interpreter);
+          % We also need a legend alignment option to make multiline
+          % legend entries work. This is added by default in getLegendOpts().
+          c = join(c,'\\');
           env = [env, ...
-                 '\addlegendentry{', prettyPrint(m2t, legendString, interpreter), sprintf('};\n\n')];
+                 '\addlegendentry{', c, sprintf('};\n\n')];
       end
 
       % append the environment
@@ -855,25 +859,14 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % title
   title = get( get( handle, 'Title' ), 'String' );
-  if iscellstr(title) && length(title) > 1
-      % See comment in corresponding axis label code.
-      m2t.axesContainers{end}.options{end+1} = ...
-          'title style={align=center}';
-  end
   if ~isempty(title)
       titleInterpreter = get( get( handle, 'Title' ), 'Interpreter' );
-      if isstr(title)
-          % Pretty-print first.
-          title = prettyPrint(m2t, title, titleInterpreter);
-      elseif iscellstr(title)
-          % Pretty-print first.
-          for i = 1:length(title)
-              title{i} = prettyPrint(m2t, title{i}, titleInterpreter);
-          end
-          title = join(title,'\\[1ex]');
-      else
-          userWarning(m2t, 'Don''t know how to handle this title object.')
+      title = prettyPrint(m2t, title, titleInterpreter);
+      if length(title) > 1
+          m2t.axesContainers{end}.options{end+1} = ...
+              'title style={align=center}';
       end
+      title = join(title, '\\[1ex]');
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('title={%s}', title);
   end
@@ -1045,31 +1038,22 @@ function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis label
   axisLabel = get( get( handle, [upper(axis),'Label'] ), 'String' );
-  if iscellstr(axisLabel) && length(axisLabel) > 1
-      % If there's more than one cell item, the list
-      % is displayed multi-row in MATLAB(R).
-      % To replicate the same in Pgfplots, one can
-      % use xlabel={first\\second\\third} only if the
-      % alignment or the width of the "label box"
-      % is defined. This is a restriction that comes with
-      % TikZ nodes.
-      m2t.axesContainers{end}.options{end+1} = ...
-          [axis, 'label style={align=center}'];
-  end
   if ~isempty( axisLabel )
       axisLabelInterpreter = ...
           get( get( handle, [upper(axis),'Label'] ), 'Interpreter' );
-      if isstr(axisLabel)
-          label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
-      elseif iscellstr(axisLabel)
-          % Pretty-print first.
-          for i = 1:length(axisLabel)
-              label{i} = prettyPrint(m2t, axisLabel{i}, axisLabelInterpreter);
-          end
-          label = join(label,'\\[1ex]');
-      else
-          userWarning(m2t, 'Don''t know how to handle this axis label object.')
+      label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
+      if length(label) > 1
+          % If there's more than one cell item, the list
+          % is displayed multi-row in MATLAB(R).
+          % To replicate the same in Pgfplots, one can
+          % use xlabel={first\\second\\third} only if the
+          % alignment or the width of the "label box"
+          % is defined. This is a restriction that comes with
+          % TikZ nodes.
+          m2t.axesContainers{end}.options{end+1} = ...
+              [axis, 'label style={align=center}'];
       end
+      label = join(label,'\\[1ex]');
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf([axis,'label={%s}'], label);
   end
@@ -2230,6 +2214,8 @@ function [ m2t, str ] = drawText(m2t, handle)
   String = get( handle, 'String' );
   Interpreter = get( handle, 'Interpreter' );
   String = prettyPrint( m2t, String, Interpreter );
+  % For now, don't handle multiline strings.
+  String = String{1};
   VerticalAlignment = get( handle, 'VerticalAlignment' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % translate them to pgf style
@@ -3648,8 +3634,11 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
                 sprintf( 'nodes=%s', textalign ), ...
                 sprintf( 'legend plot pos=%s', pictalign )};
   else
-      % make sure the entries are flush left (default MATLAB behavior)
-      lStyle{end+1} = 'nodes=right';
+      % Make sure the entries are flush left (default MATLAB behavior).
+      % This is also import for multiline legend entries: Without alignment
+      % specification, the TeX document won't compile.
+      %lStyle{end+1} = 'nodes=right';
+      lStyle{end+1} = 'align=left';
   end
 
   if ~isempty( lStyle )
@@ -3682,16 +3671,17 @@ function [pTicks, pTickLabels, hasMinorTicks] = ...
   keywordScale     = [ upper(axis), 'Scale' ];
   keywordMinorTick = [ upper(axis), 'MinorTick' ];
 
-  tickLabels = cellstr( get( handle, keywordTickLabel ) );
+  tickLabels = cellstr(get(handle, keywordTickLabel));
   for k = 1:length(tickLabels)
-      tickLabels{k} = prettyPrint(m2t, tickLabels{k}, labelInterpreter);
+      str = prettyPrint(m2t, tickLabels{k}, labelInterpreter);
+      tickLabels{k} = join(str, '\\');
   end
   tickMode = get( handle, keywordTickMode );
   if strcmp(tickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
       % not required, then let pgfplots take care of the ticks.
       % In most cases, this looks a lot better anyway.
-      pTicks      = [];
+      pTicks = [];
       if length(tickLabels) == 1 && isempty(tickLabels{1})
           pTickLabels = '\empty';
       else
@@ -4819,80 +4809,103 @@ function [retval] = switchMatOct( m2t, matlabValue, octaveValue )
   end
 end
 % =========================================================================
-function string = prettyPrint( m2t, string, interpreter )
+function c = prettyPrint(m2t, strings, interpreter)
   % Some resources on how MATLAB handles rich (TeX) markup:
   % http://www.mathworks.com/help/techdoc/ref/text_props.html#String
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
   % http://www.mathworks.com/help/techdoc/ref/text_props.html#Interpreter
   % http://www.mathworks.com/help/techdoc/ref/text.html#f68-481120
 
-  % If the user set the matlab2tikz parameter 'parseStrings' to false, no
-  % parsing of strings takes place, thus making the user 100% responsible.
-  if ~m2t.cmdOpts.Results.parseStrings
-      return
+  % Multiline handling.
+  % Make sure that the input string is really a cellstr that contains
+  % only one-line strings.
+  if isstr(strings)
+      strings = cellstr(strings);
+  elseif iscellstr(strings)
+      cs = {};
+      for k = 1:length(strings)
+          tmp = cellstr(strings{k});
+          cs = {cs{:}, tmp{:}};
+      end
+      strings = cs;
+  else
+      error('matlab2tikz:prettyPrint', 'Data type not understood.');
   end
 
-  % Make sure we have a valid interpreter set up
-  if ~any( strcmpi( interpreter, {'latex', 'tex', 'none'} ))
-      userWarning( m2t, 'Don''t know interpreter ''%s''. Default handling.', interpreter );
-      interpreter = 'tex';
-  end
+  % Now loop over the strings and return them pretty-printed in c.
+  c = {};
+  for k = 1:length(strings)
 
-  % The interpreter property of the text element defines how the string
-  % is parsed
-  switch lower( interpreter )
-      case 'latex' % Basic subset of the LaTeX markup language
+      % If the user set the matlab2tikz parameter 'parseStrings' to false, no
+      % parsing of strings takes place, thus making the user 100% responsible.
+      if ~m2t.cmdOpts.Results.parseStrings
+          return
+      end
 
-          % Replace $$...$$ with $...$ but otherwise leave untouched
-          string = regexprep( string, '^\$\$(.*)\$\$$', '$$1$' );
+      % Make sure we have a valid interpreter set up
+      if ~any( strcmpi( interpreter, {'latex', 'tex', 'none'} ))
+          userWarning( m2t, 'Don''t know interpreter ''%s''. Default handling.', interpreter );
+          interpreter = 'tex';
+      end
 
-      case 'tex' % Subset of plain TeX markup language
+      % The interpreter property of the text element defines how the string
+      % is parsed
+      switch lower( interpreter )
+          case 'latex' % Basic subset of the LaTeX markup language
 
-          % Parse string piece-wise in separate function.
-          string = parseTexString( m2t, string );
+              % Replace $$...$$ with $...$ but otherwise leave untouched
+              string = regexprep( strings{k}, '^\$\$(.*)\$\$$', '$$1$' );
 
-      case 'none' % Literal characters
+          case 'tex' % Subset of plain TeX markup language
 
-          % Only make special characters TeX compatible
+              % Parse string piece-wise in a separate function.
+              string = parseTexString(m2t, strings{k});
 
-          string = strrep( string, '\', '\textbackslash{}' );
-          % Note: '{' and '}' can't be converted to '\{' and '\}',
-          %       respectively, via strrep(...) as this would lead to
-          %       backslashes converted to '\textbackslash\{\}' because
-          %       the backslash was converted to '\textbackslash{}' in
-          %       the previous step. Using regular expressions with
-          %       negative look-behind makes sure any braces in 'string'
-          %       were not introduced by escaped backslashes.
-          %       Also keep in mind that escaping braces before backslashes
-          %       would not remedy the issue -- in that case 'string' would
-          %       contain backslashes introduced by brace escaping that are
-          %       not supposed to be printable characters.
-          repl = switchMatOct( m2t, '\\{', '\{' );
-          string = regexprep( string, '(?<!\\textbackslash){', repl );
-          repl = switchMatOct( m2t, '\\}', '\}' );
-          string = regexprep( string, '(?<!\\textbackslash{)}', repl );
-          string = strrep( string, '$', '\$' );
-          string = strrep( string, '%', '\%' );
-          string = strrep( string, '_', '\_' );
-          string = strrep( string, '^', '\textasciicircum{}' );
-          string = strrep( string, '#', '\#' );
-          string = strrep( string, '&', '\&' );
-          string = strrep( string, '~', '\textasciitilde{}' ); % or '\~{}'
-          % Clean up: remove superfluous '{}' if it's followed by a backslash
-          string = strrep( string, '{}\', '\' );
-          % Clean up: remove superfluous '{}' at the end of 'string'
-          string = regexprep( string, '\{\}$', '' );
+          case 'none' % Literal characters
 
-          % Make sure to return a string and not a cellstr.
-          if iscellstr( string )
-              string = string{1};
-          end
+              % Only make special characters TeX compatible
 
+              string = strrep( strings{k}, '\', '\textbackslash{}' );
+              % Note: '{' and '}' can't be converted to '\{' and '\}',
+              %       respectively, via strrep(...) as this would lead to
+              %       backslashes converted to '\textbackslash\{\}' because
+              %       the backslash was converted to '\textbackslash{}' in
+              %       the previous step. Using regular expressions with
+              %       negative look-behind makes sure any braces in 'string'
+              %       were not introduced by escaped backslashes.
+              %       Also keep in mind that escaping braces before backslashes
+              %       would not remedy the issue -- in that case 'string' would
+              %       contain backslashes introduced by brace escaping that are
+              %       not supposed to be printable characters.
+              repl = switchMatOct( m2t, '\\{', '\{' );
+              string = regexprep( string, '(?<!\\textbackslash){', repl );
+              repl = switchMatOct( m2t, '\\}', '\}' );
+              string = regexprep( string, '(?<!\\textbackslash{)}', repl );
+              string = strrep( string, '$', '\$' );
+              string = strrep( string, '%', '\%' );
+              string = strrep( string, '_', '\_' );
+              string = strrep( string, '^', '\textasciicircum{}' );
+              string = strrep( string, '#', '\#' );
+              string = strrep( string, '&', '\&' );
+              string = strrep( string, '~', '\textasciitilde{}' ); % or '\~{}'
+              % Clean up: remove superfluous '{}' if it's followed by a backslash
+              string = strrep( string, '{}\', '\' );
+              % Clean up: remove superfluous '{}' at the end of 'string'
+              string = regexprep( string, '\{\}$', '' );
+
+              % Make sure to return a string and not a cellstr.
+              if iscellstr( string )
+                  string = string{1};
+              end
+          otherwise
+              error('matlab2tikz:prettyPrint', 'Unknown interpreter');
+      end
+      c{end+1} = string;
   end
 
 end
 % =========================================================================
-function parsed = parseTexString ( m2t, string )
+function parsed = parseTexString(m2t, string)
 
   % Convert cell string to regular string, otherwise MATLAB complains
   if iscellstr( string )

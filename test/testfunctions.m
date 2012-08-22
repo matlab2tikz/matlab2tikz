@@ -122,17 +122,16 @@ end
 % *** FUNCTION one_point
 function description = one_point ()
 
-plot(1:10)
-title({'hello';'there'})
+  plot(1:10)
+  title({'title', 'multline'})
+  legend(char('Multi-Line Legend Entry','Wont Work 2^2=4'))
+  xlabel({'one','two','three'});
+  ylabel({'one','two','three'});
 
 %  plot(0.123, 0.145, 'x');
-%  set(gca, 'YTick', []);
-%
-%  xlabel({'one','two','three'});
-%  ylabel({'one','two','three'});
-%  title({'one','two','three'});
+  set(gca, 'YTick', []);
 
-  description = 'Plot only one single point.' ;
+  description = 'Plot only one single point.';
 
 end
 % =========================================================================
