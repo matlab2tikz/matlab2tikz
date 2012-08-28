@@ -56,7 +56,7 @@ function matlab2tikz_acidtest( varargin )
   texfile_init( fh );
 
   % query the number of test functions
-  [dummya, dummyb, n] = testfunctions(0);
+  [dummya, dummyb, dummyc, n] = testfunctions(0);
 
   if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
       indices = matlab2tikzOpts.Results.testFunctionIndices;
@@ -83,7 +83,7 @@ function matlab2tikz_acidtest( varargin )
 
       % plot the figure
       try
-          [desc{k}, funcName{k}] = testfunctions( indices(k) );
+          [desc{k}, extraOpts, funcName{k}] = testfunctions( indices(k) );
       catch
           e = lasterror( 'reset' );
           if ~isempty( e.message )
@@ -126,16 +126,20 @@ function matlab2tikz_acidtest( varargin )
           continue
       end
 
-      pdf_file = sprintf( 'data/test%d-reference' , indices(k) );
+      pdf_file = sprintf( 'data/test%d-reference.pdf' , indices(k) );
+      eps_file = sprintf( 'data/test%d-reference.eps' , indices(k) );
       gen_file = sprintf( 'data/test%d-converted.tex', indices(k) );
 
       tic;
 
       % now, test matlab2tikz
       try
-          matlab2tikz( gen_file, 'showInfo', false, ...
-                                 'relativePngPath', '../data/', ...
-                                 'width', '\figurewidth' );
+          matlab2tikz('filename', gen_file, ...
+                      'showInfo', false, ...
+                      'relativePngPath', '../data/', ...
+                      'width', '\figurewidth', ...
+                      extraOpts{:} ...
+                      );
       catch
           e = lasterror('reset');
           if ~isempty( e.message )
@@ -163,13 +167,17 @@ function matlab2tikz_acidtest( varargin )
           end
           tikzerror(k) = true;
       end
-
       % Save reference output as PDF
       try
           switch env
               case 'MATLAB'
-                  % Create a cropped print.
-                  savefig( pdf_file, 'pdf' );
+                  % Create a cropped PDF.
+                  % Unfortunately, MATLAB cannot do that directly, so first
+                  % create an EPS (which has a tight bounding box) and then
+                  % convert it to PDF.
+                  print(gcf, '-depsc2', eps_file);
+                  eps2pdf(eps_file);
+                  %savefig( pdf_file, 'pdf' );
               case 'Octave'
                   % In Octave, figures are automatically cropped when using print().
                   print( strcat(pdf_file,'.pdf'), '-dpdf', '-S415,311', '-r150' );

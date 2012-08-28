@@ -132,7 +132,6 @@ function matlab2tikz( varargin )
 % =========================================================================
   % Check if we are in MATLAB or Octave.
   m2t.env = getEnvironment();
-
   warningMessage = [ '\n',...
                      '================================================================================\n\n', ...
                      '  matlab2tikz is tested and developed on   %s   and\n', ...
@@ -1585,7 +1584,7 @@ function mask = pointReduction( m2t, data )
       end
       % Check if it's larger than the threshold and
       % update the reference point in that case.
-      if norm(visualDiff) > threshold
+      if norm(visDiff) > threshold
           XRef = data(kk,:);
           mask(kk) = true;
       end
