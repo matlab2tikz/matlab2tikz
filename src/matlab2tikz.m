@@ -3461,7 +3461,7 @@ function [ m2t, colorindex ] = cdata2colorindex ( m2t, cdata, imagehandle )
   % Transforms a color in CData format to an index in the color map.
   % Only does something if CDataMapping is 'scaled', really.
 
-  if ~isnumeric(cdata)
+  if ~isnumeric(cdata) && ~islogical(cdata)
       error( 'matlab2tikz:cdata2colorindex',                        ...
              [ 'Don''t know how to handle cdata ''',cdata,'''.' ] );
   end
