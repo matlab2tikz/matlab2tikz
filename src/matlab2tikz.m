@@ -605,11 +605,11 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       end
       legendString = [];
       m2t.currentHandleHasLegend = false;
-      switch m2t.env
-          case 'MATLAB'
-              if ~isempty(m2t.legendHandles)
-                  % Check if current handle is referenced in a legend.
-                  ud = get(m2t.legendHandles(1), 'UserData');
+      % Check if current handle is referenced in a legend.
+      for legendHandle = m2t.legendHandles(:)'
+          switch m2t.env
+              case 'MATLAB'
+                  ud = get(legendHandle, 'UserData');
                   k = find(child == getfield(ud, fieldName));
                   if isempty(k)
                       % Lines of error bar plots are not referenced directly in legends
@@ -621,17 +621,17 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                   if ~isempty(k)
                       % Legend entry found. Add it to the plot.
                       m2t.currentHandleHasLegend = true;
-                      interpreter = get( m2t.legendHandles(1), 'Interpreter' );
+                      interpreter = get(legendHandle, 'Interpreter');
                       legendString = ud.lstrings(k);
                   end
-              end
-          case 'Octave'
-              % Octave handles legend entries on a per-axes basis.
-              m2t.currentHandleHasLegend = m2t.gcaHasLegend;
-              interpreter = get( m2t.legendHandles(1), 'interpreter');
-              legendString = get(child, 'displayname');
-          otherwise
-              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+              case 'Octave'
+                  % Octave handles legend entries on a per-axes basis.
+                  m2t.currentHandleHasLegend = m2t.gcaHasLegend;
+                  interpreter = get(legendHandle, 'interpreter');
+                  legendString = get(child, 'displayname');
+              otherwise
+                  error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+          end
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       switch get( child, 'Type' )
