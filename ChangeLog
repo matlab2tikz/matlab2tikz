@@ -1,3 +1,12 @@
+2012-09-01  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.2.3.
+	* Multiline text for all entities.
+	* Support for logical images.
+	* Support for multiple legends (legends in subplots).
+	* Fixed version check bug.
+	* Fix minumumPointsDistance.
+
 2012-07-19  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.2.2.
