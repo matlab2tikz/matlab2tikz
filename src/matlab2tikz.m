@@ -705,6 +705,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   colorbarKeyword = switchMatOct(m2t,'Colorbar','colorbar');
   switch get( handle, tagKeyword )
       case colorbarKeyword
+          % TODO Find the axes environment that this colorbar belongs to.
           % Handle a colorbar separately.
           m2t.axesContainers{end}.options{end+1} = ...
               matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
@@ -745,8 +746,13 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % Check if this axis environment is referenced by a legend.
   m2t.gcaHasLegend = false;
   if strcmp(m2t.env, 'Octave')
-      ud = get(m2t.legendHandles(1), 'UserData');
-      m2t.gcaHasLegend = ~isempty(find(handle == getfield(ud, 'handle')));
+      for k = 1:length(m2t.legendHandles)
+          ud = get(m2t.legendHandles(k), 'UserData');
+          if ~isempty(find(handle == getfield(ud, 'handle')))
+              m2t.gcaHasLegend = true;
+              break;
+          end
+      end
   end
 
   % get the view angle
@@ -4818,7 +4824,7 @@ function c = prettyPrint(m2t, strings, interpreter)
   % Multiline handling.
   % Make sure that the input string is really a cellstr that contains
   % only one-line strings.
-  if isstr(strings)
+  if ischar(strings)
       strings = cellstr(strings);
   elseif iscellstr(strings)
       cs = {};
