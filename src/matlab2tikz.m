@@ -705,12 +705,26 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   colorbarKeyword = switchMatOct(m2t,'Colorbar','colorbar');
   switch get( handle, tagKeyword )
       case colorbarKeyword
-          % TODO Find the axes environment that this colorbar belongs to.
           % Handle a colorbar separately.
-          m2t.axesContainers{end}.options{end+1} = ...
-              matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
-          m2t.axesContainers{end}.options = ...
-              [m2t.axesContainers{end}.options,  getColorbarOptions(m2t, handle)];
+          % Find the axes environment that this colorbar belongs to.
+          parentAxesHandle = double(get(handle,'axes'));
+          parentFound = false;
+          for k = 1:length(m2t.axesContainers)
+            if m2t.axesContainers{k}.handle == parentAxesHandle
+              k0 = k;
+              parentFound = true;
+              break;
+            end
+          end
+          if ~parentFound
+            warning('Could not find parent axes for color bar. Skipping.');
+            return
+          else
+            m2t.axesContainers{k0}.options{end+1} = ...
+                matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
+            m2t.axesContainers{k0}.options = ...
+                [m2t.axesContainers{k0}.options, getColorbarOptions(m2t, handle)];
+          end
           % Note that m2t.currentHandles.gca does *not* get updated.
           % Within drawColorbar(), m2t.currentHandles.gca is assumed to point
           % to the parent axes.
@@ -732,7 +746,8 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % Use a struct instead of a custom subclass of hgsetget (which would
   % facilitate writing clean code) as structs are more portable (old MATLAB(R)
   % versions, GNU Octave).
-  m2t.axesContainers{end+1} = structWithCell( 'name',     [], ...
+  m2t.axesContainers{end+1} = structWithCell( 'handle',   handle, ...
+                                              'name',     [], ...
                                               'comment',  [], ...
                                               'options',  cell(0), ...
                                               'content',  cell(0), ...
