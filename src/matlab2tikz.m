@@ -182,12 +182,12 @@ function matlab2tikz( varargin )
   m2t.extraRgbColorNames = cell(0);
 
   % the actual contents of the TikZ file go here
-  m2t.content = structWithCell( 'name',     [], ...
-                                'comment',  [], ...
-                                'options',  cell(0), ...
-                                'content',  cell(0), ...
-                                'children', cell(0)  ...
-                              );
+  m2t.content = struct( 'name',     [], ...
+                        'comment',  [], ...
+                        'options',  {cell(0)}, ...
+                        'content',  {cell(0)}, ...
+                        'children', {cell(0)}  ...
+                      );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % scan the options
   m2t.cmdOpts = matlab2tikzInputParser;
@@ -386,7 +386,7 @@ function matlab2tikz( varargin )
                       % Download the files and unzip its contents into the folder
                       % above the folder that contains the current script.
                       % This assumes that the file structure is something like
-                      % 
+                      %
                       %   src/matlab2tikz.m
                       %   src/[...]
                       %   AUTHORS
@@ -719,12 +719,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % Use a struct instead of a custom subclass of hgsetget (which would
   % facilitate writing clean code) as structs are more portable (old MATLAB(R)
   % versions, GNU Octave).
-  m2t.axesContainers{end+1} = structWithCell( 'name',     [], ...
-                                              'comment',  [], ...
-                                              'options',  cell(0), ...
-                                              'content',  cell(0), ...
-                                              'children', cell(0)  ...
-                                             );
+  m2t.axesContainers{end+1} = struct( 'name',     [], ...
+                                      'comment',  [], ...
+                                      'options',  {cell(0)}, ...
+                                      'content',  {cell(0)}, ...
+                                      'children', {cell(0)}  ...
+                                    );
 
   % update gca
   m2t.currentHandles.gca = handle;
@@ -3161,12 +3161,12 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   end
 
   % the actual contents of the TikZ file go here
-  env = structWithCell( 'name',     'axis', ...
-                        'comment',  'colorbar', ...
-                        'options',  cell(0), ...
-                        'content',  cell(0), ...
-                        'children', cell(0)  ...
-                       );
+  env = struct=( 'name',     'axis', ...
+                 'comment',  'colorbar', ...
+                 'options',  {cell(0)}, ...
+                 'content',  {cell(0)}, ...
+                 'children', {cell(0)}  ...
+               );
 
   % Do log handling for color bars, too.
   xScale = get( handle, 'XScale' );
@@ -4763,7 +4763,7 @@ function isBelow = isVersionBelow(env, versionA, versionB)
   m = min(length(vA), length(vB));
   vA = vA(1:m);
   vB = vB(1:m);
-  
+
   isBelow = true;
   for i = 1:m
     if vA(i) > vB(i)
@@ -4771,7 +4771,7 @@ function isBelow = isVersionBelow(env, versionA, versionB)
       break;
     end
   end
-  
+
   function arr = versionArray(env,str)
     if ischar(str)
       % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
@@ -5204,19 +5204,5 @@ function string = parseTexSubstring ( m2t, string )
   % backslash
   string = regexprep( string, '(?<!\\)\{\}$', '' );
 
-end
-% =========================================================================
-function newStruct = structWithCell(varargin)
-  % Constructs a structure with cell variables as MATLAB would make a struct
-  % array by using the equivalent struct() call
-  % Setting values to cell() straight away doesn't work unfortunately
-  % as MATLAB(R) interprets structs with cell values as a cell array of structs.
-  assert(mod(nargin,2)==0,'An even number of arguments is expected');
-  newStruct = struct();
-  keys      = varargin(1:2:end-1);
-  values    = varargin(2:2:end);
-  for iKV = 1:numel(keys)
-      newStruct.(keys{iKV}) = values{iKV};
-  end
 end
 % =========================================================================
