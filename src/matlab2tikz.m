@@ -403,10 +403,10 @@ function matlab2tikz( varargin )
                       % On the hard drive and the zip file. In particular, this assumes
                       % that the folder on the hard drive is writable by the user
                       % and that matlab2tikz.m is not symlinked from some other place.
-                      [pathstr, name, ext] = fileparts(mfilename('fullpath'));
+                      pathstr = fileparts(mfilename('fullpath'));
                       targetPath = [pathstr, filesep, '..', filesep];
                       userInfo(m2t, ['Downloading and unzipping to ', targetPath, '...']);
-                      filenames = unzip(url, targetPath);
+                      unzip(url, targetPath);
                       userInfo(m2t, 'done.');
                       error('Upgrade successful. Please re-execute.');
                   end
@@ -416,14 +416,16 @@ function matlab2tikz( varargin )
       end
   end
   % print some version info to the screen
-  userInfo( m2t, [ 'The latest updates can be retrieved from\n   %s' ], m2t.website );
-
-  % print some version info to the screen
-  userInfo( m2t, 'where you can also make suggestions and rate %s.\n', m2t.name );
-  userInfo( m2t, ['For usage instructions, bug reports, the latest development versions and more, see\n',...
-                  '   https://github.com/nschloe/matlab2tikz,\n', ...
-                  '   https://github.com/nschloe/matlab2tikz/wiki,\n', ...
-                  '   https://github.com/nschloe/matlab2tikz/issues.\n']);
+  versionInfo = ['The latest updates can be retrieved from\n'         ,...
+                 '   %s\n'                                            ,...
+                 'where you can also make suggestions and rate %s.\n' ,...
+                 'For usage instructions, bug reports, the latest'    ,...
+                 ' development versions and more, see\n'              ,...
+                 '   https://github.com/nschloe/matlab2tikz,\n'       ,...
+                 '   https://github.com/nschloe/matlab2tikz/wiki,\n'  ,...
+                 '   https://github.com/nschloe/matlab2tikz/issues.\n'
+                ];
+  userInfo( m2t, versionInfo, m2t.website, m2t.name);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
   saveToFile( m2t, fid, fileWasOpen );
