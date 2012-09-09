@@ -146,18 +146,20 @@ function matlab2tikz( varargin )
 
   envVersion = findEnvironmentVersion( m2t.env );
   if isempty( envVersion )
-      warning( 'Could not determine enviroment version. Continuing and hoping for the best.' );
+      warning( 'Could not determine environment version. Continuing and hoping for the best.' );
   else
       switch m2t.env
           case 'MATLAB'
               % Make sure we're running MATLAB >= 2008b.
               if isVersionBelow(m2t.env, envVersion, [7, 7])
-                  warning(warningMessage, 'MATLAB 2008b', 'MATLAB');
+                  warning('matlab2tikz:deprecatedEnvironment',...
+                          warningMessage, 'MATLAB 2008b', 'MATLAB');
               end
           case 'Octave'
               % Make sure we're running Octave >= 3.4.0.
               if isVersionBelow(m2t.env, envVersion, [3, 4, 0])
-                  warning(warningMessage, 'Octave 3.4.0', 'Octave');
+                  warning('matlab2tikz:deprecatedEnvironment',...
+                          warningMessage, 'Octave 3.4.0', 'Octave');
               end
           otherwise
               error( 'Unknown environment. Need MATLAB(R) or Octave.' )
