@@ -2013,7 +2013,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       end
 
       % Get color indices for indexed color images and truecolor values otherwise.
-      if ndims( cdata ) == 2
+      if ismatrix( cdata )
           [ m2t, colorData ] = imagecolor2colorindex ( m2t, cdata, handle );
       else
           colorData = cdata;
@@ -4727,7 +4727,7 @@ end
 % =========================================================================
 function imwriteWrapperPNG( colorData, cmap, fileName )
     % Write an indexed or a truecolor image
-    if ndims( colorData ) == 2
+    if ismatrix( colorData )
         % According to imwrite's documentation there is support for 1-bit,
         % 2-bit, 4-bit and 8-bit (i.e., 256 colors) indexed images only.
         % When having more colors, a truecolor image must be generated and
