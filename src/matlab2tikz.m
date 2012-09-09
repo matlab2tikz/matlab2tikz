@@ -680,7 +680,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
           % legend entries work. This is added by default in getLegendOpts().
           c = join(c,'\\');
           env = [env, ...
-                 '\addlegendentry{', c, sprintf('};\n\n')];
+                 '\addlegendentry{', c, sprintf('};\n\n')]; %#ok
       end
 
       % append the environment
