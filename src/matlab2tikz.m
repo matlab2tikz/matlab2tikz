@@ -4795,7 +4795,7 @@ function isBelow = isVersionBelow(env, versionA, versionB)
       break
     end
   end
-  
+
 end
 % =========================================================================
 function arr = versionArray(env, str)

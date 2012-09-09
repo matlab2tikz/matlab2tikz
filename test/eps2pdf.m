@@ -17,7 +17,7 @@ function [result,msg] = eps2pdf(epsFile,fullGsPath,orientation)
 %                       0 -> no change (default)
 %                       1 -> flip orientation
 %                       2 -> remove orientation
-%   
+%
 %   - result:       0 if ok, anything else otherwise
 %   - msg:          resulting status on file being processed
 %
@@ -31,7 +31,7 @@ function [result,msg] = eps2pdf(epsFile,fullGsPath,orientation)
 %   is determined by the bounding box and not by the paper size. This can not be
 %   accomplished by using Ghostscript only. So, all that one needs is of course
 %   Matlab and Ghostscript drivers.
-% 
+%
 %   This tool is especially suited for LaTeX (TeX) users who want to create pdf
 %   documents on the fly (by including pdf graphics and using either pdftex or
 %   pdflatex). An example would be, if you are using LaTeX (TeX) to typeset
@@ -118,11 +118,11 @@ else
     if stat
         status = ['pdf file not created - error running Ghostscript - check GS path: ' result];
         if nargout,      result = 1;    end;
-        if nargout > 1,  msg = status;  else, disp(status);  end;  
+        if nargout > 1,  msg = status;  else, disp(status);  end;
     else
-        status = 'pdf successfully created'; 
+        status = 'pdf successfully created';
         if nargout,      result = 0;    end;
-        if nargout > 1,  msg = status;  else, disp(status);  end; 
+        if nargout > 1,  msg = status;  else, disp(status);  end;
     end
 end
 
@@ -241,8 +241,8 @@ if orientation ~= 0
                 orientStr = 'Portrait';
             elseif strfind(lower(orientStr),'portrait')
                 changeOrientation = 1;
-                orientStr = 'Landscape';                
-            end            
+                orientStr = 'Landscape';
+            end
         elseif  ~isempty(orientStr) & orientation == 2      % remove
             if strfind(lower(orientStr),'landscape') | strfind(lower(orientStr),'portrait')
                 changeOrientation = 1;
@@ -301,9 +301,9 @@ if isnumeric(str);
     outstr = str;
     return
 end
-ind = find( ~isspace(str) );        % indices of the non-space characters in the str    
+ind = find( ~isspace(str) );        % indices of the non-space characters in the str
 if isempty(ind)
-    outstr = [];        
+    outstr = [];
 else
     outstr = str( ind(1):ind(end) );
 end

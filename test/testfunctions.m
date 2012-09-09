@@ -3,31 +3,31 @@
 % ***
 % *** Standard example plot from MATLAB's help pages.
 % ***
-% =========================================================================  
+% =========================================================================
 % ***
 % *** Copyright (c) 2008--2012, Nico Schlömer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
-% *** Redistribution and use in source and binary forms, with or without 
-% *** modification, are permitted provided that the following conditions are 
+% *** Redistribution and use in source and binary forms, with or without
+% *** modification, are permitted provided that the following conditions are
 % *** met:
 % ***
-% ***    * Redistributions of source code must retain the above copyright 
+% ***    * Redistributions of source code must retain the above copyright
 % ***      notice, this list of conditions and the following disclaimer.
-% ***    * Redistributions in binary form must reproduce the above copyright 
-% ***      notice, this list of conditions and the following disclaimer in 
+% ***    * Redistributions in binary form must reproduce the above copyright
+% ***      notice, this list of conditions and the following disclaimer in
 % ***      the documentation and/or other materials provided with the distribution
 % ***
-% *** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-% *** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-% *** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-% *** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
-% *** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-% *** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-% *** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-% *** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-% *** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-% *** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+% *** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+% *** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+% *** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+% *** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+% *** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+% *** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+% *** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+% *** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+% *** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+% *** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % *** POSSIBILITY OF SUCH DAMAGE.
 % ***
 % =========================================================================
@@ -107,7 +107,7 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
                          };
 
   numFunctions = length( testfunction_handles );
-  if (k<=0) 
+  if (k<=0)
       % This is used for querying numFunctions.
       desc = '';
       funcName = '';
@@ -117,7 +117,7 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
       funcName = func2str( testfunction_handles{ k } );
   else
       error( 'testfunctions:outOfBounds', ...
-             'Out of bounds (number of testfunctions=%d)', numFunctions ); 
+             'Out of bounds (number of testfunctions=%d)', numFunctions );
   end
 
 end
@@ -341,7 +341,7 @@ function [description, extraOpts] = double_axes()
   dyb = 0.1;   % normalized units, bottom offset
   dyt = 0.1;   % separation between subsequent axes bottoms
 
-  x = [0; 24; 48; 72; 96;];   
+  x = [0; 24; 48; 72; 96;];
   y = [7.653 7.473 7.637 7.652 7.651];
 
   figure(1)
@@ -357,7 +357,7 @@ function [description, extraOpts] = double_axes()
 
   % rescale and reposition all axes to handle additional axes
   for an=1:naxes-1
-     if isequal(rem(an,2),0) 
+     if isequal(rem(an,2),0)
         % even ones in array of axes handles represent axes on which lines are plotted
         set(allAxes(an),'Position',[ax1Pos(1,1) ax1Pos(1,2)+dyb ax1Pos(1,3) ax1Pos(1,4)-dyt])
      else
@@ -492,7 +492,7 @@ function [description, extraOpts] = zoom()
        );
 
   hold off;
-  
+
   axis([pi/2-delta, pi/2+delta, 1-delta, 1+delta] );
 
   description = 'Plain cosine function, zoomed in.';
@@ -709,7 +709,7 @@ end
 function [description, extraOpts] = subplot2x2b ()
 
   x = (1:5);
- 
+
   subplot(2,2,1);
   y = rand(1,5);
   plot(x,y);
@@ -770,7 +770,7 @@ end
 function [description, extraOpts] = subplotCustom ()
 
   x = (1:5);
- 
+
   y = rand(1,5);
   subplot( 'Position', [0.05 0.1 0.3 0.3] )
   plot(x,y);
@@ -835,7 +835,7 @@ function [description, extraOpts] = legendsubplots ()
   % first line
   sigma1=std(y);
   tracey=mean(y,1);
-  plot123=plot(x,tracey,'b-'); 
+  plot123=plot(x,tracey,'b-');
 
   hold on
 
@@ -911,7 +911,7 @@ function [description, extraOpts] = besselImage()
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
-  
+
   m = length(beta);
   n = length(nu);
   trace = zeros(m,n);
@@ -928,7 +928,7 @@ function [description, extraOpts] = besselImage()
   xlabel('Order')
   ylabel('\beta')
   set(gca,'YDir','normal')
-  
+
   description = 'Bessel function.';
   extraOpts = {};
 end
@@ -1051,7 +1051,7 @@ function [description, extraOpts] = scatterPlot()
       extraOpts = {};
       return
   end
-  
+
   data = load( 'seamount' );
   scatter( data.x, data.y, 5, data.z, '^' );
   description = 'Scatter plot with MATLAB(R) data.';
@@ -1664,7 +1664,7 @@ function [description, extraOpts] = hist3d()
 %    X = [MPG,Weight];
 %    hist3(X,[7 7]);
 %    xlabel('MPG'); ylabel('Weight');
-%  
+%
 %    hist3(X,[7 7],'FaceAlpha',.65);
 %    xlabel('MPG'); ylabel('Weight');
 %    set(gcf,'renderer','opengl');
@@ -1709,7 +1709,7 @@ function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
           break
       end
   end
-  
+
   if isempty( versionString )
       % couldn't find `env'
       below = true;
