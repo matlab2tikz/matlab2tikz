@@ -2225,7 +2225,7 @@ function [ m2t, str ] = drawText(m2t, handle)
   [ m2t, tcolor ] = getColor( m2t, handle, color, 'patch' );
   EdgeColor = get( handle, 'EdgeColor' );
   HorizontalAlignment = get( handle, 'HorizontalAlignment' );
-  pos = get( handle, 'Position' );
+  pos = pos2dims(get( handle, 'Position' ));
   String = get( handle, 'String' );
   Interpreter = get( handle, 'Interpreter' );
   String = prettyPrint( m2t, String, Interpreter );
@@ -2280,7 +2280,7 @@ function [ m2t, str ] = drawText(m2t, handle)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = sprintf( '\\node[%s]\nat (axis cs:%.15g, %.15g) {%s};\n', ...
-                 join(style,', '), pos(1), pos(2), String );
+                 join(style,', '), pos.left, pos.bottom, String );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -2324,12 +2324,12 @@ function [ m2t, str ] = drawRectangle( m2t, handle )
       colorOptions{end+1} = sprintf( 'draw=%s', xEdgeColor );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  pos = get( handle, 'Position' );
+  pos = pos2dims(get( handle, 'Position' ));
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   drawOptions = [ lineOptions, colorOptions ];
   % plot the thing
   str = sprintf( '\\draw[%s] (axis cs:%.15g, %.15g) rectangle (axis cs:%.15g, %.15g);\n', ...
-                 join(drawOptions,', '), pos(1), pos(2), pos(1)+pos(3), pos(2)+pos(4) ...
+                 join(drawOptions,', '), pos.left, pos.bottom, pos.right, pos.top ...
                );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
@@ -5263,10 +5263,13 @@ end
 % =========================================================================
 function dims = pos2dims(pos)
 % Position quadruplet [left, bottom, width, height] to dimension structure
-dims = struct('left'  , pos(1),...
-              'bottom', pos(2),...
-              'width' , pos(3),...
-              'height', pos(4));
+  dims = struct('left' , pos(1), 'bottom', pos(2));
+  if numel(pos) == 4
+      dims.width  = pos(3);
+      dims.height = pos(4);
+      dims.right  = dims.left   + dims.width;
+      dims.top    = dims.bottom + dims.height;
+  end
 end
 % =========================================================================
 function use(varargin)
