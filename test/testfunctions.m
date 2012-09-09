@@ -1646,7 +1646,7 @@ end
 % =========================================================================
 function [description, extraOpts] = hist3d()
 
-  if ~exist('hist3','builtin')
+  if ~exist('hist3','builtin') && isempty(which('hist3'))
       fprintf( 'Statistics toolbox not found. Abort.\n\n' );
       description = [];
       extraOpts = {};
