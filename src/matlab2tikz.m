@@ -370,11 +370,10 @@ function matlab2tikz( varargin )
   userInfo( m2t, '\nThis is %s v%s.\n', m2t.name, m2t.version)
 
   % Conditionally check for a new matlab2tikz version.
-  updateNotePrinted = false;
   if m2t.cmdOpts.Results.showInfo
       try
           html = urlread([m2t.website, '/all_files']);
-      catch
+      catch %#ok
           % Couldn't load the URL -- never mind.
           html = [];
       end
