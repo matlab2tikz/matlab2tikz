@@ -443,10 +443,12 @@ end
 % an open file
 function l = filehandleValidation( x, p )
     l = isnumeric(x) && any( x==fopen('all') );
+    use(p);
 end
 % =========================================================================
 function l = isCellOrChar( x, p )
     l = iscell(x) || ischar(x);
+    use(p);
 end
 % =========================================================================
 function deprecatedParameter(m2t, oldParameter, varargin)
@@ -961,6 +963,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
                   [ m2t, legendOpts ] = getLegendOpts( m2t, sibling );
                   m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, legendOpts{:}};
 %                end
+              use(legDims,axisDims);
           end
       end
   end
@@ -1202,13 +1205,14 @@ end
 % =========================================================================
 function [m2t, str] = addLabel(m2t)
 
-  [pathstr, name, ext] = fileparts(m2t.cmdOpts.Results.filename);
+  [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename);
   label = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
   str = sprintf('\\label{%s}\n', label);
   m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
 
   userWarning(m2t, 'Automatically added label ''%s'' for line plot.', label);
 
+  use(pathstr);
 end
 % =========================================================================
 function str = plotLine2d(opts, data)
@@ -1298,6 +1302,7 @@ function dataCellNew = ...
   % 'printPrevious' tells whether or not the previous segment is visible;
   % this information is used for determining when a new 'addplot' needs
   % to be opened.
+  use(m2t);
 
   dataCellNew = cell(0);
 
@@ -1353,6 +1358,7 @@ function dataCellNew = movePointsCloser(m2t, dataCell, xLim, yLim)
   % to the boundary of that box and make sure that lines in the visible
   % box are preserved. This typically involved replacing one point by
   % two new ones.
+  use(m2t);
 
   xWidth = xLim(2) - xLim(1);
   yWidth = yLim(2) - yLim(1);
@@ -2388,6 +2394,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   markerFaceColor = get( h, 'MarkerFaceColor' );
   hasFaceColor    = ~strcmp(markerFaceColor,'none');
   [tikzMarker, markOptions] = translateMarker( m2t, matlabMarker, [], hasFaceColor );
+  use(markOptions);
 
   if length(cData) == 3
       % No special treatment for the colors or markers are needed.
@@ -3293,7 +3300,9 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
+  % TODO: deal with minor ticks
   [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'x' );
+  use(hasMinorTicks);
   if ~isempty( ticks )
       cbarOptions = [ cbarOptions,                                    ...
                        sprintf( 'xtick={%s}', ticks ) ];
@@ -3303,6 +3312,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
                        sprintf( 'xticklabels={%s}', tickLabels ) ];
   end
   [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'y' );
+  use(hasMinorTicks);
   if ~isempty( ticks )
       cbarOptions = [ cbarOptions,                                    ...
                       sprintf( 'ytick={%s}', ticks ) ];
@@ -4071,6 +4081,7 @@ function out = extractValueUnit( str )
     pattern = strcat( '(', fp_regex, ')?', '(\\?[a-z]+)' );
 
     [s,e,te,m,t,nm] = regexp( str, pattern, 'match' );
+    use(s,e,te,m,nm);
 
     if length(t)~=1
         error( 'getAxesDimensions:illegalLength', ...
@@ -4381,6 +4392,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
                                          % If there is more than one, then
                                          % 'idx' has twins. min returns the one
                                          % with the lowest index.
+              use(dummy);
 
               % delete the index from the 'remove list'
               doub(idx) = [];
@@ -4410,6 +4422,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
   [dummy,ix] = sort( sum(C~=0, 2), 'descend' );
+  use(dummy);
   plotOrder = zeros(1,numVisibleHandles);
   plotNumber = 0;
   for k = 1:numVisibleHandles
@@ -4615,6 +4628,8 @@ function refAxesId = getReferenceAxes( loc, colBarPos, axesHandlesPos )
           error( 'getReferenceAxes:illLocation',    ...
                   'Illegal ''Location'' ''%s''.', loc  );
   end
+
+  use(m);
 
 end
 % =========================================================================
@@ -5250,5 +5265,14 @@ dims = struct('left'  , pos(1),...
               'bottom', pos(2),...
               'width' , pos(3),...
               'height', pos(4));
+end
+% =========================================================================
+function use(varargin)
+% This function doesn't actually do anything, but trick MATLAB mlint
+% into believing a variable is used. We pay the price of a function call
+% for this convenience, but are liberated from lots of mlint messages.
+% Once MATLAB 2009a and Octave 3.x are regarded as deprecated,
+% all such occurances can be removed and its parameters
+% should be replaced with the ~ parameter
 end
 % =========================================================================
