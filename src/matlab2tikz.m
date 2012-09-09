@@ -2097,7 +2097,7 @@ function [ m2t, str ] = drawHggroup( m2t, h )
   % for bar plots, for example.
   try
       cl = class( handle(h) );
-  catch
+  catch %#ok
       cl = 'unknown';
   end
 
@@ -3207,10 +3207,11 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   % Assume that the parent axes pair is m2t.currentHandles.gca.
   try
       m2t.currentHandles.gca;
-  catch
-      error( [ 'm2t.currentHandles.gca not set although needed ', ...
-               'by the color bar. The parent axes have not been printed yet.' ] ...
-           )
+  catch %#ok
+      error( [ 'm2t.currentHandles.gca not set although needed by the ', ...
+               'color bar. The parent axes have not been printed yet.' ] ...
+           );
+      % TODO make sure the parent axes get printed before the color bar
   end
   parentDim = getAxesDimensions( m2t.currentHandles.gca, ...
                                  m2t.cmdOpts.Results.width, ...
