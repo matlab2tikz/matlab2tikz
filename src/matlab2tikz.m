@@ -611,13 +611,13 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
           switch m2t.env
               case 'MATLAB'
                   ud = get(legendHandle, 'UserData');
-                  k = find(child == getfield(ud, fieldName));
+                  k = find(child == ud.(fieldName));
                   if isempty(k)
                       % Lines of error bar plots are not referenced directly in legends
                       % as an error bars plot contains two "lines": the data and the
                       % deviations. Here, the legends refer to the specgraph.errorbarseries
                       % handle which is 'Parent' to the line handle.
-                      k = find(get(child,'Parent') == getfield(ud, fieldName));
+                      k = find(get(child,'Parent') == ud.(fieldName));
                   end
                   if ~isempty(k)
                       % Legend entry found. Add it to the plot.
@@ -764,7 +764,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if strcmp(m2t.env, 'Octave')
       for k = 1:length(m2t.legendHandles)
           ud = get(m2t.legendHandles(k), 'UserData');
-          if ~isempty(find(handle == getfield(ud, 'handle')))
+          if ~isempty(find(handle == ud.handle))
               m2t.gcaHasLegend = true;
               break;
           end
