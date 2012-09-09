@@ -939,11 +939,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       end
   else
       % TODO: How to uniquely connect a legend with a pair of axes in Octave?
-      axisDims = get(handle,'Position');
-      axisLeft = axisDims(1);
-      axisBot  = axisDims(2);
-      axisWid  = axisDims(3);
-      axisHei  = axisDims(4);
+      axisDims = pos2dims(get(handle,'Position'));
       % siblings of this handle:
       siblings = get( get(handle,'Parent'), 'Children' );
       % "siblings" always(?) is a column vector. Iterating over the column
@@ -953,18 +949,15 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       siblings = reshape( siblings, 1, [] );
       for sibling = siblings
           if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
-              legDims = get( sibling, 'Position' );
-              legLeft = legDims(1);
-              legBot  = legDims(2);
-              legWid  = legDims(3);
-              legHei  = legDims(4);
+              legDims = pos2dims(get( sibling, 'Position' ));
+
               % TODO The following logic does not work for 3D plots.
               %      => Commented out.
               %      This creates problems though for stacked plots with legends.
-%                if (    legLeft > axisLeft ...
-%                     && legBot > axisBot ...
-%                     && legLeft+legWid < axisLeft+axisWid ...
-%                     && legBot+legHei  < axisBot+axisHei )
+%                if (    legDims.left   > axisDims.left ...
+%                     && legDims.bottom > axisDims.bottom ...
+%                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
+%                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height )
                   [ m2t, legendOpts ] = getLegendOpts( m2t, sibling );
                   m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, legendOpts{:}};
 %                end
@@ -2419,7 +2412,6 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
                       'scatter src=explicit', ...
                       ['scatter/use mapped color={', join(markerOptions,','), '}'] };
   end
-
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
@@ -5250,5 +5242,13 @@ function string = parseTexSubstring ( m2t, string )
   % backslash
   string = regexprep( string, '(?<!\\)\{\}$', '' );
 
+end
+% =========================================================================
+function dims = pos2dims(pos)
+% Position quadruplet [left, bottom, width, height] to dimension structure
+dims = struct('left'  , pos(1),...
+              'bottom', pos(2),...
+              'width' , pos(3),...
+              'height', pos(4));
 end
 % =========================================================================
