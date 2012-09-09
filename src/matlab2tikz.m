@@ -370,11 +370,10 @@ function matlab2tikz( varargin )
   userInfo( m2t, '\nThis is %s v%s.\n', m2t.name, m2t.version)
 
   % Conditionally check for a new matlab2tikz version.
-  updateNotePrinted = false;
   if m2t.cmdOpts.Results.showInfo
       try
           html = urlread([m2t.website, '/all_files']);
-      catch
+      catch %#ok
           % Couldn't load the URL -- never mind.
           html = [];
       end
@@ -404,10 +403,10 @@ function matlab2tikz( varargin )
                       % On the hard drive and the zip file. In particular, this assumes
                       % that the folder on the hard drive is writable by the user
                       % and that matlab2tikz.m is not symlinked from some other place.
-                      [pathstr, name, ext] = fileparts(mfilename('fullpath'));
+                      pathstr = fileparts(mfilename('fullpath'));
                       targetPath = [pathstr, filesep, '..', filesep];
                       userInfo(m2t, ['Downloading and unzipping to ', targetPath, '...']);
-                      filenames = unzip(url, targetPath);
+                      unzip(url, targetPath);
                       userInfo(m2t, 'done.');
                       error('Upgrade successful. Please re-execute.');
                   end
@@ -417,14 +416,16 @@ function matlab2tikz( varargin )
       end
   end
   % print some version info to the screen
-  userInfo( m2t, [ 'The latest updates can be retrieved from\n   %s' ], m2t.website );
-
-  % print some version info to the screen
-  userInfo( m2t, 'where you can also make suggestions and rate %s.\n', m2t.name );
-  userInfo( m2t, ['For usage instructions, bug reports, the latest development versions and more, see\n',...
-                  '   https://github.com/nschloe/matlab2tikz,\n', ...
-                  '   https://github.com/nschloe/matlab2tikz/wiki,\n', ...
-                  '   https://github.com/nschloe/matlab2tikz/issues.\n']);
+  versionInfo = ['The latest updates can be retrieved from\n'         ,...
+                 '   %s\n'                                            ,...
+                 'where you can also make suggestions and rate %s.\n' ,...
+                 'For usage instructions, bug reports, the latest'    ,...
+                 ' development versions and more, see\n'              ,...
+                 '   https://github.com/nschloe/matlab2tikz,\n'       ,...
+                 '   https://github.com/nschloe/matlab2tikz/wiki,\n'  ,...
+                 '   https://github.com/nschloe/matlab2tikz/issues.\n'
+                ];
+  userInfo( m2t, versionInfo, m2t.website, m2t.name);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
   saveToFile( m2t, fid, fileWasOpen );
@@ -595,14 +596,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       % First of all, check if 'child' is referenced in a legend.
       % If yes, some plot types may want to add stuff (e.g. 'forget plot').
       % Add '\addlegendentry{...}' then after the plot.
-      switch m2t.env
-          case 'MATLAB'
-              fieldName = 'handles';
-          case 'Octave'
-              fieldName = 'handle';
-          otherwise
-              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-      end
+      fieldName = switchMatOct(m2t, 'handles', 'handle');
       legendString = [];
       m2t.currentHandleHasLegend = false;
       % Check if current handle is referenced in a legend.
@@ -610,13 +604,13 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
           switch m2t.env
               case 'MATLAB'
                   ud = get(legendHandle, 'UserData');
-                  k = find(child == getfield(ud, fieldName));
+                  k = find(child == ud.(fieldName));
                   if isempty(k)
                       % Lines of error bar plots are not referenced directly in legends
                       % as an error bars plot contains two "lines": the data and the
                       % deviations. Here, the legends refer to the specgraph.errorbarseries
                       % handle which is 'Parent' to the line handle.
-                      k = find(get(child,'Parent') == getfield(ud, fieldName));
+                      k = find(get(child,'Parent') == ud.(fieldName));
                   end
                   if ~isempty(k)
                       % Legend entry found. Add it to the plot.
@@ -746,7 +740,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % Use a struct instead of a custom subclass of hgsetget (which would
   % facilitate writing clean code) as structs are more portable (old MATLAB(R)
   % versions, GNU Octave).
-  m2t.axesContainers{end+1} = struct( 'handle,    handle,    ...
+  m2t.axesContainers{end+1} = struct( 'handle',   handle,    ...
                                       'name',     [],        ...
                                       'comment',  [],        ...
                                       'options',  {cell(0)}, ...
@@ -763,7 +757,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if strcmp(m2t.env, 'Octave')
       for k = 1:length(m2t.legendHandles)
           ud = get(m2t.legendHandles(k), 'UserData');
-          if ~isempty(find(handle == getfield(ud, 'handle')))
+          if ~isempty(find(handle == ud.handle))
               m2t.gcaHasLegend = true;
               break;
           end
@@ -2019,7 +2013,7 @@ function [ m2t, str ] = drawImage( m2t, handle )
       end
 
       % Get color indices for indexed color images and truecolor values otherwise.
-      if ndims( cdata ) == 2
+      if ismatrix( cdata )
           [ m2t, colorData ] = imagecolor2colorindex ( m2t, cdata, handle );
       else
           colorData = cdata;
@@ -4733,7 +4727,7 @@ end
 % =========================================================================
 function imwriteWrapperPNG( colorData, cmap, fileName )
     % Write an indexed or a truecolor image
-    if ndims( colorData ) == 2
+    if ismatrix( colorData )
         % According to imwrite's documentation there is support for 1-bit,
         % 2-bit, 4-bit and 8-bit (i.e., 256 colors) indexed images only.
         % When having more colors, a truecolor image must be generated and

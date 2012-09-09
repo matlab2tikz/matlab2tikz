@@ -84,8 +84,8 @@ function matlab2tikz_acidtest( varargin )
       % plot the figure
       try
           [desc{k}, extraOpts, funcName{k}] = testfunctions( indices(k) );
-      catch
-          e = lasterror( 'reset' );
+      catch %#ok
+          e = lasterror( 'reset' ); %#ok
           if ~isempty( e.message )
               ploterrmsg{k} = [ ploterrmsg{k}, sprintf( 'error: %s\n', e.message ) ];
           end
@@ -99,7 +99,7 @@ function matlab2tikz_acidtest( varargin )
               ploterrmsg{k} = [ ploterrmsg{k}, ...
                                 sprintf( 'error:   %s at line %d, in function %s\n', ...
                                          e.stack(j).file, e.stack(j).line, e.stack(j).name ) ];
-              if isempty(funcName{k}) && ~isempty(regexp(e.stack(j).name, '^testfunctions>'))
+              if isempty(funcName{k}) && ~isempty(regexp(e.stack(j).name, '^testfunctions>','once'))
                   % extract function name
                   funcName{k} = regexprep(e.stack(j).name, '^testfunctions>(.*)', '$1');
               end
@@ -140,8 +140,8 @@ function matlab2tikz_acidtest( varargin )
                       'width', '\figurewidth', ...
                       extraOpts{:} ...
                       );
-      catch
-          e = lasterror('reset');
+      catch %#ok
+          e = lasterror('reset'); %#ok
           if ~isempty( e.message )
               tikzerrmsg{k} = [ tikzerrmsg{k}, sprintf( 'error: %s\n', e.message ) ];
           end
@@ -185,8 +185,8 @@ function matlab2tikz_acidtest( varargin )
               otherwise
                   error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
           end
-      catch
-          e = lasterror('reset');
+      catch %#ok
+          e = lasterror('reset'); %#ok
           if ~isempty( e.message )
               pdferrmsg{k} = [ pdferrmsg{k}, sprintf( 'error: %s\n', e.message ) ];
           end
