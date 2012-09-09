@@ -596,14 +596,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       % First of all, check if 'child' is referenced in a legend.
       % If yes, some plot types may want to add stuff (e.g. 'forget plot').
       % Add '\addlegendentry{...}' then after the plot.
-      switch m2t.env
-          case 'MATLAB'
-              fieldName = 'handles';
-          case 'Octave'
-              fieldName = 'handle';
-          otherwise
-              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-      end
+      fieldName = switchMatOct(m2t, 'handles', 'handle');
       legendString = [];
       m2t.currentHandleHasLegend = false;
       % Check if current handle is referenced in a legend.
