@@ -757,7 +757,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if strcmp(m2t.env, 'Octave')
       for k = 1:length(m2t.legendHandles)
           ud = get(m2t.legendHandles(k), 'UserData');
-          if ~isempty(find(handle == ud.handle))
+          if ~isempty(find( handle == ud.handle, 1))
               m2t.gcaHasLegend = true;
               break;
           end
