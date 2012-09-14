@@ -2358,9 +2358,9 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   % Get color map.
   surfOptions{end+1} = matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
 
+  % TODO Revisit this selection and create a bunch of test plots.
   if strcmpi(plotType, 'surf')
       % Set shader for surface plot.
-      % TODO: find MATLAB equivalents for flat corner and flat mean
       if strcmpi( edgeColor, 'none' ) && strcmpi( faceColor, 'flat' )
           surfOptions{end+1} = 'shader=flat';
       elseif isnumeric(edgeColor) && strcmpi(faceColor, 'flat')
@@ -2371,7 +2371,7 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
       elseif strcmpi(edgeColor, 'none') && strcmpi(faceColor, 'interp')
           surfOptions{end+1} = 'shader=interp';
       else
-          surfOptions{end+1} = 'shader=faceted';
+          surfOptions{end+1} = 'shader=faceted interp';
       end
   elseif strcmpi(plotType, 'mesh')
       surfOptions{end+1} = 'shader=flat';

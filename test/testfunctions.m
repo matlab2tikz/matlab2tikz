@@ -1653,27 +1653,26 @@ function [description, extraOpts] = hist3d()
       return
   end
 
-%    load carbig
-%    X = [MPG,Weight];
-%    hist3(X,[7 7]);
-%    xlabel('MPG'); ylabel('Weight');
-%    set(gcf,'renderer','opengl');
-%    set(get(gca,'child'),'FaceColor','interp','CDataMode','auto');
+%  load carbig
+%  X = [MPG,Weight];
+%  hist3(X,[7 7]);
+%  xlabel('MPG'); ylabel('Weight');
+%  set(get(gca,'child'),'FaceColor','interp','CDataMode','auto');
 
-%    load carbig
-%    X = [MPG,Weight];
-%    hist3(X,[7 7]);
-%    xlabel('MPG'); ylabel('Weight');
-%
-%    hist3(X,[7 7],'FaceAlpha',.65);
-%    xlabel('MPG'); ylabel('Weight');
-%    set(gcf,'renderer','opengl');
+  load carbig
+  X = [MPG,Weight];
+  hist3(X,[7 7]);
+  xlabel('MPG'); ylabel('Weight');
+  hist3(X,[7 7],'FaceAlpha',.65);
+  xlabel('MPG'); ylabel('Weight');
+  % Linux crashed with OpenGL.
+  %%set(gcf,'renderer','opengl');
 
-  load seamount
-  dat = [-y,x]; % Grid corrected for negative y-values
-  n = hist3(dat); % Extract histogram data;
-                  % default to 10x10 bins
-  view([-37.5, 30]);
+%  load seamount
+%  dat = [-y,x]; % Grid corrected for negative y-values
+%  n = hist3(dat); % Extract histogram data;
+%                  % default to 10x10 bins
+%  view([-37.5, 30]);
 
   description = '3D histogram plot.';
   extraOpts = {};
