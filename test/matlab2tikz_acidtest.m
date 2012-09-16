@@ -54,6 +54,10 @@ function matlab2tikz_acidtest( varargin )
   texfile = 'tex/acid.tex';
   fh = fopen( texfile, 'w' );
   texfile_init( fh );
+  
+  % output streams
+  stdout = 1;
+  stderr = 2;
 
   % query the number of test functions
   [dummya, dummyb, dummyc, n] = testfunctions(0);
@@ -76,7 +80,7 @@ function matlab2tikz_acidtest( varargin )
   desc = cell( length(indices), 1 );
   funcName = cell( length(indices), 1 );
   for k = 1:length(indices)
-      fprintf('Executing test case no. %d...\n', indices(k) );
+      fprintf( stdout, 'Executing test case no. %d...\n', indices(k) );
 
       % open a window
       fig_handle = figure;
@@ -113,9 +117,9 @@ function matlab2tikz_acidtest( varargin )
           % be applied constantly as the string that's saved to the LaTeX
           % output must have only one backslash.
           if strcmp( env, 'MATLAB' )
-              fprintf( strrep( ploterrmsg{k}, '\', '\\' ) )
+              fprintf( stderr,  strrep( ploterrmsg{k}, '\', '\\' ) );
           else
-              fprintf( ploterrmsg{k} )
+              fprintf( stderr, ploterrmsg{k} );
           end
           ploterror(k) = true;
       end
@@ -161,9 +165,9 @@ function matlab2tikz_acidtest( varargin )
           % be applied constantly as the string that's saved to the LaTeX
           % output must have only one backslash.
           if strcmp( env, 'MATLAB' )
-              fprintf( strrep( tikzerrmsg{k}, '\', '\\' ) )
+              fprintf( stderr, strrep( tikzerrmsg{k}, '\', '\\' ) );
           else
-              fprintf( tikzerrmsg{k} )
+              fprintf( stderr, tikzerrmsg{k} );
           end
           tikzerror(k) = true;
       end
@@ -206,9 +210,9 @@ function matlab2tikz_acidtest( varargin )
           % be applied constantly as the string that's saved to the LaTeX
           % output must have only one backslash.
           if strcmp( env, 'MATLAB' )
-              fprintf( strrep( pdferrmsg{k}, '\', '\\' ) )
+              fprintf( stderr, strrep( pdferrmsg{k}, '\', '\\' ) );
           else
-              fprintf( pdferrmsg{k} )
+              fprintf( stderr, pdferrmsg{k} );
           end
           pdferror(k) = true;
       end
@@ -230,8 +234,8 @@ function matlab2tikz_acidtest( varargin )
       close( fig_handle );
 
       elapsedTime = toc;
-      fprintf( '%s ', strrep( funcName{k}, '\_', '_' ) )
-      fprintf( 'done (%4.2fs).\n\n', elapsedTime );
+      fprintf( stdout, '%s ', strrep( funcName{k}, '\_', '_' ) );
+      fprintf( stdout, 'done (%4.2fs).\n\n', elapsedTime );
   end
 
   % Write the summary table to the LaTeX file

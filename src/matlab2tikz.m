@@ -146,18 +146,20 @@ function matlab2tikz( varargin )
 
   envVersion = findEnvironmentVersion( m2t.env );
   if isempty( envVersion )
-      warning( 'Could not determine enviroment version. Continuing and hoping for the best.' );
+      warning( 'Could not determine environment version. Continuing and hoping for the best.' );
   else
       switch m2t.env
           case 'MATLAB'
               % Make sure we're running MATLAB >= 2008b.
               if isVersionBelow(m2t.env, envVersion, [7, 7])
-                  warning(warningMessage, 'MATLAB 2008b', 'MATLAB');
+                  warning('matlab2tikz:deprecatedEnvironment',...
+                          warningMessage, 'MATLAB 2008b', 'MATLAB');
               end
           case 'Octave'
               % Make sure we're running Octave >= 3.4.0.
               if isVersionBelow(m2t.env, envVersion, [3, 4, 0])
-                  warning(warningMessage, 'Octave 3.4.0', 'Octave');
+                  warning('matlab2tikz:deprecatedEnvironment',...
+                          warningMessage, 'Octave 3.4.0', 'Octave');
               end
           otherwise
               error( 'Unknown environment. Need MATLAB(R) or Octave.' )
@@ -441,11 +443,11 @@ end
 % =========================================================================
 % validates the optional argument 'filehandle' to be the handle of
 % an open file
-function l = filehandleValidation( x, p )
+function l = filehandleValidation( x, p ) %#ok
     l = isnumeric(x) && any( x==fopen('all') );
 end
 % =========================================================================
-function l = isCellOrChar( x, p )
+function l = isCellOrChar( x, p ) %#ok
     l = iscell(x) || ischar(x);
 end
 % =========================================================================
@@ -676,7 +678,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
           % legend entries work. This is added by default in getLegendOpts().
           c = join(c,'\\');
           env = [env, ...
-                 '\addlegendentry{', c, sprintf('};\n\n')];
+                 '\addlegendentry{', c, sprintf('};\n\n')]; %#ok
       end
 
       % append the environment
@@ -757,7 +759,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   if strcmp(m2t.env, 'Octave')
       for k = 1:length(m2t.legendHandles)
           ud = get(m2t.legendHandles(k), 'UserData');
-          if ~isempty(find(handle == ud.handle))
+          if ~isempty(find( handle == ud.handle, 1))
               m2t.gcaHasLegend = true;
               break;
           end
@@ -939,11 +941,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       end
   else
       % TODO: How to uniquely connect a legend with a pair of axes in Octave?
-      axisDims = get(handle,'Position');
-      axisLeft = axisDims(1);
-      axisBot  = axisDims(2);
-      axisWid  = axisDims(3);
-      axisHei  = axisDims(4);
+      axisDims = pos2dims(get(handle,'Position')); %#ok
       % siblings of this handle:
       siblings = get( get(handle,'Parent'), 'Children' );
       % "siblings" always(?) is a column vector. Iterating over the column
@@ -953,18 +951,15 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       siblings = reshape( siblings, 1, [] );
       for sibling = siblings
           if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
-              legDims = get( sibling, 'Position' );
-              legLeft = legDims(1);
-              legBot  = legDims(2);
-              legWid  = legDims(3);
-              legHei  = legDims(4);
+              legDims = pos2dims(get( sibling, 'Position' )); %#ok
+
               % TODO The following logic does not work for 3D plots.
               %      => Commented out.
               %      This creates problems though for stacked plots with legends.
-%                if (    legLeft > axisLeft ...
-%                     && legBot > axisBot ...
-%                     && legLeft+legWid < axisLeft+axisWid ...
-%                     && legBot+legHei  < axisBot+axisHei )
+%                if (    legDims.left   > axisDims.left ...
+%                     && legDims.bottom > axisDims.bottom ...
+%                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
+%                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height )
                   [ m2t, legendOpts ] = getLegendOpts( m2t, sibling );
                   m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, legendOpts{:}};
 %                end
@@ -1209,7 +1204,7 @@ end
 % =========================================================================
 function [m2t, str] = addLabel(m2t)
 
-  [pathstr, name, ext] = fileparts(m2t.cmdOpts.Results.filename);
+  [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
   label = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
   str = sprintf('\\label{%s}\n', label);
   m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
@@ -1297,7 +1292,7 @@ function dataCell = splitLine( m2t, hasLines, hasMarkers, data, xLim, yLim )
 end
 % =========================================================================
 function dataCellNew = ...
-    splitByVisibility( m2t, hasLines, hasMarkers, dataCell, xLim, yLim )
+    splitByVisibility( m2t, hasLines, hasMarkers, dataCell, xLim, yLim ) %#ok
   % Parts of the line data may sit outside the plotbox.
   % 'segvis' tells us which segment are actually visible, and the
   % following construction loops through it and makes sure that each
@@ -1355,7 +1350,7 @@ function dataCellNew = ...
 
 end
 % =========================================================================
-function dataCellNew = movePointsCloser(m2t, dataCell, xLim, yLim)
+function dataCellNew = movePointsCloser(m2t, dataCell, xLim, yLim) %#ok
   % Move all points outside a box much larger than the visible one
   % to the boundary of that box and make sure that lines in the visible
   % box are preserved. This typically involved replacing one point by
@@ -2097,7 +2092,7 @@ function [ m2t, str ] = drawHggroup( m2t, h )
   % for bar plots, for example.
   try
       cl = class( handle(h) );
-  catch
+  catch %#ok
       cl = 'unknown';
   end
 
@@ -2191,7 +2186,7 @@ function [m2t,env] = drawSurface( m2t, handle )
 
     if m2t.cmdOpts.Results.automaticLabels
         [m2t, label] = addLabel(m2t);
-        str = [str, label];
+        str = [str, label]; %#ok
     end
 
 end
@@ -2224,7 +2219,7 @@ function [ m2t, str ] = drawText(m2t, handle)
   [ m2t, tcolor ] = getColor( m2t, handle, color, 'patch' );
   EdgeColor = get( handle, 'EdgeColor' );
   HorizontalAlignment = get( handle, 'HorizontalAlignment' );
-  pos = get( handle, 'Position' );
+  pos = pos2dims(get( handle, 'Position' ));
   String = get( handle, 'String' );
   Interpreter = get( handle, 'Interpreter' );
   String = prettyPrint( m2t, String, Interpreter );
@@ -2279,7 +2274,7 @@ function [ m2t, str ] = drawText(m2t, handle)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = sprintf( '\\node[%s]\nat (axis cs:%.15g, %.15g) {%s};\n', ...
-                 join(style,', '), pos(1), pos(2), String );
+                 join(style,', '), pos.left, pos.bottom, String );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -2323,12 +2318,12 @@ function [ m2t, str ] = drawRectangle( m2t, handle )
       colorOptions{end+1} = sprintf( 'draw=%s', xEdgeColor );
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  pos = get( handle, 'Position' );
+  pos = pos2dims(get( handle, 'Position' ));
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   drawOptions = [ lineOptions, colorOptions ];
   % plot the thing
   str = sprintf( '\\draw[%s] (axis cs:%.15g, %.15g) rectangle (axis cs:%.15g, %.15g);\n', ...
-                 join(drawOptions,', '), pos(1), pos(2), pos(1)+pos(3), pos(2)+pos(4) ...
+                 join(drawOptions,', '), pos.left, pos.bottom, pos.right, pos.top ...
                );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
@@ -2419,7 +2414,6 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
                       'scatter src=explicit', ...
                       ['scatter/use mapped color={', join(markerOptions,','), '}'] };
   end
-
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
@@ -3207,10 +3201,11 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   % Assume that the parent axes pair is m2t.currentHandles.gca.
   try
       m2t.currentHandles.gca;
-  catch
-      error( [ 'm2t.currentHandles.gca not set although needed ', ...
-               'by the color bar. The parent axes have not been printed yet.' ] ...
-           )
+  catch %#ok
+      error( [ 'm2t.currentHandles.gca not set although needed by the ', ...
+               'color bar. The parent axes have not been printed yet.' ] ...
+           );
+      % TODO make sure the parent axes get printed before the color bar
   end
   parentDim = getAxesDimensions( m2t.currentHandles.gca, ...
                                  m2t.cmdOpts.Results.width, ...
@@ -3300,7 +3295,8 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
-  [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'x' );
+  % TODO: deal with minor ticks
+  [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'x' ); %#ok
   if ~isempty( ticks )
       cbarOptions = [ cbarOptions,                                    ...
                        sprintf( 'xtick={%s}', ticks ) ];
@@ -3309,7 +3305,8 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
       cbarOptions = [ cbarOptions,                                    ...
                        sprintf( 'xticklabels={%s}', tickLabels ) ];
   end
-  [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'y' );
+  [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'y' ); %#ok
+
   if ~isempty( ticks )
       cbarOptions = [ cbarOptions,                                    ...
                       sprintf( 'ytick={%s}', ticks ) ];
@@ -4077,7 +4074,7 @@ function out = extractValueUnit( str )
     fp_regex = '[-+]?\d*\.?\d*(?:e[-+]?\d+)?';
     pattern = strcat( '(', fp_regex, ')?', '(\\?[a-z]+)' );
 
-    [s,e,te,m,t,nm] = regexp( str, pattern, 'match' );
+    [dummy,dummy,dummy,dummy,t,dummy] = regexp( str, pattern, 'match' ); %#ok
 
     if length(t)~=1
         error( 'getAxesDimensions:illegalLength', ...
@@ -4384,10 +4381,11 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
                              'Illegal alignment code %d.', C(i,j) );
               end
 
-              [dummy,idx] = min( dist ); % 'idx' holds the index of the minimum.
-                                         % If there is more than one, then
-                                         % 'idx' has twins. min returns the one
-                                         % with the lowest index.
+              [dummy,idx] = min( dist ); %#ok
+              % 'idx' holds the index of the minimum.
+              % If there is more than one, then
+              % 'idx' has twins. min returns the one
+              % with the lowest index.
 
               % delete the index from the 'remove list'
               doub(idx) = [];
@@ -4416,7 +4414,8 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
 
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
-  [dummy,ix] = sort( sum(C~=0, 2), 'descend' );
+  [dummy,ix] = sort( sum(C~=0, 2), 'descend' ); %#ok
+  
   plotOrder = zeros(1,numVisibleHandles);
   plotNumber = 0;
   for k = 1:numVisibleHandles
@@ -4598,31 +4597,30 @@ function refAxesId = getReferenceAxes( loc, colBarPos, axesHandlesPos )
           % scan in 'axesHandlesPos' for the handle number that lies
           % directly below colBarHandle
           [m,refAxesId]  = min( colBarPos(2) ...
-                                - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) );
+                                - axesHandlesPos(axesHandlesPos(:,4)<colBarPos(2),4) ); %#ok
 
       case {'southoutside'}
           % scan in 'axesHandlesPos' for the handle number that lies
           % directly above colBarHandle
           [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,2)>colBarPos(4),2)...
-                            - colBarPos(4) );
+                            - colBarPos(4) ); %#ok
 
       case {'eastoutside'}
           % scan in 'axesHandlesPos' for the handle number that lies
           % directly left of colBarHandle
           [m,refAxesId]  = min( colBarPos(1) ...
-                            - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) );
+                            - axesHandlesPos(axesHandlesPos(:,3)<colBarPos(1),3) ); %#ok
 
       case {'westoutside'}
           % scan in 'axesHandlesPos' for the handle number that lies
           % directly right of colBarHandle
           [m,refAxesId]  = min( axesHandlesPos(axesHandlesPos(:,1)>colBarPos(3),1) ...
-                            - colBarPos(3)  );
+                            - colBarPos(3)  ); %#ok
 
       otherwise
           error( 'getReferenceAxes:illLocation',    ...
                   'Illegal ''Location'' ''%s''.', loc  );
   end
-
 end
 % =========================================================================
 function userInfo( m2t, message, varargin )
@@ -5249,5 +5247,16 @@ function string = parseTexSubstring ( m2t, string )
   % backslash
   string = regexprep( string, '(?<!\\)\{\}$', '' );
 
+end
+% =========================================================================
+function dims = pos2dims(pos)
+% Position quadruplet [left, bottom, width, height] to dimension structure
+  dims = struct('left' , pos(1), 'bottom', pos(2));
+  if numel(pos) == 4
+      dims.width  = pos(3);
+      dims.height = pos(4);
+      dims.right  = dims.left   + dims.width;
+      dims.top    = dims.bottom + dims.height;
+  end
 end
 % =========================================================================
