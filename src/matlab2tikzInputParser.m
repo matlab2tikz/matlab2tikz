@@ -196,7 +196,7 @@ end
 function result = validate_arg (validator, arg)
   try
     result = validator (arg);
-  catch
+  catch %#ok
     result = false;
   end
 end
