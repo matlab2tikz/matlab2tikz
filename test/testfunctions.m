@@ -103,7 +103,8 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
                            @fill3plot           , ...
                            @rectanglePlot       , ...
                            @herrorbarPlot       , ...
-                           @hist3d
+                           @hist3d              , ...
+                           @myBoxplot
                          };
 
   numFunctions = length( testfunction_handles );
@@ -1677,6 +1678,33 @@ function [description, extraOpts] = hist3d()
   description = '3D histogram plot.';
   extraOpts = {};
 
+end
+% =========================================================================
+function [description, extraOpts] = myBoxplot()
+
+  if ~exist('boxplot','builtin') && isempty(which('boxplot'))
+      fprintf( 'Statistics toolbox not found. Abort.\n\n' );
+      description = [];
+      extraOpts = {};
+      return
+  end
+
+  errors =[
+     0.810000   3.200000   0.059500
+     0.762500  -3.200000   0.455500
+     0.762500   4.000000   0.901000
+     0.762500   3.600000   0.406000
+     0.192500   3.600000   0.307000
+     0.810000  -3.600000   0.604000
+     1.000000  -2.400000   0.505000
+     0.430000  -2.400000   0.455500
+     1.000000   3.200000   0.158500
+  ];
+
+  boxplot(errors);
+
+  description = 'Boxplot.';
+  extraOpts = {};
 end
 % =========================================================================
 function env = getEnvironment
