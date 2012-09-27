@@ -4415,7 +4415,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
   [dummy,ix] = sort( sum(C~=0, 2), 'descend' ); %#ok
-  
+
   plotOrder = zeros(1,numVisibleHandles);
   plotNumber = 0;
   for k = 1:numVisibleHandles
@@ -4851,6 +4851,7 @@ function c = prettyPrint(m2t, strings, interpreter)
       % If the user set the matlab2tikz parameter 'parseStrings' to false, no
       % parsing of strings takes place, thus making the user 100% responsible.
       if ~m2t.cmdOpts.Results.parseStrings
+          c = strings;
           return
       end
 
