@@ -114,7 +114,7 @@ if ~ok
     if nargout > 1,  msg = status;  else disp(status); end;
 else
     % Run Ghostscript
-    comandLine = [fullGsPath ' ' GS_PARAMETERS ' -sOutputFile=' '"' target '"' ' -f ' '"' tmpFile '"'];
+    comandLine = ['"' fullGsPath '"' ' ' GS_PARAMETERS ' -sOutputFile=' '"' target '"' ' -f ' '"' tmpFile '"'];
     [stat, result] = system(comandLine);
     if stat
         status = ['pdf file not created - error running Ghostscript - check GS path: ' result];
