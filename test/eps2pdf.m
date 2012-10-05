@@ -60,11 +60,8 @@ function [result,msg] = eps2pdf(epsFile,fullGsPath,orientation)
 global epsFileContent
 
 if ispc
-    if strcmp(computer,'PCWIN64')
-        DEF_GS_PATH = 'gswin64c.exe';
-    else
-        DEF_GS_PATH = 'gswin32c.exe';
-    end
+    [dummy,DEF_GS_PATH] =  system('where gswin*c.exe');
+    DEF_GS_PATH = DEF_GS_PATH(end-12:end-1);
 else
     DEF_GS_PATH = 'gs';
 end
@@ -117,7 +114,7 @@ if ~ok
     if nargout > 1,  msg = status;  else disp(status); end;
 else
     % Run Ghostscript
-    comandLine = ['"' fullGsPath '"' ' ' GS_PARAMETERS ' -sOutputFile=' '"' target '"' ' -f ' '"' tmpFile '"'];
+    comandLine = [fullGsPath ' ' GS_PARAMETERS ' -sOutputFile=' '"' target '"' ' -f ' '"' tmpFile '"'];
     [stat, result] = system(comandLine);
     if stat
         status = ['pdf file not created - error running Ghostscript - check GS path: ' result];
