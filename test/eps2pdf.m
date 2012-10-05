@@ -60,20 +60,24 @@ function [result,msg] = eps2pdf(epsFile,fullGsPath,orientation)
 global epsFileContent
 
 if ispc
-    DEF_GS_PATH = 'gswin32c.exe';
+    if strcmp(computer,'PCWIN64')
+        DEF_GS_PATH = 'gswin64c.exe';
+    else
+        DEF_GS_PATH = 'gswin32c.exe';
+    end
 else
     DEF_GS_PATH = 'gs';
 end
 GS_PARAMETERS = '-q -dNOPAUSE -dBATCH -dDOINTERPOLATE -dUseFlateCompression=true -sDEVICE=pdfwrite -r1200';
 
-error(nargchk(1,3,nargin));
+narginchk(1,3);
 if nargin < 2 || isempty(fullGsPath)
     fullGsPath = DEF_GS_PATH;
 else
-    if ~exist(fullGsPath)
+    if ~exist(fullGsPath,'dir')
         status = ['Ghostscript executable could not be found: ' fullGsPath];
         if nargout,      result = 1;    end;
-        if nargout > 1,  msg = status;  else, disp(status);  end;
+        if nargout > 1,  msg = status;  else disp(status);  end;
         return
     end
 end
@@ -82,7 +86,7 @@ if nargin < 3 || isempty(orientation)
 end
 orientation = abs(round(orientation));
 orientation = orientation(1);
-if orientation < 0 | orientation > 2
+if orientation < 0 || orientation > 2
     orientation = 0;
 end
 
@@ -110,7 +114,7 @@ tmpFile = fullfile(pathstr,[tmpFileName ext '.eps2pdf~']);
 if ~ok
     status = ['Error while creating temporary eps file: ' epsFile ' - ' errStr];
     if nargout,      result = 1;    end;
-    if nargout > 1,  msg = status;  else, disp(status); end;
+    if nargout > 1,  msg = status;  else disp(status); end;
 else
     % Run Ghostscript
     comandLine = ['"' fullGsPath '"' ' ' GS_PARAMETERS ' -sOutputFile=' '"' target '"' ' -f ' '"' tmpFile '"'];
@@ -118,16 +122,16 @@ else
     if stat
         status = ['pdf file not created - error running Ghostscript - check GS path: ' result];
         if nargout,      result = 1;    end;
-        if nargout > 1,  msg = status;  else, disp(status);  end;
+        if nargout > 1,  msg = status;  else disp(status);  end;
     else
         status = 'pdf successfully created';
         if nargout,      result = 0;    end;
-        if nargout > 1,  msg = status;  else, disp(status);  end;
+        if nargout > 1,  msg = status;  else disp(status);  end;
     end
 end
 
 % Delete tmp file
-if exist(tmpFile)
+if exist(tmpFile,'file')
     delete(tmpFile);
 end
 
@@ -145,8 +149,6 @@ function [ok,errStr] = create_tmpepsfile(epsFile,tmpFile,orientation)
 % Creates tmp eps file - file with refined content
 global epsFileContent
 
-ok = 0;
-errStr = [];
 [ok,errStr] = read_epsfilecontent( epsFile );
 if ~ok
     return
@@ -209,7 +211,7 @@ if isempty(ind)
 end
 ii = ind(1) + 14;
 fromBB = ii;
-while ~((epsFileContent(ii) == sprintf('\n')) | (epsFileContent(ii) == sprintf('\r')) | (epsFileContent(ii) == '%'))
+while ~((epsFileContent(ii) == sprintf('\n')) || (epsFileContent(ii) == sprintf('\r')) || (epsFileContent(ii) == '%'))
     ii = ii + 1;
 end
 toBB = ii - 1;
@@ -230,12 +232,12 @@ if orientation ~= 0
     if ~isempty(ind)
         ii = ind(1) + 14;
         fromOR = ii;
-        while ~((epsFileContent(ii) == sprintf('\n')) | (epsFileContent(ii) == sprintf('\r')) | (epsFileContent(ii) == '%'))
+        while ~((epsFileContent(ii) == sprintf('\n')) || (epsFileContent(ii) == sprintf('\r')) || (epsFileContent(ii) == '%'))
             ii = ii + 1;
         end
         toOR = ii - 1;
         orientStr = strim(epsFileContent(fromOR:toOR));
-        if ~isempty(orientStr) & orientation == 1           % flip
+        if ~isempty(orientStr) && orientation == 1           % flip
             if strfind(lower(orientStr),'landscape')
                 changeOrientation = 1;
                 orientStr = 'Portrait';
@@ -243,8 +245,8 @@ if orientation ~= 0
                 changeOrientation = 1;
                 orientStr = 'Landscape';
             end
-        elseif  ~isempty(orientStr) & orientation == 2      % remove
-            if strfind(lower(orientStr),'landscape') | strfind(lower(orientStr),'portrait')
+        elseif  ~isempty(orientStr) && orientation == 2      % remove
+            if strfind(lower(orientStr),'landscape') || strfind(lower(orientStr),'portrait')
                 changeOrientation = 1;
                 orientStr = ' ';
             end
@@ -278,7 +280,7 @@ global epsFileContent
 NL = '\r\n';        % default (for Windows systems)
 ii = 1;
 len = length(epsFileContent);
-while ~(epsFileContent(ii)==sprintf('\n') | epsFileContent(ii)==sprintf('\r') | ii<len)
+while ~(epsFileContent(ii)==sprintf('\n') || epsFileContent(ii)==sprintf('\r') || ii<len)
     ii = ii + 1;
 end
 if epsFileContent(ii)==sprintf('\n')
