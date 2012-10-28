@@ -207,7 +207,7 @@ function matlab2tikz( varargin )
   m2t.cmdOpts = m2t.cmdOpts.addOptional( m2t.cmdOpts, 'filehandle', [], @filehandleValidation );
 
   % explicitly specify which figure to use
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'figurehandle', gcf, @ishandle );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'figurehandle', get(0,'CurrentFigure'), @ishandle );
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'colormap', [], @isnumeric );
 
   % whether to strictly stick to the default MATLAB plot appearance:
@@ -305,6 +305,9 @@ function matlab2tikz( varargin )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add global elements
+  if isempty(m2t.cmdOpts.Results.figurehandle)
+    error('MATLAB figure not found.');
+  end
   m2t.currentHandles.gcf = m2t.cmdOpts.Results.figurehandle;
   if m2t.cmdOpts.Results.colormap
       m2t.currentHandles.colormap = m2t.cmdOpts.Results.colormap;
