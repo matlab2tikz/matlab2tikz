@@ -2135,6 +2135,10 @@ function [ m2t, str ] = drawHggroup( m2t, h )
           % stair plots
           [m2t, str] = drawStairSeries( m2t, h );
 
+      case {'specgraph.areaseries'}
+          % scatter plots
+          [m2t,str] = drawAreaSeries( m2t, h );
+
       case {'specgraph.contourgroup', 'hggroup'}
           % handle all those the usual way
           [m2t, str] = handleAllChildren( m2t, h );
@@ -2825,6 +2829,60 @@ function [ m2t, str ] = drawStairSeries( m2t, h )
                     sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
   end
   str = [ str, sprintf(' };\n\n') ];
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+end
+% =========================================================================
+function [ m2t, str ] = drawAreaSeries( m2t, h )
+  % Takes care of MATLAB's stem plots.
+  %
+  % TODO Get rid of code duplication with 'drawAxes'.
+
+  str = [];
+
+  if ~isfield(m2t, 'addedAreaOption') || isempty(m2t.addedAreaOption) || ~m2t.addedAreaOption
+      % Add 'area style' to axes options.
+      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
+                                         'area style', ...
+                                         'stack plots=y'};
+      m2t.addedAreaOption = true;
+  end
+
+  % Handle draw options.
+  % define edge color
+  drawOptions = {};
+  edgeColor  = get( h, 'EdgeColor' );
+  [ m2t, xEdgeColor ] = getColor( m2t, h, edgeColor, 'patch' );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % define face color;
+  % quite oddly, this value is not coded in the handle itself, but in its
+  % child patch.
+  child      = get( h, 'Children' );
+  faceColor  = get( child, 'FaceColor');
+  [ m2t, xFaceColor ] = getColor( m2t, h, faceColor, 'patch' );
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % gather the draw options
+  lineStyle = get( h, 'LineStyle' );
+  drawOptions{end+1} = sprintf( 'fill=%s', xFaceColor );
+  if strcmp( lineStyle, 'none' )
+      drawOptions{end+1} = 'draw=none';
+  else
+      drawOptions{end+1} = sprintf( 'draw=%s', xEdgeColor );
+  end
+  drawOpts = join( drawOptions, ',' );
+
+  % plot the thing
+  str = [ str, ...
+          sprintf('\\addplot[%s] coordinates{', drawOpts) ];
+
+  xData = get( h, 'XData' );
+  yData = get( h, 'YData' );
+
+  for k=1:length(xData)
+      str = strcat( str, ...
+                    sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
+  end
+  str = [ str, sprintf(' }\n\\closedcycle;\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end

@@ -104,7 +104,8 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
                            @rectanglePlot       , ...
                            @herrorbarPlot       , ...
                            @hist3d              , ...
-                           @myBoxplot
+                           @myBoxplot           , ...
+                           @areaPlot
                          };
 
   numFunctions = length( testfunction_handles );
@@ -1704,6 +1705,15 @@ function [description, extraOpts] = myBoxplot()
   boxplot(errors);
 
   description = 'Boxplot.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = areaPlot()
+
+  area(1:3, rand(3));
+  legend('foo', 'bar', 'foobar');
+
+  description = 'Area plot.';
   extraOpts = {};
 end
 % =========================================================================
