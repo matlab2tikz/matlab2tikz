@@ -494,11 +494,13 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   fh          = m2t.currentHandles.gcf;
   axesHandles = findobj( fh, 'type', 'axes' );
 
-  % Find all legend handles. This is MATLAB-only.
-  legendHandleIdx = strcmp( get(axesHandles,'Tag'), 'legend' );
-  m2t.legendHandles = axesHandles(legendHandleIdx);
-  % Remove all legend handles as they are treated separately.
-  axesHandles = axesHandles(~legendHandleIdx);
+  if ~isempty(axesHandles)
+      % Find all legend handles. This is MATLAB-only.
+      legendHandleIdx = strcmp( get(axesHandles,'Tag'), 'legend' );
+      m2t.legendHandles = axesHandles(legendHandleIdx);
+      % Remove all legend handles as they are treated separately.
+      axesHandles = axesHandles(~legendHandleIdx);
+  end
 
   % Turn around the handles vector to make sure that plots that appeared
   % first also appear first in the vector. This has effects on the alignment
@@ -4153,6 +4155,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   %       which could be returned along with its properties
 
   numVisibleHandles = 0;
+  visibleAxesHandles = [];
   for k = 1:length(axesHandles)
       if axisIsVisible( axesHandles(k) )
           numVisibleHandles = numVisibleHandles+1;
