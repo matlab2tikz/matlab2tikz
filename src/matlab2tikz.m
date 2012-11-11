@@ -812,6 +812,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('width=%s', dim.x.unit);
   else
+      if strcmp(dim.x.unit, 'px')
+          % TikZ doesn't know pixels. -- Convert to inches.
+          dpi = get(0, 'ScreenPixelsPerInch');
+          dim.x.value = dim.x.value / dpi;
+          dim.x.unit = 'in';
+      end
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('width=%.15g%s', dim.x.value, dim.x.unit);
   end
@@ -820,6 +826,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('height=%s', dim.y.unit);
   else
+      if strcmp(dim.y.unit, 'px')
+          % TikZ doesn't know pixels. -- Convert to inches.
+          dpi = get(0, 'ScreenPixelsPerInch');
+          dim.y.value = dim.y.value / dpi;
+          dim.y.unit = 'in';
+      end
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('height=%.15g%s', dim.y.value, dim.y.unit);
   end
