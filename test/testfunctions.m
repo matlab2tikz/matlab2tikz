@@ -105,7 +105,9 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
                            @herrorbarPlot       , ...
                            @hist3d              , ...
                            @myBoxplot           , ...
-                           @areaPlot
+                           @areaPlot            , ...
+                           @customLegend        , ...
+                           @croppedImage
                          };
 
   numFunctions = length( testfunction_handles );
@@ -122,10 +124,48 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
              'Out of bounds (number of testfunctions=%d)', numFunctions );
   end
 
+  return;
 end
 % =========================================================================
 % *** FUNCTION one_point
-function [description, extraOpts] = one_point ()
+function [description, extraOpts] = one_point()
+
+%%--------------------------------------------------
+%t_start=0.0;
+%t_end=60;
+%delta_t = 0.1;
+%number_of_intpoints = (t_end - t_start ) / delta_t;
+%
+%xp = linspace(t_start, t_end, number_of_intpoints);
+%yp1 = xp.^2+2;
+%yp2 = xp.^2+50.*sin(xp)-1;
+%yp3 = sin(xp);
+%
+%xp = reshape(xp,size(xp,2),size(xp,1));
+%yp1 = reshape(yp1,size(yp1,2),size(yp1,1));
+%yp2 = reshape(yp2,size(yp2,2),size(yp2,1));
+%yp3 = reshape(yp3,size(yp3,2),size(yp3,1));
+%%--------------------------------------------------
+%
+%% figure
+%% plotyy
+%[AX,P1,P2] = plotyy(xp, [ yp2  , yp1      ], xp     ,   yp3);
+%% setting axis labels
+%set(get(AX(1),'Ylabel'),'String','$E_{kin}$,$E_{pot}$ [J] x $10^{-3}$','Interpreter','tex');
+%set(get(AX(2),'Ylabel'),'String','$E_{pot}$ [J] x $10^{-3}$');
+%xlabel('t [ns]');
+%% line Properties
+%set(P1,'LineWidth',1);
+%set(P1(1),'LineStyle','-','Color',[1 0 0])
+%set(P1(2),'LineStyle','-','Color',[0 0 0]);
+%set(P2,'LineStyle','-','LineWidth',1,'Color',[0 0 1])
+%grid on;
+%hold on;
+%legend1 = legend([P1(1) P1(2) P2],'$E_{tot}$','$E_{kin}$','$E_{pot}$');
+%set(legend1,'Box','off','Orientation','horizontal','Location','NorthOutside');
+%--------------------------------------------------
+% output
+%matlab2tikz('parseStrings', false, 'interpretTickLabelsAsTex', true,'width', '\figurewidth', 'height','\figureheight', 'test.tex')
 
   plot(1:10)
   title({'title', 'multline'})
@@ -141,10 +181,6 @@ function [description, extraOpts] = one_point ()
 
 end
 % =========================================================================
-% *** FUNCTION plain_cos
-% ***
-% *** Most simple example.
-% ***
 function [description, extraOpts] = plain_cos()
 
   fplot( @cos, [0,2*pi] );
@@ -173,12 +209,8 @@ function [description, extraOpts] = plain_cos()
 
 end
 % =========================================================================
-% *** FUNCTION sine_with_markers
-% ***
-% *** Standard example plot from MATLAB's help pages.
-% ***
-% =========================================================================
 function [description, extraOpts] = sine_with_markers ()
+  % Standard example plot from MATLAB's help pages.
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -204,11 +236,6 @@ function [description, extraOpts] = sine_with_markers ()
   extraOpts = {};
 
 end
-% =========================================================================
-% *** FUNCTION sine_with_annotation
-% ***
-% *** Standard example plot from MATLAB's help pages.
-% ***
 % =========================================================================
 function [description, extraOpts] = sine_with_annotation ()
 
@@ -245,11 +272,6 @@ function [description, extraOpts] = linesWithOutliers()
   extraOpts = {};
 end
 % =========================================================================
-% *** FUNCTION peaks_contour
-% ***
-% *** Standard example plot from MATLAB's help pages.
-% ***
-% =========================================================================
 function [description, extraOpts] = peaks_contour()
 
   [C, h] = contour(peaks(20),10);
@@ -271,7 +293,8 @@ function [description, extraOpts] = contourPenny()
   if ~exist('penny.mat','file')
       fprintf( 'penny data set not found. Abort.\n\n' );
       description = [];
-      return
+      extraOpts = {};
+      return;
   end
 
   load penny;
@@ -282,11 +305,6 @@ function [description, extraOpts] = contourPenny()
   extraOpts = {};
 
 end
-% =========================================================================
-% *** FUNCTION peaks_contourf
-% ***
-% *** Standard example plot from MATLAB's help pages.
-% ***
 % =========================================================================
 function [description, extraOpts] = peaks_contourf ()
 
@@ -320,11 +338,6 @@ function [description, extraOpts] = randomWithLines()
   description = 'Random points with lines.';
   extraOpts = {};
 end
-% =========================================================================
-% *** FUNCTION many_random_points
-% ***
-% *** Test the performance when drawing many points.
-% ***
 % =========================================================================
 function [description, extraOpts] = many_random_points ()
 
@@ -402,31 +415,30 @@ function [description, extraOpts] = double_axes()
   extraOpts = {};
 end
 % =========================================================================
-% *** FUNCTION logplot
-% ***
-% *** Test logscaled axes.
-% ***
-% =========================================================================
-function [description, extraOpts] = logplot ()
+function [description, extraOpts] = logplot()
 
   x = logspace(-1,2);
+  x
   loglog(x,exp(x),'-s')
-  grid on
+  grid on;
 
   description = 'Test logscaled axes.';
   extraOpts = {};
 
 end
 % =========================================================================
-% *** FUNCTION colorbarLogplot
-% ***
-% *** Logscaled colorbar.
-% ***
-% =========================================================================
 function [description, extraOpts] = colorbarLogplot ()
 
-  imagesc([1 10 100]);
-  set(colorbar(), 'YScale', 'log');
+  switch getEnvironment()
+      case 'MATLAB'
+          imagesc([1 10 100]);
+      case 'Octave'
+          % TODO find out what to do for octave here
+          imagesc([1 10 100]);
+      otherwise
+          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+  end
+  %set(colorbar(), 'YScale', 'log');
 
   description = 'Logscaled colorbar.';
   extraOpts = {};
@@ -1714,6 +1726,38 @@ function [description, extraOpts] = areaPlot()
   legend('foo', 'bar', 'foobar');
 
   description = 'Area plot.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = customLegend()
+
+  x = -pi:pi/10:pi;
+  y = tan(sin(x)) - sin(tan(x));
+  plot(x,y,'--rs');
+
+  lh=legend('y',4);
+  set(lh,'color','g')
+  set(lh,'edgecolor','r')
+  set(lh, 'position',[.5 .6 .1 .05])
+
+  description = 'Custom legend.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = croppedImage()
+
+  load('flujet','X','map');
+  image(X)
+  colormap(map)
+  %axis off
+  axis image
+  xlim([50 200])
+  ylim([50 200])
+  % colorbar at top
+  colorbar('north');
+  set(gca,'Units','normalized');
+
+  description = 'Custom legend.';
   extraOpts = {};
 end
 % =========================================================================

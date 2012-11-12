@@ -2215,6 +2215,10 @@ function [ m2t, str ] = drawHggroup( m2t, h )
           % scatter plots
           [m2t,str] = drawScatterPlot( m2t, h );
 
+      case 'unknown'
+          % Weird spurious class from Octave.
+          [m2t, str] = handleAllChildren( m2t, h );
+
       otherwise
           userWarning( m2t, 'Don''t know class ''%s''. Default handling.', cl );
           [m2t, str] = handleAllChildren( m2t, h );
