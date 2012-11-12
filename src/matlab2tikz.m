@@ -3674,8 +3674,9 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
           anchor = 'south east';
       case 'none'
           % TODO
-          position = [-dist, 0];
-          anchor = 'south east';
+          pos = get(handle, 'Position');
+          position = pos(1:2);
+          anchor = 'south west';
       case {'best','bestoutside'}
           % TODO: Implement these.
           % The position could be determined by means of 'Position' and/or
