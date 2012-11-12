@@ -2012,12 +2012,12 @@ function [ m2t, str ] = drawImage( m2t, handle )
   end
 
   % read x-, y-, and color-data
-  xData = get( handle, 'XData' );
-  yData = get( handle, 'YData' );
-  cdata = get( handle, 'CData' );
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  cdata = get(handle, 'CData');
 
-  m = size(cdata,1);
-  n = size(cdata,2);
+  m = size(cdata, 1);
+  n = size(cdata, 2);
 
   if ~strcmp( get(m2t.currentHandles.gca,'Visible'), 'off' )
       % Flip the image over as the PNG gets written starting at (0,0) that is,
@@ -2064,11 +2064,27 @@ function [ m2t, str ] = drawImage( m2t, handle )
       imwriteWrapperPNG( colorData, m2t.currentHandles.colormap, pngFileName );
       % ------------------------------------------------------------------------
 
-      xLim = get( m2t.currentHandles.gca, 'XLim' );
-      yLim = get( m2t.currentHandles.gca, 'YLim' );
+      xLim = get(m2t.currentHandles.gca, 'XLim');
+      yLim = get(m2t.currentHandles.gca, 'YLim');
+
+      opts = {sprintf('xmin=%d', xLim(1)), ...
+              sprintf('xmax=%d', xLim(2)), ...
+              sprintf('ymin=%d', yLim(1)), ...
+              sprintf('ymax=%d', yLim(2))};
+
+      if xLim(2)-xLim(1) < n || yLim(2)-yLim(1) < m
+          % Needs trimming.
+          % TODO flipped images
+          opts = {opts{:}, ...
+                  sprintf('includegraphics={trim=%d %d %d %d,clip}', ...
+                          xLim(1), m-yLim(2), ...
+                          n-xLim(2), yLim(1))};
+      end
+
       str = [ str, ...
-              sprintf( '\\addplot graphics [xmin=%d, xmax=%d, ymin=%d, ymax=%d] {%s};\n', ...
-                       xLim(1), xLim(2), yLim(1), yLim(2), pngReferencePath) ];
+              sprintf( '\\addplot graphics [%s] {%s};\n', ...
+                       join(opts,','), pngReferencePath) ];
+      % TODO crop the image accordingly
       userInfo( m2t, [ '\nA PNG file is stored at ''%s'' for which\n', ...
                        'the TikZ file contains a reference to ''%s''.\n', ...
                        'You may need to adapt this, depending on the relative\n', ...
@@ -4321,8 +4337,9 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   nonCbarHandles              = (1:numVisibleHandles);
   nonCbarHandles(cbarHandles) = [];
   for k = cbarHandles
-      axesPos(k,:) = correctColorbarPos( visibleAxesHandles(k), ...
-                                         axesPos(nonCbarHandles,:) );
+      axesPos(k,:) = correctColorbarPos(m2t, ...
+                                        visibleAxesHandles(k), ...
+                                        axesPos(nonCbarHandles,:) );
   end
 
   % now, the color bars are nicely aligned with the plots
@@ -4651,11 +4668,11 @@ function pgfOpt = cornerCode2pgfplotOption( code )
 
 end
 % =========================================================================
-function pos = correctColorbarPos( colBarHandle, axesHandlesPos )
+function pos = correctColorbarPos(m2t, colBarHandle, axesHandlesPos)
   % The handle 'colBarHandle' is the handle of a color bar,
   % 'axesHandlesPos' a (nx4)-matrix containing the positions of all
   % *non-colorbar* handles.
-  % The function looks for the color bar's parent and returnes the position
+  % The function looks for the color bar's parent and returns the position
   % "as it should be".
 
   colBarPos    = get( colBarHandle, 'Position' );
@@ -4674,6 +4691,7 @@ function pos = correctColorbarPos( colBarHandle, axesHandlesPos )
       case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'alignSubPlots:getColorbarPos',                     ...
                         'Don''t know how to deal with inner colorbars yet.' );
+          % TODO set pos to something meaningful
           return;
 
       case {'northoutside','southoutside'}
