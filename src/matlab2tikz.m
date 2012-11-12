@@ -381,7 +381,7 @@ function matlab2tikz( varargin )
   userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2tikz.)\n', ...
                  '(For all other options, type ''help matlab2tikz''.)\n']);
 
-  userInfo( m2t, '\nThis is %s v%s.\n', m2t.name, m2t.version)
+  userInfo(m2t, '\nThis is %s v%s.\n', m2t.name, m2t.version)
 
   % Conditionally check for a new matlab2tikz version.
   if m2t.cmdOpts.Results.showInfo
@@ -501,14 +501,24 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
 
   % get all axes handles
   fh          = m2t.currentHandles.gcf;
-  axesHandles = findobj( fh, 'type', 'axes' );
+  axesHandles = findobj(fh, 'type', 'axes');
 
+  tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
   if ~isempty(axesHandles)
       % Find all legend handles. This is MATLAB-only.
-      legendHandleIdx = strcmp( get(axesHandles,'Tag'), 'legend' );
+      legendHandleIdx = strcmp(get(axesHandles, tagKeyword), 'legend');
       m2t.legendHandles = axesHandles(legendHandleIdx);
       % Remove all legend handles as they are treated separately.
       axesHandles = axesHandles(~legendHandleIdx);
+  end
+
+  colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
+  if ~isempty(axesHandles)
+      % Find all colorbar handles. This is MATLAB-only.
+      cbarHandleIdx = strcmp(get(axesHandles, tagKeyword), colorbarKeyword);
+      m2t.cbarHandles = axesHandles(cbarHandleIdx);
+      % Remove all legend handles as they are treated separately.
+      axesHandles = axesHandles(~cbarHandleIdx);
   end
 
   % Turn around the handles vector to make sure that plots that appeared
@@ -523,8 +533,14 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   for k = 1:length(visibleAxesHandles)
       m2t = drawAxes( m2t, visibleAxesHandles(ix(k)), alignmentOptions(ix(k)) );
   end
+
+  % Handle color bars.
+  for cbar = m2t.cbarHandles
+      m2t = handleColorbar(m2t, cbar);
+  end
+
   % Add all axes containers to the file contents.
-  for axesContainer =  m2t.axesContainers
+  for axesContainer = m2t.axesContainers
       m2t.content = addChildren( m2t.content, axesContainer );
   end
 
@@ -588,8 +604,10 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
                     '\\usepackage{amsmath}\n', ...
                     '\\begin{document}\n']);
   end
+
   % printAll handles the actual figure plotting
   printAll( m2t.content, fid );
+
   if m2t.cmdOpts.Results.standalone
       fprintf(fid, '\n\\end{document}');
   end
@@ -727,29 +745,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   switch get( handle, tagKeyword )
       case colorbarKeyword
           % Handle a colorbar separately.
-          % Find the axes environment that this colorbar belongs to.
-          parentAxesHandle = double(get(handle,'axes'));
-          parentFound = false;
-          for k = 1:length(m2t.axesContainers)
-            if m2t.axesContainers{k}.handle == parentAxesHandle
-              k0 = k;
-              parentFound = true;
-              break;
-            end
-          end
-          if ~parentFound
-            warning('Could not find parent axes for color bar. Skipping.');
-            return
-          else
-            m2t.axesContainers{k0}.options{end+1} = ...
-                matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
-            m2t.axesContainers{k0}.options = ...
-                [m2t.axesContainers{k0}.options, getColorbarOptions(m2t, handle)];
-          end
-          % Note that m2t.currentHandles.gca does *not* get updated.
-          % Within drawColorbar(), m2t.currentHandles.gca is assumed to point
-          % to the parent axes.
-          %[m2t, m2t.axesContainers{end}] = drawColorbar( m2t, handle, alignmentOptions );
+          m2t = handleColorbar(m2t, handle);
           return
       case 'legend'
           % Don't handle the legend here, but further below in the 'axis'
@@ -1016,6 +1012,38 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   m2t.axesContainers{end} = addChildren( m2t.axesContainers{end}, childrenEnvs );
 
   return
+end
+% =========================================================================
+function m2t = handleColorbar(m2t, handle)
+
+    if isempty(handle)
+        return;
+    end
+
+    % Find the axes environment that this colorbar belongs to.
+    parentAxesHandle = double(get(handle,'axes'));
+    parentFound = false;
+    for k = 1:length(m2t.axesContainers)
+      if m2t.axesContainers{k}.handle == parentAxesHandle
+        k0 = k;
+        parentFound = true;
+        break;
+      end
+    end
+    if parentFound
+      m2t.axesContainers{k0}.options{end+1} = ...
+          matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
+      m2t.axesContainers{k0}.options = ...
+          [m2t.axesContainers{k0}.options, getColorbarOptions(m2t, handle)];
+    else
+      warning('Could not find parent axes for color bar. Skipping.');
+    end
+    % Note that m2t.currentHandles.gca does *not* get updated.
+    % Within drawColorbar(), m2t.currentHandles.gca is assumed to point
+    % to the parent axes.
+    %[m2t, m2t.axesContainers{end}] = drawColorbar( m2t, handle, alignmentOptions );
+
+    return;
 end
 % =========================================================================
 function tag = getTag( handle )
@@ -2072,7 +2100,10 @@ function [ m2t, str ] = drawImage( m2t, handle )
               sprintf('ymin=%d', yLim(1)), ...
               sprintf('ymax=%d', yLim(2))};
 
-      if xLim(2)-xLim(1) < n || yLim(2)-yLim(1) < m
+      % If xLim and yLim are integer values, treat them as pixel
+      % limits.
+      if (all(rem(xLim,1) == 0) && all(rem(yLim,1) == 0)) && ...
+         (xLim(2)-xLim(1) < n || yLim(2)-yLim(1) < m)
           % Needs trimming.
           % TODO flipped images
           opts = {opts{:}, ...
@@ -3209,7 +3240,7 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     return
 end
 % =========================================================================
-function axisOptions = getColorbarOptions( m2t, handle )
+function axisOptions = getColorbarOptions(m2t, handle)
 
   % begin collecting axes options
   axisOptions = {};
@@ -3223,17 +3254,47 @@ function axisOptions = getColorbarOptions( m2t, handle )
   % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
   % small cased ('northoutside'). Hence, use lower() for uniformity.
   switch lower( loc )
-      case { 'north', 'south', 'east', 'west' }
-          userWarning( m2t, 'Don''t know how to deal with inner colorbars yet.' );
-          return;
+      case 'north'
+          cbarOptions{end+1} = 'horizontal';
+          cbarStyleOptions = {cbarStyleOptions{:},...
+                              'at={(0.5,0.97)}',...
+                              'anchor=north', ...
+                              'xticklabel pos=lower', ...
+                              'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
+      case 'south'
+          cbarOptions{end+1} = 'horizontal';
+          cbarStyleOptions = {cbarStyleOptions{:},...
+                              'at={(0.5,0.03)}',...
+                              'anchor=south', ...
+                              'xticklabel pos=upper', ...
+                              'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
+      case 'east'
+          cbarOptions{end+1} = 'right';
+          cbarStyleOptions = {cbarStyleOptions{:},...
+                              'at={(0.97,0.5)}',...
+                              'anchor=east', ...
+                              'xticklabel pos=left', ...
+                              'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
+      case 'west'
+          cbarOptions{end+1} = 'left';
+          cbarStyleOptions = {cbarStyleOptions{:},...
+                              'at={(0.03,0.5)}',...
+                              'anchor=west', ...
+                              'xticklabel pos=right', ...
+                              'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
       case 'eastoutside'
           %cbarOptions{end+1} = 'right';
       case 'westoutside'
           cbarOptions{end+1} = 'left';
       case 'northoutside'
-          cbarOptions{end+1} = 'top';
+          % TODO move to top
+          cbarOptions{end+1} = 'horizontal';
+          cbarStyleOptions = {cbarStyleOptions{:},...
+                              'at={(0.5,1.03)}',...
+                              'anchor=south', ...
+                              'xticklabel pos=upper'};
       case 'southoutside'
-          cbarOptions{end+1} = 'bottom';
+          cbarOptions{end+1} = 'horizontal';
       otherwise
           error( 'drawColorbar: Unknown ''Location'' %s.', loc )
   end
@@ -4691,7 +4752,7 @@ function pos = correctColorbarPos(m2t, colBarHandle, axesHandlesPos)
       case { 'north', 'south', 'east', 'west' }
           userWarning( m2t, 'alignSubPlots:getColorbarPos',                     ...
                         'Don''t know how to deal with inner colorbars yet.' );
-          % TODO set pos to something meaningful
+          pos = colBarPos;
           return;
 
       case {'northoutside','southoutside'}
