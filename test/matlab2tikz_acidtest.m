@@ -54,7 +54,7 @@ function matlab2tikz_acidtest( varargin )
   texfile = 'tex/acid.tex';
   fh = fopen( texfile, 'w' );
   texfile_init( fh );
-  
+
   % output streams
   stdout = 1;
   stderr = 2;
@@ -184,7 +184,7 @@ function matlab2tikz_acidtest( varargin )
                   %savefig( pdf_file, 'pdf' );
               case 'Octave'
                   % In Octave, figures are automatically cropped when using print().
-                  print( strcat(pdf_file,'.pdf'), '-dpdf', '-S415,311', '-r150' );
+                  print(pdf_file, '-dpdf', '-S415,311', '-r150' );
                   pause( 1.0 )
               otherwise
                   error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
