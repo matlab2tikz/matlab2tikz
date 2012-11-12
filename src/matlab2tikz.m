@@ -3672,6 +3672,10 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
       case 'southwestoutside'
           position = [-dist, 0];
           anchor = 'south east';
+      case 'none'
+          % TODO
+          position = [-dist, 0];
+          anchor = 'south east';
       case {'best','bestoutside'}
           % TODO: Implement these.
           % The position could be determined by means of 'Position' and/or
@@ -3732,6 +3736,21 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   % property, so turn off line and background fill.
   if ( ~isVisible(handle) )
       lStyle = {lStyle{:}, 'fill=none', 'draw=none'};
+  end
+
+  % handle colors
+  edgeColor = get(handle, 'EdgeColor');
+  if all(edgeColor == [1,1,1])
+      lStyle = {lStyle{:}, 'draw=none'};
+  else
+      [ m2t, col ] = getColor( m2t, handle, edgeColor, 'patch' );
+      lStyle = {lStyle{:}, sprintf('draw=%s', col)};
+  end
+
+  fillColor = get(handle, 'Color');
+  if ~all(edgeColor == [1,1,1])
+      [ m2t, col ] = getColor( m2t, handle, fillColor, 'patch' );
+      lStyle = {lStyle{:}, sprintf('fill=%s', col)};
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -4199,8 +4218,8 @@ function newstr = escapeCharacters( str )
   % %% and \\, respectively.
 
   newstr = str;
-  newstr = strrep( newstr, '%' , '%%'    );
-  newstr = strrep( newstr, '\' , '\\'    );
+  newstr = strrep(newstr, '%' , '%%');
+  newstr = strrep(newstr, '\' , '\\');
 
 end
 % =========================================================================
