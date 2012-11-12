@@ -787,16 +787,6 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       end
   end
 
-  % get the view angle
-  view = get( handle, 'View' );
-  isViewFromAbove = all(view == [0,90]);
-
-  % Unconditionally add the view specfication. This is unnecessary for
-  % 2D plots as both MATLAB's and Pgfplots' default is [0,90] here.
-  % At this point, it's hard to say whether or not we're dealing with a 3D
-  % plot though.
-  m2t.axesContainers{end}.options{end+1} = ...
-      sprintf('view={%.15g}{%.15g}', view);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
   dim = getAxesDimensions( handle, ...
@@ -831,6 +821,9 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('height=%.15g%s', dim.y.value, dim.y.unit);
   end
+
+  view = get( handle, 'View' );
+  isViewFromAbove = all(view == [0,90]);
 
   % Add the physical dimension of one unit of length in the coordinate system.
   % This is used later on to translate lenghts to physical units where
@@ -1233,9 +1226,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
 
   if ~isempty( zData )
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
-      opts = [ '\n', join(drawOptions, ',\n' ), '\n' ];
-      str = [ str, ...
-              plotLine3d( opts, data ) ];
+      opts = ['\n', join(drawOptions, ',\n' ), '\n'];
+      [m2t, cont] = plotLine3d(m2t, opts, data);
+      str = [str, cont];
   else
       xLim = get( m2t.currentHandles.gca, 'XLim' );
       yLim = get( m2t.currentHandles.gca, 'YLim' );
@@ -1315,7 +1308,7 @@ function str = plotLine2d(opts, data)
 
 end
 % =========================================================================
-function str = plotLine3d(opts, data)
+function [m2t, str] = plotLine3d(m2t, opts, data)
 
     str = sprintf( ['\\addplot3 [',opts,']\n'] );
 
@@ -1333,6 +1326,10 @@ function str = plotLine3d(opts, data)
     str_data = strrep(str_data, 'Inf', 'inf');
     str = sprintf('%s %s \n};\n\n', str, str_data);
 
+    % Set view angle.
+    view = get(m2t.currentHandles.gca, 'View');
+    m2t.axesContainers{end}.options{end+1} = ...
+        sprintf('view={%.15g}{%.15g}', view);
 end
 % =========================================================================
 function dataCell = splitLine( m2t, hasLines, hasMarkers, data, xLim, yLim )
@@ -2023,6 +2020,10 @@ function [ m2t, str ] = drawPatch( m2t, handle )
           % close it
           str = strcat( str, sprintf('};\n') );
       end
+      % Set view angle.
+      view = get(m2t.currentHandles.gca, 'View');
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('view={%.15g}{%.15g}', view);
    end
    str = [ str, sprintf('\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2278,6 +2279,12 @@ function [m2t,env] = drawSurface( m2t, handle )
         str = [str, label]; %#ok
     end
 
+    % Set view angle.
+    view = get(m2t.currentHandles.gca, 'View');
+    m2t.axesContainers{end}.options{end+1} = ...
+        sprintf('view={%.15g}{%.15g}', view);
+
+    return;
 end
 % =========================================================================
 function [ m2t, str ] = drawText(m2t, handle)
@@ -2511,6 +2518,10 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
       env = 'addplot';
   else
       env = 'addplot3';
+      % Set view angle.
+      view = get(m2t.currentHandles.gca, 'View');
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('view={%.15g}{%.15g}', view);
   end
 
   str = [ str, ...
