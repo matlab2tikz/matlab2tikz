@@ -641,21 +641,22 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       % First of all, check if 'child' is referenced in a legend.
       % If yes, some plot types may want to add stuff (e.g. 'forget plot').
       % Add '\addlegendentry{...}' then after the plot.
-      fieldName = switchMatOct(m2t, 'handles', 'handle');
       legendString = [];
       m2t.currentHandleHasLegend = false;
       % Check if current handle is referenced in a legend.
-      for legendHandle = m2t.legendHandles(:)'
-          switch m2t.env
-              case 'MATLAB'
+      switch m2t.env
+          case 'MATLAB'
+              for legendHandle = m2t.legendHandles
                   ud = get(legendHandle, 'UserData');
-                  k = find(child == ud.(fieldName));
+                  % In Octave, the field name is 'handle'. Well, whatever.
+                  % fieldName = switchMatOct(m2t, 'handles', 'handle');
+                  k = find(child == ud.handles);
                   if isempty(k)
                       % Lines of error bar plots are not referenced directly in legends
                       % as an error bars plot contains two "lines": the data and the
                       % deviations. Here, the legends refer to the specgraph.errorbarseries
                       % handle which is 'Parent' to the line handle.
-                      k = find(get(child,'Parent') == ud.(fieldName));
+                      k = find(get(child,'Parent') == ud.handles);
                   end
                   if ~isempty(k)
                       % Legend entry found. Add it to the plot.
@@ -663,14 +664,17 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                       interpreter = get(legendHandle, 'Interpreter');
                       legendString = ud.lstrings(k);
                   end
-              case 'Octave'
-                  % Octave handles legend entries on a per-axes basis.
-                  m2t.currentHandleHasLegend = m2t.gcaHasLegend;
-                  interpreter = get(legendHandle, 'interpreter');
+              end
+          case 'Octave'
+              m2t.currentHandleHasLegend = ~isempty(m2t.gcaAssociatedLegend);
+              % Octave associates legends with axes, not with (line) plot.
+              % The variable m2t.gcaHasLegend is set in drawAxes().
+              interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
+              if isfield(get(child), 'displayname')
                   legendString = get(child, 'displayname');
-              otherwise
-                  error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-          end
+              end
+          otherwise
+              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       switch get( child, 'Type' )
@@ -719,7 +723,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
           c = prettyPrint(m2t, legendString, interpreter);
           % We also need a legend alignment option to make multiline
           % legend entries work. This is added by default in getLegendOpts().
-          c = join(c,'\\');
+          c = join(c, '\\');
           env = [env, ...
                  '\addlegendentry{', c, sprintf('};\n\n')]; %#ok
       end
@@ -776,12 +780,12 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % Octave:
   % Check if this axis environment is referenced by a legend.
-  m2t.gcaHasLegend = false;
+  m2t.gcaAssociatedLegend = [];
   if strcmp(m2t.env, 'Octave')
-      for k = 1:length(m2t.legendHandles)
-          ud = get(m2t.legendHandles(k), 'UserData');
-          if ~isempty(find( handle == ud.handle, 1))
-              m2t.gcaHasLegend = true;
+      for lhandle = m2t.legendHandles
+          ud = get(lhandle, 'UserData');
+          if any(handle == ud.handle)
+              m2t.gcaAssociatedLegend = lhandle;
               break;
           end
       end
