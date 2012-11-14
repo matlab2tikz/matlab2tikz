@@ -107,7 +107,8 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
                            @myBoxplot           , ...
                            @areaPlot            , ...
                            @customLegend        , ...
-                           @croppedImage
+                           @croppedImage        , ...
+                           @doubleAxes
                          };
 
   numFunctions = length( testfunction_handles );
@@ -1608,6 +1609,7 @@ function [description, extraOpts] = fill3plot()
   if ~exist('fill3','builtin')
       fprintf( 'fill3() not found. Abort.\n\n' );
       description = [];
+      extraOpts = {};
       return
   end
 
@@ -1758,6 +1760,15 @@ function [description, extraOpts] = croppedImage()
   set(gca,'Units','normalized');
 
   description = 'Custom legend.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = doubleAxes()
+
+  ah1=axes;
+  ah2=axes;
+
+  description = 'Double axes.';
   extraOpts = {};
 end
 % =========================================================================

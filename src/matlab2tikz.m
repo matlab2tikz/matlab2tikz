@@ -646,29 +646,31 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       % Check if current handle is referenced in a legend.
       switch m2t.env
           case 'MATLAB'
-              for legendHandle = m2t.legendHandles
-                  ud = get(legendHandle, 'UserData');
-                  % In Octave, the field name is 'handle'. Well, whatever.
-                  % fieldName = switchMatOct(m2t, 'handles', 'handle');
-                  k = find(child == ud.handles);
-                  if isempty(k)
-                      % Lines of error bar plots are not referenced directly in legends
-                      % as an error bars plot contains two "lines": the data and the
-                      % deviations. Here, the legends refer to the specgraph.errorbarseries
-                      % handle which is 'Parent' to the line handle.
-                      k = find(get(child,'Parent') == ud.handles);
-                  end
-                  if ~isempty(k)
-                      % Legend entry found. Add it to the plot.
-                      m2t.currentHandleHasLegend = true;
-                      interpreter = get(legendHandle, 'Interpreter');
-                      legendString = ud.lstrings(k);
+              if ~isempty(m2t.legendHandles)
+                  for legendHandle = m2t.legendHandles
+                      ud = get(legendHandle, 'UserData');
+                      % In Octave, the field name is 'handle'. Well, whatever.
+                      % fieldName = switchMatOct(m2t, 'handles', 'handle');
+                      k = find(child == ud.handles);
+                      if isempty(k)
+                          % Lines of error bar plots are not referenced directly in legends
+                          % as an error bars plot contains two "lines": the data and the
+                          % deviations. Here, the legends refer to the specgraph.errorbarseries
+                          % handle which is 'Parent' to the line handle.
+                          k = find(get(child,'Parent') == ud.handles);
+                      end
+                      if ~isempty(k)
+                          % Legend entry found. Add it to the plot.
+                          m2t.currentHandleHasLegend = true;
+                          interpreter = get(legendHandle, 'Interpreter');
+                          legendString = ud.lstrings(k);
+                      end
                   end
               end
           case 'Octave'
-              m2t.currentHandleHasLegend = ~isempty(m2t.gcaAssociatedLegend);
               % Octave associates legends with axes, not with (line) plot.
               % The variable m2t.gcaHasLegend is set in drawAxes().
+              m2t.currentHandleHasLegend = ~isempty(m2t.gcaAssociatedLegend);
               interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
               if isfield(get(child), 'displayname')
                   legendString = get(child, 'displayname');
