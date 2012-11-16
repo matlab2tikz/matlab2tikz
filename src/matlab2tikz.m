@@ -86,6 +86,10 @@ function matlab2tikz( varargin )
 %   taking a peek at what the figure will look like.
 %   (default: false)
 %
+%   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
+%   check for updates of matlab2tikz.
+%   (default: true)
+%
 %   Example
 %      x = -pi:pi/10:pi;
 %      y = tan(sin(x)) - sin(tan(x));
@@ -284,16 +288,19 @@ function matlab2tikz( varargin )
   % As opposed to titles, axis labels and such, MATLAB(R) does not interpret tick
   % labels as TeX. matlab2tikz retains this behavior, but if it is desired to
   % interpret the tick labels as TeX, set this option to true.
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'interpretTickLabelsAsTex', false, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'interpretTickLabelsAsTex', false, @islogical);
 
   % Allow a string to be added to the header of the generated TikZ file.
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'tikzFileComment', '', @ischar );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'tikzFileComment', '', @ischar);
 
   % Add support for automatic labels.
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'automaticLabels', false, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'automaticLabels', false, @islogical);
 
   % Add support for standalone TeX files.
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'standalone', false, @islogical );
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'standalone', false, @islogical);
+
+  % Automatic updater.
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'checkForUpdates', true, @islogical);
 
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse( m2t.cmdOpts, varargin{:} );
@@ -384,65 +391,24 @@ function matlab2tikz( varargin )
   userInfo(m2t, '\nThis is %s v%s.\n', m2t.name, m2t.version)
 
   % Conditionally check for a new matlab2tikz version.
-  if m2t.cmdOpts.Results.showInfo
-      try
-          html = urlread([m2t.website, '/all_files']);
-      catch %#ok
-          % Couldn't load the URL -- never mind.
-          html = [];
-      end
-      if ~isempty(html)
-          % Extract the version information from the html.
-          m2tMostRecent = regexp(html, 'matlab2tikz-(\d+\.\d+\.\d+)', 'tokens');
-          if ~isempty(m2tMostRecent)
-              if isVersionBelow(m2t.env, m2t.version, m2tMostRecent{1}{1})
-                  userInfo(m2t, '**********************************************\n');
-                  userInfo(m2t, 'New version available! (%s)\n', m2tMostRecent{1}{1});
-                  userInfo(m2t, '**********************************************\n');
-
-                  reply = input(' *** Would you like matlab2tikz to self-upgrade? y/n [n]:','s');
-                  if strcmp(reply, 'y')
-                      % Download and unzip the new version it the system's temporary directory.
-                      url = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz?download=true';
-                      % Download the files and unzip its contents into the folder
-                      % above the folder that contains the current script.
-                      % This assumes that the file structure is something like
-                      %
-                      %   src/matlab2tikz.m
-                      %   src/[...]
-                      %   AUTHORS
-                      %   ChangeLog
-                      %   [...]
-                      %
-                      % On the hard drive and the zip file. In particular, this assumes
-                      % that the folder on the hard drive is writable by the user
-                      % and that matlab2tikz.m is not symlinked from some other place.
-                      pathstr = fileparts(mfilename('fullpath'));
-                      targetPath = [pathstr, filesep, '..', filesep];
-                      userInfo(m2t, ['Downloading and unzipping to ', targetPath, '...']);
-                      unzip(url, targetPath);
-                      userInfo(m2t, 'done.');
-                      error('Upgrade successful. Please re-execute.');
-                  end
-                  userInfo(m2t, '');
-              end
-          end
-      end
+  if m2t.cmdOpts.Results.checkForUpdates
+      updater(m2t.name, m2t.website, m2t.version, m2t.env)
   end
+
   % print some version info to the screen
   versionInfo = ['The latest updates can be retrieved from\n'         ,...
                  '   %s\n'                                            ,...
                  'where you can also make suggestions and rate %s.\n' ,...
                  'For usage instructions, bug reports, the latest'    ,...
-                 ' development versions and more, see\n'              ,...
+                 'development versions and more, see\n'               ,...
                  '   https://github.com/nschloe/matlab2tikz,\n'       ,...
                  '   https://github.com/nschloe/matlab2tikz/wiki,\n'  ,...
                  '   https://github.com/nschloe/matlab2tikz/issues.\n'
                 ];
-  userInfo( m2t, versionInfo, m2t.website, m2t.name);
+  userInfo(m2t, versionInfo, m2t.website, m2t.name);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
-  saveToFile( m2t, fid, fileWasOpen );
+  saveToFile(m2t, fid, fileWasOpen);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
