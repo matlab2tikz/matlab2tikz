@@ -943,7 +943,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
           gls = translateLineStyle( matlabGridLineStyle );
           axisGridOpts = sprintf( 'grid style={%s}', gls );
           m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:},...
-                                              axisGridOpts{:}};
+                                             axisGridOpts};
       end
   else
       % When specifying 'axis on top', the axes stay above all graphs (which is

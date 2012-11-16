@@ -1765,8 +1765,11 @@ end
 % =========================================================================
 function [description, extraOpts] = doubleAxes()
 
-  ah1=axes;
-  ah2=axes;
+  ah1 = axes;
+  ah2 = axes;
+
+  grid(ah2,'on')
+  set(ah2,'GridLineStyle','-')
 
   description = 'Double axes.';
   extraOpts = {};
