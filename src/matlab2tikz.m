@@ -606,11 +606,13 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
       % Add '\addlegendentry{...}' then after the plot.
       legendString = [];
       m2t.currentHandleHasLegend = false;
+
       % Check if current handle is referenced in a legend.
       switch m2t.env
           case 'MATLAB'
               if ~isempty(m2t.legendHandles)
-                  for legendHandle = m2t.legendHandles
+                  % Make sure that m2t.legendHandles is a row vector.
+                  for legendHandle = m2t.legendHandles(:)'
                       ud = get(legendHandle, 'UserData');
                       % In Octave, the field name is 'handle'. Well, whatever.
                       % fieldName = switchMatOct(m2t, 'handles', 'handle');
