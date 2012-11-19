@@ -24,60 +24,64 @@
 %   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %   POSSIBILITY OF SUCH DAMAGE.
 % =========================================================================
-function updater(name, fileExchangeUrl, version, env)
-  fileExchangeUrl = m2t.website;
-  name = 'matlab2tikz';
-  env = m2t.env;
-  version = m2t.version;
+function updater(name, fileExchangeUrl, version, verbose, env)
   try
       html = urlread([fileExchangeUrl, '/all_files']);
   catch %#ok
       % Couldn't load the URL -- never mind.
-      html = [];
+      html = '';
   end
-  if ~isempty(html)
-      % Search for a string "/version-1.6.3" in the HTML. This assumes
-      % that the package author has added a file by that name to
-      % to package. This is a rather dirty hack around FileExchange's
-      % lack of native versioning information.
-      mostRecentVersion = regexp(html, '/version-(\d+\.\d+\.\d+)', 'tokens');
-      if ~isempty(mostRecentVersion)
-          if isVersionBelow(env, version, mostRecentVersion{1}{1})
-              userInfo(m2t, '**********************************************\n');
-              userInfo(m2t, 'New version available! (%s)\n', mostRecentVersion{1}{1});
-              userInfo(m2t, '**********************************************\n');
+  % Search for a string "/version-1.6.3" in the HTML. This assumes
+  % that the package author has added a file by that name to
+  % to package. This is a rather dirty hack around FileExchange's
+  % lack of native versioning information.
+  mostRecentVersion = regexp(html, '/version-(\d+\.\d+\.\d+)', 'tokens');
+  if ~isempty(mostRecentVersion)
+      if isVersionBelow(env, version, mostRecentVersion{1}{1})
+          userInfo(verbose, '**********************************************\n');
+          userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion{1}{1});
+          userInfo(verbose, '**********************************************\n');
 
-              reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
-              if strcmp(reply, 'y')
-                  % Download the files and unzip its contents into the folder
-                  % above the folder that contains the current script.
-                  % This assumes that the file structure is something like
-                  %
-                  %   src/matlab2tikz.m
-                  %   src/[...]
-                  %   AUTHORS
-                  %   ChangeLog
-                  %   [...]
-                  %
-                  % on the hard drive and the zip file. In particular, this assumes
-                  % that the folder on the hard drive is writable by the user
-                  % and that matlab2tikz.m is not symlinked from some other place.
-                  % TODO explicitly delete the old content
-                  pathstr = fileparts(mfilename('fullpath'));
-                  targetPath = [pathstr, filesep, '..', filesep];
+          reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
+          if strcmp(reply, 'y')
+              % Download the files and unzip its contents into the folder
+              % above the folder that contains the current script.
+              % This assumes that the file structure is something like
+              %
+              %   src/matlab2tikz.m
+              %   src/[...]
+              %   AUTHORS
+              %   ChangeLog
+              %   [...]
+              %
+              % on the hard drive and the zip file. In particular, this assumes
+              % that the folder on the hard drive is writable by the user
+              % and that matlab2tikz.m is not symlinked from some other place.
+              pathstr = fileparts(mfilename('fullpath'));
+              targetPath = [pathstr, filesep, '..', filesep];
+              userInfo(verbose, ['Downloading and unzipping to ', targetPath, '...']);
+              upgradeSuccess = false;
+              try
+                  unzippedFiles = unzip([fileExchangeUrl, '?download=true'], targetPath);
+                  upgradeSuccess = true; %~isempty(unzippedFiles);
+                  userInfo(verbose, 'done.');
+              catch
+                  userInfo(verbose, 'FAILED.');
+              end
+              if upgradeSuccess
+                  % TODO explicitly delete all of the old content
                   % Delete old version number file.
                   versionFile = [pathstr, filesep, 'version-', version];
                   if exist(versionFile, 'file') == 2
-                      delete(versionFile)
+                      delete(versionFile);
                   end
-                  userInfo(m2t, ['Downloading and unzipping to ', targetPath, '...']);
-                  unzip([fileExchangeUrl, '?download=true'], targetPath);
-                  userInfo(m2t, 'done.');
                   % TODO anything better than error()?
                   error('Upgrade successful. Please re-execute.');
+              else
+                  error('Upgrade failed.');
               end
-              userInfo(m2t, '');
           end
+          userInfo(verbose, '');
       end
   end
 end
@@ -116,6 +120,21 @@ function arr = versionArray(env, str)
   else
     arr = str;
   end
+
+end
+% =========================================================================
+function userInfo(verbose, message, varargin)
+  % Display usage information.
+
+  if ~verbose
+      return
+  end
+
+  mess = sprintf(message, varargin{:});
+
+  % Replace '\n' by '\n *** ' and print.
+  mess = strrep( mess, sprintf('\n'), sprintf('\n *** ') );
+  fprintf( ' *** %s\n', mess );
 
 end
 % =========================================================================
