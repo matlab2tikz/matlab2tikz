@@ -3285,10 +3285,9 @@ function axisOptions = getColorbarOptions(m2t, handle)
           error( 'drawColorbar: Unknown ''Location'' %s.', loc )
   end
 
-  % Activate this as soon as it's available in Pgfplots.
-  %if strcmp( get(handle, 'YScale'), 'log' )
-      %cbarStyleOptions{end+1} = 'ymode=log';
-  %end
+  if strcmp(get(handle, 'YScale'), 'log')
+      cbarStyleOptions{end+1} = 'ymode=log';
+  end
 
   if m2t.cmdOpts.Results.strict
       % Sampled colors.

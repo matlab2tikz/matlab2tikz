@@ -439,7 +439,7 @@ function [description, extraOpts] = colorbarLogplot ()
       otherwise
           error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
-  %set(colorbar(), 'YScale', 'log');
+  set(colorbar(), 'YScale', 'log');
 
   description = 'Logscaled colorbar.';
   extraOpts = {};
