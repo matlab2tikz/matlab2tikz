@@ -181,7 +181,7 @@ function matlab2tikz( varargin )
   m2t.currentHandles = [];
 
   m2t.name = 'matlab2tikz';
-  m2t.version = '0.2.3';
+  m2t.version = '0.3.0';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2012';

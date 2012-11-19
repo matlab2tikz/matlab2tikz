@@ -1,3 +1,23 @@
+2012-11-19  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.3.0.
+	* Support for:
+	   - area plots
+	   - legend position
+	   - inner color bars
+	   - log-scaled color bars
+	* New command line options:
+	   - standalone (create compilable TeX file)
+	   - checkForUpdates
+	* mlint cleanups.
+	* Removed deprecated options.
+	* Bugfixes:
+	   - colorbar-axis association
+	   - option parsing
+	   - automatic updater
+	   - unit 'px'
+	   - ...
+
 2012-09-01  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.2.3.
