@@ -1,4 +1,7 @@
-% =========================================================================
+function parser = matlab2tikzInputParser()
+%MATLAB2TIKZINPUTPARSER   Input parsing for matlab2tikz..
+%   This implementation exists because Octave is lacking one.
+
 %   Copyright (c) 2008--2012 Nico Schlömer
 %   All rights reserved.
 %
@@ -24,7 +27,6 @@
 %   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %   POSSIBILITY OF SUCH DAMAGE.
 % =========================================================================
-function parser = matlab2tikzInputParser ()
   % Initialize the structure.
   parser = struct ();
   % Public Properties
