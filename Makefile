@@ -3,8 +3,6 @@
 MATLAB2TIKZ_DIR=.
 VERSION=0.3.0
 
-PACKAGE_DIR=matlab2tikz-${VERSION}
-
 default: release
 
 release:

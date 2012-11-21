@@ -107,6 +107,7 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
                            @myBoxplot           , ...
                            @areaPlot            , ...
                            @customLegend        , ...
+                           @pixelLegend         , ...
                            @croppedImage        , ...
                            @doubleAxes
                          };
@@ -1743,6 +1744,18 @@ function [description, extraOpts] = customLegend()
   set(lh, 'position',[.5 .6 .1 .05])
 
   description = 'Custom legend.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = pixelLegend()
+
+  x = linspace(0,1);
+  plot(x, [x;x.^2]);
+  set(gca, 'units', 'pixels')
+  lh=legend('1', '2');
+  set(lh, 'position', [100 200 65 42])
+
+  description = 'Legend with pixel position.';
   extraOpts = {};
 end
 % =========================================================================

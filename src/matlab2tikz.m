@@ -3735,9 +3735,23 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
           position = [-dist, 0];
           anchor = 'south east';
       case 'none'
-          % TODO
-          pos = get(handle, 'Position');
-          position = pos(1:2);
+          % TODO handle position with pixels
+          legendPos = get(handle, 'Position');
+          unit = get(handle, 'Units');
+          switch unit
+              case 'normalized'
+                  position = legendPos(1:2);
+              case 'pixels'
+                  % Calculate where the legend is located w.r.t. the axes.
+                  axesPos = get(m2t.currentHandles.gca, 'Position');
+                  % By default, the axes position is given w.r.t. to the figure,
+                  % and so is the legend.
+                  position = (legendPos(1:2)-axesPos(1:2)) ./ axesPos(3:4);
+              otherwise
+                  position = pos(1:2);
+                  userWarning( m2t, [ ' Unknown legend length unit ''', unit, '''' ...
+                                      '. Handling like ''normalized''.' ] );
+          end
           anchor = 'south west';
       case {'best','bestoutside'}
           % TODO: Implement these.
@@ -3779,8 +3793,8 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   % append to legend options
   if ~isempty(anchor)
       lStyle = {lStyle{:}, ...
-                sprintf( 'at={(%.15g,%.15g)}',position ), ...
-                sprintf( 'anchor=%s', anchor )};
+                sprintf('at={(%.15g,%.15g)}', position), ...
+                sprintf('anchor=%s', anchor )};
   end
   % handle orientation
   ori = get( handle, 'Orientation' );
