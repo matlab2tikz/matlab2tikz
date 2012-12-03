@@ -966,8 +966,15 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add manually given extra axis options
   if ~isempty( m2t.cmdOpts.Results.extraAxisOptions )
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                         m2t.cmdOpts.Results.extraAxisOptions{:}};
+      if isstr(m2t.cmdOpts.Results.extraAxisOptions)
+          m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
+                                             m2t.cmdOpts.Results.extraAxisOptions};
+      elseif iscellstr(m2t.cmdOpts.Results.extraAxisOptions)
+          m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
+                                             m2t.cmdOpts.Results.extraAxisOptions{:}};
+      else
+          error('Illegal extraAxisOptions (need string or cell string).')
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
