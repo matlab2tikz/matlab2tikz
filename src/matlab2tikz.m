@@ -3820,21 +3820,21 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
   % property, so turn off line and background fill.
   if ( ~isVisible(handle) )
       lStyle = {lStyle{:}, 'fill=none', 'draw=none'};
-  end
-
-  % handle colors
-  edgeColor = get(handle, 'EdgeColor');
-  if all(edgeColor == [1,1,1])
-      lStyle = {lStyle{:}, 'draw=none'};
   else
-      [ m2t, col ] = getColor( m2t, handle, edgeColor, 'patch' );
-      lStyle = {lStyle{:}, sprintf('draw=%s', col)};
-  end
+      % handle colors
+      edgeColor = get(handle, 'EdgeColor');
+      if all(edgeColor == [1,1,1])
+          lStyle = {lStyle{:}, 'draw=none'};
+      else
+          [ m2t, col ] = getColor( m2t, handle, edgeColor, 'patch' );
+          lStyle = {lStyle{:}, sprintf('draw=%s', col)};
+      end
 
-  fillColor = get(handle, 'Color');
-  if ~all(edgeColor == [1,1,1])
-      [ m2t, col ] = getColor( m2t, handle, fillColor, 'patch' );
-      lStyle = {lStyle{:}, sprintf('fill=%s', col)};
+      fillColor = get(handle, 'Color');
+      if ~all(edgeColor == [1,1,1])
+          [ m2t, col ] = getColor( m2t, handle, fillColor, 'patch' );
+          lStyle = {lStyle{:}, sprintf('fill=%s', col)};
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
