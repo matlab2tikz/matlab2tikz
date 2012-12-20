@@ -447,7 +447,7 @@ function [description, extraOpts] = colorbarLogplot ()
 
 end
 % =========================================================================
-function [description, extraOpts] = legendplot ()
+function [description, extraOpts] = legendplot()
 
 %    x = -pi:pi/20:pi;
 %    plot(x,cos(x),'-ro',x,sin(x),'-.b');
@@ -464,7 +464,7 @@ function [description, extraOpts] = legendplot ()
   ylabel( '{y-Values}' )
   legend( 'sin(x)', 'cos(x)', 'Location','NorthOutside', ...
                               'Orientation', 'Horizontal' );
-  grid on
+  grid on;
 
   description = 'Test inserting of legends.';
   extraOpts = {};

@@ -3848,7 +3848,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
       % This is also import for multiline legend entries: Without alignment
       % specification, the TeX document won't compile.
       %lStyle{end+1} = 'nodes=right';
-      lStyle{end+1} = 'align=left';
+      lStyle{end+1} = 'legend cell align=left';
   end
 
   if ~isempty( lStyle )
