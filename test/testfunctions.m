@@ -109,7 +109,8 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
                            @customLegend        , ...
                            @pixelLegend         , ...
                            @croppedImage        , ...
-                           @doubleAxes
+                           @doubleAxes          , ...
+                           @pColorPlot
                          };
 
   numFunctions = length( testfunction_handles );
@@ -171,7 +172,8 @@ function [description, extraOpts] = one_point()
 
   plot(1:10)
   title({'title', 'multline'})
-  legend(char('Multi-Line Legend Entry','Wont Work 2^2=4'))
+  %legend(char('Multi-Line Legend Entry','Wont Work 2^2=4'))
+  legend('Multi-Line Legend Entry Wont Work 2^2=4')
   xlabel({'one','two','three'});
   ylabel({'one','two','three'});
 
@@ -1788,6 +1790,21 @@ function [description, extraOpts] = doubleAxes()
   set(ah2,'GridLineStyle','-')
 
   description = 'Double axes.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = pColorPlot()
+
+  n = 6;
+  r = (0:n)'/n;
+  theta = pi*(-n:n)/n;
+  X = r*cos(theta);
+  Y = r*sin(theta);
+  C = r*cos(2*theta);
+  pcolor(X,Y,C)
+  axis equal tight
+
+  description = 'pcolor() plot.';
   extraOpts = {};
 end
 % =========================================================================

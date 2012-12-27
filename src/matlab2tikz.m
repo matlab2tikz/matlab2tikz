@@ -1956,9 +1956,9 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   end
 
   % n > 1 for certain patch plots, for example.
-  n = size(xData,2);
+  n = size(xData, 2);
 
-  if isempty( zData )
+  if isempty(zData)
       % 2d patch
       for j = 1:n
           str = strcat( str, ...
@@ -2212,13 +2212,26 @@ function [m2t,env] = drawSurface( m2t, handle )
 
     str = [ str, sprintf( '\ncoordinates{ \n' ) ];
 
-    dx = get(handle,'XData');
-    dy = get(handle,'YData');
-    dz = get(handle,'ZData');
+    dx = get(handle, 'XData');
+    dy = get(handle, 'YData');
+    dz = get(handle, 'ZData');
     if any(~isfinite(dx(:))) || any(~isfinite(dy(:))) || any(~isfinite(dz(:)))
         m2t.axesContainers{end}.options{end+1} = 'unbounded coords=jump';
     end
     [col, row] = size(dz);
+
+    % Check if we need extra CData.
+    colors = get(handle, 'CData');
+    % Note:
+    % Pgfplots actually does a better job than MATLAB in determining what
+    % colors to use for the patches. The circular test case on
+    % http://www.mathworks.de/de/help/matlab/ref/pcolor.html, for example
+    % yields a symmetric setup in Pgfplots (and doesn't in MATLAB).
+    if any(xor(isnan(dz), isnan(colors)) | (abs(colors - dz) > 1.0e-10))
+        % TODO Remove this uuuugly workaround as soon as Pgfplots can handle
+        %      explicit CData.
+        dz = colors;
+    end
 
     % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
