@@ -750,8 +750,8 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   m2t.gcaAssociatedLegend = [];
   if strcmp(m2t.env, 'Octave')
       if ~isempty(m2t.legendHandles)
-          for lhandle = m2t.legendHandles
-              lhandle
+          % Make sure that m2t.legendHandles is a row vector.
+          for lhandle = m2t.legendHandles(:)'
               ud = get(lhandle, 'UserData');
               if any(handle == ud.handle)
                   m2t.gcaAssociatedLegend = lhandle;

@@ -834,7 +834,7 @@ function [description, extraOpts] = errorBars2 ()
 
 end
 % =========================================================================
-function [description, extraOpts] = legendsubplots ()
+function [description, extraOpts] = legendsubplots()
   % size of upper subplot
   rows = 4;
   % number of points.  A large number here (eg 1000) will stress-test
@@ -842,31 +842,30 @@ function [description, extraOpts] = legendsubplots ()
   % memory
   length = 100;
 
-
   % generate some spurious data
-  t=0:(4*pi)/length:4*pi;
-  x=t;
-  a=t;
-  y=sin(t)+0.1*randn(1,length+1);
-  b=sin(t)+0.1*randn(1,length+1)+0.05*cos(2*t);
+  t = 0:(4*pi)/length:4*pi;
+  x = t;
+  a = t;
+  y = sin(t) + 0.1*randn(1,length+1);
+  b = sin(t) + 0.1*randn(1,length+1) + 0.05*cos(2*t);
 
   % plot the top figure
   subplot(rows+2,1,1:rows);
 
   % first line
-  sigma1=std(y);
-  tracey=mean(y,1);
-  plot123=plot(x,tracey,'b-');
+  sigma1 = std(y);
+  tracey = mean(y,1);
+  plot123 = plot(x,tracey,'b-');
 
   hold on
 
   % second line
-  sigma2=std(b);
-  traceb=mean(b,1);
-  plot456=plot(a,traceb,'r-');
+  sigma2 = std(b);
+  traceb = mean(b,1);
+  plot456 = plot(a,traceb,'r-');
 
-  spec0=['Mean V(t)_A (\sigma \approx ' num2str(sigma1,'%0.4f') ')'];
-  spec1=['Mean V(t)_B (\sigma \approx ' num2str(sigma2,'%0.4f') ')'];
+  spec0 = ['Mean V(t)_A (\sigma \approx ' num2str(sigma1,'%0.4f') ')'];
+  spec1 = ['Mean V(t)_B (\sigma \approx ' num2str(sigma2,'%0.4f') ')'];
 
   hold off
   %plot123(1:2)
@@ -878,7 +877,7 @@ function [description, extraOpts] = legendsubplots ()
 
   % now plot a differential trace
   subplot(rows+2,1,rows+1:rows+2)
-  plot7=plot(a,traceb-tracey,'k');
+  plot7 = plot(a,traceb-tracey,'k');
 
   legend(plot7,'\Delta V(t)')
   legend boxoff
