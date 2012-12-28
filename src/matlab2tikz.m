@@ -2208,7 +2208,6 @@ function [m2t,env] = drawSurface( m2t, handle )
 
     str = [];
     [m2t, opts, plotType] = surfaceOpts(m2t, handle);
-
     dx = get(handle, 'XData');
     dy = get(handle, 'YData');
     dz = get(handle, 'ZData');
@@ -2227,9 +2226,11 @@ function [m2t,env] = drawSurface( m2t, handle )
     if any(xor(isnan(dz), isnan(colors)) | (abs(colors - dz) > 1.0e-10))
         % TODO Remove this uuuugly workaround as soon as Pgfplots can handle
         %      explicit CData.
+        opts{end+1} = 'point meta=explicit';
         dz = colors;
     end
 
+    opts = join(opts, ',\n');
     str = [ str, sprintf( [ '\n\\addplot3[%%\n%s,\n', opts ,']' ], plotType ) ];
 
     % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
@@ -2237,14 +2238,13 @@ function [m2t,env] = drawSurface( m2t, handle )
     % Spectrograms need to have the grid removed,
     % m2t.axesContainers{end}.options{end+1} = 'grid=none';
     str = [ str, sprintf( '\ntable { \n' ) ];
-    dz = dz';
     if isvector(dx)
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         n = length(dy);
         for i = 1:row
             str = [ str, ...
                     sprintf('%.15g %.15g %.15g\n', ...
-                            [ones(n,1)*dx(i), dy, dz(i,:)']') ];
+                            [ones(n,1)*dx(i), dy, dz(:,i)]') ];
             % insert an empty line to tell Pgfplots about one row ending here
             str = [str, sprintf('\n')];
         end
@@ -2254,7 +2254,7 @@ function [m2t,env] = drawSurface( m2t, handle )
         for i = 1:row
             str = [str, ...
                    sprintf('%.15g %.15g %.15g\n', ...
-                           [dx(:,i), dy(:,i), dz(i,:)']')];
+                           [dx(:,i), dy(:,i), dz(:,i)]')];
             % insert an empty line to tell Pgfplots about one row ending here
             str = [str, sprintf('\n')];
         end
@@ -2418,7 +2418,7 @@ function [ m2t, str ] = drawRectangle( m2t, handle )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
-function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
+function [m2t,surfOptions,plotType] = surfaceOpts( m2t, handle )
 
   faceColor = get( handle, 'FaceColor');
   edgeColor = get( handle, 'EdgeColor');
@@ -2461,8 +2461,6 @@ function [m2t,surfOpts,plotType] = surfaceOpts( m2t, handle )
   elseif strcmpi(plotType, 'mesh')
       surfOptions{end+1} = 'shader=flat';
   end
-
-  surfOpts = join( surfOptions , ',\n' );
 
   return
 end
