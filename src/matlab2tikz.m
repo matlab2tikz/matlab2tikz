@@ -1180,9 +1180,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   % Plot the actual line data.
   % First put them all together in one multiarray.
   % This also implicitly makes sure that the lengths match.
-  xData  = get( handle, 'XData' );
-  yData  = get( handle, 'YData' );
-  zData  = get( handle, 'ZData' );
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  zData = get(handle, 'ZData');
   % We would like to do
   %   data = [xData(:), yData(:), zData(:)],
   % but Octave fails. Hence this isempty() construction.
@@ -1193,7 +1193,7 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
   end
 
   % check if the *optional* argument 'yDeviation' was given
-  if nargin>2
+  if nargin > 2
       data = [data, yDeviation(:)];
   end
 
@@ -1288,10 +1288,10 @@ end
 % =========================================================================
 function [m2t, str] = plotLine3d(m2t, opts, data)
 
-    str = sprintf( ['\\addplot3 [',opts,']\n'] );
+    str = sprintf(['\\addplot3 [', opts, ']\n']);
 
-    str = [ str, ...
-            sprintf('coordinates{\n') ];
+    str = [str, ...
+           sprintf('coordinates{\n')];
 
     % Convert to string array then cell to call sprintf once (and no loops).
     str_data = cellstr(num2str(data, '(%.15g,%.15g,%.15g)'));
@@ -2237,10 +2237,13 @@ function [m2t,env] = drawSurface( m2t, handle )
     needsExplicitColors = any(xor(isnan(dz), isnan(colors)) ...
                              | (abs(colors - dz) > 1.0e-10));
     if needsExplicitColors
+        % Explicit color specification requires the coordinates{} type format.
+        formatType = 'coordinates';
         opts{end+1} = 'point meta=explicit';
-        formatString = '%.15g %.15g %.15g %.15g\n';
+        formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
         data = [dx(:), dy(:), dz(:), colors(:)];
     else
+        formatType = 'table';
         formatString = '%.15g %.15g %.15g\n';
         data = [dx(:), dy(:), dz(:)];
     end
@@ -2259,7 +2262,7 @@ function [m2t,env] = drawSurface( m2t, handle )
     % m2t.axesContainers{end}.options{end+1} = 'grid=none';
     % Here is where everything is put together.
     str = [str, ...
-           sprintf('\ntable {\n'), ...
+           sprintf('\n%s {\n', formatType), ...
            sprintf(formatString, data'), ...
            sprintf('};\n')];
     env = str;
