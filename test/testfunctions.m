@@ -170,7 +170,10 @@ function [description, extraOpts] = one_point()
 % output
 %matlab2tikz('parseStrings', false, 'interpretTickLabelsAsTex', true,'width', '\figurewidth', 'height','\figureheight', 'test.tex')
 
-  plot(1:10)
+  m = [0 1 1.5 1 -1];
+  k = 1:1:length(m);
+  plot(k,m,'*-');
+  %plot(1:10)
   title({'title', 'multline'})
   %legend(char('Multi-Line Legend Entry','Wont Work 2^2=4'))
   legend('Multi-Line Legend Entry Wont Work 2^2=4')
@@ -179,6 +182,7 @@ function [description, extraOpts] = one_point()
 
 %  plot(0.123, 0.145, 'x');
   set(gca, 'YTick', []);
+  set(gca,'XTick',0:1:length(m)-1);
 
   description = 'Plot only one single point.';
   extraOpts = {};

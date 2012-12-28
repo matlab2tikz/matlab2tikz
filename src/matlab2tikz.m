@@ -1058,7 +1058,7 @@ function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
       sprintf([axis,'min=%.15g, ',axis,'max=%.15g'], limits);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
-  [ticks, tickLabels, hasMinorTicks] = getIndividualAxisTicks( m2t, handle, axis );
+  [ticks, tickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis);
 
   % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
   % the number of minor ticks is automatically determined by MATLAB(R) to
@@ -3472,7 +3472,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
   % TODO: deal with minor ticks
-  [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'x' ); %#ok
+  [ ticks, tickLabels, hasMinorTicks ] = getlAxisTicks(m2t, handle, 'x'); %#ok
   if ~isempty( ticks )
       cbarOptions = [ cbarOptions,                                    ...
                        sprintf( 'xtick={%s}', ticks ) ];
@@ -3481,7 +3481,7 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
       cbarOptions = [ cbarOptions,                                    ...
                        sprintf( 'xticklabels={%s}', tickLabels ) ];
   end
-  [ ticks, tickLabels, hasMinorTicks ] = getIndividualAxisTicks( m2t, handle, 'y' ); %#ok
+  [ ticks, tickLabels, hasMinorTicks ] = getAxisTicks(m2t, handle, 'y'); %#ok
 
   if ~isempty( ticks )
       cbarOptions = [ cbarOptions,                                    ...
@@ -3868,8 +3868,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
 
 end
 % =========================================================================
-function [pTicks, pTickLabels, hasMinorTicks] = ...
-    getIndividualAxisTicks( m2t, handle, axis )
+function [pTicks, pTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis)
   % Return axis tick marks pgfplot style. Nice: Tick lengths and such
   % details are taken care of by Pgfplots.
 
@@ -3897,7 +3896,7 @@ function [pTicks, pTickLabels, hasMinorTicks] = ...
       str = prettyPrint(m2t, tickLabels{k}, labelInterpreter);
       tickLabels{k} = join(str, '\\');
   end
-  tickMode = get( handle, keywordTickMode );
+  tickMode = get(handle, keywordTickMode);
   if strcmp(tickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
       % not required, then let pgfplots take care of the ticks.
@@ -3909,42 +3908,53 @@ function [pTicks, pTickLabels, hasMinorTicks] = ...
           pTickLabels = [];
       end
   else % strcmp(zTickMode,'manual') || m2t.cmdOpts.Results.strict
-      ticks     = get( handle, keywordTick );
-      isAxisLog = strcmp( get(handle,keywordScale), 'log' );
-      [pTicks, pTickLabels] = matlabTicks2pgfplotsTicks( m2t, ticks, tickLabels, isAxisLog );
+      ticks = get(handle, keywordTick);
+      isAxisLog = strcmp(get(handle,keywordScale), 'log');
+      [pTicks, pTickLabels] = ...
+          matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isAxisLog);
   end
-  hasMinorTicks = strcmp( get( handle, keywordMinorTick ), 'on' );
+  hasMinorTicks = strcmp(get(handle, keywordMinorTick), 'on');
 
 end
 % =========================================================================
 function [pTicks, pTickLabels] = ...
-    matlabTicks2pgfplotsTicks( m2t, ticks, tickLabels, isLogAxis )
+    matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isLogAxis)
   % Converts MATLAB style ticks and tick labels to pgfplots style
   % ticks and tick labels (if at all necessary).
 
-  if isempty( ticks )
+  if isempty(ticks)
       pTicks      = '\empty';
       pTickLabels = [];
       return
   end
 
   % set ticks + labels
-  pTicks = join( num2cell(ticks), ',' );
+  pTicks = join(num2cell(ticks), ',');
 
   % if there's no specific labels, return empty
-  if isempty( tickLabels ) || (length(tickLabels)==1 && isempty(tickLabels{1}))
+  if isempty(tickLabels) || (length(tickLabels)==1 && isempty(tickLabels{1}))
       pTickLabels = [];
       return
   end
 
   % sometimes tickLabels are cells, sometimes plain arrays
   % -- unify this to cells
-  if ischar( tickLabels )
-      tickLabels = strtrim( mat2cell( tickLabels,                    ...
-                                     ones( size(tickLabels,1), 1 ), ...
-                                     size( tickLabels, 2 )          ...
+  if ischar(tickLabels)
+      tickLabels = strtrim(mat2cell(tickLabels,                  ...
+                                    ones(size(tickLabels,1), 1), ...
+                                    size(tickLabels, 2)          ...
                                    ) ...
-                         );
+                          );
+  end
+
+  % What MATLAB does when there the number of ticks and tick labels do not
+  % coincide is somewhat unclear. To fix bug
+  %     https://github.com/nschloe/matlab2tikz/issues/161,
+  % cut off the first entries in `ticks`.
+  m = length(ticks);
+  n = length(tickLabels);
+  if n < m
+     ticks = ticks(m-n+1:end)
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
