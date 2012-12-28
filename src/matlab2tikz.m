@@ -2207,10 +2207,7 @@ end
 function [m2t,env] = drawSurface( m2t, handle )
 
     str = [];
-    [m2t, opts, plotType] = surfaceOpts( m2t, handle );
-    str = [ str, sprintf( [ '\n\\addplot3[%%\n%s,\n', opts ,']' ], plotType ) ];
-
-    str = [ str, sprintf( '\ncoordinates{ \n' ) ];
+    [m2t, opts, plotType] = surfaceOpts(m2t, handle);
 
     dx = get(handle, 'XData');
     dy = get(handle, 'YData');
@@ -2233,31 +2230,33 @@ function [m2t,env] = drawSurface( m2t, handle )
         dz = colors;
     end
 
+    str = [ str, sprintf( [ '\n\\addplot3[%%\n%s,\n', opts ,']' ], plotType ) ];
+
     % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
     % Spectrograms need to have the grid removed,
     % m2t.axesContainers{end}.options{end+1} = 'grid=none';
+    str = [ str, sprintf( '\ntable { \n' ) ];
     dz = dz';
     if isvector(dx)
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        n = length(dy);
         for i = 1:row
-            for j = 1:col
-                str = [ str, ...
-                        sprintf('(%.15g,%.15g,%.15g)', dx(i), dy(j), dz(i,j) ) ];
-            end
+            str = [ str, ...
+                    sprintf('%.15g %.15g %.15g\n', ...
+                            [ones(n,1)*dx(i), dy, dz(i,:)']') ];
             % insert an empty line to tell Pgfplots about one row ending here
-            str = [str, sprintf('\n\n')];
+            str = [str, sprintf('\n')];
         end
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     else
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         for i = 1:row
-            str_data = sprintf('%s', num2str([dx(:,i) dy(:,i) dz(i,:)'],'(%.15g,%.15g,%.15g)')');
-            % Remove the white space.
-            str_data = str_data(~isspace(str_data));
-            str = [str, str_data];
+            str = [str, ...
+                   sprintf('%.15g %.15g %.15g\n', ...
+                           [dx(:,i), dy(:,i), dz(i,:)']')];
             % insert an empty line to tell Pgfplots about one row ending here
-            str = [str, sprintf('\n\n')];
+            str = [str, sprintf('\n')];
         end
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     end %if-else
