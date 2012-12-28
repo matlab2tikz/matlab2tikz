@@ -434,14 +434,16 @@ function [description, extraOpts] = logplot()
 
 end
 % =========================================================================
-function [description, extraOpts] = colorbarLogplot ()
+function [description, extraOpts] = colorbarLogplot()
 
   switch getEnvironment()
       case 'MATLAB'
           imagesc([1 10 100]);
       case 'Octave'
           % TODO find out what to do for octave here
-          imagesc([1 10 100]);
+          description = 'Logscaled colorbar -- unavailable in Octave.';
+          extraOpts = {};
+          return;
       otherwise
           error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
@@ -1584,9 +1586,18 @@ function [description, extraOpts] = parameterCurve3d()
 end
 % =========================================================================
 function [description, extraOpts] = parameterSurf()
-  x = rand(100,1)*4-2;
-  y = rand(100,1)*4-2;
-  z = x.*exp(-x.^2-y.^2);
+
+  if ~exist('TriScatteredInterp', 'builtin')
+      fprintf( 'TriScatteredInterp() not found. Abort.\n\n' );
+      description = [];
+      extraOpts = {};
+      return;
+  end
+
+
+  x = rand(100,1)*4 - 2;
+  y = rand(100,1)*4 - 2;
+  z = x.*exp(-x.^2 - y.^2);
 
   % Construct the interpolant
   % F = TriScatteredInterp(x,y,z,'nearest');
@@ -1764,6 +1775,13 @@ function [description, extraOpts] = pixelLegend()
 end
 % =========================================================================
 function [description, extraOpts] = croppedImage()
+
+  if ~exist('flujet.mat','file')
+      fprintf( 'flujet data set not found. Abort.\n\n' );
+      description = [];
+      extraOpts = {};
+      return;
+  end
 
   load('flujet','X','map');
   image(X)

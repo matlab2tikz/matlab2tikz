@@ -482,6 +482,8 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
       m2t.cbarHandles = axesHandles(cbarHandleIdx);
       % Remove all legend handles as they are treated separately.
       axesHandles = axesHandles(~cbarHandleIdx);
+  else
+      m2t.cbarHandles = [];
   end
 
   % Turn around the handles vector to make sure that plots that appeared
@@ -969,7 +971,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add manually given extra axis options
   if ~isempty( m2t.cmdOpts.Results.extraAxisOptions )
-      if isstr(m2t.cmdOpts.Results.extraAxisOptions)
+      if ischar(m2t.cmdOpts.Results.extraAxisOptions)
           m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
                                              m2t.cmdOpts.Results.extraAxisOptions};
       elseif iscellstr(m2t.cmdOpts.Results.extraAxisOptions)
@@ -2051,27 +2053,27 @@ function [ m2t, str ] = drawImage( m2t, handle )
       if strcmp( filesep, '\' )
           % We're on a Windows system with the directory separator
           % character "\". It has to be changed into "/" for the TeX output
-          pngReferencePath = strrep( pngReferencePath, filesep, '/' );
+          pngReferencePath = strrep(pngReferencePath, filesep, '/');
       end
 
       % Get color indices for indexed color images and truecolor values otherwise.
       % Don't use ismatrix(), c.f. <https://github.com/nschloe/matlab2tikz/issues/143>.
       if ndims( cdata ) == 2
-          [ m2t, colorData ] = imagecolor2colorindex ( m2t, cdata, handle );
+          [ m2t, colorData ] = imagecolor2colorindex(m2t, cdata, handle);
       else
           colorData = cdata;
       end
 
       % flip the image if reverse
       if m2t.xAxisReversed
-          colorData = colorData(:,n:-1:1,:);
+          colorData = colorData(:, n:-1:1, :);
       end
       if m2t.yAxisReversed
-          colorData = colorData(m:-1:1,:,:);
+          colorData = colorData(m:-1:1, :, :);
       end
 
       % write the image
-      imwriteWrapperPNG( colorData, m2t.currentHandles.colormap, pngFileName );
+      imwriteWrapperPNG(colorData, m2t.currentHandles.colormap, pngFileName);
       % ------------------------------------------------------------------------
 
       xLim = get(m2t.currentHandles.gca, 'XLim');
@@ -2094,9 +2096,9 @@ function [ m2t, str ] = drawImage( m2t, handle )
                           n-xLim(2), yLim(1))};
       end
 
-      str = [ str, ...
-              sprintf( '\\addplot graphics [%s] {%s};\n', ...
-                       join(opts,','), pngReferencePath) ];
+      str = [str, ...
+             sprintf('\\addplot graphics [%s] {%s};\n', ...
+                     join(opts, ','), pngReferencePath)];
       % TODO crop the image accordingly
       userInfo( m2t, [ '\nA PNG file is stored at ''%s'' for which\n', ...
                        'the TikZ file contains a reference to ''%s''.\n', ...
@@ -4958,7 +4960,7 @@ function printAll( env, fid )
     end
 end
 % =========================================================================
-function imwriteWrapperPNG( colorData, cmap, fileName )
+function imwriteWrapperPNG(colorData, cmap, fileName)
     % Write an indexed or a truecolor image
     % Don't use ismatrix(), cf. <https://github.com/nschloe/matlab2tikz/issues/143>.
     if (ndims( colorData ) == 2)
@@ -4966,13 +4968,13 @@ function imwriteWrapperPNG( colorData, cmap, fileName )
         % 2-bit, 4-bit and 8-bit (i.e., 256 colors) indexed images only.
         % When having more colors, a truecolor image must be generated and
         % used instead.
-        if size( cmap, 1 ) <= 256
-            imwrite ( colorData, cmap, fileName, 'png' );
+        if size(cmap, 1) <= 256
+            imwrite(colorData, cmap, fileName, 'png');
         else
-            imwrite ( ind2rgb(colorData, cmap), fileName, 'png' );
+            imwrite(ind2rgb(colorData, cmap), fileName, 'png');
         end
     else
-        imwrite ( colorData, fileName, 'png' );
+        imwrite(colorData, fileName, 'png');
     end
 end
 % =========================================================================
