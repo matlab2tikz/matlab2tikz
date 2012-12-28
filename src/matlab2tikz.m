@@ -2223,11 +2223,10 @@ function [m2t,env] = drawSurface( m2t, handle )
     % colors to use for the patches. The circular test case on
     % http://www.mathworks.de/de/help/matlab/ref/pcolor.html, for example
     % yields a symmetric setup in Pgfplots (and doesn't in MATLAB).
-    if any(xor(isnan(dz), isnan(colors)) | (abs(colors - dz) > 1.0e-10))
-        % TODO Remove this uuuugly workaround as soon as Pgfplots can handle
-        %      explicit CData.
+    needsExplicitColors = any(xor(isnan(dz), isnan(colors)) ...
+                        | (abs(colors - dz) > 1.0e-10));
+    if needsExplicitColors
         opts{end+1} = 'point meta=explicit';
-        dz = colors;
     end
 
     opts = join(opts, ',\n');
@@ -2241,22 +2240,42 @@ function [m2t,env] = drawSurface( m2t, handle )
     if isvector(dx)
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         n = length(dy);
-        for i = 1:row
-            str = [ str, ...
-                    sprintf('%.15g %.15g %.15g\n', ...
-                            [ones(n,1)*dx(i), dy, dz(:,i)]') ];
-            % insert an empty line to tell Pgfplots about one row ending here
-            str = [str, sprintf('\n')];
+        if needsExplicitColors
+            % Insert an empty line to tell Pgfplots about one row ending here.
+            for i = 1:row
+                str = [str, ...
+                       sprintf('%.15g %.15g %.15g %.15g\n', ...
+                               [ones(n,1)*dx(i), dy, dz(:,i), colors(:,i)]'), ...
+                       sprintf('\n')];
+            end
+        else
+            % Insert an empty line to tell Pgfplots about one row ending here.
+            for i = 1:row
+                str = [str, ...
+                       sprintf('%.15g %.15g %.15g\n', ...
+                               [ones(n,1)*dx(i), dy, dz(:,i)]'), ...
+                       sprintf('\n')];
+            end
         end
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     else
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        for i = 1:row
-            str = [str, ...
-                   sprintf('%.15g %.15g %.15g\n', ...
-                           [dx(:,i), dy(:,i), dz(:,i)]')];
-            % insert an empty line to tell Pgfplots about one row ending here
-            str = [str, sprintf('\n')];
+        if needsExplicitColors
+            % Insert an empty line to tell Pgfplots about one row ending here.
+            for i = 1:row
+                str = [str, ...
+                       sprintf('%.15g %.15g %.15g %.15g\n', ...
+                               [dx(:,i), dy(:,i), dz(:,i), colors(:,i)]'), ...
+                       sprintf('\n')];
+            end
+        else
+            % Insert an empty line to tell Pgfplots about one row ending here.
+            for i = 1:row
+                str = [str, ...
+                       sprintf('%.15g %.15g %.15g\n', ...
+                               [dx(:,i), dy(:,i), dz(:,i)]'), ...
+                       sprintf('\n')];
+            end
         end
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     end %if-else
