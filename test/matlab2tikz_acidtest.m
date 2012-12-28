@@ -182,6 +182,7 @@ function matlab2tikz_acidtest( varargin )
                   % convert it to PDF.
                   print(gcf, '-depsc2', eps_file);
                   eps2pdf(eps_file);
+                  %print(gcf, '-dpdf', pdf_file);
                   %savefig( pdf_file, 'pdf' );
               case 'Octave'
                   % In Octave, figures are automatically cropped when using print().
