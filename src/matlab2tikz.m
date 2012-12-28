@@ -2214,7 +2214,18 @@ function [m2t,env] = drawSurface( m2t, handle )
     if any(~isfinite(dx(:))) || any(~isfinite(dy(:))) || any(~isfinite(dz(:)))
         m2t.axesContainers{end}.options{end+1} = 'unbounded coords=jump';
     end
-    [col, row] = size(dz);
+
+    [numcols, numrows] = size(dz);
+
+    % If dx or dy are given as vectors, convert them to the wasteful matrix
+    % representation first. This makes sure we can treat the data with one
+    % single sprintf() command below.
+    if isvector(dx)
+        dx = ones(numcols,1) * dx;
+    end
+    if isvector(dy)
+        dy = dy * ones(1,numrows);
+    end
 
     % Check if we need extra CData.
     colors = get(handle, 'CData');
@@ -2224,68 +2235,39 @@ function [m2t,env] = drawSurface( m2t, handle )
     % http://www.mathworks.de/de/help/matlab/ref/pcolor.html, for example
     % yields a symmetric setup in Pgfplots (and doesn't in MATLAB).
     needsExplicitColors = any(xor(isnan(dz), isnan(colors)) ...
-                        | (abs(colors - dz) > 1.0e-10));
+                             | (abs(colors - dz) > 1.0e-10));
     if needsExplicitColors
         opts{end+1} = 'point meta=explicit';
+        formatString = '%.15g %.15g %.15g %.15g\n';
+        data = [dx(:), dy(:), dz(:), colors(:)];
+    else
+        formatString = '%.15g %.15g %.15g\n';
+        data = [dx(:), dy(:), dz(:)];
     end
 
+    % Add mesh/rows=<num rows> for specifying the row data instead of empty
+    % lines in the data list below. This makes it possible to reduce the
+    % data writing to one single sprintf() call.
+    opts{end+1} = sprintf('mesh/rows=%d', numrows);
+
     opts = join(opts, ',\n');
-    str = [ str, sprintf( [ '\n\\addplot3[%%\n%s,\n', opts ,']' ], plotType ) ];
+    str = [str, sprintf(['\n\\addplot3[%%\n%s,\n', opts ,']'], plotType)];
 
     % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
     % Spectrograms need to have the grid removed,
     % m2t.axesContainers{end}.options{end+1} = 'grid=none';
-    str = [ str, sprintf( '\ntable { \n' ) ];
-    if isvector(dx)
-        % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        n = length(dy);
-        if needsExplicitColors
-            % Insert an empty line to tell Pgfplots about one row ending here.
-            for i = 1:row
-                str = [str, ...
-                       sprintf('%.15g %.15g %.15g %.15g\n', ...
-                               [ones(n,1)*dx(i), dy, dz(:,i), colors(:,i)]'), ...
-                       sprintf('\n')];
-            end
-        else
-            % Insert an empty line to tell Pgfplots about one row ending here.
-            for i = 1:row
-                str = [str, ...
-                       sprintf('%.15g %.15g %.15g\n', ...
-                               [ones(n,1)*dx(i), dy, dz(:,i)]'), ...
-                       sprintf('\n')];
-            end
-        end
-        % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    else
-        % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        if needsExplicitColors
-            % Insert an empty line to tell Pgfplots about one row ending here.
-            for i = 1:row
-                str = [str, ...
-                       sprintf('%.15g %.15g %.15g %.15g\n', ...
-                               [dx(:,i), dy(:,i), dz(:,i), colors(:,i)]'), ...
-                       sprintf('\n')];
-            end
-        else
-            % Insert an empty line to tell Pgfplots about one row ending here.
-            for i = 1:row
-                str = [str, ...
-                       sprintf('%.15g %.15g %.15g\n', ...
-                               [dx(:,i), dy(:,i), dz(:,i)]'), ...
-                       sprintf('\n')];
-            end
-        end
-        % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    end %if-else
+    % Here is where everything is put together.
+    str = [str, ...
+           sprintf('\ntable {\n'), ...
+           sprintf(formatString, data'), ...
+           sprintf('};\n')];
+    env = str;
 
     % TODO:
     % - remove grids in spectrogram by either removing grid command
     %   or adding: 'grid=none' from/in axis options
     % - handling of huge data amounts in LaTeX.
-    str = [str, sprintf('};\n')];
-    env = str;
 
     if m2t.cmdOpts.Results.automaticLabels
         [m2t, label] = addLabel(m2t);
