@@ -426,7 +426,6 @@ end
 function [description, extraOpts] = logplot()
 
   x = logspace(-1,2);
-  x
   loglog(x,exp(x),'-s')
   grid on;
 
@@ -1813,20 +1812,12 @@ function [description, extraOpts] = pColorPlot()
 end
 % =========================================================================
 function env = getEnvironment
-  env = '';
-  % Check if we are in MATLAB or Octave.
-  % `ver' in MATLAB gives versioning information on all installed packages
-  % separately, and there is no guarantee that MATLAB itself is listed first.
-  % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
-  versionData = ver;
-  for k = 1:max(size(versionData))
-      if strcmp( versionData(k).Name, 'MATLAB' )
-          env = 'MATLAB';
-          break;
-      elseif strcmp( versionData(k).Name, 'Octave' )
-          env = 'Octave';
-          break;
-      end
+  if ~isempty(ver('MATLAB'))
+     env = 'MATLAB';
+  elseif ~isempty(ver('Octave'))
+     env = 'Octave';
+  else
+     env = [];
   end
 end
 % =========================================================================

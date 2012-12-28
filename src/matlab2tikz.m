@@ -328,13 +328,13 @@ function matlab2tikz( varargin )
   % handle output file handle/file name
   if ~isempty( m2t.cmdOpts.Results.filehandle )
       fid     = m2t.cmdOpts.Results.filehandle;
-      fileWasOpen = 1;
+      fileWasOpen = true;
       if ~isempty(m2t.cmdOpts.Results.filename)
           userWarning( m2t, ...
                        'File handle AND file name for output given. File handle used, file name discarded.')
       end
   else
-      fileWasOpen = 0;
+      fileWasOpen = false;
       % set filename
       if ~isempty(m2t.cmdOpts.Results.filename)
           filename = m2t.cmdOpts.Results.filename;
@@ -2229,22 +2229,25 @@ function [m2t,env] = drawSurface( m2t, handle )
 
     % Check if we need extra CData.
     colors = get(handle, 'CData');
-    % Note:
-    % Pgfplots actually does a better job than MATLAB in determining what
-    % colors to use for the patches. The circular test case on
-    % http://www.mathworks.de/de/help/matlab/ref/pcolor.html, for example
-    % yields a symmetric setup in Pgfplots (and doesn't in MATLAB).
-    needsExplicitColors = any(xor(isnan(dz), isnan(colors)) ...
-                             | (abs(colors - dz) > 1.0e-10));
+    if length(size(colors)) > 2
+        % TODO Handle the case of RGB-specified colors.
+        needsExplicitColors = false;
+    else
+        % Note:
+        % Pgfplots actually does a better job than MATLAB in determining what
+        % colors to use for the patches. The circular test case on
+        % http://www.mathworks.de/de/help/matlab/ref/pcolor.html, for example
+        % yields a symmetric setup in Pgfplots (and doesn't in MATLAB).
+        needsExplicitColors = any(xor(isnan(dz), isnan(colors)) ...
+                                 | (abs(colors - dz) > 1.0e-10));
+    end
     if needsExplicitColors
-        % Explicit color specification requires the coordinates{} type format.
-        formatType = 'coordinates';
         opts{end+1} = 'point meta=explicit';
         formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
         data = [dx(:), dy(:), dz(:), colors(:)];
     else
-        formatType = 'table';
-        formatString = '%.15g %.15g %.15g\n';
+        formatType = 'coordinates';
+        formatString = '(%.15g, %.15g, %.15g)\n';
         data = [dx(:), dy(:), dz(:)];
     end
 
@@ -2261,8 +2264,11 @@ function [m2t,env] = drawSurface( m2t, handle )
     % Spectrograms need to have the grid removed,
     % m2t.axesContainers{end}.options{end+1} = 'grid=none';
     % Here is where everything is put together.
+    % It would be nice to use table{} here, but that doesn't seem to work with
+    % explicit colors and also fails if zdata contains "too many" NaNs.
+    % For safety, use coordinates{}.
     str = [str, ...
-           sprintf('\n%s {\n', formatType), ...
+           sprintf('\ncoordinates {\n'), ...
            sprintf(formatString, data'), ...
            sprintf('};\n')];
     env = str;
@@ -3957,7 +3963,7 @@ function [pTicks, pTickLabels] = ...
   m = length(ticks);
   n = length(tickLabels);
   if n < m
-     ticks = ticks(m-n+1:end)
+     ticks = ticks(m-n+1:end);
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4968,21 +4974,19 @@ function imwriteWrapperPNG( colorData, cmap, fileName )
 end
 % =========================================================================
 function env = getEnvironment()
-  env = '';
   % Check if we are in MATLAB or Octave.
   % 'ver' in MATLAB gives versioning information on all installed packages
   % separately, and there is no guarantee that MATLAB itself is listed first.
   % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
-  versionData = ver;
-  for k = 1:max(size(versionData))
-      if strcmp( versionData(k).Name, 'MATLAB' )
-          env = 'MATLAB';
-          break;
-      elseif strcmp( versionData(k).Name, 'Octave' )
-          env = 'Octave';
-          break;
-      end
+  % We could use ver('MATLAB') or ver('Octave').
+  if ~isempty(ver('MATLAB'))
+     env = 'MATLAB';
+  elseif ~isempty(ver('Octave'))
+     env = 'Octave';
+  else
+     env = [];
   end
+
 end
 % =========================================================================
 function versionString = findEnvironmentVersion( env )
