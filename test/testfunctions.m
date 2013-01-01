@@ -31,7 +31,7 @@
 % *** POSSIBILITY OF SUCH DAMAGE.
 % ***
 % =========================================================================
-function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
+function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
 
   % assign the functions to test
   testfunction_handles = {                        ...
@@ -114,17 +114,19 @@ function [ desc, extraOpts, funcName, numFunctions ] = testfunctions ( k )
                          };
 
   numFunctions = length( testfunction_handles );
+
   if (k<=0)
       % This is used for querying numFunctions.
       desc = '';
       funcName = '';
       extraOpts = {};
+      return;
   elseif (k<=numFunctions)
-      [desc, extraOpts] = testfunction_handles{ k } ();
-      funcName = func2str( testfunction_handles{ k } );
+      [desc, extraOpts] = testfunction_handles{k}();
+      funcName = func2str(testfunction_handles{k});
   else
-      error( 'testfunctions:outOfBounds', ...
-             'Out of bounds (number of testfunctions=%d)', numFunctions );
+      error('testfunctions:outOfBounds', ...
+            'Out of bounds (number of testfunctions=%d)', numFunctions);
   end
 
   return;

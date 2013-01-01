@@ -125,7 +125,7 @@ function matlab2tikz( varargin )
 % *** -------
 % ***  Note:
 % *** -------
-% ***    This program is a rewrite on Paul Wagenaars' Matfig2PGF which
+% ***    This program is originally based on Paul Wagenaars' Matfig2PGF which
 % ***    itself uses pure PGF as output format <paul@wagenaars.org>, see
 % ***
 % ***       http://www.mathworks.com/matlabcentral/fileexchange/12962
@@ -133,11 +133,7 @@ function matlab2tikz( varargin )
 % ***    In an attempt to simplify and extend things, the idea for
 % ***    matlab2tikz has emerged. The goal is to provide the user with a
 % ***    clean interface between the very handy figure creation in MATLAB
-% ***    and the powerful means that TikZ with pgfplots has to offer.
-% ***
-% ***
-% *** TODO: * Replace slow strcat() in loops with Julien Ridoux' idea.
-% ***         (See function plotLine().)
+% ***    and the powerful means that TikZ with Pgfplots has to offer.
 % ***
 % =========================================================================
   % Check if we are in MATLAB or Octave.
@@ -724,7 +720,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
           % Don't handle the legend here, but further below in the 'axis'
           % environment.
           % In MATLAB, an axes environment and its corresponding legend are
-          % children of the same figure (siblings), while in pgfplots, the
+          % children of the same figure (siblings), while in Pgfplots, the
           % \legend (or \addlegendentry) command must appear within the axis
           % environment.
           return
@@ -906,7 +902,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       matlabGridLineStyle = get( handle, 'GridLineStyle' );
       % Take over the grid line style in any case when in strict mode.
       % If not, don't add anything in case of default line grid line style
-      % and effectively take pgfplots' default.
+      % and effectively take Pgfplots' default.
       defaultMatlabGridLineStyle = ':';
       if m2t.cmdOpts.Results.strict ...
          || ~strcmp(matlabGridLineStyle,defaultMatlabGridLineStyle)
@@ -919,7 +915,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
       % When specifying 'axis on top', the axes stay above all graphs (which is
       % default MATLAB behavior), but so do the grids (which is not default
       % behavior).
-      % To date (Dec 12, 2009) pgfplots is not able to handle those things
+      % To date (Dec 12, 2009) Pgfplots is not able to handle those things
       % separately.
       % See also http://sourceforge.net/tracker/index.php?func=detail&aid=3510455&group_id=224188&atid=1060657
       % As a prelimary compromise, only pull this option if no grid is in use.
@@ -1298,12 +1294,8 @@ function [m2t, str] = plotLine3d(m2t, opts, data)
     str = [str, ...
            sprintf('coordinates{\n')];
 
-    % Convert to string array then cell to call sprintf once (and no loops).
-    str_data = cellstr(num2str(data, '(%.15g,%.15g,%.15g)'));
-    str_data = sprintf('%s', str_data{:});
+    str_data = sprintf('(%.15g,%.15g,%.15g)\n', data');
 
-    % The process above adds extra white spaces, remove them all
-    str_data = str_data(~isspace(str_data));
     % Also, replace "Inf" by the Pgfplots-recognized "inf".
     % Remove this as soon as Pgfplots knows "Inf".
     str_data = strrep(str_data, 'Inf', 'inf');
@@ -1658,7 +1650,7 @@ function lineOpts = getLineOptions( m2t, lineStyle, lineWidth )
 
       % take over the line width in any case when in strict mode;
       % if not, don't add anything in case of default line width
-      % and effectively take pgfplots' default
+      % and effectively take Pgfplots' default.
       matlabDefaultLineWidth = 0.5;
       if m2t.cmdOpts.Results.strict ...
          || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
@@ -1686,7 +1678,7 @@ function [ m2t, drawOptions ] = getMarkerOptions( m2t, h )
 
       % take over the marker size in any case when in strict mode;
       % if not, don't add anything in case of default marker size
-      % and effectively take pgfplots' default
+      % and effectively take Pgfplots' default.
       if m2t.cmdOpts.Results.strict || ~isDefault
          drawOptions{end+1} = sprintf('mark size=%.1fpt', tikzMarkerSize);
       end
@@ -1966,49 +1958,33 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   if isempty(zData)
       % 2d patch
       for j = 1:n
-          str = strcat( str, ...
-                        sprintf(['\n\\addplot [',drawOpts,'] coordinates{']) );
-
-          % Convert to string array then cell to call sprintf once (and no loops).
-          str_data = cellstr(num2str([xData(:,j),yData(:,j)],'(%.15g,%.15g)'));
-          str_data = sprintf('%s', str_data{:});
-          % The process adds extra white spaces, remove them all
-          str_data = str_data(~isspace(str_data));
-          str = sprintf('%s %s', str, str_data);
-
+          str = [str, ...
+                 sprintf(['\n\\addplot [',drawOpts,'] coordinates{\n']), ...
+                 sprintf('(%.15g,%.15g)\n', [xData(:,j),yData(:,j)]'), ...
+                 '};'];
           % This path isn't necessarily closed, but Pgfplots
           % can deal with that.
-
-          % Close environment.
-          str = strcat( str, sprintf('};') );
       end
    else % ~isempty( zData )
       % 3d patch
       for j = 1:n
-          str = strcat( str, ...
-                        sprintf(['\n\\addplot3 [',drawOpts,'] coordinates{']) );
-
-          % Convert to string array then cell to call sprintf once (and no loops).
-          str_data = cellstr(num2str([xData(:,j),yData(:,j),zData(:,j)],'(%.15g,%.15g,%.15g)'));
-          str_data = sprintf('%s', str_data{:});
-          % The process adds extra white spaces, remove them all
-          str_data = str_data(~isspace(str_data));
-          str = sprintf('%s %s', str, str_data);
-
+          str = [str, ...
+                 sprintf(['\n\\addplot3 [',drawOpts,'] coordinates{\n']), ...
+                 sprintf('(%.15g,%.15g,%.15g)\n', [xData(:,j),yData(:,j),zData(:,j)]')];
           % make sure the path is closed
           if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j) || zData(1,j)~=zData(end,j)
-              str = strcat( str, ...
-                            sprintf( ' (%.15g,%.15g,%.15g)', xData(1,j), yData(1,j), zData(1,j) ) );
+              str = strcat(str, ...
+                           sprintf('(%.15g,%.15g,%.15g)\n', xData(1,j), yData(1,j), zData(1,j)));
           end
           % close it
-          str = strcat( str, sprintf('};\n') );
+          str = strcat(str, sprintf('};\n'));
       end
       % Set view angle.
       view = get(m2t.currentHandles.gca, 'View');
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('view={%.15g}{%.15g}', view);
    end
-   str = [ str, sprintf('\n') ];
+   str = [str, sprintf('\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
@@ -2237,6 +2213,8 @@ function [m2t,env] = drawSurface( m2t, handle )
     if length(size(colors)) > 2
         % TODO Handle the case of RGB-specified colors.
         needsExplicitColors = false;
+        % Check if the color can be found in the current color map.
+        col = colors(1,1,:);
     else
         % Note:
         % Pgfplots actually does a better job than MATLAB in determining what
@@ -2246,13 +2224,20 @@ function [m2t,env] = drawSurface( m2t, handle )
         needsExplicitColors = any(xor(isnan(dz), isnan(colors)) ...
                                  | (abs(colors - dz) > 1.0e-10));
     end
+    % Explicitly add 'header=false' to the list of table options to avoid
+    % conflicts with NaNs; they may be interpreted as strings by Pgfplots.
     if needsExplicitColors
+        %formatType = 'coordinates';
+        %formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
+        formatType = 'table[meta index=3,header=false]';
         opts{end+1} = 'point meta=explicit';
-        formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
+        formatString = '%.15g %.15g %.15g %.15g\n';
         data = [dx(:), dy(:), dz(:), colors(:)];
     else
-        formatType = 'coordinates';
-        formatString = '(%.15g, %.15g, %.15g)\n';
+        %formatType = 'coordinates';
+        %formatString = '(%.15g, %.15g, %.15g)\n';
+        formatType = 'table[header=false]';
+        formatString = '%.15g %.15g %.15g\n';
         data = [dx(:), dy(:), dz(:)];
     end
 
@@ -2269,11 +2254,8 @@ function [m2t,env] = drawSurface( m2t, handle )
     % Spectrograms need to have the grid removed,
     % m2t.axesContainers{end}.options{end+1} = 'grid=none';
     % Here is where everything is put together.
-    % It would be nice to use table{} here, but that doesn't seem to work with
-    % explicit colors and also fails if zdata contains "too many" NaNs.
-    % For safety, use coordinates{}.
     str = [str, ...
-           sprintf('\ncoordinates {\n'), ...
+           sprintf('\n%s {\n', formatType), ...
            sprintf(formatString, data'), ...
            sprintf('};\n')];
     env = str;
@@ -2503,7 +2485,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
                       ['color=' xcolor ] };
   elseif size(cData,2) == 3
       drawOptions = { 'only marks' ...
-      % TODO Get this in order as soon as pgfplots can do "scatter rgb".
+      % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
 %                        'scatter rgb' ...
                     };
   else
@@ -2532,27 +2514,31 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   end
 
   str = [ str, ...
-          sprintf( '\\%s[%s] plot coordinates{', env, drawOpts ) ];
+          sprintf( '\\%s[%s] plot coordinates{\n', env, drawOpts ) ];
 
-  for k = 1:length(xData)
-      if isempty(zData)
-          str = strcat( str, ...
-                        sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
-      else
-          str = strcat( str, ...
-                        sprintf( ' (%.15g,%.15g,%.15g)', xData(k), yData(k), zData(k) ) );
-      end
-      if length(cData) == 3
-          % If size(cData,1)==1, then all the colors are the same and have
-          % already been accounted for above.
-          str = strcat( str, sprintf('\n') );
-      elseif size(cData,2) == 3
-          [m2t, col] = rgb2colorliteral( m2t, cData(k,:) );
-          str = strcat( str, sprintf( ' [%s]\n', col ) );
-      else
-          str = strcat( str, sprintf( ' [%d]\n', cData(k) ) );
-      end
+  if isempty(zData)
+      format = '(%.15g,%.15g)';
+      data = [xData(:), yData(:)];
+  else
+      format = '(%.15g,%.15g,%.15g)';
+      data = [xData(:), yData(:), zData(:)];
   end
+
+  if length(cData) == 3
+      % If size(cData,1)==1, then all the colors are the same and have
+      % already been accounted for above.
+      format = [format, '\n'];
+  elseif size(cData,2) == 3
+      % Hm, can't deal with this?
+      %[m2t, col] = rgb2colorliteral( m2t, cData(k,:) );
+      %str = strcat( str, sprintf( ' [%s]\n', col ) );
+  else
+      format = [format, ' [%d]\n'];
+      data = [data, cData(:)];
+  end
+
+  % The actual printing.
+  str = strcat(str, sprintf(format, data'));
 
   str = [ str, sprintf(' };\n\n') ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2561,7 +2547,7 @@ end
 % =========================================================================
 function [ m2t, str ] = drawBarseries( m2t, h )
   % Takes care of plots like the ones produced by MATLAB's hist.
-  % The main pillar is pgfplots's '{x,y}bar' plot.
+  % The main pillar is Pgfplots's '{x,y}bar' plot.
   %
   % TODO Get rid of code duplication with 'drawAxes'.
 
@@ -2578,7 +2564,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   str = [];
 
   % -----------------------------------------------------------------------
-  % The bar plot implementation in pgfplots lacks certain functionalities;
+  % The bar plot implementation in Pgfplots lacks certain functionalities;
   % for example, it can't plot bar plots and non-bar plots in the same
   % axis (while MATLAB can).
   % The following checks if this is the case and cowardly bails out if so.
@@ -2611,7 +2597,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
                           % Unfortunately, MATLAB(R) treats error bars and corresponding
                           % bar plots as siblings of a common axes object.
                           % For error bars to work with bar plots -- which is trivially
-                          % possible in pgfplots -- one has to match errorbar and bar
+                          % possible in Pgfplots -- one has to match errorbar and bar
                           % objects (probably by their values).
                           userWarning( m2t, 'Error bars discarded (to be implemented).'  );
                       otherwise
@@ -2705,7 +2691,7 @@ function [ m2t, str ] = drawBarseries( m2t, h )
           dx = min( diff(xData) );
 
           % MATLAB treats shift and width in normalized coordinate units,
-          % whereas pgfplots requires physical units (pt,cm,...); hence
+          % whereas Pgfplots requires physical units (pt,cm,...); hence
           % have the units converted.
           if (isHoriz)
               physicalBarWidth = dx * barWidth * m2t.unitlength.y.value;
@@ -2784,22 +2770,18 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  str = [ str, ...
-          sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
+  str = [str, ...
+         sprintf('\\addplot[%s] plot coordinates{\n', drawOpts)];
 
   if isHoriz
       % If the bars are horizontal, the values x and y are exchanged.
-      for k=1:length(xData)
-          str = strcat( str, ...
-                        sprintf( ' (%.15g,%.15g)', yData(k), xData(k) ) );
-      end
+      str = strcat(str, ...
+                   sprintf('(%.15g,%.15g)\n', [yData(:), xData(:)]'));
   else
-      for k=1:length(xData)
-          str = strcat( str, ...
-                        sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
-      end
+      str = strcat(str, ...
+                   sprintf('(%.15g,%.15g)\n', [xData(:), yData(:)]'));
   end
-  str = [ str, sprintf(' };\n\n') ];
+  str = [str, sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
@@ -2840,20 +2822,14 @@ function [ m2t, str ] = drawStemseries( m2t, h )
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
 
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  str = [ str, ...
-          sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
-
-  xData = get( h, 'XData' );
-  yData = get( h, 'YData' );
-
-  for k=1:length(xData)
-      str = strcat( str, ...
-                    sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
-  end
-  str = [ str, sprintf(' };\n\n') ];
+  xData = get(h, 'XData');
+  yData = get(h, 'YData');
+  str = [str, ...
+         sprintf('\\addplot[%s] plot coordinates{', drawOpts), ...
+         sprintf('(%.15g,%.15g)\n', [xData(:), yData(:)]'), ...
+         sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
@@ -2895,17 +2871,12 @@ function [ m2t, str ] = drawStairSeries( m2t, h )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  str = [ str, ...
-          sprintf( '\\addplot[%s] plot coordinates{', drawOpts ) ];
-
   xData = get( h, 'XData' );
   yData = get( h, 'YData' );
-
-  for k=1:length(xData)
-      str = strcat( str, ...
-                    sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
-  end
-  str = [ str, sprintf(' };\n\n') ];
+  str = [str, ...
+         sprintf('\\addplot[%s] plot coordinates{\n', drawOpts ), ...
+         sprintf('(%.15g,%.15g)\n', [xData(:), yData(:)]'), ...
+         sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
@@ -2949,17 +2920,12 @@ function [ m2t, str ] = drawAreaSeries( m2t, h )
   drawOpts = join( drawOptions, ',' );
 
   % plot the thing
-  str = [ str, ...
-          sprintf('\\addplot[%s] coordinates{', drawOpts) ];
-
   xData = get( h, 'XData' );
   yData = get( h, 'YData' );
-
-  for k=1:length(xData)
-      str = strcat( str, ...
-                    sprintf( ' (%.15g,%.15g)', xData(k), yData(k) ) );
-  end
-  str = [ str, sprintf(' }\n\\closedcycle;\n') ];
+  str = [str, ...
+         sprintf('\\addplot[%s] plot coordinates{\n', drawOpts ), ...
+         sprintf('(%.15g,%.15g)\n', [xData(:), yData(:)]'), ...
+         sprintf('}\n\\closedcycle;\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
@@ -3452,14 +3418,14 @@ function [ m2t, env ] = drawColorbar( m2t, handle, alignmentOptions )
           if strcmpi( loc, 'northoutside' )
               cbarOptions = [ cbarOptions,                            ...
                               'xticklabel pos=right, ytick=\empty' ];
-                              % we actually wanted to set pos=top here,
-                              % but pgfplots doesn't support that yet.
+                              % We actually wanted to set pos=top here,
+                              % but Pgfplots doesn't support that yet.
                               % pos=right does the same thing, really.
           else
               cbarOptions = [ cbarOptions,                            ...
                                'xticklabel pos=left, ytick=\empty' ];
-                               % we actually wanted to set pos=bottom here,
-                               % but pgfplots doesn't support that yet.
+                               % We actually wanted to set pos=bottom here,
+                               % but Pgfplots doesn't support that yet.
                                % pos=left does the same thing, really.
           end
 
@@ -3883,7 +3849,7 @@ function [ m2t, lOpts ] = getLegendOpts( m2t, handle )
 end
 % =========================================================================
 function [pTicks, pTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis)
-  % Return axis tick marks pgfplot style. Nice: Tick lengths and such
+  % Return axis tick marks Pgfplots style. Nice: Tick lengths and such
   % details are taken care of by Pgfplots.
 
   if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
@@ -3913,7 +3879,7 @@ function [pTicks, pTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis)
   tickMode = get(handle, keywordTickMode);
   if strcmp(tickMode,'auto') && ~m2t.cmdOpts.Results.strict
       % If the ticks are set automatically, and strict conversion is
-      % not required, then let pgfplots take care of the ticks.
+      % not required, then let Pgfplots take care of the ticks.
       % In most cases, this looks a lot better anyway.
       pTicks = [];
       if length(tickLabels) == 1 && isempty(tickLabels{1})
@@ -4361,7 +4327,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % The output vector 'alignmentOptions' contains:
   %     - whether or not it is a reference (.isRef)
   %     - axes name  (.name), only set if .isRef is true
-  %     - the actual pgfplots options (.opts)
+  %     - the actual Pgfplots options (.opts)
   %
   % The routine tries to be smart in the sense that it will detect that in
   % a setup such as
@@ -4645,7 +4611,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
       end
   end
 
-  % Now, actually go ahead and process the info to return pgfplots alignment
+  % Now, actually go ahead and process the info to return Pgfplots alignment
   % options.
 
   % Sort the axes environments by the number of connections they have.
@@ -4743,7 +4709,7 @@ function [plotOrder, plotNumber, alignmentOptions] = setOptionsRecursion( plotOr
 
 end
 % =========================================================================
-% translates the corner code in a real option to pgfplots
+% translates the corner code in a real option to Pgfplots
 function pgfOpt = cornerCode2pgfplotOption( code )
 
   switch code
