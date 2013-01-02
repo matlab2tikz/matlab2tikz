@@ -176,6 +176,9 @@ function matlab2tikz( varargin )
 
   m2t.currentHandles = [];
 
+  % For hgtransform groups.
+  m2t.transform = [];
+
   m2t.name = 'matlab2tikz';
   m2t.version = '0.3.0';
   m2t.author = 'Nico Schlömer';
@@ -558,7 +561,11 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
       m2t.content.colors = [m2t.content.colors sprintf('\n')];
   end
 
-  % finally print it to the file
+  % Finally print it to the file,
+  if ~isempty(m2t.content.comment)
+      fprintf(fid, '%% %s\n', ...
+              strrep(m2t.content.comment, sprintf('\n'), sprintf('\n%% ')));
+  end
   if m2t.cmdOpts.Results.standalone
       fprintf(fid, ['\\documentclass[tikz]{standalone}\n', ...
                     '\\usepackage{pgfplots}\n', ...
@@ -566,14 +573,11 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
                     '\\usepackage{amsmath}\n', ...
                     '\\begin{document}\n']);
   end
-
-  % printAll handles the actual figure plotting
-  printAll( m2t.content, fid );
-
+  % printAll() handles the actual figure plotting.
+  printAll(m2t.content, fid);
   if m2t.cmdOpts.Results.standalone
       fprintf(fid, '\n\\end{document}');
   end
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % close the file if necessary
@@ -659,9 +663,15 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               [m2t, env] = drawHggroup( m2t, child );
 
           case 'hgtransform'
-              % don't handle those directly but descend to its children
-              % (which could for example be patch handles)
-              [m2t, env] = handleAllChildren( m2t, child );
+              % From http://www.mathworks.de/de/help/matlab/ref/hgtransformproperties.html:
+              % Matrix: 4-by-4 matrix
+              %   Transformation matrix applied to hgtransform object and its
+              %   children. The hgtransform object applies the transformation
+              %   matrix to all its children.
+              % More information at http://www.mathworks.de/de/help/matlab/creating_plots/group-objects.html.
+              m2t.transform = get(child, 'Matrix');
+              [m2t, env] = handleAllChildren(m2t, child);
+              m2t.transform = [];
 
           case 'surface'
               [m2t, env] = drawSurface( m2t, child );
@@ -1916,9 +1926,9 @@ function [ m2t, str ] = drawPatch( m2t, handle )
   % a distinct graphical object. Usually there is only one column, but
   % there may be more (-->hist plots, although they are now handled
   % within the barplot framework).
-  xData = get( handle, 'XData' );
-  yData = get( handle, 'YData' );
-  zData = get( handle, 'ZData' );
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  zData = get(handle, 'ZData');
 
   if any(~isfinite(xData(:))) || any(~isfinite(yData(:))) || any(~isfinite(zData(:)))
       % Add 'unbounded coords=jump' to the axis options if it's not there
@@ -2169,7 +2179,7 @@ function [ m2t, str ] = drawHggroup( m2t, h )
 
 end
 % =========================================================================
-function [m2t,env] = drawSurface( m2t, handle )
+function [m2t,env] = drawSurface(m2t, handle)
 
     str = [];
     [m2t, opts, plotType] = surfaceOpts(m2t, handle);
@@ -2197,7 +2207,7 @@ function [m2t,env] = drawSurface( m2t, handle )
     if length(size(colors)) > 2
         % TODO Handle the case of RGB-specified colors.
         needsExplicitColors = false;
-        % Check if the color can be found in the current color map.
+        % TODO Check if the color can be found in the current color map.
         col = colors(1,1,:);
     else
         % Note:
@@ -2223,6 +2233,13 @@ function [m2t,env] = drawSurface( m2t, handle )
         formatType = 'table[header=false]';
         formatString = '%.15g %.15g %.15g\n';
         data = [dx(:), dy(:), dz(:)];
+        if ~isempty(m2t.transform)
+            R = m2t.transform(1:3,1:3);
+            t = m2t.transform(1:3,4);
+            n = size(data, 1);
+            data = data * R' ...
+                 + kron(ones(n,1), t');
+        end
     end
 
     % Add mesh/rows=<num rows> for specifying the row data instead of empty
@@ -4870,10 +4887,6 @@ function parent = addChildren( parent, children )
 end
 % =========================================================================
 function printAll( env, fid )
-
-    if ~isempty(env.comment)
-        fprintf( fid, '%% %s\n', strrep( env.comment, sprintf('\n'), sprintf('\n%% ') ) );
-    end
 
     if isfield(env, 'colors') && ~isempty(env.colors)
         fprintf( fid, '%s', env.colors);
