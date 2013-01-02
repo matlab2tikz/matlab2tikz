@@ -551,7 +551,8 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   if ~isempty(m2t.extraRgbColorNames)
       m2t.content.colors = sprintf('\n%% defining custom colors\n');
       for k = 1:length(m2t.extraRgbColorNames)
-          m2t.content.colors = [m2t.content.colors sprintf('\\definecolor{%s}{rgb}{%.15g,%.15g,%.15g}\n', ...
+          m2t.content.colors = [m2t.content.colors, ...
+                                sprintf('\\definecolor{%s}{rgb}{%.15g,%.15g,%.15g}\n', ...
                                         m2t.extraRgbColorNames{k}', m2t.extraRgbColorSpecs{k})];
       end
       m2t.content.colors = [m2t.content.colors sprintf('\n')];
@@ -761,9 +762,9 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
-  dim = getAxesDimensions( handle, ...
-                           m2t.cmdOpts.Results.width, ...
-                           m2t.cmdOpts.Results.height );
+  dim = getAxesDimensions(handle, ...
+                          m2t.cmdOpts.Results.width, ...
+                          m2t.cmdOpts.Results.height);
   % set the width
   if dim.x.unit(1)=='\' && dim.x.value==1.0
       % only return \figurewidth instead of 1.0\figurewidth
@@ -1205,12 +1206,19 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
 
   if ~isempty( zData )
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
-      opts = ['\n', join(drawOptions, ',\n' ), '\n'];
-      [m2t, cont] = plotLine3d(m2t, opts, data);
-      str = [str, cont];
+      str = [str, ...
+             sprintf(['\\addplot3 [\n', join(drawOptions, ',\n'), ']\n']), ...
+             sprintf('table {\n'), ...
+             sprintf('%.15g %.15g %.15g\n', data'), ...
+             sprintf('};\n')];
+
+      % Set view angle.
+      view = get(m2t.currentHandles.gca, 'View');
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('view={%.15g}{%.15g}', view);
   else
-      xLim = get( m2t.currentHandles.gca, 'XLim' );
-      yLim = get( m2t.currentHandles.gca, 'YLim' );
+      xLim = get(m2t.currentHandles.gca, 'XLim');
+      yLim = get(m2t.currentHandles.gca, 'YLim');
       % split the data into logical chunks
       dataCell = splitLine( m2t, hasLines, hasMarkers, data, xLim, yLim );
 
@@ -1255,10 +1263,7 @@ function str = plotLine2d(opts, data)
     str = [];
 
     % check if the *optional* argument 'yDeviation' was given
-    errorbarMode = false;
-    if size(data,2) == 3
-        errorbarMode = true;
-    end
+    errorbarMode = (size(data,2) == 3);
 
     str = [ str, ...
             sprintf( ['\\addplot [',opts,']\n'] ) ];
@@ -1267,47 +1272,27 @@ function str = plotLine2d(opts, data)
                 sprintf('plot [error bars/.cd, y dir = both, y explicit]\n') ];
     end
 
-    str = [ str, ...
-            sprintf('coordinates{\n') ];
-
     % Convert to string array then cell to call sprintf once (and no loops).
     if errorbarMode
-        str_data = cellstr(num2str(data, '(%.15g,%.15g) +- (0.0,%.15g)'));
+        dataType = 'coordinates';
+        str_data = sprintf('(%.15g,%.15g) +- (0.0,%.15g)', data');
     else
-        str_data = cellstr(num2str(data, '(%.15g,%.15g)'));
+        dataType = 'table';
+        str_data = sprintf('%.15g %.15g\n', data');
+        %dataType = 'coordinates';
+        %str_data = sprintf('(%.15g, %.15g)', data');
     end
-    str_data = sprintf('%s', str_data{:});
 
-    % The process above adds extra white spaces, remove them all
-    str_data = str_data(~isspace(str_data));
-    % Also, replace "Inf" by the Pgfplots-recognized "inf".
-    % Remove this as soon as Pgfplots knows "Inf".
+    % Pgfplots doesn't recognize "Inf" when used with coordinates{}.
     str_data = strrep(str_data, 'Inf', 'inf');
-    str = sprintf('%s %s \n};\n', str, str_data);
-
-end
-% =========================================================================
-function [m2t, str] = plotLine3d(m2t, opts, data)
-
-    str = sprintf(['\\addplot3 [', opts, ']\n']);
-
     str = [str, ...
-           sprintf('coordinates{\n')];
+           sprintf('%s{\n', dataType), ...
+           str_data, ...
+           sprintf('};\n')];
 
-    str_data = sprintf('(%.15g,%.15g,%.15g)\n', data');
-
-    % Also, replace "Inf" by the Pgfplots-recognized "inf".
-    % Remove this as soon as Pgfplots knows "Inf".
-    str_data = strrep(str_data, 'Inf', 'inf');
-    str = sprintf('%s %s \n};\n\n', str, str_data);
-
-    % Set view angle.
-    view = get(m2t.currentHandles.gca, 'View');
-    m2t.axesContainers{end}.options{end+1} = ...
-        sprintf('view={%.15g}{%.15g}', view);
 end
 % =========================================================================
-function dataCell = splitLine( m2t, hasLines, hasMarkers, data, xLim, yLim )
+function dataCell = splitLine(m2t, hasLines, hasMarkers, data, xLim, yLim)
   % Split the xData, yData into several chunks of data for each of which
   % an \addplot will be generated.
   % Splitting criteria are:
@@ -1569,8 +1554,7 @@ function lambda = crossLines(X1, X2, X3, X4)
   %  L1(lambda) = X1 + lambda (X2 - X1)
   %  L2(lambda) = X3 + lambda (X4 - X3)
   %
-  % returns the lambda for which they intersect (and Inf
-  % if they are parallel).
+  % returns the lambda for which they intersect (and Inf if they are parallel).
   % Technically, one needs to solve the 2x2 equation system
   %
   %   x1 + lambda1 (x2-x1)  =  x3 + lambda2 (x4-x3)
@@ -1959,8 +1943,8 @@ function [ m2t, str ] = drawPatch( m2t, handle )
       % 2d patch
       for j = 1:n
           str = [str, ...
-                 sprintf(['\n\\addplot [',drawOpts,'] coordinates{\n']), ...
-                 sprintf('(%.15g,%.15g)\n', [xData(:,j),yData(:,j)]'), ...
+                 sprintf(['\n\\addplot [', drawOpts, '] coordinates{\n']), ...
+                 sprintf('(%.15g,%.15g)\n', [xData(:,j), yData(:,j)]'), ...
                  '};'];
           % This path isn't necessarily closed, but Pgfplots
           % can deal with that.
@@ -2360,7 +2344,6 @@ function [ m2t, str ] = drawText(m2t, handle)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   pos = get(handle, 'Position');
-  %pos = pos2dims(get( handle, 'Position' ));
   if length(pos) == 2
       posString = sprintf('(axis cs:%.15g, %.15g)', pos);
   elseif length(pos) == 3
@@ -2514,21 +2497,14 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   drawOpts = join( drawOptions, ',' );
   if isempty(zData)
       env = 'addplot';
+      format = '(%.15g,%.15g)';
+      data = [xData(:), yData(:)];
   else
       env = 'addplot3';
       % Set view angle.
       view = get(m2t.currentHandles.gca, 'View');
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('view={%.15g}{%.15g}', view);
-  end
-
-  str = [ str, ...
-          sprintf( '\\%s[%s] plot coordinates{\n', env, drawOpts ) ];
-
-  if isempty(zData)
-      format = '(%.15g,%.15g)';
-      data = [xData(:), yData(:)];
-  else
       format = '(%.15g,%.15g,%.15g)';
       data = [xData(:), yData(:), zData(:)];
   end
@@ -2547,9 +2523,10 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
   end
 
   % The actual printing.
-  str = strcat(str, sprintf(format, data'));
-
-  str = [ str, sprintf(' };\n\n') ];
+  str = [str, ...
+         sprintf('\\%s[%s] plot coordinates{\n', env, drawOpts), ...
+         sprintf(format, data'), ...
+         sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
@@ -2579,25 +2556,24 @@ function [ m2t, str ] = drawBarseries( m2t, h )
   % The following checks if this is the case and cowardly bails out if so.
   % On top of that, the number of bar plots is counted.
   if isempty(m2t.barplotTotalNumber)
-      m2t.nonbarPlotPresent  = 0;
+      m2t.nonbarPlotPresent = 0;
       m2t.barplotTotalNumber = 0;
-      parent             = get( h, 'Parent' );
-      siblings           = get( parent, 'Children' );
-      for k = 1:length(siblings)
+      siblings = get(get(h, 'Parent'), 'Children');
+      for s = siblings(:)'
 
           % skip invisible objects
-          if ~isVisible(siblings(k))
+          if ~isVisible(s)
               continue
           end
 
-          t = get( siblings(k), 'Type' );
+          t = get(s, 'Type');
           switch t
               case {'line','patch'}
                   m2t.nonbarPlotPresent = 1;
               case 'text'
                   % this is pretty harmless: don't complain about ordinary text
               case 'hggroup'
-                  cl = class(handle(siblings(k)));
+                  cl = class(handle(s));
                   switch cl
                       case 'specgraph.barseries'
                           m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
@@ -2806,8 +2782,8 @@ function [ m2t, str ] = drawStemseries( m2t, h )
   lineWidth = get( h, 'LineWidth' );
   marker    = get( h, 'Marker' );
 
-  if (    ( strcmp(lineStyle,'none') || lineWidth==0 )                  ...
-       && strcmp(marker,'none') )
+  if ((strcmp(lineStyle,'none') || lineWidth==0 )                  ...
+      && strcmp(marker,'none') )
       % nothing to plot!
       return
   end
@@ -2815,7 +2791,7 @@ function [ m2t, str ] = drawStemseries( m2t, h )
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
   % deal with draw options
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-  color     = get( h, 'Color' );
+  color = get( h, 'Color' );
   [ m2t, plotColor ] = getColor( m2t, h, color, 'patch' );
 
   lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
@@ -2829,7 +2805,6 @@ function [ m2t, str ] = drawStemseries( m2t, h )
   % insert draw options
   drawOpts =  join( drawOptions, ',' );
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
@@ -2908,7 +2883,7 @@ function [ m2t, str ] = drawAreaSeries( m2t, h )
   % Handle draw options.
   % define edge color
   drawOptions = {};
-  edgeColor  = get( h, 'EdgeColor' );
+  edgeColor = get( h, 'EdgeColor' );
   [ m2t, xEdgeColor ] = getColor( m2t, h, edgeColor, 'patch' );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define face color;
@@ -2997,29 +2972,29 @@ function [ m2t, str ] = drawQuiverGroup( m2t, h )
       arrowOpts = [ arrowOpts, '-' ];
   end
 
-  color      = get( h, 'Color');
-  [ m2t, arrowcolor ] = getColor( m2t, h, color, 'patch' );
-  arrowOpts = [ arrowOpts,                               ...
-                 sprintf( 'color=%s', arrowcolor ),      ... % color
-                 getLineOptions( m2t, lineStyle, lineWidth ), ... % line options
+  color = get(h, 'Color');
+  [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
+  arrowOpts = [arrowOpts, ...
+               sprintf('color=%s', arrowcolor), ... % color
+               getLineOptions(m2t, lineStyle, lineWidth), ... % line options
                ];
 
   % define arrow style
-  arrowOptions = join( arrowOpts, ',' );
+  arrowOptions = join(arrowOpts, ',');
 
   % Append the arrow style to the TikZ options themselves.
   % TODO: Look into replacing this by something more 'local',
   % (see \pgfplotset{}).
-  arrowStyle  = [ 'arrow',num2str(m2t.quiverId),'/.style={',arrowOptions,'}' ];
-  m2t.tikzOptions = [ m2t.tikzOptions, arrowStyle ];
+  arrowStyle  = ['arrow',num2str(m2t.quiverId), '/.style={',arrowOptions,'}'];
+  m2t.tikzOptions = [m2t.tikzOptions, arrowStyle];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % return the vector field code
-  str = [ str, ...
-          sprintf( [ '\\addplot [arrow',num2str(m2t.quiverId)  ,...
-                     '] coordinates{ (%.15g,%.15g) (%.15g,%.15g) };\n'],...
-                   XY ) ];
+  str = [str, ...
+         sprintf(['\\addplot [arrow',num2str(m2t.quiverId), '] ', ...
+                  'coordinates{(%.15g,%.15g) (%.15g,%.15g)};\n'],...
+                  XY ) ];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 end
@@ -3059,7 +3034,7 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
 
   n = length(yValues);
 
-  yDeviations = zeros(n,1);
+  yDeviations = zeros(n, 1);
 
   for k = 1:n
       % upper deviation
@@ -3079,7 +3054,7 @@ function [ m2t, str ] = drawErrorBars( m2t, h )
   end
 
   % Now, pull drawLine() with deviation information.
-  [ m2t, str ] = drawLine( m2t, c(dataIdx), yDeviations );
+  [ m2t, str ] = drawLine(m2t, c(dataIdx), yDeviations);
 
 end
 % ==============================================================================

@@ -176,6 +176,21 @@ function matlab2tikz_acidtest( varargin )
       try
           switch env
               case 'MATLAB'
+                  %% Make the inset tight.
+                  %ti = get(gca, 'TightInset');
+                  %set(gca, ...
+                  %    'Position', [ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
+
+                  %set(gca, 'units', 'centimeters')
+                  %pos = get(gca, 'Position');
+                  %ti = get(gca, 'TightInset');
+
+                  %set(gcf, ...
+                  %    'PaperUnits', 'centimeters');
+                  %set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+                  %set(gcf, 'PaperPositionMode', 'manual');
+                  %set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+                  %print(pdf_file, '-dpdf');
                   % Create a cropped PDF.
                   % Unfortunately, MATLAB cannot do that directly, so first
                   % create an EPS (which has a tight bounding box) and then

@@ -14,6 +14,7 @@ TARGET:=acid
 
 default: main
 
+#main:
 main: eps2pdf
 	@$(PDFLATEX) $(TARGET)
 
@@ -22,7 +23,7 @@ main: eps2pdf
 # make sure the EPS's got converted to PDF's
 eps2pdf:
 	@echo -e -n "Building PDF files..."
-	@find ../data/ -name "*.eps" | while read file; do epstopdf "$$file"; done
+	@find ../data/ -name "*.eps" -exec epstopdf {} \;
 	@echo -e " done.\n\n"
 	
 clean:

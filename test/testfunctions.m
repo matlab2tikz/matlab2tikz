@@ -1590,13 +1590,12 @@ end
 % =========================================================================
 function [description, extraOpts] = parameterSurf()
 
-  if ~exist('TriScatteredInterp', 'builtin')
+  if ~exist('TriScatteredInterp')
       fprintf( 'TriScatteredInterp() not found. Abort.\n\n' );
       description = [];
       extraOpts = {};
       return;
   end
-
 
   x = rand(100,1)*4 - 2;
   y = rand(100,1)*4 - 2;
