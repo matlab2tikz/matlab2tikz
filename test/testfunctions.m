@@ -1584,6 +1584,7 @@ end
 function [description, extraOpts] = parameterCurve3d()
   ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
   description = 'Parameter curve in 3D.';
+  text(0.5, 0.5, 10, 'abs');
   extraOpts = {};
 end
 % =========================================================================

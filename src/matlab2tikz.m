@@ -2306,7 +2306,6 @@ function [ m2t, str ] = drawText(m2t, handle)
   [ m2t, tcolor ] = getColor( m2t, handle, color, 'patch' );
   EdgeColor = get( handle, 'EdgeColor' );
   HorizontalAlignment = get( handle, 'HorizontalAlignment' );
-  pos = pos2dims(get( handle, 'Position' ));
   String = get( handle, 'String' );
   Interpreter = get( handle, 'Interpreter' );
   String = prettyPrint( m2t, String, Interpreter );
@@ -2360,8 +2359,18 @@ function [ m2t, str ] = drawText(m2t, handle)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  str = sprintf( '\\node[%s]\nat (axis cs:%.15g, %.15g) {%s};\n', ...
-                 join(style,', '), pos.left, pos.bottom, String );
+  pos = get(handle, 'Position');
+  %pos = pos2dims(get( handle, 'Position' ));
+  if length(pos) == 2
+      posString = sprintf('(axis cs:%.15g, %.15g)', pos);
+  elseif length(pos) == 3
+      posString = sprintf('(axis cs:%.15g, %.15g, %.15g)', pos);
+  else
+      error('matlab2tikz:drawText', ...
+            'Illegal text position specification.');
+  end
+  str = sprintf( '\\node[%s]\nat %s {%s};\n', ...
+                 join(style,', '), posString, String );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
