@@ -110,7 +110,8 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @pixelLegend         , ...
                            @croppedImage        , ...
                            @doubleAxes          , ...
-                           @pColorPlot
+                           @pColorPlot          , ...
+                           @hgTransformPlot
                          };
 
   numFunctions = length( testfunction_handles );
@@ -1827,6 +1828,37 @@ function [description, extraOpts] = pColorPlot()
   axis equal tight
 
   description = 'pcolor() plot.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = hgTransformPlot()
+  % Check out
+  % http://www.mathworks.de/de/help/matlab/ref/hgtransform.html.
+
+  ax = axes('XLim',[-2 1],'YLim',[-2 1],'ZLim',[-1 1]);
+  view(3);
+  grid on;
+  axis equal;
+
+  [x y z] = cylinder([.2 0]);
+  h(1) = surface(x,y,z,'FaceColor','red');
+  h(2) = surface(x,y,-z,'FaceColor','green');
+  h(3) = surface(z,x,y,'FaceColor','blue');
+  h(4) = surface(-z,x,y,'FaceColor','cyan');
+  h(5) = surface(y,z,x,'FaceColor','magenta');
+  h(6) = surface(y,-z,x,'FaceColor','yellow');
+
+  t1 = hgtransform('Parent',ax);
+  t2 = hgtransform('Parent',ax);
+
+  set(h,'Parent',t1);
+  h2 = copyobj(h,t2);
+
+  Txy = makehgtform('translate',[-1.5 -1.5 0]);
+  set(t2,'Matrix',Txy)
+  drawnow
+
+  description = 'hgtransform() plot.';
   extraOpts = {};
 end
 % =========================================================================
