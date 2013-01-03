@@ -459,10 +459,10 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   % axes in polar plots, for example), are otherwise hidden from their
   % parental handles (and can hence not be discovered by matlab2tikz).
   % With ShowHiddenHandles 'on', there is no escape. :)
-  set( 0, 'ShowHiddenHandles', 'on' );
+  set(0, 'ShowHiddenHandles', 'on');
 
   % get all axes handles
-  fh          = m2t.currentHandles.gcf;
+  fh = m2t.currentHandles.gcf;
   axesHandles = findobj(fh, 'type', 'axes');
 
   tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
@@ -492,10 +492,10 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
   axesHandles = axesHandles(end:-1:1);
 
   % find alignments
-  [visibleAxesHandles,alignmentOptions,ix] = alignSubPlots( m2t, axesHandles );
+  [visibleAxesHandles, alignmentOptions, ix] = alignSubPlots(m2t, axesHandles);
   m2t.axesContainers = {};
   for k = 1:length(visibleAxesHandles)
-      m2t = drawAxes( m2t, visibleAxesHandles(ix(k)), alignmentOptions(ix(k)) );
+      m2t = drawAxes(m2t, visibleAxesHandles(ix(k)), alignmentOptions(ix(k)));
   end
 
   % Handle color bars.
@@ -505,10 +505,10 @@ function m2t = saveToFile( m2t, fid, fileWasOpen )
 
   % Add all axes containers to the file contents.
   for axesContainer = m2t.axesContainers
-      m2t.content = addChildren( m2t.content, axesContainer );
+      m2t.content = addChildren(m2t.content, axesContainer);
   end
 
-  set( 0, 'ShowHiddenHandles', 'off' );
+  set(0, 'ShowHiddenHandles', 'off');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
   m2t.content.comment = sprintf( [ 'This file was created by %s v%s.\n', ...
@@ -589,7 +589,7 @@ end
 function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
   % Draw all children of a graphics object (if they need to be drawn).
 
-  children = get( handle, 'Children' );
+  children = get(handle, 'Children');
 
   % prepare cell array of pgfEnvironments
   pgfEnvironments = cell(0);
@@ -647,20 +647,20 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               error('Unknown environment. Need MATLAB(R) or Octave.')
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      switch get( child, 'Type' )
+      switch get(child, 'Type')
           % 'axes' environments are treated separately.
 
           case 'line'
-              [m2t, str] = drawLine( m2t, child );
+              [m2t, str] = drawLine(m2t, child);
 
           case 'patch'
-              [m2t, str] = drawPatch( m2t, child );
+              [m2t, str] = drawPatch(m2t, child);
 
           case 'image'
-              [m2t, str] = drawImage( m2t, child );
+              [m2t, str] = drawImage(m2t, child);
 
           case 'hggroup'
-              [m2t, str] = drawHggroup( m2t, child );
+              [m2t, str] = drawHggroup(m2t, child);
 
           case 'hgtransform'
               % From http://www.mathworks.de/de/help/matlab/ref/hgtransformproperties.html:
@@ -674,23 +674,23 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               m2t.transform = [];
 
           case 'surface'
-              [m2t, str] = drawSurface( m2t, child );
+              [m2t, str] = drawSurface(m2t, child);
 
           case 'text'
-              [m2t, str] = drawText( m2t, child );
+              [m2t, str] = drawText(m2t, child);
 
           case 'rectangle'
-              [m2t, str] = drawRectangle( m2t, child );
+              [m2t, str] = drawRectangle(m2t, child);
 
-          case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
-                 'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
+          case {'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
+                'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
               % don't to anything for these handles and its children
               str = [];
 
           otherwise
-              error( 'matlab2tikz:handleAllChildren',                 ...
-                     'I don''t know how to handle this object: %s\n', ...
-                                                       get(child,'Type') );
+              error('matlab2tikz:handleAllChildren',                 ...
+                    'I don''t know how to handle this object: %s\n', ...
+                                                       get(child, 'Type'));
 
       end
 
@@ -721,8 +721,8 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
 
   % Handle special cases.
   % MATLAB(R) uses 'Tag', Octave 'tag' for their tags. :/
-  tagKeyword      = switchMatOct(m2t,'Tag','tag');
-  colorbarKeyword = switchMatOct(m2t,'Colorbar','colorbar');
+  tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
+  colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
   switch get( handle, tagKeyword )
       case colorbarKeyword
           % Handle a colorbar separately.
@@ -744,13 +744,13 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % Use a struct instead of a custom subclass of hgsetget (which would
   % facilitate writing clean code) as structs are more portable (old MATLAB(R)
   % versions, GNU Octave).
-  m2t.axesContainers{end+1} = struct( 'handle',   handle,    ...
-                                      'name',     [],        ...
-                                      'comment',  [],        ...
-                                      'options',  {cell(0)}, ...
-                                      'content',  {cell(0)}, ...
-                                      'children', {cell(0)}  ...
-                                    );
+  m2t.axesContainers{end+1} = struct('handle',   handle,    ...
+                                     'name',     [],        ...
+                                     'comment',  [],        ...
+                                     'options',  {cell(0)}, ...
+                                     'content',  {cell(0)}, ...
+                                     'children', {cell(0)}  ...
+                                     );
 
   % update gca
   m2t.currentHandles.gca = handle;
@@ -825,18 +825,18 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % Get other axis options (ticks, axis color, label,...).
   % This is set here such that the axis orientation indicator in m2t is set
   % before -- if ~isVisible(handle) -- the handle's children are called.
-  [ m2t, hasXGrid ] = getAxisOptions( m2t, handle, 'x' );
-  [ m2t, hasYGrid ] = getAxisOptions( m2t, handle, 'y' );
+  [m2t, hasXGrid] = getAxisOptions(m2t, handle, 'x');
+  [m2t, hasYGrid] = getAxisOptions(m2t, handle, 'y');
   if ~isViewFromAbove
-      [ m2t, hasZGrid ] = getAxisOptions( m2t, handle, 'z' );
+      [m2t, hasZGrid] = getAxisOptions(m2t, handle, 'z');
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  if ~isVisible( handle )
+  if ~isVisible(handle)
       % An invisible axes container *can* have visible children, so don't
       % immediately bail out here.
-      c = get(handle,'Children');
+      c = get(handle, 'Children');
       for k = 1:length(c)
-          if isVisible( c(k) )
+          if isVisible(c(k))
               % If the axes contain something that's visible, add an invisible
               % axes pair.
               m2t.axesContainers{end}.name = 'axis';
@@ -1035,9 +1035,9 @@ function tag = getTag( handle )
     % if a tag is given, use it as comment
     tag = get(handle, 'tag');
     if ~isempty(tag)
-        tag = sprintf( 'Axis "%s"', tag );
+        tag = sprintf('Axis "%s"', tag);
     else
-        tag = sprintf( 'Axis at [%.2g %.2f %.2g %.2g]', get(handle, 'position' ) );
+        tag = sprintf('Axis at [%.2g %.2f %.2g %.2g]', get(handle, 'position'));
     end
 
 end
@@ -1049,9 +1049,9 @@ function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % axis colors
-  color = get( handle, [upper(axis),'Color'] );
-  if ( any(color) ) % color not black [0,0,0]
-       [ m2t, col ] = getColor( m2t, handle, color, 'patch' );
+  color = get(handle, [upper(axis),'Color']);
+  if (any(color)) % color not black [0,0,0]
+       [m2t, col] = getColor(m2t, handle, color, 'patch');
        m2t.axesContainers{end}.options = ...
            {m2t.axesContainers{end}.options{:}, ...
             ['every outer ',axis,' axis line/.append style={',col, '}'], ...
@@ -1149,7 +1149,7 @@ function bool = axisIsVisible( axisHandle )
 
 end
 % =========================================================================
-function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
+function [m2t, str] = drawLine(m2t, handle, yDeviation)
   % Returns the code for drawing a regular line.
   % This is an extremely common operation and takes place in most of the
   % not too fancy plots.
@@ -1167,9 +1167,9 @@ function [ m2t, str ] = drawLine( m2t, handle, yDeviation )
       return
   end
 
-  lineStyle = get( handle, 'LineStyle' );
-  lineWidth = get( handle, 'LineWidth' );
-  marker    = get( handle, 'Marker' );
+  lineStyle = get(handle, 'LineStyle');
+  lineWidth = get(handle, 'LineWidth');
+  marker    = get(handle, 'Marker');
 
   hasLines = ~strcmp(lineStyle,'none') && lineWidth>0.0;
   hasMarkers = ~strcmp(marker,'none');
@@ -1969,10 +1969,10 @@ function [ m2t, str ] = drawPatch( m2t, handle )
           % make sure the path is closed
           if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j) || zData(1,j)~=zData(end,j)
               str = strcat(str, ...
-                           sprintf('%.15g %.15g %.15g\n', xData(1,j), yData(1,j), zData(1,j)));
+                           sprintf('\n%.15g %.15g %.15g\n', xData(1,j), yData(1,j), zData(1,j)));
           end
           % close it
-          str = strcat(str, sprintf('};\n'));
+          str = strcat(str, sprintf('\n};\n'));
       end
       % Set view angle.
       view = get(m2t.currentHandles.gca, 'View');
