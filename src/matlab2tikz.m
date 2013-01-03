@@ -1156,11 +1156,6 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
   %
   % This function handles error bars, too.
 
-  % TODO Check for "special" lines, e.g.:
-  % if strcmp( get(handle,'Tag'), 'zplane_unitcircle' )
-  %     % draw unit circle and axes
-  % end
-
   str = [];
 
   if ~isVisible( handle )
@@ -1169,25 +1164,33 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
 
   lineStyle = get(handle, 'LineStyle');
   lineWidth = get(handle, 'LineWidth');
-  marker    = get(handle, 'Marker');
+  marker = get(handle, 'Marker');
+
+  % Get draw options.
+  color = get(handle, 'Color');
+  [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
+  lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+  [m2t, markerOptions] = getMarkerOptions(m2t, handle);
+  drawOptions = [{sprintf('color=%s', xcolor)}, ... % color
+                 lineOptions, ...
+                 markerOptions];
+
+  % Check for "special" lines, e.g.:
+  if strcmp(get(handle, 'Tag'), 'zplane_unitcircle')
+       % Draw unit circle and axes.
+       % TODO Don't hardcode "10".
+       opts = join(drawOptions, ',');
+       str = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts),...
+              sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
+              sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
+       return
+  end
 
   hasLines = ~strcmp(lineStyle,'none') && lineWidth>0.0;
   hasMarkers = ~strcmp(marker,'none');
   if ~hasLines && ~hasMarkers
       return
   end
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % deal with draw options
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  color  = get( handle, 'Color' );
-  [ m2t, xcolor ] = getColor( m2t, handle, color, 'patch' );
-  lineOptions = getLineOptions( m2t, lineStyle, lineWidth );
-  [ m2t, markerOptions ] = getMarkerOptions( m2t, handle );
-  drawOptions = [ {sprintf( 'color=%s', xcolor )}, ... % color
-                  lineOptions, ...
-                  markerOptions ];
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Plot the actual line data.
