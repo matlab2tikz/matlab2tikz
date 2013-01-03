@@ -2,7 +2,7 @@ function parser = matlab2tikzInputParser()
 %MATLAB2TIKZINPUTPARSER   Input parsing for matlab2tikz..
 %   This implementation exists because Octave is lacking one.
 
-%   Copyright (c) 2008--2012 Nico Schlömer
+%   Copyright (c) 2008--2013 Nico Schlömer
 %   All rights reserved.
 %
 %   Redistribution and use in source and binary forms, with or without

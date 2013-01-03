@@ -2,7 +2,7 @@ function updater(name, fileExchangeUrl, version, verbose, env)
 %UPDATER   Auto-update matlab2tikz.
 %   Only for internal usage.
 
-%   Copyright (c) 2012, Nico Schlömer <nico.schloemer@gmail.com>
+%   Copyright (c) 2012--2013, Nico Schlömer <nico.schloemer@gmail.com>
 %   All rights reserved.
 %
 %   Redistribution and use in source and binary forms, with or without
