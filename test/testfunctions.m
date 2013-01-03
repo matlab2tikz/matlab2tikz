@@ -74,6 +74,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @subplot3x1          , ...
                            @subplotCustom       , ...
                            @legendsubplots      , ...
+                           @legendsubplots2     , ...
                            @bodeplots           , ...
                            @mandrillImage       , ...
                            @besselImage         , ...
@@ -194,26 +195,57 @@ end
 % =========================================================================
 function [description, extraOpts] = plain_cos()
 
-  fplot( @cos, [0,2*pi] );
+  Rc=1;
+  C=1.5e-6; %F
 
-  % add some minor ticks
-  set( gca, 'XMinorTick', 'on' );
-  set( gca, 'YTick', [] );
+  % Set inductors
+  L1=4e-3;
+  L2=0.8e-3;
 
-  % Adjust the aspect ratio when in MATLAB(R) or Octave >= 3.4.
-  env = getEnvironment();
-  switch env
-      case 'MATLAB'
-          daspect([ 1 2 1 ])
-      case 'Octave'
-          if isVersionBelow( env, 3, 4 )
-              % Octave < 3.4 doesn't have daspect unfortunately.
-          else
-              daspect([ 1 2 1 ])
-          end
-      otherwise
-          error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
-  end
+  % Resistances of inductors
+  R1=4;
+  R2=2;
+
+  % Transfer functions
+  % Building transfer functions
+  s=tf('s');
+  Zc=1/(s*C)+Rc;
+  Z1=s*L1+R1;
+  Z2=s*L2+R2;
+  LCLd=(Z2+Zc)/(Z1+Zc);
+  LCL=(s^2*C*L2+1)/(s^2*C*L1+1);
+
+  t=logspace(3,5,1000);
+  hold off
+  bode(LCL,t)
+  hold on
+  bode(LCLd,t)
+  title('Voltage transfer function of a LCL filter')
+  set(findall(gcf,'type','line'),'linewidth',1.5)
+  grid on
+
+  legend('Perfect LCL',' Real LCL','Location','SW')
+
+%  fplot( @cos, [0,2*pi] );
+%
+%  % add some minor ticks
+%  set( gca, 'XMinorTick', 'on' );
+%  set( gca, 'YTick', [] );
+%
+%  % Adjust the aspect ratio when in MATLAB(R) or Octave >= 3.4.
+%  env = getEnvironment();
+%  switch env
+%      case 'MATLAB'
+%          daspect([ 1 2 1 ])
+%      case 'Octave'
+%          if isVersionBelow( env, 3, 4 )
+%              % Octave < 3.4 doesn't have daspect unfortunately.
+%          else
+%              daspect([ 1 2 1 ])
+%          end
+%      otherwise
+%          error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
+%  end
 
   description = 'Plain cosine function with minimumPointsDistance of $0.5$.' ;
   extraOpts = {'minimumPointsDistance', 0.5};
@@ -893,7 +925,42 @@ function [description, extraOpts] = legendsubplots()
   description = [ 'Subplots with legends. '                             , ...
                   'Increase value of "length" in the code to stress-test your TeX installation.' ];
   extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = legendsubplots2()
+  Rc=1;
+  C=1.5e-6; %F
 
+  % Set inductors
+  L1=4e-3;
+  L2=0.8e-3;
+
+  % Resistances of inductors
+  R1=4;
+  R2=2;
+
+  % Transfer functions
+  % Building transfer functions
+  s=tf('s');
+  Zc=1/(s*C)+Rc;
+  Z1=s*L1+R1;
+  Z2=s*L2+R2;
+  LCLd=(Z2+Zc)/(Z1+Zc);
+  LCL=(s^2*C*L2+1)/(s^2*C*L1+1);
+
+  t=logspace(3,5,1000);
+  hold off
+  bode(LCL,t)
+  hold on
+  bode(LCLd,t)
+  title('Voltage transfer function of a LCL filter')
+  set(findall(gcf,'type','line'),'linewidth',1.5)
+  grid on
+
+  legend('Perfect LCL',' Real LCL','Location','SW')
+
+  description = ['Another subplot with legends.'];
+  extraOpts = {};
 end
 % =========================================================================
 function [description, extraOpts] = bodeplots()

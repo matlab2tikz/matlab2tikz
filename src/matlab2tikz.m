@@ -592,7 +592,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
   children = get( handle, 'Children' );
 
   % prepare cell array of pgfEnvironments
-  pgfEnvironments = cell(length(children),1);
+  pgfEnvironments = cell(0);
 
   % It's important that we go from back to front here, as this is
   % how MATLAB does it, too. Significant for patch (contour) plots,
@@ -600,9 +600,8 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
 
   % initialize counter to store environments in reverse order so that it's
   % consistent with the comment above.
-  n = 1;
-  for i = length(children):-1:1
-      child = children(i);
+  C = children(end:-1:1);
+  for child = C(:)'
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       % First of all, check if 'child' is referenced in a legend.
       % If yes, some plot types may want to add stuff (e.g. 'forget plot').
@@ -621,9 +620,10 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                       % fieldName = switchMatOct(m2t, 'handles', 'handle');
                       k = find(child == ud.handles);
                       if isempty(k)
-                          % Lines of error bar plots are not referenced directly in legends
-                          % as an error bars plot contains two "lines": the data and the
-                          % deviations. Here, the legends refer to the specgraph.errorbarseries
+                          % Lines of error bar plots are not referenced
+                          % directly in legends as an error bars plot contains
+                          % two "lines": the data and the deviations. Here, the
+                          % legends refer to the specgraph.errorbarseries
                           % handle which is 'Parent' to the line handle.
                           k = find(get(child,'Parent') == ud.handles);
                       end
@@ -644,23 +644,23 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
                   legendString = get(child, 'displayname');
               end
           otherwise
-              error( 'Unknown environment. Need MATLAB(R) or Octave.' )
+              error('Unknown environment. Need MATLAB(R) or Octave.')
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       switch get( child, 'Type' )
           % 'axes' environments are treated separately.
 
           case 'line'
-              [m2t, env] = drawLine( m2t, child );
+              [m2t, str] = drawLine( m2t, child );
 
           case 'patch'
-              [m2t, env] = drawPatch( m2t, child );
+              [m2t, str] = drawPatch( m2t, child );
 
           case 'image'
-              [m2t, env] = drawImage( m2t, child );
+              [m2t, str] = drawImage( m2t, child );
 
           case 'hggroup'
-              [m2t, env] = drawHggroup( m2t, child );
+              [m2t, str] = drawHggroup( m2t, child );
 
           case 'hgtransform'
               % From http://www.mathworks.de/de/help/matlab/ref/hgtransformproperties.html:
@@ -670,22 +670,22 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
               %   matrix to all its children.
               % More information at http://www.mathworks.de/de/help/matlab/creating_plots/group-objects.html.
               m2t.transform = get(child, 'Matrix');
-              [m2t, env] = handleAllChildren(m2t, child);
+              [m2t, str] = handleAllChildren(m2t, child);
               m2t.transform = [];
 
           case 'surface'
-              [m2t, env] = drawSurface( m2t, child );
+              [m2t, str] = drawSurface( m2t, child );
 
           case 'text'
-              [m2t, env] = drawText( m2t, child );
+              [m2t, str] = drawText( m2t, child );
 
           case 'rectangle'
-              [m2t, env] = drawRectangle( m2t, child );
+              [m2t, str] = drawRectangle( m2t, child );
 
           case { 'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                  'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
               % don't to anything for these handles and its children
-              env = [];
+              str = [];
 
           otherwise
               error( 'matlab2tikz:handleAllChildren',                 ...
@@ -694,19 +694,20 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
 
       end
 
-      % add legend after the plot data
-      if m2t.currentHandleHasLegend && ~isempty(legendString)
+      % Add legend after the plot data.
+      % The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
+      % the output might not necessarily be a string, but a cellstr.
+      if ischar(str) && ~isempty(str) ...
+         && m2t.currentHandleHasLegend && ~isempty(legendString)
           c = prettyPrint(m2t, legendString, interpreter);
           % We also need a legend alignment option to make multiline
           % legend entries work. This is added by default in getLegendOpts().
-          c = join(c, '\\');
-          env = [env, ...
-                 '\addlegendentry{', c, sprintf('};\n\n')]; %#ok
+          str = [str, ...
+                 sprintf('\\addlegendentry{%s};\n\n', join(c, '\\'))]; %#ok
       end
 
       % append the environment
-      pgfEnvironments{n} = env;
-      n = n+1;
+      pgfEnvironments{end+1} = str;
   end
 
 end
@@ -2154,7 +2155,7 @@ function [ m2t, str ] = drawHggroup( m2t, h )
 
       case {'specgraph.contourgroup', 'hggroup'}
           % handle all those the usual way
-          [m2t, str] = handleAllChildren( m2t, h );
+          [m2t, str] = handleAllChildren(m2t, h);
 
       case {'specgraph.quivergroup'}
           % quiver arrows
