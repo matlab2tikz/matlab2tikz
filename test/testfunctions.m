@@ -46,6 +46,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @many_random_points  , ...
                            @randomWithLines     , ...
                            @double_axes         , ...
+                           @double_axes2        , ...
                            @logplot             , ...
                            @colorbarLogplot     , ...
                            @legendplot          , ...
@@ -425,6 +426,28 @@ function [description, extraOpts] = double_axes()
 
   description = 'Double axes';
   extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = double_axes2()
+
+  ah1=axes;
+  ph=plot([0 1],[0 1]);
+
+  title('Title')
+  ylabel('y')
+  xlabel('x')
+
+  % add a new set of axes
+  % to make a gray grid
+  ah2=axes;
+  % make the background transparent
+  set(ah1,'color','none')
+  % move these axes to the back
+  set(gcf,'Child',flipud(get(gcf,'Children')))
+
+  description = 'Double overlayed axes with a flip.' ;
+  extraOpts = {};
+
 end
 % =========================================================================
 function [description, extraOpts] = logplot()

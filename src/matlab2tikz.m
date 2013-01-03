@@ -899,13 +899,13 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Axes left or right?
   % For double axes pairs, unconditionally put the ordinate labels
-  % left for the first one, right for the second one.
+  % right for the first one, left for the second one.
   if alignmentOptions.isElderTwin
-      m2t.axesContainers{end}.options{end+1} = 'axis lines*=left';
-  elseif alignmentOptions.isYoungerTwin
       m2t.axesContainers{end}.options{end+1} = 'axis lines*=right';
-  elseif strcmp( get( handle, 'Box' ), 'off' )
-      % Box off and only one axex pair present.
+  elseif alignmentOptions.isYoungerTwin
+      m2t.axesContainers{end}.options{end+1} = 'axis lines*=left';
+  elseif strcmp(get(handle, 'Box'), 'off')
+      % Box off and only one axes pair present.
       m2t.axesContainers{end}.options{end+1} = 'axis lines*=left';
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
