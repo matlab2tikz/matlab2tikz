@@ -712,7 +712,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
 
 end
 % =========================================================================
-function m2t = drawAxes( m2t, handle, alignmentOptions )
+function m2t = drawAxes(m2t, handle, alignmentOptions)
   % Input arguments:
   %    handle.................The axes environment handle.
   %    alignmentOptions.......The alignment options as defined in the
@@ -884,7 +884,7 @@ function m2t = drawAxes( m2t, handle, alignmentOptions )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % title
-  title = get( get( handle, 'Title' ), 'String' );
+  title = get(get(handle, 'Title'), 'String');
   if ~isempty(title)
       titleInterpreter = get( get( handle, 'Title' ), 'Interpreter' );
       title = prettyPrint(m2t, title, titleInterpreter);
@@ -1095,10 +1095,10 @@ function [ m2t, hasGrid ] = getAxisOptions( m2t, handle, axis )
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis label
-  axisLabel = get( get( handle, [upper(axis),'Label'] ), 'String' );
-  if ~isempty( axisLabel )
+  axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
+  if ~isempty(axisLabel)
       axisLabelInterpreter = ...
-          get( get( handle, [upper(axis),'Label'] ), 'Interpreter' );
+          get(get(handle, [upper(axis),'Label']), 'Interpreter');
       label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
       if length(label) > 1
           % If there's more than one cell item, the list

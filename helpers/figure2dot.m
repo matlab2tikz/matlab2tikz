@@ -6,7 +6,7 @@
 % ***
 % =========================================================================
 %
-%     Copyright (C) 2008 Nico Schl"omer
+%     Copyright (C) 2008--2013 Nico Schlömer
 %
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -52,17 +52,6 @@ function figure2dot( filename )
   set( 0, 'ShowHiddenHandles', 'off' );
 
 end
-% =========================================================================
-% *** END FUNCTION figure2dot
-% =========================================================================
-
-
-% =========================================================================
-% *** FUNCTION plot_children
-% ***
-% *** This function does the actual work: display of the current node, descend
-% *** to the children.
-% ***
 % =========================================================================
 function plot_children( fh, h, id )
 
@@ -136,22 +125,12 @@ function plot_children( fh, h, id )
 
 end
 % =========================================================================
-% *** END FUNCTION plot_children
-% =========================================================================
-
-
-
-% =========================================================================
-% *** FUNCTION collapse
-% ***
-% *** This function collapses a cell of strings to a single string (with a
-% *** given delimiter inbetween two strings, if desired).
-% ***
-% *** Example of usage:
-% ***              collapse( cellstr, ',' )
-% ***
-% =========================================================================
 function newstr = collapse( cellstr, delimiter )
+  % This function collapses a cell of strings to a single string (with a
+  % given delimiter inbetween two strings, if desired).
+  %
+  % Example of usage:
+  %              collapse( cellstr, ',' )
 
   if length(cellstr)<1
      newstr = [];
@@ -174,6 +153,4 @@ function newstr = collapse( cellstr, delimiter )
   end
 
 end
-% =========================================================================
-% *** END FUNCTION collapse
 % =========================================================================
