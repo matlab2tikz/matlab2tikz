@@ -712,6 +712,17 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
 
 end
 % =========================================================================
+function data = applyHgTransform(m2t, data)
+  if ~isempty(m2t.transform)
+      R = m2t.transform(1:3,1:3);
+      t = m2t.transform(1:3,4);
+      n = size(data, 1);
+      data = data * R' ...
+           + kron(ones(n,1), t');
+  end
+  return
+end
+% =========================================================================
 function m2t = drawAxes(m2t, handle, alignmentOptions)
   % Input arguments:
   %    handle.................The axes environment handle.
@@ -1205,7 +1216,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
   if isempty(zData)
       data = [xData(:), yData(:)];
   else
-      data = [xData(:), yData(:), zData(:)];
+      data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
   end
 
   % check if the *optional* argument 'yDeviation' was given
@@ -1966,13 +1977,14 @@ function [ m2t, str ] = drawPatch( m2t, handle )
    else % ~isempty( zData )
       % 3d patch
       for j = 1:n
+          data = applyHgTransform(m2t, [xData(:,j),yData(:,j),zData(:,j)]);
           str = [str, ...
                  sprintf(['\n\\addplot3 [',drawOpts,'] table{\n']), ...
-                 sprintf('%.15g %.15g %.15g\n', [xData(:,j),yData(:,j),zData(:,j)]')];
+                 sprintf('%.15g %.15g %.15g\n', data')];
           % make sure the path is closed
-          if xData(1,j)~=xData(end,j) || yData(1,j)~=yData(end,j) || zData(1,j)~=zData(end,j)
+          if any(abs(data(1,:)-data(end,:)) > 1.0e-12)
               str = strcat(str, ...
-                           sprintf('\n%.15g %.15g %.15g\n', xData(1,j), yData(1,j), zData(1,j)));
+                           sprintf('\n%.15g %.15g %.15g\n', data(1,:)'));
           end
           % close it
           str = strcat(str, sprintf('\n};\n'));
@@ -2230,20 +2242,13 @@ function [m2t,env] = drawSurface(m2t, handle)
         formatType = 'table[meta index=3,header=false]';
         opts{end+1} = 'point meta=explicit';
         formatString = '%.15g %.15g %.15g %.15g\n';
-        data = [dx(:), dy(:), dz(:), colors(:)];
+        data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), colors(:)];
     else
         %formatType = 'coordinates';
         %formatString = '(%.15g, %.15g, %.15g)\n';
         formatType = 'table[header=false]';
         formatString = '%.15g %.15g %.15g\n';
-        data = [dx(:), dy(:), dz(:)];
-        if ~isempty(m2t.transform)
-            R = m2t.transform(1:3,1:3);
-            t = m2t.transform(1:3,4);
-            n = size(data, 1);
-            data = data * R' ...
-                 + kron(ones(n,1), t');
-        end
+        data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
     end
 
     % Add mesh/rows=<num rows> for specifying the row data instead of empty
@@ -2368,6 +2373,7 @@ function [ m2t, str ] = drawText(m2t, handle)
   if length(pos) == 2
       posString = sprintf('(axis cs:%.15g, %.15g)', pos);
   elseif length(pos) == 3
+      pos = applyHgTransform(m2t, pos);
       posString = sprintf('(axis cs:%.15g, %.15g, %.15g)', pos);
   else
       error('matlab2tikz:drawText', ...
@@ -2527,7 +2533,7 @@ function [ m2t, str ] = drawScatterPlot( m2t, h )
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('view={%.15g}{%.15g}', view);
       format = '(%.15g,%.15g,%.15g)';
-      data = [xData(:), yData(:), zData(:)];
+      data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
   end
 
   if length(cData) == 3
@@ -2974,7 +2980,6 @@ function [ m2t, str ] = drawQuiverGroup( m2t, h )
   XY(3,:) = xData(2:step:end);
   XY(4,:) = yData(2:step:end);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % gather the arrow options
