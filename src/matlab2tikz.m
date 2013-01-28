@@ -198,22 +198,22 @@ function matlab2tikz( varargin )
   m2t.extraRgbColorNames = cell(0);
 
   % the actual contents of the TikZ file go here
-  m2t.content = struct( 'name',     [], ...
-                        'comment',  [], ...
-                        'options',  {cell(0)}, ...
-                        'content',  {cell(0)}, ...
-                        'children', {cell(0)}  ...
-                      );
+  m2t.content = struct('name',     [], ...
+                       'comment',  [], ...
+                       'options',  {cell(0)}, ...
+                       'content',  {cell(0)}, ...
+                       'children', {cell(0)}  ...
+                       );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % scan the options
   m2t.cmdOpts = matlab2tikzInputParser;
-  m2t.cmdOpts = m2t.cmdOpts.addOptional( m2t.cmdOpts, ...
-                                         'filename', ...
-                                         [], ...
-                                         @(x) filenameValidation(x,m2t.cmdOpts) );
+  m2t.cmdOpts = m2t.cmdOpts.addOptional(m2t.cmdOpts, ...
+                                        'filename', ...
+                                        [], ...
+                                        @(x) filenameValidation(x,m2t.cmdOpts));
 
   % possibility to give a file handle as argument
-  m2t.cmdOpts = m2t.cmdOpts.addOptional( m2t.cmdOpts, 'filehandle', [], @filehandleValidation );
+  m2t.cmdOpts = m2t.cmdOpts.addOptional(m2t.cmdOpts, 'filehandle', [], @filehandleValidation);
 
   % explicitly specify which figure to use
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'figurehandle', get(0,'CurrentFigure'), @ishandle );
@@ -597,11 +597,7 @@ function [ m2t, pgfEnvironments ] = handleAllChildren( m2t, handle )
   % It's important that we go from back to front here, as this is
   % how MATLAB does it, too. Significant for patch (contour) plots,
   % and the order of plotting the colored patches.
-
-  % initialize counter to store environments in reverse order so that it's
-  % consistent with the comment above.
-  C = children(end:-1:1);
-  for child = C(:)'
+  for child = children(end:-1:1)'
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       % First of all, check if 'child' is referenced in a legend.
       % If yes, some plot types may want to add stuff (e.g. 'forget plot').
@@ -3575,36 +3571,35 @@ function [m2t, xcolor] = getColor( m2t, handle, color, mode )
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       switch mode
           case 'patch'
-              [m2t, colorindex] = patchcolor2colorindex(m2t, color, handle);
+              [m2t, xcolor] = patchcolor2xcolor(m2t, color, handle);
           case 'image'
               [m2t, colorindex] = imagecolor2colorindex(m2t, color, handle);
+              [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
           otherwise
               error( [ 'matlab2tikz:getColor',                          ...
                        'Argument ''mode'' has illegal value ''%s''.' ], ...
                        mode );
       end
-      [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
 
 end
 % =========================================================================
-function [ m2t, colorindex ] = patchcolor2colorindex( m2t, color, patchhandle )
-  % Transforms a color of the edge or the face of a patch to a 1x3 rgb
-  % color vector.
+function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
+  % Transforms a color of the edge or the face of a patch to an xcolor literal.
 
   if ~ischar( color )
-      error( 'patchcolor2colorindex:illegalInput', ...
+      error( 'patchcolor2xcolor:illegalInput', ...
              'Input argument ''color'' not a string.' );
   end
 
   switch color
       case 'flat'
           % look for CData at different places
-          cdata = get( patchhandle, 'CData' );
+          cdata = get(patchhandle, 'CData');
           if isempty(cdata) || ~isnumeric(cdata)
-              c     = get( patchhandle, 'Children' );
-              cdata = get( c, 'CData' );
+              c = get(patchhandle, 'Children');
+              cdata = get(c, 'CData');
           end
 
           % QUIRK: With contour plots (not contourf), cdata will be a vector of
@@ -3612,8 +3607,13 @@ function [ m2t, colorindex ] = patchcolor2colorindex( m2t, color, patchhandle )
           %        around this oddity, just take the first entry.
           %        With barseries plots, data has been observed to return a
           %        *matrix* with all equal entries.
-          cdata = cdata( 1, 1 );
-          [ m2t, colorindex ] = cdata2colorindex( m2t, cdata, patchhandle );
+          cdata = cdata(1, 1);
+          [m2t, colorindex] = cdata2colorindex(m2t, cdata, patchhandle);
+          [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
+
+      case 'auto'
+          color = get(patchhandle, 'Color');
+          [m2t, xcolor] = rgb2colorliteral(m2t, color);
 
       case 'none'
           error( [ 'matlab2tikz:anycolor2rgb',                       ...
@@ -3628,14 +3628,14 @@ function [ m2t, colorindex ] = patchcolor2colorindex( m2t, color, patchhandle )
 
 end
 % =========================================================================
-function [ m2t, colorindex ] = imagecolor2colorindex ( m2t, color, imagehandle )
+function [m2t, colorindex] = imagecolor2colorindex(m2t, color, imagehandle)
   % Transforms a color in image color format to a 1x3 rgb color vector.
 
-  [ m2t, colorindex ] = cdata2colorindex( m2t, color, imagehandle );
+  [m2t, colorindex] = cdata2colorindex(m2t, color, imagehandle);
 
 end
 % =========================================================================
-function [ m2t, colorindex ] = cdata2colorindex ( m2t, cdata, imagehandle )
+function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
   % Transforms a color in CData format to an index in the color map.
   % Only does something if CDataMapping is 'scaled', really.
 
@@ -3649,7 +3649,7 @@ function [ m2t, colorindex ] = cdata2colorindex ( m2t, cdata, imagehandle )
   % -----------------------------------------------------------------------
   % For the following, see, for example, the MATLAB help page for 'image',
   % section 'Image CDataMapping'.
-  switch get( imagehandle, 'CDataMapping' )
+  switch get(imagehandle, 'CDataMapping')
       case 'scaled'
           % need to scale within clim
           % see MATLAB's manual page for caxis for details

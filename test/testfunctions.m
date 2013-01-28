@@ -62,6 +62,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @roseplot            , ...
                            @compassplot         , ...
                            @stemplot            , ...
+                           @stemplot2           , ...
                            @groupbars           , ...
                            @bars                , ...
                            @hbars                , ...
@@ -591,17 +592,30 @@ end
 %
 %  end
 % =========================================================================
-function [description, extraOpts] = stemplot ()
+function [description, extraOpts] = stemplot()
 
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
        exp(.05*x).*cos(x)]';
-  h = stem(x,y);
+  h = stem(x, y);
   legend( 'exp(-.07x)*cos(x)', 'exp(.05*x)*cos(x)', 'Location', 'NorthWest');
   set(h(1),'MarkerFaceColor','blue')
   set(h(2),'MarkerFaceColor','red','Marker','square')
 
   description = 'A simple stem plot.' ;
+  extraOpts = {};
+
+end
+% =========================================================================
+function [description, extraOpts] = stemplot2()
+
+  x = 0:25;
+  y = [exp(-.07*x).*cos(x);
+       exp(.05*x).*cos(x)]';
+  h = stem(x, y, 'filled');
+  legend( 'exp(-.07x)*cos(x)', 'exp(.05*x)*cos(x)', 'Location', 'NorthWest');
+
+  description = 'Another simple stem plot.' ;
   extraOpts = {};
 
 end
