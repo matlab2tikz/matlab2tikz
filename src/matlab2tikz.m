@@ -39,11 +39,6 @@ function matlab2tikz( varargin )
 %   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
-%   MATLAB2TIKZ('minimumPointsDistance',DOUBLE,...) gives a minimum distance at
-%   which two nodes are considered different. This can help with plots that
-%   contain a large amount of data points not all of which need to be plotted.
-%   (default: 0.0)
-%
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
 %
@@ -237,9 +232,6 @@ function matlab2tikz( varargin )
   % width and height of the figure
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'height', [], @ischar );
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'width' , [], @ischar );
-
-  % minimum distance for two points to be plotted separately
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'minimumPointsDistance', 0.0, @isnumeric );
 
   % extra axis options
   m2t.cmdOpts = m2t.cmdOpts.addParamValue( m2t.cmdOpts, 'extraAxisOptions', {}, @isCellOrChar );
@@ -1245,7 +1237,6 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
 
       % plot them
       for k = 1:length(dataCell)
-          mask = pointReduction( m2t, dataCell{k}(:,1:2) );
           % If the line has a legend string, make sure to only include a legend
           % entry for the *last* occurence of the plot series.
           % Hence the condition k<length(xDataCell).
@@ -1256,8 +1247,8 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
           else
               opts = [ '\n', join(drawOptions, ',\n' ), '\n' ];
           end
-          str = [ str, ...
-                  plotLine2d( opts, dataCell{k}(mask,:) ) ];
+          str = [str, ...
+                 plotLine2d( opts, dataCell{k})];
       end
   end
 
@@ -1590,57 +1581,6 @@ function lambda = crossLines(X1, X2, X3, X4)
   invA = [-(X4(2)-X3(2)), X4(1)-X3(1);...
           -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
   lambda = invA * rhs;
-
-end
-% =========================================================================
-function mask = pointReduction( m2t, data )
-  % Generates a mask which is true for the first point, and all
-  % subsequent points which have a greater norm2-distance from
-  % the previous point than 'threshold'.
-
-  threshold = m2t.cmdOpts.Results.minimumPointsDistance;
-  n = size(data, 1);
-
-  if ( threshold==0.0 )
-      % bail out early
-      mask = true(n,1);
-      return
-  end
-
-  % Get info about log scaling.
-  isXlog = false;
-  isYlog = false;
-  if strcmp(m2t.axesContainers{end}.name, 'loglogaxis')
-      isXlog = true;
-      isYlog = true;
-  elseif strcmp(m2t.axesContainers{end}.name, 'semilogx')
-      isXlog = true;
-  elseif strcmp(m2t.axesContainers{end}.name, 'semilogy')
-      isYlog = true;
-  end
-
-  mask = false(n,1);
-
-  XRef = data(1,:);
-  mask(1) = true;
-  for kk = 2:n
-      % Compute the visible distance of those points,
-      % incorporating possible log-scaling of the axes.
-      visDiff = XRef - data(kk,:);
-      if isXlog
-          % visDiff(1) = log10(XRef(1)) - log10(data(kk,1));
-          visDiff(1) = log10(visDiff(1));
-      end
-      if isYlog
-          visDiff(2) = log10(visDiff(2));
-      end
-      % Check if it's larger than the threshold and
-      % update the reference point in that case.
-      if norm(visDiff) > threshold
-          XRef = data(kk,:);
-          mask(kk) = true;
-      end
-  end
 
 end
 % =========================================================================
