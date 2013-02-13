@@ -49,7 +49,7 @@ function pointReduction2d(minimumPointsDistance)
   end
 
   axesHandle = gca;
-  handle = get(gca,'Children');
+  handle = get(gca, 'Children');
 
   % Extract the data from the current plot.
   data = [get(handle, 'XData')', get(handle, 'YData')'];
@@ -57,7 +57,7 @@ function pointReduction2d(minimumPointsDistance)
   % Generates a mask which is true for the first point, and all
   % subsequent points which have a greater norm2-distance from
   % the previous point than 'threshold'.
-  n = size(data, 1)
+  n = size(data, 1);
 
   % Get info about log scaling.
   isXlog = strcmp(get(axesHandle, 'XScale'), 'log');
@@ -85,6 +85,7 @@ function pointReduction2d(minimumPointsDistance)
           mask(kk) = true;
       end
   end
+  mask(end) = true;
 
   % Set the new (masked) data.
   set(handle, 'XData', data(mask, 1));

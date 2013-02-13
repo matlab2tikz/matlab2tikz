@@ -90,6 +90,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @scatterPlot         , ...
                            @scatter3Plot        , ...
                            @scatter3Plot2       , ...
+                           @spherePlot          , ...
                            @surfPlot            , ...
                            @surfPlot2           , ...
                            @meshPlot            , ...
@@ -1209,6 +1210,19 @@ function [description, extraOpts] = scatter3Plot2()
   return
 end
 % =========================================================================
+function [description, extraOpts] = spherePlot()
+
+  sphere(30);
+  title('a sphere: x^2+y^2+z^2');
+  xlabel('x');
+  ylabel('y');
+  zlabel('z');
+  axis equal;
+
+  description = 'Plot a sphere.';
+  extraOpts = {};
+end
+% =========================================================================
 function [description, extraOpts] = surfPlot()
   [X,Y,Z] = peaks(30);
   surf(X,Y,Z)
@@ -1216,7 +1230,9 @@ function [description, extraOpts] = surfPlot()
   axis([-3 3 -3 3 -10 5])
   set(gca,'View',[-37.5,36]);
 
-  colorbar
+  hc = colorbar;
+  set(get(hc,'Xlabel'),'String','Multitude');
+  set(get(hc,'Ylabel'),'String','Magnitude');
 
   xlabel( 'x' )
   ylabel( 'y' )

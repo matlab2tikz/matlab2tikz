@@ -2134,6 +2134,12 @@ function [m2t,env] = drawSurface(m2t, handle)
 
     str = [];
     [m2t, opts, plotType] = surfaceOpts(m2t, handle);
+
+    % Add 'z buffer=sort' to the options to make sphere plot and the like not
+    % overlap. There are different options here some of which may be more
+    % advantagous in other situations; check out Pgfplots' manual here.
+    opts{end+1} = 'z buffer=sort';
+
     dx = get(handle, 'XData');
     dy = get(handle, 'YData');
     dz = get(handle, 'ZData');
@@ -2143,7 +2149,7 @@ function [m2t,env] = drawSurface(m2t, handle)
 
     [numcols, numrows] = size(dz);
 
-    % If dx or dy are given as vectors, convert them to the wasteful matrix
+    % If dx or dy are given as vectors, convert them to the (wasteful) matrix
     % representation first. This makes sure we can treat the data with one
     % single sprintf() command below.
     if isvector(dx)
