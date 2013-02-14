@@ -754,6 +754,12 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % update gca
   m2t.currentHandles.gca = handle;
 
+  % This is an ugly workaround for bar plots.
+  % Bar plots need to have several values counted on a per-axes basis, e.g.,
+  % the number of bars. Setting m2t.barplotId to [] here makes sure those
+  % values are recomputed in drawBarseries().
+  m2t.barplotId = [];
+
   % Octave:
   % Check if this axis environment is referenced by a legend.
   m2t.gcaAssociatedLegend = [];
@@ -2488,14 +2494,16 @@ function [m2t, str] = drawBarseries(m2t, h)
   %
   % TODO Get rid of code duplication with 'drawAxes'.
 
-  if ~isfield(m2t, 'barplotId')
+  % m2t.barplotId is set to [] in drawAxes(), so all of the values are computed
+  % anew for subplots.
+  if ~isfield(m2t, 'barplotId') || isempty(m2t.barplotId)
       % 'barplotId' provides a consecutively numbered ID for each
-      % barseries plot. This allows for properly handling multiple bars.
+      % barseries plot. This allows for a proper handling of multiple bars.
       m2t.barplotId = [];
       m2t.barplotTotalNumber = [];
       m2t.barShifts = [];
-      m2t.addedAxisOption = [];
-      m2t.nonbarPlotPresent = [];
+      m2t.addedAxisOption = false;
+      m2t.nonbarPlotPresent = false;
   end
 
   str = [];
@@ -2520,7 +2528,7 @@ function [m2t, str] = drawBarseries(m2t, h)
           t = get(s, 'Type');
           switch t
               case {'line','patch'}
-                  m2t.nonbarPlotPresent = 1;
+                  m2t.nonbarPlotPresent = true;
               case 'text'
                   % this is pretty harmless: don't complain about ordinary text
               case 'hggroup'
@@ -2529,20 +2537,20 @@ function [m2t, str] = drawBarseries(m2t, h)
                       case 'specgraph.barseries'
                           m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
                       case 'specgraph.errorbarseries'
-                          % TODO:
+                          % TODO
                           % Unfortunately, MATLAB(R) treats error bars and corresponding
                           % bar plots as siblings of a common axes object.
                           % For error bars to work with bar plots -- which is trivially
                           % possible in Pgfplots -- one has to match errorbar and bar
                           % objects (probably by their values).
-                          userWarning(m2t, 'Error bars discarded (to be implemented).' );
+                          userWarning(m2t, 'Error bars discarded (to be implemented).');
                       otherwise
                           error('matlab2tikz:drawBarseries',          ...
-                                 'Unknown class''%s''.', cl );
+                                'Unknown class''%s''.', cl);
                   end
               otherwise
                   error('matlab2tikz:drawBarseries',                  ...
-                         'Unknown type ''%s''.', t);
+                        'Unknown type ''%s''.', t);
           end
       end
   end
@@ -2590,11 +2598,11 @@ function [m2t, str] = drawBarseries(m2t, h)
 
           % Maximum group with relative to the minumum distance between to
           % x-values.
-          groupWidth = 0.8;
+          maxGroupWidth = 0.8;
           if numBars == 1
               groupWidth = 1.0;
           else
-              groupWidth = min(groupWidth, numBars/(numBars+1.5));
+              groupWidth = min(maxGroupWidth, numBars/(numBars+1.5));
           end
 
           % ---------------------------------------------------------------
@@ -2673,8 +2681,8 @@ function [m2t, str] = drawBarseries(m2t, h)
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       otherwise
-          error('matlab2tikz:drawBarseries',                          ...
-                 'Don''t know how to handle BarLayout ''%s''.', barlayout);
+          error('matlab2tikz:drawBarseries', ...
+                'Don''t know how to handle BarLayout ''%s''.', barlayout);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define edge color

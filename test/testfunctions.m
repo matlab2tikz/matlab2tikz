@@ -67,7 +67,8 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @stemplot2           , ...
                            @groupbars           , ...
                            @bars                , ...
-                           @hbars                , ...
+                           @subplotBars         , ...
+                           @hbars               , ...
 ...%                             @stackbars           , ...
                            @xAxisReversed       , ...
                            @errorBars           , ...
@@ -571,6 +572,24 @@ function [description, extraOpts] = bars()
   bar(bins,data, 1.5);
 
   description = 'Plot with bars.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = subplotBars()
+  subplot(2,1,1);
+  X = rand(1,10);
+  bar(X);
+
+  subplot(2,1,2);
+  bins = -0.5:0.1:0.5;
+  bins = 10 * bins;
+  numEntries = length(bins);
+  numBars = 3;
+  data = round(100 * rand(numEntries, numBars));
+
+  bar(bins,data, 1.5);
+
+  description = 'Bars in subplots.';
   extraOpts = {};
 end
 % =========================================================================
