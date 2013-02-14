@@ -58,6 +58,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @imageplot           , ...
                            @logicalImage        , ...
                            @imagescplot         , ...
+                           @imagescplot2        , ...
                            @stairsplot          , ...
                            @polarplot           , ...
                            @roseplot            , ...
@@ -725,16 +726,33 @@ function [description, extraOpts] = logicalImage()
   extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = imagescplot ()
+function [description, extraOpts] = imagescplot()
 
   pointsX = 10;
   pointsY = 20;
-  x       = 0:1/pointsX:1;
-  y       = 0:1/pointsY:1;
-  z       = sin(x)'*cos(y);
+  x = 0:1/pointsX:1;
+  y = 0:1/pointsY:1;
+  z = sin(x)'*cos(y);
   imagesc(x,y,z);
 
-  description = 'An imagesc plot of $\sin(x)\cos(y)$.' ;
+  description = 'An imagesc plot of $\sin(x)\cos(y)$.';
+  extraOpts = {};
+
+end
+% =========================================================================
+function [description, extraOpts] = imagescplot2()
+
+  a=magic(10);
+  x=-5:1:4;
+  y=10:19;
+  imagesc(x,y,a)
+
+  xlim([-3,2])
+  ylim([12,15])
+
+  grid on;
+
+  description = 'A trimmed imagesc plot.';
   extraOpts = {};
 
 end

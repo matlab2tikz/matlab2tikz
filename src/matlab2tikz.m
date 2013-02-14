@@ -1931,8 +1931,6 @@ function [m2t, str] = drawPatch(m2t, handle)
 end
 % =========================================================================
 function [m2t, str] = drawImage(m2t, handle)
-  % Draws an 'image' graphics object (which is essentially just a matrix
-%    % containing the RGB color values for a spot).
 
   str = [];
 
@@ -1973,8 +1971,9 @@ function [m2t, str] = drawImage(m2t, handle)
           pngReferencePath = strrep(pngReferencePath, filesep, '/');
       end
 
-      % Get color indices for indexed color images and truecolor values otherwise.
-      % Don't use ismatrix(), c.f. <https://github.com/nschloe/matlab2tikz/issues/143>.
+      % Get color indices for indexed color images and truecolor values
+      % otherwise. Don't use ismatrix(), c.f.
+      % <https://github.com/nschloe/matlab2tikz/issues/143>.
       if ndims(cdata) == 2
           [m2t, colorData] = imagecolor2colorindex(m2t, cdata, handle);
       else
@@ -1992,36 +1991,24 @@ function [m2t, str] = drawImage(m2t, handle)
       % write the image
       imwriteWrapperPNG(colorData, m2t.currentHandles.colormap, pngFileName);
       % ------------------------------------------------------------------------
+      % dimensions of a pixel in axes units
+      xw = (xData(end)-xData(1)) / (n-1);
+      yw = (yData(end)-yData(1)) / (m-1);
 
-      xLim = get(m2t.currentHandles.gca, 'XLim');
-      yLim = get(m2t.currentHandles.gca, 'YLim');
-
-      opts = {sprintf('xmin=%d', xLim(1)), ...
-              sprintf('xmax=%d', xLim(2)), ...
-              sprintf('ymin=%d', yLim(1)), ...
-              sprintf('ymax=%d', yLim(2))};
-
-      % If xLim and yLim are integer values, treat them as pixel
-      % limits.
-      if (all(rem(xLim,1) == 0) && all(rem(yLim,1) == 0)) && ...
-         (xLim(2)-xLim(1) < n || yLim(2)-yLim(1) < m)
-          % Needs trimming.
-          % TODO flipped images
-          opts = {opts{:}, ...
-                  sprintf('includegraphics={trim=%d %d %d %d,clip}', ...
-                          xLim(1), m-yLim(2), ...
-                          n-xLim(2), yLim(1))};
-      end
+      opts = {sprintf('xmin=%.15g', xData(1) - xw/2), ...
+              sprintf('xmax=%.15g', xData(end) + xw/2), ...
+              sprintf('ymin=%.15g', yData(1) - yw/2), ...
+              sprintf('ymax=%.15g', yData(end) + yw/2)};
 
       str = [str, ...
              sprintf('\\addplot graphics [%s] {%s};\n', ...
                      join(opts, ','), pngReferencePath)];
-      % TODO crop the image accordingly
-      userInfo(m2t, ['\nA PNG file is stored at ''%s'' for which\n', ...
-                       'the TikZ file contains a reference to ''%s''.\n', ...
-                       'You may need to adapt this, depending on the relative\n', ...
-                       'locations of the master TeX file and the included TikZ file.\n'], ...
-                     pngFileName, pngReferencePath);
+      userInfo(m2t, ...
+               ['\nA PNG file is stored at ''%s'' for which\n', ...
+                'the TikZ file contains a reference to ''%s''.\n', ...
+                'You may need to adapt this, depending on the relative\n', ...
+                'locations of the master TeX file and the included TikZ file.\n'], ...
+                pngFileName, pngReferencePath);
   else
       % ------------------------------------------------------------------------
       % draw the thing
