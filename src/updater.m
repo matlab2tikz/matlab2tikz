@@ -109,10 +109,10 @@ function isBelow = isVersionBelow(env, versionA, versionB)
 end
 % =========================================================================
 function arr = versionArray(env, str)
-  % Converts a version string to an array.
+  % Converts a version string to an array, e.g.,
+  % '2.62.8.1' to [2, 62, 8, 1].
 
   if ischar(str)
-    % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
     if strcmpi(env, 'MATLAB')
         split = regexp(str, '\.', 'split');
     elseif strcmpi(env, 'Octave')

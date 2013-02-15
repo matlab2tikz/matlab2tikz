@@ -775,7 +775,6 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
           end
       end
   end
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
   dim = getAxesDimensions(handle, ...
@@ -810,10 +809,6 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
       m2t.axesContainers{end}.options{end+1} = ...
           sprintf('height=%.15g%s', dim.y.value, dim.y.unit);
   end
-
-  view = get(handle, 'View');
-  isViewFromAbove = all(view == [0,90]);
-
   % Add the physical dimension of one unit of length in the coordinate system.
   % This is used later on to translate lenghts to physical units where
   % necessary (e.g., in bar plots).
@@ -823,6 +818,26 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   m2t.unitlength.y.unit = dim.y.unit;
   yLim = get(m2t.currentHandles.gca, 'YLim');
   m2t.unitlength.y.value = dim.y.value / (yLim(2)-yLim(1));
+  for axis = 'xyz'
+      m2t.([axis 'AxisReversed']) = ...
+        strcmp(get(handle,[upper(axis),'Dir']), 'reverse');;
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % In MATLAB, all plots are treated as 3D plots; it's just the view that
+  % makes 2D plots appear like 2D.
+  % Recurse into the children of this environment. Do this here to give the
+  % contained plots the chance to set m2t.currentAxesContain3dData to true.
+  m2t.currentAxesContain3dData = false;
+  [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
+  m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % The rest of this is handling axes options.
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % Set view for 3D plots.
+  if m2t.currentAxesContain3dData
+      m2t.axesContainers{end}.options{end+1} = ...
+                sprintf('view={%.15g}{%.15g}', get(handle, 'View'));
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % the following is general MATLAB behavior
   m2t.axesContainers{end}.options{end+1} = 'scale only axis';
@@ -832,7 +847,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % before -- if ~isVisible(handle) -- the handle's children are called.
   [m2t, hasXGrid] = getAxisOptions(m2t, handle, 'x');
   [m2t, hasYGrid] = getAxisOptions(m2t, handle, 'y');
-  if ~isViewFromAbove
+  if m2t.currentAxesContain3dData
       [m2t, hasZGrid] = getAxisOptions(m2t, handle, 'z');
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -860,7 +875,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % get scales
   isXLog = strcmp(get(handle, 'XScale'), 'log');
   isYLog = strcmp(get(handle, 'YScale'), 'log');
-  if ~isViewFromAbove % 3D plot
+  if m2t.currentAxesContain3dData
       m2t.axesContainers{end}.name = 'axis';
   elseif  ~isXLog && ~isYLog
       m2t.axesContainers{end}.name = 'axis';
@@ -995,10 +1010,6 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  % recurse into the children of this environment
-  [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
-  m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
 
   return
 end
@@ -1227,10 +1238,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
              sprintf('%.15g %.15g %.15g\n', data'), ...
              sprintf('};\n')];
 
-      % Set view angle.
-      view = get(m2t.currentHandles.gca, 'View');
-      m2t.axesContainers{end}.options{end+1} = ...
-          sprintf('view={%.15g}{%.15g}', view);
+      m2t.currentAxesContain3dData = true;
   else
       xLim = get(m2t.currentHandles.gca, 'XLim');
       yLim = get(m2t.currentHandles.gca, 'YLim');
@@ -1832,8 +1840,8 @@ function [m2t, str] = drawPatch(m2t, handle)
   % Draws a 'patch' graphics object (as found in contourf plots, for
   % example).
   %
-  % TODO: Declare common patch properties (like 'draw=none') once for
-  %       all patches.
+  % TODO Declare common patch properties (like 'draw=none') once for
+  %      all patches.
 
   str = [];
 
@@ -1926,10 +1934,8 @@ function [m2t, str] = drawPatch(m2t, handle)
           % close it
           str = strcat(str, sprintf('\n};\n'));
       end
-      % Set view angle.
-      view = get(m2t.currentHandles.gca, 'View');
-      m2t.axesContainers{end}.options{end+1} = ...
-          sprintf('view={%.15g}{%.15g}', view);
+
+      m2t.currentAxesContain3dData = true;
    end
    str = [str, sprintf('\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1981,7 +1987,7 @@ function [m2t, str] = drawImage(m2t, handle)
       % otherwise. Don't use ismatrix(), c.f.
       % <https://github.com/nschloe/matlab2tikz/issues/143>.
       if ndims(cdata) == 2
-          [m2t, colorData] = imagecolor2colorindex(m2t, cdata, handle);
+          [m2t, colorData] = cdata2colorindex(m2t, cdata, handle);
       else
           colorData = cdata;
       end
@@ -1998,8 +2004,18 @@ function [m2t, str] = drawImage(m2t, handle)
       imwriteWrapperPNG(colorData, m2t.currentHandles.colormap, pngFileName);
       % ------------------------------------------------------------------------
       % dimensions of a pixel in axes units
-      xw = (xData(end)-xData(1)) / (n-1);
-      yw = (yData(end)-yData(1)) / (m-1);
+      if n==1
+          xLim = get(m2t.currentHandles.gca, 'XLim');
+          xw = xLim(2) - xLim(1);
+      else
+          xw = (xData(end)-xData(1)) / (n-1);
+      end
+      if m==1
+          yLim = get(m2t.currentHandles.gca, 'YLim');
+          yw = yLim(2) - yLim(1);
+      else
+          yw = (yData(end)-yData(1)) / (m-1);
+      end
 
       opts = {sprintf('xmin=%.15g', xData(1) - xw/2), ...
               sprintf('xmax=%.15g', xData(end) + xw/2), ...
@@ -2124,11 +2140,6 @@ function [m2t,env] = drawSurface(m2t, handle)
     str = [];
     [m2t, opts, plotType] = surfaceOpts(m2t, handle);
 
-    % Add 'z buffer=sort' to the options to make sphere plot and the like not
-    % overlap. There are different options here some of which may be more
-    % advantagous in other situations; check out Pgfplots' manual here.
-    opts{end+1} = 'z buffer=sort';
-
     dx = get(handle, 'XData');
     dy = get(handle, 'YData');
     dz = get(handle, 'ZData');
@@ -2146,6 +2157,17 @@ function [m2t,env] = drawSurface(m2t, handle)
     end
     if isvector(dy)
         dy = dy * ones(1,numrows);
+    end
+
+    % Add 'z buffer=sort' to the options to make sphere plot and the like not
+    % overlap. There are different options here some of which may be more
+    % advantagous in other situations; check out Pgfplots' manual here.
+    % Since 'z buffer=sort' is computationally more expensive for LaTeX, try
+    % to avoid it for the most default situations, e.g., when dx and dy are
+    % rank-1-matrices.
+    if any(~isnan(dx(1,:)) & dx(1,:) ~= dx(2,:)) ...
+    || any(~isnan(dy(:,1)) & dy(:,1) ~= dy(:,2))
+        opts{end+1} = 'z buffer=sort';
     end
 
     % Check if we need extra CData.
@@ -2210,10 +2232,7 @@ function [m2t,env] = drawSurface(m2t, handle)
         str = [str, label]; %#ok
     end
 
-    % Set view angle.
-    view = get(m2t.currentHandles.gca, 'View');
-    m2t.axesContainers{end}.options{end+1} = ...
-        sprintf('view={%.15g}{%.15g}', view);
+    m2t.currentAxesContain3dData = true;
 
     return;
 end
@@ -2458,10 +2477,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       data = [xData(:), yData(:)];
   else
       env = 'addplot3';
-      % Set view angle.
-      view = get(m2t.currentHandles.gca, 'View');
-      m2t.axesContainers{end}.options{end+1} = ...
-          sprintf('view={%.15g}{%.15g}', view);
+      m2t.currentAxesContain3dData = true;
       format = '(%.15g,%.15g,%.15g)';
       data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
   end
@@ -3303,7 +3319,7 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
           case 'patch'
               [m2t, xcolor] = patchcolor2xcolor(m2t, color, handle);
           case 'image'
-              [m2t, colorindex] = imagecolor2colorindex(m2t, color, handle);
+              [m2t, colorindex] = cdata2colorindex(m2t, color, handle);
               [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
           otherwise
               error(['matlab2tikz:getColor',                          ...
@@ -3355,13 +3371,6 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                    'Don''t know how to handle the color model ''%s''.'],  ...
                    color);
   end
-
-end
-% =========================================================================
-function [m2t, colorindex] = imagecolor2colorindex(m2t, color, imagehandle)
-  % Transforms a color in image color format to a 1x3 rgb color vector.
-
-  [m2t, colorindex] = cdata2colorindex(m2t, color, imagehandle);
 
 end
 % =========================================================================
@@ -3663,8 +3672,8 @@ function [pTicks, pTickLabels] = ...
       tickLabels = strtrim(mat2cell(tickLabels,                  ...
                                     ones(size(tickLabels,1), 1), ...
                                     size(tickLabels, 2)          ...
-                                  ) ...
-                         );
+                                   ) ...
+                          );
   end
 
   % What MATLAB does when there the number of ticks and tick labels do not
@@ -3774,14 +3783,14 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
   % Take a look at xcolor.sty for the color definitions.
   % TODO Implement mixtures with colors other than 'black' such as red!50!green.
 
-  xcolColorNames = { 'red', 'green', 'blue', 'brown', ...
-                     'lime', 'orange', 'pink', 'purple', ...
-                     'teal', 'violet', 'black', 'darkgray', ...
-                     'gray', 'lightgray', 'white' };
-  xcolColorSpecs = { [1,0,0], [0,1,0], [0,0,1], [0.75,0.5,0.25], ...
-                     [0.75,1,0], [1,0.5,0], [1,0.75,0.75], [0.75,0,0.25], ...
-                     [0,0.5,0.5], [0.5,0,0.5], [0,0,0], [0.25,0.25,0.25], ...
-                     [0.5,0.5,0.5], [0.75,0.75,0.75], [1,1,1] };
+  xcolColorNames = {'red', 'green', 'blue', 'brown', ...
+                    'lime', 'orange', 'pink', 'purple', ...
+                    'teal', 'violet', 'black', 'darkgray', ...
+                    'gray', 'lightgray', 'white'};
+  xcolColorSpecs = {[1,0,0], [0,1,0], [0,0,1], [0.75,0.5,0.25], ...
+                    [0.75,1,0], [1,0.5,0], [1,0.75,0.75], [0.75,0,0.25], ...
+                    [0,0.5,0.5], [0.5,0,0.5], [0,0,0], [0.25,0.25,0.25], ...
+                    [0.5,0.5,0.5], [0.75,0.75,0.75], [1,1,1]};
 
 % The colors 'cyan', 'magenta', 'yellow', and 'olive' within xcolor.sty
 % are defined in the CMYK color space, with an approximation in RGB.
@@ -3848,14 +3857,14 @@ function newstr = join(cellstr, delimiter)
   end
 
   if isnumeric(cellstr{1})
-      newstr = my_num2str(cellstr{1});
+      newstr = sprintf('%.15g', cellstr{1});
   else
       newstr = cellstr{1};
   end
 
   for k = 2:length(cellstr)
       if isnumeric(cellstr{k})
-          str = my_num2str(cellstr{k});
+          str = sprintf('%.15g', cellstr{k});
       else
           str = cellstr{k};
       end
@@ -3864,19 +3873,8 @@ function newstr = join(cellstr, delimiter)
 
 end
 % =========================================================================
-function str = my_num2str(num)
-  % Returns a number to a string in a *short* form.
-
-  if ~isnumeric(num)
-      error('num2str_short: Invalid input.')
-  end
-
-  str = num2str(num, '%.15g');
-
-end
-% =========================================================================
 function dimension = getAxesDimensions(handle, ...
-                                        widthString, heightString) % optional
+                                       widthString, heightString) % optional
   % Returns the physical dimension of the axes.
 
   [width, height, unit] = getNaturalAxesDimensions(handle);
@@ -3918,23 +3916,24 @@ function dimension = getAxesDimensions(handle, ...
 end
 % =========================================================================
 function [width, height, unit] = getNaturalAxesDimensions(handle)
+
   daspectmode = get(handle, 'DataAspectRatioMode');
   position    = get(handle, 'Position');
   units       = get(handle, 'Units');
 
-      % Convert the MATLAB unit strings into TeX unit strings.
-      switch units
-          case 'pixels'
-                  units = 'px';
-          case 'centimeters'
-                  units = 'cm';
-          case 'inches'
-                  units = 'in';
-          case 'points'
-                  units = 'pt';
-          case 'characters'
-                  units = 'em';
-      end
+  % Convert the MATLAB unit strings into TeX unit strings.
+  switch units
+      case 'pixels'
+              units = 'px';
+      case 'centimeters'
+              units = 'cm';
+      case 'inches'
+              units = 'in';
+      case 'points'
+              units = 'pt';
+      case 'characters'
+              units = 'em';
+  end
 
   switch daspectmode
       case 'auto'
@@ -4007,8 +4006,8 @@ function [width, height, unit] = getNaturalAxesDimensions(handle)
   end
 end
 % =========================================================================
-% decompose m2t.cmdOpts.Results.width into value and unit
 function out = extractValueUnit(str)
+    % Decompose m2t.cmdOpts.Results.width into value and unit.
 
     % Regular expression to match '4.12cm', '\figurewidth', ...
     fp_regex = '[-+]?\d*\.?\d*(?:e[-+]?\d+)?';
@@ -4935,7 +4934,7 @@ function parsed = parseTexString(m2t, string)
 
 end
 % =========================================================================
-function string = parseTexSubstring (m2t, string)
+function string = parseTexSubstring(m2t, string)
 
   % Keep a copy of the original input string for potential warning messages
   % referring to the string as it was originally used in MATLAB/Octave and
