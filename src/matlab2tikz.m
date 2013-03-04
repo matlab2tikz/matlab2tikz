@@ -117,19 +117,17 @@ function matlab2tikz(varargin)
 %   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %   POSSIBILITY OF SUCH DAMAGE.
 
-% *** -------
-% ***  Note:
-% *** -------
-% ***    This program is originally based on Paul Wagenaars' Matfig2PGF which
-% ***    itself uses pure PGF as output format <paul@wagenaars.org>, see
-% ***
-% ***       http://www.mathworks.com/matlabcentral/fileexchange/12962
-% ***
-% ***    In an attempt to simplify and extend things, the idea for
-% ***    matlab2tikz has emerged. The goal is to provide the user with a
-% ***    clean interface between the very handy figure creation in MATLAB
-% ***    and the powerful means that TikZ with Pgfplots has to offer.
-% ***
+%   Note:
+%   This program is originally based on Paul Wagenaars' Matfig2PGF which itself
+%   uses pure PGF as output format <paul@wagenaars.org>, see
+%
+%      http://www.mathworks.com/matlabcentral/fileexchange/12962
+%
+%   In an attempt to simplify and extend things, the idea for matlab2tikz has
+%   emerged. The goal is to provide the user with a clean interface between the
+%   very handy figure creation in MATLAB and the powerful means that TikZ with
+%   Pgfplots has to offer.
+%
 % =========================================================================
   % Check if we are in MATLAB or Octave.
   m2t.env = getEnvironment();
@@ -484,10 +482,10 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   axesHandles = axesHandles(end:-1:1);
 
   % find alignments
-  [visibleAxesHandles, alignmentOptions, ix] = alignSubPlots(m2t, axesHandles);
+  [relevantAxesHandles, alignmentOptions, IX] = alignSubPlots(m2t, axesHandles);
   m2t.axesContainers = {};
-  for k = 1:length(visibleAxesHandles)
-      m2t = drawAxes(m2t, visibleAxesHandles(ix(k)), alignmentOptions(ix(k)));
+  for ix = IX(:)'
+      m2t = drawAxes(m2t, relevantAxesHandles(ix), alignmentOptions(ix));
   end
 
   % Handle color bars.
@@ -852,25 +850,31 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if ~isVisible(handle)
-      % An invisible axes container *can* have visible children, so don't
-      % immediately bail out here.
-      c = get(handle, 'Children');
-      for k = 1:length(c)
-          if isVisible(c(k))
-              % If the axes contain something that's visible, add an invisible
-              % axes pair.
-              m2t.axesContainers{end}.name = 'axis';
-              m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                                 'hide x axis', 'hide y axis'};
-              m2t.axesContainers{end}.comment = getTag(handle);
-              break;
-          end
-      end
-      % recurse into the children of this environment
-      [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
-      m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
-      return
+      % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
+      % in MATLAB, they may still be visible. Well.
+      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
+                                         'hide axis'};
   end
+  %if ~isVisible(handle)
+  %    % An invisible axes container *can* have visible children, so don't
+  %    % immediately bail out here.
+  %    children = get(handle, 'Children');
+  %    for child = children(:)'
+  %        if isVisible(child)
+  %            % If the axes contain something that's visible, add an invisible
+  %            % axes pair.
+  %            m2t.axesContainers{end}.name = 'axis';
+  %            m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
+  %                                               'hide x axis', 'hide y axis'};
+  %            m2t.axesContainers{end}.comment = getTag(handle);
+  %            break;
+  %        end
+  %    end
+  %    % recurse into the children of this environment
+  %    [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
+  %    m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
+  %    return
+  %end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get scales
   isXLog = strcmp(get(handle, 'XScale'), 'log');
@@ -1033,6 +1037,7 @@ function m2t = handleColorbar(m2t, handle)
     if parentFound
       m2t.axesContainers{k0}.options{end+1} = ...
           matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
+      % Append cell string.
       m2t.axesContainers{k0}.options = ...
           [m2t.axesContainers{k0}.options, getColorbarOptions(m2t, handle)];
     else
@@ -1147,11 +1152,11 @@ function bool = axisIsVisible(axisHandle)
  if ~isVisible(axisHandle)
      % An invisible axes container *can* have visible children, so don't
      % immediately bail out here.
-     c = get(axisHandle,'Children');
-     bool = 0;
-     for k=1:length(c)
-         if isVisible(c(k))
-             bool = 1;
+     children = get(axisHandle, 'Children');
+     bool = false;
+     for child = children(:)'
+         if isVisible(child)
+             bool = true;
              return;
          end
      end
@@ -4052,7 +4057,7 @@ function out = isVisible(handle)
   out = strcmp(get(handle,'Visible'), 'on');
 end
 % =========================================================================
-function [visibleAxesHandles,alignmentOptions,plotOrder] =...
+function [relevantAxesHandles, alignmentOptions, plotOrder] =...
     alignSubPlots(m2t, axesHandles)
   % Returns the alignment options for all the axes enviroments.
   % The question whether two plots are aligned on the left, right, top, or
@@ -4087,25 +4092,25 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % TODO: look for unique IDs of the axes enviroments
   %       which could be returned along with its properties
 
-  numVisibleHandles = 0;
-  visibleAxesHandles = [];
-  for k = 1:length(axesHandles)
-      if axisIsVisible(axesHandles(k))
-          numVisibleHandles = numVisibleHandles+1;
-          visibleAxesHandles(numVisibleHandles) = axesHandles(k);
+  relevantAxesHandles = [];
+  for axesHandle = axesHandles(:)'
+      % Only handle visible non-colorbar handles.
+      if axisIsVisible(axesHandle) && ~strcmp(get(axesHandle,'Tag'), 'Colorbar')
+          relevantAxesHandles(end+1) = axesHandle;
       end
   end
+  numRelevantHandles = length(relevantAxesHandles);
 
   % initialize alignmentOptions
   alignmentOptions = struct([]);
-  for k = 1:numVisibleHandles
-      alignmentOptions(k).isElderTwin   = 0;
-      alignmentOptions(k).isYoungerTwin = 0;
-      alignmentOptions(k).opts          = cell(0);
+  for k = 1:numRelevantHandles
+      alignmentOptions(k).isElderTwin = false;
+      alignmentOptions(k).isYoungerTwin = false;
+      alignmentOptions(k).opts = cell(0);
   end
 
   % return immediately if nothing is to be aligned
-  if numVisibleHandles <= 1
+  if numRelevantHandles <= 1
       plotOrder = 1;
       return
   end
@@ -4114,42 +4119,22 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % Contains 0's where the axes environments are not aligned, and
   % positive integers where they are. The integer encodes how the axes
   % are aligned (top right:bottom left, and so on).
-  C = zeros(numVisibleHandles,numVisibleHandles);
+  C = zeros(numRelevantHandles, numRelevantHandles);
 
   % 'isRef' tells whether the respective plot acts as a position reference
   % for another plot.
   % TODO: preallocate this
   % Also, gather all the positions.
-  axesPos     = zeros(numVisibleHandles,4);
-  cbarHandles = [];  % indices of color bar handles;
-                     % they need to be treated separately
-  for k = 1:numVisibleHandles
-      % treat color bars later
-      if strcmp(get(visibleAxesHandles(k),'Tag'), 'Colorbar')
-          cbarHandles = [cbarHandles, k];
-          continue
-      end
-
-      % 'axesPos(i,:)' contains
+  axesPos = zeros(numRelevantHandles, 4);
+  for k = 1:numRelevantHandles
+      % `axesPos(i,:)` contains
       %     (indices 1,3): the x-value of the left and the right axis, and
       %     (indices 2,4): the y-value of the bottom and top axis,
-      % of plot no. 'i'
-      axesPos(k,:) = get(visibleAxesHandles(k), 'Position');
+      % of plot `i`.
+      axesPos(k,:) = get(relevantAxesHandles(k), 'Position');
       axesPos(k,3) = axesPos(k,1) + axesPos(k,3);
       axesPos(k,4) = axesPos(k,2) + axesPos(k,4);
   end
-
-  % Unfortunately, MATLAB doesn't seem to exactly align color bars
-  % to its parent plot. Hence, some quirking is needed.
-  nonCbarHandles              = (1:numVisibleHandles);
-  nonCbarHandles(cbarHandles) = [];
-  for k = cbarHandles
-      axesPos(k,:) = correctColorbarPos(m2t, ...
-                                        visibleAxesHandles(k), ...
-                                        axesPos(nonCbarHandles,:));
-  end
-
-  % now, the color bars are nicely aligned with the plots
 
 
   % Loop over all figures to see if axes are aligned.
@@ -4158,7 +4143,7 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % Among all the {x,y}-alignments choose the one with the closest
   % {y,x}-distance. This is important, for example, in situations where
   % there are 3 plots on top of each other:
-  % we want no. 2 to align below no. 1, and no. 3 below no. 2
+  % We want no. 2 to align below no. 1, and no. 3 below no. 2
   % (and not no. 1 again).
   %
   % There are nine alignments this algorithm can deal with:
@@ -4180,112 +4165,94 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % If two plots happen to coincide at both left and right axes, for
   % example, only one relation is stored.
   %
-  for i = 1:numVisibleHandles
-      for j = i+1:numVisibleHandles
+  for i = 1:numRelevantHandles
+      for j = i+1:numRelevantHandles
           if max(abs(axesPos(i,:)-axesPos(j,:))) < m2t.tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % twins
               C(i,j) =  5;
               C(j,i) = -5;
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(axesPos(i,1)-axesPos(j,1)) < m2t.tol;
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-              % left axes align
-              if axesPos(i,2) > axesPos(j,2)
+              % Left axes align.
+              % Check if the axes are on top of each other.
+              if axesPos(i,2) > axesPos(j,4)
                   C(i,j) = -3;
                   C(j,i) =  3;
-              else
+              elseif axesPos(j,2) > axesPos(i,4)
                   C(i,j) =  3;
                   C(j,i) = -3;
               end
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(axesPos(i,1)-axesPos(j,3)) < m2t.tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % left axis of 'i' aligns with right axis of 'j'
-              if axesPos(i,2) > axesPos(j,2)
+              if axesPos(i,2) > axesPos(j,4)
                   C(i,j) = -3;
                   C(j,i) =  4;
-              else
+              elseif axesPos(j,2) > axesPos(i,4)
                   C(i,j) =  3;
                   C(j,i) = -4;
               end
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(axesPos(i,3)-axesPos(j,1)) < m2t.tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % right axis of 'i' aligns with left axis of 'j'
-              if axesPos(i,2) > axesPos(j,2)
+              if axesPos(i,2) > axesPos(j,4)
                   C(i,j) = -4;
                   C(j,i) =  3;
-              else
+              else axesPos(j,2) > axesPos(i,4)
                   C(i,j) =  4;
                   C(j,i) = -3;
               end
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(axesPos(i,3)-axesPos(j,1)) < m2t.tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % right axes of 'i' and 'j' align
-              if axesPos(i,2) > axesPos(j,2)
+              if axesPos(i,2) > axesPos(j,4)
                   C(i,j) = -4;
                   C(j,i) =  4;
-              else
+              elseif axesPos(j,2) > axesPos(i,4)
                   C(i,j) =  4;
                   C(j,i) = -4;
               end
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(axesPos(i,2)-axesPos(j,2)) < m2t.tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % lower axes of 'i' and 'j' align
-              if axesPos(i,1) > axesPos(j,1)
+              if axesPos(i,1) > axesPos(j,3)
                   C(i,j) = -1;
                   C(j,i) =  1;
-              else
+              elseif axesPos(j,1) > axesPos(i,3)
                   C(i,j) =  1;
                   C(j,i) = -1;
               end
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(axesPos(i,2)-axesPos(j,4)) < m2t.tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % lower axis of 'i' aligns with upper axis of 'j'
-              if axesPos(i,1) > axesPos(j,1)
+              if axesPos(i,1) > axesPos(j,3)
                   C(i,j) = -1;
                   C(j,i) =  2;
-              else
+              elseif axesPos(j,1) > axesPos(i,3)
                   C(i,j) =  1;
                   C(j,i) = -2;
               end
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(axesPos(i,4)-axesPos(j,2)) < m2t.tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % upper axis of 'i' aligns with lower axis of 'j'
-              if axesPos(i,1) > axesPos(j,1)
+              if axesPos(i,1) > axesPos(j,3)
                   C(i,j) = -2;
                   C(j,i) =  1;
-              else
+              elseif axesPos(j,1) > axesPos(i,3)
                   C(i,j) =  2;
                   C(j,i) = -1;
               end
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
           elseif abs(axesPos(i,4)-axesPos(j,4)) < m2t.tol
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               % upper axes of 'i' and 'j' align
-              if axesPos(i,1) > axesPos(j,1)
+              if axesPos(i,1) > axesPos(j,3)
                   C(i,j) = -2;
                   C(j,i) =  2;
-              else
+              elseif axesPos(j,1) > axesPos(i,3)
                   C(i,j) =  2;
                   C(j,i) = -2;
               end
-              % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           end
-
       end
   end
 
@@ -4293,15 +4260,15 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % If, for any node, there is more than one plot that aligns with it in the
   % same way (e.g., upper left), then pick exactly *one* of them.
   % Take the one that is closest to the correspondig plot.
-  for i = 1:numVisibleHandles
-      for j = 1:numVisibleHandles % everything except 'i'
+  for i = 1:numRelevantHandles
+      for j = 1:numRelevantHandles
 
           if C(i,j)==0 || abs(C(i,j))==5 % don't check for double zeros (aka "no relation"'s) or triplets, quadruplets,...
               continue
           end
 
           % find doubles, and count C(i,j) in
-          doub = find(C(i,j:numVisibleHandles)==C(i,j)) ...
+          doub = find(C(i,j:numRelevantHandles)==C(i,j)) ...
                + j-1; % to get the actual index
 
           if length(doub)>1
@@ -4340,27 +4307,26 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % Alright. The matrix 'C' now contains exactly the alignment info that
   % we are looking for.
 
-  % Is each axes environment connected to at least one other?
-  noConn = find(~any(C,2));
-  if ~isempty(noConn)
-      for k = 1:length(noConn)
-          userWarning(m2t, ['The axes environment no. %d is not aligned with',...
-                              ' any other axes environment and will be plotted',...
-                              ' right in the middle.'], noConn(k));
-      end
-  end
+  %% Is each axes environment connected to at least one other?
+  %noConn = find(~any(C,2));
+  %for nc = noConn(:)'
+  %    userWarning(m2t, ['The axes environment no. %d is not aligned with',...
+  %                      ' any other axes environment and will be plotted',...
+  %                      ' right in the middle.'], nc);
+  %end
 
   % Now, actually go ahead and process the info to return Pgfplots alignment
   % options.
 
   % Sort the axes environments by the number of connections they have.
   % That means: start with the plot which has the most connections.
-  [dummy,ix] = sort(sum(C~=0, 2), 'descend'); %#ok
+  [dummy, IX] = sort(sum(C~=0, 2), 'descend'); %#ok
 
-  plotOrder = zeros(1,numVisibleHandles);
+  plotOrder = zeros(1,numRelevantHandles);
   plotNumber = 0;
-  for k = 1:numVisibleHandles
-      [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion(plotOrder, plotNumber, C, alignmentOptions, ix(k), []);
+  for ix = IX(:)'
+      [plotOrder,plotNumber,alignmentOptions] = ...
+          setOptionsRecursion(plotOrder, plotNumber, C, alignmentOptions, ix, []);
   end
 
   % Burkart, July 23, 2011:
@@ -4379,8 +4345,8 @@ function [visibleAxesHandles,alignmentOptions,plotOrder] =...
   % came later in the TikZ output.
   % The reordering was tested against the test suite and didn't break any
   % of the test cases, neither on Octave nor on MATLAB.
-  newPlotOrder = zeros(1,numVisibleHandles);
-  for k = 1:numVisibleHandles
+  newPlotOrder = zeros(1,numRelevantHandles);
+  for k = 1:numRelevantHandles
       newPlotOrder(plotOrder(k)) = k;
   end
   plotOrder = newPlotOrder;
@@ -4471,51 +4437,6 @@ function pgfOpt = cornerCode2pgfplotOption(code)
       otherwise
           error('cornerCode2pgfplotOption:unknRelCode',...
                   'Illegal alignment code %d.', code);
-  end
-
-end
-% =========================================================================
-function pos = correctColorbarPos(m2t, colBarHandle, axesHandlesPos)
-  % The handle 'colBarHandle' is the handle of a color bar,
-  % 'axesHandlesPos' a (nx4)-matrix containing the positions of all
-  % *non-colorbar* handles.
-  % The function looks for the color bar's parent and returns the position
-  % "as it should be".
-
-  colBarPos    = get(colBarHandle, 'Position');
-  colBarPos(3) = colBarPos(1) + colBarPos(3);
-  colBarPos(4) = colBarPos(2) + colBarPos(4);
-
-  loc = get(colBarHandle, 'Location');
-
-  % get the ID of the refence axes of the color bar
-  refAxesId  = getReferenceAxes(loc, colBarPos, axesHandlesPos);
-  refAxesPos = axesHandlesPos(refAxesId,:);
-
-  % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-  % small cased ('northoutside'). Hence, use lower() for uniformity.
-  switch lower(loc)
-      case { 'north', 'south', 'east', 'west' }
-          userWarning(m2t, 'alignSubPlots:getColorbarPos',                     ...
-                        'Don''t know how to deal with inner colorbars yet.');
-          pos = colBarPos;
-          return;
-
-      case {'northoutside','southoutside'}
-          pos = [refAxesPos(1), ...
-                  colBarPos(2) , ...
-                  refAxesPos(3), ...
-                  colBarPos(4)      ];
-
-      case {'eastoutside','westoutside'}
-          pos = [colBarPos(1) , ...
-                  refAxesPos(2), ...
-                  colBarPos(3) , ...
-                  refAxesPos(4)     ];
-
-      otherwise
-          error('alignSubPlots:getColorbarPos',    ...
-                  'Unknown ''Location'' %s.', loc );
   end
 
 end
@@ -4633,11 +4554,11 @@ function printAll(env, fid)
     if isempty(env.options)
         fprintf(fid, '\\begin{%s}\n', env.name);
     else
-        fprintf(fid, '\\begin{%s}[%%\n%s]\n', env.name, join(env.options, sprintf(',\n')));
+        fprintf(fid, '\\begin{%s}[%%\n%s\n]\n', env.name, join(env.options, sprintf(',\n')));
     end
 
-    for k = 1:length(env.content)
-        fprintf(fid, '%s', env.content{k});
+    for item = env.content
+        fprintf(fid, '%s', item);
     end
 
     for k = 1:length(env.children)
@@ -4649,7 +4570,7 @@ function printAll(env, fid)
         end
     end
 
-    % End the tikpicture environment with an empty comment and no newline
+    % End the tikzpicture environment with an empty comment and no newline
     % so no additional space is generated by the tikzpicture in TeX.
     % This is useful if something should immediately follow the picture,
     % e.g. another picture, with a separately defined spacing or without
