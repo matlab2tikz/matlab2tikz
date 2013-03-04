@@ -2177,11 +2177,9 @@ function [m2t,env] = drawSurface(m2t, handle)
 
     % Check if we need extra CData.
     colors = get(handle, 'CData');
-    if length(size(colors)) > 2
+    if any(isnan(colors)) || length(size(colors)) > 2
         % TODO Handle the case of RGB-specified colors.
         needsExplicitColors = false;
-        % TODO Check if the color can be found in the current color map.
-        col = colors(1,1,:);
     else
         % Note:
         % Pgfplots actually does a better job than MATLAB in determining what
@@ -3946,7 +3944,7 @@ function [width, height, unit] = getNaturalAxesDimensions(handle)
         % The plot will use the full size of the current figure.,
         if strcmp(units, 'normalized')
             % The dpi is needed to associate the size on the screen (in pixels)
-            % to the physical size of the plot (on a pdf, for example).
+            % to the physical size of the plot.
             % Unfortunately, MATLAB doesn't seem to be able to always make a
             % good guess about the current DPI (a bug is filed for this on
             % mathworks.com).
@@ -3955,6 +3953,9 @@ function [width, height, unit] = getNaturalAxesDimensions(handle)
             unit = 'in';
             figuresize = get(gcf, 'Position');
 
+            % This assumes that figuresize is always in units of dots (pixels).
+            % Apparently, this isn't always the case, so we're going to need to
+            % fix things here.
             width  = position(3) * figuresize(3) / dpi;
             height = position(4) * figuresize(4) / dpi;
 
