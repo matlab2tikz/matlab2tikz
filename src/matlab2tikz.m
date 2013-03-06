@@ -852,8 +852,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   if ~isVisible(handle)
       % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
       % in MATLAB, they may still be visible. Well.
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                         'hide axis'};
+      m2t.axesContainers{end}.options{end+1} = 'hide axis';
   end
   %if ~isVisible(handle)
   %    % An invisible axes container *can* have visible children, so don't
@@ -1129,8 +1128,15 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
               [axis, 'label style={align=center}'];
       end
       label = join(label,'\\[1ex]');
-      m2t.axesContainers{end}.options{end+1} = ...
-          sprintf([axis,'label={%s}'], label);
+      if isVisible(handle)
+          m2t.axesContainers{end}.options{end+1} = ...
+              sprintf([axis,'label={%s}'], label);
+      else
+          m2t.axesContainers{end}.options{end+1} = ...
+              sprintf(['extra description/.code={\n', ...
+                       '\\node[/pgfplots/every axis label,/pgfplots/every axis x label]{inhalt};\n', ...
+                       '}']);
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids
@@ -2082,6 +2088,10 @@ function [m2t, str] = drawImage(m2t, handle)
       % ------------------------------------------------------------------------
   end
 
+  % Make sure that the axes are still visible above the image.
+  m2t.axesContainers{end}.options{end+1} = 'axis on top';
+
+  return;
 end
 % =========================================================================
 function [m2t, str] = drawHggroup(m2t, h)
@@ -3366,13 +3376,13 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
 
       case 'none'
           error(['matlab2tikz:anycolor2rgb',                       ...
-                   'Color model ''none'' not allowed here. ',        ...
-                   'Make sure this case gets intercepted before.']);
+                 'Color model ''none'' not allowed here. ',        ...
+                 'Make sure this case gets intercepted before.']);
 
       otherwise
           error(['matlab2tikz:anycolor2rgb',                          ...
-                   'Don''t know how to handle the color model ''%s''.'],  ...
-                   color);
+                 'Don''t know how to handle the color model ''%s''.'],  ...
+                 color);
   end
 
 end
