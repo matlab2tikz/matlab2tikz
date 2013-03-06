@@ -1134,8 +1134,8 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
       else
           m2t.axesContainers{end}.options{end+1} = ...
               sprintf(['extra description/.code={\n', ...
-                       '\\node[/pgfplots/every axis label,/pgfplots/every axis x label]{inhalt};\n', ...
-                       '}']);
+                       '\\node[/pgfplots/every axis label,/pgfplots/every axis %s label]{%s};\n', ...
+                       '}'], axis, label);
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2334,9 +2334,25 @@ function [m2t, str] = drawText(m2t, handle)
   pos = get(handle, 'Position');
   if length(pos) == 2
       posString = sprintf('(axis cs:%.15g, %.15g)', pos);
+
+      xlim = get(m2t.currentHandles.gca,'XLim');
+      ylim = get(m2t.currentHandles.gca,'YLim');
+      if pos(1) < xlim(1) || pos(1) > xlim(2) ...
+      || pos(2) < ylim(1) || pos(2) > ylim(2)
+         m2t.axesContainers{end}.options{end+1} = 'clip=false';
+      end
   elseif length(pos) == 3
       pos = applyHgTransform(m2t, pos);
       posString = sprintf('(axis cs:%.15g, %.15g, %.15g)', pos);
+
+      xlim = get(m2t.currentHandles.gca,'XLim');
+      ylim = get(m2t.currentHandles.gca,'YLim');
+      zlim = get(m2t.currentHandles.gca,'ZLim');
+      if pos(1) < xlim(1) || pos(1) > xlim(2) ...
+      || pos(2) < ylim(1) || pos(2) > ylim(2) ...
+      || pos(3) < zlim(1) || pos(3) > zlim(2)
+         m2t.axesContainers{end}.options{end+1} = 'clip=false';
+      end
   else
       error('matlab2tikz:drawText', ...
             'Illegal text position specification.');
