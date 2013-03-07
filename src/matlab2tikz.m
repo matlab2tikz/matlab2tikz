@@ -521,7 +521,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   % Add custom comment.
   m2t.content.comment = [m2t.content.comment, ...
                           sprintf('\n%s\n', m2t.cmdOpts.Results.tikzFileComment)
-                       ];
+                        ];
 
   m2t.content.name = 'tikzpicture';
 
@@ -1128,15 +1128,15 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
               [axis, 'label style={align=center}'];
       end
       label = join(label,'\\[1ex]');
-      if isVisible(handle)
+      %if isVisible(handle)
           m2t.axesContainers{end}.options{end+1} = ...
               sprintf([axis,'label={%s}'], label);
-      else
-          m2t.axesContainers{end}.options{end+1} = ...
-              sprintf(['extra description/.code={\n', ...
-                       '\\node[/pgfplots/every axis label,/pgfplots/every axis %s label]{%s};\n', ...
-                       '}'], axis, label);
-      end
+      %else
+      %    m2t.axesContainers{end}.options{end+1} = ...
+      %        sprintf(['extra description/.code={\n', ...
+      %                 '\\node[/pgfplots/every axis label,/pgfplots/every axis %s label]{%s};\n', ...
+      %                 '}'], axis, label);
+      %end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get grids
@@ -1921,8 +1921,9 @@ function [m2t, str] = drawPatch(m2t, handle)
   n = size(xData, 2);
 
   if isempty(zData)
-      % 2d patch
-      for j = 1:n
+      % 2D patch.
+      % Patches are drawn with the last column first.
+      for j = n:-1:1
           str = [str, ...
                  sprintf(['\n\\addplot [', drawOpts, '] table{\n']), ...
                  sprintf('%.15g %.15g \n', [xData(:,j), yData(:,j)]'), ...
@@ -1931,19 +1932,14 @@ function [m2t, str] = drawPatch(m2t, handle)
           % can deal with that.
       end
    else % ~isempty(zData)
-      % 3d patch
-      for j = 1:n
+      % 3D patch.
+      % Patches are drawn with the last column first.
+      for j = n:-1:1
           data = applyHgTransform(m2t, [xData(:,j),yData(:,j),zData(:,j)]);
           str = [str, ...
                  sprintf(['\n\\addplot3 [',drawOpts,'] table{\n']), ...
-                 sprintf('%.15g %.15g %.15g\n', data')];
-          % make sure the path is closed
-          if any(abs(data(1,:)-data(end,:)) > 1.0e-12)
-              str = strcat(str, ...
-                           sprintf('\n%.15g %.15g %.15g\n', data(1,:)'));
-          end
-          % close it
-          str = strcat(str, sprintf('\n};\n'));
+                 sprintf('%.15g %.15g %.15g\n', data'), ...
+                 sprintf('\n};\n')];
       end
 
       m2t.currentAxesContain3dData = true;
