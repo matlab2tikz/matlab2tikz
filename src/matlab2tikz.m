@@ -818,7 +818,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   m2t.unitlength.y.value = dim.y.value / (yLim(2)-yLim(1));
   for axis = 'xyz'
       m2t.([axis 'AxisReversed']) = ...
-        strcmp(get(handle,[upper(axis),'Dir']), 'reverse');;
+        strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % In MATLAB, all plots are treated as 3D plots; it's just the view that
@@ -1851,8 +1851,6 @@ function [m2t, str] = drawPatch(m2t, handle)
   % Draws a 'patch' graphics object (as found in contourf plots, for
   % example).
   %
-  % TODO Declare common patch properties (like 'draw=none') once for
-  %      all patches.
 
   str = [];
 
@@ -1860,17 +1858,25 @@ function [m2t, str] = drawPatch(m2t, handle)
       return
   end
 
+  % MATLAB's patch elements are matrices in which each column represents a
+  % a distinct graphical object. Usually there is only one column, but
+  % there may be more (-->hist plots, although they are now handled
+  % within the barplot framework).
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  zData = get(handle, 'ZData');
+
   % -----------------------------------------------------------------------
   % gather the draw options
   drawOptions = cell(0);
 
   % fill color
-  faceColor  = get(handle, 'FaceColor');
+  faceColor = get(handle, 'FaceColor');
   if ~strcmp(faceColor, 'none')
       [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
       drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
       xFaceAlpha = get(handle, 'FaceAlpha');
-      if abs(xFaceAlpha-1.0)>m2t.tol
+      if abs(xFaceAlpha-1.0) > m2t.tol
           drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
       end
   end
@@ -1882,7 +1888,30 @@ function [m2t, str] = drawPatch(m2t, handle)
       drawOptions{end+1} = 'draw=none';
   else
       [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
-      drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+      if isempty(xEdgeColor)
+          % getColor() wasn't able to return a color. This is because cdata
+          % was an actual vector with different values in it, meaning that
+          % the color changes along the edge. This is the case, for example,
+          % with waterfall() plots.
+          % An actual color maps is needed here.
+          %
+          drawOptions{end+1} = 'mesh'; % or surf
+          m2t.axesContainers{end}.options{end+1} = ...
+            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
+          % Append upper and lower limit of the color mapping.
+          clim = caxis;
+          m2t.axesContainers{end}.options{end+1} = ...
+            sprintf('point meta min=%.15g', clim(1));
+          m2t.axesContainers{end}.options{end+1} = ...
+            sprintf('point meta max=%.15g', clim(2));
+          % Note:
+          % Pgfplots can't currently use FaceColor and colormapped edge color
+          % in one go. The option 'surf' makes sure that colormapped edge
+          % colors are used. Face colors are not displayed.
+      else
+          % getColor() returned a reasonable color value.
+          drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+      end
   end
 
   if ~m2t.currentHandleHasLegend
@@ -1892,14 +1921,6 @@ function [m2t, str] = drawPatch(m2t, handle)
 
   drawOpts = join(drawOptions, ',');
   % -----------------------------------------------------------------------
-
-  % MATLAB's patch elements are matrices in which each column represents a
-  % a distinct graphical object. Usually there is only one column, but
-  % there may be more (-->hist plots, although they are now handled
-  % within the barplot framework).
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
 
   if any(~isfinite(xData(:))) || any(~isfinite(yData(:))) || any(~isfinite(zData(:)))
       % Add 'unbounded coords=jump' to the axis options if it's not there
@@ -1939,14 +1960,14 @@ function [m2t, str] = drawPatch(m2t, handle)
           str = [str, ...
                  sprintf(['\n\\addplot3 [',drawOpts,'] table{\n']), ...
                  sprintf('%.15g %.15g %.15g\n', data'), ...
-                 sprintf('\n};\n')];
+                 sprintf('};\n')];
       end
-
       m2t.currentAxesContain3dData = true;
    end
    str = [str, sprintf('\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  return;
 end
 % =========================================================================
 function [m2t, str] = drawImage(m2t, handle)
@@ -2164,10 +2185,10 @@ function [m2t,env] = drawSurface(m2t, handle)
     % representation first. This makes sure we can treat the data with one
     % single sprintf() command below.
     if isvector(dx)
-        dx = ones(numcols,1) * dx(:);
+        dx = ones(numcols,1) * dx(:)';
     end
     if isvector(dy)
-        dy = dy(:)' * ones(1,numrows);
+        dy = dy(:) * ones(1,numrows);
     end
 
     % Add 'z buffer=sort' to the options to make sphere plot and the like not
@@ -2183,7 +2204,7 @@ function [m2t,env] = drawSurface(m2t, handle)
 
     % Check if we need extra CData.
     colors = get(handle, 'CData');
-    if any(isnan(colors)) || length(size(colors)) > 2
+    if length(size(colors)) > 2 || any(any(isnan(colors)))
         % TODO Handle the case of RGB-specified colors.
         needsExplicitColors = false;
     else
@@ -2450,6 +2471,9 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
       end
   elseif strcmpi(plotType, 'mesh')
       surfOptions{end+1} = 'shader=flat';
+  else
+      error('matlab2tikz:surfaceOpts', ...
+            'Illegal plot type ''%s''.', plotType);
   end
 
   return
@@ -3316,6 +3340,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
   end
 
   % Append upper and lower limit of the colorbar.
+  % TODO Use caxis not only for color bars.
   clim = caxis;
   axisOptions{end+1} = sprintf('point meta min=%.15g', clim(1));
   axisOptions{end+1} = sprintf('point meta max=%.15g', clim(2));
@@ -3347,9 +3372,9 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
               [m2t, colorindex] = cdata2colorindex(m2t, color, handle);
               [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
           otherwise
-              error(['matlab2tikz:getColor',                          ...
-                       'Argument ''mode'' has illegal value ''%s''.'], ...
-                       mode);
+              error(['matlab2tikz:getColor', ...
+                     'Argument ''mode'' has illegal value ''%s''.'], ...
+                     mode);
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
@@ -3361,7 +3386,7 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
 
   if ~ischar(color)
       error('patchcolor2xcolor:illegalInput', ...
-             'Input argument ''color'' not a string.');
+            'Input argument ''color'' not a string.');
   end
 
   switch color
@@ -3373,14 +3398,15 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
               cdata = get(c, 'CData');
           end
 
-          % QUIRK: With contour plots (not contourf), cdata will be a vector of
-          %        equal values, except the last one which is a NaN. To work
-          %        around this oddity, just take the first entry.
-          %        With barseries plots, data has been observed to return a
-          %        *matrix* with all equal entries.
-          cdata = cdata(1, 1);
-          [m2t, colorindex] = cdata2colorindex(m2t, cdata, patchhandle);
-          [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
+          col1 = cdata(1,1);
+          if all(isnan(cdata) | abs(cdata-col1)<1.0e-10)
+              [m2t, colorindex] = cdata2colorindex(m2t, col1, patchhandle);
+              [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
+          else
+              % Don't return anything meaningful and count on the caller to
+              % make soemthing of it.
+              xcolor = [];
+          end
 
       case 'auto'
           color = get(patchhandle, 'Color');
@@ -3397,6 +3423,7 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                  color);
   end
 
+  return;
 end
 % =========================================================================
 function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
@@ -4221,7 +4248,7 @@ function [relevantAxesHandles, alignmentOptions, plotOrder] =...
               if axesPos(i,2) > axesPos(j,4)
                   C(i,j) = -4;
                   C(j,i) =  3;
-              else axesPos(j,2) > axesPos(i,4)
+              elseif axesPos(j,2) > axesPos(i,4)
                   C(i,j) =  4;
                   C(j,i) = -3;
               end
