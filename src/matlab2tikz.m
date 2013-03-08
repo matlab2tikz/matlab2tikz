@@ -2164,10 +2164,10 @@ function [m2t,env] = drawSurface(m2t, handle)
     % representation first. This makes sure we can treat the data with one
     % single sprintf() command below.
     if isvector(dx)
-        dx = ones(numcols,1) * dx;
+        dx = ones(numcols,1) * dx(:);
     end
     if isvector(dy)
-        dy = dy * ones(1,numrows);
+        dy = dy(:)' * ones(1,numrows);
     end
 
     % Add 'z buffer=sort' to the options to make sphere plot and the like not
