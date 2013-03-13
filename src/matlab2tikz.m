@@ -746,7 +746,9 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
                                      'comment',  [],        ...
                                      'options',  {cell(0)}, ...
                                      'content',  {cell(0)}, ...
-                                     'children', {cell(0)}  ...
+                                     'children', {cell(0)},  ...
+                                     'stackedBarsPresent', false, ...
+                                     'nonbarPlotsPresent', false ...
                                     );
 
   % update gca
@@ -828,6 +830,13 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   m2t.currentAxesContain3dData = false;
   [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
   m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  if m2t.axesContainers{end}.stackedBarsPresent ...
+  && m2t.axesContainers{end}.nonbarPlotsPresent
+      userWarning(m2t, ['Pgfplots can''t deal with stacked bar plots', ...
+                        ' and non-bar plots in one axis environment.', ...
+                        ' The LaTeX file will probably not compile.']);
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % The rest of this is handling axes options.
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1184,6 +1193,17 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
   if ~isVisible(handle)
       return
   end
+
+  % Don't allow lines is there's already stacked bars.
+  % This could be somewhat controversial: Why not remove the stacked bars then?
+  % Anyways, with stacked bar plots, lines are typically base lines and such,
+  % so nothing of great interest. Throw those out for now.
+  if m2t.axesContainers{end}.stackedBarsPresent
+      return
+  end
+
+  % This is for a quirky workaround for stacked bar plots.
+  m2t.axesContainers{end}.nonbarPlotsPresent = true;
 
   lineStyle = get(handle, 'LineStyle');
   lineWidth = get(handle, 'LineWidth');
@@ -1858,6 +1878,9 @@ function [m2t, str] = drawPatch(m2t, handle)
       return
   end
 
+  % This is for a quirky workaround for stacked bar plots.
+  m2t.axesContainers{end}.nonbarPlotsPresent = true;
+
   % MATLAB's patch elements are matrices in which each column represents a
   % a distinct graphical object. Usually there is only one column, but
   % there may be more (-->hist plots, although they are now handled
@@ -2279,10 +2302,10 @@ function [m2t, str] = drawText(m2t, handle)
   % are handled by other subfunctions (labels etc.) or don't need to be
   % handled at all.
   % The HandleVisibility says something about whether the text handle is
-  % visible as a data structure or now. Typically, a handle is hidden
+  % visible as a data structure or not. Typically, a handle is hidden
   % if the graphics aren't supposed to be altered, e.g., axis labels.
   % Most of those entities are captured by matlab2tikz one way or
-  % another, but sometimes this logic fails. This is the case, for
+  % another, but sometimes they are not. This is the case, for
   % example, with polar plots and the axis descriptions therein.
   if strcmp(get(handle, 'Visible'), 'off') ...
      || (strcmp(get(handle, 'HandleVisibility'), 'off') && ~m2t.cmdOpts.Results.showHiddenStrings)
@@ -2568,7 +2591,6 @@ function [m2t, str] = drawBarseries(m2t, h)
       m2t.barplotTotalNumber = [];
       m2t.barShifts = [];
       m2t.addedAxisOption = false;
-      m2t.nonbarPlotPresent = false;
   end
 
   str = [];
@@ -2580,42 +2602,32 @@ function [m2t, str] = drawBarseries(m2t, h)
   % The following checks if this is the case and cowardly bails out if so.
   % On top of that, the number of bar plots is counted.
   if isempty(m2t.barplotTotalNumber)
-      m2t.nonbarPlotPresent = 0;
       m2t.barplotTotalNumber = 0;
       siblings = get(get(h, 'Parent'), 'Children');
       for s = siblings(:)'
 
           % skip invisible objects
           if ~isVisible(s)
-              continue
+              continue;
           end
 
-          t = get(s, 'Type');
-          switch t
-              case {'line','patch'}
-                  m2t.nonbarPlotPresent = true;
-              case 'text'
-                  % this is pretty harmless: don't complain about ordinary text
-              case 'hggroup'
-                  cl = class(handle(s));
-                  switch cl
-                      case 'specgraph.barseries'
-                          m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
-                      case 'specgraph.errorbarseries'
-                          % TODO
-                          % Unfortunately, MATLAB(R) treats error bars and corresponding
-                          % bar plots as siblings of a common axes object.
-                          % For error bars to work with bar plots -- which is trivially
-                          % possible in Pgfplots -- one has to match errorbar and bar
-                          % objects (probably by their values).
-                          userWarning(m2t, 'Error bars discarded (to be implemented).');
-                      otherwise
-                          error('matlab2tikz:drawBarseries',          ...
-                                'Unknown class''%s''.', cl);
-                  end
-              otherwise
-                  error('matlab2tikz:drawBarseries',                  ...
-                        'Unknown type ''%s''.', t);
+          if strcmpi(get(s, 'Type'), 'hggroup')
+              cl = class(handle(s));
+              switch cl
+                  case 'specgraph.barseries'
+                      m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
+                  case 'specgraph.errorbarseries'
+                      % TODO
+                      % Unfortunately, MATLAB(R) treats error bars and
+                      % corresponding bar plots as siblings of a common axes
+                      % object. For error bars to work with bar plots -- which
+                      % is trivially possible in Pgfplots -- one has to match
+                      % errorbar and bar objects (probably by their values).
+                      userWarning(m2t, 'Error bars discarded (to be implemented).');
+                  otherwise
+                      error('matlab2tikz:drawBarseries',          ...
+                            'Unknown class''%s''.', cl);
+              end
           end
       end
   end
@@ -2730,11 +2742,7 @@ function [m2t, str] = drawBarseries(m2t, h)
           % plots).
           % Make sure this happens exactly *once*.
           if isempty(m2t.addedAxisOption) || ~m2t.addedAxisOption
-              if m2t.nonbarPlotPresent
-                  userWarning(m2t, ['Pgfplots can''t deal with stacked bar plots', ...
-                                 ' and non-bar plots in one axis environment.', ...
-                                 ' The file will probably not compile.'        ]);
-              end
+              m2t.axesContainers{end}.stackedBarsPresent = true;
               bWFactor = get(h, 'BarWidth');
               % Add 'ybar stacked' to the containing axes environment.
               m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
@@ -4102,9 +4110,21 @@ function newstr = escapeCharacters(str)
 
 end
 % =========================================================================
-function out = isVisible(handle)
+function out = isVisible(handles)
   % Determines whether an object is actually visible or not.
-  out = strcmp(get(handle,'Visible'), 'on');
+  %
+  out = strcmp(get(handles,'Visible'), 'on');
+  % There's another handle property, 'HandleVisibility', which may or may not
+  % determine the visibility of the object. Empirically, it seems to be 'off'
+  % whenever we're dealing with an object that's not user-created, such as
+  % automatic axis ticks, baselines in bar plots, axis lines for polar plots
+  % and so forth.
+  % For now, don't check 'HandleVisibility'.
+
+  %% Don't use short-circuit logical operators here to keep the function working
+  %% for multiple handle inputs.
+  %out = ~(strcmp(get(handles,'Visible'), 'off') ...
+  %       |strcmp(get(handles, 'HandleVisibility'), 'off'));
 end
 % =========================================================================
 function [relevantAxesHandles, alignmentOptions, plotOrder] =...

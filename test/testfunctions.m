@@ -69,7 +69,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @bars                , ...
                            @subplotBars         , ...
                            @hbars               , ...
-...%                             @stackbars           , ...
+                           @stackbars           , ...
                            @xAxisReversed       , ...
                            @errorBars           , ...
                            @errorBars2          , ...
@@ -563,6 +563,7 @@ function [description, extraOpts] = zoom()
 end
 % =========================================================================
 function [description, extraOpts] = bars()
+
   bins = -0.5:0.1:0.5;
   bins = 10 * bins;
   numEntries = length(bins);
@@ -612,15 +613,14 @@ function [description, extraOpts] = groupbars()
   extraOpts = {};
 end
 % =========================================================================
-%  function [description, extraOpts] = stackbars()
-%
-%    Y = round(rand(5,3)*10);
-%    bar(Y,'stack');
-%    title 'Stack';
-%
-%    description = 'Plot of stacked bars.' ;
-%
-%  end
+function [description, extraOpts] = stackbars()
+  Y = round(rand(5,3)*10);
+  bar(Y,'stack');
+  title 'Stack';
+
+  description = 'Plot of stacked bars.';
+  extraOpts = {};
+end
 % =========================================================================
 function [description, extraOpts] = stemplot()
 
