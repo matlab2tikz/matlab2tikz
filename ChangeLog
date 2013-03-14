@@ -1,3 +1,14 @@
+2012-03-14  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.3.2.
+	* Support for:
+	   - waterfall plots
+	* Bugfixes:
+	   - axis locations
+	   - color handling
+	   - stacked bars
+	   - ...
+
 2012-02-15  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.3.1.
