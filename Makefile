@@ -1,7 +1,7 @@
 # This makefile creates a release tarball.
 
 MATLAB2TIKZ_DIR=.
-VERSION=0.3.1
+VERSION=0.3.2
 
 default: release
 
