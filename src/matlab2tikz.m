@@ -929,16 +929,42 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
           sprintf('title={%s}', title);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % Axes left or right?
-  % For double axes pairs, unconditionally put the ordinate labels
-  % right for the first one, left for the second one.
-  if alignmentOptions.isElderTwin
-      m2t.axesContainers{end}.options{end+1} = 'axis lines*=right';
-  elseif alignmentOptions.isYoungerTwin
-      m2t.axesContainers{end}.options{end+1} = 'axis lines*=left';
-  elseif strcmp(get(handle, 'Box'), 'off')
-      % Box off and only one axes pair present.
-      m2t.axesContainers{end}.options{end+1} = 'axis lines*=left';
+  % axes locations
+  boxOn = strcmp(get(handle, 'box'), 'on');
+  xloc = get(handle, 'XAxisLocation');
+  if boxOn
+      if strcmp(xloc, 'bottom')
+          % default; nothing added
+      elseif strcmp(xloc, 'top')
+          m2t.axesContainers{end}.options{end+1} = 'axis x line*=top';
+      else
+          error('matlab2tikz:drawAxes', ...
+                sprintf('Illegal axis location ''%s''.', xloc));
+      end
+  else % box off
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('axis x line*=%s', xloc);
+  end
+  yloc = get(handle, 'YAxisLocation');
+  if boxOn
+      if strcmp(yloc, 'left')
+          % default; nothing added
+      elseif strcmp(yloc, 'right')
+          m2t.axesContainers{end}.options{end+1} = 'axis y line*=right';
+      else
+          error('matlab2tikz:drawAxes', ...
+                sprintf('Illegal axis location ''%s''.', yloc));
+      end
+  else % box off
+      m2t.axesContainers{end}.options{end+1} = ...
+          sprintf('axis y line*=%s', yloc);
+  end
+  if m2t.currentAxesContain3dData
+      % There's no such attribute as 'ZAxisLocation'.
+      % Instead, the default seems to be 'left'.
+      if ~boxOn
+          m2t.axesContainers{end}.options{end+1} = 'axis z line*=left';
+      end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % grid line style
@@ -1077,10 +1103,17 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   color = get(handle, [upper(axis),'Color']);
   if (any(color)) % color not black [0,0,0]
        [m2t, col] = getColor(m2t, handle, color, 'patch');
-       m2t.axesContainers{end}.options = ...
-           {m2t.axesContainers{end}.options{:}, ...
-            ['every outer ',axis,' axis line/.append style={',col, '}'], ...
-            ['every ',axis,' tick label/.append style={font=\color{',col,'}}']};
+       if strcmp(get(handle, 'box'), 'on')
+           % If the axes are arranged as a box, make sure that the individual
+           % axes are drawn as four separate paths. This makes the alignment
+           % at the box corners somewhat less nice, but allows for different
+           % axis styles (e.g., colors).
+           m2t.axesContainers{end}.options{end+1} = 'separate axis lines';
+       end
+       m2t.axesContainers{end}.options{end+1} = ...
+         ['every outer ',axis,' axis line/.append style={',col, '}'];
+       m2t.axesContainers{end}.options{end+1} = ...
+         ['every ',axis,' tick label/.append style={font=\color{',col,'}}'];
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle the orientation
@@ -4174,8 +4207,6 @@ function [relevantAxesHandles, alignmentOptions, plotOrder] =...
   % initialize alignmentOptions
   alignmentOptions = struct([]);
   for k = 1:numRelevantHandles
-      alignmentOptions(k).isElderTwin = false;
-      alignmentOptions(k).isYoungerTwin = false;
       alignmentOptions(k).opts = cell(0);
   end
 
@@ -4443,21 +4474,14 @@ function [plotOrder, plotNumber, alignmentOptions] = setOptionsRecursion(plotOrd
     unprocessedChildren = unprocessedFriends(abs(C(k,unprocessedFriends))~=5);
     unprocessedTwins    = unprocessedFriends(abs(C(k,unprocessedFriends))==5);
 
-    if length(unprocessedTwins) == 1
-        alignmentOptions(k).isElderTwin = 1;
-    elseif length(unprocessedTwins) > 1
-        error('setOptionsRecursion:twoTwins',...
-               'More than one twin axes discovered.');
-    end
-
     if ~isempty(unprocessedChildren) % Are there unprocessed children?
         % Give these axes a name.
         alignmentOptions(k).opts{end+1} = sprintf('name=plot%d', k);
     end
 
     if ~isempty(parent) % if a parent is given
-        if (abs(C(parent,k))==5) % don't apply "at=" for younger twins
-            alignmentOptions(k).isYoungerTwin = 1;
+        if (abs(C(parent,k))==5)
+            % don't apply "at=" for younger twins
         else
             % See were this node sits with respect to its parent,
             % and adapt the option accordingly.

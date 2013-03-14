@@ -87,6 +87,8 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @zplanePlot1         , ...
                            @zplanePlot2         , ...
                            @freqResponsePlot    , ...
+                           @axesLocation        , ...
+                           @axesColors          , ...
                            @multipleAxes        , ...
                            @scatterPlotRandom   , ...
                            @scatterPlot         , ...
@@ -1149,7 +1151,28 @@ function [description, extraOpts] = freqResponsePlot()
   extraOpts = {};
 end
 % =========================================================================
+function [description, extraOpts] = axesLocation()
+  plot(rand(1,10));
+  set(gca,'XAxisLocation','top');
+  set(gca,'YAxisLocation','right');
+
+  description = 'Swapped axis locations.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = axesColors()
+
+  plot(rand(1,10));
+  set(gca,'XColor','g','YColor','b');
+%  set(gca,'XColor','b','YColor','k');
+  box off;
+
+  description = 'Custom axes colors.';
+  extraOpts = {};
+end
+% =========================================================================
 function [description, extraOpts] = multipleAxes()
+
   x1 = 0:.1:40;
   y1 = 4.*cos(x1)./(x1+2);
   x2 = 1:.2:20;
@@ -1175,6 +1198,7 @@ function [description, extraOpts] = multipleAxes()
   % Now set the tick mark locations.
   set(ax1,'XTick',xlimits(1):xinc:xlimits(2) ,...
           'YTick',ylimits(1):yinc:ylimits(2) )
+
   description = 'Multiple axes.';
   extraOpts = {};
 end
@@ -1776,6 +1800,7 @@ function [description, extraOpts] = fill3plot()
   grid on;
   fill3(x1,x2,h,'k');
   view(45,22.5);
+  box on;
 
   description = 'fill3 plot.';
   extraOpts = {};
