@@ -1,29 +1,25 @@
-% =========================================================================
-% *** FUNCTION figure2dot
-% ***
-% *** This very simple function generates a Graphviz (.dot) file displaying
-% *** the children/parents relationships in a MATLAB figure (gcf).
-% ***
-% =========================================================================
-%
-%     Copyright (C) 2008--2013 Nico Schlömer
-%
-%     This program is free software: you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published by
-%     the Free Software Foundation, either version 3 of the License, or
-%     (at your option) any later version.
-%
-%     This program is distributed in the hope that it will be useful,
-%     but WITHOUT ANY WARRANTY; without even the implied warranty of
-%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License for more details.
-%
-%     You should have received a copy of the GNU General Public License
-%     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-%
-% =========================================================================
 function figure2dot( filename )
+%FIGURE2DOT    Save figure in Graphviz (.dot) file.
+%   FIGURE2DOT() saves the current figure as dot-file.
+%
 
+%   Copyright (c) 2008--2013, Nico Schlömer <nico.schloemer@gmail.com>
+%   All rights reserved.
+%
+%   This program is free software: you can redistribute it and/or modify
+%   it under the terms of the GNU General Public License as published by
+%   the Free Software Foundation, either version 3 of the License, or
+%   (at your option) any later version.
+%
+%   This program is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%   GNU General Public License for more details.
+%
+%   You should have received a copy of the GNU General Public License
+%   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%
+% =========================================================================
   global node_number
 
   % also show hidden handles
