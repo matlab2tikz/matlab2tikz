@@ -1298,8 +1298,8 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
       str = [str, ...
              sprintf(['\\addplot3 [\n', join(drawOptions, ',\n'), ']\n']), ...
-             sprintf('table {\n'), ...
-             sprintf('%.15g %.15g %.15g\n', data'), ...
+             sprintf('table[row sep=crcr] {\n'), ...
+             sprintf('%.15g %.15g %.15g\\\\\n', data'), ...
              sprintf('};\n')];
 
       m2t.currentAxesContain3dData = true;
@@ -1363,8 +1363,8 @@ function str = plotLine2d(opts, data)
         dataType = 'coordinates';
         str_data = sprintf('(%.15g,%.15g) +- (0.0,%.15g)', data');
     else
-        dataType = 'table';
-        str_data = sprintf('%.15g %.15g\n', data');
+        dataType = 'table[row sep=crcr]';
+        str_data = sprintf('%.15g %.15g\\\\\n', data');
         %dataType = 'coordinates';
         %str_data = sprintf('(%.15g, %.15g)', data');
     end
@@ -2002,8 +2002,8 @@ function [m2t, str] = drawPatch(m2t, handle)
       % Patches are drawn with the last column first.
       for j = n:-1:1
           str = [str, ...
-                 sprintf(['\n\\addplot [', drawOpts, '] table{\n']), ...
-                 sprintf('%.15g %.15g \n', [xData(:,j), yData(:,j)]'), ...
+                 sprintf(['\n\\addplot [', drawOpts, '] table[row sep=crcr]{\n']), ...
+                 sprintf('%.15g %.15g\\\\\n', [xData(:,j), yData(:,j)]'), ...
                  '};'];
           % This path isn't necessarily closed, but Pgfplots
           % can deal with that.
@@ -2014,8 +2014,8 @@ function [m2t, str] = drawPatch(m2t, handle)
       for j = n:-1:1
           data = applyHgTransform(m2t, [xData(:,j),yData(:,j),zData(:,j)]);
           str = [str, ...
-                 sprintf(['\n\\addplot3 [',drawOpts,'] table{\n']), ...
-                 sprintf('%.15g %.15g %.15g\n', data'), ...
+                 sprintf(['\n\\addplot3 [',drawOpts,'] table[row sep=crcr]{\n']), ...
+                 sprintf('%.15g %.15g %.15g\\\\\n', data'), ...
                  sprintf('};\n')];
       end
       m2t.currentAxesContain3dData = true;
@@ -2277,15 +2277,15 @@ function [m2t,env] = drawSurface(m2t, handle)
     if needsExplicitColors
         %formatType = 'coordinates';
         %formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
-        formatType = 'table[meta index=3,header=false]';
+        formatType = 'table[row sep=crcr,meta index=3,header=false]';
         opts{end+1} = 'point meta=explicit';
-        formatString = '%.15g %.15g %.15g %.15g\n';
+        formatString = '%.15g %.15g %.15g %.15g\\\\\n';
         data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), colors(:)];
     else
         %formatType = 'coordinates';
         %formatString = '(%.15g, %.15g, %.15g)\n';
-        formatType = 'table[header=false]';
-        formatString = '%.15g %.15g %.15g\n';
+        formatType = 'table[row sep=crcr,header=false]';
+        formatString = '%.15g %.15g %.15g\\\\\n';
         data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
     end
 
