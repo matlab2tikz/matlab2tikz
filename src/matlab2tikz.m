@@ -4652,7 +4652,7 @@ function printAll(env, fid)
     end
 
     for item = env.content
-        fprintf(fid, '%s', item);
+        fprintf(fid, '%s', char(item));
     end
 
     for k = 1:length(env.children)
