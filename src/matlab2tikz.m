@@ -179,7 +179,6 @@ function matlab2tikz(varargin)
   m2t.years = '2008--2013';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
 
-  m2t.tikzOptions = cell(0); % for the arrow style -- TODO: see if we can get this removed
   m2t.tol = 1.0e-15; % global round-off tolerance;
                      % used, for example, in equality test for doubles
   m2t.relativePngPath = [];
@@ -193,7 +192,7 @@ function matlab2tikz(varargin)
   % the actual contents of the TikZ file go here
   m2t.content = struct('name',     [], ...
                        'comment',  [], ...
-                       'options',  {cell(0)}, ...
+                       'options',  {cell(0,2)}, ...
                        'content',  {cell(0)}, ...
                        'children', {cell(0)}  ...
                       );
@@ -525,8 +524,6 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
   m2t.content.name = 'tikzpicture';
 
-  m2t.content.options = { m2t.content.options{:}, m2t.tikzOptions{:} };
-
   % Add custom TikZ options if any given.
   if ~isempty(m2t.cmdOpts.Results.extraTikzpictureSettings)
       if ischar(m2t.cmdOpts.Results.extraTikzpictureSettings)
@@ -745,7 +742,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   m2t.axesContainers{end+1} = struct('handle', handle, ...
                                      'name', [], ...
                                      'comment', [], ...
-                                     'options', struct(), ...
+                                     'options', {cell(0,2)}, ...
                                      'content', {cell(0)}, ...
                                      'children', {cell(0)}, ...
                                      'stackedBarsPresent', false, ...
@@ -785,7 +782,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   if dim.x.unit(1)=='\' && dim.x.value==1.0
       % only return \figurewidth instead of 1.0\figurewidth
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, 'width', dim.x.unit);
+        addToOptions(m2t.axesContainers{end}.options, 'width', dim.x.unit);
   else
       if strcmp(dim.x.unit, 'px')
           % TikZ doesn't know pixels. -- Convert to inches.
@@ -794,12 +791,12 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
           dim.x.unit = 'in';
       end
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, 'width', sprintf('%.15g%s', dim.x.value, dim.x.unit));
+        addToOptions(m2t.axesContainers{end}.options, 'width', sprintf('%.15g%s', dim.x.value, dim.x.unit));
   end
   if dim.y.unit(1)=='\' && dim.y.value==1.0
       % only return \figureheight instead of 1.0\figureheight
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, 'height', dim.y.unit);
+        addToOptions(m2t.axesContainers{end}.options, 'height', dim.y.unit);
   else
       if strcmp(dim.y.unit, 'px')
           % TikZ doesn't know pixels. -- Convert to inches.
@@ -808,7 +805,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
           dim.y.unit = 'in';
       end
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, 'height', sprintf('%.15g%s', dim.y.value, dim.y.unit));
+        addToOptions(m2t.axesContainers{end}.options, 'height', sprintf('%.15g%s', dim.y.value, dim.y.unit));
   end
   % Add the physical dimension of one unit of length in the coordinate system.
   % This is used later on to translate lenghts to physical units where
@@ -844,13 +841,13 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % Set view for 3D plots.
   if m2t.currentAxesContain3dData
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     'view', sprintf('{%.15g}{%.15g}', get(handle, 'View')));
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % the following is general MATLAB behavior
   m2t.axesContainers{end}.options = ...
-    addToStruct(m2t.axesContainers{end}.options, ...
+    addToOptions(m2t.axesContainers{end}.options, ...
                 'scale only axis', []);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Get other axis options (ticks, axis color, label,...).
@@ -866,7 +863,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
       % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
       % in MATLAB, they may still be visible. Well.
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     'hide axis', []);
   end
   %if ~isVisible(handle)
@@ -907,8 +904,8 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set alignment options
   if ~isempty(alignmentOptions.opts)
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:},...
-                                         alignmentOptions.opts{:}};
+      m2t.axesContainers{end}.options = cat(1,m2t.axesContainers{end}.options,...
+                                              alignmentOptions.opts);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % background color
@@ -917,7 +914,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
       [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
       if ~strcmp(col, 'white')
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         'axis background/.style', sprintf('{fill=%s}', col));
       end
   end
@@ -929,12 +926,12 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
       title = prettyPrint(m2t, title, titleInterpreter);
       if length(title) > 1
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         'title style', '{align=center}');
       end
       title = join(title, '\\[1ex]');
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     'title', sprintf('{%s}', title));
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -945,34 +942,42 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
       if strcmp(xloc, 'bottom')
           % default; nothing added
       elseif strcmp(xloc, 'top')
-          m2t.axesContainers{end}.options{end+1} = 'axis x line*=top';
+          m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                         'axis x line*', 'top');
       else
           error('matlab2tikz:drawAxes', ...
                 sprintf('Illegal axis location ''%s''.', xloc));
       end
   else % box off
-      m2t.axesContainers{end}.options{end+1} = ...
-          sprintf('axis x line*=%s', xloc);
+      m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                         'axis x line*', xloc);
   end
   yloc = get(handle, 'YAxisLocation');
   if boxOn
       if strcmp(yloc, 'left')
           % default; nothing added
       elseif strcmp(yloc, 'right')
-          m2t.axesContainers{end}.options{end+1} = 'axis y line*=right';
+          m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                         'axis y line*', 'right');
       else
           error('matlab2tikz:drawAxes', ...
                 sprintf('Illegal axis location ''%s''.', yloc));
       end
   else % box off
-      m2t.axesContainers{end}.options{end+1} = ...
-          sprintf('axis y line*=%s', yloc);
+      m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                         'axis y line*', yloc);
   end
   if m2t.currentAxesContain3dData
       % There's no such attribute as 'ZAxisLocation'.
       % Instead, the default seems to be 'left'.
       if ~boxOn
-          m2t.axesContainers{end}.options{end+1} = 'axis z line*=left';
+          m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                         'axis z line*', 'left');
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -986,9 +991,10 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
       if m2t.cmdOpts.Results.strict ...
          || ~strcmp(matlabGridLineStyle,defaultMatlabGridLineStyle)
           gls = translateLineStyle(matlabGridLineStyle);
-          axisGridOpts = sprintf('grid style={%s}', gls);
-          m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:},...
-                                             axisGridOpts};
+          axisGridOpts = {'grid style', sprintf('{%s}', gls)};
+          m2t.axesContainers{end}.options = cat(1, ...
+                                                m2t.axesContainers{end}.options,...
+                                                axisGridOpts);
       end
   else
       % When specifying 'axis on top', the axes stay above all graphs (which is
@@ -1000,7 +1006,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
       % As a prelimary compromise, only pull this option if no grid is in use.
       if m2t.cmdOpts.Results.strict
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         'axis on top', []);
       end
   end
@@ -1015,8 +1021,11 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   if strcmp(m2t.env, 'MATLAB')
       legendHandle = legend(handle);
       if ~isempty(legendHandle)
-          [m2t, legendOpts] = getLegendOpts(m2t, legendHandle);
-          m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, legendOpts{:}};
+          [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
+          m2t.axesContainers{end}.options = ...
+              addToOptions(m2t.axesContainers{end}.options, ...
+                           key, ...
+                           ['{', legendOpts, '}']);
       end
   else
       % TODO: How to uniquely connect a legend with a pair of axes in Octave?
@@ -1039,8 +1048,11 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
 %                     && legDims.bottom > axisDims.bottom ...
 %                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
 %                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height)
-                  [m2t, legendOpts] = getLegendOpts(m2t, sibling);
-                  m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, legendOpts{:}};
+                  [m2t, key, legendOpts] = getLegendOpts(m2t, sibling);
+                  m2t.axesContainers{end}.options = ...
+                      addToOptions(m2t.axesContainers{end}.options, ...
+                                   key, ...
+                                   ['{', legendOpts, '}']);
 %                end
           end
       end
@@ -1049,11 +1061,13 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % add manually given extra axis options
   if ~isempty(m2t.cmdOpts.Results.extraAxisOptions)
       if ischar(m2t.cmdOpts.Results.extraAxisOptions)
-          m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                             m2t.cmdOpts.Results.extraAxisOptions};
+          m2t.axesContainers{end}.options = cat(1, ...
+                                                m2t.axesContainers{end}.options, ...
+                                                m2t.cmdOpts.Results.extraAxisOptions);
       elseif iscellstr(m2t.cmdOpts.Results.extraAxisOptions)
-          m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                             m2t.cmdOpts.Results.extraAxisOptions{:}};
+          m2t.axesContainers{end}.options = cat(1, ...
+                                                m2t.axesContainers{end}.options, ...
+                                                m2t.cmdOpts.Results.extraAxisOptions);
       else
           error('Illegal extraAxisOptions (need string or cell string).')
       end
@@ -1080,11 +1094,13 @@ function m2t = handleColorbar(m2t, handle)
       end
     end
     if parentFound
-      m2t.axesContainers{k0}.options{end+1} = ...
-          matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
+      m2t.axesContainers{end}.options = ...
+        addToOptions(m2t.axesContainers{end}.options, ...
+                    matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
       % Append cell string.
-      m2t.axesContainers{k0}.options = ...
-          [m2t.axesContainers{k0}.options, getColorbarOptions(m2t, handle)];
+      m2t.axesContainers{k0}.options = cat(1,...
+                                           m2t.axesContainers{k0}.options, ...
+                                           getColorbarOptions(m2t, handle));
     else
       warning('Could not find parent axes for color bar. Skipping.');
     end
@@ -1119,12 +1135,17 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
            % axes are drawn as four separate paths. This makes the alignment
            % at the box corners somewhat less nice, but allows for different
            % axis styles (e.g., colors).
-           m2t.axesContainers{end}.options{end+1} = 'separate axis lines';
+           m2t.axesContainers{end}.options = ...
+               addToOptions(m2t.axesContainers{end}.options, 'separate axis lines', []);
        end
-       m2t.axesContainers{end}.options{end+1} = ...
-         ['every outer ',axis,' axis line/.append style={',col, '}'];
-       m2t.axesContainers{end}.options{end+1} = ...
-         ['every ',axis,' tick label/.append style={font=\color{',col,'}}'];
+       m2t.axesContainers{end}.options = ...
+           addToOptions(m2t.axesContainers{end}.options, ...
+                       ['every outer ', axis, ' axis line/.append style'], ...
+                       ['{', col, '}']);
+       m2t.axesContainers{end}.options = ...
+           addToOptions(m2t.axesContainers{end}.options, ...
+                        ['every ',axis,' tick label/.append style'], ...
+                        ['{font=\color{',col,'}}']);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle the orientation
@@ -1132,17 +1153,17 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   m2t.([axis 'AxisReversed']) = isAxisReversed;
   if isAxisReversed
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     [axis, ' dir'], 'reverse');
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
   limits = get(handle, [upper(axis),'Lim']);
   m2t.axesContainers{end}.options = ...
-    addToStruct(m2t.axesContainers{end}.options, ...
+    addToOptions(m2t.axesContainers{end}.options, ...
                 [axis,'min'], sprintf('%.15g', limits(1)));
   m2t.axesContainers{end}.options = ...
-    addToStruct(m2t.axesContainers{end}.options, ...
+    addToOptions(m2t.axesContainers{end}.options, ...
                 [axis,'max'], sprintf('%.15g', limits(2)));
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
@@ -1155,21 +1176,21 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   matlabDefaultNumMinorTicks = 3;
   if ~isempty(ticks)
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     [axis,'tick'], sprintf('{%s}', ticks));
   end
   if ~isempty(tickLabels)
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     [axis,'ticklabels'], sprintf('{%s}', tickLabels));
   end
   if hasMinorTicks
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     [axis,'minorticks'], 'true');
       if m2t.cmdOpts.Results.strict
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         sprintf('minor %s tick num', axis), ...
                         sprintf('{%d}', matlabDefaultNumMinorTicks));
       end
@@ -1190,13 +1211,13 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
           % is defined. This is a restriction that comes with
           % TikZ nodes.
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         [axis, 'label style'], '{align=center}');
       end
       label = join(label,'\\[1ex]');
       %if isVisible(handle)
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         [axis, 'label'], sprintf('{%s}', label));
       %else
       %    m2t.axesContainers{end}.options{end+1} = ...
@@ -1210,13 +1231,13 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   hasGrid = false;
   if strcmp(get(handle, [upper(axis),'Grid']), 'on');
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     [axis, 'majorgrids'], []);
       hasGrid = true;
   end
   if strcmp(get(handle, [upper(axis),'MinorGrid']), 'on');
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     [axis, 'minorgrids'], []);
       hasGrid = true;
   end
@@ -1321,7 +1342,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
   % Check if any value is infinite/NaN. In that case, add appropriate option.
   if any(~isfinite(data(:)))
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
+        addToOptions(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
   end
 
   if ~isempty(zData)
@@ -1983,15 +2004,15 @@ function [m2t, str] = drawPatch(m2t, handle)
           %
           drawOptions{end+1} = 'mesh'; % or surf
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
           % Append upper and lower limit of the color mapping.
           clim = caxis;
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         'point meta min', sprintf('%.15g', clim(1)));
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         'point meta max', sprintf('%.15g', clim(2)));
           % Note:
           % Pgfplots can't currently use FaceColor and colormapped edge color
@@ -2013,7 +2034,7 @@ function [m2t, str] = drawPatch(m2t, handle)
 
   if any(~isfinite(xData(:))) || any(~isfinite(yData(:))) || any(~isfinite(zData(:)))
       m2t.axesContainers{end}.options = ...
-        addToStruct(m2t.axesContainers{end}.options, ...
+        addToOptions(m2t.axesContainers{end}.options, ...
                     'unbounded coords', 'jump');
   end
 
@@ -2186,7 +2207,7 @@ function [m2t, str] = drawImage(m2t, handle)
 
   % Make sure that the axes are still visible above the image.
   m2t.axesContainers{end}.options = ...
-    addToStruct(m2t.axesContainers{end}.options, ...
+    addToOptions(m2t.axesContainers{end}.options, ...
                 'axis on top', []);
 
   return;
@@ -2258,7 +2279,7 @@ function [m2t,env] = drawSurface(m2t, handle)
     dz = get(handle, 'ZData');
     if any(~isfinite(dx(:))) || any(~isfinite(dy(:))) || any(~isfinite(dz(:)))
         m2t.axesContainers{end}.options = ...
-          addToStruct(m2t.axesContainers{end}.options, ...
+          addToOptions(m2t.axesContainers{end}.options, ...
                       'unbounded coords', 'jump');
     end
 
@@ -2440,7 +2461,7 @@ function [m2t, str] = drawText(m2t, handle)
       if pos(1) < xlim(1) || pos(1) > xlim(2) ...
       || pos(2) < ylim(1) || pos(2) > ylim(2)
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         'clip', 'false');
       end
   elseif length(pos) == 3
@@ -2454,7 +2475,7 @@ function [m2t, str] = drawText(m2t, handle)
       || pos(2) < ylim(1) || pos(2) > ylim(2) ...
       || pos(3) < zlim(1) || pos(3) > zlim(2)
           m2t.axesContainers{end}.options = ...
-            addToStruct(m2t.axesContainers{end}.options, ...
+            addToOptions(m2t.axesContainers{end}.options, ...
                         'clip', 'false');
       end
   else
@@ -2809,10 +2830,13 @@ function [m2t, str] = drawBarseries(m2t, h)
               m2t.axesContainers{end}.stackedBarsPresent = true;
               bWFactor = get(h, 'BarWidth');
               % Add 'ybar stacked' to the containing axes environment.
-              m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                                 [barType,' stacked'], ...
-                                                 sprintf('bar width=%.15g%s', ...
-                                                         m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit)};
+              m2t.axesContainers{end}.options = ...
+                  addToOptions(m2t.axesContainers{end}.options, ...
+                               [barType,' stacked'], []);
+              m2t.axesContainers{end}.options = ...
+                  addToOptions(m2t.axesContainers{end}.options, ...
+                               'bar width', ...
+                               sprintf('%.15g%s', m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
               m2t.addedAxisOption = true;
           end
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2847,7 +2871,7 @@ function [m2t, str] = drawBarseries(m2t, h)
   % Add 'area legend' to the options as otherwise the legend indicators
   % will just highlight the edges.
   m2t.axesContainers{end}.options = ...
-    addToStruct(m2t.axesContainers{end}.options, 'area legend', []);
+    addToOptions(m2t.axesContainers{end}.options, 'area legend', []);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   str = [str, ...
@@ -2969,9 +2993,10 @@ function [m2t, str] = drawAreaSeries(m2t, h)
 
   if ~isfield(m2t, 'addedAreaOption') || isempty(m2t.addedAreaOption) || ~m2t.addedAreaOption
       % Add 'area style' to axes options.
-      m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
-                                         'area style', ...
-                                         'stack plots=y'};
+      m2t.axesContainers{end}.options = ...
+          addToOptions(m2t.axesContainers{end}.options, 'area style', []);
+      m2t.axesContainers{end}.options = ...
+          addToOptions(m2t.axesContainers{end}.options, 'stack plots', 'y');
       m2t.addedAreaOption = true;
   end
 
@@ -3080,7 +3105,9 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
   % TODO: Look into replacing this by something more 'local',
   % (see \pgfplotset{}).
   arrowStyle  = ['arrow',num2str(m2t.quiverId), '/.style={',arrowOptions,'}'];
-  m2t.tikzOptions = [m2t.tikzOptions, arrowStyle];
+  m2t.content.options = addToOptions(m2t.content.options,...
+                                     sprintf('arrow%d/.style', m2t.quiverId), ...
+                                     ['{', arrowOptions, '}']);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3091,6 +3118,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
                   XY)];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  return;
 end
 % =========================================================================
 function [m2t, str] = drawErrorBars(m2t, h)
@@ -3305,7 +3333,7 @@ end
 function axisOptions = getColorbarOptions(m2t, handle)
 
   % begin collecting axes options
-  axisOptions = {};
+  axisOptions = cell(0, 2);
   cbarOptions = {};
   cbarStyleOptions = {};
 
@@ -3381,7 +3409,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
             % is defined. This is a restriction that comes with
             % TikZ nodes.
             m2t.axesContainers{end}.options = ...
-              addToStruct(m2t.axesContainers{end}.options, ...
+              addToOptions(m2t.axesContainers{end}.options, ...
                           [axis, 'label style'], '{align=center}');
         end
         label = join(label,'\\[1ex]');
@@ -3398,24 +3426,27 @@ function axisOptions = getColorbarOptions(m2t, handle)
 
   % Merge them together in axisOptions.
   if isempty(cbarOptions)
-      axisOptions{end+1} = 'colorbar';
+      axisOptions = addToOptions(axisOptions, 'colorbar', []);
   else
       if length(cbarOptions) > 1
           userWarning(m2t, ...
                       'Pgfplots cannot deal with more than one colorbar option yet.');
       end
-      axisOptions{end+1} = ['colorbar ', cbarOptions{1}];
+      axisOptions = addToOptions(axisOptions, ...
+                                 ['colorbar ', cbarOptions{1}], []);
   end
 
   if ~isempty(cbarStyleOptions)
-      axisOptions{end+1} = ['colorbar style={', join(cbarStyleOptions, ','), '}'];
+      axisOptions = addToOptions(axisOptions, ...
+                                 'colorbar style', ...
+                                 ['{', join(cbarStyleOptions, ','), '}']);
   end
 
   % Append upper and lower limit of the colorbar.
   % TODO Use caxis not only for color bars.
   clim = caxis;
-  axisOptions{end+1} = sprintf('point meta min=%.15g', clim(1));
-  axisOptions{end+1} = sprintf('point meta max=%.15g', clim(2));
+  axisOptions = addToOptions(axisOptions, 'point meta min', sprintf('%.15g', clim(1)));
+  axisOptions = addToOptions(axisOptions, 'point meta max', sprintf('%.15g', clim(2)));
 
   % do _not_ handle colorbar's children
   return
@@ -3539,7 +3570,7 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
 
 end
 % =========================================================================
-function [m2t, lOpts] = getLegendOpts(m2t, handle)
+function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
 
   % Need to check that there's nothing inside visible before we
   % abandon this legend -- an invisible property of the parent just
@@ -3549,7 +3580,6 @@ function [m2t, lOpts] = getLegendOpts(m2t, handle)
       return
   end
 
-  lOpts = cell(0);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % handle legend location
   loc  = get(handle, 'Location');
@@ -3716,9 +3746,11 @@ function [m2t, lOpts] = getLegendOpts(m2t, handle)
   end
 
   if ~isempty(lStyle)
-      lOpts{end+1} = ['legend style={' join(lStyle,',') '}'];
+      key = 'legend style';
+      lOpts = join(lStyle,',');
   end
 
+  return;
 end
 % =========================================================================
 function [pTicks, pTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis)
@@ -4507,7 +4539,8 @@ function [plotOrder, plotNumber, alignmentOptions] = setOptionsRecursion(plotOrd
 
     if ~isempty(unprocessedChildren) % Are there unprocessed children?
         % Give these axes a name.
-        alignmentOptions(k).opts{end+1} = sprintf('name=plot%d', k);
+        alignmentOptions(k).opts = ...
+            addToOptions(alignmentOptions(k).opts, 'name', sprintf('plot%d', k));
     end
 
     if ~isempty(parent) % if a parent is given
@@ -4520,8 +4553,10 @@ function [plotOrder, plotNumber, alignmentOptions] = setOptionsRecursion(plotOrd
             refPos = cornerCode2pgfplotOption(C(parent,k));
 
             % add the option
-            alignmentOptions(k).opts{end+1} = ...
-                sprintf('at=(plot%d.%s), anchor=%s', parent, refPos, anchor);
+            alignmentOptions(k).opts = ...
+                addToOptions(alignmentOptions(k).opts, 'at', sprintf('(plot%d.%s)',  parent, refPos));
+            alignmentOptions(k).opts = ...
+                addToOptions(alignmentOptions(k).opts, 'anchor', anchor);
         end
     end
 
@@ -4679,7 +4714,7 @@ function printAll(env, fid)
     if isempty(env.options)
         fprintf(fid, '\\begin{%s}\n', env.name);
     else
-        fprintf(fid, '\\begin{%s}[%%\n%s\n]\n', env.name, join(env.options, sprintf(',\n')));
+        fprintf(fid, '\\begin{%s}[%%\n%s\n]\n', env.name, prettyprintOpts(env.options, sprintf(',\n')));
     end
 
     for item = env.content
@@ -5244,47 +5279,48 @@ function dims = pos2dims(pos)
   end
 end
 % =========================================================================
-function struct = addToStruct(struct, key, value)
+function opts = addToOptions(opts, key, value)
   % Adds a key-value pair to a struct and does some sanity-checking before.
 
-  fn = fieldnames(struct);
-  % Check if the field already exists.
-  for name = fn'
-      if strcmp(key, name)
+  % Make sure to convert the value to a char first.
+  value = char(value);
+
+  % Check if the key already exists.
+  for k = 1:size(opts,1)
+      if strcmp(opts{k,1}, key)
           % The key already exists in struct.
-          if strcmp(struct.(char(key)), value)
+          if strcmp(opts{k,2}, value)
               % The suggested value is the same as the one that's already
               % there. Do nothing.
               return;
           else
-              error('matlab2tikz:addToStruct', ...
+              error('matlab2tikz:addToOptions', ...
                     ['Trying to add (%s, %s) to struct, but it already ' ...
                     'contains the conflicting key-value pair (%s, %s).'], ...
-                    key, value, key, struct.(char(key)));
+                    key, value, key, opts{k,2});
           end
       end
   end
 
   % The key doesn't exist. Just add it.
-  struct.(key) = value;
+  opts = cat(1, opts, {key, value});
 
   return;
 end
 % =========================================================================
-function str = prettyprintStruct(struct)
+function str = prettyprintOpts(opts, sep)
 
   str = [];
 
-  fn = fieldnames(struct);
   c = {};
-  for key = fn'
-      if isempty(struct.(char(key)))
-          c{end+1} = sprintf('%s', char(key));
+  for k = 1:size(opts,1)
+      if isempty(opts{k,2})
+          c{end+1} = sprintf('%s', opts{k,1});
       else
-          c{end+1} = sprintf('%s=%s', char(key), struct.(char(key)));
+          c{end+1} = sprintf('%s=%s', opts{k,1}, opts{k,2});
       end
   end
-  str = sprintf(join(c, ',\n'));
+  str = join(c, sep);
   return;
 end
 % =========================================================================
