@@ -887,20 +887,10 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   %    return
   %end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % get scales
-  isXLog = strcmp(get(handle, 'XScale'), 'log');
-  isYLog = strcmp(get(handle, 'YScale'), 'log');
-  if m2t.currentAxesContain3dData
-      m2t.axesContainers{end}.name = 'axis';
-  elseif  ~isXLog && ~isYLog
-      m2t.axesContainers{end}.name = 'axis';
-  elseif isXLog && ~isYLog
-      m2t.axesContainers{end}.name = 'semilogxaxis';
-  elseif ~isXLog && isYLog
-      m2t.axesContainers{end}.name = 'semilogyaxis';
-  else
-      m2t.axesContainers{end}.name = 'loglogaxis';
-  end
+  % This used to discriminate between semilog{x,y}axis, loglog, and axis.
+  % Now, the log-scale is handled by the {x,y,z}mode argument, so just go for
+  % axis.
+  m2t.axesContainers{end}.name = 'axis';
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set alignment options
   if ~isempty(alignmentOptions.opts)
@@ -1157,6 +1147,13 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
                     [axis, ' dir'], 'reverse');
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  isAxisLog = strcmp(get(handle,[upper(axis),'Scale']), 'log');
+  if isAxisLog
+      m2t.axesContainers{end}.options = ...
+        addToOptions(m2t.axesContainers{end}.options, ...
+                     [axis,'mode'], 'log');
+  end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
   limits = get(handle, [upper(axis),'Lim']);
   m2t.axesContainers{end}.options = ...
@@ -1197,6 +1194,8 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis label
+  get(handle, [upper(axis),'Label'])
+  get(get(handle, [upper(axis),'Label']), 'String')
   axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
   if ~isempty(axisLabel)
       axisLabelInterpreter = ...

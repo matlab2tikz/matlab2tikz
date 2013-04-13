@@ -52,6 +52,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @colorbarLogplot     , ...
                            @legendplot          , ...
                            @legendplotBoxoff    , ...
+                           @moreLegends         , ...
                            @zoom                , ...
                            @quiveroverlap       , ...
                            @quiverplot          , ...
@@ -531,6 +532,19 @@ function [description, extraOpts] = legendplotBoxoff ()
   legend boxoff;
 
   description = 'Test inserting of legends.';
+  extraOpts = {};
+
+end
+% =========================================================================
+function [description, extraOpts] = moreLegends()
+
+  x = 0:.1:7;
+  y1 = sin(x);
+  y2 = cos(x);
+  [ax,h1,h2] = plotyy(x,y1,x,y2);
+  legend([h1;h2],'Sine','Cosine');
+
+  description = 'More legends.';
   extraOpts = {};
 
 end
@@ -1308,7 +1322,8 @@ function [description, extraOpts] = surfPlot2()
         zeros(5,5) zeros(5,5)
       ];
 
-  surf( abs( fftshift(fft2(z)) ) )
+  surf(abs(fftshift(fft2(z))) + 1);
+  set(gca,'ZScale','log');
 
   legend( 'legendary', 'Location', 'NorthEastOutside' );
 
