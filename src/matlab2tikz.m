@@ -1196,8 +1196,6 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis label
-  get(handle, [upper(axis),'Label'])
-  get(get(handle, [upper(axis),'Label']), 'String')
   axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
   if ~isempty(axisLabel)
       axisLabelInterpreter = ...
@@ -3754,7 +3752,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
   return;
 end
 % =========================================================================
-function [pTicks, pTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis)
+function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis)
   % Return axis tick marks Pgfplots style. Nice: Tick lengths and such
   % details are taken care of by Pgfplots.
 
@@ -3762,45 +3760,41 @@ function [pTicks, pTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis)
       error('Illegal axis specifier ''%s''.', axis);
   end
 
-  if m2t.cmdOpts.Results.interpretTickLabelsAsTex
-      labelInterpreter = 'tex';
-  else
-      % By default, MATLAB never interprets tick labels as TeX
-      labelInterpreter = 'none';
-  end
-
-  % Create the keywords, e.g., 'XTickLabel', 'XScale', etc., that are used to
-  % extract the information from the figure.
-  keywordTickLabel = [upper(axis), 'TickLabel'];
-  keywordTickMode  = [upper(axis), 'TickMode'];
-  keywordTick      = [upper(axis), 'Tick'];
-  keywordScale     = [upper(axis), 'Scale'];
-  keywordMinorTick = [upper(axis), 'MinorTick'];
-
-  tickLabels = cellstr(get(handle, keywordTickLabel));
-  for k = 1:length(tickLabels)
-      str = prettyPrint(m2t, tickLabels{k}, labelInterpreter);
-      tickLabels{k} = join(str, '\\');
-  end
+  keywordTickMode = [upper(axis), 'TickMode'];
   tickMode = get(handle, keywordTickMode);
-  if strcmp(tickMode,'auto') && ~m2t.cmdOpts.Results.strict
-      % If the ticks are set automatically, and strict conversion is
-      % not required, then let Pgfplots take care of the ticks.
-      % In most cases, this looks a lot better anyway.
-      pTicks = [];
-      if length(tickLabels) == 1 && isempty(tickLabels{1})
-          pTickLabels = '\empty';
-      else
-          pTickLabels = [];
+  keywordTick = [upper(axis), 'Tick'];
+  ticks = get(handle, keywordTick);
+  if isempty(ticks)
+      % If no ticks are present, we need to enforce this in any case.
+      pgfTicks = '\empty';
+  else
+      if strcmp(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict
+          % If the ticks are set automatically, and strict conversion is
+          % not required, then let Pgfplots take care of the ticks.
+          % In most cases, this looks a lot better anyway.
+          pgfTicks = [];
+      else % strcmp(tickMode,'manual') || m2t.cmdOpts.Results.strict
+          pgfTicks = join(cellstr(num2str(ticks(:))), ', ');
       end
-  else % strcmp(zTickMode,'manual') || m2t.cmdOpts.Results.strict
-      ticks = get(handle, keywordTick);
+  end
+
+  keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
+  tickLabelMode = get(handle, keywordTickLabelMode);
+  keywordTickLabel = [upper(axis), 'TickLabel'];
+  tickLabels = cellstr(get(handle, keywordTickLabel));
+  if strcmp(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict
+      pgfTickLabels = [];
+  else % strcmp(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
+      keywordScale = [upper(axis), 'Scale'];
       isAxisLog = strcmp(get(handle,keywordScale), 'log');
-      [pTicks, pTickLabels] = ...
+      [pgfTicks, pgfTickLabels] = ...
           matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isAxisLog);
   end
+
+  keywordMinorTick = [upper(axis), 'MinorTick'];
   hasMinorTicks = strcmp(get(handle, keywordMinorTick), 'on');
 
+  return;
 end
 % =========================================================================
 function [pTicks, pTickLabels] = ...
