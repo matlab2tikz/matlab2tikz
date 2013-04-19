@@ -42,8 +42,8 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
 %
-%   MATLAB2TIKZ('extraTikzpictureSettings',CHAR or CELLCHAR,...)
-%   explicitly adds extra settings to the tikzpicture environment. (default: [])
+%   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
+%   explicitly adds extra options to the tikzpicture environment. (default: [])
 %
 %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
 %
@@ -234,7 +234,7 @@ function matlab2tikz(varargin)
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraAxisOptions', {}, @isCellOrChar);
 
   % extra tikzpicture settings
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraTikzpictureSettings', {}, @isCellOrChar);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraTikzpictureOptions', {}, @isCellOrChar);
 
   % file encoding
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'encoding' , '', @ischar);
@@ -525,15 +525,15 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   m2t.content.name = 'tikzpicture';
 
   % Add custom TikZ options if any given.
-  if ~isempty(m2t.cmdOpts.Results.extraTikzpictureSettings)
-      if ischar(m2t.cmdOpts.Results.extraTikzpictureSettings)
-          m2t.cmdOpts.Results.extraTikzpictureSettings = ...
-             {m2t.cmdOpts.Results.extraTikzpictureSettings};
+  if ~isempty(m2t.cmdOpts.Results.extraTikzpictureOptions)
+      if ischar(m2t.cmdOpts.Results.extraTikzpictureOptions)
+          m2t.cmdOpts.Results.extraTikzpictureOptions = ...
+             {m2t.cmdOpts.Results.extraTikzpictureOptions};
       end
-      for k = 1:length(m2t.cmdOpts.Results.extraTikzpictureSettings)
+      for k = 1:length(m2t.cmdOpts.Results.extraTikzpictureOptions)
           m2t.content.options = ...
               addToOptions(m2t.content.options, ...
-                           m2t.cmdOpts.Results.extraTikzpictureSettings{k}, []);
+                           m2t.cmdOpts.Results.extraTikzpictureOptions{k}, []);
       end
   end
 
