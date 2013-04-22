@@ -207,8 +207,8 @@ function [description, extraOpts] = plain_cos()
   fplot( @cos, [0,2*pi] );
 
   % add some minor ticks
-  set( gca, 'XMinorTick', 'on' );
-  set( gca, 'YTick', [] );
+  set(gca, 'XMinorTick', 'on');
+  set(gca, 'YTick', []);
 
   % Adjust the aspect ratio when in MATLAB(R) or Octave >= 3.4.
   env = getEnvironment();
@@ -260,8 +260,13 @@ end
 % =========================================================================
 function [description, extraOpts] = markerSizes()
   hold on;
+
+  h = fill([1 1 2 2],[1 2 2 1],'r');
+  set(h,'LineWidth',10);
+
   plot([0],[0],'go','Markersize',14,'LineWidth',10)
   plot([0],[0],'bo','Markersize',14,'LineWidth',1)
+
   description = 'Marker sizes.';
   extraOpts = {};
 end
@@ -270,9 +275,10 @@ function [description, extraOpts] = sine_with_annotation ()
 
   x = -pi:.1:pi;
   y = sin(x);
-  plot(x,y);
+  h = plot(x,y);
   set(gca,'XTick',-pi:pi/2:pi);
   set(gca,'XTickLabel',{'-pi','-pi/2','0','pi/2','pi'});
+
 
   xlabel('-\pi \leq \Theta \leq \pi');
   ylabel('sin(\Theta)');
@@ -282,7 +288,7 @@ function [description, extraOpts] = sine_with_annotation ()
 
   set(findobj(gca,'Type','line','Color',[0 0 1]),...
       'Color','red',...
-      'LineWidth',2)
+      'LineWidth',10);
 
   description = [ 'Plot of the sine function. '                        ,...
                   'Pay particular attention to how titles and annotations are treated.' ];
