@@ -45,6 +45,9 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
 %   explicitly adds extra options to the tikzpicture environment. (default: [])
 %
+%   MATLAB2TIKZ('extraTikzpictureCode',CHAR or CELLCHAR,...)
+%   explicitly adds extra code right after \begin{tikzpicture}. (default: [])
+%
 %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
 %
 %   MATLAB2TIKZ('maxChunkLength',INT,...) sets maximum number of data points
@@ -235,6 +238,9 @@ function matlab2tikz(varargin)
 
   % extra tikzpicture settings
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraTikzpictureOptions', {}, @isCellOrChar);
+
+  % extra tikzpicture code
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraTikzpictureCode', {}, @isCellOrChar);
 
   % file encoding
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'encoding' , '', @ischar);
@@ -1977,6 +1983,12 @@ function [m2t, str] = drawPatch(m2t, handle)
   % gather the draw options
   drawOptions = cell(0);
 
+  % line width
+  lineStyle = get(handle, 'LineStyle');
+  lineWidth = get(handle, 'LineWidth');
+  lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+  drawOptions = [drawOptions, lineOptions];
+
   % fill color
   faceColor = get(handle, 'FaceColor');
   if ~strcmp(faceColor, 'none')
@@ -2917,9 +2929,9 @@ function [m2t, str] = drawStemseries(m2t, h)
   [m2t, markerOptions] = getMarkerOptions(m2t, h);
 
   drawOptions = ['ycomb',                      ...
-                   sprintf('color=%s', plotColor),         ... % color
-                   lineOptions, ...
-                   markerOptions];
+                 sprintf('color=%s', plotColor),         ... % color
+                 lineOptions, ...
+                 markerOptions];
 
   % insert draw options
   drawOpts =  join(drawOptions, ',');
@@ -2963,9 +2975,9 @@ function [m2t, str] = drawStairSeries(m2t, h)
   [m2t, markerOptions] = getMarkerOptions(m2t, h);
 
   drawOptions = ['const plot',         ...
-                   sprintf('color=%s', plotColor), ... % color
-                   lineOptions, ...
-                   markerOptions];
+                 sprintf('color=%s', plotColor), ... % color
+                 lineOptions, ...
+                 markerOptions];
 
   % insert draw options
   drawOpts =  join(drawOptions, ',');
