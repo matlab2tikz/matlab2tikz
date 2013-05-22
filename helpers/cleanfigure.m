@@ -1,14 +1,10 @@
-function pointReduction2d(minimumPointsDistance)
-%   MATLAB2TIKZ('minimumPointsDistance',DOUBLE,...) gives a minimum distance at
-%   which two nodes are considered different. This can help with plots that
-%   contain a large amount of data points not all of which need to be plotted.
-%   (default: 0.0)
+function cleanfigure()
+%   CLEANFIGURE() removes the unnecessary objects from your MATLAB plot
+%   to give you a better experience with matlab2tikz.
 
-%POINTREDUCTION2D    Reduce the number of data points in the plot.
-%   POINTREDUCTION2D(minimumPointDistance) reduces the number of data points in the current plot
-%   POINTREDUCTION2D comes with several options that can be combined at will.
+%   CLEANFIGURE comes with several options that can be combined at will.
 %
-%   POINTREDUCTION2D('figurehandle',FIGUREHANDLE,...) explicitly specifies the
+%   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
 %   Example
@@ -43,15 +39,42 @@ function pointReduction2d(minimumPointsDistance)
 %   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %   POSSIBILITY OF SUCH DAMAGE.
 
+  % Recurse down the tree of plot objects and clean up the leaves.
+  recursiveCleanup(gcf);
+  return;
+end
+% =========================================================================
+function recursiveCleanup(handle)
+
+  children = get(handle, 'Children');
+  if ~isempty(children)
+      for child = children
+          recursiveCleanup(child);
+      end
+  else
+      type = get(handle, 'Type');
+      if strcmp(type, 'line')
+          pointReduction(handle);
+      end
+  end
+
+  return;
+end
+% =========================================================================
+function pointReduction(handle)
+  % Reduce the number of data points in the line handle.
+  % Given a minimum distance at which two nodes are considered different,
+  % this can help with plots that contain a large amount of data points not
+  % all of which need to be plotted.
+  %
+  minimumPointsDistance = 1.0e-10;
+
   if ( abs(minimumPointsDistance) < 1.0e-15 )
       % bail out early
       return
   end
 
-  axesHandle = gca;
-  handle = get(gca, 'Children');
-
-  % Extract the data from the current plot.
+  % Extract the data from the current line handle.
   data = [get(handle, 'XData')', get(handle, 'YData')'];
 
   % Generates a mask which is true for the first point, and all
@@ -60,8 +83,8 @@ function pointReduction2d(minimumPointsDistance)
   n = size(data, 1);
 
   % Get info about log scaling.
-  isXlog = strcmp(get(axesHandle, 'XScale'), 'log');
-  isYlog = strcmp(get(axesHandle, 'YScale'), 'log');
+  isXlog = strcmp(get(gca, 'XScale'), 'log');
+  isYlog = strcmp(get(gca, 'YScale'), 'log');
 
   mask = false(n, 1);
 
