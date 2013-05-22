@@ -44,29 +44,34 @@ function cleanfigure()
   return;
 end
 % =========================================================================
-function recursiveCleanup(handle)
+function recursiveCleanup(h)
 
-  children = get(handle, 'Children');
+  % Don't try to be smart about quiver groups.
+  if strcmp(class(handle(h)), 'specgraph.quivergroup')
+      return;
+  end
+
+  children = get(h, 'Children');
   if ~isempty(children)
       for child = children(:)'
           recursiveCleanup(child);
       end
   else
-      type = get(handle, 'Type');
+      type = get(h, 'Type');
       if strcmp(type, 'line')
-          pointReduction(handle);
+          pointReduction(h);
       elseif strcmp(type, 'text')
           % Check if text is inside bounds by checking if the Extent rectangle
           % and the axes box overlap.
           xlim = get(gca, 'XLim');
           ylim = get(gca, 'YLim');
-          extent = get(handle, 'Extent');
+          extent = get(h, 'Extent');
           extent(3:4) = extent(1:2) + extent(3:4);
           overlap = xlim(1) < extent(3) && xlim(2) > extent(1) ...
-                 && ylim(2) < extent(4) && ylim(4) > extent(2);
+                 && ylim(1) < extent(4) && ylim(2) > extent(2);
           if ~overlap
               % Artificially disable visibility. m2t will check and skip.
-              set(handle, 'Visible', 'off');
+              set(h, 'Visible', 'off');
           end
       end
   end

@@ -135,44 +135,6 @@ function matlab2tikz_acidtest( varargin )
       gen_file = sprintf( 'data/test%d-converted.tex', indices(k) );
 
       tic;
-
-      % now, test matlab2tikz
-      try
-          cleanfigure;
-          matlab2tikz('filename', gen_file, ...
-                      'showInfo', false, ...
-                      'checkForUpdates', false, ...
-                      'relativePngPath', '../data/', ...
-                      'width', '\figurewidth', ...
-                      extraOpts{:} ...
-                      );
-      catch %#ok
-          e = lasterror('reset'); %#ok
-          if ~isempty( e.message )
-              tikzerrmsg{k} = [ tikzerrmsg{k}, sprintf( 'error: %s\n', e.message ) ];
-          end
-          if ~isempty( e.identifier )
-              tikzerrmsg{k} = [ tikzerrmsg{k}, sprintf( 'error: %s\n', e.identifier ) ];
-          end
-          if ~isempty( e.stack )
-              tikzerrmsg{k} = [ tikzerrmsg{k}, sprintf('error: called from:\n') ];
-          end
-          for j = 1:length(e.stack)
-              tikzerrmsg{k} = [ tikzerrmsg{k}, ...
-                                sprintf( 'error:   %s at line %d, in function %s\n', ...
-                                         e.stack(j).file, e.stack(j).line, e.stack(j).name ) ];
-          end
-          % When displaying the error message in MATLAB, all backslashes
-          % have to be replaced by two backslashes. This must not, however,
-          % be applied constantly as the string that's saved to the LaTeX
-          % output must have only one backslash.
-          if strcmp( env, 'MATLAB' )
-              fprintf( stderr, strrep( tikzerrmsg{k}, '\', '\\' ) );
-          else
-              fprintf( stderr, tikzerrmsg{k} );
-          end
-          tikzerror(k) = true;
-      end
       % Save reference output as PDF
       try
           switch env
@@ -233,6 +195,43 @@ function matlab2tikz_acidtest( varargin )
               fprintf( stderr, pdferrmsg{k} );
           end
           pdferror(k) = true;
+      end
+      % now, test matlab2tikz
+      try
+          cleanfigure;
+          matlab2tikz('filename', gen_file, ...
+                      'showInfo', false, ...
+                      'checkForUpdates', false, ...
+                      'relativePngPath', '../data/', ...
+                      'width', '\figurewidth', ...
+                      extraOpts{:} ...
+                      );
+      catch %#ok
+          e = lasterror('reset'); %#ok
+          if ~isempty( e.message )
+              tikzerrmsg{k} = [ tikzerrmsg{k}, sprintf( 'error: %s\n', e.message ) ];
+          end
+          if ~isempty( e.identifier )
+              tikzerrmsg{k} = [ tikzerrmsg{k}, sprintf( 'error: %s\n', e.identifier ) ];
+          end
+          if ~isempty( e.stack )
+              tikzerrmsg{k} = [ tikzerrmsg{k}, sprintf('error: called from:\n') ];
+          end
+          for j = 1:length(e.stack)
+              tikzerrmsg{k} = [ tikzerrmsg{k}, ...
+                                sprintf( 'error:   %s at line %d, in function %s\n', ...
+                                         e.stack(j).file, e.stack(j).line, e.stack(j).name ) ];
+          end
+          % When displaying the error message in MATLAB, all backslashes
+          % have to be replaced by two backslashes. This must not, however,
+          % be applied constantly as the string that's saved to the LaTeX
+          % output must have only one backslash.
+          if strcmp( env, 'MATLAB' )
+              fprintf( stderr, strrep( tikzerrmsg{k}, '\', '\\' ) );
+          else
+              fprintf( stderr, tikzerrmsg{k} );
+          end
+          tikzerror(k) = true;
       end
 
       % Make underscores in function names TeX compatible
