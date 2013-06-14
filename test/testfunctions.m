@@ -82,6 +82,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @legendsubplots      , ...
                            @legendsubplots2     , ...
                            @bodeplots           , ...
+                           @rlocusPlot          , ...
                            @mandrillImage       , ...
                            @besselImage         , ...
                            @clownImage          , ...
@@ -1051,6 +1052,15 @@ function [description, extraOpts] = bodeplots()
   g = tf([1 0.1 7.5],[1 0.12 9 0 0]);
   bode(g)
   description = 'Bode diagram of frequency response.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = rlocusPlot()
+
+  s=tf('s');
+  rlocus(tf([1 1],[4 3 1]))
+
+  description = 'rlocus plot.';
   extraOpts = {};
 end
 % =========================================================================

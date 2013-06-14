@@ -11,7 +11,7 @@ function cleanfigure()
 %      x = -pi:pi/1000:pi;
 %      y = tan(sin(x)) - sin(tan(x));
 %      plot(x,y,'--rs');
-%      pointReduction2d(0.1);
+%      coarsenLine2d(0.1);
 %
 
 %   Copyright (c) 2013, Nico Schlömer <nico.schloemer@gmail.com>
@@ -46,8 +46,13 @@ end
 % =========================================================================
 function recursiveCleanup(h)
 
+  % Skip invisible objects.
+  if ~strcmp(get(h,'Visible'), 'on')
+      return;
+  end
+
   % Don't try to be smart about quiver groups.
-  if strcmp(class(handle(h)), 'specgraph.quivergroup')
+  if isa(handle(h), 'specgraph.quivergroup')
       return;
   end
 
@@ -57,9 +62,14 @@ function recursiveCleanup(h)
           recursiveCleanup(child);
       end
   else
+      % We're in a leaf, so apply all the fancy simplications.
       type = get(h, 'Type');
       if strcmp(type, 'line')
-          pointReduction(h);
+          % Move some points closer to the box to avoid TeX:DimensionTooLarge
+          % errors. This may involve inserting extra points.
+          movePointsCloser(h);
+          % Don't be too precise.
+          coarsenLine(h, 1.0e-10);
       elseif strcmp(type, 'text')
           % Check if text is inside bounds by checking if the Extent rectangle
           % and the axes box overlap.
@@ -79,14 +89,12 @@ function recursiveCleanup(h)
   return;
 end
 % =========================================================================
-function pointReduction(handle)
+function coarsenLine(handle, minimumPointsDistance)
   % Reduce the number of data points in the line handle.
   % Given a minimum distance at which two nodes are considered different,
   % this can help with plots that contain a large amount of data points not
   % all of which need to be plotted.
   %
-  minimumPointsDistance = 1.0e-10;
-
   if ( abs(minimumPointsDistance) < 1.0e-15 )
       % bail out early
       return
@@ -94,6 +102,10 @@ function pointReduction(handle)
 
   % Extract the data from the current line handle.
   data = [get(handle, 'XData')', get(handle, 'YData')'];
+
+  if isempty(data)
+      return;
+  end
 
   % Generates a mask which is true for the first point, and all
   % subsequent points which have a greater norm2-distance from
@@ -131,6 +143,153 @@ function pointReduction(handle)
   % Set the new (masked) data.
   set(handle, 'XData', data(mask, 1));
   set(handle, 'YData', data(mask, 2));
+
+end
+% =========================================================================
+function movePointsCloser(handle)
+  % Move all points outside a box much larger than the visible one
+  % to the boundary of that box and make sure that lines in the visible
+  % box are preserved. This typically involved replacing one point by
+  % two new ones.
+
+  % Extract the data from the current line handle.
+  data = [get(handle, 'XData')', get(handle, 'YData')'];
+
+%get(handle, 'ZData')
+%data
+
+  xlim = get(gca, 'XLim');
+  ylim = get(gca, 'YLim');
+
+  xWidth = xlim(2) - xlim(1);
+  yWidth = ylim(2) - ylim(1);
+  extendFactor = 20;
+  largeXLim = xlim + extendFactor * [-xWidth, xWidth];
+  largeYLim = ylim + extendFactor * [-yWidth, yWidth];
+
+  % Get which points are in an extended box (the limits of which
+  % don't exceed TeX's memory).
+  dataIsInLargeBox = isInBox(data(:,1:2), ...
+                             largeXLim, largeYLim);
+
+  % Loop through all points which are to be included in the plot yet do not
+  % fit into the extended box, and gather the points by which they are to be
+  % replaced.
+  replaceIndices = find(~dataIsInLargeBox)';
+  m = length(replaceIndices);
+  r = cell(m, 1);
+  for k = 1:m
+      i = replaceIndices(k);
+      r{k} = [];
+      if i > 1 && all(isfinite(data(i-1,:)))
+          newPoint = moveToBox(data(i,:), data(i-1,:), largeXLim, largeYLim);
+          % Don't bother if the point is inf:
+          % There's no intersection with the large box, so even the
+          % connection between the two after they have been moved
+          % won't be probably be visible.
+          if all(isfinite(newPoint))
+              r{k} = [r{k}; newPoint];
+          end
+      end
+      if i < size(data,1) && all(isfinite(data(i+1,:)))
+          newPoint = moveToBox(data(i,:), data(i+1,:), largeXLim, largeYLim);
+          % Don't bother if the point is inf:
+          % There's no intersection with the large box, so even the
+          % connection between the two after they have been moved
+          % won't be probably be visible.
+          if all(isfinite(newPoint))
+              r{k} = [r{k}; newPoint];
+          end
+      end
+  end
+
+  % Insert all r{k}{:} at replaceIndices[k].
+  dataNew = [];
+  lastReplIndex = 0;
+  for k = 1:m
+     dataNew = [dataNew; ...
+                data(lastReplIndex+1:replaceIndices(k)-1,:);...
+                r{k}];
+     lastReplIndex = replaceIndices(k);
+  end
+  dataNew = [dataNew; ...
+             data(lastReplIndex+1:end,:)];
+
+  % Set the new (masked) data.
+  set(handle, 'XData', dataNew(:,1));
+  set(handle, 'YData', dataNew(:,2));
+
+  return;
+end
+% =========================================================================
+function xNew = moveToBox(x, xRef, xlim, ylim)
+  % Takes a box defined by xlim, ylim, one point x and a reference point
+  % xRef.
+  % Returns the point xNew that sits on the line segment between x and xRef
+  % *and* on the box. If several such points exist, take the closest one
+  % to x.
+
+  % Find out with which border the line x---xRef intersects, and determine
+  % the smallest parameter alpha such that x + alpha*(xRef-x)
+  % sits on the boundary.
+  minAlpha = inf;
+  % left boundary:
+  lambda = crossLines(x, xRef, [xlim(1);ylim(1)], [xlim(1);ylim(2)]);
+  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
+      minAlpha = lambda(1);
+  end
+
+  % bottom boundary:
+  lambda = crossLines(x, xRef, [xlim(1);ylim(1)], [xlim(2);ylim(1)]);
+  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
+      minAlpha = lambda(1);
+  end
+
+  % right boundary:
+  lambda = crossLines(x, xRef, [xlim(2);ylim(1)], [xlim(2);ylim(2)]);
+  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
+      minAlpha = lambda(1);
+  end
+
+  % top boundary:
+  lambda = crossLines(x, xRef, [xlim(1);ylim(2)], [xlim(2);ylim(2)]);
+  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
+      minAlpha = lambda(1);
+  end
+
+  % create the new point
+  xNew = x + minAlpha*(xRef-x);
+end
+% =========================================================================
+function out = isInBox(data, xLim, yLim)
+
+  out = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
+      & data(:,2) > yLim(1) & data(:,2) < yLim(2);
+
+end
+% =========================================================================
+function lambda = crossLines(X1, X2, X3, X4)
+  % Given four points X_k=(x_k,y_k), k\in{1,2,3,4}, and the two lines defined
+  % by those,
+  %
+  %  L1(lambda) = X1 + lambda (X2 - X1)
+  %  L2(lambda) = X3 + lambda (X4 - X3)
+  %
+  % returns the lambda for which they intersect (and Inf if they are parallel).
+  % Technically, one needs to solve the 2x2 equation system
+  %
+  %   x1 + lambda1 (x2-x1)  =  x3 + lambda2 (x4-x3)
+  %   y1 + lambda1 (y2-y1)  =  y3 + lambda2 (y4-y3)
+  %
+  % for lambda and mu.
+
+  rhs = X3(:) - X1(:);
+  % Divide by det even if it's 0: Infs are returned.
+  % A = [X2-X1, -(X4-X3)];
+  detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1));
+  invA = [-(X4(2)-X3(2)), X4(1)-X3(1);...
+          -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
+  lambda = invA * rhs;
 
 end
 % =========================================================================

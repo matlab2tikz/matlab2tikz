@@ -245,6 +245,9 @@ function matlab2tikz(varargin)
   % file encoding
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'encoding' , '', @ischar);
 
+  % floating point number precision
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'floatFormat', '%.15g', @ischar);
+
   % Maximum chunk length.
   % TeX parses files line by line with a buffer of size buf_size. If the
   % plot has too many data points, pdfTeX's buffer size may be exceeded.
@@ -305,6 +308,10 @@ function matlab2tikz(varargin)
                        'strings please set the parameter ''parseStrings'' to false.\n', ...
                        '==========================================================================']);
   end
+
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % shortcut
+  m2t.ff = m2t.cmdOpts.Results.floatFormat;
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add global elements
@@ -549,7 +556,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
       for k = 1:length(m2t.extraRgbColorNames)
           % make sure to append with '%' to avoid spacing woes
           m2t.content.colors = [m2t.content.colors, ...
-                                sprintf('\\definecolor{%s}{rgb}{%.15g,%.15g,%.15g}%%\n', ...
+                                sprintf(['\\definecolor{%s}{rgb}{', m2t.ff, ',', m2t.ff, ',', m2t.ff,'}%%\n'], ...
                                         m2t.extraRgbColorNames{k}', m2t.extraRgbColorSpecs{k})];
       end
       m2t.content.colors = [m2t.content.colors sprintf('\n')];
@@ -568,7 +575,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
                     '\\begin{document}\n']);
   end
   % printAll() handles the actual figure plotting.
-  printAll(m2t.content, fid);
+  printAll(m2t, m2t.content, fid);
   if m2t.cmdOpts.Results.standalone
       fprintf(fid, '\n\\end{document}');
   end
@@ -693,7 +700,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
           % We also need a legend alignment option to make multiline
           % legend entries work. This is added by default in getLegendOpts().
           str = [str, ...
-                 sprintf('\\addlegendentry{%s};\n\n', join(c, '\\'))]; %#ok
+                 sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))]; %#ok
       end
 
       % append the environment
@@ -798,7 +805,8 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
           dim.x.unit = 'in';
       end
       m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, 'width', sprintf('%.15g%s', dim.x.value, dim.x.unit));
+        addToOptions(m2t.axesContainers{end}.options, 'width', ...
+            sprintf([m2t.ff, '%s'], dim.x.value, dim.x.unit));
   end
   if dim.y.unit(1)=='\' && dim.y.value==1.0
       % only return \figureheight instead of 1.0\figureheight
@@ -812,7 +820,8 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
           dim.y.unit = 'in';
       end
       m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, 'height', sprintf('%.15g%s', dim.y.value, dim.y.unit));
+        addToOptions(m2t.axesContainers{end}.options, 'height', ...
+                     sprintf([m2t.ff, '%s'], dim.y.value, dim.y.unit));
   end
   % Add the physical dimension of one unit of length in the coordinate system.
   % This is used later on to translate lenghts to physical units where
@@ -849,7 +858,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   if m2t.currentAxesContain3dData
       m2t.axesContainers{end}.options = ...
         addToOptions(m2t.axesContainers{end}.options, ...
-                    'view', sprintf('{%.15g}{%.15g}', get(handle, 'View')));
+                    'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], get(handle, 'View')));
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % the following is general MATLAB behavior
@@ -926,7 +935,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
             addToOptions(m2t.axesContainers{end}.options, ...
                         'title style', '{align=center}');
       end
-      title = join(title, '\\[1ex]');
+      title = join(m2t, title, '\\[1ex]');
       m2t.axesContainers{end}.options = ...
         addToOptions(m2t.axesContainers{end}.options, ...
                     'title', sprintf('{%s}', title));
@@ -944,7 +953,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
                          'axis x line*', 'top');
       else
           error('matlab2tikz:drawAxes', ...
-                sprintf('Illegal axis location ''%s''.', xloc));
+                'Illegal axis location ''%s''.', xloc);
       end
   else % box off
       m2t.axesContainers{end}.options = ...
@@ -961,7 +970,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
                          'axis y line*', 'right');
       else
           error('matlab2tikz:drawAxes', ...
-                sprintf('Illegal axis location ''%s''.', yloc));
+                'Illegal axis location ''%s''.', yloc);
       end
   else % box off
       m2t.axesContainers{end}.options = ...
@@ -1167,10 +1176,10 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   limits = get(handle, [upper(axis),'Lim']);
   m2t.axesContainers{end}.options = ...
     addToOptions(m2t.axesContainers{end}.options, ...
-                [axis,'min'], sprintf('%.15g', limits(1)));
+                [axis,'min'], sprintf(m2t.ff, limits(1)));
   m2t.axesContainers{end}.options = ...
     addToOptions(m2t.axesContainers{end}.options, ...
-                [axis,'max'], sprintf('%.15g', limits(2)));
+                [axis,'max'], sprintf(m2t.ff, limits(2)));
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
   [ticks, tickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis);
@@ -1220,7 +1229,7 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
             addToOptions(m2t.axesContainers{end}.options, ...
                         [axis, 'label style'], '{align=center}');
       end
-      label = join(label,'\\[1ex]');
+      label = join(m2t, label,'\\[1ex]');
       %if isVisible(handle)
           m2t.axesContainers{end}.options = ...
             addToOptions(m2t.axesContainers{end}.options, ...
@@ -1311,7 +1320,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
   if strcmp(get(handle, 'Tag'), 'zplane_unitcircle')
        % Draw unit circle and axes.
        % TODO Don't hardcode "10".
-       opts = join(drawOptions, ',');
+       opts = join(m2t, drawOptions, ',');
        str = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts),...
               sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
               sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
@@ -1354,9 +1363,9 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
   if ~isempty(zData)
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
       str = [str, ...
-             sprintf(['\\addplot3 [\n', join(drawOptions, ',\n'), ']\n']), ...
+             sprintf(['\\addplot3 [\n', join(m2t, drawOptions, ',\n'), ']\n']), ...
              sprintf('table[row sep=crcr] {\n'), ...
-             sprintf('%.15g %.15g %.15g\\\\\n', data'), ...
+             sprintf([m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'], data'), ...
              sprintf('};\n')];
 
       m2t.currentAxesContain3dData = true;
@@ -1374,12 +1383,12 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
           %if ~isempty(m2t.legendHandles) && (~m2t.currentHandleHasLegend || k < length(dataCell))
           if ~m2t.currentHandleHasLegend || k < length(dataCell)
               % No legend entry found. Don't include plot in legend.
-              opts = ['\n', join({drawOptions{:}, 'forget plot'}, ',\n'), '\n'];
+              opts = ['\n', join(m2t, {drawOptions{:}, 'forget plot'}, ',\n'), '\n'];
           else
-              opts = ['\n', join(drawOptions, ',\n'), '\n'];
+              opts = ['\n', join(m2t, drawOptions, ',\n'), '\n'];
           end
           str = [str, ...
-                 plotLine2d(opts, dataCell{k})];
+                 plotLine2d(m2t, opts, dataCell{k})];
       end
   end
 
@@ -1401,38 +1410,39 @@ function [m2t, str] = addLabel(m2t)
 
 end
 % =========================================================================
-function str = plotLine2d(opts, data)
+function str = plotLine2d(m2t, opts, data)
 
-    str = [];
+  str = [];
 
-    % check if the *optional* argument 'yDeviation' was given
-    errorbarMode = (size(data,2) == 3);
+  % check if the *optional* argument 'yDeviation' was given
+  errorbarMode = (size(data,2) == 3);
 
-    str = [str, ...
-            sprintf(['\\addplot [',opts,']\n'])];
-    if errorbarMode
-        str = [str, ...
-                sprintf('plot [error bars/.cd, y dir = both, y explicit]\n')];
-    end
+  str = [str, ...
+          sprintf(['\\addplot [',opts,']\n'])];
+  if errorbarMode
+      str = [str, ...
+             sprintf('plot [error bars/.cd, y dir = both, y explicit]\n')];
+  end
 
-    % Convert to string array then cell to call sprintf once (and no loops).
-    if errorbarMode
-        dataType = 'coordinates';
-        str_data = sprintf('(%.15g,%.15g) +- (0.0,%.15g)', data');
-    else
-        dataType = 'table[row sep=crcr]';
-        str_data = sprintf('%.15g %.15g\\\\\n', data');
-        %dataType = 'coordinates';
-        %str_data = sprintf('(%.15g, %.15g)', data');
-    end
+  % Convert to string array then cell to call sprintf once (and no loops).
+  if errorbarMode
+      dataType = 'coordinates';
+      str_data = sprintf(['(', m2t.ff, ',', m2t.ff,') +- (0.0,', m2t.ff,')'], data');
+  else
+      dataType = 'table[row sep=crcr]';
+      str_data = sprintf([m2t.ff, ' ', m2t.ff, '\\\\\n'], data');
+      %dataType = 'coordinates';
+      %str_data = sprintf(['(', m2t.ff,', 'm2t.ff, ')'], data');
+  end
 
-    % Pgfplots doesn't recognize "Inf" when used with coordinates{}.
-    str_data = strrep(str_data, 'Inf', 'inf');
-    str = [str, ...
-           sprintf('%s{\n', dataType), ...
-           str_data, ...
-           sprintf('};\n')];
+  % Pgfplots doesn't recognize "Inf" when used with coordinates{}.
+  str_data = strrep(str_data, 'Inf', 'inf');
+  str = [str, ...
+         sprintf('%s{\n', dataType), ...
+         str_data, ...
+         sprintf('};\n')];
 
+  return
 end
 % =========================================================================
 function dataCell = splitLine(m2t, hasLines, hasMarkers, data, xLim, yLim)
@@ -1446,10 +1456,6 @@ function dataCell = splitLine(m2t, hasLines, hasMarkers, data, xLim, yLim)
 
   % Split up each of the chunks along visible segments.
   dataCell = splitByVisibility(m2t, hasLines, hasMarkers, dataCell, xLim, yLim);
-
-  % Move some points closer to the box to avoid TeX:DimensionTooLarge errors.
-  % This may involve inserting extra points.
-  dataCell = movePointsCloser(m2t, dataCell, xLim, yLim);
 
   % Split each of the current chunks further with respect to outliers.
   dataCell = splitByArraySize(m2t, dataCell);
@@ -1515,71 +1521,6 @@ function dataCellNew = ...
 
 end
 % =========================================================================
-function dataCellNew = movePointsCloser(m2t, dataCell, xLim, yLim) %#ok
-  % Move all points outside a box much larger than the visible one
-  % to the boundary of that box and make sure that lines in the visible
-  % box are preserved. This typically involved replacing one point by
-  % two new ones.
-
-  xWidth = xLim(2) - xLim(1);
-  yWidth = yLim(2) - yLim(1);
-  extendFactor = 20;
-  largeXLim = xLim + extendFactor * [-xWidth, xWidth];
-  largeYLim = yLim + extendFactor * [-yWidth, yWidth];
-
-  dataCellNew = {};
-  for data = dataCell
-      % Get which points are in an extended box (the limits of which
-      % don't exceed TeX's memory).
-      dataIsInLargeBox = isInBox(data{1}(:,1:2), ...
-                                 largeXLim, largeYLim);
-
-      % Loop through all points which are to be included in the plot
-      % yet do not fit into the extended box, and gather the points
-      % by which they are to be replaced.
-      replaceIndices = find(~dataIsInLargeBox)';
-      m = length(replaceIndices);
-      r = cell(m, 1);
-      for k = 1:m
-          i = replaceIndices(k);
-          r{k} = [];
-          if i > 1 && all(isfinite(data{1}(i-1,:)))
-              newPoint = moveToBox(data{1}(i,:), data{1}(i-1,:), largeXLim, largeYLim);
-              % Don't bother if the point is inf:
-              % There's no intersection with the large box, so even the
-              % connection between the two after they have been moved
-              % won't be probably be visible.
-              if all(isfinite(newPoint))
-                  r{k} = [r{k}; newPoint];
-              end
-          end
-          if i < size(data{1},1) && all(isfinite(data{1}(i+1,:)))
-              newPoint = moveToBox(data{1}(i,:), data{1}(i+1,:), largeXLim, largeYLim);
-              % Don't bother if the point is inf:
-              % There's no intersection with the large box, so even the
-              % connection between the two after they have been moved
-              % won't be probably be visible.
-              if all(isfinite(newPoint))
-                  r{k} = [r{k}; newPoint];
-              end
-          end
-      end
-
-      % Insert all r{k}{:} at replaceIndices[k].
-      dataCellNew{end+1} = [];
-      lastReplIndex = 0;
-      for k = 1:m
-         dataCellNew{end} = [dataCellNew{end}; ...
-                             data{1}(lastReplIndex+1:replaceIndices(k)-1,:);...
-                             r{k}];
-         lastReplIndex = replaceIndices(k);
-      end
-      dataCellNew{end} = [dataCellNew{end}; ...
-                          data{1}(lastReplIndex+1:end,:)];
-  end
-
-end
-% =========================================================================
 function out = isInBox(data, xLim, yLim)
 
   out = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
@@ -1621,45 +1562,6 @@ function dataCellNew = splitByArraySize(m2t, dataCell)
       end
   end
 
-end
-% =========================================================================
-function xNew = moveToBox(x, xRef, xLim, yLim)
-  % Takes a box defined by xLim, yLim, one point x and a reference point
-  % xRef.
-  % Returns the point xNew that sits on the line segment between x and xRef
-  % *and* on the box. If several such points exist, take the closest one
-  % to x.
-
-  % Find out with which border the line x---xRef intersects, and determine
-  % the smallest parameter alpha such that x + alpha*(xRef-x)
-  % sits on the boundary.
-  minAlpha = inf;
-  % left boundary:
-  lambda = crossLines(x, xRef, [xLim(1);yLim(1)], [xLim(1);yLim(2)]);
-  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
-      minAlpha = lambda(1);
-  end
-
-  % bottom boundary:
-  lambda = crossLines(x, xRef, [xLim(1);yLim(1)], [xLim(2);yLim(1)]);
-  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
-      minAlpha = lambda(1);
-  end
-
-  % right boundary:
-  lambda = crossLines(x, xRef, [xLim(2);yLim(1)], [xLim(2);yLim(2)]);
-  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
-      minAlpha = lambda(1);
-  end
-
-  % top boundary:
-  lambda = crossLines(x, xRef, [xLim(1);yLim(2)], [xLim(2);yLim(2)]);
-  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
-      minAlpha = lambda(1);
-  end
-
-  % create the new point
-  xNew = x + minAlpha*(xRef-x);
 end
 % =========================================================================
 function out = segmentVisible(data, dataIsInBox, xLim, yLim)
@@ -1788,7 +1690,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
       drawOptions{end+1} = sprintf('mark=%s', tikzMarker);
 
       if ~isempty(markOptions)
-          mo = join(markOptions, ',');
+          mo = join(m2t, markOptions, ',');
           drawOptions{end+1} = ['mark options={', mo, '}'];
       end
   end
@@ -2022,10 +1924,10 @@ function [m2t, str] = drawPatch(m2t, handle)
           clim = caxis;
           m2t.axesContainers{end}.options = ...
             addToOptions(m2t.axesContainers{end}.options, ...
-                        'point meta min', sprintf('%.15g', clim(1)));
+                        'point meta min', sprintf(m2t.ff, clim(1)));
           m2t.axesContainers{end}.options = ...
             addToOptions(m2t.axesContainers{end}.options, ...
-                        'point meta max', sprintf('%.15g', clim(2)));
+                        'point meta max', sprintf(m2t.ff, clim(2)));
           % Note:
           % Pgfplots can't currently use FaceColor and colormapped edge color
           % in one go. The option 'surf' makes sure that colormapped edge
@@ -2041,7 +1943,7 @@ function [m2t, str] = drawPatch(m2t, handle)
       drawOptions{end+1} = 'forget plot';
   end
 
-  drawOpts = join(drawOptions, ',');
+  drawOpts = join(m2t, drawOptions, ',');
   % -----------------------------------------------------------------------
 
   if any(~isfinite(xData(:))) || any(~isfinite(yData(:))) || any(~isfinite(zData(:)))
@@ -2059,7 +1961,7 @@ function [m2t, str] = drawPatch(m2t, handle)
       for j = n:-1:1
           str = [str, ...
                  sprintf(['\n\\addplot [', drawOpts, '] table[row sep=crcr]{\n']), ...
-                 sprintf('%.15g %.15g\\\\\n', [xData(:,j), yData(:,j)]'), ...
+                 sprintf([m2t.ff, ' ', m2t.ff, '\\\\\n'], [xData(:,j), yData(:,j)]'), ...
                  '};'];
           % This path isn't necessarily closed, but Pgfplots
           % can deal with that.
@@ -2071,7 +1973,7 @@ function [m2t, str] = drawPatch(m2t, handle)
           data = applyHgTransform(m2t, [xData(:,j),yData(:,j),zData(:,j)]);
           str = [str, ...
                  sprintf(['\n\\addplot3 [',drawOpts,'] table[row sep=crcr]{\n']), ...
-                 sprintf('%.15g %.15g %.15g\\\\\n', data'), ...
+                 sprintf([m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'], data'), ...
                  sprintf('};\n')];
       end
       m2t.currentAxesContain3dData = true;
@@ -2157,14 +2059,14 @@ function [m2t, str] = drawImage(m2t, handle)
           yw = (yData(end)-yData(1)) / (m-1);
       end
 
-      opts = {sprintf('xmin=%.15g', xData(1) - xw/2), ...
-              sprintf('xmax=%.15g', xData(end) + xw/2), ...
-              sprintf('ymin=%.15g', yData(1) - yw/2), ...
-              sprintf('ymax=%.15g', yData(end) + yw/2)};
+      opts = {sprintf(['xmin=', m2t.ff], xData(1) - xw/2), ...
+              sprintf(['xmax=', m2t.ff], xData(end) + xw/2), ...
+              sprintf(['ymin=', m2t.ff], yData(1) - yw/2), ...
+              sprintf(['ymax=', m2t.ff], yData(end) + yw/2)};
 
       str = [str, ...
              sprintf('\\addplot graphics [%s] {%s};\n', ...
-                     join(opts, ','), pngReferencePath)];
+                     join(m2t, opts, ','), pngReferencePath)];
       userInfo(m2t, ...
                ['\nA PNG file is stored at ''%s'' for which\n', ...
                 'the TikZ file contains a reference to ''%s''.\n', ...
@@ -2201,7 +2103,7 @@ function [m2t, str] = drawImage(m2t, handle)
 
       m = length(X);
       n = length(Y);
-      [m2t xcolor] = getColor(m2t, handle, cdata, 'image');
+      [m2t, xcolor] = getColor(m2t, handle, cdata, 'image');
 
       % The following section takes pretty long to execute, although in principle it is
       % discouraged to use TikZ for those; LaTeX will take forever to compile.
@@ -2210,7 +2112,7 @@ function [m2t, str] = drawImage(m2t, handle)
       for i = 1:m
           for j = 1:n
               str = strcat(str, ...
-                            sprintf('\\fill [%s] (axis cs:%.15g,%.15g) rectangle (axis cs:%.15g,%.15g);\n', ...
+                            sprintf(['\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
                                      xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 ));
           end
       end
@@ -2339,13 +2241,13 @@ function [m2t,env] = drawSurface(m2t, handle)
         %formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
         formatType = 'table[row sep=crcr,meta index=3,header=false]';
         opts{end+1} = 'point meta=explicit';
-        formatString = '%.15g %.15g %.15g %.15g\\\\\n';
+        formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
         data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), colors(:)];
     else
         %formatType = 'coordinates';
         %formatString = '(%.15g, %.15g, %.15g)\n';
         formatType = 'table[row sep=crcr,header=false]';
-        formatString = '%.15g %.15g %.15g\\\\\n';
+        formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
         data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
     end
 
@@ -2354,7 +2256,7 @@ function [m2t,env] = drawSurface(m2t, handle)
     % data writing to one single sprintf() call.
     opts{end+1} = sprintf('mesh/rows=%d', numrows);
 
-    opts = join(opts, ',\n');
+    opts = join(m2t, opts, ',\n');
     str = [str, sprintf(['\n\\addplot3[%%\n%s,\n', opts ,']'], plotType)];
 
     % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
@@ -2438,7 +2340,7 @@ function [m2t, str] = drawText(m2t, handle)
   % Add rotation.
   rot = get(handle, 'Rotation');
   if rot ~= 0.0
-    style{end+1} = sprintf('rotate=%.15g', rot);
+    style{end+1} = sprintf(['rotate=', m2t.ff], rot);
   end
 
   % Don't try and mess around with the font sizes: MATLAB and LaTeX have
@@ -2466,7 +2368,7 @@ function [m2t, str] = drawText(m2t, handle)
   % plot the thing
   pos = get(handle, 'Position');
   if length(pos) == 2
-      posString = sprintf('(axis cs:%.15g, %.15g)', pos);
+      posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
 
       xlim = get(m2t.currentHandles.gca,'XLim');
       ylim = get(m2t.currentHandles.gca,'YLim');
@@ -2478,7 +2380,7 @@ function [m2t, str] = drawText(m2t, handle)
       end
   elseif length(pos) == 3
       pos = applyHgTransform(m2t, pos);
-      posString = sprintf('(axis cs:%.15g, %.15g, %.15g)', pos);
+      posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
 
       xlim = get(m2t.currentHandles.gca,'XLim');
       ylim = get(m2t.currentHandles.gca,'YLim');
@@ -2495,7 +2397,7 @@ function [m2t, str] = drawText(m2t, handle)
             'Illegal text position specification.');
   end
   str = sprintf('\\node[%s]\nat %s {%s};\n', ...
-                 join(style,', '), posString, String);
+                 join(m2t, style,', '), posString, String);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -2543,8 +2445,8 @@ function [m2t, str] = drawRectangle(m2t, handle)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   drawOptions = [lineOptions, colorOptions];
   % plot the thing
-  str = sprintf('\\draw[%s] (axis cs:%.15g, %.15g) rectangle (axis cs:%.15g, %.15g);\n', ...
-                 join(drawOptions,', '), pos.left, pos.bottom, pos.right, pos.top ...
+  str = sprintf(['\\draw[%s] (axis cs:',m2t.ff,',',m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
+                 join(m2t, drawOptions,', '), pos.left, pos.bottom, pos.right, pos.top ...
               );
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
@@ -2568,7 +2470,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
   % Set opacity if FaceAlpha < 1 in MATLAB
   faceAlpha = get(handle, 'FaceAlpha');
   if isnumeric(faceAlpha) && faceAlpha ~= 1.0
-    surfOptions{end+1} = sprintf('opacity=%.15g', faceAlpha);
+    surfOptions{end+1} = sprintf(['opacity=', m2t.ff], faceAlpha);
   end
 
   % Get color map.
@@ -2634,20 +2536,20 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       drawOptions = { 'scatter', ...
                       'only marks', ...
                       'scatter src=explicit', ...
-                      ['scatter/use mapped color={', join(markerOptions,','), '}'] };
+                      ['scatter/use mapped color={', join(m2t, markerOptions,','), '}'] };
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  drawOpts = join(drawOptions, ',');
+  drawOpts = join(m2t, drawOptions, ',');
   if isempty(zData)
       env = 'addplot';
-      format = '(%.15g,%.15g)';
+      format = ['(', m2t.ff, ',', m2t.ff, ')'];
       data = [xData(:), yData(:)];
   else
       env = 'addplot3';
       m2t.currentAxesContain3dData = true;
-      format = '(%.15g,%.15g,%.15g)';
+      format = ['(', m2t.ff, ',', m2t.ff, ',', m2t.ff, ')'];
       data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
   end
 
@@ -2822,10 +2724,10 @@ function [m2t, str] = drawBarseries(m2t, h)
           end
           drawOptions = {drawOptions{:}, ...
                          barType, ...
-                         sprintf('bar width=%.15g%s', physicalBarWidth, phyicalBarUnit)};
+                         sprintf(['bar width=',m2t.ff,'%s'], physicalBarWidth, phyicalBarUnit)};
           if physicalBarShift ~= 0.0
               drawOptions{end+1} = ...
-                  sprintf('bar shift=%.15g%s', physicalBarShift, phyicalBarUnit);
+                  sprintf(['bar shift=',m2t.ff,'%s'], physicalBarShift, phyicalBarUnit);
           end
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
           % end grouped plots
@@ -2848,7 +2750,7 @@ function [m2t, str] = drawBarseries(m2t, h)
               m2t.axesContainers{end}.options = ...
                   addToOptions(m2t.axesContainers{end}.options, ...
                                'bar width', ...
-                               sprintf('%.15g%s', m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
+                               sprintf([m2t.ff,'%s'], m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
               m2t.addedAxisOption = true;
           end
           % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2878,7 +2780,7 @@ function [m2t, str] = drawBarseries(m2t, h)
   else
       drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
   end
-  drawOpts = join(drawOptions, ',');
+  drawOpts = join(m2t, drawOptions, ',');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Add 'area legend' to the options as otherwise the legend indicators
   % will just highlight the edges.
@@ -2892,10 +2794,10 @@ function [m2t, str] = drawBarseries(m2t, h)
   if isHoriz
       % If the bars are horizontal, the values x and y are exchanged.
       str = strcat(str, ...
-                   sprintf('(%.15g,%.15g)\n', [yData(:), xData(:)]'));
+                   sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [yData(:), xData(:)]'));
   else
       str = strcat(str, ...
-                   sprintf('(%.15g,%.15g)\n', [xData(:), yData(:)]'));
+                   sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'));
   end
   str = [str, sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2934,7 +2836,7 @@ function [m2t, str] = drawStemseries(m2t, h)
                  markerOptions];
 
   % insert draw options
-  drawOpts =  join(drawOptions, ',');
+  drawOpts =  join(m2t, drawOptions, ',');
   % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2943,7 +2845,7 @@ function [m2t, str] = drawStemseries(m2t, h)
   yData = get(h, 'YData');
   str = [str, ...
          sprintf('\\addplot[%s] plot coordinates{', drawOpts), ...
-         sprintf('(%.15g,%.15g)\n', [xData(:), yData(:)]'), ...
+         sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
          sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -2980,7 +2882,7 @@ function [m2t, str] = drawStairSeries(m2t, h)
                  markerOptions];
 
   % insert draw options
-  drawOpts =  join(drawOptions, ',');
+  drawOpts = join(m2t, drawOptions, ',');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -2990,7 +2892,7 @@ function [m2t, str] = drawStairSeries(m2t, h)
   yData = get(h, 'YData');
   str = [str, ...
          sprintf('\\addplot[%s] plot coordinates{\n', drawOpts), ...
-         sprintf('(%.15g,%.15g)\n', [xData(:), yData(:)]'), ...
+         sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
          sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -3033,14 +2935,14 @@ function [m2t, str] = drawAreaSeries(m2t, h)
   else
       drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
   end
-  drawOpts = join(drawOptions, ',');
+  drawOpts = join(m2t, drawOptions, ',');
 
   % plot the thing
   xData = get(h, 'XData');
   yData = get(h, 'YData');
   str = [str, ...
          sprintf('\\addplot[%s] plot coordinates{\n', drawOpts), ...
-         sprintf('(%.15g,%.15g)\n', [xData(:), yData(:)]'), ...
+         sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
          sprintf('}\n\\closedcycle;\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -3111,7 +3013,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
               ];
 
   % define arrow style
-  arrowOptions = join(arrowOpts, ',');
+  arrowOptions = join(m2t, arrowOpts, ',');
 
   % Append the arrow style to the TikZ options themselves.
   % TODO: Look into replacing this by something more 'local',
@@ -3126,7 +3028,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
   % return the vector field code
   str = [str, ...
          sprintf(['\\addplot [arrow',num2str(m2t.quiverId), '] ', ...
-                  'coordinates{(%.15g,%.15g) (%.15g,%.15g)};\n'],...
+                  'coordinates{(',m2t.ff,',',m2t.ff,') (',m2t.ff,',',m2t.ff,')};\n'],...
                   XY)];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -3140,26 +3042,37 @@ function [m2t, str] = drawErrorBars(m2t, h)
   % 'errorseries' plots have two line-plot children, one of which contains
   % the information about the center points; 'XData' and 'YData' components
   % are both of length n.
-  % The other contains the information about the deviations (errors).
-  % 'XData' and 'YData' are of length 9*n and contain redundant info which
-  % is only needed by MATLAB itself to explicitly draw the error bars.
+  % The other contains the information about the deviations (errors), more
+  % more precisely: the lines to be drawn. Those are
+  %        ___
+  %         |
+  %         |
+  %         X  <-- (x0,y0)
+  %         |
+  %         |
+  %        _|_
+  %
+  %    X: x0,     x0,     x0-eps, x0+eps, x0-eps, x0+eps;
+  %    Y: y0-dev, y0+dev, y0-dev, y0-dev, y0+dev, y0+dev.
+  %
+  % Hence, 'XData' and 'YData' are of length 6*n and contain redundant info.
   c = get(h, 'Children');
 
   % Find out which contains the data and which the deviations.
   n1 = length(get(c(1),'XData'));
   n2 = length(get(c(2),'XData'));
-  if n2 == 9*n1
+  if n2 == 6*n1
       % n1 contains centerpoint info
       dataIdx  = 1;
       errorIdx = 2;
-  elseif n1 == 9*n2
+  elseif n1 == 6*n2
       % n2 contains centerpoint info
       dataIdx  = 2;
       errorIdx = 1;
   else
       error('drawErrorBars:errorMatch', ...
-             'Sizes of and error data not matching (9*%d ~= %d and 9*%d ~= %d).', ...
-             n1, n2, n2, n1);
+            'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d).', ...
+            n1, n2, n2, n1);
   end
 
   % prepare error array (that is, gather the y-deviations)
@@ -3172,16 +3085,16 @@ function [m2t, str] = drawErrorBars(m2t, h)
 
   for k = 1:n
       % upper deviation
-      kk = 9*(k-1) + 1;
+      kk = 6*(k-1) + 1;
       upDev = abs(yValues(k) - yErrors(kk));
 
       % lower deviation
-      kk = 9*(k-1) + 2;
+      kk = 6*(k-1) + 2;
       loDev = abs(yValues(k) - yErrors(kk));
 
       if abs(upDev-loDev) >= 1e-10 % don't use 'm2t.tol' here as is seems somewhat too strict
           error('drawErrorBars:uneqDeviations', ...
-                 'Upper and lower error deviations not equal (%.15g ~= %.15g). Pgfplots can''t deal with that yet. Using upper deviations.', upDev, loDev);
+                'Upper and lower error deviations not equal (%.15g ~= %.15g). Pgfplots can''t deal with that yet. Using upper deviations.', upDev, loDev);
       end
 
       yDeviations(k) = upDev;
@@ -3337,7 +3250,7 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
         sprintf('rgb(%d%s)=(%g, %g, %g)', x, unit, colors(k));
         colSpecs{k} = sprintf('rgb(%d%s)=(%g,%g,%g)', x, unit, colors(k,:));
     end
-    pgfplotsColormap = sprintf('colormap={mymap}{[1%s] %s}', unit, join(colSpecs, '; '));
+    pgfplotsColormap = sprintf('colormap={mymap}{[1%s] %s}', unit, join(m2t, colSpecs, '; '));
 
     return
 end
@@ -3424,7 +3337,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
               addToOptions(m2t.axesContainers{end}.options, ...
                           [axis, 'label style'], '{align=center}');
         end
-        label = join(label,'\\[1ex]');
+        label = join(m2t, label,'\\[1ex]');
         cbarStyleOptions{end+1} = sprintf([axis,'label={%s}'], label);
     end
   end
@@ -3451,14 +3364,14 @@ function axisOptions = getColorbarOptions(m2t, handle)
   if ~isempty(cbarStyleOptions)
       axisOptions = addToOptions(axisOptions, ...
                                  'colorbar style', ...
-                                 ['{', join(cbarStyleOptions, ','), '}']);
+                                 ['{', join(m2t, cbarStyleOptions, ','), '}']);
   end
 
   % Append upper and lower limit of the colorbar.
   % TODO Use caxis not only for color bars.
   clim = caxis;
-  axisOptions = addToOptions(axisOptions, 'point meta min', sprintf('%.15g', clim(1)));
-  axisOptions = addToOptions(axisOptions, 'point meta max', sprintf('%.15g', clim(2)));
+  axisOptions = addToOptions(axisOptions, 'point meta min', sprintf(m2t.ff, clim(1)));
+  axisOptions = addToOptions(axisOptions, 'point meta max', sprintf(m2t.ff, clim(2)));
 
   % do _not_ handle colorbar's children
   return
@@ -3706,7 +3619,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
   % append to legend options
   if ~isempty(anchor)
       lStyle = {lStyle{:}, ...
-                sprintf('at={(%.15g,%.15g)}', position), ...
+                sprintf(['at={(',m2t.ff,',',m2t.ff,')}'], position), ...
                 sprintf('anchor=%s', anchor)};
   end
   % handle orientation
@@ -3759,7 +3672,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
 
   if ~isempty(lStyle)
       key = 'legend style';
-      lOpts = join(lStyle,',');
+      lOpts = join(m2t, lStyle,',');
   end
 
   return;
@@ -3787,7 +3700,7 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, ax
           % In most cases, this looks a lot better anyway.
           pgfTicks = [];
       else % strcmp(tickMode,'manual') || m2t.cmdOpts.Results.strict
-          pgfTicks = join(cellstr(num2str(ticks(:))), ', ');
+          pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
       end
   end
 
@@ -3822,7 +3735,7 @@ function [pTicks, pTickLabels] = ...
   end
 
   % set ticks + labels
-  pTicks = join(num2cell(ticks), ',');
+  pTicks = join(m2t, num2cell(ticks), ',');
 
   % if there's no specific labels, return empty
   if isempty(tickLabels) || (length(tickLabels)==1 && isempty(tickLabels{1}))
@@ -3907,7 +3820,7 @@ function [pTicks, pTickLabels] = ...
               tickLabels{k} = sprintf('$10^{%s}$', str);
           end
       end
-      pTickLabels = join(tickLabels, ',');
+      pTickLabels = join(m2t, tickLabels, ',');
   else
       pTickLabels = [];
   end
@@ -4002,7 +3915,7 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
 
 end
 % =========================================================================
-function newstr = join(cellstr, delimiter)
+function newstr = join(m2t, cellstr, delimiter)
   % This function joins a cell of strings to a single string (with a
   % given delimiter inbetween two strings, if desired).
   %
@@ -4021,14 +3934,14 @@ function newstr = join(cellstr, delimiter)
   end
 
   if isnumeric(cellstr{1})
-      newstr = sprintf('%.15g', cellstr{1});
+      newstr = sprintf(m2t.ff, cellstr{1});
   else
       newstr = cellstr{1};
   end
 
   for k = 2:length(cellstr)
       if isnumeric(cellstr{k})
-          str = sprintf('%.15g', cellstr{k});
+          str = sprintf(m2t.ff, cellstr{k});
       else
           str = cellstr{k};
       end
@@ -4713,7 +4626,7 @@ function parent = addChildren(parent, children)
     return;
 end
 % =========================================================================
-function printAll(env, fid)
+function printAll(m2t, env, fid)
 
     if isfield(env, 'colors') && ~isempty(env.colors)
         fprintf(fid, '%s', env.colors);
@@ -4722,7 +4635,7 @@ function printAll(env, fid)
     if isempty(env.options)
         fprintf(fid, '\\begin{%s}\n', env.name);
     else
-        fprintf(fid, '\\begin{%s}[%%\n%s\n]\n', env.name, prettyprintOpts(env.options, sprintf(',\n')));
+        fprintf(fid, '\\begin{%s}[%%\n%s\n]\n', env.name, prettyprintOpts(m2t, env.options, sprintf(',\n')));
     end
 
     for item = env.content
@@ -4734,7 +4647,7 @@ function printAll(env, fid)
             fprintf(fid, escapeCharacters(env.children{k}));
         else
             fprintf(fid, '\n');
-            printAll(env.children{k}, fid);
+            printAll(m2t, env.children{k}, fid);
         end
     end
 
@@ -5316,9 +5229,7 @@ function opts = addToOptions(opts, key, value)
   return;
 end
 % =========================================================================
-function str = prettyprintOpts(opts, sep)
-
-  str = [];
+function str = prettyprintOpts(m2t, opts, sep)
 
   c = {};
   for k = 1:size(opts,1)
@@ -5328,7 +5239,7 @@ function str = prettyprintOpts(opts, sep)
           c{end+1} = sprintf('%s=%s', opts{k,1}, opts{k,2});
       end
   end
-  str = join(c, sep);
+  str = join(m2t, c, sep);
   return;
 end
 % =========================================================================
