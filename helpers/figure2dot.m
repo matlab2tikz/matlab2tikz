@@ -1,4 +1,4 @@
-function figure2dot( filename )
+function figure2dot(filename)
 %FIGURE2DOT    Save figure in Graphviz (.dot) file.
 %   FIGURE2DOT() saves the current figure as dot-file.
 %
@@ -32,129 +32,123 @@ function figure2dot( filename )
   global node_number
 
   % also show hidden handles
-  set( 0, 'ShowHiddenHandles', 'on' );
+  set(0, 'ShowHiddenHandles', 'on');
 
-  filehandle = fopen( filename, 'w' );
+  filehandle = fopen(filename, 'w');
 
   % start printing
-  fprintf( filehandle, 'digraph simple_hierarchy {\n\n' );
+  fprintf(filehandle, 'digraph simple_hierarchy {\n\n');
 
-  fprintf( filehandle, 'node[shape=box];\n\n' );
+  fprintf(filehandle, 'node[shape=box];\n\n');
 
   % define the root node
   node_number = 0;
-  p = get( gcf, 'Parent' );
+  p = get(gcf, 'Parent');
   % define root element
-  type = get( p, 'Type' );
-  fprintf( filehandle, 'N%d [label="%s"]\n\n', node_number, type );
+  type = get(p, 'Type');
+  fprintf(filehandle, 'N%d [label="%s"]\n\n', node_number, type);
 
   % start recursion
-  plot_children( filehandle, p, node_number );
+  plot_children(filehandle, p, node_number);
 
   % finish off
-  fprintf( filehandle, '}' );
-  fclose( filehandle );
-  set( 0, 'ShowHiddenHandles', 'off' );
+  fprintf(filehandle, '}');
+  fclose(filehandle);
+  set(0, 'ShowHiddenHandles', 'off');
 
 end
 % =========================================================================
-function plot_children( fh, h, id )
+function plot_children(fh, h, id)
 
   global node_number
 
   % get the children
-  children = get( h, 'Children' );
+  children = get(h, 'Children');
 
   % -----------------------------------------------------------------------
   % loop through the children
-  for k= 1:length(children)
-
+  for child = children(:)'
       % define child number
       node_number = node_number + 1;
-
-      type = get( children(k), 'Type' );
-
+      type = get(child, 'Type');
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       % skip certain entries
-      if  strcmp( type, 'uimenu'        ) || ...
-          strcmp( type, 'uitoolbar'     ) || ...
-          strcmp( type, 'uicontextmenu' )
+      if  strcmp(type, 'uimenu'       ) || ...
+          strcmp(type, 'uitoolbar'    ) || ...
+          strcmp(type, 'uicontextmenu')
           continue;
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
       label = cell(0);
-      label = [ label, sprintf( 'Type: %s' , type   ) ];
+      label = [label, sprintf('Type: %s', type)];
 
-      hClass = class( handle(children(k)) );
-      label  = [ label, sprintf( 'Class: %s', hClass ) ];
+      hClass = class(handle(child));
+      label  = [label, sprintf('Class: %s', hClass)];
 
-      tag = get( children(k), 'Tag'  );
+      tag = get(child, 'Tag');
       if ~isempty(tag)
-          label = [ label, sprintf( 'Tag: %s', tag ) ];
+          label = [label, sprintf('Tag: %s', tag)];
       end
 
-      visibility = get( children(k), 'Visible' );
+      visibility = get(child, 'Visible');
       color = []; % set default value
-      if ~strcmp( visibility , 'on' )
-          label = [ label, sprintf( 'Visible: %s', visibility ) ];
+      if ~strcmp(visibility, 'on')
+          label = [label, sprintf('Visible: %s', visibility)];
           color = 'gray';
       end
 
-      handlevisibility = get( children(k), 'HandleVisibility' );
-      if ~ strcmp( handlevisibility , 'on' )
-          label = [ label, sprintf( 'HandleVisibility: %s', handlevisibility ) ];
+      handlevisibility = get(child, 'HandleVisibility');
+      if ~strcmp(handlevisibility, 'on')
+          label = [label, sprintf('HandleVisibility: %s', handlevisibility)];
       end
 
       % gather options
       options = cell(0);
       if ~isempty(label)
-          options = [ options, [ 'label=',collapse(label,'\n') ] ];
+          options = [options, ['label=', collapse(label,'\n')]];
       end
       if ~isempty(color)
-          options = [ options, [ 'color=',color ] ];
+          options = [options, ['color=', color]];
       end
 
-
       % print node
-      fprintf( fh, 'N%d [label="%s"]\n', node_number, collapse(label,'\n') );
+      fprintf(fh, 'N%d [label="%s"]\n', node_number, collapse(label, '\n'));
 
       % connect to the child
-      fprintf( fh, 'N%d -> N%d;\n\n', id, node_number );
+      fprintf(fh, 'N%d -> N%d;\n\n', id, node_number);
 
       % recurse
-      plot_children( fh, children(k), node_number );
+      plot_children(fh, child, node_number);
   end
   % -----------------------------------------------------------------------
 
 end
 % =========================================================================
-function newstr = collapse( cellstr, delimiter )
+function newstr = collapse(cellstr, delimiter)
   % This function collapses a cell of strings to a single string (with a
   % given delimiter inbetween two strings, if desired).
   %
   % Example of usage:
-  %              collapse( cellstr, ',' )
+  %              collapse(cellstr, ',')
 
   if length(cellstr)<1
      newstr = [];
      return
   end
 
-  if isnumeric( cellstr{1} )
-      newstr = my_num2str( cellstr{1} );
+  if isnumeric(cellstr{1})
+      newstr = my_num2str(cellstr{1});
   else
       newstr = cellstr{1};
   end
 
-  for k = 2:length( cellstr )
-      if isnumeric( cellstr{k} )
-          str = my_num2str( cellstr{k} );
+  for k = 2:length(cellstr)
+      if isnumeric(cellstr{k})
+          str = my_num2str(cellstr{k});
       else
           str = cellstr{k};
       end
-      newstr = [ newstr, delimiter, str ];
+      newstr = [newstr, delimiter, str];
   end
 
 end
