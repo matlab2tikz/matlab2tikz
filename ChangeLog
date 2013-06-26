@@ -1,4 +1,15 @@
-2012-04-13  Nico Schlömer  <nico.schloemer@gmail.com>
+2013-06-26  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.4.0.
+	* Added cleanfigure() for removing unwanted entities from a plot
+	  before conversion
+	* Add option `floatFormat` to allow for custom specification of the format
+	  of float numbers
+	* Bugfixes:
+	   - linewidth for patches
+	   - ...
+
+2013-04-13  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.3.3.
 	* Support for:
@@ -9,7 +20,7 @@
 	   - logscaled axes
 	   - ...
 
-2012-03-14  Nico Schlömer  <nico.schloemer@gmail.com>
+2013-03-14  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.3.2.
 	* Support for:
@@ -20,7 +31,7 @@
 	   - stacked bars
 	   - ...
 
-2012-02-15  Nico Schlömer  <nico.schloemer@gmail.com>
+2013-02-15  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.3.1.
 	* Use table{} for plots for cleaner output files.

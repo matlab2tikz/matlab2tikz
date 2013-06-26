@@ -1,5 +1,5 @@
-This is matlab2tikz, a MATLAB(R) script for converting MATLAB(R) figures into native
-TikZ/Pgfplots figures.
+This is matlab2tikz, a MATLAB(R) script for converting MATLAB(R) figures into
+native TikZ/Pgfplots figures.
 
 To download and rate matlab2tikz, go to its page on MathWorks 
 http://www.mathworks.com/matlabcentral/fileexchange/22022.
@@ -10,8 +10,8 @@ party packages, your mileage may vary.
 
 The workflow is as follows.
 
-0. a. Place the matlab2tikz scripts (contents of src/ folder) in a directory where 
-         MATLAB can find it (the current directory, for example).
+0. a. Place the matlab2tikz scripts (contents of src/ folder) in a directory
+      where MATLAB can find it (the current directory, for example).
    b. Make sure that your LaTeX installation includes the packages
      * TikZ (aka PGF, >=2.00) and
      * Pgfplots (>=1.3).
@@ -24,20 +24,20 @@ The workflow is as follows.
 ```
    or
 ```matlab
->> matlab2tikz( 'myfile.tex' );
+>> matlab2tikz('myfile.tex');
 ```
   The script accepts numerous options; check them out by invoking the help,
 ```matlab
 >> help matlab2tikz
 ```
-  for example 'height', 'width', 'encoding', and some more. Invoke by
+Sometimes, MATLAB makes it hard to create matching LaTeX plots by keeping
+invisible objects around or streches the plots too far beyond the bounding box.
+Use
 ```matlab
->> matlab2tikz( 'myfile.tex', 'height', '4cm', 'width', '3in' );
+>> cleanfigure;
+>> matlab2tikz('myfile.tex');
 ```
-  To specify the dimension of the plot from within the LaTeX document, try
-```matlab
->> matlab2tikz( 'myfile.tex', 'height', '\figureheight', 'width', '\figurewidth' );
-```
+to first clean the figure of unwanted entities, and then convert it to TeX.
 
 3. Add the contents of `myfile.tex` into your LaTeX source code; a
    convenient way of doing so is to use `\input{/path/to/myfile.tex}`.
@@ -52,9 +52,6 @@ The workflow is as follows.
 \newlength\figureheight
 \newlength\figurewidth
 \begin{document}
-% Setting the figure dimensions is optional (see above).
-\setlength\figureheight{4cm}
-\setlength\figurewidth{6cm}
 \input{myfile.tex}
 \end{document}
 ```
