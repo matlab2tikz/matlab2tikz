@@ -11,7 +11,7 @@ function cleanfigure()
 %      x = -pi:pi/1000:pi;
 %      y = tan(sin(x)) - sin(tan(x));
 %      plot(x,y,'--rs');
-%      coarsenLine2d(0.1);
+%      cleanfigure();
 %
 
 %   Copyright (c) 2013, Nico Schlömer <nico.schloemer@gmail.com>
@@ -39,42 +39,68 @@ function cleanfigure()
 %   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %   POSSIBILITY OF SUCH DAMAGE.
 
+  % Treat hidden handles, too.
+  shh = get(0, 'ShowHiddenHandles');
+  set(0, 'ShowHiddenHandles', 'on');
+
+  % Keep track of the current axes.
+  meta.gca = [];
+
   % Recurse down the tree of plot objects and clean up the leaves.
-  recursiveCleanup(gcf);
+  recursiveCleanup(meta, gcf, 0);
+
+  % Reset to initial state.
+  set(0, 'ShowHiddenHandles', shh);
+
   return;
 end
 % =========================================================================
-function recursiveCleanup(h)
+function indent = recursiveCleanup(meta, h, indent)
 
-  % Skip invisible objects.
-  if ~strcmp(get(h,'Visible'), 'on')
-      return;
-  end
+  type = get(h, 'Type');
+
+  %display(sprintf([repmat(' ',1,indent), type, '->']))
 
   % Don't try to be smart about quiver groups.
   if isa(handle(h), 'specgraph.quivergroup')
       return;
   end
 
+  % Update the current axes.
+  if isa(handle(h), 'axes')
+      meta.gca = h;
+  end
+
   children = get(h, 'Children');
   if ~isempty(children)
       for child = children(:)'
-          recursiveCleanup(child);
+          indent = indent + 4;
+          indent = recursiveCleanup(meta, child, indent);
+          indent = indent - 4;
       end
   else
       % We're in a leaf, so apply all the fancy simplications.
-      type = get(h, 'Type');
+
+      %% Skip invisible objects.
+      %if ~strcmp(get(h, 'Visible'), 'on')
+      %    display(sprintf([repmat(' ',1,indent), '  invisible']))
+      %    return;
+      %end
+
+      %display(sprintf([repmat(' ',1,indent), '  handle this']))
+
       if strcmp(type, 'line')
+          pruneOutsideBox(meta, h);
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
-          movePointsCloser(h);
+          movePointsCloser(meta, h);
           % Don't be too precise.
-          coarsenLine(h, 1.0e-10);
+          coarsenLine(meta, h, 1.0e-10);
       elseif strcmp(type, 'text')
           % Check if text is inside bounds by checking if the Extent rectangle
           % and the axes box overlap.
-          xlim = get(gca, 'XLim');
-          ylim = get(gca, 'YLim');
+          xlim = get(meta.gca, 'XLim');
+          ylim = get(meta.gca, 'YLim');
           extent = get(h, 'Extent');
           extent(3:4) = extent(1:2) + extent(3:4);
           overlap = xlim(1) < extent(3) && xlim(2) > extent(1) ...
@@ -89,7 +115,112 @@ function recursiveCleanup(h)
   return;
 end
 % =========================================================================
-function coarsenLine(handle, minimumPointsDistance)
+function pruneOutsideBox(meta, handle)
+  % Some sections of the line may sit outside of the visible box.
+  % Cut those off.
+
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  zData = get(handle, 'ZData');
+
+  if isempty(zData)
+    data = [xData(:), yData(:)];
+  else
+    data = [xData(:), yData(:), zData(:)];
+  end
+
+  if isempty(data)
+      return;
+  end
+
+  %hasLines = ~strcmp(lineStyle,'none') && lineWidth>0.0;
+  %hasMarkers = ~strcmp(marker,'none');
+  hasLines = true;
+  hasMarkers = true;
+  xLim = get(meta.gca, 'XLim');
+  yLim = get(meta.gca, 'YLim');
+
+  tol = 1.0e-10;
+  relaxedXLim = xLim + [-tol, tol];
+  relaxedYLim = yLim + [-tol, tol];
+
+  numPoints = size(data, 1);
+
+  % Get which points are inside a (slightly larger) box.
+  dataIsInBox = isInBox(data(:,1:2), ...
+                        relaxedXLim, relaxedYLim);
+
+  % By default, don't plot any points.
+  shouldPlot = false(numPoints,1);
+  if hasMarkers
+      shouldPlot = shouldPlot | dataIsInBox;
+  end
+  if hasLines
+      % Check if the connecting line is in the box.
+      segvis = segmentVisible(data(:,1:2), ...
+                              dataIsInBox, xLim, yLim);
+      % Plot points which are next to an edge which is in the box.
+      shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
+  end
+
+  %% Split the data in chunks of where 'shouldPlot' is 'true'.
+  %k = 1;
+  %while k <= numPoints
+  %    % fast forward to shouldPlot==True
+  %    while k<=numPoints && ~shouldPlot(k)
+  %        k = k+1;
+  %    end
+  %    kStart = k;
+  %    % fast forward to shouldPlot==False
+  %    while k<=numPoints && shouldPlot(k)
+  %        k = k+1;
+  %    end
+  %    kEnd = k-1;
+
+  %    if kStart <= kEnd
+  %        dataCellNew{end+1} = data{1}(kStart:kEnd,:);
+  %    end
+  %end
+
+  % Set the new (masked) data.
+  set(handle, 'XData', data(shouldPlot, 1));
+  set(handle, 'YData', data(shouldPlot, 2));
+  if ~isempty(zData)
+    set(handle, 'ZData', data(shouldPlot, 3));
+  end
+
+  return;
+end
+% =========================================================================
+function out = segmentVisible(data, dataIsInBox, xLim, yLim)
+    % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
+    % in p and determine whether the line between the pair crosses the box.
+
+    n = size(data, 1);
+    out = false(n-1, 1);
+    for k = 1:n-1
+        out(k) =  (dataIsInBox(k) && all(isfinite(data(k+1,:)))) ... % one of the neighbors is inside the box
+               || (dataIsInBox(k+1) && all(isfinite(data(k,:)))) ... % and the other is finite
+               || segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(1);yLim(1)], [xLim(1);yLim(2)]) ... % left border
+               || segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(1);yLim(1)], [xLim(2);yLim(1)]) ... % bottom border
+               || segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(2);yLim(1)], [xLim(2);yLim(2)]) ... % right border
+               || segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(1);yLim(2)], [xLim(2);yLim(2)]); % top border
+    end
+
+end
+% =========================================================================
+function out = segmentsIntersect(X1, X2, X3, X4)
+  % Checks whether the segments X1--X2 and X3--X4 intersect.
+  lambda = crossLines(X1, X2, X3, X4);
+  out = all(lambda > 0.0) && all(lambda < 1.0);
+  return
+end
+% =========================================================================
+function coarsenLine(meta, handle, minimumPointsDistance)
   % Reduce the number of data points in the line handle.
   % Given a minimum distance at which two nodes are considered different,
   % this can help with plots that contain a large amount of data points not
@@ -101,7 +232,15 @@ function coarsenLine(handle, minimumPointsDistance)
   end
 
   % Extract the data from the current line handle.
-  data = [get(handle, 'XData')', get(handle, 'YData')'];
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  zData = get(handle, 'ZData');
+  if ~isempty(zData)
+    % Don't do funny stuff with zData.
+    return;
+  end
+
+  data = [xData(:), yData(:)];
 
   if isempty(data)
       return;
@@ -113,8 +252,8 @@ function coarsenLine(handle, minimumPointsDistance)
   n = size(data, 1);
 
   % Get info about log scaling.
-  isXlog = strcmp(get(gca, 'XScale'), 'log');
-  isYlog = strcmp(get(gca, 'YScale'), 'log');
+  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
 
   mask = false(n, 1);
 
@@ -144,26 +283,36 @@ function coarsenLine(handle, minimumPointsDistance)
   set(handle, 'XData', data(mask, 1));
   set(handle, 'YData', data(mask, 2));
 
+  return;
 end
 % =========================================================================
-function movePointsCloser(handle)
+function movePointsCloser(meta, handle)
   % Move all points outside a box much larger than the visible one
   % to the boundary of that box and make sure that lines in the visible
-  % box are preserved. This typically involved replacing one point by
+  % box are preserved. This typically involves replacing one point by
   % two new ones.
 
   % Extract the data from the current line handle.
-  data = [get(handle, 'XData')', get(handle, 'YData')'];
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  zData = get(handle, 'ZData');
 
-%get(handle, 'ZData')
-%data
+  if ~isempty(zData) && any(zData(1)~=zData)
+    % Don't do funny stuff with varying zData.
+    return;
+  end
 
-  xlim = get(gca, 'XLim');
-  ylim = get(gca, 'YLim');
+  data = [xData(:), yData(:)];
+
+  xlim = get(meta.gca, 'XLim');
+  ylim = get(meta.gca, 'YLim');
 
   xWidth = xlim(2) - xlim(1);
   yWidth = ylim(2) - ylim(1);
-  extendFactor = 20;
+  % Chose a pretty large extend factor here to work around sitatuation where
+  % the connecting line between two points intersects with the box if the two
+  % points are moved quite close to the box.
+  extendFactor = 10.0;
   largeXLim = xlim + extendFactor * [-xWidth, xWidth];
   largeYLim = ylim + extendFactor * [-yWidth, yWidth];
 
@@ -218,6 +367,12 @@ function movePointsCloser(handle)
   % Set the new (masked) data.
   set(handle, 'XData', dataNew(:,1));
   set(handle, 'YData', dataNew(:,2));
+
+  if ~isempty(zData)
+    % As per precondition, all zData entries are equal.
+    zDataNew = zData(1) * ones(size(dataNew,1), 1);
+    set(handle, 'zData', zDataNew);
+  end
 
   return;
 end
