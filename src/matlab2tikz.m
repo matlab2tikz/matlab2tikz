@@ -2368,7 +2368,11 @@ function [m2t, str] = drawText(m2t, handle)
   % plot the thing
   pos = get(handle, 'Position');
   if length(pos) == 2
-      posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
+      if strcmp(get(handle, 'Units'),'normalized')
+          posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
+      else
+          posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
+      end
 
       xlim = get(m2t.currentHandles.gca,'XLim');
       ylim = get(m2t.currentHandles.gca,'YLim');
@@ -2380,7 +2384,11 @@ function [m2t, str] = drawText(m2t, handle)
       end
   elseif length(pos) == 3
       pos = applyHgTransform(m2t, pos);
-      posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
+      if strcmp(get(handle, 'Units'),'normalized')
+          posString = sprintf(['(rel axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
+      else
+          posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
+      end
 
       xlim = get(m2t.currentHandles.gca,'XLim');
       ylim = get(m2t.currentHandles.gca,'YLim');
