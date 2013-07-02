@@ -62,12 +62,17 @@ function indent = recursiveCleanup(meta, h, indent)
   %display(sprintf([repmat(' ',1,indent), type, '->']))
 
   % Don't try to be smart about quiver groups.
-  if isa(handle(h), 'specgraph.quivergroup')
+  % NOTE:
+  % A better way to write `strcmp(get(h,...))` would be to use
+  %     isa(handle(h), 'specgraph.quivergroup').
+  % The handle() function isn't supported by Octave, though, so let's stick
+  % with strcmp().
+  if strcmp(get(h, 'Type'), 'specgraph.quivergroup')
       return;
   end
 
   % Update the current axes.
-  if isa(handle(h), 'axes')
+  if strcmp(get(h, 'Type'), 'axes')
       meta.gca = h;
   end
 
