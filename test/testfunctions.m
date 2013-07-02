@@ -745,18 +745,19 @@ end
 % =========================================================================
 function [description, extraOpts] = imageplot ()
 
-  n       = 10;
+  n = 10;
   density = 0.5;
 
-  subplot( 1, 2, 1 );
-  A       = sprand( n, n, density );
+  subplot(1,2,1);
+  A = sprand( n, n, density );
   imagesc( A );
 
-  subplot( 1, 2, 2 );
-  A       = sprand( n, n, density );
+  subplot(1,2,2);
+  A = sprand( n, n, density );
   imagesc( A );
 
   description = 'An image plot of matrix values.' ;
+  %extraOpts = {'imagesAsPng', false};
   extraOpts = {};
 
 end

@@ -2078,6 +2078,8 @@ function [m2t, str] = drawImage(m2t, handle)
   else
       % ------------------------------------------------------------------------
       % draw the thing
+      userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
+                        'Make sure to set ''imagesAsPng'' to true.']);
 
       % Generate uniformly distributed X, Y, although xData and yData may be non-uniform.
       % This is MATLAB(R) behaviour.
@@ -2107,15 +2109,17 @@ function [m2t, str] = drawImage(m2t, handle)
       n = length(Y);
       [m2t, xcolor] = getColor(m2t, handle, cdata, 'image');
 
-      % The following section takes pretty long to execute, although in principle it is
-      % discouraged to use TikZ for those; LaTeX will take forever to compile.
-      % Still, a bug has been filed on MathWorks to allow for one-line sprintf'ing with
-      % (string+num) cells (Request ID: 1-9WHK4W).
+      % The following section takes pretty long to execute, although in
+      % principle it is discouraged to use TikZ for those; LaTeX will take
+      % forever to compile.
+      % Still, a bug has been filed on MathWorks to allow for one-line
+      % sprintf'ing with (string+num) cells (Request ID: 1-9WHK4W);
+      % <http://www.mathworks.de/support/service_requests/Service_Request_Detail.do?ID=183481&filter=&sort=&statusorder=0&dateorder=0>.
       for i = 1:m
           for j = 1:n
               str = strcat(str, ...
                             sprintf(['\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
-                                     xcolor{i,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 ));
+                                     xcolor{m-i+1,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 ));
           end
       end
       % ------------------------------------------------------------------------
@@ -3408,7 +3412,15 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
               [m2t, xcolor] = patchcolor2xcolor(m2t, color, handle);
           case 'image'
               [m2t, colorindex] = cdata2colorindex(m2t, color, handle);
-              [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
+              m = size(colorindex, 1);
+              n = size(colorindex, 2);
+              xcolor = cell(m, n);
+              for i = 1:m
+                  for j = 1:n
+                      [m2t, xc] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex(i,j), :));
+                      xcolor{i, j} = xc;
+                  end
+              end
           otherwise
               error(['matlab2tikz:getColor', ...
                      'Argument ''mode'' has illegal value ''%s''.'], ...
@@ -3923,6 +3935,7 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
   m2t.extraRgbColorNames{end+1} = colorLiteral;
   m2t.extraRgbColorSpecs{end+1} = rgb;
 
+  return;
 end
 % =========================================================================
 function newstr = join(m2t, cellstr, delimiter)
