@@ -930,7 +930,7 @@ function [description, extraOpts] = errorBars ()
   E = std(Y)*ones(size(X));
   errorbar(X,Y,E)
 
-  description = 'Generic error bar plot.' ;
+  description = 'Generic error bar plot.';
   extraOpts = {};
 
 end
@@ -942,7 +942,7 @@ function [description, extraOpts] = errorBars2 ()
   e = std( data, 1, 2 );
   errorbar( y, e, 'xr' );
 
-  description = 'Another error bar example.' ;
+  description = 'Another error bar example.';
   extraOpts = {};
 
 end

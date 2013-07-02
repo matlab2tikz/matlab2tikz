@@ -1350,8 +1350,10 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
   end
 
   % check if the *optional* argument 'yDeviation' was given
+  hasDeviations = false;
   if nargin > 2
       data = [data, yDeviation(:)];
+      hasDeviations = true;
   end
 
   % Check if any value is infinite/NaN. In that case, add appropriate option.
@@ -1373,7 +1375,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
       xLim = get(m2t.currentHandles.gca, 'XLim');
       yLim = get(m2t.currentHandles.gca, 'YLim');
       % split the data into logical chunks
-      dataCell = splitLine(m2t, hasLines, hasMarkers, data, xLim, yLim);
+      dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xLim, yLim);
 
       % plot them
       for k = 1:length(dataCell)
@@ -1445,7 +1447,7 @@ function str = plotLine2d(m2t, opts, data)
   return
 end
 % =========================================================================
-function dataCell = splitLine(m2t, hasLines, hasMarkers, data, xLim, yLim)
+function dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xLim, yLim)
   % Split the xData, yData into several chunks of data for each of which
   % an \addplot will be generated.
   % Splitting criteria are:
@@ -1455,7 +1457,7 @@ function dataCell = splitLine(m2t, hasLines, hasMarkers, data, xLim, yLim)
   dataCell{1} = data;
 
   % Split up each of the chunks along visible segments.
-  dataCell = splitByVisibility(m2t, hasLines, hasMarkers, dataCell, xLim, yLim);
+  dataCell = splitByVisibility(m2t, hasLines, hasMarkers, hasDeviations, dataCell, xLim, yLim);
 
   % Split each of the current chunks further with respect to outliers.
   dataCell = splitByArraySize(m2t, dataCell);
@@ -1463,7 +1465,7 @@ function dataCell = splitLine(m2t, hasLines, hasMarkers, data, xLim, yLim)
 end
 % =========================================================================
 function dataCellNew = ...
-    splitByVisibility(m2t, hasLines, hasMarkers, dataCell, xLim, yLim) %#ok
+    splitByVisibility(m2t, hasLines, hasMarkers, hasDeviations, dataCell, xLim, yLim) %#ok
   % Parts of the line data may sit outside the plotbox.
   % 'segvis' tells us which segment are actually visible, and the
   % following construction loops through it and makes sure that each
@@ -1485,7 +1487,7 @@ function dataCellNew = ...
       dataIsInBox = isInBox(data{1}(:,1:2), ...
                             relaxedXLim, relaxedYLim);
 
-      if hasMarkers
+      if hasMarkers || hasDeviations
           shouldPlot = dataIsInBox;
       else
           % By default, don't plot any points.
@@ -3070,11 +3072,11 @@ function [m2t, str] = drawErrorBars(m2t, h)
   n1 = length(get(c(1),'XData'));
   n2 = length(get(c(2),'XData'));
   if n2 == 6*n1
-      % n1 contains centerpoint info
+      % 1 contains centerpoint info
       dataIdx  = 1;
       errorIdx = 2;
   elseif n1 == 6*n2
-      % n2 contains centerpoint info
+      % 2 contains centerpoint info
       dataIdx  = 2;
       errorIdx = 1;
   else
