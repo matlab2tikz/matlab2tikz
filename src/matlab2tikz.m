@@ -50,6 +50,9 @@ function matlab2tikz(varargin)
 %
 %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
 %
+%   MATLAB2TIKZ('floatFormat',CHAR,...) sets the format used for float values.
+%   You can use this to decrease the file size. (default: '%.15g')
+%
 %   MATLAB2TIKZ('maxChunkLength',INT,...) sets maximum number of data points
 %   per \addplot (default: 4000).
 %
