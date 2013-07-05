@@ -3784,7 +3784,7 @@ function [pTicks, pTickLabels] = ...
 
   % if there's no specific labels, return empty
   if isempty(tickLabels) || (length(tickLabels)==1 && isempty(tickLabels{1}))
-      pTickLabels = [];
+      pTickLabels = '\empty';
       return
   end
 

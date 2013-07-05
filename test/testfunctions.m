@@ -198,6 +198,8 @@ function [description, extraOpts] = one_point()
   set(gca, 'YTick', []);
   set(gca,'XTick',0:1:length(m)-1);
 
+  set(gca,'XTickLabel',{});
+
   description = 'Plot only one single point.';
   extraOpts = {};
 
