@@ -3096,7 +3096,7 @@ function [m2t, str] = drawErrorBars(m2t, h)
       dataIdx  = 2;
       errorIdx = 1;
       numDevData = 6;
-  if n2 == 9*n1
+  elseif n2 == 9*n1
       % 1 contains centerpoint info
       dataIdx  = 1;
       errorIdx = 2;
