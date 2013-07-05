@@ -3070,6 +3070,14 @@ function [m2t, str] = drawErrorBars(m2t, h)
   %    Y: y0-dev, y0+dev, y0-dev, y0-dev, y0+dev, y0+dev.
   %
   % Hence, 'XData' and 'YData' are of length 6*n and contain redundant info.
+  % Some versions of MATLAB(R) insert more columns with NaNs (deviations in
+  % direction z?) such that the data is laid out as
+  %
+  %    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps, NaN;
+  %    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev, NaN.
+  %
+  % This function accounts for both variants.
+  %
   c = get(h, 'Children');
 
   % Find out which contains the data and which the deviations.
@@ -3079,10 +3087,22 @@ function [m2t, str] = drawErrorBars(m2t, h)
       % 1 contains centerpoint info
       dataIdx  = 1;
       errorIdx = 2;
+      numDevData = 6;
   elseif n1 == 6*n2
       % 2 contains centerpoint info
       dataIdx  = 2;
       errorIdx = 1;
+      numDevData = 6;
+  if n2 == 9*n1
+      % 1 contains centerpoint info
+      dataIdx  = 1;
+      errorIdx = 2;
+      numDevData = 9;
+  elseif n1 == 9*n2
+      % 2 contains centerpoint info
+      dataIdx  = 2;
+      errorIdx = 1;
+      numDevData = 9;
   else
       error('drawErrorBars:errorMatch', ...
             'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d).', ...
@@ -3099,11 +3119,11 @@ function [m2t, str] = drawErrorBars(m2t, h)
 
   for k = 1:n
       % upper deviation
-      kk = 6*(k-1) + 1;
+      kk = numDevData*(k-1) + 1;
       upDev = abs(yValues(k) - yErrors(kk));
 
       % lower deviation
-      kk = 6*(k-1) + 2;
+      kk = numDevData*(k-1) + 2;
       loDev = abs(yValues(k) - yErrors(kk));
 
       if abs(upDev-loDev) >= 1e-10 % don't use 'm2t.tol' here as is seems somewhat too strict
