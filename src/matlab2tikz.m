@@ -16,7 +16,7 @@ function matlab2tikz(varargin)
 %   used. (default: current color map)
 %
 %   MATLAB2TIKZ('strict',BOOL,...) tells MATLAB2TIKZ to adhere to MATLAB(R)
-%   conventions wherever there is room for relaxation. (default: FALSE)
+%   conventions wherever there is room for relaxation. (default: false)
 %
 %   MATLAB2TIKZ('showInfo',BOOL,...) turns informational output on or off.
 %   (default: true)
@@ -39,14 +39,15 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
+%   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...)
+%   explicitly adds extra code at the beginning of the output file.
+%   (default: [])
+%
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
 %
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
 %   explicitly adds extra options to the tikzpicture environment. (default: [])
-%
-%   MATLAB2TIKZ('extraTikzpictureCode',CHAR or CELLCHAR,...)
-%   explicitly adds extra code right after \begin{tikzpicture}. (default: [])
 %
 %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
 %
@@ -236,14 +237,14 @@ function matlab2tikz(varargin)
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'height', [], @ischar);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'width' , [], @ischar);
 
+  % extra code
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraCode', {}, @isCellOrChar);
+
   % extra axis options
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraAxisOptions', {}, @isCellOrChar);
 
   % extra tikzpicture settings
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraTikzpictureOptions', {}, @isCellOrChar);
-
-  % extra tikzpicture code
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraTikzpictureCode', {}, @isCellOrChar);
 
   % file encoding
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'encoding' , '', @ischar);
@@ -517,10 +518,10 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
   m2t.content.comment = sprintf(['This file was created by %s v%s.\n', ...
-                                   'Copyright (c) %s, %s <%s>\n', ...
-                                   'All rights reserved.\n'], ...
-                                   m2t.name, m2t.version, ...
-                                   m2t.years, m2t.author, m2t.authorEmail);
+                                 'Copyright (c) %s, %s <%s>\n', ...
+                                 'All rights reserved.\n'], ...
+                                 m2t.name, m2t.version, ...
+                                 m2t.years, m2t.author, m2t.authorEmail);
 
   if m2t.cmdOpts.Results.showInfo
       % disable this info if showInfo=false
@@ -570,6 +571,22 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
       fprintf(fid, '%% %s\n', ...
               strrep(m2t.content.comment, sprintf('\n'), sprintf('\n%% ')));
   end
+
+  % Add custom code.
+  if ~isempty(m2t.cmdOpts.Results.extraCode)
+      if ischar(m2t.cmdOpts.Results.extraCode)
+          fprintf(fid, m2t.cmdOpts.Results.extraCode);
+          fprintf(fid, '\n');
+      elseif iscell(m2t.cmdOpts.Results.extraCode)
+          for str = m2t.cmdOpts.Results.extraCode(:)'
+              fprintf(fid, str{1});
+              fprintf(fid, '\n');
+          end
+      else
+          error('matlab2tikz:saveToFile', 'Need str or cellstr.');
+      end
+  end
+
   if m2t.cmdOpts.Results.standalone
       fprintf(fid, ['\\documentclass[tikz]{standalone}\n', ...
                     '\\usepackage{pgfplots}\n', ...
