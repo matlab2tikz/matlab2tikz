@@ -1480,14 +1480,14 @@ function dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xL
   dataCell = splitByVisibility(m2t, hasLines, hasMarkers, hasDeviations, dataCell, xLim, yLim);
 
   % Split each of the current chunks further with respect to outliers.
-  dataCell = splitByArraySize(m2t, dataCell);
+  dataCell = splitByArraySize(m2t, hasLines, dataCell);
 
 end
 % =========================================================================
 function dataCellNew = ...
     splitByVisibility(m2t, hasLines, hasMarkers, hasDeviations, dataCell, xLim, yLim) %#ok
   % Parts of the line data may sit outside the plotbox.
-  % 'segvis' tells us which segment are actually visible, and the
+  % 'segvis' tells us which segments are actually visible, and the
   % following construction loops through it and makes sure that each
   % point that is necessary gets actually printed.
   % 'printPrevious' tells whether or not the previous segment is visible;
@@ -1550,21 +1550,15 @@ function out = isInBox(data, xLim, yLim)
 
 end
 % =========================================================================
-function dataCellNew = splitByArraySize(m2t, dataCell)
+function dataCellNew = splitByArraySize(m2t, hasLines, dataCell)
   % TeX parses files line by line with a buffer of size buf_size. If the
   % plot has too many data points, pdfTeX's buffer size may be exceeded.
   % As a work-around, the plot is split into several smaller plots, and this
   % function does the job.
 
-  % Unconditionally set this to true. This results in one extra point to be
-  % plotted per chunk, which probably doesn't hurt too much. Anyways,
-  % TODO Take hasLines as argument to splitByArraySize().
-  hasLines = true;
-
   dataCellNew = cell(0);
 
   for data = dataCell
-
       chunkStart = 1;
       len = size(data{1}, 1);
       while chunkStart <= len
@@ -1577,7 +1571,7 @@ function dataCellNew = splitByArraySize(m2t, dataCell)
           % stream; otherwise the line between two data chunks would be broken.
           if hasLines && chunkEnd~=len
               dataCellNew{end} = [dataCellNew{end};...
-                                   data{1}(chunkEnd+1,:)];
+                                  data{1}(chunkEnd+1,:)];
           end
 
           chunkStart = chunkEnd + 1;
@@ -2393,8 +2387,9 @@ function [m2t, str] = drawText(m2t, handle)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   pos = get(handle, 'Position');
+  units = get(handle, 'Units');
   if length(pos) == 2
-      if strcmp(get(handle, 'Units'),'normalized')
+      if strcmp(units, 'normalized')
           posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
       else
           posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
@@ -2410,15 +2405,15 @@ function [m2t, str] = drawText(m2t, handle)
       end
   elseif length(pos) == 3
       pos = applyHgTransform(m2t, pos);
-      if strcmp(get(handle, 'Units'),'normalized')
+      if strcmp(units, 'normalized')
           posString = sprintf(['(rel axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
       else
           posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
       end
 
-      xlim = get(m2t.currentHandles.gca,'XLim');
-      ylim = get(m2t.currentHandles.gca,'YLim');
-      zlim = get(m2t.currentHandles.gca,'ZLim');
+      xlim = get(m2t.currentHandles.gca, 'XLim');
+      ylim = get(m2t.currentHandles.gca, 'YLim');
+      zlim = get(m2t.currentHandles.gca, 'ZLim');
       if pos(1) < xlim(1) || pos(1) > xlim(2) ...
       || pos(2) < ylim(1) || pos(2) > ylim(2) ...
       || pos(3) < zlim(1) || pos(3) > zlim(2)
