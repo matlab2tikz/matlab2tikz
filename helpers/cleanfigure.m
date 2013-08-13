@@ -198,9 +198,12 @@ function pruneOutsideBox(meta, handle)
       end
 
       % Create masked data with NaN padding.
-      newData = [];
+      % Make sure that there are no NaNs at the beginning of the data since
+      % this would be interpreted as column names by Pgfplots.
+      ci = chunkIndices(1,:);
+      newData = data(ci(1):ci(2), :);
       n = size(data, 2);
-      for ci = chunkIndices'
+      for ci = chunkIndices(2:end,:)'
            newData = [newData; ...
                       NaN(1, n); ...
                       data(ci(1):ci(2), :)];
