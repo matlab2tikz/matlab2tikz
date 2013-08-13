@@ -3090,8 +3090,8 @@ function [m2t, str] = drawErrorBars(m2t, h)
   %    Y: y0-dev, y0+dev, y0-dev, y0-dev, y0+dev, y0+dev.
   %
   % Hence, 'XData' and 'YData' are of length 6*n and contain redundant info.
-  % Some versions of MATLAB(R) insert more columns with NaNs (deviations in
-  % direction z?) such that the data is laid out as
+  % Some versions of MATLAB(R) insert more columns with NaNs (to be able to
+  % pass the entire X, Y arrays into plot()) such that the data is laid out as
   %
   %    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps, NaN;
   %    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev, NaN.
