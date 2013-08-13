@@ -2867,12 +2867,12 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
   str = [];
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % One could get(h,'{X,Y,U,V}Data') in which the intended arrow lengths are stored.
-  % MATLAB(R) however applies some quite sophisticated scaling here to avoid overlap
-  % of arrows.
+  % One could get(h,'{X,Y,U,V}Data') in which the intended arrow lengths
+  % are stored. MATLAB(R) however applies some quite sophisticated scaling
+  % here to avoid overlap of arrows.
   % The actual length of the arrows is stored in c(1) of
   %
-  %  c = get(h,'Children');
+  %  c = get(h, 'Children');
   %
   % 'XData' and 'YData' of c(1) will be of the form
   %
@@ -2892,8 +2892,6 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
   XY(2,:) = yData(1:step:end);
   XY(3,:) = xData(2:step:end);
   XY(4,:) = yData(2:step:end);
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % gather the arrow options
   showArrowHead = get(h, 'ShowArrowHead');
@@ -2929,15 +2927,12 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
                                      sprintf('arrow%d/.style', m2t.quiverId), ...
                                      ['{', arrowOptions, '}']);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % return the vector field code
   str = [str, ...
          sprintf(['\\addplot [arrow',num2str(m2t.quiverId), '] ', ...
                   'coordinates{(',m2t.ff,',',m2t.ff,') (',m2t.ff,',',m2t.ff,')};\n'],...
                   XY)];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   return;
 end
 % =========================================================================

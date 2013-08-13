@@ -265,7 +265,7 @@ function coarsenLine(meta, handle, minimumPointsDistance)
   yData = get(handle, 'YData');
   zData = get(handle, 'ZData');
   if ~isempty(zData)
-    % Don't do funny stuff with zData.
+    % Don't do funny stuff when zData is present.
     return;
   end
 
@@ -275,7 +275,7 @@ function coarsenLine(meta, handle, minimumPointsDistance)
       return;
   end
 
-  % Generates a mask which is true for the first point, and all
+  % Generate a mask which is true for the first point, and all
   % subsequent points which have a greater norm2-distance from
   % the previous point than 'threshold'.
   n = size(data, 1);
@@ -308,6 +308,9 @@ function coarsenLine(meta, handle, minimumPointsDistance)
   end
   mask(end) = true;
 
+  % Make sure to keep NaNs.
+  mask = mask | any(isnan(data)')';
+
   % Set the new (masked) data.
   set(handle, 'XData', data(mask, 1));
   set(handle, 'YData', data(mask, 2));
@@ -319,7 +322,7 @@ function movePointsCloser(meta, handle)
   % Move all points outside a box much larger than the visible one
   % to the boundary of that box and make sure that lines in the visible
   % box are preserved. This typically involves replacing one point by
-  % two new ones.
+  % two new ones and a NaN.
 
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
@@ -338,9 +341,8 @@ function movePointsCloser(meta, handle)
 
   xWidth = xlim(2) - xlim(1);
   yWidth = ylim(2) - ylim(1);
-  % Chose a pretty large extend factor here to work around sitatuation where
-  % the connecting line between two points intersects with the box if the two
-  % points are moved quite close to the box.
+  % Don't choose the larger box too large to make sure that the values inside
+  % it can still be treated by TeX.
   extendFactor = 10.0;
   largeXLim = xlim + extendFactor * [-xWidth, xWidth];
   largeYLim = ylim + extendFactor * [-yWidth, yWidth];
@@ -349,6 +351,9 @@ function movePointsCloser(meta, handle)
   % don't exceed TeX's memory).
   dataIsInLargeBox = isInBox(data(:,1:2), ...
                              largeXLim, largeYLim);
+
+  % Count the NaNs as being inside the box.
+  dataIsInLargeBox = dataIsInLargeBox | any(isnan(data)')';
 
   % Loop through all points which are to be included in the plot yet do not
   % fit into the extended box, and gather the points by which they are to be
@@ -396,7 +401,6 @@ function movePointsCloser(meta, handle)
   % Set the new (masked) data.
   set(handle, 'XData', dataNew(:,1));
   set(handle, 'YData', dataNew(:,2));
-
   if ~isempty(zData)
     % As per precondition, all zData entries are equal.
     zDataNew = zData(1) * ones(size(dataNew,1), 1);
