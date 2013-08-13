@@ -31,7 +31,7 @@ The workflow is as follows.
 >> help matlab2tikz
 ```
 Sometimes, MATLAB makes it hard to create matching LaTeX plots by keeping
-invisible objects around or streches the plots too far beyond the bounding box.
+invisible objects around or stretches the plots too far beyond the bounding box.
 Use
 ```matlab
 >> cleanfigure;
@@ -56,7 +56,7 @@ to first clean the figure of unwanted entities, and then convert it to TeX.
 \end{document}
 ```
 
-There are reported incompatibilties with the follwing LaTeX packages:
+There are reported incompatibilities with the following LaTeX packages:
    * signalflowdiagram <http://www.texample.net/tikz/examples/signal-flow-building-blocks/>
      (Check out <http://sourceforge.net/tracker/?func=detail&aid=3312653&group_id=224188&atid=1060656>.)
 
