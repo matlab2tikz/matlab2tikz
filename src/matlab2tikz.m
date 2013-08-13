@@ -55,7 +55,7 @@ function matlab2tikz(varargin)
 %   You can use this to decrease the file size. (default: '%.15g')
 %
 %   MATLAB2TIKZ('maxChunkLength',INT,...) sets maximum number of data points
-%   per \addplot (default: 4000).
+%   per \addplot for line plots (default: 4000).
 %
 %   MATLAB2TIKZ('parseStrings',BOOL,...) determines whether title, axes labels
 %   and the like are parsed into LaTeX by MATLAB2TIKZ's parser.
