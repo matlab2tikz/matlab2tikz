@@ -156,7 +156,7 @@ function pruneOutsideBox(meta, handle)
                         relaxedXLim, relaxedYLim);
 
   % By default, don't plot any points.
-  shouldPlot = false(numPoints,1);
+  shouldPlot = false(numPoints, 1);
   if hasMarkers
       shouldPlot = shouldPlot | dataIsInBox;
   end
@@ -168,30 +168,50 @@ function pruneOutsideBox(meta, handle)
       shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
   end
 
-  %% Split the data in chunks of where 'shouldPlot' is 'true'.
-  %k = 1;
-  %while k <= numPoints
-  %    % fast forward to shouldPlot==True
-  %    while k<=numPoints && ~shouldPlot(k)
-  %        k = k+1;
-  %    end
-  %    kStart = k;
-  %    % fast forward to shouldPlot==False
-  %    while k<=numPoints && shouldPlot(k)
-  %        k = k+1;
-  %    end
-  %    kEnd = k-1;
+  if ~all(shouldPlot)
+      % There are two options here:
+      %      data = data(shouldPlot, :);
+      % i.e., simply removing the data that isn't supposed to be plotted.
+      % For line plots, this has the disadvantage that the line between two
+      % 'loose' ends may now appear in the figure.
+      % To avoid this, add a row of NaNs wherever a block of actual data is
+      % removed.
+      chunkIndices = [];
+      k = 1;
+      while k <= numPoints
+          % fast forward to shouldPlot==True
+          while k<=numPoints && ~shouldPlot(k)
+              k = k+1;
+          end
+          kStart = k;
+          % fast forward to shouldPlot==False
+          while k<=numPoints && shouldPlot(k)
+              k = k+1;
+          end
+          kEnd = k-1;
 
-  %    if kStart <= kEnd
-  %        dataCellNew{end+1} = data{1}(kStart:kEnd,:);
-  %    end
-  %end
+          if kStart <= kEnd
+              chunkIndices = [chunkIndices; ...
+                              [kStart, kEnd]];
+          end
+      end
 
-  % Set the new (masked) data.
-  set(handle, 'XData', data(shouldPlot, 1));
-  set(handle, 'YData', data(shouldPlot, 2));
+      % Create masked data with NaN padding.
+      newData = [];
+      n = size(data, 2);
+      for ci = chunkIndices'
+           newData = [newData; ...
+                      NaN(1, n); ...
+                      data(ci(1):ci(2), :)];
+      end
+      data = newData;
+  end
+
+  % Override with the new data.
+  set(handle, 'XData', data(:, 1));
+  set(handle, 'YData', data(:, 2));
   if ~isempty(zData)
-    set(handle, 'ZData', data(shouldPlot, 3));
+    set(handle, 'ZData', data(:, 3));
   end
 
   return;

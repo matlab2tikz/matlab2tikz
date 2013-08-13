@@ -747,7 +747,6 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   %                           function 'alignSubPlots()'.
   %                           This argument is optional.
 
-
   % Handle special cases.
   % MATLAB(R) uses 'Tag', Octave 'tag' for their tags. :/
   tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
@@ -1476,77 +1475,8 @@ function dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xL
 
   dataCell{1} = data;
 
-  % Split up each of the chunks along visible segments.
-  dataCell = splitByVisibility(m2t, hasLines, hasMarkers, hasDeviations, dataCell, xLim, yLim);
-
   % Split each of the current chunks further with respect to outliers.
   dataCell = splitByArraySize(m2t, hasLines, dataCell);
-
-end
-% =========================================================================
-function dataCellNew = ...
-    splitByVisibility(m2t, hasLines, hasMarkers, hasDeviations, dataCell, xLim, yLim) %#ok
-  % Parts of the line data may sit outside the plotbox.
-  % 'segvis' tells us which segments are actually visible, and the
-  % following construction loops through it and makes sure that each
-  % point that is necessary gets actually printed.
-  % 'printPrevious' tells whether or not the previous segment is visible;
-  % this information is used for determining when a new 'addplot' needs
-  % to be opened.
-
-  dataCellNew = cell(0);
-
-  tol = 1.0e-10;
-  relaxedXLim = xLim + [-tol, tol];
-  relaxedYLim = yLim + [-tol, tol];
-
-  for data = dataCell
-      numPoints = size(data{1}, 1);
-
-      % Get which points are inside a (slightly larger) box.
-      dataIsInBox = isInBox(data{1}(:,1:2), ...
-                            relaxedXLim, relaxedYLim);
-
-      if hasMarkers || hasDeviations
-          shouldPlot = dataIsInBox;
-      else
-          % By default, don't plot any points.
-          shouldPlot = false(numPoints,1);
-      end
-      if hasLines
-          % Check if the connecting line is in the box.
-          segvis = segmentVisible(data{1}(:,1:2), ...
-                                  dataIsInBox, xLim, yLim);
-          % Plot points which are next to an edge which is in the box.
-          shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
-      end
-
-      % Split the data in chunks of where 'shouldPlot' is 'true'.
-      k = 1;
-      while k <= numPoints
-          % fast forward to shouldPlot==True
-          while k<=numPoints && ~shouldPlot(k)
-              k = k+1;
-          end
-          kStart = k;
-          % fast forward to shouldPlot==False
-          while k<=numPoints && shouldPlot(k)
-              k = k+1;
-          end
-          kEnd = k-1;
-
-          if kStart <= kEnd
-              dataCellNew{end+1} = data{1}(kStart:kEnd,:);
-          end
-      end
-  end
-
-end
-% =========================================================================
-function out = isInBox(data, xLim, yLim)
-
-  out = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
-      & data(:,2) > yLim(1) & data(:,2) < yLim(2);
 
 end
 % =========================================================================
@@ -1577,59 +1507,6 @@ function dataCellNew = splitByArraySize(m2t, hasLines, dataCell)
           chunkStart = chunkEnd + 1;
       end
   end
-
-end
-% =========================================================================
-function out = segmentVisible(data, dataIsInBox, xLim, yLim)
-    % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
-    % in p and determine whether the line between the pair crosses the box.
-
-    n = size(data, 1);
-    out = false(n-1, 1);
-    for k = 1:n-1
-        out(k) =  (dataIsInBox(k) && all(isfinite(data(k+1,:)))) ... % one of the neighbors is inside the box
-               || (dataIsInBox(k+1) && all(isfinite(data(k,:)))) ... % and the other is finite
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(1)], [xLim(1);yLim(2)]) ... % left border
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(1)], [xLim(2);yLim(1)]) ... % bottom border
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(2);yLim(1)], [xLim(2);yLim(2)]) ... % right border
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(2)], [xLim(2);yLim(2)]); % top border
-    end
-
-end
-% =========================================================================
-function out = segmentsIntersect(X1, X2, X3, X4)
-  % Checks whether the segments X1--X2 and X3--X4 intersect.
-  lambda = crossLines(X1, X2, X3, X4);
-  out = all(lambda > 0.0) && all(lambda < 1.0);
-  return
-end
-% =========================================================================
-function lambda = crossLines(X1, X2, X3, X4)
-  % Given four points X_k=(x_k,y_k), k\in{1,2,3,4}, and the two lines defined
-  % by those,
-  %
-  %  L1(lambda) = X1 + lambda (X2 - X1)
-  %  L2(lambda) = X3 + lambda (X4 - X3)
-  %
-  % returns the lambda for which they intersect (and Inf if they are parallel).
-  % Technically, one needs to solve the 2x2 equation system
-  %
-  %   x1 + lambda1 (x2-x1)  =  x3 + lambda2 (x4-x3)
-  %   y1 + lambda1 (y2-y1)  =  y3 + lambda2 (y4-y3)
-  %
-  % for lambda and mu.
-
-  rhs = X3(:) - X1(:);
-  % Divide by det even if it's 0: Infs are returned.
-  % A = [X2-X1, -(X4-X3)];
-  detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1));
-  invA = [-(X4(2)-X3(2)), X4(1)-X3(1);...
-          -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
-  lambda = invA * rhs;
 
 end
 % =========================================================================
