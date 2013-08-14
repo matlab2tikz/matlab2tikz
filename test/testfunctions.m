@@ -99,6 +99,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @spherePlot          , ...
                            @surfPlot            , ...
                            @surfPlot2           , ...
+                           @superkohle          , ...
                            @meshPlot            , ...
                            @ylabels             , ...
                            @spectro             , ... % takes pretty long to LuaLaTeX-compile
@@ -1347,6 +1348,41 @@ function [description, extraOpts] = surfPlot2()
   legend( 'legendary', 'Location', 'NorthEastOutside' );
 
   description = 'Another surface plot.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = superkohle()
+
+  x1=0;
+  x2=pi;
+  y1=0;
+  y2=pi;
+  omegashape = [2 2 2 2             % 2 = line segment; 1 = circle segment; 4 = elipse segment
+              x1 x2 x2 x1         % start point x
+              x2 x2 x1 x1         % end point x
+              y1 y1 y2 y2         % start point y
+              y1 y2 y2 y1         % end point y
+              1 1 1 1
+              0 0 0 0];
+  [xy,edges,tri] = initmesh(omegashape,'Hgrad',1.05);
+  mmin = 1;
+  while size(xy,2) < mmin
+      [xy,edges,tri] = refinemesh(omegashape,xy,edges,tri);
+  end
+  m = size(xy,2);
+  x = xy(1,:)';
+  y = xy(2,:)';
+  y0 = cos(x).*cos(y);
+
+  figure;
+  pdesurf(xy,tri,y0(:,1));
+  title('y_0');
+  xlabel('x1 axis');
+  ylabel('x2 axis');
+  axis([0 pi 0 pi -1 1]);
+  grid on;
+
+  description = 'Superkohle plot.';
   extraOpts = {};
 end
 % =========================================================================
