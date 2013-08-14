@@ -1,3 +1,16 @@
+2013-08-14  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.4.1.
+	* Replaced option `extraTikzpictureCode` by `extraCode`
+	  for inserting code at the beginning of the file.
+	* Support for relative text positioning.
+	* Improved documentation.
+	* Code cleanup: moved all figure manipulations over to cleanfigure()
+	* Bugfixes:
+	   - error bars
+	   - empty tick labels
+	   - ...
+
 2013-06-26  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.4.0.
