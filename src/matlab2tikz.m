@@ -2960,8 +2960,8 @@ function [m2t, str] = drawErrorBars(m2t, h)
   % Some versions of MATLAB(R) insert more columns with NaNs (to be able to
   % pass the entire X, Y arrays into plot()) such that the data is laid out as
   %
-  %    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps, NaN;
-  %    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev, NaN.
+  %    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps;
+  %    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev.
   %
   % This function accounts for both variants.
   %
@@ -2980,20 +2980,20 @@ function [m2t, str] = drawErrorBars(m2t, h)
       dataIdx  = 2;
       errorIdx = 1;
       numDevData = 6;
-  elseif n2 == 9*n1
+  elseif n2 == 9*n1-1
       % 1 contains centerpoint info
       dataIdx  = 1;
       errorIdx = 2;
       numDevData = 9;
-  elseif n1 == 9*n2
+  elseif n1 == 9*n2-1
       % 2 contains centerpoint info
       dataIdx  = 2;
       errorIdx = 1;
       numDevData = 9;
   else
       error('drawErrorBars:errorMatch', ...
-            'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d).', ...
-            n1, n2, n2, n1);
+            'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d, 9*%d-1 ~= %d, 9*%d-1 ~= %d).', ...
+            n1, n2, n2, n1, n1, n2, n2, n1);
   end
 
   % prepare error array (that is, gather the y-deviations)
