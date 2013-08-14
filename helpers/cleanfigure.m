@@ -343,7 +343,7 @@ function movePointsCloser(meta, handle)
   yWidth = ylim(2) - ylim(1);
   % Don't choose the larger box too large to make sure that the values inside
   % it can still be treated by TeX.
-  extendFactor = 10.0;
+  extendFactor = 0.1;
   largeXLim = xlim + extendFactor * [-xWidth, xWidth];
   largeYLim = ylim + extendFactor * [-yWidth, yWidth];
 
@@ -389,10 +389,37 @@ function movePointsCloser(meta, handle)
   % Insert all r{k}{:} at replaceIndices[k].
   dataNew = [];
   lastReplIndex = 0;
+  lastEntryIsReplacement = false;
   for k = 1:m
-     dataNew = [dataNew; ...
-                data(lastReplIndex+1:replaceIndices(k)-1,:);...
-                r{k}];
+     % Make sure that two subsequent moved points are separated by a NaN entry.
+     % This is to make sure that there is no visible line between two moved
+     % points that wasn't there before.
+     d = data(lastReplIndex+1:replaceIndices(k)-1,:);
+     if size(r{k}, 1) == 2
+         % Two replacement entries -- pad them with a NaN.
+         rep = [r{k}(1, :); ...
+                NaN(1, size(r{k}, 2)); ...
+                r{k}(2, :)];
+     else
+         rep = r{k};
+     end
+     if isempty(d) && ~isempty(rep) && lastEntryIsReplacement
+         % The last entry was a replacment, and the first one now is.
+         % Prepend a NaN.
+         rep = [NaN(1, size(r{k}, 2)); ...
+                rep];
+     end
+     % Add the data.
+     if ~isempty(d)
+         dataNew = [dataNew; ...
+                    d];
+         lastEntryIsReplacement = false;
+     end
+     if ~isempty(rep)
+         dataNew = [dataNew; ...
+                    rep];
+         lastEntryIsReplacement = true;
+     end
      lastReplIndex = replaceIndices(k);
   end
   dataNew = [dataNew; ...
