@@ -1777,62 +1777,70 @@ function [m2t, str] = drawPatch(m2t, handle)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   zData = get(handle, 'ZData');
-
   % -----------------------------------------------------------------------
   % gather the draw options
   drawOptions = cell(0);
 
-  % line width
-  lineStyle = get(handle, 'LineStyle');
-  lineWidth = get(handle, 'LineWidth');
-  lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-  drawOptions = [drawOptions, lineOptions];
+  % see if individual color values are present
+  cData = get(handle, 'CData');
 
-  % fill color
-  faceColor = get(handle, 'FaceColor');
-  if ~strcmp(faceColor, 'none')
-      [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-      drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
-      xFaceAlpha = get(handle, 'FaceAlpha');
-      if abs(xFaceAlpha-1.0) > m2t.tol
-          drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
+  if isempty(cData)
+      % line width
+      lineStyle = get(handle, 'LineStyle');
+      lineWidth = get(handle, 'LineWidth');
+      lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+      drawOptions = [drawOptions, lineOptions];
+
+      % Find out color values.
+      % fill color
+      faceColor = get(handle, 'FaceColor');
+      if ~strcmp(faceColor, 'none')
+          %[m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+          xFaceColor = 'red';
+          drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
+          xFaceAlpha = get(handle, 'FaceAlpha');
+          if abs(xFaceAlpha-1.0) > m2t.tol
+              drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
+          end
       end
-  end
 
-  % draw color
-  edgeColor = get(handle, 'EdgeColor');
-  lineStyle = get(handle, 'LineStyle');
-  if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
-      drawOptions{end+1} = 'draw=none';
-  else
-      [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
-      if isempty(xEdgeColor)
-          % getColor() wasn't able to return a color. This is because cdata
-          % was an actual vector with different values in it, meaning that
-          % the color changes along the edge. This is the case, for example,
-          % with waterfall() plots.
-          % An actual color maps is needed here.
-          %
-          drawOptions{end+1} = 'mesh'; % or surf
-          m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
-                        matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
-          % Append upper and lower limit of the color mapping.
-          clim = caxis;
-          m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
-                        'point meta min', sprintf(m2t.ff, clim(1)));
-          m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
-                        'point meta max', sprintf(m2t.ff, clim(2)));
-          % Note:
-          % Pgfplots can't currently use FaceColor and colormapped edge color
-          % in one go. The option 'surf' makes sure that colormapped edge
-          % colors are used. Face colors are not displayed.
+      % draw color
+      edgeColor = get(handle, 'EdgeColor');
+      lineStyle = get(handle, 'LineStyle');
+      if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+          drawOptions{end+1} = 'draw=none';
       else
-          % getColor() returned a reasonable color value.
-          drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+          [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
+          if isempty(xEdgeColor)
+              % getColor() wasn't able to return a color. This is because cdata
+              % was an actual vector with different values in it, meaning that
+              % the color changes along the edge. This is the case, for
+              % example, with waterfall() plots.
+              % An actual color maps is needed here.
+              %
+              drawOptions{end+1} = 'mesh'; % or surf
+              m2t.axesContainers{end}.options = ...
+                addToOptions(m2t.axesContainers{end}.options, ...
+                            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+              % Append upper and lower limit of the color mapping.
+              clim = caxis;
+              m2t.axesContainers{end}.options = ...
+                addToOptions(m2t.axesContainers{end}.options, ...
+                            'point meta min', sprintf(m2t.ff, clim(1)));
+              m2t.axesContainers{end}.options = ...
+                addToOptions(m2t.axesContainers{end}.options, ...
+                            'point meta max', sprintf(m2t.ff, clim(2)));
+              % Note:
+              % Pgfplots can't currently use FaceColor and colormapped edge color
+              % in one go. The option 'surf' makes sure that colormapped edge
+              % colors are used. Face colors are not displayed.
+          else
+              % getColor() returned a reasonable color value.
+              drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+          end
       end
+  else % ~isempty(cData)
+      drawOptions{end+1} = 'patch';
   end
 
   if ~m2t.currentHandleHasLegend
@@ -1842,8 +1850,9 @@ function [m2t, str] = drawPatch(m2t, handle)
 
   drawOpts = join(m2t, drawOptions, ',');
   % -----------------------------------------------------------------------
-
-  if any(~isfinite(xData(:))) || any(~isfinite(yData(:))) || any(~isfinite(zData(:)))
+  if   any(~isfinite(xData(:))) ...
+    || any(~isfinite(yData(:))) ...
+    || any(~isfinite(zData(:)))
       m2t.axesContainers{end}.options = ...
         addToOptions(m2t.axesContainers{end}.options, ...
                     'unbounded coords', 'jump');
@@ -1855,24 +1864,36 @@ function [m2t, str] = drawPatch(m2t, handle)
   if isempty(zData)
       % 2D patch.
       % Patches are drawn with the last column first.
+      str = [str, ...
+             sprintf(['\n\\addplot [', drawOpts, ']\n']), ...
+             sprintf('table[row sep=crcr]{\n') ...
+             ];
       for j = n:-1:1
           str = [str, ...
-                 sprintf(['\n\\addplot [', drawOpts, '] table[row sep=crcr]{\n']), ...
-                 sprintf([m2t.ff, ' ', m2t.ff, '\\\\\n'], [xData(:,j), yData(:,j)]'), ...
-                 '};'];
+                 sprintf([m2t.ff, ' ', m2t.ff, '\\\\\n'], ...
+                         [xData(:,j), yData(:,j)]'), ...
+                 ];
           % This path isn't necessarily closed, but Pgfplots
           % can deal with that.
       end
+      str = [str, '};'];
    else % ~isempty(zData)
       % 3D patch.
+      str = [str, ...
+             sprintf(['\n\\addplot3 [',drawOpts,']\n']), ...
+             sprintf('table[row sep=crcr,point meta=\\thisrow{c}]{\n'), ...
+             sprintf('x y z c\\\\\n') ...
+             ];
       % Patches are drawn with the last column first.
       for j = n:-1:1
-          data = applyHgTransform(m2t, [xData(:,j),yData(:,j),zData(:,j)]);
+          data = applyHgTransform(m2t, [xData(:,j), yData(:,j), zData(:,j)]);
           str = [str, ...
-                 sprintf(['\n\\addplot3 [',drawOpts,'] table[row sep=crcr]{\n']), ...
-                 sprintf([m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'], data'), ...
-                 sprintf('};\n')];
+                 sprintf([m2t.ff, ' ', m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'], ...
+                         [data, cData(:,j)]'), ...
+                 ];
       end
+      str = [str, ...
+              sprintf('};\n')];
       m2t.currentAxesContain3dData = true;
    end
    str = [str, sprintf('\n')];

@@ -1374,7 +1374,6 @@ function [description, extraOpts] = superkohle()
   y = xy(2,:)';
   y0 = cos(x).*cos(y);
 
-  figure;
   pdesurf(xy,tri,y0(:,1));
   title('y_0');
   xlabel('x1 axis');
