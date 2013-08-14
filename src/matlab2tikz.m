@@ -556,14 +556,14 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
   % Don't forget to define the colors.
   if ~isempty(m2t.extraRgbColorNames)
-      m2t.content.colors = sprintf('\n%% defining custom colors\n');
+      m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
       for k = 1:length(m2t.extraRgbColorNames)
           % make sure to append with '%' to avoid spacing woes
           m2t.content.colors = [m2t.content.colors, ...
                                 sprintf(['\\definecolor{%s}{rgb}{', m2t.ff, ',', m2t.ff, ',', m2t.ff,'}%%\n'], ...
                                         m2t.extraRgbColorNames{k}', m2t.extraRgbColorSpecs{k})];
       end
-      m2t.content.colors = [m2t.content.colors sprintf('\n')];
+      m2t.content.colors = [m2t.content.colors sprintf('%%\n')];
   end
 
   % Finally print it to the file,
