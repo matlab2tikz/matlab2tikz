@@ -14,7 +14,7 @@ release:
      ${MATLAB2TIKZ_DIR}/README.md \
      ${MATLAB2TIKZ_DIR}/THANKS \
      ${MATLAB2TIKZ_DIR}/version-${VERSION} \
-     ${MATLAB2TIKZ_DIR}/helpers/ \
+     ${MATLAB2TIKZ_DIR}/tools/ \
      ${MATLAB2TIKZ_DIR}/src/
 
 clean:
