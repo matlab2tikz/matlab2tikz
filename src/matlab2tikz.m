@@ -1784,7 +1784,15 @@ function [m2t, str] = drawPatch(m2t, handle)
   % see if individual color values are present
   cData = get(handle, 'CData');
 
-  if isempty(cData)
+  if length(cData) == length(xData)
+      drawOptions{end+1} = 'patch';
+      % Add the color map.
+      m2t.axesContainers{end}.options = ...
+        addToOptions(m2t.axesContainers{end}.options, ...
+                    matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+  else
+      % Probably one color only, so things we're probably only dealing with
+      % one patch here.
       % line width
       lineStyle = get(handle, 'LineStyle');
       lineWidth = get(handle, 'LineWidth');
@@ -1795,8 +1803,7 @@ function [m2t, str] = drawPatch(m2t, handle)
       % fill color
       faceColor = get(handle, 'FaceColor');
       if ~strcmp(faceColor, 'none')
-          %[m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-          xFaceColor = 'red';
+          [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
           drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
           xFaceAlpha = get(handle, 'FaceAlpha');
           if abs(xFaceAlpha-1.0) > m2t.tol
@@ -1831,16 +1838,14 @@ function [m2t, str] = drawPatch(m2t, handle)
                 addToOptions(m2t.axesContainers{end}.options, ...
                             'point meta max', sprintf(m2t.ff, clim(2)));
               % Note:
-              % Pgfplots can't currently use FaceColor and colormapped edge color
-              % in one go. The option 'surf' makes sure that colormapped edge
-              % colors are used. Face colors are not displayed.
+              % Pgfplots can't currently use FaceColor and colormapped edge
+              % color in one go. The option 'surf' makes sure that colormapped
+              % edge colors are used. Face colors are not displayed.
           else
               % getColor() returned a reasonable color value.
               drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
           end
       end
-  else % ~isempty(cData)
-      drawOptions{end+1} = 'patch';
   end
 
   if ~m2t.currentHandleHasLegend
