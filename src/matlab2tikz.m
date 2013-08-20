@@ -2991,9 +2991,11 @@ function [m2t, str] = drawErrorBars(m2t, h)
   % pass the entire X, Y arrays into plot()) such that the data is laid out as
   %
   %    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps;
-  %    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev.
+  %    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev,
   %
-  % This function accounts for both variants.
+  % or with another columns of NaNs added at the end.
+  %
+  % This function accounts for all variants.
   %
   c = get(h, 'Children');
 
@@ -3010,12 +3012,12 @@ function [m2t, str] = drawErrorBars(m2t, h)
       dataIdx  = 2;
       errorIdx = 1;
       numDevData = 6;
-  elseif n2 == 9*n1-1
+  elseif n2 == 9*n1-1 || n2 == 9*n1
       % 1 contains centerpoint info
       dataIdx  = 1;
       errorIdx = 2;
       numDevData = 9;
-  elseif n1 == 9*n2-1
+  elseif n1 == 9*n2-1 || n1 == 9*n2
       % 2 contains centerpoint info
       dataIdx  = 2;
       errorIdx = 1;
