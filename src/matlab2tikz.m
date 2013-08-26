@@ -1812,7 +1812,7 @@ function [m2t, str] = drawPatch(m2t, handle)
   % back to explicit color specifications for line plots.
   if length(cData) == length(xData) ...
      && ~strcmp(get(handle, 'FaceColor'), 'none')
-      data = [data, cData];
+      data = [data, cData(:)];
       drawOptions{end+1} = 'patch';
       columnNames{end+1} = 'c';
       tableOptions{end+1} = 'point meta=\\thisrow{c}';
