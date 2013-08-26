@@ -1777,6 +1777,17 @@ function [m2t, str] = drawPatch(m2t, handle)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   zData = get(handle, 'ZData');
+
+  if isempty(zData)
+      columnNames = {'x', 'y'};
+      data = [xData(:), yData(:)];
+      plotType = 'addplot';
+  else
+      columnNames = {'x', 'y', 'z'};
+      data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
+      plotType = 'addplot3';
+      m2t.currentAxesContain3dData = true;
+  end
   % -----------------------------------------------------------------------
   % gather the draw options
   drawOptions = cell(0);
@@ -1784,8 +1795,13 @@ function [m2t, str] = drawPatch(m2t, handle)
   % see if individual color values are present
   cData = get(handle, 'CData');
 
-  if length(cData) == length(xData)
+  if get(handle, 'FaceColor') ~= 'none'
       drawOptions{end+1} = 'patch';
+  end
+
+  if length(cData) == length(xData)
+      data = [data, cData];
+      columnNames{end+1} = 'c';
       % Add the color map.
       m2t.axesContainers{end}.options = ...
         addToOptions(m2t.axesContainers{end}.options, ...
@@ -1862,34 +1878,14 @@ function [m2t, str] = drawPatch(m2t, handle)
         addToOptions(m2t.axesContainers{end}.options, ...
                     'unbounded coords', 'jump');
   end
-
-  % n > 1 for certain patch plots, for example.
-  n = size(xData, 2);
-
-  if isempty(zData)
-      % 2D patch.
-      % Concatenate the data column by column and plot it in one sprintf
-      % operation.
-      % This path isn't necessarily closed, but Pgfplots
-      % can deal with that.
-      str = [str, ...
-             sprintf(['\n\\addplot [', drawOpts, ']\n']), ...
-             sprintf('table[row sep=crcr]{\n'), ...
-             sprintf([m2t.ff, ' ', m2t.ff, '\\\\\n'], ...
-                     [xData(:), yData(:)]'), ...
-            '};'];
-   else % ~isempty(zData)
-      % 3D patch.
-      data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
-      str = [str, ...
-             sprintf(['\n\\addplot3 [',drawOpts,']\n']), ...
-             sprintf('table[row sep=crcr,point meta=\\thisrow{c}]{\n'), ...
-             sprintf('x y z c\\\\\n'), ...
-             sprintf([repmat([m2t.ff, ' '], 1, 4), '\\\\\n'], ...
-                     [data, cData(:)]'), ...
-             sprintf('};\n')];
-      m2t.currentAxesContain3dData = true;
-   end
+  % Plot the actual data.
+  str = [str, ...
+         sprintf(['\n\\', plotType, '[',drawOpts,']\n']), ...
+         sprintf('table[row sep=crcr,point meta=\\thisrow{c}]{\n'), ...
+         sprintf([join(m2t, columnNames, ' '), '\\\\\n']), ...
+         sprintf([repmat([m2t.ff, ' '], 1, size(data, 2)), '\\\\\n'], ...
+                 data'), ...
+         sprintf('};\n')];
    str = [str, sprintf('\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
