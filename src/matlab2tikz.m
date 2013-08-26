@@ -1795,17 +1795,27 @@ function [m2t, str] = drawPatch(m2t, handle)
   % see if individual color values are present
   cData = get(handle, 'CData');
 
-  if get(handle, 'FaceColor') ~= 'none'
-      drawOptions{end+1} = 'patch';
-  end
+  % Use the '\\' as a row separator to make sure that the generated figures
+  % work in subplot environments.
+  tableOptions = {'row sep=crcr'};
 
+  % Add the proper color map even if the map data isn't directly used in the
+  % plot to make sure that we get correct color bars.
   if length(cData) == length(xData)
-      data = [data, cData];
-      columnNames{end+1} = 'c';
       % Add the color map.
       m2t.axesContainers{end}.options = ...
         addToOptions(m2t.axesContainers{end}.options, ...
                     matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+  end
+  % If full color data is provided, we can use point meta color data.
+  % For some reason, this only works for filled contours in Pgfplots, so fall
+  % back to explicit color specifications for line plots.
+  if length(cData) == length(xData) ...
+     && ~strcmp(get(handle, 'FaceColor'), 'none')
+      data = [data, cData];
+      drawOptions{end+1} = 'patch';
+      columnNames{end+1} = 'c';
+      tableOptions{end+1} = 'point meta=\\thisrow{c}';
   else
       % Probably one color only, so things we're probably only dealing with
       % one patch here.
@@ -1881,7 +1891,7 @@ function [m2t, str] = drawPatch(m2t, handle)
   % Plot the actual data.
   str = [str, ...
          sprintf(['\n\\', plotType, '[',drawOpts,']\n']), ...
-         sprintf('table[row sep=crcr,point meta=\\thisrow{c}]{\n'), ...
+         sprintf(['table[', join(m2t, tableOptions, ', '), ']{\n']), ...
          sprintf([join(m2t, columnNames, ' '), '\\\\\n']), ...
          sprintf([repmat([m2t.ff, ' '], 1, size(data, 2)), '\\\\\n'], ...
                  data'), ...
