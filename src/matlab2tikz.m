@@ -2692,26 +2692,24 @@ function [m2t, str] = drawBarseries(m2t, h)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define edge color
-  edgeColor  = get(h, 'EdgeColor');
-  [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
+  edgeColor = get(h, 'EdgeColor');
+  lineStyle = get(h, 'LineStyle');
+  if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+      drawOptions{end+1} = 'draw=none';
+  else
+      [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
+      drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % define face color;
   % quite oddly, this value is not coded in the handle itself, but in its
   % child patch.
-  child      = get(h, 'Children');
-  faceColor  = get(child, 'FaceColor');
-  [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % gather the draw options
-  lineStyle = get(h, 'LineStyle');
-
-  drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
-  if strcmp(lineStyle, 'none')
-      drawOptions{end+1} = 'draw=none';
-  else
-      drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+  child = get(h, 'Children');
+  faceColor = get(child, 'FaceColor');
+  if ~strcmp(faceColor, 'none')
+      [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
+      drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
   end
-  drawOpts = join(m2t, drawOptions, ',');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Add 'area legend' to the options as otherwise the legend indicators
   % will just highlight the edges.
@@ -2719,6 +2717,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     addToOptions(m2t.axesContainers{end}.options, 'area legend', []);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
+  drawOpts = join(m2t, drawOptions, ',');
   str = [str, ...
          sprintf('\\addplot[%s] plot coordinates{\n', drawOpts)];
 

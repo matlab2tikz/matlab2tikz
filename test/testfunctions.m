@@ -624,7 +624,9 @@ function [description, extraOpts] = bars()
   numBars = 3;
   data = round(100 * rand(numEntries, numBars));
 
-  bar(bins,data, 1.5);
+  b = bar(bins,data, 1.5);
+
+  set(b(1),'FaceColor','m','EdgeColor','none')
 
   description = 'Plot with bars.';
   extraOpts = {};
