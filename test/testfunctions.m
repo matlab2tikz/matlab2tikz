@@ -45,6 +45,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @contourPenny        , ...
                            @peaks_contourf      , ...
                            @many_random_points  , ...
+                           @double_colorbar     , ...
                            @randomWithLines     , ...
                            @double_axes         , ...
                            @double_axes2        , ...
@@ -357,6 +358,33 @@ function [description, extraOpts] = peaks_contourf ()
   colormap hsv;
 
   description = 'Test the contourfill plots.';
+  extraOpts = {};
+
+end
+% =========================================================================
+function [description, extraOpts] = double_colorbar()
+
+  vspace = linspace(-40,40,20);
+  speed_map = rand(20);
+  Q1_map = rand(20);
+
+  subplot(1, 2, 1);
+  contour(vspace(9:17),vspace(9:17),speed_map(9:17,9:17),20)
+  colorbar
+  axis tight
+  axis square
+  xlabel('$v_{2d}$')
+  ylabel('$v_{2q}$')
+
+  subplot(1, 2, 2)
+  contour(vspace(9:17),vspace(9:17),Q1_map(9:17,9:17),20)
+  colorbar
+  axis tight
+  axis square
+  xlabel('$v_{2d}$')
+  ylabel('$v_{2q}$')
+
+  description = 'Double colorbar.';
   extraOpts = {};
 
 end

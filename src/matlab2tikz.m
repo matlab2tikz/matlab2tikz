@@ -505,7 +505,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   end
 
   % Handle color bars.
-  for cbar = m2t.cbarHandles
+  for cbar = m2t.cbarHandles(:)'
       m2t = handleColorbar(m2t, cbar);
   end
 
