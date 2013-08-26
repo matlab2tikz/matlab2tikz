@@ -572,6 +572,13 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
               strrep(m2t.content.comment, sprintf('\n'), sprintf('\n%% ')));
   end
 
+  if m2t.cmdOpts.Results.standalone
+      fprintf(fid, ['\\documentclass[tikz]{standalone}\n', ...
+                    '\\usepackage{pgfplots}\n', ...
+                    '\\pgfplotsset{compat=newest}\n', ...
+                    '\\usepackage{amsmath}\n']);
+  end
+
   % Add custom code.
   if ~isempty(m2t.cmdOpts.Results.extraCode)
       if ischar(m2t.cmdOpts.Results.extraCode)
@@ -588,11 +595,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   end
 
   if m2t.cmdOpts.Results.standalone
-      fprintf(fid, ['\\documentclass[tikz]{standalone}\n', ...
-                    '\\usepackage{pgfplots}\n', ...
-                    '\\pgfplotsset{compat=newest}\n', ...
-                    '\\usepackage{amsmath}\n', ...
-                    '\\begin{document}\n']);
+      fprintf(fid, '\\begin{document}\n']);
   end
   % printAll() handles the actual figure plotting.
   printAll(m2t, m2t.content, fid);
