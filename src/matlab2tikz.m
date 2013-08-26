@@ -595,7 +595,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   end
 
   if m2t.cmdOpts.Results.standalone
-      fprintf(fid, '\\begin{document}\n']);
+      fprintf(fid, '\\begin{document}\n');
   end
   % printAll() handles the actual figure plotting.
   printAll(m2t, m2t.content, fid);
