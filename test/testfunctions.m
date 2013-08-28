@@ -194,7 +194,7 @@ function [description, extraOpts] = one_point()
   %legend(char('Multi-Line Legend Entry','Wont Work 2^2=4'))
   legend('Multi-Line Legend Entry Wont Work 2^2=4')
   xlabel({'one','two','three'});
-  ylabel({'one','two','three'});
+  ylabel({'one','° ∞', 'three'});
 
 %  plot(0.123, 0.145, 'x');
   set(gca, 'YTick', []);
@@ -348,8 +348,9 @@ end
 % =========================================================================
 function [description, extraOpts] = peaks_contourf ()
 
-  contourf( peaks(20), 10 );
+  contourf(peaks(20), 10);
   colorbar();
+  legend('my legend');
 %    colorbar('NorthOutside');
 %    colorbar('SouthOutside');
 %    colorbar('WestOutside');

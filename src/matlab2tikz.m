@@ -4727,14 +4727,14 @@ function c = prettyPrint(m2t, strings, interpreter)
   % http://www.mathworks.com/help/techdoc/ref/text.html#f68-481120
 
   % Multiline handling.
-  % Make sure that the input string is really a cellstr that contains
-  % only one-line strings.
+  % Make sure that the input string is really a cellstr that contains only
+  % one-line strings.
   if ischar(strings)
       strings = cellstr(strings);
   elseif iscellstr(strings)
       cs = {};
-      for k = 1:length(strings)
-          tmp = cellstr(strings{k});
+      for s = strings
+          tmp = cellstr(s);
           cs = {cs{:}, tmp{:}};
       end
       strings = cs;
@@ -4744,7 +4744,7 @@ function c = prettyPrint(m2t, strings, interpreter)
 
   % Now loop over the strings and return them pretty-printed in c.
   c = {};
-  for k = 1:length(strings)
+  for s = strings
 
       % If the user set the matlab2tikz parameter 'parseStrings' to false, no
       % parsing of strings takes place, thus making the user 100% responsible.
@@ -4765,18 +4765,22 @@ function c = prettyPrint(m2t, strings, interpreter)
           case 'latex' % Basic subset of the LaTeX markup language
 
               % Replace $$...$$ with $...$ but otherwise leave untouched
-              string = regexprep(strings{k}, '^\$\$(.*)\$\$$', '$$1$');
+              string = regexprep(s, '^\$\$(.*)\$\$$', '$$1$');
 
           case 'tex' % Subset of plain TeX markup language
 
+              % Deal with UTF8 characters.
+              string = s;
+              string = strrep(string, '°', '\circ');
+              string = strrep(string, '∞', '\infty');
+
               % Parse string piece-wise in a separate function.
-              string = parseTexString(m2t, strings{k});
+              string = parseTexString(m2t, string);
 
           case 'none' % Literal characters
+              % Make special characters TeX compatible
 
-              % Only make special characters TeX compatible
-
-              string = strrep(strings{k}, '\', '\textbackslash{}');
+              string = strrep(s, '\', '\textbackslash{}');
               % Note: '{' and '}' can't be converted to '\{' and '\}',
               %       respectively, via strrep(...) as this would lead to
               %       backslashes converted to '\textbackslash\{\}' because
