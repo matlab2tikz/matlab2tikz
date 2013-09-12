@@ -67,8 +67,8 @@ function indent = recursiveCleanup(meta, h, indent)
   %     isa(handle(h), 'specgraph.quivergroup').
   % The handle() function isn't supported by Octave, though, so let's stick
   % with strcmp().
-  %if strcmp(get(h, 'Type'), 'specgraph.quivergroup')
-  if strcmp(class(handle(h)), 'specgraph.quivergroup')
+  if strcmp(get(h, 'Type'), 'specgraph.quivergroup')
+  %if strcmp(class(handle(h)), 'specgraph.quivergroup')
       return;
   end
 
