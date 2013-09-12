@@ -1,3 +1,14 @@
+2013-09-12  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.4.2.
+	* Support for explicit color specification in 3D plots.
+	* Better color handling for patch plots.
+	* Support for various unicode characters.
+	* Bugfixes:
+	   - edge colors for bar plots
+	   - multiple color bars
+	   - ...
+
 2013-08-14  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.4.1.

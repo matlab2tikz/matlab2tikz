@@ -180,7 +180,7 @@ function matlab2tikz(varargin)
   m2t.transform = [];
 
   m2t.name = 'matlab2tikz';
-  m2t.version = '0.4.1';
+  m2t.version = '0.4.2';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2013';
@@ -190,7 +190,7 @@ function matlab2tikz(varargin)
                      % used, for example, in equality test for doubles
   m2t.relativePngPath = [];
 
-  % The following color RBG-values which will need to be defined.
+  % The following color RGB-values which will need to be defined.
   % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
   % their specifications.
   m2t.extraRgbColorSpecs = cell(0);
