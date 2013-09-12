@@ -1,3 +1,11 @@
+===============================
+Logo contest!
+-------------
+
+On http://tex.stackexchange.com/questions/132985/matlab2tikz-logo you can submit your own suggestion for a new matlab2tikz logo. Chime in if you have something nice and iconic in mind!
+
+===============================
+
 This is matlab2tikz, a MATLAB(R) script for converting MATLAB(R) figures into
 native TikZ/Pgfplots figures.
 
