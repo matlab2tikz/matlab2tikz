@@ -2145,35 +2145,63 @@ function [m2t,env] = drawSurface(m2t, handle)
         opts{end+1} = 'z buffer=sort';
     end
 
+    % There are several possibilities of how colors are specified for surface
+    % plots:
+    %    * explicitly by RGB-values,
+    %    * implicitly through a color map with a point-meta coordinate,
+    %    * implicitly through a color map with a given coordinate (e.g., z).
+    %
+
     % Check if we need extra CData.
     colors = get(handle, 'CData');
-    if length(size(colors)) > 2 || any(any(isnan(colors)))
-        % TODO Handle the case of RGB-specified colors.
-        needsExplicitColors = false;
+    if length(size(colors)) == 3 && size(colors, 3) == 3
+        % Explicit RGB-coded colors.
+        opts{end+1} = 'mesh/color input=explicit';
+
+        formatType = 'table[row sep=crcr,header=false,meta index=3]';
+        formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff,  ' ', ...
+                        m2t.ff, ',', m2t.ff, ',', m2t.ff, ...
+                        '\\\\\n'];
+        r = colors(:, :, 1);
+        g = colors(:, :, 2);
+        b = colors(:, :, 3);
+        data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), ...
+                r(:), g(:), b(:)];
+        %formatType = 'table[row sep=crcr,header=false]';
+        %formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
+        %data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
+
+    %elseif length(size(colors)) > 2 || any(isnan(colors(:)))
+    %    needsPointmeta = false;
     else
+        opts{end+1} = matlab2pgfplotsColormap(m2t, ...
+                                              m2t.currentHandles.colormap);
+        % If NaNs are present in the color specifications, don't use them for
+        % Pgfplots; they may be interpreted as strings there. The option
+        % 'header=false' will be explicitly added.
         % Note:
         % Pgfplots actually does a better job than MATLAB in determining what
         % colors to use for the patches. The circular test case on
         % http://www.mathworks.de/de/help/matlab/ref/pcolor.html, for example
         % yields a symmetric setup in Pgfplots (and doesn't in MATLAB).
-        needsExplicitColors = any(xor(isnan(dz), isnan(colors)) ...
-                                 | (abs(colors - dz) > 1.0e-10));
-    end
-    % Explicitly add 'header=false' to the list of table options to avoid
-    % conflicts with NaNs; they may be interpreted as strings by Pgfplots.
-    if needsExplicitColors
-        %formatType = 'coordinates';
-        %formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
-        formatType = 'table[row sep=crcr,meta index=3,header=false]';
-        opts{end+1} = 'point meta=explicit';
-        formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
-        data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), colors(:)];
-    else
-        %formatType = 'coordinates';
-        %formatString = '(%.15g, %.15g, %.15g)\n';
-        formatType = 'table[row sep=crcr,header=false]';
-        formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
-        data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
+        needsPointmeta = any(xor(isnan(dz), isnan(colors)) ...
+                            | (abs(colors - dz) > 1.0e-10));
+        if needsPointmeta
+            % Get color map.
+            %formatType = 'coordinates';
+            %formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
+            formatType = 'table[row sep=crcr,header=false,meta index=3]';
+            opts{end+1} = 'point meta=explicit';
+            formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, ' ', ...
+                            m2t.ff, '\\\\\n'];
+            data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), colors(:)];
+        else
+            %formatType = 'coordinates';
+            %formatString = '(%.15g, %.15g, %.15g)\n';
+            formatType = 'table[row sep=crcr,header=false]';
+            formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
+            data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
+        end
     end
 
     % Add mesh/rows=<num rows> for specifying the row data instead of empty
@@ -2407,9 +2435,6 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
     surfOptions{end+1} = sprintf(['opacity=', m2t.ff], faceAlpha);
   end
 
-  % Get color map.
-  surfOptions{end+1} = matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap);
-
   % TODO Revisit this selection and create a bunch of test plots.
   if strcmpi(plotType, 'surf')
       % Set shader for surface plot.
@@ -2444,9 +2469,9 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   zData = get(h, 'ZData');
   cData = get(h, 'CData');
 
-  matlabMarker    = get(h, 'Marker');
+  matlabMarker = get(h, 'Marker');
   markerFaceColor = get(h, 'MarkerFaceColor');
-  hasFaceColor    = ~strcmp(markerFaceColor,'none');
+  hasFaceColor = ~strcmp(markerFaceColor,'none');
   [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, [], hasFaceColor);
 
   if length(cData) == 3
