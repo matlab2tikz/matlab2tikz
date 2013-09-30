@@ -573,6 +573,10 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
       fprintf(fid, '%% %s\n', ...
               strrep(m2t.content.comment, sprintf('\n'), sprintf('\n%% ')));
   end
+  [VCID,VC] = VersionControlIdentifier();
+  if ~isempty(VCID)
+      fprintf(fid, '%% %s commit identifier: %s \n', VC, VCID);
+  end
 
   if m2t.cmdOpts.Results.standalone
       fprintf(fid, ['\\documentclass[tikz]{standalone}\n', ...
@@ -5201,5 +5205,63 @@ end
 function errorUnknownEnvironment()
   error('matlab2tikz:unknownEnvironment',...
         'Unknown environment. Need MATLAB(R) or Octave.')
+end
+% =========================================================================
+function [treeish,VC] = VersionControlIdentifier()
+% This function gives the (git) commit ID of matlab2tikz 
+%
+% This assumes the standard directory structure as used by Nico's master branch:
+%          SOMEPATH/src/matlab2tikz.m with a .git directory in SOMEPATH.
+%
+% The HEAD of that repository is determined from file information
+% only (i.e. git doesn't have to be installed at the user side): in git, a
+% branch file just contains a tree-ish (commit hash OR dynamic reference)
+%
+% When the tree-ish is a dynamic reference (ref:refs/heads/master),
+% this reference is followed as to obtain an absolute tree-ish (hash).
+%
+% If such a .git directory is NOT present, a fall-back file is tried within
+% the matlab2tikz folder. 
+% This file should conform to the same syntax as a git file.
+  VC       = 'git';
+  maxIter  = 10; % stop following dynamic references after a while
+  fallback = '.commitinfo'; % fall-back file name
+  try
+    % get the matlab2tikz directory
+    m2tDir = fileparts(mfilename('fullpath'));
+    gitDir = fullfile(m2tDir,'..','.git');
+    refPrefix = 'ref:';
+    
+    % Fake a tree-ish (this maps to a file in gitDir)
+    if exist(gitDir,'dir')
+        treeish = [refPrefix,'HEAD'];
+    else
+        treeish = [refPrefix,fallback]; % fall-back file
+        gitDir = m2tDir; % everything relative to the M-file
+    end
+    
+    nIter = 1;
+    while any(strfind(treeish, refPrefix)) && nIter < maxIter
+        refName = treeish(numel(refPrefix)+1:end);
+        branchFile = fullfile(gitDir, refName);
+        
+        if exist(branchFile, 'file')
+            fid = fopen(branchFile,'r');
+            treeish = fscanf(fid,'%s');
+            fclose(fid);
+        else
+            treeish = '';
+            return;
+        end
+        
+        nIter = nIter + 1;
+    end
+    if nIter >= maxIter
+        treeish = '';
+        return;
+    end
+  catch
+    treeish = '';
+  end    
 end
 % =========================================================================
