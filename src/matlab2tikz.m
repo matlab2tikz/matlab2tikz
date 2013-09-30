@@ -300,9 +300,6 @@ function matlab2tikz(varargin)
 
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % warn for deprecated options
-  %deprecatedParameter(m2t,'mathmode','parseStrings','parseStringsAsMath');
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % inform users of potentially dangerous options
@@ -431,30 +428,6 @@ end
 % =========================================================================
 function l = isCellOrChar(x, p) %#ok
     l = iscell(x) || ischar(x);
-end
-% =========================================================================
-function deprecatedParameter(m2t, oldParameter, varargin)
-  if any(ismember(m2t.cmdOpts.Parameters, oldParameter))
-      switch numel(varargin)
-          case 0
-              replacements = '';
-          case 1
-              replacements = ['''' varargin{1} ''''];
-          otherwise
-              replacements = deblank(sprintf('''%s'' and ',varargin{:}));
-              replacements = regexprep(replacements,' and$','');
-      end
-      if ~isempty(replacements)
-          replacements = sprintf('From now on, please use %s to control the output.\n',replacements);
-      end
-
-      message = ['\n===============================================================================\n', ...
-                  'You are using the deprecated parameter ''%s''.\n', ...
-                  '%s', ...
-                  '==============================================================================='];
-      warning('matlab2tikz:deprecatedParameter', ...
-                message, oldParameter, replacements);
-  end
 end
 % =========================================================================
 function m2t = saveToFile(m2t, fid, fileWasOpen)
