@@ -5218,13 +5218,13 @@ function opts = addToOptions(opts, key, value)
 end
 % =========================================================================
 function str = prettyprintOpts(m2t, opts, sep)
-
-  c = {};
-  for k = 1:size(opts,1)
+  nOpts = size(opts,1);
+  c = cell(nOpts,1);
+  for k = 1:nOpts
       if isempty(opts{k,2})
-          c{end+1} = sprintf('%s', opts{k,1});
+          c{k} = sprintf('%s', opts{k,1});
       else
-          c{end+1} = sprintf('%s=%s', opts{k,1}, opts{k,2});
+          c{k} = sprintf('%s=%s', opts{k,1}, opts{k,2});
       end
   end
   str = join(m2t, c, sep);
