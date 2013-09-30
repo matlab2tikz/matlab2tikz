@@ -137,7 +137,7 @@ function matlab2tikz(varargin)
 %
 % =========================================================================
   % Check if we are in MATLAB or Octave.
-  m2t.env = getEnvironment();
+  [m2t.env,envVersion] = getEnvironment();
   warningMessage = ['\n',...
                      '================================================================================\n\n', ...
                      '  matlab2tikz is tested and developed on   %s   and\n', ...
@@ -150,7 +150,6 @@ function matlab2tikz(varargin)
                      '\n', ...
                      '================================================================================'];
 
-  envVersion = findEnvironmentVersion(m2t.env);
   if isempty(envVersion)
       warning('matlab2tikz:cannotDetermineEnvironment',...
       'Could not determine environment version. Continuing and hoping for the best.');
@@ -4645,32 +4644,21 @@ function imwriteWrapperPNG(colorData, cmap, fileName)
     end
 end
 % =========================================================================
-function env = getEnvironment()
+function [env,versionString] = getEnvironment()
   % Check if we are in MATLAB or Octave.
-  % 'ver' in MATLAB gives versioning information on all installed packages
-  % separately, and there is no guarantee that MATLAB itself is listed first.
-  % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
-  % We could use ver('MATLAB') or ver('Octave').
-  if ~isempty(ver('MATLAB'))
-     env = 'MATLAB';
-  elseif ~isempty(ver('Octave'))
-     env = 'Octave';
-  else
-     env = [];
-  end
-
-end
-% =========================================================================
-function versionString = findEnvironmentVersion(env)
-  % Get version string for 'env' by iterating over all toolboxes.
-  versionString = [];
-  for versionDatum = ver
-      if strcmp(versionDatum.Name, env)
-          % found it: store and exit the loop
-          versionString = versionDatum.Version;
-          break
+  % Calling ver with an argument: iterating over all entries is very slow
+  alternatives = {'MATLAB','Octave'};
+  for iCase = 1:numel(alternatives)
+      env   = alternatives{iCase};
+      vData = ver(env);
+      if ~isempty(vData)
+          versionString = vData.Version;
+          return; % found the right environment
       end
   end
+  % otherwise:
+  env = [];
+  versionString = [];
 end
 % =========================================================================
 function isBelow = isVersionBelow(env, versionA, versionB)
