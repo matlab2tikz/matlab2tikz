@@ -742,7 +742,6 @@ function data = applyHgTransform(m2t, data)
       data = data * R' ...
            + kron(ones(n,1), t');
   end
-  return
 end
 % =========================================================================
 function m2t = drawAxes(m2t, handle, alignmentOptions)
@@ -1106,8 +1105,6 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  return
 end
 % =========================================================================
 function m2t = handleColorbar(m2t, handle)
@@ -1138,8 +1135,6 @@ function m2t = handleColorbar(m2t, handle)
       warning('matlab2tikz:parentAxesOfColorBarNotFound',...
               'Could not find parent axes for color bar. Skipping.');
     end
-
-    return;
 end
 % =========================================================================
 function tag = getTag(handle)
@@ -1284,7 +1279,6 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
       hasGrid = true;
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  return;
 end
 % =========================================================================
 function bool = axisIsVisible(axisHandle)
@@ -1470,8 +1464,6 @@ function str = plotLine2d(m2t, opts, data)
          sprintf('%s{\n', dataType), ...
          str_data, ...
          sprintf('};\n')];
-
-  return
 end
 % =========================================================================
 function dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xLim, yLim)
@@ -1485,7 +1477,6 @@ function dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xL
 
   % Split each of the current chunks further with respect to outliers.
   dataCell = splitByArraySize(m2t, hasLines, dataCell);
-
 end
 % =========================================================================
 function dataCellNew = splitByArraySize(m2t, hasLines, dataCell)
@@ -1879,8 +1870,6 @@ function [m2t, str] = drawPatch(m2t, handle)
          sprintf('};\n')];
    str = [str, sprintf('\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  return;
 end
 % =========================================================================
 function [m2t, str] = drawImage(m2t, handle)
@@ -2026,8 +2015,6 @@ function [m2t, str] = drawImage(m2t, handle)
   m2t.axesContainers{end}.options = ...
     addToOptions(m2t.axesContainers{end}.options, ...
                 'axis on top', []);
-
-  return;
 end
 % =========================================================================
 function [m2t, str] = drawHggroup(m2t, h)
@@ -2212,8 +2199,6 @@ function [m2t,env] = drawSurface(m2t, handle)
     end
 
     m2t.currentAxesContain3dData = true;
-
-    return;
 end
 % =========================================================================
 function [m2t, str] = drawText(m2t, handle)
@@ -2434,8 +2419,6 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
       error('matlab2tikz:surfaceOpts', ...
             'Illegal plot type ''%s''.', plotType);
   end
-
-  return
 end
 % =========================================================================
 function [m2t, str] = drawScatterPlot(m2t, h)
@@ -2509,7 +2492,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
          sprintf(format, data'), ...
          sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 end
 % =========================================================================
 function [m2t, str] = drawBarseries(m2t, h)
@@ -2737,7 +2719,6 @@ function [m2t, str] = drawBarseries(m2t, h)
   end
   str = [str, sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 end
 % =========================================================================
 function [m2t, str] = drawStemseries(m2t, h)
@@ -2784,7 +2765,6 @@ function [m2t, str] = drawStemseries(m2t, h)
          sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
          sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 end
 % =========================================================================
 function [m2t, str] = drawStairSeries(m2t, h)
@@ -2831,7 +2811,6 @@ function [m2t, str] = drawStairSeries(m2t, h)
          sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
          sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 end
 % =========================================================================
 function [m2t, str] = drawAreaSeries(m2t, h)
@@ -2881,7 +2860,6 @@ function [m2t, str] = drawAreaSeries(m2t, h)
          sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
          sprintf('}\n\\closedcycle;\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 end
 % =========================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
@@ -2963,7 +2941,6 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
                   'coordinates{(',m2t.ff,',',m2t.ff,') (',m2t.ff,',',m2t.ff,')};\n'],...
                   XY)];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  return;
 end
 % =========================================================================
 function [m2t, str] = drawErrorBars(m2t, h)
@@ -3061,7 +3038,6 @@ end
 function out = linearFunction(X, Y)
     % Return the linear function that goes through (X[1], Y[1]), (X[2], Y[2]).
     out = @(x) (Y(2,:)*(x-X(1)) + Y(1,:)*(X(2)-x)) / (X(2)-X(1));
-    return
 end
 % ==============================================================================
 function matlabColormap = pgfplots2matlabColormap(points, rgb, numColors)
@@ -3079,8 +3055,6 @@ function matlabColormap = pgfplots2matlabColormap(points, rgb, numColors)
         end
         matlabColormap(k,:) = f(x);
     end
-
-    return
 end
 % ==============================================================================
 function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
@@ -3204,8 +3178,6 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
         colSpecs{k} = sprintf('rgb(%d%s)=(%g,%g,%g)', x, unit, colors(k,:));
     end
     pgfplotsColormap = sprintf('colormap={mymap}{[1%s] %s}', unit, join(m2t, colSpecs, '; '));
-
-    return
 end
 % =========================================================================
 function axisOptions = getColorbarOptions(m2t, handle)
@@ -3328,7 +3300,6 @@ function axisOptions = getColorbarOptions(m2t, handle)
   axisOptions = addToOptions(axisOptions, 'point meta max', sprintf(m2t.ff, clim(2)));
 
   % do _not_ handle colorbar's children
-  return
 end
 % =========================================================================
 function [m2t, xcolor] = getColor(m2t, handle, color, mode)
@@ -3368,7 +3339,6 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
-
 end
 % =========================================================================
 function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
@@ -3411,8 +3381,6 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
           error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
                 'Don''t know how to handle the color model ''%s''.',color);
   end
-
-  return;
 end
 % =========================================================================
 function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
@@ -3452,7 +3420,6 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
                   'Unknown CDataMapping ''%s''.',cdatamapping);
   end
   % -----------------------------------------------------------------------
-
 end
 % =========================================================================
 function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
@@ -3634,8 +3601,6 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
       key = 'legend style';
       lOpts = join(m2t, lStyle,',');
   end
-
-  return;
 end
 % =========================================================================
 function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis)
@@ -3680,8 +3645,6 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, ax
 
   keywordMinorTick = [upper(axis), 'MinorTick'];
   hasMinorTicks = strcmp(get(handle, keywordMinorTick), 'on');
-
-  return;
 end
 % =========================================================================
 function [pTicks, pTickLabels] = ...
@@ -3785,7 +3748,6 @@ function [pTicks, pTickLabels] = ...
   else
       pTickLabels = [];
   end
-
 end
 % =========================================================================
 function tikzLineStyle = translateLineStyle(matlabLineStyle)
@@ -3873,8 +3835,6 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
   colorLiteral = sprintf('mycolor%d', length(m2t.extraRgbColorNames)+1);
   m2t.extraRgbColorNames{end+1} = colorLiteral;
   m2t.extraRgbColorSpecs{end+1} = rgb;
-
-  return;
 end
 % =========================================================================
 function newstr = join(m2t, cellstr, delimiter)
@@ -3949,8 +3909,6 @@ function dimension = getAxesDimensions(handle, ...
       dimension.y.unit  = unit;
       dimension.y.value = height;
   end
-
-  return;
 end
 % =========================================================================
 function [width, height, unit] = getNaturalAxesDimensions(handle)
@@ -4346,7 +4304,6 @@ function [relevantAxesHandles, alignmentOptions, plotOrder] =...
               C(i,doub) = 0;
               C(doub,i) = 0;
           end
-
       end
   end
 
@@ -4396,8 +4353,6 @@ function [relevantAxesHandles, alignmentOptions, plotOrder] =...
       newPlotOrder(plotOrder(k)) = k;
   end
   plotOrder = newPlotOrder;
-
-  return
 end
 % -----------------------------------------------------------------------
 % sets the alignment options for a specific node
@@ -4540,7 +4495,6 @@ function userInfo(m2t, message, varargin)
   % Replace '\n' by '\n *** ' and print.
   mess = strrep(mess, sprintf('\n'), sprintf('\n *** '));
   fprintf(' *** %s\n', mess);
-
 end
 % =========================================================================
 function userWarning(m2t, message, varargin)
@@ -4551,7 +4505,6 @@ function userWarning(m2t, message, varargin)
   end
 
   warning('matlab2tikz:userWarning', message, varargin{:});
-
 end
 % =========================================================================
 function parent = addChildren(parent, children)
@@ -4571,8 +4524,6 @@ function parent = addChildren(parent, children)
             parent.children = {parent.children{:} children};
         end
     end
-
-    return;
 end
 % =========================================================================
 function printAll(m2t, env, fid)
@@ -4692,7 +4643,6 @@ function arr = versionArray(env, str)
   else
     arr = str;
   end
-
 end
 % =========================================================================
 function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
@@ -4807,7 +4757,6 @@ function c = prettyPrint(m2t, strings, interpreter)
       end
       c{end+1} = string;
   end
-
 end
 % =========================================================================
 function parsed = parseTexString(m2t, string)
@@ -5139,7 +5088,6 @@ function string = parseTexSubstring(m2t, string)
   % Clean up: remove '{}' at the end of 'string' unless it's prefixed by a
   % backslash
   string = regexprep(string, '(?<!\\)\{\}$', '');
-
 end
 % =========================================================================
 function dims = pos2dims(pos)
@@ -5178,8 +5126,6 @@ function opts = addToOptions(opts, key, value)
 
   % The key doesn't exist. Just add it.
   opts = cat(1, opts, {key, value});
-
-  return;
 end
 % =========================================================================
 function str = prettyprintOpts(m2t, opts, sep)
@@ -5193,7 +5139,6 @@ function str = prettyprintOpts(m2t, opts, sep)
       end
   end
   str = join(m2t, c, sep);
-  return;
 end
 % =========================================================================
 function errorUnknownEnvironment()
