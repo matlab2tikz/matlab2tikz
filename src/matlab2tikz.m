@@ -4556,19 +4556,6 @@ function userWarning(m2t, message, varargin)
 
 end
 % =========================================================================
-function root = append(root, appendix)
-    if isempty(appendix)
-        return;
-    end
-    if ~ischar(appendix)
-        error('matlab2tikz:append:NotAString',...
-              'Argument must be of class ''string''.');
-    end
-
-    root.content{end+1} = appendix;
-    return;
-end
-% =========================================================================
 function parent = addChildren(parent, children)
 
     if isempty(children)
