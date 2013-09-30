@@ -3844,7 +3844,7 @@ function newstr = join(m2t, cellstr, delimiter)
   % Example of usage:
   %              join(cellstr, ',')
 
-  if ~iscellstr(cellstr) && ~isnumeric(cellstr{1})
+  if ~all(cellfun(@(x)(isnumeric(x) || ischar(x)), cellstr))
       % display value of cellstr as debug information
       disp(cellstr)
       error('matlab2tikz:join:NotCellstrOrNumeric',...
@@ -3860,7 +3860,7 @@ function newstr = join(m2t, cellstr, delimiter)
   nElem = numel(cellstr);
   for k = 1:nElem
       if isnumeric(cellstr{k})
-          cellstr{k} = sprintf(m2t.ff, cellstr{1});
+          cellstr{k} = sprintf(m2t.ff, cellstr{k});
       end
   end
     
