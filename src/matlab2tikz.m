@@ -152,7 +152,8 @@ function matlab2tikz(varargin)
 
   envVersion = findEnvironmentVersion(m2t.env);
   if isempty(envVersion)
-      warning('Could not determine environment version. Continuing and hoping for the best.');
+      warning('matlab2tikz:cannotDetermineEnvironment',...
+      'Could not determine environment version. Continuing and hoping for the best.');
   else
       switch m2t.env
           case 'MATLAB'
@@ -168,7 +169,7 @@ function matlab2tikz(varargin)
                           warningMessage, 'Octave 3.4.0', 'Octave');
               end
           otherwise
-              error('Unknown environment. Need MATLAB(R) or Octave.')
+              errorUnknownEnvironment();
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -320,7 +321,7 @@ function matlab2tikz(varargin)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add global elements
   if isempty(m2t.cmdOpts.Results.figurehandle)
-    error('MATLAB figure not found.');
+    error('matlab2tikz:figureNotFound','MATLAB figure not found.');
   end
   m2t.currentHandles.gcf = m2t.cmdOpts.Results.figurehandle;
   if m2t.cmdOpts.Results.colormap
@@ -358,7 +359,8 @@ function matlab2tikz(varargin)
       elseif strcmp(m2t.env, 'Octave');
           fid = fopen(filename, 'w');
       else
-          error('Unknown environment. Need MATLAB(R) or Octave.')
+          error('matlab2tikz:unknownEnvironment',...
+                'Unknown environment. Need MATLAB(R) or Octave.')
       end
 
       if fid == -1
@@ -664,7 +666,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                   legendString = get(child, 'displayname');
               end
           otherwise
-              error('Unknown environment. Need MATLAB(R) or Octave.')
+              errorUnknownEnvironment();
       end
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       switch get(child, 'Type')
@@ -1099,7 +1101,8 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
                                m2t.cmdOpts.Results.extraAxisOptions{k}, []);
           end
       else
-          error('Illegal extraAxisOptions (need string or cell string).')
+          error('matlab2tikz:illegalExtraAxisOptions',...
+                'Illegal extraAxisOptions (need string or cell string).')
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1132,7 +1135,8 @@ function m2t = handleColorbar(m2t, handle)
                                            m2t.axesContainers{k0}.options, ...
                                            getColorbarOptions(m2t, handle));
     else
-      warning('Could not find parent axes for color bar. Skipping.');
+      warning('matlab2tikz:parentAxesOfColorBarNotFound',...
+              'Could not find parent axes for color bar. Skipping.');
     end
 
     return;
@@ -1153,7 +1157,8 @@ end
 function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
-      error('Illegal axis specifier ''%s''.', axis);
+      error('matlab2tikz:illegalAxisSpecifier',...
+            'Illegal axis specifier ''%s''.', axis);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % axis colors
@@ -1661,8 +1666,8 @@ function [tikzMarker, markOptions] = ...
   % This function is used for getMarkerOptions() as well as drawScatterPlot().
 
   if(~ischar(matlabMarker))
-      error(['Function translateMarker:', ...
-              'Variable matlabMarker is not a string.']);
+      error('matlab2tikz:translateMarker:MarkerNotAString',...
+            'Variable matlabMarker is not a string.');
   end
 
   switch (matlabMarker)
@@ -1749,8 +1754,8 @@ function [tikzMarker, markOptions] = ...
                   end
 
               otherwise
-                  error([' Function translateMarker:',               ...
-                          ' Unknown matlabMarker ''',matlabMarker,'''.']);
+                  error('matlab2tikz:translateMarker:unknownMatlabMarker',...
+                        'Unknown matlabMarker ''%s''.',matlabMarker);
           end
   end
 end
@@ -3286,7 +3291,8 @@ function axisOptions = getColorbarOptions(m2t, handle)
       case 'southoutside'
           cbarOptions{end+1} = 'horizontal';
       otherwise
-          error('getColorbarOptions: Unknown ''Location'' %s.', loc)
+          error('matlab2tikz:getColorOptions:unknownLocation',...
+               'getColorbarOptions: Unknown ''Location'' %s.', loc)
   end
 
   if strcmp(get(handle, 'YScale'), 'log')
@@ -3424,14 +3430,13 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
           [m2t, xcolor] = rgb2colorliteral(m2t, color);
 
       case 'none'
-          error(['matlab2tikz:anycolor2rgb',                       ...
-                 'Color model ''none'' not allowed here. ',        ...
+          error('matlab2tikz:anycolor2rgb:ColorModelNoneNotAllowed',...
+                ['Color model ''none'' not allowed here. ',...
                  'Make sure this case gets intercepted before.']);
 
       otherwise
-          error(['matlab2tikz:anycolor2rgb',                          ...
-                 'Don''t know how to handle the color model ''%s''.'],  ...
-                 color);
+          error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
+                'Don''t know how to handle the color model ''%s''.',color);
   end
 
   return;
@@ -3442,8 +3447,8 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
   % Only does something if CDataMapping is 'scaled', really.
 
   if ~isnumeric(cdata) && ~islogical(cdata)
-      error('matlab2tikz:cdata2colorindex',                        ...
-             ['Don''t know how to handle cdata ''',cdata,'''.']);
+      error('matlab2tikz:cdata2colorindex:unknownCDataType',...
+            'Don''t know how to handle CData ''%s''.',cdata);
   end
 
   axeshandle = m2t.currentHandles.gca;
@@ -3470,9 +3475,8 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
           colorindex = cdata;
 
       otherwise
-            error(['matlab2tikz:anycolor2rgb',                ...
-                     'Unknown CDataMapping ''%s''.'],          ...
-                     cdatamapping);
+            error('matlab2tikz:anycolor2rgb:unknownCDataMapping',...
+                  'Unknown CDataMapping ''%s''.',cdatamapping);
   end
   % -----------------------------------------------------------------------
 
@@ -3666,7 +3670,8 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, ax
   % details are taken care of by Pgfplots.
 
   if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
-      error('Illegal axis specifier ''%s''.', axis);
+      error('matlab2tikz:illegalAxisSpecifier',...
+            'Illegal axis specifier ''%s''.', axis);
   end
 
   keywordTickMode = [upper(axis), 'TickMode'];
@@ -3813,8 +3818,8 @@ end
 function tikzLineStyle = translateLineStyle(matlabLineStyle)
 
   if(~ischar(matlabLineStyle))
-      error([' Function translateLineStyle:',                        ...
-               ' Variable matlabLineStyle is not a string.']);
+      error('matlab2tikz:translateLineStyle:NotAString',...
+            'Variable matlabLineStyle is not a string.');
   end
 
   switch (matlabLineStyle)
@@ -3829,8 +3834,8 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
       case '-.'
           tikzLineStyle = 'dash pattern=on 1pt off 3pt on 3pt off 3pt';
       otherwise
-          error(['Function translateLineStyle:',                    ...
-                   'Unknown matlabLineStyle ''',matlabLineStyle,'''.']);
+          error('matlab2tikz:translateLineStyle:UnknownLineStyle',...
+                'Unknown matlabLineStyle ''%s''.', matlabLineStyle);
   end
 end
 % =========================================================================
@@ -4582,7 +4587,8 @@ function root = append(root, appendix)
         return;
     end
     if ~ischar(appendix)
-        error('Argument must be of class ''string''.');
+        error('matlab2tikz:append:NotAString',...
+              'Argument must be of class ''string''.');
     end
 
     root.content{end+1} = appendix;
@@ -4740,7 +4746,7 @@ function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
       case 'Octave'
           retval = octaveValue;
       otherwise
-          error('Unknown environment. Need MATLAB(R) or Octave.')
+         errorUnknownEnvironment();
   end
 end
 % =========================================================================
@@ -5086,7 +5092,7 @@ function string = parseTexSubstring(m2t, string)
                             'not replaced with a space.'], origstr)
           end
       otherwise
-          error('Unknown environment. Need MATLAB(R) or Octave.')
+          errorUnknownEnvironment();
   end
   % Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
   % escape sequence. An un-escaped "~" produces weird output in Octave, thus
@@ -5107,7 +5113,7 @@ function string = parseTexSubstring(m2t, string)
                            origstr)
           end
       otherwise
-          error('Unknown environment. Need MATLAB(R) or Octave.')
+          errorUnknownEnvironment();
   end
 
   % Convert '..._\text{abc}' and '...^\text{abc}' to '..._\text{a}\text{bc}'
@@ -5229,5 +5235,10 @@ function str = prettyprintOpts(m2t, opts, sep)
   end
   str = join(m2t, c, sep);
   return;
+end
+% =========================================================================
+function errorUnknownEnvironment()
+  error('matlab2tikz:unknownEnvironment',...
+        'Unknown environment. Need MATLAB(R) or Octave.')
 end
 % =========================================================================
