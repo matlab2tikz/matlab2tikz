@@ -584,12 +584,10 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   % Add custom code.
   if ~isempty(m2t.cmdOpts.Results.extraCode)
       if ischar(m2t.cmdOpts.Results.extraCode)
-          fprintf(fid, m2t.cmdOpts.Results.extraCode);
-          fprintf(fid, '\n');
-      elseif iscell(m2t.cmdOpts.Results.extraCode)
+          fprintf(fid, '%s\n', m2t.cmdOpts.Results.extraCode);
+      elseif iscellstr(m2t.cmdOpts.Results.extraCode)
           for str = m2t.cmdOpts.Results.extraCode(:)'
-              fprintf(fid, str{1});
-              fprintf(fid, '\n');
+              fprintf(fid, '%s\n', str{1});
           end
       else
           error('matlab2tikz:saveToFile', 'Need str or cellstr.');
