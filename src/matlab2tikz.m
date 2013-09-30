@@ -3860,7 +3860,7 @@ function newstr = join(m2t, cellstr, delimiter)
   nElem = numel(cellstr);
   for k = 1:nElem
       if isnumeric(cellstr{k})
-          cellstr{k} = sprintf(m2t.ff, cellstr{1});
+          cellstr{k} = sprintf(m2t.ff, cellstr{k});
       end
   end
     
