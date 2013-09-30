@@ -3895,22 +3895,20 @@ function newstr = join(m2t, cellstr, delimiter)
     newstr = [];
     return
   end
-
-  if isnumeric(cellstr{1})
-      newstr = sprintf(m2t.ff, cellstr{1});
-  else
-      newstr = cellstr{1};
-  end
-
-  for k = 2:length(cellstr)
+  
+  % convert all numeric values to strings first
+  nElem = numel(cellstr);
+  for k = 1:nElem
       if isnumeric(cellstr{k})
-          str = sprintf(m2t.ff, cellstr{k});
-      else
-          str = cellstr{k};
+          cellstr{k} = sprintf(m2t.ff, cellstr{1});
       end
-      newstr = [newstr, delimiter, str];
   end
-
+    
+  % inspired by strjoin of recent versions of MATLAB
+  newstr = cell(2,nElem);
+  newstr(1,:)         = reshape(cellstr, 1, nElem); 
+  newstr(2,1:nElem-1) = {delimiter}; % put delimiters in-between the elements
+  newstr = [newstr{:}];
 end
 % =========================================================================
 function dimension = getAxesDimensions(handle, ...
