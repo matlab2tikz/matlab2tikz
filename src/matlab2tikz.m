@@ -1683,74 +1683,47 @@ function [tikzMarker, markOptions] = ...
       otherwise  % the following markers are only available with PGF's
                 % plotmarks library
           userInfo(m2t, '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n');
+          hasFilledVariant = true;
           switch (matlabMarker)
 
               case '*'
                   tikzMarker = 'asterisk';
+                  hasFilledVariant = false;
 
               case {'s','square'}
-                  if faceColorToggle
-                      tikzMarker = 'square*';
-                  else
-                      tikzMarker = 'square';
-                  end
+                  tikzMarker = 'square';
 
               case {'d','diamond'}
-                  if faceColorToggle
-                      tikzMarker = 'diamond*';
-                  else
-                      tikzMarker = 'diamond';
-                  end
+                  tikzMarker = 'diamond';
 
               case '^'
-                  if faceColorToggle
-                      tikzMarker = 'triangle*';
-                  else
-                      tikzMarker = 'triangle';
-                  end
+                  tikzMarker = 'triangle';
 
               case 'v'
-                  if faceColorToggle
-                      tikzMarker = 'triangle*';
-                  else
-                      tikzMarker = 'triangle';
-                  end
+                  tikzMarker = 'triangle';
                   markOptions = [markOptions, ',rotate=180'];
 
               case '<'
-                  if faceColorToggle
-                      tikzMarker = 'triangle*';
-                  else
-                      tikzMarker = 'triangle';
-                  end
+                  tikzMarker = 'triangle';
                   markOptions = [markOptions, ',rotate=90'];
 
               case '>'
-                  if faceColorToggle
-                      tikzMarker = 'triangle*';
-                  else
-                      tikzMarker = 'triangle';
-                  end
+                  tikzMarker = 'triangle';
                   markOptions = [markOptions, ',rotate=270'];
 
               case {'p','pentagram'}
-                  if faceColorToggle
-                      tikzMarker = 'star*';
-                  else
-                      tikzMarker = 'star';
-                  end
+                  tikzMarker = 'star';
 
               case {'h','hexagram'}
                   userWarning(m2t, 'MATLAB''s marker ''hexagram'' not available in TikZ. Replacing by ''star''.');
-                  if faceColorToggle
-                      tikzMarker = 'star*';
-                  else
-                      tikzMarker = 'star';
-                  end
+                  tikzMarker = 'star';
 
               otherwise
                   error([' Function translateMarker:',               ...
                           ' Unknown matlabMarker ''',matlabMarker,'''.']);
+          end
+          if faceColorToggle && hasFilledVariant
+              tikzMarker = [tikzMarker '*'];
           end
   end
 end
