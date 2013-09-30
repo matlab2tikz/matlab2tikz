@@ -359,8 +359,7 @@ function matlab2tikz(varargin)
       elseif strcmp(m2t.env, 'Octave');
           fid = fopen(filename, 'w');
       else
-          error('matlab2tikz:unknownEnvironment',...
-                'Unknown environment. Need MATLAB(R) or Octave.')
+          errorUnknownEnvironment();
       end
 
       if fid == -1
@@ -3888,7 +3887,8 @@ function newstr = join(m2t, cellstr, delimiter)
   if ~iscellstr(cellstr) && ~isnumeric(cellstr{1})
       % display value of cellstr as debug information
       disp(cellstr)
-      error('Expected cellstr or numeric.');
+      error('matlab2tikz:join:NotCellstrOrNumeric',...
+            'Expected cellstr or numeric.');
   end
 
   if isempty(cellstr)
