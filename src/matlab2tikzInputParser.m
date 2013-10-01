@@ -174,19 +174,19 @@ function p = parse (p, varargin)
     end
   end
 
-  if (~ isempty (varargin))
-    if (p.KeepUnmatched)
+  if ~isempty(varargin)
     % Include properties that do not match specified properties
       for n = 1:2:numel(varargin)
-        if (ischar (varargin{n}))
-          results.(varargin{n}) = varargin{n+1};
+        if ischar(varargin{n})
+          if p.KeepUnmatched
+            results.(varargin{n}) = varargin{n+1};
+          end
+          p.Unmatched.(varargin{n}) = varargin{n+1};
         else
           error (sprintf ('%s:invalidinput', mfilename), ...
                  '%s: invalid input', mfilename)
         end
       end
-    end
-    p.Unmatched = varargin{1:2:end};
   end
 
   % Store the results of the parsing
