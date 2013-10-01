@@ -5219,26 +5219,15 @@ function [treeish,VC] = VersionControlIdentifier()
 %
 % When the tree-ish is a dynamic reference (ref:refs/heads/master),
 % this reference is followed as to obtain an absolute tree-ish (hash).
-%
-% If such a .git directory is NOT present, a fall-back file is tried within
-% the matlab2tikz folder. 
-% This file should conform to the same syntax as a git file.
   VC       = 'git';
   maxIter  = 10; % stop following dynamic references after a while
-  fallback = '.commitinfo'; % fall-back file name
+  refPrefix = 'ref:';
   try
     % get the matlab2tikz directory
     m2tDir = fileparts(mfilename('fullpath'));
     gitDir = fullfile(m2tDir,'..','.git');
-    refPrefix = 'ref:';
     
-    % Fake a tree-ish (this maps to a file in gitDir)
-    if exist(gitDir,'dir')
-        treeish = [refPrefix,'HEAD'];
-    else
-        treeish = [refPrefix,fallback]; % fall-back file
-        gitDir = m2tDir; % everything relative to the M-file
-    end
+    treeish = [refPrefix,'HEAD'];
     
     nIter = 1;
     while any(strfind(treeish, refPrefix)) && nIter < maxIter
