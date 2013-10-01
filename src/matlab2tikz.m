@@ -518,10 +518,15 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   set(0, 'ShowHiddenHandles', 'off');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
-  m2t.content.comment = sprintf(['This file was created by %s v%s.\n', ...
+  [VCID, VC] = VersionControlIdentifier();
+  versionString = sprintf('v%s', m2t.version);
+  if ~isempty(VCID)
+      versionString = [versionString, sprintf(' (commit %s)', VCID)];
+  end
+  m2t.content.comment = sprintf(['This file was created by %s %s.\n', ...
                                  'Copyright (c) %s, %s <%s>\n', ...
                                  'All rights reserved.\n'], ...
-                                 m2t.name, m2t.version, ...
+                                 m2t.name, versionString, ...
                                  m2t.years, m2t.author, m2t.authorEmail);
 
   if m2t.cmdOpts.Results.showInfo
@@ -535,10 +540,13 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
                            ];
   end
 
+
   % Add custom comment.
-  m2t.content.comment = [m2t.content.comment, ...
-                          sprintf('\n%s\n', m2t.cmdOpts.Results.tikzFileComment)
-                        ];
+  if ~isempty(m2t.cmdOpts.Results.tikzFileComment)
+      m2t.content.comment = [m2t.content.comment, ...
+                             sprintf('\n%s\n', m2t.cmdOpts.Results.tikzFileComment)
+                            ];
+  end
 
   m2t.content.name = 'tikzpicture';
 
@@ -571,10 +579,6 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   if ~isempty(m2t.content.comment)
       fprintf(fid, '%% %s\n', ...
               strrep(m2t.content.comment, sprintf('\n'), sprintf('\n%% ')));
-  end
-  [VCID,VC] = VersionControlIdentifier();
-  if ~isempty(VCID)
-      fprintf(fid, '%% %s commit identifier: %s \n', VC, VCID);
   end
 
   if m2t.cmdOpts.Results.standalone
