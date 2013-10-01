@@ -3266,6 +3266,20 @@ function axisOptions = getColorbarOptions(m2t, handle)
     end
   end
 
+  % title
+  title = get(get(handle, 'Title'), 'String');
+  if ~isempty(title)
+      titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
+      title = prettyPrint(m2t, title, titleInterpreter);
+      if length(title) > 1
+          m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                        'title style', '{align=center}');
+      end
+      title = join(m2t, title, '\\[1ex]');
+      cbarStyleOptions{end+1} = sprintf('title={%s}', title);
+  end
+
   if m2t.cmdOpts.Results.strict
       % Sampled colors.
       numColors = size(m2t.currentHandles.colormap, 1);
@@ -3853,7 +3867,7 @@ function newstr = join(m2t, cellstr, delimiter)
     newstr = [];
     return
   end
-  
+
   % convert all numeric values to strings first
   nElem = numel(cellstr);
   for k = 1:nElem
@@ -3861,10 +3875,10 @@ function newstr = join(m2t, cellstr, delimiter)
           cellstr{k} = sprintf(m2t.ff, cellstr{k});
       end
   end
-    
+
   % inspired by strjoin of recent versions of MATLAB
   newstr = cell(2,nElem);
-  newstr(1,:)         = reshape(cellstr, 1, nElem); 
+  newstr(1,:)         = reshape(cellstr, 1, nElem);
   newstr(2,1:nElem-1) = {delimiter}; % put delimiters in-between the elements
   newstr = [newstr{:}];
 end
