@@ -5198,7 +5198,7 @@ function errorUnknownEnvironment()
 end
 % =========================================================================
 function [treeish,VC] = VersionControlIdentifier()
-% This function gives the (git) commit ID of matlab2tikz 
+% This function gives the (git) commit ID of matlab2tikz
 %
 % This assumes the standard directory structure as used by Nico's master branch:
 %          SOMEPATH/src/matlab2tikz.m with a .git directory in SOMEPATH.
@@ -5216,14 +5216,14 @@ function [treeish,VC] = VersionControlIdentifier()
     % get the matlab2tikz directory
     m2tDir = fileparts(mfilename('fullpath'));
     gitDir = fullfile(m2tDir,'..','.git');
-    
+
     treeish = [refPrefix,'HEAD'];
-    
+
     nIter = 1;
     while any(strfind(treeish, refPrefix)) && nIter < maxIter
         refName = treeish(numel(refPrefix)+1:end);
         branchFile = fullfile(gitDir, refName);
-        
+
         if exist(branchFile, 'file')
             fid = fopen(branchFile,'r');
             treeish = fscanf(fid,'%s');
@@ -5232,7 +5232,7 @@ function [treeish,VC] = VersionControlIdentifier()
             treeish = '';
             return;
         end
-        
+
         nIter = nIter + 1;
     end
     if nIter >= maxIter
@@ -5241,6 +5241,6 @@ function [treeish,VC] = VersionControlIdentifier()
     end
   catch
     treeish = '';
-  end    
+  end
 end
 % =========================================================================
