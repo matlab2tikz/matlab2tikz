@@ -2234,7 +2234,10 @@ function [m2t, str] = drawText(m2t, handle)
   Interpreter = get(handle, 'Interpreter');
   String = prettyPrint(m2t, String, Interpreter);
   % For now, don't handle multiline strings.
-  String = String{1};
+  % Sometimes, the cells are nested; take care of this, too.
+  while iscell(String)
+      String = String{1};
+  end
   VerticalAlignment = get(handle, 'VerticalAlignment');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % translate them to pgf style
