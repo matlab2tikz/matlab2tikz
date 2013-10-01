@@ -890,11 +890,24 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % Get other axis options (ticks, axis color, label,...).
   % This is set here such that the axis orientation indicator in m2t is set
   % before -- if ~isVisible(handle) -- the handle's children are called.
-  [m2t, hasXGrid] = getAxisOptions(m2t, handle, 'x');
-  [m2t, hasYGrid] = getAxisOptions(m2t, handle, 'y');
+  m2t.axesContainers{end}.options = merge(m2t.axesContainers{end}.options, ...
+                                          getAxisOptions(m2t, handle, 'x') ...
+                                          );
+  m2t.axesContainers{end}.options = merge(m2t.axesContainers{end}.options, ...
+                                          getAxisOptions(m2t, handle, 'y') ...
+                                          );
+  %[m2t, hasXGrid] = getAxisOptions(m2t, handle, 'x');
+  %[m2t, hasYGrid] = getAxisOptions(m2t, handle, 'y');
   if m2t.currentAxesContain3dData
-      [m2t, hasZGrid] = getAxisOptions(m2t, handle, 'z');
+      %[m2t, hasZGrid] = getAxisOptions(m2t, handle, 'z');
+      m2t.axesContainers{end}.options = ...
+          merge(m2t.axesContainers{end}.options, ...
+                getAxisOptions(m2t, handle, 'z') ...
+                );
   end
+  hasXGrid = false;
+  hasYGrid = false;
+  hasZGrid = false;
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if ~isVisible(handle)
       % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
@@ -1147,12 +1160,14 @@ function tag = getTag(handle)
 
 end
 % =========================================================================
-function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
+function options = getAxisOptions(m2t, handle, axis)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
       error('matlab2tikz:illegalAxisSpecifier',...
             'Illegal axis specifier ''%s''.', axis);
   end
+  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  options = {};
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % axis colors
   color = get(handle, [upper(axis),'Color']);
@@ -1163,15 +1178,14 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
            % axes are drawn as four separate paths. This makes the alignment
            % at the box corners somewhat less nice, but allows for different
            % axis styles (e.g., colors).
-           m2t.axesContainers{end}.options = ...
-               addToOptions(m2t.axesContainers{end}.options, 'separate axis lines', []);
+           options = addToOptions(options, 'separate axis lines', []);
        end
-       m2t.axesContainers{end}.options = ...
-           addToOptions(m2t.axesContainers{end}.options, ...
+       options = ...
+           addToOptions(options, ...
                        ['every outer ', axis, ' axis line/.append style'], ...
                        ['{', col, '}']);
-       m2t.axesContainers{end}.options = ...
-           addToOptions(m2t.axesContainers{end}.options, ...
+       options = ...
+           addToOptions(options, ...
                         ['every ',axis,' tick label/.append style'], ...
                         ['{font=\color{',col,'}}']);
   end
@@ -1180,26 +1194,22 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   isAxisReversed = strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
   m2t.([axis 'AxisReversed']) = isAxisReversed;
   if isAxisReversed
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    [axis, ' dir'], 'reverse');
+      options = addToOptions(options, ...
+                             [axis, ' dir'], 'reverse');
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   isAxisLog = strcmp(get(handle,[upper(axis),'Scale']), 'log');
   if isAxisLog
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                     [axis,'mode'], 'log');
+      options = addToOptions(options, ...
+                             [axis,'mode'], 'log');
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get axis limits
   limits = get(handle, [upper(axis),'Lim']);
-  m2t.axesContainers{end}.options = ...
-    addToOptions(m2t.axesContainers{end}.options, ...
-                [axis,'min'], sprintf(m2t.ff, limits(1)));
-  m2t.axesContainers{end}.options = ...
-    addToOptions(m2t.axesContainers{end}.options, ...
-                [axis,'max'], sprintf(m2t.ff, limits(2)));
+  options = addToOptions(options, ...
+                         [axis,'min'], sprintf(m2t.ff, limits(1)));
+  options = addToOptions(options, ...
+                         [axis,'max'], sprintf(m2t.ff, limits(2)));
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get ticks along with the labels
   [ticks, tickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis);
@@ -1210,24 +1220,21 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   % a reasonable default.
   matlabDefaultNumMinorTicks = 3;
   if ~isempty(ticks)
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    [axis,'tick'], sprintf('{%s}', ticks));
+      options = addToOptions(options, ...
+                             [axis,'tick'], sprintf('{%s}', ticks));
   end
   if ~isempty(tickLabels)
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    [axis,'ticklabels'], sprintf('{%s}', tickLabels));
+      options = addToOptions(options, ...
+                             [axis,'ticklabels'], sprintf('{%s}', tickLabels));
   end
   if hasMinorTicks
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    [axis,'minorticks'], 'true');
+      options = addToOptions(options, ...
+                             [axis,'minorticks'], 'true');
       if m2t.cmdOpts.Results.strict
-          m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
-                        sprintf('minor %s tick num', axis), ...
-                        sprintf('{%d}', matlabDefaultNumMinorTicks));
+          options = ...
+            addToOptions(options, ...
+                         sprintf('minor %s tick num', axis), ...
+                         sprintf('{%d}', matlabDefaultNumMinorTicks));
       end
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1245,15 +1252,13 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
           % alignment or the width of the "label box"
           % is defined. This is a restriction that comes with
           % TikZ nodes.
-          m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
-                        [axis, 'label style'], '{align=center}');
+          options = addToOptions(options, ...
+                                 [axis, 'label style'], '{align=center}');
       end
       label = join(m2t, label,'\\[1ex]');
       %if isVisible(handle)
-          m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
-                        [axis, 'label'], sprintf('{%s}', label));
+          options = addToOptions(options, ...
+                                 [axis, 'label'], sprintf('{%s}', label));
       %else
       %    m2t.axesContainers{end}.options{end+1} = ...
       %        sprintf(['extra description/.code={\n', ...
@@ -1265,15 +1270,13 @@ function [m2t, hasGrid] = getAxisOptions(m2t, handle, axis)
   % get grids
   hasGrid = false;
   if strcmp(get(handle, [upper(axis),'Grid']), 'on');
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    [axis, 'majorgrids'], []);
+      options = addToOptions(options, ...
+                             [axis, 'majorgrids'], []);
       hasGrid = true;
   end
   if strcmp(get(handle, [upper(axis),'MinorGrid']), 'on');
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    [axis, 'minorgrids'], []);
+      options = addToOptions(options, ...
+                             [axis, 'minorgrids'], []);
       hasGrid = true;
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3238,33 +3241,54 @@ function axisOptions = getColorbarOptions(m2t, handle)
                'getColorbarOptions: Unknown ''Location'' %s.', loc)
   end
 
-  if strcmp(get(handle, 'YScale'), 'log')
-      cbarStyleOptions{end+1} = 'ymode=log';
+  % TODO proper use of addToOptions()
+  xo = getAxisOptions(m2t, handle, 'x');
+  for k = 1:size(xo, 1)
+      if   strcmp(xo{k,1}, 'xmin') ...
+        || strcmp(xo{k,1}, 'xmax') ...
+        || strcmp(xo{k,1}, 'xtick')
+          % filter a bunch of keywords
+          continue;
+      end
+      cbarStyleOptions{end+1} = [xo{k,1}, '=', xo{k,2}];
+  end
+  yo = getAxisOptions(m2t, handle, 'y');
+  for k = 1:size(yo, 1)
+      if   strcmp(yo{k,1}, 'ymin') ...
+        || strcmp(yo{k,1}, 'ymax')
+          % filter a bunch of keywords
+          continue;
+      end
+      cbarStyleOptions{end+1} = [yo{k,1}, '=', yo{k,2}];
   end
 
-  % Get axis labels.
-  for axis = 'xy'
-    axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
-    if ~isempty(axisLabel)
-        axisLabelInterpreter = ...
-            get(get(handle, [upper(axis),'Label']), 'Interpreter');
-        label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
-        if length(label) > 1
-            % If there's more than one cell item, the list
-            % is displayed multi-row in MATLAB(R).
-            % To replicate the same in Pgfplots, one can
-            % use xlabel={first\\second\\third} only if the
-            % alignment or the width of the "label box"
-            % is defined. This is a restriction that comes with
-            % TikZ nodes.
-            m2t.axesContainers{end}.options = ...
-              addToOptions(m2t.axesContainers{end}.options, ...
-                          [axis, 'label style'], '{align=center}');
-        end
-        label = join(m2t, label,'\\[1ex]');
-        cbarStyleOptions{end+1} = sprintf([axis,'label={%s}'], label);
-    end
-  end
+  %if strcmp(get(handle, 'YScale'), 'log')
+  %    cbarStyleOptions{end+1} = 'ymode=log';
+  %end
+  %
+  %% Get axis labels.
+  %for axis = 'xy'
+  %  axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
+  %  if ~isempty(axisLabel)
+  %      axisLabelInterpreter = ...
+  %          get(get(handle, [upper(axis),'Label']), 'Interpreter');
+  %      label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
+  %      if length(label) > 1
+  %          % If there's more than one cell item, the list
+  %          % is displayed multi-row in MATLAB(R).
+  %          % To replicate the same in Pgfplots, one can
+  %          % use xlabel={first\\second\\third} only if the
+  %          % alignment or the width of the "label box"
+  %          % is defined. This is a restriction that comes with
+  %          % TikZ nodes.
+  %          m2t.axesContainers{end}.options = ...
+  %            addToOptions(m2t.axesContainers{end}.options, ...
+  %                        [axis, 'label style'], '{align=center}');
+  %      end
+  %      label = join(m2t, label,'\\[1ex]');
+  %      cbarStyleOptions{end+1} = sprintf([axis,'label={%s}'], label);
+  %  end
+  %end
 
   % title
   title = get(get(handle, 'Title'), 'String');
@@ -5103,7 +5127,7 @@ function string = parseTexSubstring(m2t, string)
 end
 % =========================================================================
 function dims = pos2dims(pos)
-% Position quadruplet [left, bottom, width, height] to dimension structure
+  % Position quadruplet [left, bottom, width, height] to dimension structure
   dims = struct('left' , pos(1), 'bottom', pos(2));
   if numel(pos) == 4
       dims.width  = pos(3);
@@ -5138,6 +5162,14 @@ function opts = addToOptions(opts, key, value)
 
   % The key doesn't exist. Just add it.
   opts = cat(1, opts, {key, value});
+end
+% =========================================================================
+function opts = merge(opts1, opts2)
+  % Merges two option lists.
+  opts = opts1;
+  for k = 1:size(opts2, 1)
+      opts = addToOptions(opts, opts2{k,1}, opts2{k,2});
+  end
 end
 % =========================================================================
 function str = prettyprintOpts(m2t, opts, sep)
