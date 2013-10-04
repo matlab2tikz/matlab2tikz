@@ -1319,6 +1319,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
       str = [str, ...
              sprintf(['\\addplot3 [\n', join(m2t, drawOptions, ',\n'), ']\n']), ...
              sprintf('table[row sep=crcr] {\n'), ...
+             %FIXME: external
              sprintf([m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'], data'), ...
              sprintf('};\n')];
 
@@ -1382,8 +1383,10 @@ function str = plotLine2d(m2t, opts, data)
   if errorbarMode
       dataType = 'coordinates';
       str_data = sprintf(['(', m2t.ff, ',', m2t.ff,') += (0.0,', m2t.ff,') -= (0.0,', m2t.ff,')\n'], data');
+      %FIXME: external
   else
       dataType = 'table[row sep=crcr]';
+      %FIXME: external
       str_data = sprintf([m2t.ff, ' ', m2t.ff, '\\\\\n'], data');
       %dataType = 'coordinates';
       %str_data = sprintf(['(', m2t.ff,', 'm2t.ff, ')'], data');
@@ -1391,6 +1394,7 @@ function str = plotLine2d(m2t, opts, data)
 
   % Pgfplots doesn't recognize "Inf" when used with coordinates{}.
   str_data = strrep(str_data, 'Inf', 'inf');
+  %FIXME: external
   str = [str, ...
          sprintf('%s{\n', dataType), ...
          str_data, ...
@@ -1797,6 +1801,7 @@ function [m2t, str] = drawPatch(m2t, handle)
                  data'), ...
          sprintf('};\n')];
    str = [str, sprintf('\n')];
+  %FIXME: external
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -2066,6 +2071,7 @@ function [m2t,env] = drawSurface(m2t, handle)
         b = colors(:, :, 3);
         data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), ...
                 r(:), g(:), b(:)];
+        %FIXME: external
         %formatType = 'table[row sep=crcr,header=false]';
         %formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
         %data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
@@ -2094,12 +2100,14 @@ function [m2t,env] = drawSurface(m2t, handle)
             formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, ' ', ...
                             m2t.ff, '\\\\\n'];
             data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), colors(:)];
+            %FIXME: external
         else
             %formatType = 'coordinates';
             %formatString = '(%.15g, %.15g, %.15g)\n';
             formatType = 'table[row sep=crcr,header=false]';
             formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
             data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
+            %FIXME: external
         end
     end
 
@@ -2121,6 +2129,7 @@ function [m2t,env] = drawSurface(m2t, handle)
            sprintf(formatString, data'), ...
            sprintf('};\n')];
     env = str;
+    %FIXME: external
 
     % TODO:
     % - remove grids in spectrogram by either removing grid command
@@ -2414,11 +2423,13 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       env = 'addplot';
       format = ['(', m2t.ff, ',', m2t.ff, ')'];
       data = [xData(:), yData(:)];
+      %FIXME: external
   else
       env = 'addplot3';
       m2t.currentAxesContain3dData = true;
       format = ['(', m2t.ff, ',', m2t.ff, ',', m2t.ff, ')'];
       data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
+      %FIXME: external
   end
 
   if length(cData) == 3
@@ -2439,6 +2450,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
          sprintf('\\%s[%s] plot coordinates{\n', env, drawOpts), ...
          sprintf(format, data'), ...
          sprintf('};\n\n')];
+  %FIXME: external
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -2653,6 +2665,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     addToOptions(m2t.axesContainers{end}.options, 'area legend', []);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
+  %FIXME: external
   drawOpts = join(m2t, drawOptions, ',');
   str = [str, ...
          sprintf('\\addplot[%s] plot coordinates{\n', drawOpts)];
@@ -2750,6 +2763,7 @@ function [m2t, str] = drawAreaSeries(m2t, h)
   drawOpts = join(m2t, drawOptions, ',');
 
   % plot the thing
+  %FIXME: external
   xData = get(h, 'XData');
   yData = get(h, 'YData');
   str = [str, ...
@@ -2852,6 +2866,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
          sprintf(['\\',name,' [arrow',num2str(m2t.quiverId), '] ', ...
                   'coordinates{(',format,') (',format,')};\n'],...
                   data)];
+  %FIXME: external
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
