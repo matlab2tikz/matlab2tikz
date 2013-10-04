@@ -3889,25 +3889,24 @@ function newstr = join(m2t, cellstr, delimiter)
   % given delimiter inbetween two strings, if desired).
   %
   % Example of usage:
-  %              join(cellstr, ',')
-
-  if ~all(cellfun(@(x)(isnumeric(x) || ischar(x)), cellstr))
-      % display value of cellstr as debug information
-      disp(cellstr)
-      error('matlab2tikz:join:NotCellstrOrNumeric',...
-            'Expected cellstr or numeric.');
-  end
+  %              join(m2t, cellstr, ',')
 
   if isempty(cellstr)
     newstr = [];
     return
   end
 
-  % convert all numeric values to strings first
+  % convert all values to strings first
   nElem = numel(cellstr);
   for k = 1:nElem
       if isnumeric(cellstr{k})
           cellstr{k} = sprintf(m2t.ff, cellstr{k});
+      elseif iscell(cellstr{k})
+          cellstr{k} = join(m2t, cellstr{k}, delimiter);
+          % this will fail for heavily nested cells
+      elseif ~ischar(cellstr{k})
+          error('matlab2tikz:join:NotCellstrOrNumeric',...
+                'Expected cellstr or numeric.');
       end
   end
 
