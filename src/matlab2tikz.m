@@ -2908,21 +2908,23 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
   m = length(xData(1:step:end));   % number of arrows
 
   if(isempty(zData))
-      XY = zeros(4,m);
-
-      XY(1,:) = xData(1:step:end);
-      XY(2,:) = yData(1:step:end);
-      XY(3,:) = xData(2:step:end);
-      XY(4,:) = yData(2:step:end);
+      name = 'addplot';
+      format = [m2t.ff,',',m2t.ff];
+      data = zeros(4,m);
+      data(1,:) = xData(1:step:end);
+      data(2,:) = yData(1:step:end);
+      data(3,:) = xData(2:step:end);
+      data(4,:) = yData(2:step:end);
   else
-      XYZ = zeros(6,m);
-
-      XYZ(1,:) = xData(1:step:end);
-      XYZ(2,:) = yData(1:step:end);
-      XYZ(3,:) = zData(1:step:end);
-      XYZ(4,:) = xData(2:step:end);
-      XYZ(5,:) = yData(2:step:end);
-      XYZ(6,:) = zData(2:step:end);
+      name = 'addplot3';
+      format = [m2t.ff,',',m2t.ff,',',m2t.ff];
+      data = zeros(6,m);
+      data(1,:) = xData(1:step:end);
+      data(2,:) = yData(1:step:end);
+      data(3,:) = zData(1:step:end);
+      data(4,:) = xData(2:step:end);
+      data(5,:) = yData(2:step:end);
+      data(6,:) = zData(2:step:end);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % gather the arrow options
@@ -2960,19 +2962,10 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
                                      ['{', arrowOptions, '}']);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % return the vector field code
-  if(isempty(zData))
-      % quiver() 2D plot
-      str = [str, ...
-             sprintf(['\\addplot [arrow',num2str(m2t.quiverId), '] ', ...
-                      'coordinates{(',m2t.ff,',',m2t.ff,') (',m2t.ff,',',m2t.ff,')};\n'],...
-                      XY)];
-  else
-      % quiver3() 3D plot
-      str = [str, ...
-             sprintf(['\\addplot3 [arrow',num2str(m2t.quiverId), '] ', ...
-                      'coordinates{(',m2t.ff,',',m2t.ff,',',m2t.ff,') (',m2t.ff,',',m2t.ff,',',m2t.ff,')};\n'],...
-                      XYZ)];
-  end
+  str = [str, ...
+         sprintf(['\\',name,' [arrow',num2str(m2t.quiverId), '] ', ...
+                  'coordinates{(',format,') (',format,')};\n'],...
+                  data)];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
