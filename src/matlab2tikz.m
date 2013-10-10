@@ -2916,6 +2916,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
       data(3,:) = xData(2:step:end);
       data(4,:) = yData(2:step:end);
   else
+      m2t.currentAxesContain3dData = true;
       name = 'addplot3';
       format = [m2t.ff,',',m2t.ff,',',m2t.ff];
       data = zeros(6,m);
