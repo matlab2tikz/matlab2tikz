@@ -57,6 +57,7 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @zoom                , ...
                            @quiveroverlap       , ...
                            @quiverplot          , ...
+                           @quiver3plot         , ...
                            @imageplot           , ...
                            @logicalImage        , ...
                            @imagescplot         , ...
@@ -707,7 +708,7 @@ function [description, extraOpts] = stemplot2()
 
 end
 % =========================================================================
-function [description, extraOpts] = stairsplot ()
+function [description, extraOpts] = stairsplot()
 
   x = linspace(-2*pi,2*pi,40);
   stairs(x,sin(x))
@@ -717,7 +718,7 @@ function [description, extraOpts] = stairsplot ()
 
 end
 % =========================================================================
-function [description, extraOpts] = quiverplot ()
+function [description, extraOpts] = quiverplot()
 
   [X,Y] = meshgrid(-2:.2:2);
   Z = X.*exp(-X.^2 - Y.^2);
@@ -729,6 +730,31 @@ function [description, extraOpts] = quiverplot ()
   hold off
 
   description = 'A combined quiver/contour plot of $x\exp(-x^2-y^2)$.' ;
+  extraOpts = {};
+
+end
+% =========================================================================
+function [description, extraOpts] = quiver3plot()
+
+  vz = 10;            % Velocity
+  a = -32;            % Acceleration
+
+  t = 0:.1:1;
+  z = vz*t + 1/2*a*t.^2;
+
+  vx = 2;
+  x = vx*t;
+  vy = 3;
+  y = vy*t;
+
+  u = gradient(x);
+  v = gradient(y);
+  w = gradient(z);
+  scale = 0;
+  quiver3(x,y,z,u,v,w,scale)
+  view([70 18])
+
+  description = 'Three-dimensional quiver plot.' ;
   extraOpts = {};
 
 end

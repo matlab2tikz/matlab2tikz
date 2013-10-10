@@ -2902,16 +2902,28 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
   xData = get(c(1), 'XData');
   yData = get(c(1), 'YData');
+  zData = get(c(1), 'ZData');
 
   step = 3;
   m = length(xData(1:step:end));   % number of arrows
 
-  XY = zeros(4,m);
+  if(isempty(zData))
+      XY = zeros(4,m);
 
-  XY(1,:) = xData(1:step:end);
-  XY(2,:) = yData(1:step:end);
-  XY(3,:) = xData(2:step:end);
-  XY(4,:) = yData(2:step:end);
+      XY(1,:) = xData(1:step:end);
+      XY(2,:) = yData(1:step:end);
+      XY(3,:) = xData(2:step:end);
+      XY(4,:) = yData(2:step:end);
+  else
+      XYZ = zeros(6,m);
+
+      XYZ(1,:) = xData(1:step:end);
+      XYZ(2,:) = yData(1:step:end);
+      XYZ(3,:) = zData(1:step:end);
+      XYZ(4,:) = xData(2:step:end);
+      XYZ(5,:) = yData(2:step:end);
+      XYZ(6,:) = zData(2:step:end);
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % gather the arrow options
   showArrowHead = get(h, 'ShowArrowHead');
@@ -2948,10 +2960,19 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
                                      ['{', arrowOptions, '}']);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % return the vector field code
-  str = [str, ...
-         sprintf(['\\addplot [arrow',num2str(m2t.quiverId), '] ', ...
-                  'coordinates{(',m2t.ff,',',m2t.ff,') (',m2t.ff,',',m2t.ff,')};\n'],...
-                  XY)];
+  if(isempty(zData))
+      % quiver() 2D plot
+      str = [str, ...
+             sprintf(['\\addplot [arrow',num2str(m2t.quiverId), '] ', ...
+                      'coordinates{(',m2t.ff,',',m2t.ff,') (',m2t.ff,',',m2t.ff,')};\n'],...
+                      XY)];
+  else
+      % quiver3() 3D plot
+      str = [str, ...
+             sprintf(['\\addplot3 [arrow',num2str(m2t.quiverId), '] ', ...
+                      'coordinates{(',m2t.ff,',',m2t.ff,',',m2t.ff,') (',m2t.ff,',',m2t.ff,',',m2t.ff,')};\n'],...
+                      XYZ)];
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
