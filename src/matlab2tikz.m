@@ -399,7 +399,7 @@ end
 % =========================================================================
 % validates the optional argument 'filehandle' to be the handle of
 % an open file
-function l = filehandleValidation(x, p) %#ok
+function l = filehandleValidation(x)
     l = isnumeric(x) && any(x==fopen('all'));
 end
 % =========================================================================
