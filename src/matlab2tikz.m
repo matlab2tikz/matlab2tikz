@@ -137,11 +137,11 @@ function matlab2tikz(varargin)
 %
 % =========================================================================
   % Check if we are in MATLAB or Octave.
-  [m2t.env,envVersion] = getEnvironment();
+  [m2t.env, m2t.envVersion] = getEnvironment();
 
   minimalVersion = struct('MATLAB', struct('name','2008b', 'num',[7 7]), ...
                           'Octave', struct('name','3.4.0', 'num',[3 4 0]));
-  checkDeprecatedEnvironment(m2t, envVersion, minimalVersion);
+  checkDeprecatedEnvironment(m2t, minimalVersion);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   m2t.cmdOpts = [];
@@ -5190,15 +5190,15 @@ function str = prettyprintOpts(m2t, opts, sep)
   str = join(m2t, c, sep);
 end
 % =========================================================================
-function checkDeprecatedEnvironment(m2t, envVersion, minimalVersions);
-  if isempty(envVersion)
+function checkDeprecatedEnvironment(m2t, minimalVersions)
+  if isempty(m2t.envVersion)
       warning('matlab2tikz:cannotDetermineEnvironment',...
       'Could not determine environment version. Continuing and hoping for the best.');
   else
       if isfield(minimalVersions, m2t.env)
         minVersion = minimalVersions.(m2t.env);
         envWithVersion = sprintf('%s %s',m2t.env, minVersion.name);
-        if isVersionBelow(m2t.env, envVersion, minVersion.num)
+        if isVersionBelow(m2t.env, m2t.envVersion, minVersion.num)
           warningMessage = ['\n',...
              '================================================================================\n\n', ...
              '  matlab2tikz is tested and developed on   %s   and\n', ...
