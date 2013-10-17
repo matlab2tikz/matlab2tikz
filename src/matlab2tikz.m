@@ -349,15 +349,16 @@ function matlab2tikz(varargin)
       end
 
       % open the file for writing
-      if strcmp(m2t.env, 'MATLAB');
+      switch m2t.env
+        case 'MATLAB'
           fid = fopen(filename, ...
                        'w', ...
                        'native', ...
                        m2t.cmdOpts.Results.encoding ...
                     );
-      elseif strcmp(m2t.env, 'Octave');
+        case 'Octave'
           fid = fopen(filename, 'w');
-      else
+        otherwise
           errorUnknownEnvironment();
       end
 
@@ -803,17 +804,22 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % Octave:
   % Check if this axis environment is referenced by a legend.
   m2t.gcaAssociatedLegend = [];
-  if strcmp(m2t.env, 'Octave')
-      if ~isempty(m2t.legendHandles)
-          % Make sure that m2t.legendHandles is a row vector.
-          for lhandle = m2t.legendHandles(:)'
-              ud = get(lhandle, 'UserData');
-              if any(handle == ud.handle)
-                  m2t.gcaAssociatedLegend = lhandle;
-                  break;
+  switch m2t.env
+      case 'Octave'
+          if ~isempty(m2t.legendHandles)
+              % Make sure that m2t.legendHandles is a row vector.
+              for lhandle = m2t.legendHandles(:)'
+                  ud = get(lhandle, 'UserData');
+                  if any(handle == ud.handle)
+                      m2t.gcaAssociatedLegend = lhandle;
+                      break;
+                  end
               end
           end
-      end
+      case 'MATLAB'
+          % no action needed
+      otherwise
+          errorUnknownEnvironment();
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
@@ -1065,44 +1071,47 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % This could be done better with a heuristic of finding
   % the nearest legend to a plot, which would cope with legends outside
   % plot boundaries.
-  if strcmp(m2t.env, 'MATLAB')
-      legendHandle = legend(handle);
-      if ~isempty(legendHandle)
-          [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
-          m2t.axesContainers{end}.options = ...
-              addToOptions(m2t.axesContainers{end}.options, ...
-                           key, ...
-                           ['{', legendOpts, '}']);
-      end
-  else
-      % TODO: How to uniquely connect a legend with a pair of axes in Octave?
-      axisDims = pos2dims(get(handle,'Position')); %#ok
-      % siblings of this handle:
-      siblings = get(get(handle,'Parent'), 'Children');
-      % "siblings" always(?) is a column vector. Iterating over the column
-      % with the for statement below wouldn't return the individual vector
-      % elements but the same column vector, resulting in no legends exported.
-      % So let's make sure "siblings" is a row vector by reshaping it:
-      siblings = reshape(siblings, 1, []);
-      for sibling = siblings
-          if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
-              legDims = pos2dims(get(sibling, 'Position')); %#ok
-
-              % TODO The following logic does not work for 3D plots.
-              %      => Commented out.
-              %      This creates problems though for stacked plots with legends.
-%                if (   legDims.left   > axisDims.left ...
-%                     && legDims.bottom > axisDims.bottom ...
-%                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
-%                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height)
-                  [m2t, key, legendOpts] = getLegendOpts(m2t, sibling);
-                  m2t.axesContainers{end}.options = ...
-                      addToOptions(m2t.axesContainers{end}.options, ...
-                                   key, ...
-                                   ['{', legendOpts, '}']);
-%                end
+  switch m2t.env
+      case 'MATLAB'
+          legendHandle = legend(handle);
+          if ~isempty(legendHandle)
+              [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
+              m2t.axesContainers{end}.options = ...
+                  addToOptions(m2t.axesContainers{end}.options, ...
+                               key, ...
+                               ['{', legendOpts, '}']);
           end
-      end
+      case 'Octave'
+          % TODO: How to uniquely connect a legend with a pair of axes in Octave?
+          axisDims = pos2dims(get(handle,'Position')); %#ok
+          % siblings of this handle:
+          siblings = get(get(handle,'Parent'), 'Children');
+          % "siblings" always(?) is a column vector. Iterating over the column
+          % with the for statement below wouldn't return the individual vector
+          % elements but the same column vector, resulting in no legends exported.
+          % So let's make sure "siblings" is a row vector by reshaping it:
+          siblings = reshape(siblings, 1, []);
+          for sibling = siblings
+              if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
+                  legDims = pos2dims(get(sibling, 'Position')); %#ok
+
+                  % TODO The following logic does not work for 3D plots.
+                  %      => Commented out.
+                  %      This creates problems though for stacked plots with legends.
+    %                if (   legDims.left   > axisDims.left ...
+    %                     && legDims.bottom > axisDims.bottom ...
+    %                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
+    %                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height)
+                      [m2t, key, legendOpts] = getLegendOpts(m2t, sibling);
+                      m2t.axesContainers{end}.options = ...
+                          addToOptions(m2t.axesContainers{end}.options, ...
+                                       key, ...
+                                       ['{', legendOpts, '}']);
+    %                end
+              end
+          end
+      otherwise
+          errorUnknownEnvironment();
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add manually given extra axis options
@@ -3585,23 +3594,28 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
   % handle alignment of legend text and pictograms
   textalign = [];
   pictalign = [];
-  % Other than MATLAB, Octave allows to change the alignment of legend text and
-  % pictograms using legend('left') and legend('right')
-  if strcmp(m2t.env, 'Octave')
-      textpos = get(handle, 'textposition');
-      switch lower(textpos)
-          case 'left'
-              % pictogram right of flush right text
-              textalign = 'left';
-              pictalign = 'right';
-          case 'right'
-              % pictogram left of flush left text (default)
-              textalign = 'right';
-              pictalign = 'left';
-          otherwise
-              userWarning(m2t, [' Unknown legend text position ''',textpos,'''' ...
-                                  '. Choosing default.']);
-      end
+  switch m2t.env
+      case 'Octave'
+          % Octave allows to change the alignment of legend text and 
+          % pictograms using legend('left') and legend('right')
+          textpos = get(handle, 'textposition');
+          switch lower(textpos)
+              case 'left'
+                  % pictogram right of flush right text
+                  textalign = 'left';
+                  pictalign = 'right';
+              case 'right'
+                  % pictogram left of flush left text (default)
+                  textalign = 'right';
+                  pictalign = 'left';
+              otherwise
+                  userWarning(m2t, [' Unknown legend text position ''',textpos,'''' ...
+                                      '. Choosing default.']);
+          end
+      case 'MATLAB'
+          % does not specify text/pictogram alignment in legends
+      otherwise
+          errorUnknownEnvironment();
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -4686,10 +4700,13 @@ function arr = versionArray(env, str)
 
   if ischar(str)
     % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
-    if strcmpi(env, 'MATLAB')
+    switch env
+      case 'MATLAB'
         split = regexp(str, '\.', 'split');
-    elseif strcmpi(env, 'Octave')
+      case  'Octave'
         split = strsplit(str, '.');
+      otherwise
+        errorUnknownEnvironment();
     end
     arr = str2num(char(split)); %#ok
   else
