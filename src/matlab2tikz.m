@@ -391,15 +391,13 @@ function matlab2tikz(varargin)
 
 end
 % =========================================================================
-% validates the optional argument 'filename' to not be another
-% keyword
 function l = filenameValidation(x, p)
+% is the filename argument NOT another keyword?
   l = ischar(x) && ~any(strcmp(x,p.Parameters));
 end
 % =========================================================================
-% validates the optional argument 'filehandle' to be the handle of
-% an open file
 function l = filehandleValidation(x)
+  % is the filehandle the handle to an opened file?
     l = isnumeric(x) && any(x==fopen('all'));
 end
 % =========================================================================
