@@ -403,7 +403,7 @@ function l = filehandleValidation(x)
     l = isnumeric(x) && any(x==fopen('all'));
 end
 % =========================================================================
-function l = isCellOrChar(x, p) %#ok
+function l = isCellOrChar(x)
     l = iscell(x) || ischar(x);
 end
 % =========================================================================
