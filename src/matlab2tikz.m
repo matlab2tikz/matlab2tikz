@@ -181,48 +181,32 @@ function matlab2tikz(varargin)
   % scan the options
   ipp = matlab2tikzInputParser;
 
-  ipp = ipp.addOptional(ipp, 'filename', [], @(x) filenameValidation(x,ipp));
-
-  % possibility to give a file handle as argument
+  ipp = ipp.addOptional(ipp, 'filename',   [], @(x) filenameValidation(x,ipp));
   ipp = ipp.addOptional(ipp, 'filehandle', [], @filehandleValidation);
 
-  % explicitly specify which figure to use
   ipp = ipp.addParamValue(ipp, 'figurehandle', get(0,'CurrentFigure'), @ishandle);
   ipp = ipp.addParamValue(ipp, 'colormap', [], @isnumeric);
-
-  % whether to strictly stick to the default MATLAB plot appearance:
   ipp = ipp.addParamValue(ipp, 'strict', false, @islogical);
-
-  % don't print warning messages
   ipp = ipp.addParamValue(ipp, 'showInfo', true, @islogical);
-
-  % don't print informational messages
   ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
+  ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
 
-  % Whether to save images in PNG format or to natively draw filled squares
-  % using TikZ itself.
-  % Default it PNG.
-  ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
-  ipp = ipp.addParamValue(ipp, 'relativePngPath', [], @ischar);
-
-  % width and height of the figure
+  ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
+  ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
+  ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrChar);
+  ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
+  ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
+  ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
+  ipp = ipp.addParamValue(ipp, 'automaticLabels', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'height', [], @ischar);
   ipp = ipp.addParamValue(ipp, 'width' , [], @ischar);
-
-  % extra code
-  ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrChar);
-
-  % extra axis options
-  ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
-
-  % extra tikzpicture settings
-  ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
-
-  % file encoding
-  ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
-
-  % floating point number precision
-  ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
+  
+  % Whether to save images in PNG format or to natively draw filled squares
+  % using TikZ itself.
+  ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
+  ipp = ipp.addParamValue(ipp, 'relativePngPath', [], @ischar);
 
   % Maximum chunk length.
   % TeX parses files line by line with a buffer of size buf_size. If the
@@ -249,25 +233,10 @@ function matlab2tikz(varargin)
   % which uses TeX's math mode for more characters like figures and operators.
   ipp = ipp.addParamValue(ipp, 'parseStringsAsMath', false, @islogical);
 
-  % Whether or not to show handles with HandleVisibility==false.
-  ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
-
   % As opposed to titles, axis labels and such, MATLAB(R) does not interpret tick
   % labels as TeX. matlab2tikz retains this behavior, but if it is desired to
   % interpret the tick labels as TeX, set this option to true.
   ipp = ipp.addParamValue(ipp, 'interpretTickLabelsAsTex', false, @islogical);
-
-  % Allow a string to be added to the header of the generated TikZ file.
-  ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
-
-  % Add support for automatic labels.
-  ipp = ipp.addParamValue(ipp, 'automaticLabels', false, @islogical);
-
-  % Add support for standalone TeX files.
-  ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
-
-  % Automatic updater.
-  ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % deprecated parameters (will auto-generate warnings upon parse)
