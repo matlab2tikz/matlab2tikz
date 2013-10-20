@@ -1,3 +1,15 @@
+2013-10-20  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.4.3.
+	* Support for 3D quiver plots.
+	* Extended support for colorbar axis options.
+	* New logo!
+	* Bugfixes:
+	   - text generation
+	   - extraCode option
+	   - join strings
+	   - ...
+
 2013-09-12  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.4.2.
