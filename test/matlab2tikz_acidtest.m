@@ -102,9 +102,6 @@ function matlab2tikz_acidtest( varargin )
               end
           end
           desc{k} = '\textcolor{red}{Error during plot generation.}';
-          if isempty( funcName{k} )
-              funcName{k} = sprintf( 'testfunctions( %d )', k );
-          end
           % When displaying the error message in MATLAB, all backslashes
           % have to be replaced by two backslashes. This must not, however,
           % be applied constantly as the string that's saved to the LaTeX
@@ -233,13 +230,6 @@ function matlab2tikz_acidtest( varargin )
       % ...and finally write the bits to the LaTeX file
       texfile_addtest(fh, pdf_file, gen_file, desc{k}, funcName{k}, ...
                       indices(k), pdferror(k), tikzerror(k));
-
-      % After 10 floats, put a \clearpage to avoid
-      %
-      %   ! LaTeX Error: Too many unprocessed floats.
-      if ~mod(k,10)
-          fprintf( fh, '\\clearpage\n\n' );
-      end
 
       close( fig_handle );
 

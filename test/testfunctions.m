@@ -1065,6 +1065,14 @@ function [description, extraOpts] = legendsubplots()
 end
 % =========================================================================
 function [description, extraOpts] = legendsubplots2()
+
+  if ~exist('tf', 'builtin')
+      fprintf( 'function "tf" not found. Abort.\n\n' );
+      description = [];
+      extraOpts = {};
+      return
+  end
+
   Rc=1;
   C=1.5e-6; %F
 
@@ -1117,6 +1125,13 @@ function [description, extraOpts] = bodeplots()
 end
 % =========================================================================
 function [description, extraOpts] = rlocusPlot()
+
+  if ~exist('tf', 'builtin')
+      fprintf( 'function "tf" not found. Abort.\n\n' );
+      description = [];
+      extraOpts = {};
+      return
+  end
 
   s=tf('s');
   rlocus(tf([1 1],[4 3 1]))
