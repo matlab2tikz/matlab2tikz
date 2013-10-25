@@ -1,38 +1,31 @@
-% =========================================================================
-% *** FUNCTION matlab2tikz_acidtest
-% ***
-% *** Choose the EPS output driver as the PDF will yield a the plot on a
-% *** full page, rather than nicely cropped around the figure.
-% ***
-% =========================================================================
-% ***
-% *** Copyright (c) 2008--2012, Nico Schlömer <nico.schloemer@gmail.com>
-% *** All rights reserved.
-% ***
-% *** Redistribution and use in source and binary forms, with or without
-% *** modification, are permitted provided that the following conditions are
-% *** met:
-% ***
-% ***    * Redistributions of source code must retain the above copyright
-% ***      notice, this list of conditions and the following disclaimer.
-% ***    * Redistributions in binary form must reproduce the above copyright
-% ***      notice, this list of conditions and the following disclaimer in
-% ***      the documentation and/or other materials provided with the distribution
-% ***
-% *** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-% *** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-% *** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-% *** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-% *** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-% *** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-% *** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-% *** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-% *** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-% *** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-% *** POSSIBILITY OF SUCH DAMAGE.
-% ***
-% =========================================================================
 function matlab2tikz_acidtest( varargin )
+%MATLAB2TIKZ_ACIDTEST    unit test driver for matlab2tikz
+
+% Copyright (c) 2008--2013, Nico Schlömer <nico.schloemer@gmail.com>
+% All rights reserved.
+%
+% Redistribution and use in source and binary forms, with or without
+% modification, are permitted provided that the following conditions are met:
+%
+%    * Redistributions of source code must retain the above copyright
+%      notice, this list of conditions and the following disclaimer.
+%    * Redistributions in binary form must reproduce the above copyright
+%      notice, this list of conditions and the following disclaimer in
+%      the documentation and/or other materials provided with the distribution
+%
+% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+% AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+% IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+% ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+% LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+% CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+% SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+% INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+% CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+% ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+% POSSIBILITY OF SUCH DAMAGE.
+%
+% =========================================================================
 
   % In which environment are we?
   env = getEnvironment();
@@ -238,8 +231,8 @@ function matlab2tikz_acidtest( varargin )
       funcName{k} = strrep( funcName{k}, '_', '\_' );
 
       % ...and finally write the bits to the LaTeX file
-      texfile_addtest( fh, pdf_file, gen_file, desc{k}, funcName{k}, ...
-                           pdferror(k), tikzerror(k) );
+      texfile_addtest(fh, pdf_file, gen_file, desc{k}, funcName{k}, ...
+                      indices(k), pdferror(k), tikzerror(k));
 
       % After 10 floats, put a \clearpage to avoid
       %
@@ -325,7 +318,7 @@ end
 function texfile_init( texfile_handle )
 
   fprintf( texfile_handle                                            , ...
-           [ '\\documentclass{scrartcl}\n'                           , ...
+           [ '\\documentclass[landscape]{scrartcl}\n'                , ...
              '\\pdfminorversion=6\n\n', ...
              '\\usepackage{amsmath} %% required for $\text{xyz}$\n\n', ...
              '\\usepackage{graphicx}\n'                              , ...
@@ -346,13 +339,10 @@ function texfile_finish( texfile_handle )
 
 end
 % =========================================================================
-% *** FUNCTION texfile_addtest
-% ***
-% *** Actually add the piece of LaTeX code that'll later be used to display
-% *** the given test.
-% ***
 function texfile_addtest( texfile_handle, ref_file, gen_file, desc, ...
-                          funcName, ref_error, gen_error )
+                          funcName, funcId, ref_error, gen_error )
+  % Actually add the piece of LaTeX code that'll later be used to display
+  % the given test.
 
   fprintf ( texfile_handle                                            , ...
             [ '\\begin{figure}\n'                                     , ...
@@ -386,12 +376,13 @@ function texfile_addtest( texfile_handle, ref_file, gen_file, desc, ...
                   '(0,\\figurewidth) -- (\\figurewidth,0);}\\\\\n'   ]  ...
               );
   end
-  fprintf ( texfile_handle                                            , ...
-            [ 'reference rendering & generated\n'                     , ...
-              '\\end{tabular}\n'                                      , ...
-              '\\caption{%s \\texttt{%s}}\n'                          , ...
-              '\\end{figure}\n\n'                                    ], ...
-              desc, funcName                                            ...
+  fprintf ( texfile_handle                       , ...
+            [ 'reference rendering & generated\n', ...
+              '\\end{tabular}\n'                 , ...
+              '\\caption{%s \\texttt{%s}, \\texttt{testFunctions(%d)}}\n', ...
+              '\\end{figure}\n'                  , ...
+              '\\clearpage\n\n'                 ], ...
+              desc, funcName, funcId               ...
           );
 
 end
@@ -417,11 +408,7 @@ function texfile_tab_completion_finish( texfile_handle )
 
 end
 % =========================================================================
-
-% =========================================================================
-% *** FUNCTION getEnvironment
-% =========================================================================
-function env = getEnvironment
+function env = getEnvironment()
   env = '';
   % Check if we are in MATLAB or Octave.
   % `ver' in MATLAB gives versioning information on all installed packages
@@ -438,6 +425,4 @@ function env = getEnvironment
       end
   end
 end
-% =========================================================================
-% *** END FUNCTION getEnvironment
 % =========================================================================
