@@ -2469,8 +2469,12 @@ function [m2t, str] = drawScatterPlot(m2t, h)
                       'only marks', ...
                       'scatter src=explicit', ...
                       ['scatter/use mapped color={', join(m2t, markerOptions,','), '}'] };
+      % Add color map.
+      matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap)
+      m2t.axesContainers{end}.options = ...
+        addToOptions(m2t.axesContainers{end}.options, ...
+                    matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
   end
-
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
   drawOpts = join(m2t, drawOptions, ',');
@@ -3061,12 +3065,12 @@ function [m2t, str] = drawErrorBars(m2t, h)
   [m2t, str] = drawLine(m2t, c(dataIdx), yDeviations);
 
 end
-% ==============================================================================
+% =============================================================================
 function out = linearFunction(X, Y)
     % Return the linear function that goes through (X[1], Y[1]), (X[2], Y[2]).
     out = @(x) (Y(2,:)*(x-X(1)) + Y(1,:)*(X(2)-x)) / (X(2)-X(1));
 end
-% ==============================================================================
+% =============================================================================
 function matlabColormap = pgfplots2matlabColormap(points, rgb, numColors)
     % Translates a Pgfplots colormap to a MATLAB color map.
 
@@ -3083,7 +3087,7 @@ function matlabColormap = pgfplots2matlabColormap(points, rgb, numColors)
         matlabColormap(k,:) = f(x);
     end
 end
-% ==============================================================================
+% =============================================================================
 function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     % Translates a MATLAB color map into a Pgfplots colormap.
 

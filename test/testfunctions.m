@@ -1311,8 +1311,10 @@ end
 % =========================================================================
 function [description, extraOpts] = scatterPlotRandom()
 
-  x = randn( 10, 2 );
-  scatter( x(:,1), x(:,2)  );
+  n=1:100;
+  scatter(n,n,n,n);
+  %x = randn( 10, 2 );
+  %scatter( x(:,1), x(:,2)  );
   description = 'Generic scatter plot.';
   extraOpts = {};
 
