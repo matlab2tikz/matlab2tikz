@@ -1313,6 +1313,7 @@ function [description, extraOpts] = scatterPlotRandom()
 
   n=1:100;
   scatter(n,n,n,n);
+  colormap autumn;
   %x = randn( 10, 2 );
   %scatter( x(:,1), x(:,2)  );
   description = 'Generic scatter plot.';
