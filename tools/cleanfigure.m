@@ -1,11 +1,13 @@
 function cleanfigure()
 %   CLEANFIGURE() removes the unnecessary objects from your MATLAB plot
 %   to give you a better experience with matlab2tikz.
-
 %   CLEANFIGURE comes with several options that can be combined at will.
 %
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
+%
+%   CLEANFIGURE('minimumPointsDistance',DOUBLE,...) explicitly specified the
+%   minimum distance between two points. (default: 1.0e-10)
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -46,8 +48,14 @@ function cleanfigure()
   % Keep track of the current axes.
   meta.gca = [];
 
+  % Set up command line options.
+  m2t.cmdOpts = matlab2tikzInputParser;
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointDistance', 1.0e-10, @isnumeric);
+  % Finally parse all the elements.
+  m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
+
   % Recurse down the tree of plot objects and clean up the leaves.
-  recursiveCleanup(meta, gcf, 0);
+  recursiveCleanup(meta, gcf, m2t.cmdOpts.Results.minimumPointsDistance, 0);
 
   % Reset to initial state.
   set(0, 'ShowHiddenHandles', shh);
@@ -55,7 +63,7 @@ function cleanfigure()
   return;
 end
 % =========================================================================
-function indent = recursiveCleanup(meta, h, indent)
+function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
 
   type = get(h, 'Type');
 
@@ -101,7 +109,7 @@ function indent = recursiveCleanup(meta, h, indent)
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
           % Don't be too precise.
-          coarsenLine(meta, h, 1.0e-10);
+          coarsenLine(meta, h, minimumPointsDistance);
       elseif strcmp(type, 'text')
           % Check if text is inside bounds by checking if the Extent rectangle
           % and the axes box overlap.
