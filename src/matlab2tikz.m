@@ -46,6 +46,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
 %
+%   MATLAB2TIKZ('extraColors', {{'name',[R G B]}, ...} , ...) adds
+%   user-defined named RGB-color definitions to the TikZ output. 
+%   R, G and B are expected between 0 and 1. (default: {})
+%
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
 %   explicitly adds extra options to the tikzpicture environment. (default: [])
 %
@@ -191,12 +195,6 @@ function matlab2tikz(varargin)
                      % used, for example, in equality test for doubles
   m2t.relativePngPath = [];
 
-  % The following color RGB-values which will need to be defined.
-  % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
-  % their specifications.
-  m2t.extraRgbColorSpecs = cell(0);
-  m2t.extraRgbColorNames = cell(0);
-
   % the actual contents of the TikZ file go here
   m2t.content = struct('name',     [], ...
                        'comment',  [], ...
@@ -297,6 +295,9 @@ function matlab2tikz(varargin)
 
   % Automatic updater.
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'checkForUpdates', true, @islogical);
+  
+  % extra colors
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraColors', {}, @iscolordefinitions);
 
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
@@ -313,6 +314,13 @@ function matlab2tikz(varargin)
                        'strings please set the parameter ''parseStrings'' to false.\n', ...
                        '==========================================================================']);
   end
+  
+  
+  % The following color RGB-values which will need to be defined.
+  % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
+  % their specifications.
+  [m2t.extraRgbColorNames, m2t.extraRgbColorSpecs] = ...
+      extractColors(m2t.cmdOpts.Results.extraColors);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % shortcut
@@ -430,6 +438,20 @@ end
 % =========================================================================
 function l = isCellOrChar(x, p) %#ok
     l = iscell(x) || ischar(x);
+end
+% =========================================================================
+function isValid = iscolordefinitions(colors)
+    isValid = iscell(colors);
+    nColors = numel(colors);
+    iColor = 1;
+    while isValid && iColor <= nColors
+        color = colors{iColor};
+        isValid = iscell(color)      && ... % nested cell of ...
+                  ischar(color{1})   && ... % CHAR as color name AND
+                  numel(color{2})==3 && ... % RGB values between 0 and 1
+                  max(color{2})<=1   && min(color{2})>=0;
+        iColor = iColor + 1;
+    end
 end
 % =========================================================================
 function deprecatedParameter(m2t, oldParameter, varargin)
@@ -568,8 +590,9 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
       m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
       for k = 1:length(m2t.extraRgbColorNames)
           % make sure to append with '%' to avoid spacing woes
+          ff = '%0.6f'; % 60-bit RGB color space (48-bit is already high-end)
           m2t.content.colors = [m2t.content.colors, ...
-                                sprintf(['\\definecolor{%s}{rgb}{', m2t.ff, ',', m2t.ff, ',', m2t.ff,'}%%\n'], ...
+                                sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
                                         m2t.extraRgbColorNames{k}', m2t.extraRgbColorSpecs{k})];
       end
       m2t.content.colors = [m2t.content.colors sprintf('%%\n')];
@@ -3836,6 +3859,18 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
       otherwise
           error('matlab2tikz:translateLineStyle:UnknownLineStyle',...
                 'Unknown matlabLineStyle ''%s''.', matlabLineStyle);
+  end
+end
+% =========================================================================
+function [names,definitions] = extractColors(colorDefinitions)
+  nColors     = numel(colorDefinitions);
+  names       = cell(1,nColors);
+  definitions = cell(1,nColors);
+
+  for iColor = 1:nColors
+      color = colorDefinitions{iColor};
+      names{iColor} = color{1};
+      definitions{iColor} = color{2};
   end
 end
 % =========================================================================
