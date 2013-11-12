@@ -1,4 +1,4 @@
-function cleanfigure()
+function cleanfigure(varargin)
 %   CLEANFIGURE() removes the unnecessary objects from your MATLAB plot
 %   to give you a better experience with matlab2tikz.
 %   CLEANFIGURE comes with several options that can be combined at will.
@@ -55,7 +55,7 @@ function cleanfigure()
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
   % Recurse down the tree of plot objects and clean up the leaves.
-  recursiveCleanup(meta, gcf, m2t.cmdOpts.Results.minimumPointsDistance, 0);
+  recursiveCleanup(meta, gcf, m2t.cmdOpts.Results.minimumPointDistance, 0);
 
   % Reset to initial state.
   set(0, 'ShowHiddenHandles', shh);
@@ -89,7 +89,7 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
   if ~isempty(children)
       for child = children(:)'
           indent = indent + 4;
-          indent = recursiveCleanup(meta, child, indent);
+          indent = recursiveCleanup(meta, child, minimumPointsDistance, indent);
           indent = indent - 4;
       end
   else
