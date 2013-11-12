@@ -590,8 +590,9 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
       m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
       for k = 1:length(m2t.extraRgbColorNames)
           % make sure to append with '%' to avoid spacing woes
+          ff = '%0.6f'; % 60-bit RGB color space (48-bit is already high-end)
           m2t.content.colors = [m2t.content.colors, ...
-                                sprintf(['\\definecolor{%s}{rgb}{', m2t.ff, ',', m2t.ff, ',', m2t.ff,'}%%\n'], ...
+                                sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
                                         m2t.extraRgbColorNames{k}', m2t.extraRgbColorSpecs{k})];
       end
       m2t.content.colors = [m2t.content.colors sprintf('%%\n')];
