@@ -50,6 +50,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
 %
+%   MATLAB2TIKZ('extraColors', {{'name',[R G B]}, ...} , ...) adds
+%   user-defined named RGB-color definitions to the TikZ output. 
+%   R, G and B are expected between 0 and 1. (default: {})
+%
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
 %   explicitly adds extra options to the tikzpicture environment. (default: [])
 %
@@ -169,12 +173,6 @@ function matlab2tikz(varargin)
   m2t.imageAsPngNo = 0;
   m2t.dataFileNo   = 0;
 
-  % The following color RGB-values which will need to be defined.
-  % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
-  % their specifications.
-  m2t.extraRgbColorSpecs = cell(0);
-  m2t.extraRgbColorNames = cell(0);
-
   % the actual contents of the TikZ file go here
   m2t.content = struct('name',     [], ...
                        'comment',  [], ...
@@ -203,6 +201,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
   ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
+  ipp = ipp.addParamValue(ipp, 'extraColors', {}, @iscolordefinitions);
   ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrChar);
   ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
   ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
@@ -264,6 +263,13 @@ function matlab2tikz(varargin)
                        'strings please set the parameter ''parseStrings'' to false.\n', ...
                        '==========================================================================']);
   end
+  
+  
+  % The following color RGB-values which will need to be defined.
+  % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
+  % their specifications.
+  [m2t.extraRgbColorNames, m2t.extraRgbColorSpecs] = ...
+      extractColors(m2t.cmdOpts.Results.extraColors);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % shortcut
@@ -370,6 +376,20 @@ end
 % =========================================================================
 function l = isCellOrChar(x)
     l = iscell(x) || ischar(x);
+end
+% =========================================================================
+function isValid = iscolordefinitions(colors)
+    isValid = iscell(colors);
+    nColors = numel(colors);
+    iColor = 1;
+    while isValid && iColor <= nColors
+        color = colors{iColor};
+        isValid = iscell(color)      && ... % nested cell of ...
+                  ischar(color{1})   && ... % CHAR as color name AND
+                  numel(color{2})==3 && ... % RGB values between 0 and 1
+                  max(color{2})<=1   && min(color{2})>=0;
+        iColor = iColor + 1;
+    end
 end
 %==========================================================================
 function fid = fileOpenForWrite(m2t, filename)
@@ -3791,6 +3811,18 @@ function [m2t, table] = makeTable(m2t, varargin)
         % put the filename in the TikZ output
         table = TeXpath(relativeFilename);    
     end
+end
+% =========================================================================
+function [names,definitions] = extractColors(colorDefinitions)
+  nColors     = numel(colorDefinitions);
+  names       = cell(1,nColors);
+  definitions = cell(1,nColors);
+
+  for iColor = 1:nColors
+      color = colorDefinitions{iColor};
+      names{iColor} = color{1};
+      definitions{iColor} = color{2};
+  end
 end
 % =========================================================================
 function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
