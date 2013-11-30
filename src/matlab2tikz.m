@@ -1382,7 +1382,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
   % check if the *optional* argument 'yDeviation' was given
   hasDeviations = false;
   if nargin > 2
-      data = [data, yDeviation(:)];
+      data = [data, yDeviation(:,1:2)];
       hasDeviations = true;
   end
 
@@ -1447,7 +1447,7 @@ function str = plotLine2d(m2t, opts, data)
   str = [];
 
   % check if the *optional* argument 'yDeviation' was given
-  errorbarMode = (size(data,2) == 3);
+  errorbarMode = (size(data,2) == 4);
 
   str = [str, ...
           sprintf(['\\addplot [',opts,']\n'])];
@@ -1459,7 +1459,7 @@ function str = plotLine2d(m2t, opts, data)
   % Convert to string array then cell to call sprintf once (and no loops).
   if errorbarMode
       dataType = 'coordinates';
-      str_data = sprintf(['(', m2t.ff, ',', m2t.ff,') +- (0.0,', m2t.ff,')'], data');
+      str_data = sprintf(['(', m2t.ff, ',', m2t.ff,') += (0.0,', m2t.ff,') -= (0.0,', m2t.ff,')'], data');
   else
       dataType = 'table[row sep=crcr]';
       str_data = sprintf([m2t.ff, ' ', m2t.ff, '\\\\\n'], data');
@@ -3041,7 +3041,7 @@ function [m2t, str] = drawErrorBars(m2t, h)
 
   n = length(yValues);
 
-  yDeviations = zeros(n, 1);
+  yDeviations = zeros(n, 2);
 
   for k = 1:n
       % upper deviation
@@ -3052,12 +3052,7 @@ function [m2t, str] = drawErrorBars(m2t, h)
       kk = numDevData*(k-1) + 2;
       loDev = abs(yValues(k) - yErrors(kk));
 
-      if abs(upDev-loDev) >= 1e-10 % don't use 'm2t.tol' here as is seems somewhat too strict
-          error('drawErrorBars:uneqDeviations', ...
-                'Upper and lower error deviations not equal (%.15g ~= %.15g). Pgfplots can''t deal with that yet. Using upper deviations.', upDev, loDev);
-      end
-
-      yDeviations(k) = upDev;
+      yDeviations(k,:) = [upDev loDev];
   end
 
   % Now, pull drawLine() with deviation information.
