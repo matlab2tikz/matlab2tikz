@@ -43,13 +43,16 @@ function parser = matlab2tikzInputParser()
   parser.Unmatched = struct ();
   % Names of parameters using default values.
   parser.UsingDefaults = {};
+  % Names of deprecated parameters and their alternatives
+  parser.DeprecatedParameters = struct();
 
   % Handles for functions that act on the object.
-  parser.addRequired   = @addRequired;
-  parser.addOptional   = @addOptional;
-  parser.addParamValue = @addParamValue;
-  parser.parse         = @parse;
-
+  parser.addRequired    = @addRequired;
+  parser.addOptional    = @addOptional;
+  parser.addParamValue  = @addParamValue;
+  parser.deprecateParam = @deprecateParam;
+  parser.parse          = @parse;
+  
   % Initialize the parser plan
   parser.plan = {};
 end
@@ -80,6 +83,18 @@ end
 % =========================================================================
 function p = addParamValue (p, name, default, validator)
   p = parser_plan (p, 'paramvalue', name, default, validator);
+end
+% =========================================================================
+function p = deprecateParam (p, name, alternatives)
+  if isempty(alternatives)
+      alternatives = {};
+  elseif ischar(alternatives)
+      alternatives = {alternatives}; % make cellstr
+  elseif ~iscellstr(alternatives)
+      error('matlab2tikzInputParser:BadAlternatives',...
+            'Alternatives for a deprecated parameter must be a char or cellstr');
+  end
+  p.DeprecatedParameters.(name) = alternatives;
 end
 % =========================================================================
 function p = parse (p, varargin)
@@ -192,7 +207,8 @@ function p = parse (p, varargin)
   % Store the results of the parsing
   p.Results = results;
   p.UsingDefaults = using_defaults;
-
+  
+  warnForDeprecatedParameters(p);
 end
 % =========================================================================
 function result = validate_arg (validator, arg)
@@ -203,3 +219,32 @@ function result = validate_arg (validator, arg)
   end
 end
 % =========================================================================
+function warnForDeprecatedParameters(p)
+  usedDeprecatedParameters = intersect(p.Parameters, fieldnames(p.DeprecatedParameters));
+  
+  for iParam = 1:numel(usedDeprecatedParameters)
+      oldParameter = usedDeprecatedParameters{iParam};
+      alternatives = p.DeprecatedParameters.(oldParameter);
+      
+      switch numel(alternatives)
+          case 0
+              replacements = '';
+          case 1
+              replacements = ['''' alternatives{1} ''''];
+          otherwise
+              replacements = deblank(sprintf('''%s'' and ',alternatives{:}));
+              replacements = regexprep(replacements,' and$','');
+      end
+      if ~isempty(replacements)
+          replacements = sprintf('From now on, please use %s to control the output.\n',replacements);
+      end
+
+      message = ['\n===============================================================================\n', ...
+                  'You are using the deprecated parameter ''%s''.\n', ...
+                  '%s', ...
+                  '==============================================================================='];
+      warning('matlab2tikz:deprecatedParameter', ...
+                message, oldParameter, replacements);
+      
+  end
+end
