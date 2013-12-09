@@ -3736,6 +3736,55 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
   end
 end
 % =========================================================================
+function table = makeTable(m2t, varargin)
+%   table = makeTable(m2t, 'name1', data1, 'name2', data2, ...)
+%   table = makeTable(m2t, {'name1','name2',...}, {data1, data2, ...})
+%   table = makeTable(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
+%
+%  When all the names are empty, no header is printed
+%
+    if numel(varargin) == 2 % cell syntax
+        variables = varargin{1};
+        data      = varargin{2};
+        if ischar(variables)
+            % one variable, one data vector -> (cell, cell)
+            variables = {variables};
+            data      = {data};
+        elseif iscellstr(variables) && ~iscell(data)
+            % multiple variables, one data matrix -> (cell, cell) by column
+            data = num2cell(data, 1);
+        end
+    else % key-value syntax
+        variables = varargin(1:2:end-1);
+        data      = varargin(2:2:end);
+    end
+
+    nColumns  = numel(data);
+    nRows     = cellfun(@numel, data);
+    if ~all(nRows==nRows(1))
+        warning('matlab2tikz:makeTableDifferentNumberOfRows',...
+                'Different data lengths [%s]. Only including the first %d ones.',...
+                num2str(nRows), min(nRows));
+    end
+    nRows = min(nRows);
+    
+    COLSEP = sprintf('\t');
+    ROWSEP = sprintf('\\\\\n');
+    FORMAT = join(m2t, repmat({m2t.ff}, nColumns), COLSEP);
+    if ~all(cellfun(@isempty, variables))
+        header = {join(m2t, variables, COLSEP)};
+    else
+        header = {};
+    end
+
+    table = cell(nRows,1);
+    for iRow = 1:nRows
+        thisData = cellfun(@(x)(x(iRow)), data, 'UniformOutput', false);
+        table{iRow} = sprintf(FORMAT, thisData{:});
+    end
+    table = [join(m2t, [header;table], ROWSEP) ROWSEP];
+end
+% =========================================================================
 function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
   % Translates an rgb value to an xcolor literal -- if possible!
   % If not, it returns the empty string.
