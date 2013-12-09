@@ -1366,33 +1366,25 @@ end
 % =========================================================================
 function str = plotLine2d(m2t, opts, data)
 
-  str = [];
-
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = (size(data,2) == 4);
 
-  str = [str, ...
-          sprintf(['\\addplot [',opts,']\n'])];
+  str = '';
   if errorbarMode
-      str = [str, ...
-             sprintf('plot [error bars/.cd, y dir = both, y explicit]\n')];
+      str = sprintf('plot [error bars/.cd, y dir = both, y explicit]\n');
   end
 
   % Convert to string array then cell to call sprintf once (and no loops).
   if errorbarMode
-      dataType = 'coordinates';
-      str_data = sprintf(['(', m2t.ff, ',', m2t.ff,') += (0.0,', m2t.ff,') -= (0.0,', m2t.ff,')\n'], data');
-      %FIXME: external
+      dataType = 'table[row sep=crcr, y error plus index=2, y error minus index=3]';
   else
       dataType = 'table[row sep=crcr]';
-      str_data = makeTable(m2t, {'',''}, data);
   end
 
-  % Pgfplots doesn't recognize "Inf" when used with coordinates{}.
-  str_data = strrep(str_data, 'Inf', 'inf');
-  str = [str, ...
+  str = [sprintf(['\\addplot [',opts,']\n']), ...
+         str, ...
          sprintf('%s{\n', dataType), ...
-         str_data, ...
+         makeTable(m2t, repmat({''}, size(data,2)), data), ...
          sprintf('};\n')];
 end
 % =========================================================================
@@ -2410,36 +2402,35 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   drawOpts = join(m2t, drawOptions, ',');
   if isempty(zData)
       env = 'addplot';
-      format = ['(', m2t.ff, ',', m2t.ff, ')'];
+      nColumns = 2;
       data = [xData(:), yData(:)];
-      %FIXME: external
   else
       env = 'addplot3';
       m2t.currentAxesContain3dData = true;
-      format = ['(', m2t.ff, ',', m2t.ff, ',', m2t.ff, ')'];
+      nColumns = 3;
       data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
-      %FIXME: external
   end
 
+  metaPart = '';
   if length(cData) == 3
       % If size(cData,1)==1, then all the colors are the same and have
       % already been accounted for above.
-      format = [format, '\n'];
+      
   elseif size(cData,2) == 3
-      % Hm, can't deal with this?
+      %TODO Hm, can't deal with this?
       %[m2t, col] = rgb2colorliteral(m2t, cData(k,:));
       %str = strcat(str, sprintf(' [%s]\n', col));
   else
-      format = [format, ' [%d]\n'];
+      metaPart = sprintf('meta index=%d',size(data,2));
       data = [data, cData(:)];
+      nColumns = nColumns + 1;
   end
 
   % The actual printing.
   str = [str, ...
-         sprintf('\\%s[%s] plot coordinates{\n', env, drawOpts), ...
-         sprintf(format, data'), ...
+         sprintf('\\%s[%s] plot table[row sep=crcr,%s]{\n', env, drawOpts, metaPart), ...
+         makeTable(m2t, repmat({''},1,nColumns), data), ...
          sprintf('};\n\n')];
-  %FIXME: external
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
