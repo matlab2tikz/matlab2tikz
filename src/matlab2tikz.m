@@ -3774,6 +3774,7 @@ function table = makeTable(m2t, varargin)
         end
         table{iRow} = sprintf(FORMAT, thisData{:});
     end
+    table = lower(table); % convert NaN and Inf to lower case for TikZ
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
 end
 % =========================================================================
