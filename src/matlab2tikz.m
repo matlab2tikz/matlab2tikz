@@ -2236,6 +2236,7 @@ function [m2t, str] = drawText(m2t, handle)
   % get required properties
   color  = get(handle, 'Color');
   [m2t, tcolor] = getColor(m2t, handle, color, 'patch');
+  bgColor = get(handle,'BackgroundColor');
   EdgeColor = get(handle, 'EdgeColor');
   HorizontalAlignment = get(handle, 'HorizontalAlignment');
   String = get(handle, 'String');
@@ -2250,6 +2251,10 @@ function [m2t, str] = drawText(m2t, handle)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % translate them to pgf style
   style = cell(0);
+  if ~strcmpi(bgColor,'none')
+      [m2t, bcolor] = getColor(m2t, handle, bgColor, 'patch');
+      style{end+1} = ['fill=' bcolor];
+  end
   switch VerticalAlignment
       case {'top', 'cap'}
           style{end+1} = 'below';
