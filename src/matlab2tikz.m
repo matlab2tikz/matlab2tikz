@@ -2055,10 +2055,6 @@ function [m2t, str] = drawHggroup(m2t, h)
           % scatter plots
           [m2t,str] = drawAreaSeries(m2t, h);
 
-      case {'specgraph.contourgroup', 'hggroup'}
-          % handle all those the usual way
-          [m2t, str] = handleAllChildren(m2t, h);
-
       case {'specgraph.quivergroup'}
           % quiver arrows
           [m2t, str] = drawQuiverGroup(m2t, h);
@@ -2070,6 +2066,10 @@ function [m2t, str] = drawHggroup(m2t, h)
       case {'specgraph.scattergroup'}
           % scatter plots
           [m2t,str] = drawScatterPlot(m2t, h);
+          
+      case {'specgraph.contourgroup', 'hggroup'}
+          % handle all those the usual way
+          [m2t, str] = handleAllChildren(m2t, h);
 
       case 'unknown'
           % Weird spurious class from Octave.
