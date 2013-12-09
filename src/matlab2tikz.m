@@ -2077,7 +2077,13 @@ function [m2t, str] = drawHggroup(m2t, h)
 
       otherwise
           userWarning(m2t, 'Don''t know class ''%s''. Default handling.', cl);
-          [m2t, str] = handleAllChildren(m2t, h);
+          try
+            m2tBackup = m2t;
+            [m2t, str] = handleAllChildren(m2t, h);
+          catch ME
+            userWarning(m2t, 'Default handling for ''%s'' failed. Continuing as if it did not occur. \n Original Message:\n %s', cl, getReport(ME));
+            [m2t, str] = deal(m2tBackup, ''); % roll-back
+          end
   end
 
 end
