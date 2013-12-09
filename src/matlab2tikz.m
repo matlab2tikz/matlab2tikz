@@ -2023,7 +2023,7 @@ function [m2t, str] = drawHggroup(m2t, h)
 
       case 'specgraph.stemseries'
           % stem plots
-          [m2t, str] = drawStemseries(m2t, h);
+          [m2t, str] = drawStemSeries(m2t, h);
 
       case 'specgraph.stairseries'
           % stair plots
@@ -2728,96 +2728,45 @@ function [m2t, str] = drawBarseries(m2t, h)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
-function [m2t, str] = drawStemseries(m2t, h)
-  % Takes care of MATLAB's stem plots.
-  %
-  % TODO Get rid of code duplication with 'drawAxes'.
-
+function [m2t, str] = drawStemSeries(m2t, h)
+    [m2t, str] = drawStemOrStairSeries_(m2t, h, 'ycomb');
+end
+function [m2t, str] = drawStairSeries(m2t, h)
+    [m2t, str] = drawStemOrStairSeries_(m2t, h, 'const plot');
+end
+function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
   str = [];
 
   lineStyle = get(h, 'LineStyle');
   lineWidth = get(h, 'LineWidth');
   marker    = get(h, 'Marker');
 
-  if ((strcmp(lineStyle,'none') || lineWidth==0)                  ...
-      && strcmp(marker,'none'))
-      % nothing to plot!
-      return
+  if ((strcmp(lineStyle,'none') || lineWidth==0) && strcmp(marker,'none'))
+      return % nothing to plot!
   end
 
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-  % deal with draw options
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+  %% deal with draw options
   color = get(h, 'Color');
   [m2t, plotColor] = getColor(m2t, h, color, 'patch');
 
   lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
   [m2t, markerOptions] = getMarkerOptions(m2t, h);
 
-  drawOptions = ['ycomb',                      ...
-                 sprintf('color=%s', plotColor),         ... % color
+  drawOptions = [plotType,                      ...
+                 sprintf('color=%s', plotColor),...
                  lineOptions, ...
                  markerOptions];
 
-  % insert draw options
+  %% insert draw options
   drawOpts =  join(m2t, drawOptions, ',');
-  % = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % plot the thing
-  xData = get(h, 'XData');
-  yData = get(h, 'YData');
-  str = [str, ...
-         sprintf('\\addplot[%s] plot coordinates{', drawOpts), ...
-         sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
-         sprintf('};\n\n')];
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-end
-% =========================================================================
-function [m2t, str] = drawStairSeries(m2t, h)
-  % Takes care of MATLAB's stairs plots.
-  %
-  % TODO Get rid of code duplication with 'drawAxes'.
-
-  str = [];
-
-  lineStyle = get(h, 'LineStyle');
-  lineWidth = get(h, 'LineWidth');
-  marker    = get(h, 'Marker');
-
-  if (   (strcmp(lineStyle,'none') || lineWidth==0)                  ...
-       && strcmp(marker,'none'))
-      return
-  end
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % deal with draw options
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  color     = get(h, 'Color');
-  [m2t, plotColor] = getColor(m2t, h, color, 'patch');
-
-  lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-  [m2t, markerOptions] = getMarkerOptions(m2t, h);
-
-  drawOptions = ['const plot',         ...
-                 sprintf('color=%s', plotColor), ... % color
-                 lineOptions, ...
-                 markerOptions];
-
-  % insert draw options
-  drawOpts = join(m2t, drawOptions, ',');
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % plot the thing
+  %% plot the thing
   xData = get(h, 'XData');
   yData = get(h, 'YData');
   str = [str, ...
          sprintf('\\addplot[%s] plot coordinates{\n', drawOpts), ...
          sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
          sprintf('};\n\n')];
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
 function [m2t, str] = drawAreaSeries(m2t, h)
