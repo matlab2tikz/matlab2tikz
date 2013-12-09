@@ -2075,14 +2075,10 @@ function [m2t,env] = drawSurface(m2t, handle)
                             | (abs(colors - dz) > 1.0e-10));
         if needsPointmeta
             % Get color map.
-            %formatType = 'coordinates';
-            %formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
             formatType = 'table[row sep=crcr,header=false,meta index=3]';
             opts{end+1} = 'point meta=explicit';
             color = colors(:);
         else
-            %formatType = 'coordinates';
-            %formatString = '(%.15g, %.15g, %.15g)\n';
             formatType = 'table[row sep=crcr,header=false]';
             color = '';
         end
