@@ -1747,10 +1747,6 @@ function [m2t, str] = drawPatch(m2t, handle)
   % This is for a quirky workaround for stacked bar plots.
   m2t.axesContainers{end}.nonbarPlotsPresent = true;
 
-  % Make sure that legends are shown in area mode.
-  m2t.axesContainers{end}.options = ...
-    addToOptions(m2t.axesContainers{end}.options, 'area legend', []);
-
   % MATLAB's patch elements are matrices in which each column represents a
   % a distinct graphical object. Usually there is only one column, but
   % there may be more (-->hist plots, although they are now handled
@@ -1771,7 +1767,8 @@ function [m2t, str] = drawPatch(m2t, handle)
   end
   % -----------------------------------------------------------------------
   % gather the draw options
-  drawOptions = cell(0);
+  % Make sure that legends are shown in area mode.
+  drawOptions = {'area legend'};
 
   % see if individual color values are present
   cData = get(handle, 'CData');
