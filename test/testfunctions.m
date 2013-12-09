@@ -1066,7 +1066,7 @@ end
 % =========================================================================
 function [description, extraOpts] = legendsubplots2()
 
-  if ~exist('tf', 'builtin')
+  if isempty(which('tf'))
       fprintf( 'function "tf" not found. Abort.\n\n' );
       description = [];
       extraOpts = {};
@@ -1126,7 +1126,7 @@ end
 % =========================================================================
 function [description, extraOpts] = rlocusPlot()
 
-  if ~exist('tf', 'builtin')
+  if isempty(which('tf'))
       fprintf( 'function "tf" not found. Abort.\n\n' );
       description = [];
       extraOpts = {};
@@ -1503,7 +1503,7 @@ function [description, extraOpts] = spectro()
 
   % In the original test case, this is 0:0.001:2, but that takes forever
   % for LaTeX to process.
-  if ~exist('chirp', 'builtin')
+  if isempty(which('chirp'))
       fprintf( 'chirp() not found. Abort.\n\n' );
       description = [];
       extraOpts = {};
