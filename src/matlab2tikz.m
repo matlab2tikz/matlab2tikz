@@ -1319,8 +1319,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
       str = [str, ...
              sprintf(['\\addplot3 [\n', join(m2t, drawOptions, ',\n'), ']\n']), ...
              sprintf('table[row sep=crcr] {\n'), ...
-             %FIXME: external
-             sprintf([m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'], data'), ...
+             makeTable(m2t, {'','',''}, data), ...
              sprintf('};\n')];
 
       m2t.currentAxesContain3dData = true;
@@ -1386,15 +1385,11 @@ function str = plotLine2d(m2t, opts, data)
       %FIXME: external
   else
       dataType = 'table[row sep=crcr]';
-      %FIXME: external
-      str_data = sprintf([m2t.ff, ' ', m2t.ff, '\\\\\n'], data');
-      %dataType = 'coordinates';
-      %str_data = sprintf(['(', m2t.ff,', 'm2t.ff, ')'], data');
+      str_data = makeTable(m2t, {'',''}, data);
   end
 
   % Pgfplots doesn't recognize "Inf" when used with coordinates{}.
   str_data = strrep(str_data, 'Inf', 'inf');
-  %FIXME: external
   str = [str, ...
          sprintf('%s{\n', dataType), ...
          str_data, ...
@@ -1796,12 +1791,9 @@ function [m2t, str] = drawPatch(m2t, handle)
   str = [str, ...
          sprintf(['\n\\', plotType, '[',drawOpts,']\n']), ...
          sprintf(['table[', join(m2t, tableOptions, ', '), ']{\n']), ...
-         sprintf([join(m2t, columnNames, ' '), '\\\\\n']), ...
-         sprintf([repmat([m2t.ff, ' '], 1, size(data, 2)), '\\\\\n'], ...
-                 data'), ...
+         makeTable(m2t, columnNames, data), ...
          sprintf('};\n')];
    str = [str, sprintf('\n')];
-  %FIXME: external
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -2063,15 +2055,13 @@ function [m2t,env] = drawSurface(m2t, handle)
         opts{end+1} = 'mesh/color input=explicit';
 
         formatType = 'table[row sep=crcr,header=false,meta index=3]';
-        formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff,  ' ', ...
-                        m2t.ff, ',', m2t.ff, ',', m2t.ff, ...
-                        '\\\\\n'];
         r = colors(:, :, 1);
         g = colors(:, :, 2);
         b = colors(:, :, 3);
-        data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), ...
-                r(:), g(:), b(:)];
-        %FIXME: external
+        colorFormat = join(m2t, repmat({m2t.ff},[3 1]),',');
+        color = arrayfun(@(r,g,b)(sprintf(colorFormat,r,g,b)), ...
+                         r(:),g(:),b(:),'UniformOutput',false);
+        
         %formatType = 'table[row sep=crcr,header=false]';
         %formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
         %data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
@@ -2097,19 +2087,15 @@ function [m2t,env] = drawSurface(m2t, handle)
             %formatString = '(%.15g, %.15g, %.15g) [%.15g]\n';
             formatType = 'table[row sep=crcr,header=false,meta index=3]';
             opts{end+1} = 'point meta=explicit';
-            formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, ' ', ...
-                            m2t.ff, '\\\\\n'];
-            data = [applyHgTransform(m2t, [dx(:), dy(:), dz(:)]), colors(:)];
-            %FIXME: external
+            color = colors(:);
         else
             %formatType = 'coordinates';
             %formatString = '(%.15g, %.15g, %.15g)\n';
             formatType = 'table[row sep=crcr,header=false]';
-            formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
-            data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
-            %FIXME: external
+            color = '';
         end
     end
+    data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
 
     % Add mesh/rows=<num rows> for specifying the row data instead of empty
     % lines in the data list below. This makes it possible to reduce the
@@ -2124,12 +2110,15 @@ function [m2t,env] = drawSurface(m2t, handle)
     % Spectrograms need to have the grid removed,
     % m2t.axesContainers{end}.options{end+1} = 'grid=none';
     % Here is where everything is put together.
+    tabArgs = {'',data(:,1),'',data(:,2),'',data(:,3)};
+    if ~isempty(color)
+        tabArgs(end+1:end+2) = {'',color};
+    end
     str = [str, ...
            sprintf('\n%s {\n', formatType), ...
-           sprintf(formatString, data'), ...
+           makeTable(m2t, tabArgs{:}), ...
            sprintf('};\n')];
     env = str;
-    %FIXME: external
 
     % TODO:
     % - remove grids in spectrogram by either removing grid command
@@ -2665,20 +2654,18 @@ function [m2t, str] = drawBarseries(m2t, h)
     addToOptions(m2t.axesContainers{end}.options, 'area legend', []);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  %FIXME: external
+  if isHoriz
+      [yDataPlot, xDataPlot] = deal(xData, yData); % swap values
+  else
+      [xDataPlot, yDataPlot] = deal(xData, yData);
+  end
+  
   drawOpts = join(m2t, drawOptions, ',');
   str = [str, ...
-         sprintf('\\addplot[%s] plot coordinates{\n', drawOpts)];
+         sprintf('\\addplot[%s] plot table[row sep=crcr] {\n', drawOpts), ...
+         makeTable(m2t, '', xDataPlot, '', yDataPlot), ...
+         sprintf('};\n\n')];
 
-  if isHoriz
-      % If the bars are horizontal, the values x and y are exchanged.
-      str = strcat(str, ...
-                   sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [yData(:), xData(:)]'));
-  else
-      str = strcat(str, ...
-                   sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'));
-  end
-  str = [str, sprintf('};\n\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -2718,8 +2705,8 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
   xData = get(h, 'XData');
   yData = get(h, 'YData');
   str = [str, ...
-         sprintf('\\addplot[%s] plot coordinates{\n', drawOpts), ...
-         sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
+         sprintf('\\addplot[%s] plot table[row sep=crcr] {\n', drawOpts), ...
+         makeTable(m2t, '', xData, '', yData), ...
          sprintf('};\n\n')];
 end
 % =========================================================================
@@ -2763,12 +2750,11 @@ function [m2t, str] = drawAreaSeries(m2t, h)
   drawOpts = join(m2t, drawOptions, ',');
 
   % plot the thing
-  %FIXME: external
   xData = get(h, 'XData');
   yData = get(h, 'YData');
   str = [str, ...
-         sprintf('\\addplot[%s] plot coordinates{\n', drawOpts), ...
-         sprintf(['(',m2t.ff,',',m2t.ff,')\n'], [xData(:), yData(:)]'), ...
+         sprintf('\\addplot[%s] plot table[row sep=crcr]{\n', drawOpts), ...
+         makeTable(m2t, '', xData, '', yData), ...
          sprintf('}\n\\closedcycle;\n')];
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
@@ -3781,6 +3767,11 @@ function table = makeTable(m2t, varargin)
     table = cell(nRows,1);
     for iRow = 1:nRows
         thisData = cellfun(@(x)(x(iRow)), data, 'UniformOutput', false);
+        for jCol = 1:nColumns
+            if iscell(thisData{jCol})
+                thisData{jCol} = thisData{jCol}{1};
+            end
+        end
         table{iRow} = sprintf(FORMAT, thisData{:});
     end
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
