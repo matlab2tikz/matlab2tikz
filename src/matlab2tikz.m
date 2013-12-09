@@ -4631,76 +4631,6 @@ function imwriteWrapperPNG(colorData, cmap, fileName)
     end
 end
 % =========================================================================
-function [env,versionString] = getEnvironment()
-  % Check if we are in MATLAB or Octave.
-  % Calling ver with an argument: iterating over all entries is very slow
-  alternatives = {'MATLAB','Octave'};
-  for iCase = 1:numel(alternatives)
-      env   = alternatives{iCase};
-      vData = ver(env);
-      if ~isempty(vData)
-          versionString = vData.Version;
-          return; % found the right environment
-      end
-  end
-  % otherwise:
-  env = [];
-  versionString = [];
-end
-% =========================================================================
-function isBelow = isVersionBelow(env, versionA, versionB)
-  % Checks if version string or vector versionA is smaller than
-  % version string or vector versionB.
-
-  vA = versionArray(env, versionA);
-  vB = versionArray(env, versionB);
-
-  isBelow = false;
-  for i = 1:min(length(vA), length(vB))
-    if vA(i) > vB(i)
-      isBelow = false;
-      break;
-    elseif vA(i) < vB(i)
-      isBelow = true;
-      break
-    end
-  end
-
-end
-% =========================================================================
-function arr = versionArray(env, str)
-  % Converts a version string to an array.
-
-  if ischar(str)
-    % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
-    switch env
-      case 'MATLAB'
-        split = regexp(str, '\.', 'split');
-      case  'Octave'
-        split = strsplit(str, '.');
-      otherwise
-        errorUnknownEnvironment();
-    end
-    arr = str2num(char(split)); %#ok
-  else
-    arr = str;
-  end
-end
-% =========================================================================
-function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
-  % Returns one of two provided values depending on whether matlab2tikz is
-  % run on MATLAB or on Octave.
-
-  switch m2t.env
-      case 'MATLAB'
-          retval = matlabValue;
-      case 'Octave'
-          retval = octaveValue;
-      otherwise
-         errorUnknownEnvironment();
-  end
-end
-% =========================================================================
 function c = prettyPrint(m2t, strings, interpreter)
   % Some resources on how MATLAB handles rich (TeX) markup:
   % http://www.mathworks.com/help/techdoc/ref/text_props.html#String
@@ -5189,6 +5119,76 @@ function str = prettyprintOpts(m2t, opts, sep)
       end
   end
   str = join(m2t, c, sep);
+end
+% =========================================================================
+function [env,versionString] = getEnvironment()
+  % Check if we are in MATLAB or Octave.
+  % Calling ver with an argument: iterating over all entries is very slow
+  alternatives = {'MATLAB','Octave'};
+  for iCase = 1:numel(alternatives)
+      env   = alternatives{iCase};
+      vData = ver(env);
+      if ~isempty(vData)
+          versionString = vData.Version;
+          return; % found the right environment
+      end
+  end
+  % otherwise:
+  env = [];
+  versionString = [];
+end
+% =========================================================================
+function isBelow = isVersionBelow(env, versionA, versionB)
+  % Checks if version string or vector versionA is smaller than
+  % version string or vector versionB.
+
+  vA = versionArray(env, versionA);
+  vB = versionArray(env, versionB);
+
+  isBelow = false;
+  for i = 1:min(length(vA), length(vB))
+    if vA(i) > vB(i)
+      isBelow = false;
+      break;
+    elseif vA(i) < vB(i)
+      isBelow = true;
+      break
+    end
+  end
+
+end
+% =========================================================================
+function arr = versionArray(env, str)
+  % Converts a version string to an array.
+
+  if ischar(str)
+    % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
+    switch env
+      case 'MATLAB'
+        split = regexp(str, '\.', 'split');
+      case  'Octave'
+        split = strsplit(str, '.');
+      otherwise
+        errorUnknownEnvironment();
+    end
+    arr = str2num(char(split)); %#ok
+  else
+    arr = str;
+  end
+end
+% =========================================================================
+function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
+  % Returns one of two provided values depending on whether matlab2tikz is
+  % run on MATLAB or on Octave.
+
+  switch m2t.env
+      case 'MATLAB'
+          retval = matlabValue;
+      case 'Octave'
+          retval = octaveValue;
+      otherwise
+         errorUnknownEnvironment();
+  end
 end
 % =========================================================================
 function checkDeprecatedEnvironment(m2t, minimalVersions)
