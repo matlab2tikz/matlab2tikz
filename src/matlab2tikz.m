@@ -491,11 +491,8 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
   VCID = VersionControlIdentifier();
-  versionString = sprintf('v%s', m2t.version);
-  if ~isempty(VCID)
-      versionString = [versionString, sprintf(' (commit %s)', VCID)];
-  end
   environment = sprintf('%s %s',m2t.env, m2t.envVersion);
+  versionString = strtrim(sprintf('v%s %s', m2t.version, VCID));
   m2t.content.comment = sprintf(['This file was created by %s %s running on %s.\n', ...
                                  'Copyright (c) %s, %s <%s>\n', ...
                                  'All rights reserved.\n'], ...
@@ -5185,7 +5182,7 @@ function errorUnknownEnvironment()
         'Unknown environment. Need MATLAB(R) or Octave.')
 end
 % =========================================================================
-function [treeish] = VersionControlIdentifier()
+function [formatted,treeish] = VersionControlIdentifier()
 % This function gives the (git) commit ID of matlab2tikz
 %
 % This assumes the standard directory structure as used by Nico's master branch:
@@ -5205,6 +5202,7 @@ function [treeish] = VersionControlIdentifier()
     gitDir = fullfile(m2tDir,'..','.git');
 
     treeish = [refPrefix,'HEAD'];
+    formatted = '';
 
     nIter = 1;
     while any(strfind(treeish, refPrefix)) && nIter < maxIter
@@ -5228,6 +5226,9 @@ function [treeish] = VersionControlIdentifier()
     end
   catch %#ok
     treeish = '';
+  end
+  if ~isempty(treeish)
+      formatted = sprintf('(commit %s)',treeish);
   end
 end
 % =========================================================================
