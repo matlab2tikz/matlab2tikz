@@ -186,7 +186,8 @@ function matlab2tikz(varargin)
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2013';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
-
+  m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VersionControlIdentifier));
+  
   m2t.tol = 1.0e-15; % global round-off tolerance;
                      % used, for example, in equality test for doubles
   m2t.relativePngPath = [];
@@ -518,12 +519,10 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   set(0, 'ShowHiddenHandles', 'off');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
-  VCID = VersionControlIdentifier();
-  versionString = strtrim(sprintf('v%s %s', m2t.version, VCID));
   m2t.content.comment = sprintf(['This file was created by %s %s.\n', ...
                                  'Copyright (c) %s, %s <%s>\n', ...
                                  'All rights reserved.\n'], ...
-                                 m2t.name, versionString, ...
+                                 m2t.name, m2t.versionFull, ...
                                  m2t.years, m2t.author, m2t.authorEmail);
 
   if m2t.cmdOpts.Results.showInfo
