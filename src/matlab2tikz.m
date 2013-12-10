@@ -490,7 +490,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   set(0, 'ShowHiddenHandles', 'off');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
-  [VCID, VC] = VersionControlIdentifier();
+  VCID = VersionControlIdentifier();
   versionString = sprintf('v%s', m2t.version);
   if ~isempty(VCID)
       versionString = [versionString, sprintf(' (commit %s)', VCID)];
@@ -5185,7 +5185,7 @@ function errorUnknownEnvironment()
         'Unknown environment. Need MATLAB(R) or Octave.')
 end
 % =========================================================================
-function [treeish,VC] = VersionControlIdentifier()
+function [treeish] = VersionControlIdentifier()
 % This function gives the (git) commit ID of matlab2tikz
 %
 % This assumes the standard directory structure as used by Nico's master branch:
@@ -5197,7 +5197,6 @@ function [treeish,VC] = VersionControlIdentifier()
 %
 % When the tree-ish is a dynamic reference (ref:refs/heads/master),
 % this reference is followed as to obtain an absolute tree-ish (hash).
-  VC       = 'git';
   maxIter  = 10; % stop following dynamic references after a while
   refPrefix = 'ref:';
   try
@@ -5227,7 +5226,7 @@ function [treeish,VC] = VersionControlIdentifier()
         treeish = '';
         return;
     end
-  catch
+  catch %#ok
     treeish = '';
   end
 end
