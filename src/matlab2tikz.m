@@ -157,7 +157,8 @@ function matlab2tikz(varargin)
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2013';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
-  m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VersionControlIdentifier));
+  VCID = VersionControlIdentifier();
+  m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
   
   m2t.tol = 1.0e-15; % global round-off tolerance;
                      % used, for example, in equality test for doubles
@@ -360,10 +361,10 @@ function matlab2tikz(varargin)
   userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2tikz.)\n', ...
                  '(For all other options, type ''help matlab2tikz''.)\n']);
 
-  userInfo(m2t, '\nThis is %s v%s.\n', m2t.name, m2t.version)
+  userInfo(m2t, '\nThis is %s %s.\n', m2t.name, m2t.versionFull)
 
   % Conditionally check for a new matlab2tikz version.
-  if m2t.cmdOpts.Results.checkForUpdates
+  if m2t.cmdOpts.Results.checkForUpdates && 
       updater(m2t.name, ...
               m2t.website, ...
               m2t.version, ...
