@@ -2233,7 +2233,10 @@ function [m2t, str] = drawText(m2t, handle)
   % Most of those entities are captured by matlab2tikz one way or
   % another, but sometimes they are not. This is the case, for
   % example, with polar plots and the axis descriptions therein.
-  if strcmp(get(handle, 'Visible'), 'off') ...
+  % Also, Matlab treats text objects with a NaN in the position as
+  % invisible.
+  if any(isnan(get(handle, 'Position')) | isnan(get(handle, 'Rotation'))) ... 
+     || strcmp(get(handle, 'Visible'), 'off') ...
      || (strcmp(get(handle, 'HandleVisibility'), 'off') && ~m2t.cmdOpts.Results.showHiddenStrings)
     return;
   end
