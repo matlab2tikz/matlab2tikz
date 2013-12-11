@@ -137,41 +137,12 @@ function matlab2tikz(varargin)
 %
 % =========================================================================
   % Check if we are in MATLAB or Octave.
-  m2t.env = getEnvironment();
-  warningMessage = ['\n',...
-                     '================================================================================\n\n', ...
-                     '  matlab2tikz is tested and developed on   %s   and\n', ...
-                     '  later versions of %s.\n', ...
-                     '  This script may still be able to handle your plots, but if you\n', ...
-                     '  hit a bug, please consider upgrading your environment first.\n', ...
-                     '\n', ...
-                     '  Every time you submit a bug report with a deprecated environment...\n', ...
-                     '  God kills a kitten.\n', ...
-                     '\n', ...
-                     '================================================================================'];
+  [m2t.env, m2t.envVersion] = getEnvironment();
 
-  envVersion = findEnvironmentVersion(m2t.env);
-  if isempty(envVersion)
-      warning('matlab2tikz:cannotDetermineEnvironment',...
-      'Could not determine environment version. Continuing and hoping for the best.');
-  else
-      switch m2t.env
-          case 'MATLAB'
-              % Make sure we're running MATLAB >= 2008b.
-              if isVersionBelow(m2t.env, envVersion, [7, 7])
-                  warning('matlab2tikz:deprecatedEnvironment',...
-                          warningMessage, 'MATLAB 2008b', 'MATLAB');
-              end
-          case 'Octave'
-              % Make sure we're running Octave >= 3.4.0.
-              if isVersionBelow(m2t.env, envVersion, [3, 4, 0])
-                  warning('matlab2tikz:deprecatedEnvironment',...
-                          warningMessage, 'Octave 3.4.0', 'Octave');
-              end
-          otherwise
-              errorUnknownEnvironment();
-      end
-  end
+  minimalVersion = struct('MATLAB', struct('name','2008b', 'num',[7 7]), ...
+                          'Octave', struct('name','3.4.0', 'num',[3 4 0]));
+  checkDeprecatedEnvironment(m2t, minimalVersion);
+
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   m2t.cmdOpts = [];
 
@@ -350,15 +321,16 @@ function matlab2tikz(varargin)
       end
 
       % open the file for writing
-      if strcmp(m2t.env, 'MATLAB');
+      switch m2t.env
+        case 'MATLAB'
           fid = fopen(filename, ...
                        'w', ...
                        'native', ...
                        m2t.cmdOpts.Results.encoding ...
                     );
-      elseif strcmp(m2t.env, 'Octave');
+        case 'Octave'
           fid = fopen(filename, 'w');
-      else
+        otherwise
           errorUnknownEnvironment();
       end
 
@@ -523,10 +495,11 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   if ~isempty(VCID)
       versionString = [versionString, sprintf(' (commit %s)', VCID)];
   end
-  m2t.content.comment = sprintf(['This file was created by %s %s.\n', ...
+  environment = sprintf('%s %s',m2t.env, m2t.envVersion);
+  m2t.content.comment = sprintf(['This file was created by %s %s running on %s.\n', ...
                                  'Copyright (c) %s, %s <%s>\n', ...
                                  'All rights reserved.\n'], ...
-                                 m2t.name, versionString, ...
+                                 m2t.name, versionString, environment, ...
                                  m2t.years, m2t.author, m2t.authorEmail);
 
   if m2t.cmdOpts.Results.showInfo
@@ -804,17 +777,22 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % Octave:
   % Check if this axis environment is referenced by a legend.
   m2t.gcaAssociatedLegend = [];
-  if strcmp(m2t.env, 'Octave')
-      if ~isempty(m2t.legendHandles)
-          % Make sure that m2t.legendHandles is a row vector.
-          for lhandle = m2t.legendHandles(:)'
-              ud = get(lhandle, 'UserData');
-              if any(handle == ud.handle)
-                  m2t.gcaAssociatedLegend = lhandle;
-                  break;
+  switch m2t.env
+      case 'Octave'
+          if ~isempty(m2t.legendHandles)
+              % Make sure that m2t.legendHandles is a row vector.
+              for lhandle = m2t.legendHandles(:)'
+                  ud = get(lhandle, 'UserData');
+                  if any(handle == ud.handle)
+                      m2t.gcaAssociatedLegend = lhandle;
+                      break;
+                  end
               end
           end
-      end
+      case 'MATLAB'
+          % no action needed
+      otherwise
+          errorUnknownEnvironment();
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % get the axes dimensions
@@ -1066,44 +1044,47 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   % This could be done better with a heuristic of finding
   % the nearest legend to a plot, which would cope with legends outside
   % plot boundaries.
-  if strcmp(m2t.env, 'MATLAB')
-      legendHandle = legend(handle);
-      if ~isempty(legendHandle)
-          [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
-          m2t.axesContainers{end}.options = ...
-              addToOptions(m2t.axesContainers{end}.options, ...
-                           key, ...
-                           ['{', legendOpts, '}']);
-      end
-  else
-      % TODO: How to uniquely connect a legend with a pair of axes in Octave?
-      axisDims = pos2dims(get(handle,'Position')); %#ok
-      % siblings of this handle:
-      siblings = get(get(handle,'Parent'), 'Children');
-      % "siblings" always(?) is a column vector. Iterating over the column
-      % with the for statement below wouldn't return the individual vector
-      % elements but the same column vector, resulting in no legends exported.
-      % So let's make sure "siblings" is a row vector by reshaping it:
-      siblings = reshape(siblings, 1, []);
-      for sibling = siblings
-          if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
-              legDims = pos2dims(get(sibling, 'Position')); %#ok
-
-              % TODO The following logic does not work for 3D plots.
-              %      => Commented out.
-              %      This creates problems though for stacked plots with legends.
-%                if (   legDims.left   > axisDims.left ...
-%                     && legDims.bottom > axisDims.bottom ...
-%                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
-%                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height)
-                  [m2t, key, legendOpts] = getLegendOpts(m2t, sibling);
-                  m2t.axesContainers{end}.options = ...
-                      addToOptions(m2t.axesContainers{end}.options, ...
-                                   key, ...
-                                   ['{', legendOpts, '}']);
-%                end
+  switch m2t.env
+      case 'MATLAB'
+          legendHandle = legend(handle);
+          if ~isempty(legendHandle)
+              [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
+              m2t.axesContainers{end}.options = ...
+                  addToOptions(m2t.axesContainers{end}.options, ...
+                               key, ...
+                               ['{', legendOpts, '}']);
           end
-      end
+      case 'Octave'
+          % TODO: How to uniquely connect a legend with a pair of axes in Octave?
+          axisDims = pos2dims(get(handle,'Position')); %#ok
+          % siblings of this handle:
+          siblings = get(get(handle,'Parent'), 'Children');
+          % "siblings" always(?) is a column vector. Iterating over the column
+          % with the for statement below wouldn't return the individual vector
+          % elements but the same column vector, resulting in no legends exported.
+          % So let's make sure "siblings" is a row vector by reshaping it:
+          siblings = reshape(siblings, 1, []);
+          for sibling = siblings
+              if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
+                  legDims = pos2dims(get(sibling, 'Position')); %#ok
+
+                  % TODO The following logic does not work for 3D plots.
+                  %      => Commented out.
+                  %      This creates problems though for stacked plots with legends.
+    %                if (   legDims.left   > axisDims.left ...
+    %                     && legDims.bottom > axisDims.bottom ...
+    %                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
+    %                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height)
+                      [m2t, key, legendOpts] = getLegendOpts(m2t, sibling);
+                      m2t.axesContainers{end}.options = ...
+                          addToOptions(m2t.axesContainers{end}.options, ...
+                                       key, ...
+                                       ['{', legendOpts, '}']);
+    %                end
+              end
+          end
+      otherwise
+          errorUnknownEnvironment();
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % add manually given extra axis options
@@ -3600,23 +3581,28 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
   % handle alignment of legend text and pictograms
   textalign = [];
   pictalign = [];
-  % Other than MATLAB, Octave allows to change the alignment of legend text and
-  % pictograms using legend('left') and legend('right')
-  if strcmp(m2t.env, 'Octave')
-      textpos = get(handle, 'textposition');
-      switch lower(textpos)
-          case 'left'
-              % pictogram right of flush right text
-              textalign = 'left';
-              pictalign = 'right';
-          case 'right'
-              % pictogram left of flush left text (default)
-              textalign = 'right';
-              pictalign = 'left';
-          otherwise
-              userWarning(m2t, [' Unknown legend text position ''',textpos,'''' ...
-                                  '. Choosing default.']);
-      end
+  switch m2t.env
+      case 'Octave'
+          % Octave allows to change the alignment of legend text and 
+          % pictograms using legend('left') and legend('right')
+          textpos = get(handle, 'textposition');
+          switch lower(textpos)
+              case 'left'
+                  % pictogram right of flush right text
+                  textalign = 'left';
+                  pictalign = 'right';
+              case 'right'
+                  % pictogram left of flush left text (default)
+                  textalign = 'right';
+                  pictalign = 'left';
+              otherwise
+                  userWarning(m2t, [' Unknown legend text position ''',textpos,'''' ...
+                                      '. Choosing default.']);
+          end
+      case 'MATLAB'
+          % does not specify text/pictogram alignment in legends
+      otherwise
+          errorUnknownEnvironment();
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -4659,84 +4645,6 @@ function imwriteWrapperPNG(colorData, cmap, fileName)
     end
 end
 % =========================================================================
-function env = getEnvironment()
-  % Check if we are in MATLAB or Octave.
-  % 'ver' in MATLAB gives versioning information on all installed packages
-  % separately, and there is no guarantee that MATLAB itself is listed first.
-  % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
-  % We could use ver('MATLAB') or ver('Octave').
-  if ~isempty(ver('MATLAB'))
-     env = 'MATLAB';
-  elseif ~isempty(ver('Octave'))
-     env = 'Octave';
-  else
-     env = [];
-  end
-
-end
-% =========================================================================
-function versionString = findEnvironmentVersion(env)
-  % Get version string for 'env' by iterating over all toolboxes.
-  versionString = [];
-  for versionDatum = ver
-      if strcmp(versionDatum.Name, env)
-          % found it: store and exit the loop
-          versionString = versionDatum.Version;
-          break
-      end
-  end
-end
-% =========================================================================
-function isBelow = isVersionBelow(env, versionA, versionB)
-  % Checks if version string or vector versionA is smaller than
-  % version string or vector versionB.
-
-  vA = versionArray(env, versionA);
-  vB = versionArray(env, versionB);
-
-  isBelow = false;
-  for i = 1:min(length(vA), length(vB))
-    if vA(i) > vB(i)
-      isBelow = false;
-      break;
-    elseif vA(i) < vB(i)
-      isBelow = true;
-      break
-    end
-  end
-
-end
-% =========================================================================
-function arr = versionArray(env, str)
-  % Converts a version string to an array.
-
-  if ischar(str)
-    % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
-    if strcmpi(env, 'MATLAB')
-        split = regexp(str, '\.', 'split');
-    elseif strcmpi(env, 'Octave')
-        split = strsplit(str, '.');
-    end
-    arr = str2num(char(split)); %#ok
-  else
-    arr = str;
-  end
-end
-% =========================================================================
-function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
-  % Returns one of two provided values depending on whether matlab2tikz is
-  % run on MATLAB or on Octave.
-
-  switch m2t.env
-      case 'MATLAB'
-          retval = matlabValue;
-      case 'Octave'
-          retval = octaveValue;
-      otherwise
-         errorUnknownEnvironment();
-  end
-end
-% =========================================================================
 function c = prettyPrint(m2t, strings, interpreter)
   % Some resources on how MATLAB handles rich (TeX) markup:
   % http://www.mathworks.com/help/techdoc/ref/text_props.html#String
@@ -5225,6 +5133,105 @@ function str = prettyprintOpts(m2t, opts, sep)
       end
   end
   str = join(m2t, c, sep);
+end
+% =========================================================================
+function [env,versionString] = getEnvironment()
+  % Check if we are in MATLAB or Octave.
+  % Calling ver with an argument: iterating over all entries is very slow
+  alternatives = {'MATLAB','Octave'};
+  for iCase = 1:numel(alternatives)
+      env   = alternatives{iCase};
+      vData = ver(env);
+      if ~isempty(vData)
+          versionString = vData.Version;
+          return; % found the right environment
+      end
+  end
+  % otherwise:
+  env = [];
+  versionString = [];
+end
+% =========================================================================
+function isBelow = isVersionBelow(env, versionA, versionB)
+  % Checks if version string or vector versionA is smaller than
+  % version string or vector versionB.
+
+  vA = versionArray(env, versionA);
+  vB = versionArray(env, versionB);
+
+  isBelow = false;
+  for i = 1:min(length(vA), length(vB))
+    if vA(i) > vB(i)
+      isBelow = false;
+      break;
+    elseif vA(i) < vB(i)
+      isBelow = true;
+      break
+    end
+  end
+
+end
+% =========================================================================
+function arr = versionArray(env, str)
+  % Converts a version string to an array.
+
+  if ischar(str)
+    % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
+    switch env
+      case 'MATLAB'
+        split = regexp(str, '\.', 'split');
+      case  'Octave'
+        split = strsplit(str, '.');
+      otherwise
+        errorUnknownEnvironment();
+    end
+    arr = str2num(char(split)); %#ok
+  else
+    arr = str;
+  end
+end
+% =========================================================================
+function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
+  % Returns one of two provided values depending on whether matlab2tikz is
+  % run on MATLAB or on Octave.
+
+  switch m2t.env
+      case 'MATLAB'
+          retval = matlabValue;
+      case 'Octave'
+          retval = octaveValue;
+      otherwise
+         errorUnknownEnvironment();
+  end
+end
+% =========================================================================
+function checkDeprecatedEnvironment(m2t, minimalVersions)
+  if isempty(m2t.envVersion)
+      warning('matlab2tikz:cannotDetermineEnvironment',...
+      'Could not determine environment version. Continuing and hoping for the best.');
+  else
+      if isfield(minimalVersions, m2t.env)
+        minVersion = minimalVersions.(m2t.env);
+        envWithVersion = sprintf('%s %s',m2t.env, minVersion.name);
+        if isVersionBelow(m2t.env, m2t.envVersion, minVersion.num)
+          warningMessage = ['\n',...
+             '================================================================================\n\n', ...
+             '  matlab2tikz is tested and developed on   %s   and\n', ...
+             '  later versions of %s.\n', ...
+             '  This script may still be able to handle your plots, but if you\n', ...
+             '  hit a bug, please consider upgrading your environment first.\n', ...
+             '\n', ...
+             '  Every time you submit a bug report with a deprecated environment...\n', ...
+             '  God kills a kitten.\n', ...
+             '\n', ...
+             '================================================================================'];
+          warning('matlab2tikz:deprecatedEnvironment',warningMessage, ...
+                   envWithVersion, m2t.env);
+        end
+      else
+        errorUnknownEnvironment();
+      end
+  end
 end
 % =========================================================================
 function errorUnknownEnvironment()
