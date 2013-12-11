@@ -186,7 +186,9 @@ function matlab2tikz(varargin)
   m2t.authorEmail = 'nico.schloemer@gmail.com';
   m2t.years = '2008--2013';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
-
+  VCID = VersionControlIdentifier();
+  m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
+  
   m2t.tol = 1.0e-15; % global round-off tolerance;
                      % used, for example, in equality test for doubles
   m2t.relativePngPath = [];
@@ -387,10 +389,10 @@ function matlab2tikz(varargin)
   userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2tikz.)\n', ...
                  '(For all other options, type ''help matlab2tikz''.)\n']);
 
-  userInfo(m2t, '\nThis is %s v%s.\n', m2t.name, m2t.version)
+  userInfo(m2t, '\nThis is %s %s.\n', m2t.name, m2t.versionFull)
 
-  % Conditionally check for a new matlab2tikz version.
-  if m2t.cmdOpts.Results.checkForUpdates
+  % Conditionally check for a new matlab2tikz version outside version control
+  if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
       updater(m2t.name, ...
               m2t.website, ...
               m2t.version, ...
@@ -402,7 +404,7 @@ function matlab2tikz(varargin)
   versionInfo = ['The latest updates can be retrieved from\n'         ,...
                  '   %s\n'                                            ,...
                  'where you can also make suggestions and rate %s.\n' ,...
-                 'For usage instructions, bug reports, the latest'    ,...
+                 'For usage instructions, bug reports, the latest '    ,...
                  'development versions and more, see\n'               ,...
                  '   https://github.com/nschloe/matlab2tikz,\n'       ,...
                  '   https://github.com/nschloe/matlab2tikz/wiki,\n'  ,...
@@ -518,15 +520,10 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   set(0, 'ShowHiddenHandles', 'off');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
-  [VCID, VC] = VersionControlIdentifier();
-  versionString = sprintf('v%s', m2t.version);
-  if ~isempty(VCID)
-      versionString = [versionString, sprintf(' (commit %s)', VCID)];
-  end
   m2t.content.comment = sprintf(['This file was created by %s %s.\n', ...
                                  'Copyright (c) %s, %s <%s>\n', ...
                                  'All rights reserved.\n'], ...
-                                 m2t.name, versionString, ...
+                                 m2t.name, m2t.versionFull, ...
                                  m2t.years, m2t.author, m2t.authorEmail);
 
   if m2t.cmdOpts.Results.showInfo
@@ -5224,7 +5221,7 @@ function errorUnknownEnvironment()
         'Unknown environment. Need MATLAB(R) or Octave.')
 end
 % =========================================================================
-function [treeish,VC] = VersionControlIdentifier()
+function [formatted,treeish] = VersionControlIdentifier()
 % This function gives the (git) commit ID of matlab2tikz
 %
 % This assumes the standard directory structure as used by Nico's master branch:
@@ -5236,7 +5233,6 @@ function [treeish,VC] = VersionControlIdentifier()
 %
 % When the tree-ish is a dynamic reference (ref:refs/heads/master),
 % this reference is followed as to obtain an absolute tree-ish (hash).
-  VC       = 'git';
   maxIter  = 10; % stop following dynamic references after a while
   refPrefix = 'ref:';
   try
@@ -5245,6 +5241,7 @@ function [treeish,VC] = VersionControlIdentifier()
     gitDir = fullfile(m2tDir,'..','.git');
 
     treeish = [refPrefix,'HEAD'];
+    formatted = '';
 
     nIter = 1;
     while any(strfind(treeish, refPrefix)) && nIter < maxIter
@@ -5266,8 +5263,11 @@ function [treeish,VC] = VersionControlIdentifier()
         treeish = '';
         return;
     end
-  catch
+  catch %#ok
     treeish = '';
+  end
+  if ~isempty(treeish)
+      formatted = sprintf('(commit %s)',treeish);
   end
 end
 % =========================================================================
