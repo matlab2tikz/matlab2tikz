@@ -92,6 +92,10 @@ function varargout = matlab2tikz(varargin)
 %   check for updates of matlab2tikz.
 %   (default: true)
 %
+%   FH = MATLAB2TIKZ('localfunction', CHAR) returns a function handle FH to the
+%   local matlab2tikz function. No other actions will be performed. This is
+%   for development purposes only! (default: '')
+%
 %   Example
 %      x = -pi:pi/10:pi;
 %      y = tan(sin(x)) - sin(tan(x));
@@ -270,6 +274,9 @@ function varargout = matlab2tikz(varargin)
 
   % Automatic updater.
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'checkForUpdates', true, @islogical);
+  
+  % Output local function handle
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'localfunction', '', @ischar);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % deprecated parameters (will auto-generate warnings upon parse)
@@ -286,6 +293,11 @@ function varargout = matlab2tikz(varargin)
                        'This may produce undesirable string output. For full control over output\n', ...
                        'strings please set the parameter ''parseStrings'' to false.\n', ...
                        '==========================================================================']);
+  end
+  
+  if ~isempty(m2t.cmdOpts.Results.localfunction)
+      varargout{1} = eval(sprintf('@%s',m2t.cmdOpts.Results.localfunction));
+      return % just return the handle to the local function
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
