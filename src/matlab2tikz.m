@@ -379,17 +379,10 @@ function l = isCellOrChar(x)
 end
 % =========================================================================
 function isValid = iscolordefinitions(colors)
-    isValid = iscell(colors);
-    nColors = numel(colors);
-    iColor = 1;
-    while isValid && iColor <= nColors
-        color = colors{iColor};
-        isValid = iscell(color)      && ... % nested cell of ...
-                  ischar(color{1})   && ... % CHAR as color name AND
-                  numel(color{2})==3 && ... % RGB values between 0 and 1
-                  max(color{2})<=1   && min(color{2})>=0;
-        iColor = iColor + 1;
-    end
+    isRGBTuple   = @(c)( numel(c) == 3 && all(0<=c & c<=1) );
+    isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
+    
+    isValid = iscell(colors) && all(cellfun(isValidEntry, colors));
 end
 %==========================================================================
 function fid = fileOpenForWrite(m2t, filename)
