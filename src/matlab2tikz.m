@@ -320,7 +320,7 @@ function matlab2tikz(varargin)
   % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
   % their specifications.
   [m2t.extraRgbColorNames, m2t.extraRgbColorSpecs] = ...
-      extractColors(m2t.cmdOpts.Results.extraColors);
+      dealColorDefinitions(m2t.cmdOpts.Results.extraColors);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % shortcut
@@ -3862,13 +3862,13 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
   end
 end
 % =========================================================================
-function [names,definitions] = extractColors(colorDefinitions)
-  nColors     = numel(colorDefinitions);
+function [names,definitions] = dealColorDefinitions(mergedColorDefs)
+  nColors     = numel(mergedColorDefs);
   names       = cell(1,nColors);
   definitions = cell(1,nColors);
 
   for iColor = 1:nColors
-      color = colorDefinitions{iColor};
+      color = mergedColorDefs{iColor};
       names{iColor} = color{1};
       definitions{iColor} = color{2};
   end
