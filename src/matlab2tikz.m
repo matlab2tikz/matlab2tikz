@@ -3815,15 +3815,11 @@ function [m2t, table] = makeTable(m2t, varargin)
 end
 % =========================================================================
 function [names,definitions] = dealColorDefinitions(mergedColorDefs)
-  nColors     = numel(mergedColorDefs);
-  names       = cell(1,nColors);
-  definitions = cell(1,nColors);
-
-  for iColor = 1:nColors
-      color = mergedColorDefs{iColor};
-      names{iColor} = color{1};
-      definitions{iColor} = color{2};
+  if isempty(mergedColorDefs)
+      mergedColorDefs = {};
   end
+  [names,definitions] = cellfun(@(x)(deal(x{:})),  mergedColorDefs, ...
+                                'UniformOutput', false);
 end
 % =========================================================================
 function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
