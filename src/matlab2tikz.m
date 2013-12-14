@@ -5245,6 +5245,9 @@ function opts = addToOptions(opts, key, value)
   % Adds a key-value pair to a struct and does some sanity-checking before.
 
   % Make sure to convert the value to a char first.
+  if ~exist('value','var')
+      value = [];
+  end
   value = char(value);
 
   % Check if the key already exists.
