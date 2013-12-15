@@ -4719,26 +4719,19 @@ end
 % =========================================================================
 function userInfo(m2t, message, varargin)
   % Display usage information.
-
-  if ~m2t.cmdOpts.Results.showInfo
-      return
+  if m2t.cmdOpts.Results.showInfo
+      mess = sprintf(message, varargin{:});
+      
+      mess = strrep(mess, sprintf('\n'), sprintf('\n *** '));
+      fprintf(' *** %s\n', mess);
   end
-
-  mess = sprintf(message, varargin{:});
-
-  % Replace '\n' by '\n *** ' and print.
-  mess = strrep(mess, sprintf('\n'), sprintf('\n *** '));
-  fprintf(' *** %s\n', mess);
 end
 % =========================================================================
 function userWarning(m2t, message, varargin)
   % Drop-in replacement for warning().
-
-  if ~m2t.cmdOpts.Results.showWarnings
-      return
+  if m2t.cmdOpts.Results.showWarnings
+        warning('matlab2tikz:userWarning', message, varargin{:});
   end
-
-  warning('matlab2tikz:userWarning', message, varargin{:});
 end
 % =========================================================================
 function parent = addChildren(parent, children)
