@@ -3893,19 +3893,19 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
   tolColor = 1000*eps(1); % tolerance (inf-norm) on color representation
   
   %% check if rgb is a predefined color
-  for iColr = 1:length(colorSpecs)
-      Ci = colorSpecs{iColr}(:);
+  for iColor = 1:length(colorSpecs)
+      Ci = colorSpecs{iColor}(:);
       if max(abs(Ci - rgb(:)) < tolColor)
-          colorLiteral = colorNames{iColr};
+          colorLiteral = colorNames{iColor};
           return % exact color was predefined
       end
   end
 
   %% check if the color is a linear combination of two already defined colors
-  for iColr = 1:length(colorSpecs)
-      for jColr = iColr+1:length(colorSpecs)
-          Ci = colorSpecs{iColr}(:);
-          Cj = colorSpecs{jColr}(:);
+  for iColor = 1:length(colorSpecs)
+      for jColor = iColor+1:length(colorSpecs)
+          Ci = colorSpecs{iColor}(:);
+          Cj = colorSpecs{jColor}(:);
           
           % solve color mixing equation `Ck = p * Ci + (1-p) * Cj` for p
           p  = (Ci-Cj) \ (rgb(:)-Cj);
@@ -3913,8 +3913,8 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
           Ck = p * Ci + (1-p)*Cj; % approximated mixed color
           
           if p <= 1 && p >= 0 && max(abs(Ck(:) - rgb(:))) < tolColor    
-              colorLiteral = sprintf('%s!%d!%s', colorNames{iColr}, p*100, ...
-                                                 colorNames{jColr});
+              colorLiteral = sprintf('%s!%d!%s', colorNames{iColor}, p*100, ...
+                                                 colorNames{jColor});
               return % linear combination found
           end
       end
