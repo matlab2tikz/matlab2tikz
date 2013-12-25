@@ -3841,9 +3841,19 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
 
   colorNames = [xcolColorNames, m2t.extraRgbColorNames];
   colorSpecs = [xcolColorSpecs, m2t.extraRgbColorSpecs];
+  
+  tolColor = 1000*eps(1); % tolerance (inf-norm) on color representation
+  
+  %% check if rgb is a predefined color
+  for kColor = 1:length(colorSpecs)
+      Ck = colorSpecs{kColor}(:);
+      if max(abs(Ck - rgb(:))) < tolColor
+          colorLiteral = colorNames{kColor};
+          return % exact color was predefined
+      end
+  end
 
   %% check if the color is a linear combination of two already defined colors
-  tolColor = 1000*eps(1); % tolerance (inf-norm) on color representation
   for iColor = 1:length(colorSpecs)
       for jColor = iColor+1:length(colorSpecs)
           Ci = colorSpecs{iColor}(:);
