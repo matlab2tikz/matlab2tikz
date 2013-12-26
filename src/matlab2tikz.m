@@ -46,6 +46,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
 %
+%   MATLAB2TIKZ('extraColors', {{'name',[R G B]}, ...} , ...) adds
+%   user-defined named RGB-color definitions to the TikZ output. 
+%   R, G and B are expected between 0 and 1. (default: {})
+%
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
 %   explicitly adds extra options to the tikzpicture environment. (default: [])
 %
@@ -164,12 +168,6 @@ function matlab2tikz(varargin)
                      % used, for example, in equality test for doubles
   m2t.relativePngPath = [];
 
-  % The following color RGB-values which will need to be defined.
-  % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
-  % their specifications.
-  m2t.extraRgbColorSpecs = cell(0);
-  m2t.extraRgbColorNames = cell(0);
-
   % the actual contents of the TikZ file go here
   m2t.content = struct('name',     [], ...
                        'comment',  [], ...
@@ -270,6 +268,9 @@ function matlab2tikz(varargin)
 
   % Automatic updater.
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'checkForUpdates', true, @islogical);
+  
+  % extra colors
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'extraColors', {}, @iscolordefinitions);
 
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
@@ -286,6 +287,13 @@ function matlab2tikz(varargin)
                        'strings please set the parameter ''parseStrings'' to false.\n', ...
                        '==========================================================================']);
   end
+  
+  
+  % The following color RGB-values which will need to be defined.
+  % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
+  % their specifications.
+  [m2t.extraRgbColorNames, m2t.extraRgbColorSpecs] = ...
+      dealColorDefinitions(m2t.cmdOpts.Results.extraColors);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % shortcut
@@ -404,6 +412,13 @@ end
 % =========================================================================
 function l = isCellOrChar(x, p) %#ok
     l = iscell(x) || ischar(x);
+end
+% =========================================================================
+function isValid = iscolordefinitions(colors)
+    isRGBTuple   = @(c)( numel(c) == 3 && all(0<=c & c<=1) );
+    isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
+    
+    isValid = iscell(colors) && all(cellfun(isValidEntry, colors));
 end
 % =========================================================================
 function deprecatedParameter(m2t, oldParameter, varargin)
@@ -538,8 +553,9 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
       m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
       for k = 1:length(m2t.extraRgbColorNames)
           % make sure to append with '%' to avoid spacing woes
+          ff = '%0.6f'; % 60-bit RGB color space (48-bit is already high-end)
           m2t.content.colors = [m2t.content.colors, ...
-                                sprintf(['\\definecolor{%s}{rgb}{', m2t.ff, ',', m2t.ff, ',', m2t.ff,'}%%\n'], ...
+                                sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
                                         m2t.extraRgbColorNames{k}', m2t.extraRgbColorSpecs{k})];
       end
       m2t.content.colors = [m2t.content.colors sprintf('%%\n')];
@@ -3782,64 +3798,72 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
   end
 end
 % =========================================================================
+function [names,definitions] = dealColorDefinitions(mergedColorDefs)
+  if isempty(mergedColorDefs)
+      mergedColorDefs = {};
+  end
+  [names,definitions] = cellfun(@(x)(deal(x{:})),  mergedColorDefs, ...
+                                'UniformOutput', false);
+end
+% =========================================================================
 function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
-  % Translates an rgb value to an xcolor literal -- if possible!
-  % If not, it returns the empty string.
-  % This allows for a cleaner output in cases where predefined colors are
-  % being used.
-  %
+  % Translates an rgb value to an xcolor literal
+  % 
+  % Possible outputs:
+  %  - xcolor literal color, e.g. 'blue'
+  %  - mixture of 2 previously defined colors, e.g. 'red!70!green'
+  %  - a newly defined color, e.g. 'mycolor10'
+  
   % Take a look at xcolor.sty for the color definitions.
-  % TODO Implement mixtures with colors other than 'black' such as red!50!green.
+  % In xcolor.sty some colors are defined in CMYK space and approximated
+  % crudely for RGB color space. So it is better to redefine those colors 
+  % instead of using xcolor's:
+  %    'cyan' , 'magenta', 'yellow', 'olive'
+  %    [0,1,1], [1,0,1]  , [1,1,0] , [0.5,0.5,0]
+  
+  xcolColorNames = {'white', 'black', 'red', 'green', 'blue', ...
+                    'brown', 'lime', 'orange', 'pink', ...
+                    'purple', 'teal', 'violet', ...
+                    'darkgray', 'gray', 'lightgray'};
+  xcolColorSpecs = {[1,1,1], [0,0,0], [1,0,0], [0,1,0], [0,0,1], ...
+                    [0.75,0.5,0.25], [0.75,1,0], [1,0.5,0], [1,0.75,0.75], ...
+                    [0.75,0,0.25], [0,0.5,0.5], [0.5,0,0.5], ...
+                    [0.25,0.25,0.25], [0.5,0.5,0.5], [0.75,0.75,0.75]};
 
-  xcolColorNames = {'red', 'green', 'blue', 'brown', ...
-                    'lime', 'orange', 'pink', 'purple', ...
-                    'teal', 'violet', 'black', 'darkgray', ...
-                    'gray', 'lightgray', 'white'};
-  xcolColorSpecs = {[1,0,0], [0,1,0], [0,0,1], [0.75,0.5,0.25], ...
-                    [0.75,1,0], [1,0.5,0], [1,0.75,0.75], [0.75,0,0.25], ...
-                    [0,0.5,0.5], [0.5,0,0.5], [0,0,0], [0.25,0.25,0.25], ...
-                    [0.5,0.5,0.5], [0.75,0.75,0.75], [1,1,1]};
-
-% The colors 'cyan', 'magenta', 'yellow', and 'olive' within xcolor.sty
-% are defined in the CMYK color space, with an approximation in RGB.
-% Unfortunately, the approximation is not very close (particularly for
-% cyan), so just redefine those colors.
-%    'cyan', 'magenta', 'yellow', 'olive'
-%    [0,1,1], [1,0,1], [1,1,0], [0.5,0.5,0]
-
-  % Check 'rgb' against all xcolor literals and the already defined colors.
   colorNames = [xcolColorNames, m2t.extraRgbColorNames];
   colorSpecs = [xcolColorSpecs, m2t.extraRgbColorSpecs];
-
-  numCols = length(colorSpecs);
-
-  % Check if RGB is a multiple of a predefined color.
-  for k = 1:numCols
-      if colorSpecs{k}(1) ~= 0.0
-          alpha = rgb(1) / colorSpecs{k}(1);
-      elseif colorSpecs{k}(2) ~= 0.0
-          alpha = rgb(2) / colorSpecs{k}(2);
-      elseif colorSpecs{k}(3) ~= 0.0
-          alpha = rgb(3) / colorSpecs{k}(3);
-      else % colorSpecs{k} = [0,0,0]
-          alpha = 0.0;
+  
+  tolColor = 1000*eps(1); % tolerance (inf-norm) on color representation
+  
+  %% check if rgb is a predefined color
+  for iColor = 1:length(colorSpecs)
+      Ci = colorSpecs{iColor}(:);
+      if max(abs(Ci - rgb(:)) < tolColor)
+          colorLiteral = colorNames{iColor};
+          return % exact color was predefined
       end
-      if isequal(rgb, alpha * colorSpecs{k})
-          if alpha == 1.0
-              colorLiteral = colorNames{k};
-              return
-          elseif alpha == 0.0
-              colorLiteral = 'black';
-              return
-          elseif 0.0 < alpha && alpha < 1.0 && round(alpha*100) == alpha*100
-              % Not sure if that last condition is necessary.
-              colorLiteral = [colorNames{k}, sprintf('!%g!black', alpha*100)];
-              return
+  end
+
+  %% check if the color is a linear combination of two already defined colors
+  for iColor = 1:length(colorSpecs)
+      for jColor = iColor+1:length(colorSpecs)
+          Ci = colorSpecs{iColor}(:);
+          Cj = colorSpecs{jColor}(:);
+          
+          % solve color mixing equation `Ck = p * Ci + (1-p) * Cj` for p
+          p  = (Ci-Cj) \ (rgb(:)-Cj);
+          p  = round(100*p)/100;  % round to a percentage
+          Ck = p * Ci + (1-p)*Cj; % approximated mixed color
+          
+          if p <= 1 && p >= 0 && max(abs(Ck(:) - rgb(:))) < tolColor    
+              colorLiteral = sprintf('%s!%d!%s', colorNames{iColor}, p*100, ...
+                                                 colorNames{jColor});
+              return % linear combination found
           end
       end
   end
 
-  % Color was not found in the default set. Need to define it.
+  %% Define colors that are not a linear combination of two known colors
   colorLiteral = sprintf('mycolor%d', length(m2t.extraRgbColorNames)+1);
   m2t.extraRgbColorNames{end+1} = colorLiteral;
   m2t.extraRgbColorSpecs{end+1} = rgb;
