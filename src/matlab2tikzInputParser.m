@@ -33,8 +33,10 @@ function parser = matlab2tikzInputParser()
   parser.Results = {};
   % Enabel/disable parameters case sensitivity.
   parser.CaseSensitive = false;
-  % Enable/disable error for parameters not defined by the constructor.
+  % Keep parameters not defined by the constructor.
   parser.KeepUnmatched = false;
+  % Enable/disable warning for parameters not defined by the constructor.
+  parser.WarnUnmatched = true;
   % Enable/disable passing arguments in a structure.
   parser.StructExpand = true;
   % Names of parameters defined in input parser constructor.
@@ -195,6 +197,10 @@ function p = parse (p, varargin)
         if ischar(varargin{n})
           if p.KeepUnmatched
             results.(varargin{n}) = varargin{n+1};
+          end
+          if p.WarnUnmatched
+            warning(sprintf('%s:unmatchedArgument',mfilename), ...
+                    'Ignoring unknown argument "%s"', varargin{n});
           end
           p.Unmatched.(varargin{n}) = varargin{n+1};
         else
