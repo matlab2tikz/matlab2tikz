@@ -986,10 +986,17 @@ end
 % =========================================================================
 function [description, extraOpts] = errorBars ()
 
-  X = 0:pi/10:pi;
-  Y = sin(X);
-  E = std(Y)*ones(size(X));
-  errorbar(X,Y,E)
+  %X = 0:pi/10:pi;
+  %Y = sin(X);
+  %E = std(Y)*ones(size(X));
+  %errorbar(X,Y,E)
+
+  data = 1:10;
+  eH = rand(10,1);
+  eL = rand(10,1);
+  %bar(1:10, data)
+  errorbar(1:10, data, eL, eH, '.')
+
 
   description = 'Generic error bar plot.';
   extraOpts = {};
