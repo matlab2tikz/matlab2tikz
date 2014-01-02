@@ -5271,11 +5271,13 @@ function opts = addToOptions(opts, key, value)
   opts = cat(1, opts, {key, value});
 end
 % =========================================================================
-function opts = merge(opts1, opts2)
-  % Merges two option lists.
-  opts = opts1;
-  for k = 1:size(opts2, 1)
-      opts = addToOptions(opts, opts2{k,1}, opts2{k,2});
+function opts = merge(opts, varargin)
+  % Merges multiple option lists
+  for jArg = 1:numel(varargin)
+      opts2 = varargin{jArg};
+      for k = 1:size(opts2, 1)
+          opts = addToOptions(opts, opts2{k,1}, opts2{k,2});
+      end
   end
 end
 % =========================================================================
