@@ -1,5 +1,15 @@
 2013-10-20  Nico Schlömer  <nico.schloemer@gmail.com>
 
+	* Version 0.4.4.
+	* Support for color maps with scatter plots.
+	* Support for different-length up-down error bars.
+	* Input options validation.
+	* Bugfixes:
+	   - legends for both area and line plots
+	   - invisible text fields
+
+2013-10-20  Nico Schlömer  <nico.schloemer@gmail.com>
+
 	* Version 0.4.3.
 	* Support for 3D quiver plots.
 	* Extended support for colorbar axis options.
