@@ -1,4 +1,4 @@
-function matlab2tikz(varargin)
+function varargout = matlab2tikz(varargin)
 %MATLAB2TIKZ    Save figure in native LaTeX (TikZ/Pgfplots).
 %   MATLAB2TIKZ() saves the current figure as LaTeX file.
 %   MATLAB2TIKZ comes with several options that can be combined at will.
@@ -91,6 +91,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
 %   check for updates of matlab2tikz.
 %   (default: true)
+%
+%   FH = MATLAB2TIKZ('localfunction', CHAR) returns a function handle FH to the
+%   local matlab2tikz function. No other actions will be performed. This is
+%   for development purposes only! (default: '')
 %
 %   Example
 %      x = -pi:pi/10:pi;
@@ -274,6 +278,9 @@ function matlab2tikz(varargin)
 
   % Automatic updater.
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'checkForUpdates', true, @islogical);
+  
+  % Output local function handle
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'localfunction', '', @ischar);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % deprecated parameters (will auto-generate warnings upon parse)
@@ -290,6 +297,11 @@ function matlab2tikz(varargin)
                        'This may produce undesirable string output. For full control over output\n', ...
                        'strings please set the parameter ''parseStrings'' to false.\n', ...
                        '==========================================================================']);
+  end
+  
+  if ~isempty(m2t.cmdOpts.Results.localfunction)
+      varargout{1} = eval(sprintf('@%s',m2t.cmdOpts.Results.localfunction));
+      return % just return the handle to the local function
   end
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -390,9 +402,12 @@ function matlab2tikz(varargin)
   userInfo(m2t, versionInfo, m2t.website, m2t.name);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Save the figure as pgf to file -- here's where the work happens
-  saveToFile(m2t, fid, fileWasOpen);
+  m2t = saveToFile(m2t, fid, fileWasOpen);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+  if nargout>=1
+      varargout{1} = m2t;
+  end
 end
 % =========================================================================
 % validates the optional argument 'filename' to not be another
