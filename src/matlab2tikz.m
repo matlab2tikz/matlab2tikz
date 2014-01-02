@@ -159,7 +159,7 @@ function matlab2tikz(varargin)
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
   VCID = VersionControlIdentifier();
   m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
-  
+
   m2t.tol = 1.0e-15; % global round-off tolerance;
                      % used, for example, in equality test for doubles
   m2t.relativePngPath = [];
@@ -206,7 +206,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'height', [], @ischar);
   ipp = ipp.addParamValue(ipp, 'width' , [], @ischar);
-  
+
   % Whether to save images in PNG format or to natively draw filled squares
   % using TikZ itself.
   ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
@@ -1381,7 +1381,7 @@ function str = plotLine2d(m2t, opts, data)
   % Convert to string array then cell to call sprintf once (and no loops).
   if errorbarMode
       dataType = 'coordinates';
-      str_data = sprintf(['(', m2t.ff, ',', m2t.ff,') += (0.0,', m2t.ff,') -= (0.0,', m2t.ff,')'], data');
+      str_data = sprintf(['(', m2t.ff, ',', m2t.ff,') += (0.0,', m2t.ff,') -= (0.0,', m2t.ff,')\n'], data');
   else
       dataType = 'table[row sep=crcr]';
       str_data = sprintf([m2t.ff, ' ', m2t.ff, '\\\\\n'], data');
@@ -1985,7 +1985,7 @@ function [m2t, str] = drawHggroup(m2t, h)
       case {'specgraph.scattergroup'}
           % scatter plots
           [m2t,str] = drawScatterPlot(m2t, h);
-          
+
       case {'specgraph.contourgroup', 'hggroup'}
           % handle all those the usual way
           [m2t, str] = handleAllChildren(m2t, h);
@@ -2154,7 +2154,7 @@ function [m2t, str] = drawText(m2t, handle)
   % example, with polar plots and the axis descriptions therein.
   % Also, Matlab treats text objects with a NaN in the position as
   % invisible.
-  if any(isnan(get(handle, 'Position')) | isnan(get(handle, 'Rotation'))) ... 
+  if any(isnan(get(handle, 'Position')) | isnan(get(handle, 'Rotation'))) ...
      || strcmp(get(handle, 'Visible'), 'off') ...
      || (strcmp(get(handle, 'HandleVisibility'), 'off') && ~m2t.cmdOpts.Results.showHiddenStrings)
     return;
@@ -3465,7 +3465,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
   pictalign = [];
   switch m2t.env
       case 'Octave'
-          % Octave allows to change the alignment of legend text and 
+          % Octave allows to change the alignment of legend text and
           % pictograms using legend('left') and legend('right')
           textpos = get(handle, 'textposition');
           switch lower(textpos)
