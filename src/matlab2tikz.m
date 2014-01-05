@@ -297,24 +297,7 @@ function matlab2tikz(varargin)
       end
 
       % open the file for writing
-      switch m2t.env
-        case 'MATLAB'
-          fid = fopen(filename, ...
-                       'w', ...
-                       'native', ...
-                       m2t.cmdOpts.Results.encoding ...
-                    );
-        case 'Octave'
-          fid = fopen(filename, 'w');
-        otherwise
-          errorUnknownEnvironment();
-      end
-
-      if fid == -1
-          error('matlab2tikz:fileOpenError', ...
-                'Unable to open file ''%s'' for writing.', ...
-                filename);
-      end
+      fid = fileOpenForWrite(m2t, filename);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   m2t.tikzFileName = fopen(fid);
@@ -376,6 +359,27 @@ end
 % =========================================================================
 function l = isCellOrChar(x)
     l = iscell(x) || ischar(x);
+end
+%==========================================================================
+function fid = fileOpenForWrite(m2t, filename)
+    switch m2t.env
+        case 'MATLAB'
+            fid = fopen(filename, ...
+                'w', ...
+                'native', ...
+                m2t.cmdOpts.Results.encoding ...
+                );
+        case 'Octave'
+            fid = fopen(filename, 'w');
+        otherwise
+            errorUnknownEnvironment();
+    end
+
+    if fid == -1
+        error('matlab2tikz:fileOpenError', ...
+            'Unable to open file ''%s'' for writing.', ...
+            filename);
+    end
 end
 % =========================================================================
 function m2t = saveToFile(m2t, fid, fileWasOpen)
