@@ -3742,7 +3742,6 @@ function table = makeTable(m2t, varargin)
 %   table = makeTable(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
 %
 %  When all the names are empty, no header is printed
-%
     if numel(varargin) == 2 % cell syntax
         variables = varargin{1};
         data      = varargin{2};
@@ -3770,7 +3769,9 @@ function table = makeTable(m2t, varargin)
     
     COLSEP = sprintf('\t');
     ROWSEP = sprintf('\\\\\n');
-    FORMAT = join(m2t, repmat({m2t.ff}, nColumns), COLSEP);
+    FORMAT = repmat({m2t.ff}, nColumns);
+    FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
+    FORMAT = join(m2t, FORMAT, COLSEP);
     if ~all(cellfun(@isempty, variables))
         header = {join(m2t, variables, COLSEP)};
     else
