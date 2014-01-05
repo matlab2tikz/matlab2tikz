@@ -32,6 +32,13 @@ function matlab2tikz(varargin)
 %   path to follow the PNG file. If LaTeX source and PNG file will reside in
 %   the same directory, this can be set to '.'. (default: [])
 %
+%   MATLAB2TIKZ('externalData',BOOL,...) stores all data points in external
+%   files as tab separated values (TSV files). (default: true)
+%
+%   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the given
+%   path to follow the external table files. If LaTeX source and data file 
+%   will reside in the same directory, this can be set to '.'. (default: [])
+%
 %   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be any
 %   LaTeX-compatible length, e.g., '3in' or '5cm' or '0.5\textwidth'.
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
@@ -211,6 +218,8 @@ function matlab2tikz(varargin)
   % using TikZ itself.
   ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'relativePngPath', [], @ischar);
+  ipp = ipp.addParamValue(ipp, 'externalData', true, @islogical);
+  ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
 
   % Maximum chunk length.
   % TeX parses files line by line with a buffer of size buf_size. If the
@@ -314,6 +323,12 @@ function matlab2tikz(varargin)
   else
       m2t.relativePngPath = m2t.cmdOpts.Results.relativePngPath;
   end
+  
+  if isempty(m2t.cmdOpts.Results.relativeDataPath)
+      m2t.relativeDataPath = fileparts(m2t.tikzFileName);
+  else
+      m2t.relativeDataPath = m2t.cmdOpts.Results.relativeDataPath;
+  end
 
   userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2tikz.)\n', ...
                  '(For all other options, type ''help matlab2tikz''.)\n']);
@@ -380,6 +395,12 @@ function fid = fileOpenForWrite(m2t, filename)
             'Unable to open file ''%s'' for writing.', ...
             filename);
     end
+end
+%==========================================================================
+function path = TeXpath(path)
+    path = strrep(path, filesep, '/');
+    % TeX uses '/' as a file separator (as UNIX). Windows, however, uses
+    % '\' which is not supported by TeX as a file separator
 end
 % =========================================================================
 function m2t = saveToFile(m2t, fid, fileWasOpen)
@@ -1320,11 +1341,9 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
 
   if ~isempty(zData)
       % Don't try to be smart in parametric 3d plots: Just plot all the data.
-      str = [str, ...
-             sprintf(['\\addplot3 [\n', join(m2t, drawOptions, ',\n'), ']\n']), ...
-             sprintf('table[row sep=crcr] {\n'), ...
-             makeTable(m2t, {'','',''}, data), ...
-             sprintf('};\n')];
+      [m2t, table] = makeTable(m2t, {'','',''}, data);
+      str = sprintf('%s\\addplot3 [%s]\n table[row sep=crcr] {%s};\n ', ...
+                    str, join(m2t, drawOptions, ','), table);
 
       m2t.currentAxesContain3dData = true;
   else
@@ -1341,12 +1360,13 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
           %if ~isempty(m2t.legendHandles) && (~m2t.currentHandleHasLegend || k < length(dataCell))
           if ~m2t.currentHandleHasLegend || k < length(dataCell)
               % No legend entry found. Don't include plot in legend.
-              opts = ['\n', join(m2t, {drawOptions{:}, 'forget plot'}, ',\n'), '\n'];
+              opts = join(m2t, [drawOptions, {'forget plot'}], ',');
           else
-              opts = ['\n', join(m2t, drawOptions, ',\n'), '\n'];
+              opts = join(m2t, drawOptions, ',');
           end
-          str = [str, ...
-                 plotLine2d(m2t, opts, dataCell{k})];
+          
+          [m2t, Part] = plotLine2d(m2t, opts, dataCell{k});
+          str = [str, Part];
       end
   end
 
@@ -1368,7 +1388,7 @@ function [m2t, str] = addLabel(m2t)
 
 end
 % =========================================================================
-function str = plotLine2d(m2t, opts, data)
+function [m2t,str] = plotLine2d(m2t, opts, data)
 
   % check if the *optional* argument 'yDeviation' was given
   errorbarMode = (size(data,2) == 4);
@@ -1380,16 +1400,13 @@ function str = plotLine2d(m2t, opts, data)
 
   % Convert to string array then cell to call sprintf once (and no loops).
   if errorbarMode
-      dataType = 'table[row sep=crcr, y error plus index=2, y error minus index=3]';
+      tabOpts = 'row sep=crcr, y error plus index=2, y error minus index=3';
   else
-      dataType = 'table[row sep=crcr]';
+      tabOpts = 'row sep=crcr';
   end
-
-  str = [sprintf(['\\addplot [',opts,']\n']), ...
-         str, ...
-         sprintf('%s{\n', dataType), ...
-         makeTable(m2t, repmat({''}, size(data,2)), data), ...
-         sprintf('};\n')];
+  [m2t, table] = makeTable(m2t, repmat({''}, size(data,2)), data);
+  str = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
+                opts, str, tabOpts, table);
 end
 % =========================================================================
 function dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xLim, yLim)
@@ -1710,7 +1727,7 @@ function [m2t, str] = drawPatch(m2t, handle)
       data = [data, cData(:)];
       drawOptions{end+1} = 'patch';
       columnNames{end+1} = 'c';
-      tableOptions{end+1} = 'point meta=\\thisrow{c}';
+      tableOptions{end+1} = 'point meta=\thisrow{c}';
   else
       % Probably one color only, so things we're probably only dealing with
       % one patch here.
@@ -1784,12 +1801,10 @@ function [m2t, str] = drawPatch(m2t, handle)
                     'unbounded coords', 'jump');
   end
   % Plot the actual data.
-  str = [str, ...
-         sprintf(['\n\\', plotType, '[',drawOpts,']\n']), ...
-         sprintf(['table[', join(m2t, tableOptions, ', '), ']{\n']), ...
-         makeTable(m2t, columnNames, data), ...
-         sprintf('};\n')];
-   str = [str, sprintf('\n')];
+  [m2t, table] = makeTable(m2t, columnNames, data);
+  
+  str = sprintf('%s\n\\%s[%s]\n table[%s] {%s};\n\n',...
+                str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -1828,11 +1843,7 @@ function [m2t, str] = drawImage(m2t, handle)
       [pathstr, name] = fileparts(m2t.tikzFileName);
       pngFileName = fullfile(pathstr, [name '-' num2str(m2t.imageAsPngNo) '.png']);
       pngReferencePath = fullfile(m2t.relativePngPath, [name '-' num2str(m2t.imageAsPngNo) '.png']);
-      if strcmp(filesep, '\')
-          % We're on a Windows system with the directory separator
-          % character "\". It has to be changed into "/" for the TeX output
-          pngReferencePath = strrep(pngReferencePath, filesep, '/');
-      end
+      pngReferencePath = TeXpath(pngReferencePath);
 
       % Get color indices for indexed color images and truecolor values
       % otherwise. Don't use ismatrix(), c.f.
@@ -2106,10 +2117,9 @@ function [m2t,env] = drawSurface(m2t, handle)
     if ~isempty(color)
         tabArgs(end+1:end+2) = {'',color};
     end
-    str = [str, ...
-           sprintf('\n%s {\n', formatType), ...
-           makeTable(m2t, tabArgs{:}), ...
-           sprintf('};\n')];
+    [m2t, table] = makeTable(m2t, tabArgs{:});
+    
+    str = sprintf('%s\n%s {%s};\n', str, formatType, table);
     env = str;
 
     % TODO:
@@ -2427,10 +2437,9 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   end
 
   % The actual printing.
-  str = [str, ...
-         sprintf('\\%s[%s] plot table[row sep=crcr,%s]{\n', env, drawOpts, metaPart), ...
-         makeTable(m2t, repmat({''},1,nColumns), data), ...
-         sprintf('};\n\n')];
+  [m2t, table] = makeTable(m2t, repmat({''},1,nColumns), data);
+  str = sprintf('%s\\%s[%s] plot table[row sep=crcr,%s]{%s};\n', str, env, ...
+                drawOpts, metaPart, table);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -2652,10 +2661,9 @@ function [m2t, str] = drawBarseries(m2t, h)
   end
   
   drawOpts = join(m2t, drawOptions, ',');
-  str = [str, ...
-         sprintf('\\addplot[%s] plot table[row sep=crcr] {\n', drawOpts), ...
-         makeTable(m2t, '', xDataPlot, '', yDataPlot), ...
-         sprintf('};\n\n')];
+  [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
+  str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%s};\n', ...
+                str, drawOpts, table);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
@@ -2695,10 +2703,10 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
   %% plot the thing
   xData = get(h, 'XData');
   yData = get(h, 'YData');
-  str = [str, ...
-         sprintf('\\addplot[%s] plot table[row sep=crcr] {\n', drawOpts), ...
-         makeTable(m2t, '', xData, '', yData), ...
-         sprintf('};\n\n')];
+  [m2t, table] = makeTable(m2t, '', xData, '', yData);
+  
+  str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%s};\n', ...
+                str, drawOpts, table);
 end
 % =========================================================================
 function [m2t, str] = drawAreaSeries(m2t, h)
@@ -2743,10 +2751,9 @@ function [m2t, str] = drawAreaSeries(m2t, h)
   % plot the thing
   xData = get(h, 'XData');
   yData = get(h, 'YData');
-  str = [str, ...
-         sprintf('\\addplot[%s] plot table[row sep=crcr]{\n', drawOpts), ...
-         makeTable(m2t, '', xData, '', yData), ...
-         sprintf('}\n\\closedcycle;\n')];
+  [m2t, table] = makeTable(m2t, '', xData, '', yData);
+  str = sprintf('%s\\addplot[%s] plot table[row sep=crcr]{%s}\n\\closedcycle;\n',...
+        str, drawOpts, table);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
 % =========================================================================
@@ -3713,12 +3720,18 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
   end
 end
 % =========================================================================
-function table = makeTable(m2t, varargin)
-%   table = makeTable(m2t, 'name1', data1, 'name2', data2, ...)
-%   table = makeTable(m2t, {'name1','name2',...}, {data1, data2, ...})
-%   table = makeTable(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
+function [m2t, table] = makeTable(m2t, varargin)
+%   [m2t,table] = makeTable(m2t, 'name1', data1, 'name2', data2, ...)
+%   [m2t,table] = makeTable(m2t, {'name1','name2',...}, {data1, data2, ...})
+%   [m2t,table] = makeTable(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
 %
 %  When all the names are empty, no header is printed
+    COLSEP = sprintf('\t');
+    if m2t.cmdOpts.Results.externalData
+        ROWSEP = sprintf('\n');
+    else
+        ROWSEP = sprintf('\\\\\n');
+    end
     if numel(varargin) == 2 % cell syntax
         variables = varargin{1};
         data      = varargin{2};
@@ -3744,8 +3757,6 @@ function table = makeTable(m2t, varargin)
     end
     nRows = min(nRows);
     
-    COLSEP = sprintf('\t');
-    ROWSEP = sprintf('\\\\\n');
     FORMAT = repmat({m2t.ff}, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
     FORMAT = join(m2t, FORMAT, COLSEP);
@@ -3759,7 +3770,7 @@ function table = makeTable(m2t, varargin)
     for iRow = 1:nRows
         thisData = cellfun(@(x)(x(iRow)), data, 'UniformOutput', false);
         for jCol = 1:nColumns
-            if iscell(thisData{jCol})
+            if iscell(thisData{jCol}) %TODO: probably this can be done more clearly
                 thisData{jCol} = thisData{jCol}{1};
             end
         end
@@ -3767,6 +3778,31 @@ function table = makeTable(m2t, varargin)
     end
     table = lower(table); % convert NaN and Inf to lower case for TikZ
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
+    
+    if ~m2t.cmdOpts.Results.externalData
+        table = sprintf('\n%s\n', table); % add some newlines for clarity
+    else
+        % output data to external file
+        if ~isfield(m2t, 'dataFileNo')
+            m2t.dataFileNo = 1;
+        else
+            m2t.dataFileNo = m2t.dataFileNo + 1;
+        end
+        
+        %TODO: extract method: absolute/relative filename for PNG/DAT files
+        [pathstr, name] = fileparts(m2t.tikzFileName);
+        baseFilename = [name '-' num2str(m2t.dataFileNo) '.tsv'];
+        filename = fullfile(pathstr, baseFilename);
+        relativeFilename = fullfile(m2t.relativeDataPath, baseFilename);
+        
+        % write the data table to an external file
+        fid = fileOpenForWrite(m2t, filename);
+        fprintf(fid, '%s', table);
+        fclose(fid);
+        
+        % put the filename in the TikZ output
+        table = TeXpath(relativeFilename);    
+    end
 end
 % =========================================================================
 function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
