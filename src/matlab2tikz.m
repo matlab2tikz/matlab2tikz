@@ -28,16 +28,13 @@ function matlab2tikz(varargin)
 %   PNG files. This is more efficient than storing the image color data as TikZ
 %   matrix. (default: true)
 %
-%   MATLAB2TIKZ('relativePngPath',CHAR, ...) tells MATLAB2TIKZ to use the given
-%   path to follow the PNG file. If LaTeX source and PNG file will reside in
-%   the same directory, this can be set to '.'. (default: [])
-%
 %   MATLAB2TIKZ('externalData',BOOL,...) stores all data points in external
 %   files as tab separated values (TSV files). (default: true)
 %
 %   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the given
-%   path to follow the external table files. If LaTeX source and data file 
-%   will reside in the same directory, this can be set to '.'. (default: [])
+%   path to follow the external data files and PNG files.  If LaTeX source and 
+%   the external files will reside in the same directory, 
+%   this can be set to '.'. (default: [])
 %
 %   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be any
 %   LaTeX-compatible length, e.g., '3in' or '5cm' or '0.5\textwidth'.
@@ -169,7 +166,8 @@ function matlab2tikz(varargin)
 
   m2t.tol = 1.0e-15; % global round-off tolerance;
                      % used, for example, in equality test for doubles
-  m2t.relativePngPath = [];
+  m2t.imageAsPngNo = 0;
+  m2t.dataFileNo   = 0;
 
   % The following color RGB-values which will need to be defined.
   % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
@@ -213,11 +211,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'height', [], @ischar);
   ipp = ipp.addParamValue(ipp, 'width' , [], @ischar);
-
-  % Whether to save images in PNG format or to natively draw filled squares
-  % using TikZ itself.
   ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
-  ipp = ipp.addParamValue(ipp, 'relativePngPath', [], @ischar);
   ipp = ipp.addParamValue(ipp, 'externalData', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
 
@@ -253,7 +247,8 @@ function matlab2tikz(varargin)
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % deprecated parameters (will auto-generate warnings upon parse)
-  %ipp.deprecateParam(ipp,'mathmode',{'parseStrings','parseStringsAsMath'});
+  ipp = ipp.addParamValue(ipp, 'relativePngPath', [], @ischar);
+  ipp = ipp.deprecateParam(ipp, 'relativePngPath', 'relativeDataPath');
 
   % Finally parse all the elements.
   ipp = ipp.parse(ipp, varargin{:});
@@ -318,14 +313,15 @@ function matlab2tikz(varargin)
   % By default, reference the PNG (if required) from the TikZ file
   % as the file path of the TikZ file itself. This works if the MATLAB script
   % is executed in the same folder where the TeX file sits.
-  if isempty(m2t.cmdOpts.Results.relativePngPath)
-      m2t.relativePngPath = fileparts(m2t.tikzFileName);
-  else
-      m2t.relativePngPath = m2t.cmdOpts.Results.relativePngPath;
-  end
-  
   if isempty(m2t.cmdOpts.Results.relativeDataPath)
-      m2t.relativeDataPath = fileparts(m2t.tikzFileName);
+      if ~isempty(m2t.cmdOpts.Results.relativePngPath)
+          %NOTE: eventually break backwards compatibility of relative PNG path
+          m2t.relativeDataPath = m2t.cmdOpts.Results.relativePngPath;
+          userWarning(m2t, ['Using "relativePngPath" for "relativeDataPath".', ...
+                            ' This will stop working in a future release.']);
+      else
+          m2t.relativeDataPath = fileparts(m2t.tikzFileName);
+      end
   else
       m2t.relativeDataPath = m2t.cmdOpts.Results.relativeDataPath;
   end
@@ -1832,17 +1828,13 @@ function [m2t, str] = drawImage(m2t, handle)
   end
 
   if (m2t.cmdOpts.Results.imagesAsPng)
-      if ~isfield(m2t, 'imageAsPngNo')
-          m2t.imageAsPngNo = 1;
-      else
-          m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
-      end
+      m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
       % ------------------------------------------------------------------------
       % draw a png image
       % Take the TikZ file base name and change the extension .png.
       [pathstr, name] = fileparts(m2t.tikzFileName);
       pngFileName = fullfile(pathstr, [name '-' num2str(m2t.imageAsPngNo) '.png']);
-      pngReferencePath = fullfile(m2t.relativePngPath, [name '-' num2str(m2t.imageAsPngNo) '.png']);
+      pngReferencePath = fullfile(m2t.relativeDataPath, [name '-' num2str(m2t.imageAsPngNo) '.png']);
       pngReferencePath = TeXpath(pngReferencePath);
 
       % Get color indices for indexed color images and truecolor values
@@ -3783,11 +3775,7 @@ function [m2t, table] = makeTable(m2t, varargin)
         table = sprintf('\n%s\n', table); % add some newlines for clarity
     else
         % output data to external file
-        if ~isfield(m2t, 'dataFileNo')
-            m2t.dataFileNo = 1;
-        else
-            m2t.dataFileNo = m2t.dataFileNo + 1;
-        end
+        m2t.dataFileNo = m2t.dataFileNo + 1;
         
         %TODO: extract method: absolute/relative filename for PNG/DAT files
         [pathstr, name] = fileparts(m2t.tikzFileName);
