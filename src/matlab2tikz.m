@@ -173,6 +173,11 @@ function matlab2tikz(varargin)
   m2t.imageAsPngNo = 0;
   m2t.dataFileNo   = 0;
 
+  % definition of color depth
+  m2t.colorDepth     = 60; %[bit] RGB color depth (typical values: 24, 30, 48)
+  m2t.colorPrecision = 2^(-m2t.colorDepth/3);
+  m2t.colorFormat    = sprintf('%%0.%df',ceil(-log10(m2t.colorPrecision)));
+
   % the actual contents of the TikZ file go here
   m2t.content = struct('name',     [], ...
                        'comment',  [], ...
@@ -520,7 +525,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
       m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
       for k = 1:length(m2t.extraRgbColorNames)
           % make sure to append with '%' to avoid spacing woes
-          ff = '%0.6f'; % 60-bit RGB color space (48-bit is already high-end)
+          ff = m2t.colorFormat;
           m2t.content.colors = [m2t.content.colors, ...
                                 sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
                                         m2t.extraRgbColorNames{k}', m2t.extraRgbColorSpecs{k})];
@@ -3842,11 +3847,10 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
   colorNames = [xcolColorNames, m2t.extraRgbColorNames];
   colorSpecs = [xcolColorSpecs, m2t.extraRgbColorSpecs];
   
-  tolColor = 2^-20; % color tolerance: 60bit RGB -> 20 bits per component
   %% check if rgb is a predefined color
   for kColor = 1:length(colorSpecs)
       Ck = colorSpecs{kColor}(:);
-      if max(abs(Ck - rgb(:))) < tolColor
+      if max(abs(Ck - rgb(:))) < m2t.colorPrecision
           colorLiteral = colorNames{kColor};
           return % exact color was predefined
       end
@@ -3863,7 +3867,7 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
           p  = round(100*p)/100;  % round to a percentage
           Ck = p * Ci + (1-p)*Cj; % approximated mixed color
           
-          if p <= 1 && p >= 0 && max(abs(Ck(:) - rgb(:))) < tolColor    
+          if p <= 1 && p >= 0 && max(abs(Ck(:) - rgb(:))) < m2t.colorPrecision    
               colorLiteral = sprintf('%s!%d!%s', colorNames{iColor}, p*100, ...
                                                  colorNames{jColor});
               return % linear combination found
