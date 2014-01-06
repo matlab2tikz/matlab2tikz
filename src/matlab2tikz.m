@@ -3597,7 +3597,7 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, ax
       keywordScale = [upper(axis), 'Scale'];
       isAxisLog = strcmp(get(handle,keywordScale), 'log');
       [pgfTicks, pgfTickLabels] = ...
-          matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isAxisLog);
+          matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isAxisLog, tickLabelMode);
   end
 
   keywordMinorTick = [upper(axis), 'MinorTick'];
@@ -3605,7 +3605,7 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, ax
 end
 % =========================================================================
 function [pTicks, pTickLabels] = ...
-    matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isLogAxis)
+    matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isLogAxis, tickLabelMode)
   % Converts MATLAB style ticks and tick labels to pgfplots style
   % ticks and tick labels (if at all necessary).
 
@@ -3698,7 +3698,9 @@ function [pTicks, pTickLabels] = ...
               else
                   str = tickLabels{k};
               end
-              tickLabels{k} = sprintf('$10^{%s}$', str);
+              if strcmpi(tickLabelMode,'auto')
+                tickLabels{k} = sprintf('$10^{%s}$', str);
+              end
           end
       end
       pTickLabels = join(m2t, tickLabels, ',');
