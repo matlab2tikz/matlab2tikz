@@ -166,7 +166,9 @@ function matlab2tikz(varargin)
 
   m2t.tol = 1.0e-15; % global round-off tolerance;
                      % used, for example, in equality test for doubles
-  
+  m2t.imageAsPngNo = 0;
+  m2t.dataFileNo   = 0;
+
   % The following color RGB-values which will need to be defined.
   % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
   % their specifications.
@@ -1826,11 +1828,7 @@ function [m2t, str] = drawImage(m2t, handle)
   end
 
   if (m2t.cmdOpts.Results.imagesAsPng)
-      if ~isfield(m2t, 'imageAsPngNo')
-          m2t.imageAsPngNo = 1;
-      else
-          m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
-      end
+      m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
       % ------------------------------------------------------------------------
       % draw a png image
       % Take the TikZ file base name and change the extension .png.
@@ -3777,11 +3775,7 @@ function [m2t, table] = makeTable(m2t, varargin)
         table = sprintf('\n%s\n', table); % add some newlines for clarity
     else
         % output data to external file
-        if ~isfield(m2t, 'dataFileNo')
-            m2t.dataFileNo = 1;
-        else
-            m2t.dataFileNo = m2t.dataFileNo + 1;
-        end
+        m2t.dataFileNo = m2t.dataFileNo + 1;
         
         %TODO: extract method: absolute/relative filename for PNG/DAT files
         [pathstr, name] = fileparts(m2t.tikzFileName);
