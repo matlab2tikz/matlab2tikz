@@ -3842,8 +3842,7 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
   colorNames = [xcolColorNames, m2t.extraRgbColorNames];
   colorSpecs = [xcolColorSpecs, m2t.extraRgbColorSpecs];
   
-  tolColor = 1000*eps(1); % tolerance (inf-norm) on color representation
-  
+  tolColor = 2^-20; % color tolerance: 60bit RGB -> 20 bits per component
   %% check if rgb is a predefined color
   for kColor = 1:length(colorSpecs)
       Ck = colorSpecs{kColor}(:);
