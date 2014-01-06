@@ -174,7 +174,7 @@ function matlab2tikz(varargin)
   m2t.dataFileNo   = 0;
 
   % definition of color depth
-  m2t.colorDepth     = 60; %[bit] RGB color depth (typical values: 24, 30, 48)
+  m2t.colorDepth     = 48; %[bit] RGB color depth (typical values: 24, 30, 48)
   m2t.colorPrecision = 2^(-m2t.colorDepth/3);
   m2t.colorFormat    = sprintf('%%0.%df',ceil(-log10(m2t.colorPrecision)));
 
