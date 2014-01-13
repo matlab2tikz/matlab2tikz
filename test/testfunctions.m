@@ -125,7 +125,8 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                            @croppedImage        , ...
                            @doubleAxes          , ...
                            @pColorPlot          , ...
-                           @hgTransformPlot
+                           @hgTransformPlot     , ...
+                           @scatter3Plot3
                          };
 
   numFunctions = length( testfunction_handles );
@@ -1381,6 +1382,17 @@ function [description, extraOpts] = scatter3Plot2()
   extraOpts = {};
 
   return
+end
+% =========================================================================
+function [description, extraOpts] = scatter3Plot3()
+  hold on;
+  scatter3(rand(5,1),rand(5,1),rand(5,1),150,...
+           'MarkerEdgeColor','none','MarkerFaceColor','k');
+  scatter3(rand(5,1),rand(5,1),rand(5,1),150,...
+           'MarkerEdgeColor','none','MarkerFaceColor','b');
+  
+  description = 'Scatter3 plot with 2 colors (Issue 292)';
+  extraOpts = {};
 end
 % =========================================================================
 function [description, extraOpts] = spherePlot()

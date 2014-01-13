@@ -2394,7 +2394,11 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   if length(cData) == 3
       % No special treatment for the colors or markers are needed.
       % All markers have the same color.
-      [m2t, xcolor] = getColor(m2t, h, cData, 'patch');
+      if hasFaceColor
+        [m2t, xcolor] = getColor(m2t, h, markerFaceColor,'patch');
+      else
+        [m2t, xcolor] = getColor(m2t, h, cData, 'patch');
+      end
       drawOptions = { 'only marks', ...
                       ['mark=' tikzMarker], ...
                       ['color=' xcolor] };
