@@ -3107,6 +3107,27 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     pgfplotsColormap = sprintf('colormap={mymap}{[1%s] %s}', unit, join(m2t, colSpecs, '; '));
 end
 % =========================================================================
+function fontStyle = getFontStyle(m2t, handle)
+  fontStyle = '';
+  if strcmpi(get(handle, 'FontWeight'),'Bold')
+      fontStyle = sprintf('%s\\bfseries',fontStyle);
+  end
+  if strcmpi(get(handle, 'FontAngle'), 'Italique')
+      fontStyle = sprintf('%s\\itshape',fontStyle);
+  end
+  if m2t.cmdOpts.Results.strictFontSize
+      fontSize  = get(handle,'FontSize');
+      fontUnits = matlab2texUnits(get(handle,'FontUnits'), 'pt');
+      fontStyle = sprintf('\\fontsize{%d%s}{1em}%s\\selectfont',fontSize,fontUnits,fontStyle);
+  end
+
+  if ~isempty(fontStyle)
+      fontStyle = {'font', fontStyle};
+  else
+      fontStyle = cell(0,2);
+  end
+end
+% =========================================================================
 function axisOptions = getColorbarOptions(m2t, handle)
 
   % begin collecting axes options
