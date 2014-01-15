@@ -3966,6 +3966,23 @@ function dimension = getAxesDimensions(handle, ...
   end
 end
 % =========================================================================
+function texUnits = matlab2texUnits(matlabUnits, fallbackValue)
+  switch matlabUnits
+      case 'pixels'
+          texUnits = 'px';
+      case 'centimeters'
+          texUnits = 'cm';
+      case 'characters'
+          texUnits = 'em';
+      case 'points'
+          texUnits = 'pt';
+      case 'inches'
+          texUnits = 'in';
+      otherwise
+          texUnits = fallbackValue;
+  end
+end
+% =========================================================================
 function [width, height, unit] = getNaturalAxesDimensions(handle)
 
   daspectmode = get(handle, 'DataAspectRatioMode');
@@ -3973,18 +3990,7 @@ function [width, height, unit] = getNaturalAxesDimensions(handle)
   units       = get(handle, 'Units');
 
   % Convert the MATLAB unit strings into TeX unit strings.
-  switch units
-      case 'pixels'
-              units = 'px';
-      case 'centimeters'
-              units = 'cm';
-      case 'inches'
-              units = 'in';
-      case 'points'
-              units = 'pt';
-      case 'characters'
-              units = 'em';
-  end
+  units = matlab2texUnits(units, units);
 
   switch daspectmode
       case 'auto'
