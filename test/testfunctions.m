@@ -31,7 +31,7 @@
 % *** POSSIBILITY OF SUCH DAMAGE.
 % ***
 % =========================================================================
-function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
+function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctions(k)
 
   % assign the functions to test
   testfunction_handles = {                        ...
@@ -130,15 +130,28 @@ function [desc, extraOpts, funcName, numFunctions] = testfunctions(k)
                          };
 
   numFunctions = length( testfunction_handles );
-
+  
+  desc = '';
+  funcName = '';
+  extraOpts = {};
+  extraCFOptions = {};
+  
   if (k<=0)
-      % This is used for querying numFunctions.
-      desc = '';
-      funcName = '';
-      extraOpts = {};
-      return;
+      return;  % This is used for querying numFunctions.
+
   elseif (k<=numFunctions)
-      [desc, extraOpts] = testfunction_handles{k}();
+      switch nargout(testfunction_handles{k})
+          case 3
+              [desc, extraOpts, extraCFOptions] = testfunction_handles{k}();
+              
+          case 1
+              desc = testfunction_handles{k}();
+              
+          otherwise
+              [desc, extraOpts] = testfunction_handles{k}();
+              
+      end
+          
       funcName = func2str(testfunction_handles{k});
   else
       error('testfunctions:outOfBounds', ...
@@ -209,7 +222,7 @@ function [description, extraOpts] = one_point()
 
 end
 % =========================================================================
-function [description, extraOpts] = plain_cos()
+function [description, extraOpts, extraOptsCleanFigure] = plain_cos()
 
   fplot( @cos, [0,2*pi] );
 
@@ -233,7 +246,8 @@ function [description, extraOpts] = plain_cos()
   end
 
   description = 'Plain cosine function with minimumPointsDistance of $0.5$.' ;
-  extraOpts = {'minimumPointsDistance', 0.5};
+  extraOpts = {};
+  extraOptsCleanFigure = {'minimumPointsDistance', 0.5};
 
 end
 % =========================================================================

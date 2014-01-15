@@ -53,7 +53,7 @@ function matlab2tikz_acidtest( varargin )
   stderr = 2;
 
   % query the number of test functions
-  [dummya, dummyb, dummyc, n] = testfunctions(0);
+  [dummya, dummyb, dummyc, dummy, n] = testfunctions(0);
 
   if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
       indices = matlab2tikzOpts.Results.testFunctionIndices;
@@ -80,7 +80,7 @@ function matlab2tikz_acidtest( varargin )
 
       % plot the figure
       try
-          [desc{k}, extraOpts, funcName{k}] = testfunctions( indices(k) );
+          [desc{k}, extraOpts, extraCFOpts, funcName{k}] = testfunctions( indices(k) );
       catch %#ok
           e = lasterror( 'reset' ); %#ok
           if ~isempty( e.message )
@@ -188,7 +188,7 @@ function matlab2tikz_acidtest( varargin )
       end
       % now, test matlab2tikz
       try
-          cleanfigure;
+          cleanfigure(extraCFOpts{:});
           matlab2tikz('filename', gen_file, ...
                       'showInfo', false, ...
                       'checkForUpdates', false, ...
