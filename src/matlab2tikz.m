@@ -936,10 +936,14 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   if ~isempty(title)
       titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
       title = prettyPrint(m2t, title, titleInterpreter);
+      titleStyle = getFontStyle(m2t, get(handle,'Title'));
       if length(title) > 1
-          m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
-                        'title style', '{align=center}');
+          titleStyle = addToOptions(titleStyle, 'align', 'center');
+      end
+      if ~isempty(titleStyle)
+          m2t.axesContainers{end}.options = addToOptions(...
+            m2t.axesContainers{end}.options, 'title style', ...
+            sprintf('{%s}', prettyprintOpts(m2t, titleStyle, ',')));
       end
       title = join(m2t, title, '\\[1ex]');
       m2t.axesContainers{end}.options = ...
@@ -2237,6 +2241,11 @@ function [m2t, str] = drawText(m2t, handle)
 %           style{end+1} = sprintf('font=\\footnotesize');
 %    end
 
+  fontStyle = getFontStyle(m2t, handle);
+  if ~isempty(fontStyle)
+      style{end+1} = prettyprintOpts(m2t, fontStyle, ', ');
+  end
+  
   style{end+1} = ['text=' tcolor];
   if ~strcmp(EdgeColor, 'none')
     [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
