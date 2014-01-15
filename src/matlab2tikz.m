@@ -3797,7 +3797,7 @@ function [m2t, table] = makeTable(m2t, varargin)
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
     
     if ~m2t.cmdOpts.Results.externalData
-        table = sprintf('\n%s\n', table); % add some newlines for clarity
+        table = sprintf('\n%s', table); % add newline for clarity
     else
         % output data to external file
         m2t.dataFileNo = m2t.dataFileNo + 1;
