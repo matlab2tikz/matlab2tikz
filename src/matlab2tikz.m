@@ -18,6 +18,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('strict',BOOL,...) tells MATLAB2TIKZ to adhere to MATLAB(R)
 %   conventions wherever there is room for relaxation. (default: false)
 %
+%   MATLAB2TIKZ('strictFontSize',BOOL,...) retains the exact font sizes
+%   specified in MATLAB for the TikZ code. This goes against normal LaTeX
+%   practice. (default: false)
+%
 %   MATLAB2TIKZ('showInfo',BOOL,...) turns informational output on or off.
 %   (default: true)
 %
@@ -199,6 +203,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'figurehandle', get(0,'CurrentFigure'), @ishandle);
   ipp = ipp.addParamValue(ipp, 'colormap', [], @isnumeric);
   ipp = ipp.addParamValue(ipp, 'strict', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'strictFontSize', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'showInfo', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
