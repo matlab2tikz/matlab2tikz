@@ -3251,7 +3251,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
 
   % Append upper and lower limit of the colorbar.
   % TODO Use caxis not only for color bars.
-  clim = caxis;
+  clim = caxis(get(handle, 'axes'));
   axisOptions = addToOptions(axisOptions, 'point meta min', sprintf(m2t.ff, clim(1)));
   axisOptions = addToOptions(axisOptions, 'point meta max', sprintf(m2t.ff, clim(2)));
 
