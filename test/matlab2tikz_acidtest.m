@@ -1,5 +1,15 @@
 function matlab2tikz_acidtest( varargin )
 %MATLAB2TIKZ_ACIDTEST    unit test driver for matlab2tikz
+%
+% MATLAB2TIKZ_ACIDTEST('testFunctionIndices', INDICES, ...) or 
+%   MATLAB2TIKZ_ACIDTEST(INDICES, ...) runs the test only for the specified 
+%   indices. When empty, all tests are run. (Default: []).
+%
+% MATLAB2TIKZ_ACIDTEST('extraOptions', {'name',value, ...}, ...) 
+%   passes the cell array of options to MATLAB2TIKZ. Default: {}
+%
+% See also matlab2tikz, testfunctions
+
 
 % Copyright (c) 2008--2013, Nico Schlömer <nico.schloemer@gmail.com>
 % All rights reserved.
@@ -39,6 +49,8 @@ function matlab2tikz_acidtest( varargin )
   matlab2tikzOpts = matlab2tikzOpts.addOptional( matlab2tikzOpts, ...
                                                  'testFunctionIndices', ...
                                                  [], @isfloat );
+  matlab2tikzOpts = matlab2tikzOpts.addParamValue( matlab2tikzOpts, ...
+                                                 'extraOptions', {}, @iscell);
 
   matlab2tikzOpts = matlab2tikzOpts.parse( matlab2tikzOpts, varargin{:} );
   % -----------------------------------------------------------------------
@@ -194,6 +206,7 @@ function matlab2tikz_acidtest( varargin )
                       'checkForUpdates', false, ...
                       'relativeDataPath', '../data/', ...
                       'width', '\figurewidth', ...
+                      matlab2tikzOpts.Results.extraOptions{:}, ...
                       extraOpts{:} ...
                       );
       catch %#ok
