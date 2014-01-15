@@ -18,6 +18,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('strict',BOOL,...) tells MATLAB2TIKZ to adhere to MATLAB(R)
 %   conventions wherever there is room for relaxation. (default: false)
 %
+%   MATLAB2TIKZ('strictFontSize',BOOL,...) retains the exact font sizes
+%   specified in MATLAB for the TikZ code. This goes against normal LaTeX
+%   practice. (default: false)
+%
 %   MATLAB2TIKZ('showInfo',BOOL,...) turns informational output on or off.
 %   (default: true)
 %
@@ -199,6 +203,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'figurehandle', get(0,'CurrentFigure'), @ishandle);
   ipp = ipp.addParamValue(ipp, 'colormap', [], @isnumeric);
   ipp = ipp.addParamValue(ipp, 'strict', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'strictFontSize', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'showInfo', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
@@ -931,10 +936,14 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   if ~isempty(title)
       titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
       title = prettyPrint(m2t, title, titleInterpreter);
+      titleStyle = getFontStyle(m2t, get(handle,'Title'));
       if length(title) > 1
-          m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
-                        'title style', '{align=center}');
+          titleStyle = addToOptions(titleStyle, 'align', 'center');
+      end
+      if ~isempty(titleStyle)
+          m2t.axesContainers{end}.options = addToOptions(...
+            m2t.axesContainers{end}.options, 'title style', ...
+            sprintf('{%s}', prettyprintOpts(m2t, titleStyle, ',')));
       end
       title = join(m2t, title, '\\[1ex]');
       m2t.axesContainers{end}.options = ...
@@ -2216,22 +2225,11 @@ function [m2t, str] = drawText(m2t, handle)
     style{end+1} = sprintf(['rotate=', m2t.ff], rot);
   end
 
-  % Don't try and mess around with the font sizes: MATLAB and LaTeX have
-  % a very different approach for the two.
-  % While MATLAB determines the font sizes in points (pt), the font size
-  % in LaTeX is determined globally by the font in use and the environment
-  % specs (What you mean is what you get).
-  % MATLAB's default font size is 10pt which is way to small for usual
-  % plots, but fits quite okay for annoated contours, for example.
-  % It's a mess.
-%    switch get(handle, 'FontSize')
-%       case 10
-%           % This setting comes out quite okay for contour annotations.
-%           style{end+1} = sprintf('font=\\tiny');
-%       case 12
-%           style{end+1} = sprintf('font=\\footnotesize');
-%    end
-
+  fontStyle = getFontStyle(m2t, handle);
+  if ~isempty(fontStyle)
+      style{end+1} = prettyprintOpts(m2t, fontStyle, ', ');
+  end
+  
   style{end+1} = ['text=' tcolor];
   if ~strcmp(EdgeColor, 'none')
     [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
@@ -3102,6 +3100,31 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     pgfplotsColormap = sprintf('colormap={mymap}{[1%s] %s}', unit, join(m2t, colSpecs, '; '));
 end
 % =========================================================================
+function fontStyle = getFontStyle(m2t, handle)
+  fontStyle = '';
+  if strcmpi(get(handle, 'FontWeight'),'Bold')
+      fontStyle = sprintf('%s\\bfseries',fontStyle);
+  end
+  if strcmpi(get(handle, 'FontAngle'), 'Italique')
+      fontStyle = sprintf('%s\\itshape',fontStyle);
+  end
+  if m2t.cmdOpts.Results.strictFontSize
+      fontSize  = get(handle,'FontSize');
+      fontUnits = matlab2texUnits(get(handle,'FontUnits'), 'pt');
+      fontStyle = sprintf('\\fontsize{%d%s}{1em}%s\\selectfont',fontSize,fontUnits,fontStyle);
+  else
+      % don't try to be smart and "translate" MATLAB font sizes to proper LaTeX
+      % ones: it cannot be done. LaTeX uses semantic sizes (e.g. \small)
+      % whose actual dimensions depend on the document style, context, ...
+  end
+
+  if ~isempty(fontStyle)
+      fontStyle = {'font', fontStyle};
+  else
+      fontStyle = cell(0,2);
+  end
+end
+% =========================================================================
 function axisOptions = getColorbarOptions(m2t, handle)
 
   % begin collecting axes options
@@ -3961,6 +3984,23 @@ function dimension = getAxesDimensions(handle, ...
   end
 end
 % =========================================================================
+function texUnits = matlab2texUnits(matlabUnits, fallbackValue)
+  switch matlabUnits
+      case 'pixels'
+          texUnits = 'px';
+      case 'centimeters'
+          texUnits = 'cm';
+      case 'characters'
+          texUnits = 'em';
+      case 'points'
+          texUnits = 'pt';
+      case 'inches'
+          texUnits = 'in';
+      otherwise
+          texUnits = fallbackValue;
+  end
+end
+% =========================================================================
 function [width, height, unit] = getNaturalAxesDimensions(handle)
 
   daspectmode = get(handle, 'DataAspectRatioMode');
@@ -3968,18 +4008,7 @@ function [width, height, unit] = getNaturalAxesDimensions(handle)
   units       = get(handle, 'Units');
 
   % Convert the MATLAB unit strings into TeX unit strings.
-  switch units
-      case 'pixels'
-              units = 'px';
-      case 'centimeters'
-              units = 'cm';
-      case 'inches'
-              units = 'in';
-      case 'points'
-              units = 'pt';
-      case 'characters'
-              units = 'em';
-  end
+  units = matlab2texUnits(units, units);
 
   switch daspectmode
       case 'auto'
