@@ -51,11 +51,15 @@ function cleanfigure(varargin)
   % Set up command line options.
   m2t.cmdOpts = matlab2tikzInputParser;
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @isnumeric);
+  
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
   % Recurse down the tree of plot objects and clean up the leaves.
-  recursiveCleanup(meta, gcf, m2t.cmdOpts.Results.minimumPointsDistance, 0);
+  for h = m2t.cmdOpts.Results.handle(:)'
+    recursiveCleanup(meta, h, m2t.cmdOpts.Results.minimumPointsDistance, 0);
+  end
 
   % Reset to initial state.
   set(0, 'ShowHiddenHandles', shh);
