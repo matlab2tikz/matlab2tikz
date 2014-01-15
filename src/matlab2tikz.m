@@ -2225,22 +2225,6 @@ function [m2t, str] = drawText(m2t, handle)
     style{end+1} = sprintf(['rotate=', m2t.ff], rot);
   end
 
-  % Don't try and mess around with the font sizes: MATLAB and LaTeX have
-  % a very different approach for the two.
-  % While MATLAB determines the font sizes in points (pt), the font size
-  % in LaTeX is determined globally by the font in use and the environment
-  % specs (What you mean is what you get).
-  % MATLAB's default font size is 10pt which is way to small for usual
-  % plots, but fits quite okay for annoated contours, for example.
-  % It's a mess.
-%    switch get(handle, 'FontSize')
-%       case 10
-%           % This setting comes out quite okay for contour annotations.
-%           style{end+1} = sprintf('font=\\tiny');
-%       case 12
-%           style{end+1} = sprintf('font=\\footnotesize');
-%    end
-
   fontStyle = getFontStyle(m2t, handle);
   if ~isempty(fontStyle)
       style{end+1} = prettyprintOpts(m2t, fontStyle, ', ');
@@ -3128,6 +3112,10 @@ function fontStyle = getFontStyle(m2t, handle)
       fontSize  = get(handle,'FontSize');
       fontUnits = matlab2texUnits(get(handle,'FontUnits'), 'pt');
       fontStyle = sprintf('\\fontsize{%d%s}{1em}%s\\selectfont',fontSize,fontUnits,fontStyle);
+  else
+      % don't try to be smart and "translate" MATLAB font sizes to proper LaTeX
+      % ones: it cannot be done. LaTeX uses semantic sizes (e.g. \small)
+      % whose actual dimensions depend on the document style, context, ...
   end
 
   if ~isempty(fontStyle)
