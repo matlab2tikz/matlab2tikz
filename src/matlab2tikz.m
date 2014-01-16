@@ -3105,7 +3105,7 @@ function fontStyle = getFontStyle(m2t, handle)
   if strcmpi(get(handle, 'FontWeight'),'Bold')
       fontStyle = sprintf('%s\\bfseries',fontStyle);
   end
-  if strcmpi(get(handle, 'FontAngle'), 'Italique')
+  if strcmpi(get(handle, 'FontAngle'), 'Italic')
       fontStyle = sprintf('%s\\itshape',fontStyle);
   end
   if m2t.cmdOpts.Results.strictFontSize
