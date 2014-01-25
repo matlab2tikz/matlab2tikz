@@ -312,8 +312,9 @@ function matlab2tikz(varargin)
       if ~isempty(m2t.cmdOpts.Results.filename)
           filename = m2t.cmdOpts.Results.filename;
       else
-          filename = uiputfile({'*.tex'; '*.*'}, ...
-                                'Save File');
+          [filename, pathname] = uiputfile({'*.tex'; '*.*'}, ...
+                                          'Save File');
+          filename = fullfile(pathname, filename);
       end
 
       % open the file for writing
