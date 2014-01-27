@@ -3731,6 +3731,8 @@ function [pTicks, pTickLabels] = ...
               end
           end
       end
+      tickLabels = cellfun(@(l)(sprintf('{%s}',l)), tickLabels, ...
+                           'UniformOutput', false);
       pTickLabels = join(m2t, tickLabels, ',');
   else
       pTickLabels = [];
