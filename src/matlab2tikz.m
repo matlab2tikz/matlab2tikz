@@ -1390,10 +1390,8 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
 
       m2t.currentAxesContain3dData = true;
   else
-      xLim = get(m2t.currentHandles.gca, 'XLim');
-      yLim = get(m2t.currentHandles.gca, 'YLim');
       % split the data into logical chunks
-      dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xLim, yLim);
+      dataCell = splitLine(m2t, hasLines, data);
 
       % plot them
       for k = 1:length(dataCell)
@@ -1453,12 +1451,9 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
                 opts, str, tabOpts, table);
 end
 % =========================================================================
-function dataCell = splitLine(m2t, hasLines, hasMarkers, hasDeviations, data, xLim, yLim)
+function dataCell = splitLine(m2t, hasLines, data)
   % Split the xData, yData into several chunks of data for each of which
   % an \addplot will be generated.
-  % Splitting criteria are:
-  %    * Visibility.
-  %    * Data set too large.
 
   dataCell{1} = data;
 
