@@ -36,8 +36,8 @@ function matlab2tikz(varargin)
 %   files as tab separated values (TSV files). (default: true)
 %
 %   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the given
-%   path to follow the external data files and PNG files.  If LaTeX source and 
-%   the external files will reside in the same directory, 
+%   path to follow the external data files and PNG files.  If LaTeX source and
+%   the external files will reside in the same directory,
 %   this can be set to '.'. (default: [])
 %
 %   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be any
@@ -55,7 +55,7 @@ function matlab2tikz(varargin)
 %   options to the Pgfplots axis environment. (default: [])
 %
 %   MATLAB2TIKZ('extraColors', {{'name',[R G B]}, ...} , ...) adds
-%   user-defined named RGB-color definitions to the TikZ output. 
+%   user-defined named RGB-color definitions to the TikZ output.
 %   R, G and B are expected between 0 and 1. (default: {})
 %
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
@@ -111,7 +111,7 @@ function matlab2tikz(varargin)
 %      matlab2tikz('myfile.tex');
 %
 
-%   Copyright (c) 2008--2013, Nico Schlömer <nico.schloemer@gmail.com>
+%   Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
 %   All rights reserved.
 %
 %   Redistribution and use in source and binary forms, with or without
@@ -164,10 +164,10 @@ function matlab2tikz(varargin)
   m2t.transform = [];
 
   m2t.name = 'matlab2tikz';
-  m2t.version = '0.4.4';
+  m2t.version = '0.4.5';
   m2t.author = 'Nico Schlömer';
   m2t.authorEmail = 'nico.schloemer@gmail.com';
-  m2t.years = '2008--2013';
+  m2t.years = '2008--2014';
   m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
   VCID = VersionControlIdentifier();
   m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
@@ -273,8 +273,8 @@ function matlab2tikz(varargin)
                        'strings please set the parameter ''parseStrings'' to false.\n', ...
                        '==========================================================================']);
   end
-  
-  
+
+
   % The following color RGB-values which will need to be defined.
   % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
   % their specifications.
@@ -391,7 +391,7 @@ end
 function isValid = iscolordefinitions(colors)
     isRGBTuple   = @(c)( numel(c) == 3 && all(0<=c & c<=1) );
     isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
-    
+
     isValid = iscell(colors) && all(cellfun(isValidEntry, colors));
 end
 %==========================================================================
@@ -1388,7 +1388,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
           else
               opts = join(m2t, drawOptions, ',');
           end
-          
+
           [m2t, Part] = plotLine2d(m2t, opts, dataCell{k});
           str = [str, Part];
       end
@@ -1826,7 +1826,7 @@ function [m2t, str] = drawPatch(m2t, handle)
   end
   % Plot the actual data.
   [m2t, table] = makeTable(m2t, columnNames, data);
-  
+
   str = sprintf('%s\n\\%s[%s]\n table[%s] {%s};\n\n',...
                 str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2089,7 +2089,7 @@ function [m2t,env] = drawSurface(m2t, handle)
         colorFormat = join(m2t, repmat({m2t.ff},[3 1]),',');
         color = arrayfun(@(r,g,b)(sprintf(colorFormat,r,g,b)), ...
                          r(:),g(:),b(:),'UniformOutput',false);
-        
+
         %formatType = 'table[row sep=crcr,header=false]';
         %formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
         %data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
@@ -2139,7 +2139,7 @@ function [m2t,env] = drawSurface(m2t, handle)
         tabArgs(end+1:end+2) = {'',color};
     end
     [m2t, table] = makeTable(m2t, tabArgs{:});
-    
+
     str = sprintf('%s\n%s {%s};\n', str, formatType, table);
     env = str;
 
@@ -2229,7 +2229,7 @@ function [m2t, str] = drawText(m2t, handle)
   if ~isempty(fontStyle)
       style{end+1} = prettyprintOpts(m2t, fontStyle, ', ');
   end
-  
+
   style{end+1} = ['text=' tcolor];
   if ~strcmp(EdgeColor, 'none')
     [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
@@ -2439,7 +2439,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   if length(cData) == 3
       % If size(cData,1)==1, then all the colors are the same and have
       % already been accounted for above.
-      
+
   elseif size(cData,2) == 3
       %TODO Hm, can't deal with this?
       %[m2t, col] = rgb2colorliteral(m2t, cData(k,:));
@@ -2673,7 +2673,7 @@ function [m2t, str] = drawBarseries(m2t, h)
   else
       [xDataPlot, yDataPlot] = deal(xData, yData);
   end
-  
+
   drawOpts = join(m2t, drawOptions, ',');
   [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
   str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%s};\n', ...
@@ -2718,7 +2718,7 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
   xData = get(h, 'XData');
   yData = get(h, 'YData');
   [m2t, table] = makeTable(m2t, '', xData, '', yData);
-  
+
   str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%s};\n', ...
                 str, drawOpts, table);
 end
@@ -3799,7 +3799,7 @@ function [m2t, table] = makeTable(m2t, varargin)
                 num2str(nRows), min(nRows));
     end
     nRows = min(nRows);
-    
+
     FORMAT = repmat({m2t.ff}, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
     FORMAT = join(m2t, FORMAT, COLSEP);
@@ -3821,26 +3821,26 @@ function [m2t, table] = makeTable(m2t, varargin)
     end
     table = lower(table); % convert NaN and Inf to lower case for TikZ
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
-    
+
     if ~m2t.cmdOpts.Results.externalData
         table = sprintf('\n%s', table); % add newline for clarity
     else
         % output data to external file
         m2t.dataFileNo = m2t.dataFileNo + 1;
-        
+
         %TODO: extract method: absolute/relative filename for PNG/DAT files
         [pathstr, name] = fileparts(m2t.tikzFileName);
         baseFilename = [name '-' num2str(m2t.dataFileNo) '.tsv'];
         filename = fullfile(pathstr, baseFilename);
         relativeFilename = fullfile(m2t.relativeDataPath, baseFilename);
-        
+
         % write the data table to an external file
         fid = fileOpenForWrite(m2t, filename);
         fprintf(fid, '%s', table);
         fclose(fid);
-        
+
         % put the filename in the TikZ output
-        table = TeXpath(relativeFilename);    
+        table = TeXpath(relativeFilename);
     end
 end
 % =========================================================================
@@ -3854,19 +3854,19 @@ end
 % =========================================================================
 function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
   % Translates an rgb value to an xcolor literal
-  % 
+  %
   % Possible outputs:
   %  - xcolor literal color, e.g. 'blue'
   %  - mixture of 2 previously defined colors, e.g. 'red!70!green'
   %  - a newly defined color, e.g. 'mycolor10'
-  
+
   % Take a look at xcolor.sty for the color definitions.
   % In xcolor.sty some colors are defined in CMYK space and approximated
-  % crudely for RGB color space. So it is better to redefine those colors 
+  % crudely for RGB color space. So it is better to redefine those colors
   % instead of using xcolor's:
   %    'cyan' , 'magenta', 'yellow', 'olive'
   %    [0,1,1], [1,0,1]  , [1,1,0] , [0.5,0.5,0]
-  
+
   xcolColorNames = {'white', 'black', 'red', 'green', 'blue', ...
                     'brown', 'lime', 'orange', 'pink', ...
                     'purple', 'teal', 'violet', ...
@@ -3878,7 +3878,7 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
 
   colorNames = [xcolColorNames, m2t.extraRgbColorNames];
   colorSpecs = [xcolColorSpecs, m2t.extraRgbColorSpecs];
-  
+
   %% check if rgb is a predefined color
   for kColor = 1:length(colorSpecs)
       Ck = colorSpecs{kColor}(:);
@@ -3893,13 +3893,13 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
       for jColor = iColor+1:length(colorSpecs)
           Ci = colorSpecs{iColor}(:);
           Cj = colorSpecs{jColor}(:);
-          
+
           % solve color mixing equation `Ck = p * Ci + (1-p) * Cj` for p
           p  = (Ci-Cj) \ (rgb(:)-Cj);
           p  = round(100*p)/100;  % round to a percentage
           Ck = p * Ci + (1-p)*Cj; % approximated mixed color
-          
-          if p <= 1 && p >= 0 && max(abs(Ck(:) - rgb(:))) < m2t.colorPrecision    
+
+          if p <= 1 && p >= 0 && max(abs(Ck(:) - rgb(:))) < m2t.colorPrecision
               colorLiteral = sprintf('%s!%d!%s', colorNames{iColor}, p*100, ...
                                                  colorNames{jColor});
               return % linear combination found

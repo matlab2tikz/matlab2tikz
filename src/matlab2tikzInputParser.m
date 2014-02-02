@@ -2,7 +2,7 @@ function parser = matlab2tikzInputParser()
 %MATLAB2TIKZINPUTPARSER   Input parsing for matlab2tikz..
 %   This implementation exists because Octave is lacking one.
 
-%   Copyright (c) 2008--2013 Nico Schlömer
+%   Copyright (c) 2008--2014 Nico Schlömer
 %   All rights reserved.
 %
 %   Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,7 @@ function parser = matlab2tikzInputParser()
   parser.addParamValue  = @addParamValue;
   parser.deprecateParam = @deprecateParam;
   parser.parse          = @parse;
-  
+
   % Initialize the parser plan
   parser.plan = {};
 end
@@ -213,7 +213,7 @@ function p = parse (p, varargin)
   % Store the results of the parsing
   p.Results = results;
   p.UsingDefaults = using_defaults;
-  
+
   warnForDeprecatedParameters(p);
 end
 % =========================================================================
@@ -227,11 +227,11 @@ end
 % =========================================================================
 function warnForDeprecatedParameters(p)
   usedDeprecatedParameters = intersect(p.Parameters, fieldnames(p.DeprecatedParameters));
-  
+
   for iParam = 1:numel(usedDeprecatedParameters)
       oldParameter = usedDeprecatedParameters{iParam};
       alternatives = p.DeprecatedParameters.(oldParameter);
-      
+
       switch numel(alternatives)
           case 0
               replacements = '';
@@ -251,6 +251,6 @@ function warnForDeprecatedParameters(p)
                   '==============================================================================='];
       warning('matlab2tikz:deprecatedParameter', ...
                 message, oldParameter, replacements);
-      
+
   end
 end

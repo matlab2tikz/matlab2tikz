@@ -3,7 +3,7 @@ function figure2dot(filename)
 %   FIGURE2DOT() saves the current figure as dot-file.
 %
 
-%   Copyright (c) 2008--2013, Nico Schlömer <nico.schloemer@gmail.com>
+%   Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
 %   All rights reserved.
 %
 %   Redistribution and use in source and binary forms, with or without

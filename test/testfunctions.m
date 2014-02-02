@@ -5,7 +5,7 @@
 % ***
 % =========================================================================
 % ***
-% *** Copyright (c) 2008--2013, Nico Schlömer <nico.schloemer@gmail.com>
+% *** Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
 % *** All rights reserved.
 % ***
 % *** Redistribution and use in source and binary forms, with or without
@@ -130,12 +130,12 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                          };
 
   numFunctions = length( testfunction_handles );
-  
+
   desc = '';
   funcName = '';
   extraOpts = {};
   extraCFOptions = {};
-  
+
   if (k<=0)
       return;  % This is used for querying numFunctions.
 
@@ -143,15 +143,15 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
       switch nargout(testfunction_handles{k})
           case 3
               [desc, extraOpts, extraCFOptions] = testfunction_handles{k}();
-              
+
           case 1
               desc = testfunction_handles{k}();
-              
+
           otherwise
               [desc, extraOpts] = testfunction_handles{k}();
-              
+
       end
-          
+
       funcName = func2str(testfunction_handles{k});
   else
       error('testfunctions:outOfBounds', ...
@@ -1404,7 +1404,7 @@ function [description, extraOpts] = scatter3Plot3()
            'MarkerEdgeColor','none','MarkerFaceColor','k');
   scatter3(rand(5,1),rand(5,1),rand(5,1),150,...
            'MarkerEdgeColor','none','MarkerFaceColor','b');
-  
+
   description = 'Scatter3 plot with 2 colors (Issue 292)';
   extraOpts = {};
 end

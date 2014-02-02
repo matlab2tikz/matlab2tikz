@@ -1,17 +1,17 @@
 function matlab2tikz_acidtest( varargin )
 %MATLAB2TIKZ_ACIDTEST    unit test driver for matlab2tikz
 %
-% MATLAB2TIKZ_ACIDTEST('testFunctionIndices', INDICES, ...) or 
-%   MATLAB2TIKZ_ACIDTEST(INDICES, ...) runs the test only for the specified 
+% MATLAB2TIKZ_ACIDTEST('testFunctionIndices', INDICES, ...) or
+%   MATLAB2TIKZ_ACIDTEST(INDICES, ...) runs the test only for the specified
 %   indices. When empty, all tests are run. (Default: []).
 %
-% MATLAB2TIKZ_ACIDTEST('extraOptions', {'name',value, ...}, ...) 
+% MATLAB2TIKZ_ACIDTEST('extraOptions', {'name',value, ...}, ...)
 %   passes the cell array of options to MATLAB2TIKZ. Default: {}
 %
 % See also matlab2tikz, testfunctions
 
 
-% Copyright (c) 2008--2013, Nico Schlömer <nico.schloemer@gmail.com>
+% Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

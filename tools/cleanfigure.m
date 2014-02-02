@@ -16,7 +16,7 @@ function cleanfigure(varargin)
 %      cleanfigure();
 %
 
-%   Copyright (c) 2013, Nico Schlömer <nico.schloemer@gmail.com>
+%   Copyright (c) 2013--2014, Nico Schlömer <nico.schloemer@gmail.com>
 %   All rights reserved.
 %
 %   Redistribution and use in source and binary forms, with or without
@@ -52,7 +52,7 @@ function cleanfigure(varargin)
   m2t.cmdOpts = matlab2tikzInputParser;
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @isnumeric);
-  
+
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 

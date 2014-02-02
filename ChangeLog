@@ -1,4 +1,14 @@
-2013-10-20  Nico Schlömer  <nico.schloemer@gmail.com>
+2013-02-02  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.4.5.
+	* Arrange data in tables.
+	* Optionally define custom colors.
+	* Allow for strict setting of font sizes.
+	* Bugfixes:
+	   - tick labels for log plots
+	   - tick labels with commas
+
+2014-01-02  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.4.4.
 	* Support for color maps with scatter plots.
