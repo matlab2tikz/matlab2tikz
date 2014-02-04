@@ -1579,6 +1579,10 @@ function [tikzMarkerSize, isDefault] = ...
   % 6pt is the default MATLAB marker size for all markers
   defaultMatlabMarkerSize = 6;
   isDefault = abs(matlabMarkerSize(1)-defaultMatlabMarkerSize)<m2t.tol;
+  % matlabMarkerSize can be vector data, use first index to check the default
+  % marker size. When the script also handles different markers together with 
+  % changing size and colour, the test should be extended to a vector norm, e.g. 
+  % sqrt(e^T*e) < tol, where e=matlabMarkerSize-defaultMatlabMarkerSize
 
   switch (matlabMarker)
       case 'none'
@@ -2388,12 +2392,14 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 
   matlabMarker = get(h, 'Marker');
   markerFaceColor = get(h, 'MarkerFaceColor');
+  markerEdgeColor = get(h, 'MarkerEdgeColor');
   hasFaceColor = ~strcmp(markerFaceColor,'none');
+  hasEdgeColor = ~strcmp(markerEdgeColor,'none');
   [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, [], hasFaceColor);
   
   if length(sData) == 1
       constMarkerkSize = true; % constant marker size
-  else
+  else % changing marker size; rescale the size data according to the marker
       constMarkerkSize = false;
       [sData, dummy] = translateMarkerSize(m2t, matlabMarker, sData);
   end
@@ -2401,18 +2407,32 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   if length(cData) == 3
       % No special treatment for the colors or markers are needed.
       % All markers have the same color.
-      if hasFaceColor
+      if hasFaceColor && ~strcmp(markerFaceColor,'flat');
         [m2t, xcolor] = getColor(m2t, h, markerFaceColor,'patch');
       else
         [m2t, xcolor] = getColor(m2t, h, cData, 'patch');
       end
+      if hasEdgeColor && ~strcmp(markerEdgeColor,'flat');
+        [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
+      else
+        [m2t, ecolor] = getColor(m2t, h, cData, 'patch');
+      end
       if constMarkerkSize % if constant marker size, do nothing special
           drawOptions = { 'only marks', ...
-                          ['mark=' tikzMarker], ...
-                          ['color=' xcolor] };
+                          ['mark=' tikzMarker] };
+          if hasFaceColor && hasEdgeColor
+              drawOptions{end+1} = { ['draw=' ecolor], ...
+                                     ['fill=' xcolor] };
+          else
+              drawOptions{end+1} = ['color=' xcolor];
+          end
       else % if changing marker size but same color on all marks
-          markerOptions = { ['mark=', tikzMarker], ...
-                            sprintf(['draw=' xcolor]) };
+          markerOptions = { ['mark=', tikzMarker] };
+          if hasEdgeColor
+              markerOptions{end+1} = ['draw=' ecolor];
+          else
+              markerOptions{end+1} = ['draw=' xcolor];
+          end
           if hasFaceColor
               markerOptions{end+1} = ['fill=' xcolor];
           end
@@ -2432,8 +2452,13 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 %                        'scatter rgb' ...
                     };
   else
-      markerOptions = { ['mark=', tikzMarker], ...
-                        sprintf('draw=mapped color') };
+      markerOptions = { ['mark=', tikzMarker] };
+      if hasEdgeColor && hasFaceColor
+          [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
+          markerOptions{end+1} = ['draw=' ecolor];
+      else
+          markerOptions{end+1} = 'draw=mapped color';
+      end
       if hasFaceColor
           markerOptions{end+1} = 'fill=mapped color';
       end
