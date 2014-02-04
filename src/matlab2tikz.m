@@ -2401,7 +2401,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       constMarkerkSize = true; % constant marker size
   else % changing marker size; rescale the size data according to the marker
       constMarkerkSize = false;
-      [sData, dummy] = translateMarkerSize(m2t, matlabMarker, sData);
+      [sData, dummy] = translateMarkerSize(m2t, matlabMarker, 18*sData./(sData+72));
   end
 
   if length(cData) == 3
@@ -2481,7 +2481,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       else
         nColumns = 3;
         sColumn = 2;
-        data = [xData(:), yData(:), sData(:)/9];
+        data = [xData(:), yData(:), sData(:)];
       end
   else
       env = 'addplot3';
@@ -2492,13 +2492,9 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       else
         nColumns = 4;
         sColumn = 3;
-        data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)/9]);
+        data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)]);
       end
   end
-  % NOTE: Relationship between sizeData entries and marker size is 9:1,
-  % thus we divide by 9 above in order to get the size of the markers in
-  % the scatter plot to the same scale as when using markers in a regular
-  % line plot.
   if ~constMarkerkSize % 
       drawOptions{end+1} = { ['visualization depends on={\thisrowno{', num2str(sColumn), '} \as \perpointmarksize}'], ...
                              'scatter/@pre marker code/.append style={/tikz/mark size=\perpointmarksize}' };
