@@ -1578,7 +1578,7 @@ function [tikzMarkerSize, isDefault] = ...
 
   % 6pt is the default MATLAB marker size for all markers
   defaultMatlabMarkerSize = 6;
-  isDefault = abs(matlabMarkerSize-defaultMatlabMarkerSize)<m2t.tol;
+  isDefault = abs(matlabMarkerSize(1)-defaultMatlabMarkerSize)<m2t.tol;
 
   switch (matlabMarker)
       case 'none'
@@ -1588,7 +1588,7 @@ function [tikzMarkerSize, isDefault] = ...
           % square (for example) (~diameter), whereas in TikZ the
           % distance of an edge to the center is the measure (~radius).
           % Hence divide by 2.
-          tikzMarkerSize = matlabMarkerSize / 2;
+          tikzMarkerSize = matlabMarkerSize(:) / 2;
       case '.'
           % as documented on the Matlab help pages:
           %
@@ -1597,21 +1597,21 @@ function [tikzMarkerSize, isDefault] = ...
           % The point (.) marker type does not change size when the
           % specified value is less than 5.
           %
-          tikzMarkerSize = matlabMarkerSize / 2 / 3;
+          tikzMarkerSize = matlabMarkerSize(:) / 2 / 3;
       case {'s','square'}
           % Matlab measures the diameter, TikZ half the edge length
-          tikzMarkerSize = matlabMarkerSize / 2 / sqrt(2);
+          tikzMarkerSize = matlabMarkerSize(:) / 2 / sqrt(2);
       case {'d','diamond'}
           % MATLAB measures the width, TikZ the height of the diamond;
           % the acute angle (at the top and the bottom of the diamond)
           % is a manually measured 75 degrees (in TikZ, and MATLAB
           % probably very similar); use this as a base for calculations
-          tikzMarkerSize = matlabMarkerSize / 2 / atan(75/2 *pi/180);
+          tikzMarkerSize = matlabMarkerSize(:) / 2 / atan(75/2 *pi/180);
       case {'^','v','<','>'}
           % for triangles, matlab takes the height
           % and tikz the circumcircle radius;
           % the triangles are always equiangular
-          tikzMarkerSize = matlabMarkerSize / 2 * (2/3);
+          tikzMarkerSize = matlabMarkerSize(:) / 2 * (2/3);
       otherwise
           error('matlab2tikz:translateMarkerSize',                   ...
                   'Unknown matlabMarker ''%s''.', matlabMarker);
@@ -2384,11 +2384,19 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   yData = get(h, 'YData');
   zData = get(h, 'ZData');
   cData = get(h, 'CData');
+  sData = get(h, 'SizeData');
 
   matlabMarker = get(h, 'Marker');
   markerFaceColor = get(h, 'MarkerFaceColor');
   hasFaceColor = ~strcmp(markerFaceColor,'none');
   [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, [], hasFaceColor);
+  
+  if length(sData) == 1
+      constMarkerkSize = true; % constant marker size
+  else
+      constMarkerkSize = false;
+      [sData, dummy] = translateMarkerSize(m2t, matlabMarker, sData);
+  end
 
   if length(cData) == 3
       % No special treatment for the colors or markers are needed.
@@ -2398,9 +2406,26 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       else
         [m2t, xcolor] = getColor(m2t, h, cData, 'patch');
       end
-      drawOptions = { 'only marks', ...
-                      ['mark=' tikzMarker], ...
-                      ['color=' xcolor] };
+      if constMarkerkSize % if constant marker size, do nothing special
+          drawOptions = { 'only marks', ...
+                          ['mark=' tikzMarker], ...
+                          ['color=' xcolor] };
+      else % if changing marker size but same color on all marks
+          markerOptions = { ['mark=', tikzMarker], ...
+                            sprintf(['draw=' xcolor]) };
+          if hasFaceColor
+              markerOptions{end+1} = ['fill=' xcolor];
+          end
+          % for changing marker size, the 'scatter' option has to be added 
+          drawOptions = { 'scatter', ...
+                          'only marks', ...
+                          ['mark=' tikzMarker] };
+          if ~hasFaceColor
+              drawOptions{end+1} = { ['scatter/use mapped color=' xcolor] };
+          else
+              drawOptions{end+1} = { ['scatter/use mapped color={', join(m2t, markerOptions,','), '}'] };
+          end 
+      end
   elseif size(cData,2) == 3
       drawOptions = { 'only marks' ...
       % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
@@ -2423,23 +2448,43 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % plot the thing
-  drawOpts = join(m2t, drawOptions, ',');
   if isempty(zData)
       env = 'addplot';
-      nColumns = 2;
-      data = [xData(:), yData(:)];
+      if length(sData) == 1
+        nColumns = 2;
+        data = [xData(:), yData(:)];
+      else
+        nColumns = 3;
+        sColumn = 2;
+        data = [xData(:), yData(:), sData(:)/9];
+      end
   else
       env = 'addplot3';
       m2t.currentAxesContain3dData = true;
-      nColumns = 3;
-      data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
+      if length(sData) == 1
+        nColumns = 3;
+        data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
+      else
+        nColumns = 4;
+        sColumn = 3;
+        data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)/9]);
+      end
   end
+  % NOTE: Relationship between sizeData entries and marker size is 9:1,
+  % thus we divide by 9 above in order to get the size of the markers in
+  % the scatter plot to the same scale as when using markers in a regular
+  % line plot.
+  if ~constMarkerkSize % 
+      drawOptions{end+1} = { ['visualization depends on={\thisrowno{', num2str(sColumn), '} \as \perpointmarksize}'], ...
+                             'scatter/@pre marker code/.append style={/tikz/mark size=\perpointmarksize}' };
+  end
+  drawOpts = join(m2t, drawOptions, ',');
 
   metaPart = '';
   if length(cData) == 3
       % If size(cData,1)==1, then all the colors are the same and have
       % already been accounted for above.
-
+      
   elseif size(cData,2) == 3
       %TODO Hm, can't deal with this?
       %[m2t, col] = rgb2colorliteral(m2t, cData(k,:));

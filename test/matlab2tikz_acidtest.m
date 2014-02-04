@@ -236,6 +236,16 @@ function matlab2tikz_acidtest( varargin )
           end
           tikzerror(k) = true;
       end
+      
+      % Add new entries as they should be discovered
+      manualCloseFuncs = {'freqResponsePlot', ... 
+                          'zplanePlot2'}; 
+      
+      if ismember(funcName{k},manualCloseFuncs)
+          closeAll = true;
+      else
+          closeAll = false;
+      end
 
       % Make underscores in function names TeX compatible
       funcName{k} = strrep( funcName{k}, '_', '\_' );
@@ -244,7 +254,11 @@ function matlab2tikz_acidtest( varargin )
       texfile_addtest(fh, pdf_file, gen_file, desc{k}, funcName{k}, ...
                       indices(k), pdferror(k), tikzerror(k));
 
-      close( fig_handle );
+      if ~closeAll
+          close( fig_handle );
+      else
+          close all;
+      end
 
       elapsedTime = toc;
       fprintf( stdout, '%s ', strrep( funcName{k}, '\_', '_' ) );
