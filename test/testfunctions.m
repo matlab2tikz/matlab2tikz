@@ -1329,7 +1329,7 @@ end
 % =========================================================================
 function [description, extraOpts] = scatterPlotRandom()
 
-  n=1:100;
+  n = 1:100;
   scatter(n, n, 1000*rand(length(n),1), n.^8);
   colormap autumn;
   %x = randn( 10, 2 );

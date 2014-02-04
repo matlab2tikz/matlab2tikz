@@ -1580,8 +1580,8 @@ function [tikzMarkerSize, isDefault] = ...
   defaultMatlabMarkerSize = 6;
   isDefault = abs(matlabMarkerSize(1)-defaultMatlabMarkerSize)<m2t.tol;
   % matlabMarkerSize can be vector data, use first index to check the default
-  % marker size. When the script also handles different markers together with 
-  % changing size and colour, the test should be extended to a vector norm, e.g. 
+  % marker size. When the script also handles different markers together with
+  % changing size and colour, the test should be extended to a vector norm, e.g.
   % sqrt(e^T*e) < tol, where e=matlabMarkerSize-defaultMatlabMarkerSize
 
   switch (matlabMarker)
@@ -2396,7 +2396,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   hasFaceColor = ~strcmp(markerFaceColor,'none');
   hasEdgeColor = ~strcmp(markerEdgeColor,'none');
   [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, [], hasFaceColor);
-  
+
   if length(sData) == 1
       constMarkerkSize = true; % constant marker size
   else % changing marker size; rescale the size data according to the marker
@@ -2436,7 +2436,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
           if hasFaceColor
               markerOptions{end+1} = ['fill=' xcolor];
           end
-          % for changing marker size, the 'scatter' option has to be added 
+          % for changing marker size, the 'scatter' option has to be added
           drawOptions = { 'scatter', ...
                           'only marks', ...
                           ['mark=' tikzMarker] };
@@ -2444,7 +2444,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
               drawOptions{end+1} = { ['scatter/use mapped color=' xcolor] };
           else
               drawOptions{end+1} = { ['scatter/use mapped color={', join(m2t, markerOptions,','), '}'] };
-          end 
+          end
       end
   elseif size(cData,2) == 3
       drawOptions = { 'only marks' ...
@@ -2472,7 +2472,12 @@ function [m2t, str] = drawScatterPlot(m2t, h)
                     matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % plot the thing
+  % Plot the thing.
+  % NOTE: Relationship between sizeData entries and marker size is 9:1, thus we
+  % divide by 9 above in order to get the size of the markers in the scatter
+  % plot to the same scale as when using markers in a regular line plot.
+  % TODO this factor needs to be adapted
+  sData = sData / 9;
   if isempty(zData)
       env = 'addplot';
       if length(sData) == 1
@@ -2481,7 +2486,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       else
         nColumns = 3;
         sColumn = 2;
-        data = [xData(:), yData(:), sData(:)/9];
+        data = [xData(:), yData(:), sData(:)];
       end
   else
       env = 'addplot3';
@@ -2492,14 +2497,10 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       else
         nColumns = 4;
         sColumn = 3;
-        data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)/9]);
+        data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)]);
       end
   end
-  % NOTE: Relationship between sizeData entries and marker size is 9:1,
-  % thus we divide by 9 above in order to get the size of the markers in
-  % the scatter plot to the same scale as when using markers in a regular
-  % line plot.
-  if ~constMarkerkSize % 
+  if ~constMarkerkSize %
       drawOptions{end+1} = { ['visualization depends on={\thisrowno{', num2str(sColumn), '} \as \perpointmarksize}'], ...
                              'scatter/@pre marker code/.append style={/tikz/mark size=\perpointmarksize}' };
   end
@@ -2509,7 +2510,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   if length(cData) == 3
       % If size(cData,1)==1, then all the colors are the same and have
       % already been accounted for above.
-      
+
   elseif size(cData,2) == 3
       %TODO Hm, can't deal with this?
       %[m2t, col] = rgb2colorliteral(m2t, cData(k,:));
