@@ -2405,7 +2405,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       constMarkerkSize = true; % constant marker size
   else % changing marker size; rescale the size data according to the marker
       constMarkerkSize = false;
-      [sData, dummy] = translateMarkerSize(m2t, matlabMarker, sData);
+      [sData, dummy] = translateMarkerSize(m2t, matlabMarker, 18*sData./(sData+72));
   end
 
   if length(cData) == 3
