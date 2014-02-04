@@ -2365,7 +2365,11 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
       elseif isnumeric(edgeColor) && strcmpi(faceColor, 'flat')
           [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
           % same as shader=flat,draw=\pgfkeysvalueof{/pgfplots/faceted color}
-          surfOptions{end+1} = 'shader=faceted';
+          if all(get(handle,'ZData')==0) %pcolor plot
+              surfOptions{end+1} = 'shader=flat corner';
+          else % regular surface plot
+              surfOptions{end+1} = 'shader=faceted';
+          end
           surfOptions{end+1} = sprintf('draw=%s', xEdgeColor);
       elseif strcmpi(edgeColor, 'none') && strcmpi(faceColor, 'interp')
           surfOptions{end+1} = 'shader=interp';
