@@ -33,7 +33,7 @@ function matlab2tikz(varargin)
 %   matrix. (default: true)
 %
 %   MATLAB2TIKZ('externalData',BOOL,...) stores all data points in external
-%   files as tab separated values (TSV files). (default: true)
+%   files as tab separated values (TSV files). (default: false)
 %
 %   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the given
 %   path to follow the external data files and PNG files.  If LaTeX source and
@@ -221,7 +221,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'height', [], @ischar);
   ipp = ipp.addParamValue(ipp, 'width' , [], @ischar);
   ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
-  ipp = ipp.addParamValue(ipp, 'externalData', true, @islogical);
+  ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
 
   % Maximum chunk length.
