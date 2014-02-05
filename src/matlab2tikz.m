@@ -156,7 +156,7 @@ function matlab2tikz(varargin)
 
   % For hgtransform groups.
   m2t.transform = [];
-
+  m2t.pgfplotsVersion = [1,3];
   m2t.name = 'matlab2tikz';
   m2t.version = '0.4.5';
   m2t.author = 'Nico Schlömer';
@@ -1413,6 +1413,7 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
 
   str = '';
   if errorbarMode
+      m2t = needsPgfplotsVersion(m2t, [1,9]);
       str = sprintf('plot [error bars/.cd, y dir = both, y explicit]\n');
   end
 
@@ -5323,6 +5324,12 @@ end
 function errorUnknownEnvironment()
   error('matlab2tikz:unknownEnvironment',...
         'Unknown environment. Need MATLAB(R) or Octave.')
+end
+% =========================================================================
+function m2t = needsPgfplotsVersion(m2t, minVersion)
+    if isVersionBelow(m2t, m2t.pgfplotsVersion, minVersion)
+        m2t.pgfplotsVersion = minVersion;
+    end
 end
 % =========================================================================
 function [formatted,treeish] = VersionControlIdentifier()
