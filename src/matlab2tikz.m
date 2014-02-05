@@ -478,12 +478,16 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   set(0, 'ShowHiddenHandles', 'off');
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % actually print the stuff
+  minimalPgfplotsVersion = formatPgfplotsVersion(m2t, m2t.pgfplotsVersion);
+
   environment = sprintf('%s %s',m2t.env, m2t.envVersion);
   m2t.content.comment = sprintf(['This file was created by %s %s running on %s.\n', ...
                                  'Copyright (c) %s, %s <%s>\n', ...
-                                 'All rights reserved.\n'], ...
+                                 'All rights reserved.\n',...
+                                 'Minimal pgfplots version: %s\n'], ...
                                  m2t.name, m2t.versionFull, environment, ...
-                                 m2t.years, m2t.author, m2t.authorEmail);
+                                 m2t.years, m2t.author, m2t.authorEmail,...
+                                 minimalPgfplotsVersion);
 
   if m2t.cmdOpts.Results.showInfo
       % disable this info if showInfo=false
@@ -495,7 +499,9 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
                                        m2t.website, m2t.name ) ...
                            ];
   end
-
+  
+  userInfo(m2t, 'You will need pgfplots version %s or newer to compile the TikZ output.',...
+                  minimalPgfplotsVersion);
 
   % Add custom comment.
   if ~isempty(m2t.cmdOpts.Results.tikzFileComment)
