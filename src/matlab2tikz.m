@@ -47,9 +47,8 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
-%   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...)
-%   explicitly adds extra code at the beginning of the output file.
-%   (default: [])
+%   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...) explicitly adds extra code 
+%   at the beginning of the output file. (default: [])
 %
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
@@ -67,7 +66,7 @@ function matlab2tikz(varargin)
 %   You can use this to decrease the file size. (default: '%.15g')
 %
 %   MATLAB2TIKZ('maxChunkLength',INT,...) sets maximum number of data points
-%   per \addplot for line plots (default: 4000).
+%   per \addplot for line plots (default: 4000)
 %
 %   MATLAB2TIKZ('parseStrings',BOOL,...) determines whether title, axes labels
 %   and the like are parsed into LaTeX by MATLAB2TIKZ's parser.
@@ -75,34 +74,29 @@ function matlab2tikz(varargin)
 %   for your labels. (default: true)
 %
 %   MATLAB2TIKZ('parseStringsAsMath',BOOL,...) determines whether to use TeX's
-%   math mode for more characters (such as operators and figures).
-%   (default: false)
+%   math mode for more characters (e.g. operators and figures). (default: false)
 %
 %   MATLAB2TIKZ('showHiddenStrings',BOOL,...) determines whether to show strings
 %   whose were deliberately hidden. This is usually unnecessary, but can come
-%   in handy for unusual plot types (e.g., polar plots).
-%   (default: false)
+%   in handy for unusual plot types (e.g., polar plots). (default: false)
 %
 %   MATLAB2TIKZ('interpretTickLabelsAsTex',BOOL,...) determines whether to
 %   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
 %   (default: false)
 %
 %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
-%   of the output file.
+%   of the output file. (default: '')
 %
 %   MATLAB2TIKZ('automaticLabels',BOOL,...) determines whether to automatically
 %   add labels to plots (where applicable) which make it possible to refer
-%   to them using \ref{...} (e.g., in the caption of a figure).
-%   (default: false)
+%   to them using \ref{...} (e.g., in the caption of a figure). (default: false)
 %
 %   MATLAB2TIKZ('standalone',BOOL,...) determines whether to produce
 %   a standalone compilable LaTeX file. Setting this to true may be useful for
-%   taking a peek at what the figure will look like.
-%   (default: false)
+%   taking a peek at what the figure will look like. (default: false)
 %
 %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
-%   check for updates of matlab2tikz.
-%   (default: true)
+%   check for updates of matlab2tikz. (default: true)
 %
 %   Example
 %      x = -pi:pi/10:pi;
