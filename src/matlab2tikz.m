@@ -5332,6 +5332,16 @@ function m2t = needsPgfplotsVersion(m2t, minVersion)
     end
 end
 % =========================================================================
+function str = formatPgfplotsVersion(m2t, version)
+    version = versionArray(m2t, version);
+    if all(isfinite(version))
+        str = sprintf('%d.',version);
+        str = str(1:end-1); % remove the last period
+    else
+        str = 'newest';
+    end
+end
+% =========================================================================
 function [formatted,treeish] = VersionControlIdentifier()
 % This function gives the (git) commit ID of matlab2tikz
 %
