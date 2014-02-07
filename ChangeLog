@@ -1,3 +1,10 @@
+2014-02-07  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.4.6.
+	* Set externalData default to false.
+	* Properly check for required Pgfplots version.
+	* Marker scaling in scatter plots.
+
 2014-02-02  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.4.5.
