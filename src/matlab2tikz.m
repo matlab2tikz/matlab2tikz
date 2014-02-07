@@ -47,7 +47,7 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
-%   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...) explicitly adds extra code 
+%   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...) explicitly adds extra code
 %   at the beginning of the output file. (default: [])
 %
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
@@ -499,7 +499,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
                                        m2t.website, m2t.name ) ...
                            ];
   end
-  
+
   userInfo(m2t, 'You will need pgfplots version %s or newer to compile the TikZ output.',...
                   minimalPgfplotsVersion);
 
@@ -2406,7 +2406,16 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       constMarkerkSize = true; % constant marker size
   else % changing marker size; rescale the size data according to the marker
       constMarkerkSize = false;
-      [sData, dummy] = translateMarkerSize(m2t, matlabMarker, 18*sData./(sData+72));
+      % MathWorks says
+      % <http://www.mathworks.se/help/matlab/ref/scattergroupproperties.html>:
+      % SizeData
+      % Size of markers in square points. Area of the marker in the scatter
+      % graph in units of points. Since there are 72 points to one inch, to
+      % specify a marker that has an area of one square inch you would use a
+      % value of 72^2.
+      %
+      % Pgfplots on the other hand uses the radius.
+      sData = sqrt(sData / pi);
   end
 
   if length(cData) == 3
@@ -2478,11 +2487,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Plot the thing.
-  % NOTE: Relationship between sizeData entries and marker size is 9:1, thus we
-  % divide by 9 above in order to get the size of the markers in the scatter
-  % plot to the same scale as when using markers in a regular line plot.
-  % TODO this factor needs to be adapted
-  sData = sData / 9;
   if isempty(zData)
       env = 'addplot';
       if length(sData) == 1
