@@ -136,11 +136,28 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
   extraOpts = {};
   extraCFOptions = {};
 
+  
   if (k<=0)
       return;  % This is used for querying numFunctions.
 
   elseif (k<=numFunctions)
-      switch nargout(testfunction_handles{k})
+      funcName = func2str(testfunction_handles{k});
+      
+      try
+          nargs = nargout(funcName);
+      catch %#ok
+          % In Octave 3.6.4, `nargout` seems not to be able to handle
+          % everything as MATLAB does:
+          %  * it does not support function handles (so using strings)
+          %  * it cannot handle subfunctions apparently, so always use the
+          %    default syntax there
+          %TODO: handle diferent number of arguments in Octave
+          warning('testfunctions:nargoutOctave',...
+              'Cannot determine number of output of "%s". Assuming 2.',funcName)
+          nargs = 2;
+      end
+      
+      switch nargs
           case 3
               [desc, extraOpts, extraCFOptions] = testfunction_handles{k}();
 
@@ -152,7 +169,6 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
 
       end
 
-      funcName = func2str(testfunction_handles{k});
   else
       error('testfunctions:outOfBounds', ...
             'Out of bounds (number of testfunctions=%d)', numFunctions);
