@@ -241,12 +241,13 @@ function matlab2tikz_acidtest( varargin )
       manualCloseFuncs = {'freqResponsePlot', ... 
                           'zplanePlot2'}; 
       
-      if ismember(funcName{k},manualCloseFuncs)
-          closeAll = true;
-      else
-          closeAll = false;
+      switch funcName{k}
+          case manualCloseFuncs
+              closeAll = true;
+          otherwise
+              closeAll = false;
       end
-
+        
       % Make underscores in function names TeX compatible
       funcName{k} = strrep( funcName{k}, '_', '\_' );
 
