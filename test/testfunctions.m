@@ -126,7 +126,8 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @doubleAxes          , ...
                            @pColorPlot          , ...
                            @hgTransformPlot     , ...
-                           @scatter3Plot3
+                           @scatter3Plot3       , ...
+                           @scatterPlotMarkers
                          };
 
   numFunctions = length( testfunction_handles );
@@ -1367,6 +1368,34 @@ function [description, extraOpts] = scatterPlot()
   data = load( 'seamount' );
   scatter( data.x, data.y, 5, data.z, '^' );
   description = 'Scatter plot with MATLAB(R) data.';
+  extraOpts = {};
+
+end
+% =========================================================================
+function [description, extraOpts] = scatterPlotMarkers()
+
+  n = 1:10;
+  d = 10;
+  s = d^2 * n;
+  e = d * ones(size(n));
+  grid on;
+  hold on;
+  
+  style = {'bx','rd','go','c.','m+','y*','bs','mv','k^','r<','g>','cp','bh'};
+  names = {'bx','rd','go','c.','m plus','y star','bs','mv',...
+           'k up triangle','r left triangle','g right triangle','cp','bh'};
+  
+  nStyles = numel(style);
+  for ii = 1:nStyles
+      scatter(n, ii * e, s, style{ii});
+  end
+  xlim([min(n)-1 max(n)+1]);
+  ylim([0 d*(nStyles+1)]);
+  set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
+  
+  legend(names{:});
+  
+  description = 'Scatter plot with with different marker sizes and legend.';
   extraOpts = {};
 
 end
