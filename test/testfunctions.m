@@ -1382,6 +1382,8 @@ function [description, extraOpts] = scatterPlotMarkers()
   hold on;
   
   style = {'bx','rd','go','c.','m+','y*','bs','mv','k^','r<','g>','cp','bh'};
+  names = {'bx','rd','go','c.','m plus','y star','bs','mv',...
+           'k up triangle','r left triangle','g right triangle','cp','bh'};
   
   nStyles = numel(style);
   for ii = 1:nStyles
@@ -1391,7 +1393,7 @@ function [description, extraOpts] = scatterPlotMarkers()
   ylim([0 d*(nStyles+1)]);
   set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
   
-  legend(style{:});
+  legend(names{:});
   
   description = 'Scatter plot with with different marker sizes and legend.';
   extraOpts = {};
