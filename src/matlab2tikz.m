@@ -2416,7 +2416,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       % value of 72^2.
       %
       % Pgfplots on the other hand uses the radius.
-      sData = sqrt(sData / pi);
+      sData = sqrt(sData);
+      [sData, dummy] = translateMarkerSize(m2t, matlabMarker, sData);
   end
 
   if length(cData) == 3
@@ -2476,6 +2477,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
           markerOptions{end+1} = 'draw=mapped color';
       end
       if hasFaceColor
+          markerOptions{end+1} = 'fill=mapped color';
+      elseif ~hasFaceColor && strcmp(matlabMarker,'.')
           markerOptions{end+1} = 'fill=mapped color';
       end
       drawOptions = { 'scatter', ...
