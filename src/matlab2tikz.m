@@ -1577,51 +1577,118 @@ function [tikzMarkerSize, isDefault] = ...
       error('matlab2tikz:translateMarkerSize',                      ...
               'Variable matlabMarkerSize is not a numeral.');
   end
-
-  % 6pt is the default MATLAB marker size for all markers
-  defaultMatlabMarkerSize = 6;
-  isDefault = abs(matlabMarkerSize(1)-defaultMatlabMarkerSize)<m2t.tol;
-  % matlabMarkerSize can be vector data, use first index to check the default
-  % marker size. When the script also handles different markers together with
-  % changing size and colour, the test should be extended to a vector norm, e.g.
-  % sqrt(e^T*e) < tol, where e=matlabMarkerSize-defaultMatlabMarkerSize
+  
+  % Divide by 1.5 to get appropriate scaling in TikZ
+  matlabMarkerSize = matlabMarkerSize(:)/1.5;
 
   switch (matlabMarker)
       case 'none'
           tikzMarkerSize = [];
       case {'+','o','x','*','p','pentagram','h','hexagram'}
-          % In MATLAB, the marker size refers to the edge length of a
+          % In Matlab, the marker size refers to the edge length of a
           % square (for example) (~diameter), whereas in TikZ the
           % distance of an edge to the center is the measure (~radius).
           % Hence divide by 2.
-          tikzMarkerSize = matlabMarkerSize(:) / 2;
+          tikzMarkerSize = matlabMarkerSize/2;
       case '.'
           % as documented on the Matlab help pages:
           %
-          % Note that MATLAB draws the point marker (specified by the '.'
+          % Note that Matlab draws the point marker (specified by the '.'
           % symbol) at one-third the specified size.
           % The point (.) marker type does not change size when the
           % specified value is less than 5.
           %
-          tikzMarkerSize = matlabMarkerSize(:) / 2 / 3;
+          tikzMarkerSize = matlabMarkerSize/2/3;
       case {'s','square'}
           % Matlab measures the diameter, TikZ half the edge length
-          tikzMarkerSize = matlabMarkerSize(:) / 2 / sqrt(2);
+          tikzMarkerSize = matlabMarkerSize/2;
       case {'d','diamond'}
-          % MATLAB measures the width, TikZ the height of the diamond;
+          % Matlab measures the width, TikZ the height of the diamond;
           % the acute angle (at the top and the bottom of the diamond)
           % is a manually measured 75 degrees (in TikZ, and MATLAB
           % probably very similar); use this as a base for calculations
-          tikzMarkerSize = matlabMarkerSize(:) / 2 / atan(75/2 *pi/180);
+          tikzMarkerSize = matlabMarkerSize/2/tan(36.3686*pi/180);
       case {'^','v','<','>'}
-          % for triangles, matlab takes the height
-          % and tikz the circumcircle radius;
-          % the triangles are always equiangular
-          tikzMarkerSize = matlabMarkerSize(:) / 2 * (2/3);
+          % For triangles, Matlab takes the height, and TikZ the 
+          % circumcircle radius; the triangles are always equiangular. Thus,
+          % r = w^3/(4*0.5*w*sqrt(3)*w/2) = w*/sqrt(3)
+          tikzMarkerSize = matlabMarkerSize*(2/3);
       otherwise
           error('matlab2tikz:translateMarkerSize',                   ...
                   'Unknown matlabMarker ''%s''.', matlabMarker);
   end
+  
+  % 2pt is the default TikZ marker size for all markers
+  defaultTikZMarkerSize = 2;
+  isDefault = abs(tikzMarkerSize(1)-defaultTikZMarkerSize)<m2t.tol;
+  % tikzMarkerSize can be vector data, use first index to check the default
+  % marker size. When the script also handles different markers together with
+  % changing size and colour, the test should be extended to a vector norm, e.g.
+  % sqrt(e^T*e) < tol, where e=tikzMarkerSize-defaultTikZMarkerSize
+
+end
+% =========================================================================
+function [tikzMarkerSize, isDefault] = ...
+                    translateMarkerSizeScatter(m2t, matlabMarker, matlabMarkerSize)
+  % The markersizes of Matlab and TikZ are related, but not equal. This
+  % is because
+  %
+  %  1.) MATLAB uses the SizeData property to describe a square bounding box
+  %      surrounding the marker, with the area given in points^2. 
+  %  2.) MATLAB and TikZ take different measures (e.g., the
+  %      edge length of a square vs. the diagonal length of it).
+
+  if(~ischar(matlabMarker))
+      error('matlab2tikz:translateMarkerSizeScatter',                      ...
+              'Variable matlabMarker is not a string.');
+  end
+
+  if(~isnumeric(matlabMarkerSize))
+      error('matlab2tikz:translateMarkerSizeScatter',                      ...
+              'Variable matlabMarkerSize is not a numeral.');
+  end
+
+  % Width of the square bounding box around the marker in points.
+  % Divide by 1.5 to get appropriate scaling in TikZ.
+  markerWidth = sqrt(matlabMarkerSize(:))/1.5;
+
+  switch (matlabMarker)
+      case 'none'
+          tikzMarkerSize = [];
+      case {'+','o','x','*','p','pentagram','h','hexagram'}
+          % Tikz uses the radius, hence divide by 2.
+          tikzMarkerSize = markerWidth/2;
+      case '.'
+          % Tikz uses the radius, hence divide by 2. The '.' marker is
+          % always printed at 1/3 of the size, thus, divide by 3 as well.
+          tikzMarkerSize = markerWidth/2/3;
+      case {'s','square'}
+          % TikZ uses half the endgelength, hence divide by 2.
+          tikzMarkerSize = markerWidth/2;
+      case {'d','diamond'}
+          % Matlab measures the width, TikZ the height of the diamond;
+          % the acute angle (at the top and the bottom of the diamond)
+          % is a atan(3/4) in Matlab, and atan(2.6/3.5306) in TikZ.
+          tikzMarkerSize = markerWidth/2/tan(36.3686*pi/180);
+      case {'^','v','<','>'}
+          % for triangles, Matlab takes the height (w)
+          % and TikZ the circumcircle radius (r). Thus, 
+          % r = (a*b*c)/(4*A) = w*(w*sqrt(1+1/4))^2 / (2*w^2)
+          tikzMarkerSize = markerWidth*(5/8);
+      otherwise
+          error('matlab2tikz:translateMarkerSize',                   ...
+                  'Unknown matlabMarker ''%s''.', matlabMarker);
+  end
+  
+  % 36pt^2 is the default Matlab scatter plot marker size for all markers.
+  % For TikZ the default marker size is 2pt, thus check if the
+  % translated marker size is equal to the default or not.
+  defaultTikZScatterMarkerSize = 2;
+  isDefault = abs(tikzMarkerSize(1)-defaultTikZScatterMarkerSize)<m2t.tol;
+  % tikzMarkerSize can be vector data, use first index to check the default
+  % marker size. When the script also handles different markers together with
+  % changing size and colour, the test should be extended to a vector norm, e.g.
+  % sqrt(e^T*e) < tol, where e=tikzMarkerSize-defaultTikZScatterMarkerSize
 
 end
 % =========================================================================
@@ -1670,15 +1737,15 @@ function [tikzMarker, markOptions] = ...
 
               case 'v'
                   tikzMarker = 'triangle';
-                  markOptions = [markOptions, ',rotate=180'];
+                  markOptions{end+1} = 'rotate=180';
 
               case '<'
                   tikzMarker = 'triangle';
-                  markOptions = [markOptions, ',rotate=90'];
+                  markOptions{end+1} = 'rotate=90';
 
               case '>'
                   tikzMarker = 'triangle';
-                  markOptions = [markOptions, ',rotate=270'];
+                  markOptions{end+1} = 'rotate=270';
 
               case {'p','pentagram'}
                   tikzMarker = 'star';
@@ -2416,8 +2483,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       % value of 72^2.
       %
       % Pgfplots on the other hand uses the radius.
-      sData = sqrt(sData);
-      [sData, dummy] = translateMarkerSize(m2t, matlabMarker, sData);
+      [sData, dummy] = translateMarkerSizeScatter(m2t, matlabMarker, sData);
   end
 
   if length(cData) == 3
@@ -2436,7 +2502,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       if constMarkerkSize % if constant marker size, do nothing special
           drawOptions = { 'only marks', ...
                           ['mark=' tikzMarker], ...
-                          ['mark options={', markOptions(2:end) '}'] }; % (2:end) to skip first comma
+                          ['mark options={', markOptions '}'] };
           if hasFaceColor && hasEdgeColor
               drawOptions{end+1} = { ['draw=' ecolor], ...
                                      ['fill=' xcolor] };
@@ -2445,7 +2511,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
           end
       else % if changing marker size but same color on all marks
           markerOptions = { ['mark=', tikzMarker], ...
-                            ['mark options={', markOptions(2:end) '}'] }; % (2:end) to skip first comma
+                            ['mark options={', markOptions '}'] };
           if hasEdgeColor
               markerOptions{end+1} = ['draw=' ecolor];
           else
@@ -2459,7 +2525,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
                           'only marks', ...
                           ['color=' xcolor], ...
                           ['mark=' tikzMarker], ...
-                          ['mark options={', markOptions(2:end) '}'] }; % (2:end) to skip first comma
+                          ['mark options={', markOptions '}'] };
           if ~hasFaceColor
               drawOptions{end+1} = { ['scatter/use mapped color=' xcolor] };
           else
@@ -2473,7 +2539,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
                     };
   else
       markerOptions = { ['mark=', tikzMarker], ...
-                        ['mark options={', markOptions(2:end) '}'] }; % (2:end) to skip first comma
+                        ['mark options={', markOptions '}'] };
       if hasEdgeColor && hasFaceColor
           [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
           markerOptions{end+1} = ['draw=' ecolor];
