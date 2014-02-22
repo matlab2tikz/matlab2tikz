@@ -1612,7 +1612,7 @@ function [tikzMarkerSize, isDefault] = ...
           % For triangles, Matlab takes the height, and TikZ the 
           % circumcircle radius; the triangles are always equiangular. Thus,
           % r = w^3/(4*0.5*w*sqrt(3)*w/2) = w*/sqrt(3)
-          tikzMarkerSize = matlabMarkerSize*(2/3);
+          tikzMarkerSize = sqrt(3)*matlabMarkerSize*(1.5)/5;
       otherwise
           error('matlab2tikz:translateMarkerSize',                   ...
                   'Unknown matlabMarker ''%s''.', matlabMarker);
@@ -1671,7 +1671,7 @@ function [tikzMarkerSize, isDefault] = ...
           % is a atan(3/4) in Matlab, and atan(2.6/3.5306) in TikZ.
           tikzMarkerSize = markerWidth/2/tan(36.3686*pi/180);
       case {'^','v','<','>'}
-          % for triangles, Matlab takes the height (w)
+          % For triangles, Matlab takes the height (w, below)
           % and TikZ the circumcircle radius (r). Thus, 
           % r = (a*b*c)/(4*A) = w*(w*sqrt(1+1/4))^2 / (2*w^2)
           tikzMarkerSize = markerWidth*(5/8);
@@ -2822,6 +2822,14 @@ function [m2t, str] = drawBarseries(m2t, h)
   m2t.axesContainers{end}.options = ...
     addToOptions(m2t.axesContainers{end}.options, 'area legend', []);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  % Add 'log origin = infty' if BaseValue differs from zero (log origin=0
+  % is default behaviour after pgfplots v1.5).
+  baseValue = get(h,'BaseValue');
+  if baseValue
+    m2t.axesContainers{end}.options = ...
+        addToOptions(m2t.axesContainers{end}.options, 'log origin=infty', []);
+  end
+
   % plot the thing
   if isHoriz
       [yDataPlot, xDataPlot] = deal(xData, yData); % swap values
