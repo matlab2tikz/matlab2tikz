@@ -58,6 +58,7 @@ function matlab2tikz_acidtest( varargin )
   % first, initialize the tex output
   texfile = 'tex/acid.tex';
   fh = fopen( texfile, 'w' );
+  assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
   texfile_init( fh );
 
   % output streams
@@ -236,18 +237,18 @@ function matlab2tikz_acidtest( varargin )
           end
           tikzerror(k) = true;
       end
-      
+
       % Add new entries as they should be discovered
-      manualCloseFuncs = {'freqResponsePlot', ... 
-                          'zplanePlot2'}; 
-      
+      manualCloseFuncs = {'freqResponsePlot', ...
+                          'zplanePlot2'};
+
       switch funcName{k}
           case manualCloseFuncs
               closeAll = true;
           otherwise
               closeAll = false;
       end
-        
+
       % Make underscores in function names TeX compatible
       funcName{k} = strrep( funcName{k}, '_', '\_' );
 
