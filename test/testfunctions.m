@@ -46,6 +46,7 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @peaks_contourf      , ...
                            @many_random_points  , ...
                            @double_colorbar     , ...
+                           @subplot_colorbar    , ...
                            @randomWithLines     , ...
                            @double_axes         , ...
                            @double_axes2        , ...
@@ -137,13 +138,13 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
   extraOpts = {};
   extraCFOptions = {};
 
-  
+
   if (k<=0)
       return;  % This is used for querying numFunctions.
 
   elseif (k<=numFunctions)
       funcName = func2str(testfunction_handles{k});
-      
+
       try
           nargs = nargout(funcName);
       catch %#ok
@@ -157,7 +158,7 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
               'Cannot determine number of output of "%s". Assuming 2.',funcName)
           nargs = 2;
       end
-      
+
       switch nargs
           case 3
               [desc, extraOpts, extraCFOptions] = testfunction_handles{k}();
@@ -421,6 +422,19 @@ function [description, extraOpts] = double_colorbar()
   description = 'Double colorbar.';
   extraOpts = {};
 
+end
+% =========================================================================
+function [description, extraOpts] = subplot_colorbar()
+
+  img = rand(100);
+  vec = rand(100,1);
+  subplot(211),imagesc(img,[0 1]);
+  colorbar;
+  subplot(212),plot(vec);
+  matlab2tikz('colorbarError.tex');
+
+  description = 'Subplot colorbar.';
+  extraOpts = {};
 end
 % =========================================================================
 function [description, extraOpts] = randomWithLines()
@@ -1380,11 +1394,11 @@ function [description, extraOpts] = scatterPlotMarkers()
   e = d * ones(size(n));
   grid on;
   hold on;
-  
+
   style = {'bx','rd','go','c.','m+','y*','bs','mv','k^','r<','g>','cp','bh'};
   names = {'bx','rd','go','c.','m plus','y star','bs','mv',...
            'k up triangle','r left triangle','g right triangle','cp','bh'};
-  
+
   nStyles = numel(style);
   for ii = 1:nStyles
       scatter(n, ii * e, s, style{ii});
@@ -1392,9 +1406,9 @@ function [description, extraOpts] = scatterPlotMarkers()
   xlim([min(n)-1 max(n)+1]);
   ylim([0 d*(nStyles+1)]);
   set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
-  
+
   legend(names{:});
-  
+
   description = 'Scatter plot with with different marker sizes and legend.';
   extraOpts = {};
 
