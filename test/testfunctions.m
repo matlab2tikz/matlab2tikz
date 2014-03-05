@@ -2237,18 +2237,15 @@ end
 % =========================================================================
 function [description, extraOpts] = multiplePatches()
 
-  %xdata = [2     2     0     2     5;
-  %         2     8     2     4     5;
-  %         8     8     2     4     8];
-  %ydata = [4     4     4     2     0;
-  %         8     4     6     2     2;
-  %         4     0     4     0     0];
-  %cdata = [15     0     4     6    10;
-  %         1     2     5     7     9;
-  %         2     3     0     8     3];
-  xdata = [2     2     0     2     5];
-  ydata = [4     4     4     2     0];
-  cdata = [15     0     4     6    10];
+  xdata = [2     2     0     2     5;
+           2     8     2     4     5;
+           8     8     2     4     8];
+  ydata = [4     4     4     2     0;
+           8     4     6     2     2;
+           4     0     4     0     0];
+  cdata = [15     0     4     6    10;
+           1     2     5     7     9;
+           2     3     0     8     3];
   p = patch(xdata,ydata,cdata,'Marker','o',...
             'MarkerFaceColor','flat',...
             'FaceColor','none');

@@ -1713,127 +1713,144 @@ function [m2t, str] = drawPatch(m2t, handle)
   % distinct graphical object. Usually there is only one column, but there may
   % be more (-->hist plots, although they are now handled within the barplot
   % framework).
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
+  XData = get(handle, 'XData');
+  YData = get(handle, 'YData');
+  ZData = get(handle, 'ZData');
 
-  if isempty(zData)
-      columnNames = {'x', 'y'};
-      data = [xData(:), yData(:)];
-      plotType = 'addplot';
-  else
-      columnNames = {'x', 'y', 'z'};
-      data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
-      plotType = 'addplot3';
-      m2t.currentAxesContain3dData = true;
+  % If the data points are given in three vectors, we are dealing with one
+  % single patch. If they are all matrices, then the columns of matrix
+  % represent one patch each.
+  if min(size(XData)) == 1
+      % Make sure vectors are column vectors.
+      XData = XData(:);
+      YData = YData(:);
+      ZData = ZData(:);
   end
-  % -----------------------------------------------------------------------
-  % gather the draw options
-  % Make sure that legends are shown in area mode.
-  drawOptions = {'area legend'};
 
-  % see if individual color values are present
-  cData = get(handle, 'CData');
+  numPatches = size(XData, 2);
 
-  % Use the '\\' as a row separator to make sure that the generated figures
-  % work in subplot environments.
-  tableOptions = {'row sep=crcr'};
+  for k = 1:numPatches
+      xData = XData(:, k);
+      yData = YData(:, k);
 
-  % Add the proper color map even if the map data isn't directly used in the
-  % plot to make sure that we get correct color bars.
-  if length(cData) == length(xData)
-      % Add the color map.
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
-  end
-  % If full color data is provided, we can use point meta color data.
-  % For some reason, this only works for filled contours in Pgfplots, so fall
-  % back to explicit color specifications for line plots.
-  if length(cData) == length(xData) ...
-     && ~strcmp(get(handle, 'FaceColor'), 'none')
-      data = [data, cData(:)];
-      drawOptions{end+1} = 'patch';
-      columnNames{end+1} = 'c';
-      tableOptions{end+1} = 'point meta=\thisrow{c}';
-  else
-      % Probably one color only, so things we're probably only dealing with
-      % one patch here.
-      % line width
-      lineStyle = get(handle, 'LineStyle');
-      lineWidth = get(handle, 'LineWidth');
-      lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-      drawOptions = [drawOptions, lineOptions];
-
-      % Find out color values.
-      % fill color
-      faceColor = get(handle, 'FaceColor');
-      if ~strcmp(faceColor, 'none')
-          [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-          drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
-          xFaceAlpha = get(handle, 'FaceAlpha');
-          if abs(xFaceAlpha-1.0) > m2t.tol
-              drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
-          end
-      end
-
-      % draw color
-      edgeColor = get(handle, 'EdgeColor');
-      lineStyle = get(handle, 'LineStyle');
-      if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
-          drawOptions{end+1} = 'draw=none';
+      if isempty(ZData)
+          columnNames = {'x', 'y'};
+          data = [xData(:), yData(:)];
+          plotType = 'addplot';
       else
-          [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
-          if isempty(xEdgeColor)
-              % getColor() wasn't able to return a color. This is because cdata
-              % was an actual vector with different values in it, meaning that
-              % the color changes along the edge. This is the case, for
-              % example, with waterfall() plots.
-              % An actual color maps is needed here.
-              %
-              drawOptions{end+1} = 'mesh'; % or surf
-              m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
-              % Append upper and lower limit of the color mapping.
-              clim = caxis;
-              m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                            'point meta min', sprintf(m2t.ff, clim(1)));
-              m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                            'point meta max', sprintf(m2t.ff, clim(2)));
-              % Note:
-              % Pgfplots can't currently use FaceColor and colormapped edge
-              % color in one go. The option 'surf' makes sure that colormapped
-              % edge colors are used. Face colors are not displayed.
+          zData = ZData(:, k);
+          columnNames = {'x', 'y', 'z'};
+          data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
+          plotType = 'addplot3';
+          m2t.currentAxesContain3dData = true;
+      end
+      % -----------------------------------------------------------------------
+      % gather the draw options
+      % Make sure that legends are shown in area mode.
+      drawOptions = {'area legend'};
+
+      % see if individual color values are present
+      cData = get(handle, 'CData');
+
+      % Use the '\\' as a row separator to make sure that the generated figures
+      % work in subplot environments.
+      tableOptions = {'row sep=crcr'};
+
+      % Add the proper color map even if the map data isn't directly used in
+      % the plot to make sure that we get correct color bars.
+      if length(cData) == length(xData)
+          % Add the color map.
+          m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                        matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+      end
+      % If full color data is provided, we can use point meta color data.
+      % For some reason, this only works for filled contours in Pgfplots, so
+      % fall back to explicit color specifications for line plots.
+      if length(cData) == length(xData) ...
+         && ~strcmp(get(handle, 'FaceColor'), 'none')
+          data = [data, cData(:)];
+          drawOptions{end+1} = 'patch';
+          columnNames{end+1} = 'c';
+          tableOptions{end+1} = 'point meta=\thisrow{c}';
+      else
+          % Probably one color only, so things we're probably only dealing with
+          % one patch here.
+          % line width
+          lineStyle = get(handle, 'LineStyle');
+          lineWidth = get(handle, 'LineWidth');
+          lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+          drawOptions = [drawOptions, lineOptions];
+
+          % Find out color values.
+          % fill color
+          faceColor = get(handle, 'FaceColor');
+          if ~strcmp(faceColor, 'none')
+              [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+              drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
+              xFaceAlpha = get(handle, 'FaceAlpha');
+              if abs(xFaceAlpha-1.0) > m2t.tol
+                  drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
+              end
+          end
+
+          % draw color
+          edgeColor = get(handle, 'EdgeColor');
+          lineStyle = get(handle, 'LineStyle');
+          if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+              drawOptions{end+1} = 'draw=none';
           else
-              % getColor() returned a reasonable color value.
-              drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+              [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
+              if isempty(xEdgeColor)
+                  % getColor() wasn't able to return a color. This is because
+                  % cdata was an actual vector with different values in it,
+                  % meaning that the color changes along the edge. This is the
+                  % case, for example, with waterfall() plots.
+                  % An actual color maps is needed here.
+                  %
+                  drawOptions{end+1} = 'mesh'; % or surf
+                  m2t.axesContainers{end}.options = ...
+                    addToOptions(m2t.axesContainers{end}.options, ...
+                                matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+                  % Append upper and lower limit of the color mapping.
+                  clim = caxis;
+                  m2t.axesContainers{end}.options = ...
+                    addToOptions(m2t.axesContainers{end}.options, ...
+                                'point meta min', sprintf(m2t.ff, clim(1)));
+                  m2t.axesContainers{end}.options = ...
+                    addToOptions(m2t.axesContainers{end}.options, ...
+                                'point meta max', sprintf(m2t.ff, clim(2)));
+                  % Note:
+                  % Pgfplots can't currently use FaceColor and colormapped edge
+                  % color in one go. The option 'surf' makes sure that
+                  % colormapped edge colors are used. Face colors are not
+                  % displayed.
+              else
+                  % getColor() returned a reasonable color value.
+                  drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+              end
           end
       end
-  end
 
-  if ~m2t.currentHandleHasLegend
-      % No legend entry found. Don't include plot in legend.
-      drawOptions{end+1} = 'forget plot';
-  end
+      if ~m2t.currentHandleHasLegend
+          % No legend entry found. Don't include plot in legend.
+          drawOptions{end+1} = 'forget plot';
+      end
 
-  drawOpts = join(m2t, drawOptions, ',');
-  % -----------------------------------------------------------------------
-  if   any(~isfinite(xData(:))) ...
-    || any(~isfinite(yData(:))) ...
-    || any(~isfinite(zData(:)))
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, ...
-                    'unbounded coords', 'jump');
-  end
-  % Plot the actual data.
-  [m2t, table] = makeTable(m2t, columnNames, data);
+      drawOpts = join(m2t, drawOptions, ',');
+      % -----------------------------------------------------------------------
+      if any(~isfinite(data(:)))
+          m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+                        'unbounded coords', 'jump');
+      end
+      % Plot the actual data.
+      [m2t, table] = makeTable(m2t, columnNames, data);
 
-  str = sprintf('%s\n\\%s[%s]\ntable[%s] {%%\n%s};\n\n',...
-                str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      str = sprintf('%s\n\\%s[%s]\ntable[%s] {%%\n%s};\n\n',...
+                    str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
+      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  end
 end
 % =========================================================================
 function [m2t, str] = drawImage(m2t, handle)
