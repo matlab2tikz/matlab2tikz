@@ -134,38 +134,20 @@ function matlab2tikz_acidtest(varargin)
 
       pdf_file = sprintf('data/test%d-reference.pdf' , indices(k));
       eps_file = sprintf('data/test%d-reference.eps' , indices(k));
-      fig_file = sprintf('data/test%d-reference' , indices(k));
-      gen_file = sprintf('data/test%d-converted.tex', indices(k));
+      fig_file = sprintf('data/test%d-reference'     , indices(k));
+      gen_file = sprintf('data/test%d-converted.tex' , indices(k));
 
       tic;
       % Save reference output as PDF
       try
           switch env
               case 'MATLAB'
-                  %% Make the inset tight.
-                  %ti = get(gca, 'TightInset');
-                  %set(gca, ...
-                  %    'Position', [ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
-
-                  %set(gca, 'units', 'centimeters')
-                  %pos = get(gca, 'Position');
-                  %ti = get(gca, 'TightInset');
-
-                  %set(gcf, ...
-                  %    'PaperUnits', 'centimeters');
-                  %set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-                  %set(gcf, 'PaperPositionMode', 'manual');
-                  %set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-                  %print(pdf_file, '-dpdf');
-                  % Create a cropped PDF.
-                  % Unfortunately, MATLAB cannot do that directly, so first
-                  % create an EPS (which has a tight bounding box) and then
-                  % convert it to PDF.
+                  % MATLAB does not generate properly cropped PDF files.
+                  % So, we generate EPS files that are converted later on.
                   print(gcf, '-depsc2', eps_file);
 
               case 'Octave'
-                  % In Octave, figures are automatically cropped when using
-                  % print().
+                  % In Octave, figures are properly cropped when using  print().
                   print(pdf_file, '-dpdf', '-S415,311', '-r150');
                   pause(1.0)
               otherwise
