@@ -337,22 +337,21 @@ function texfile_tab_completion_finish(texfile_handle)
 
 end
 % =========================================================================
-function env = getEnvironment()
-  env = '';
+function [env,versionString] = getEnvironment()
   % Check if we are in MATLAB or Octave.
-  % `ver' in MATLAB gives versioning information on all installed packages
-  % separately, and there is no guarantee that MATLAB itself is listed first.
-  % Hence, loop through the array and try to find 'MATLAB' or 'Octave'.
-  versionData = ver;
-  for k = 1:max(size(versionData))
-      if strcmp(versionData(k).Name, 'MATLAB')
-          env = 'MATLAB';
-          break;
-      elseif strcmp(versionData(k).Name, 'Octave')
-          env = 'Octave';
-          break;
+  % Calling ver with an argument: iterating over all entries is very slow
+  alternatives = {'MATLAB','Octave'};
+  for iCase = 1:numel(alternatives)
+      env   = alternatives{iCase};
+      vData = ver(env);
+      if ~isempty(vData)
+          versionString = vData.Version;
+          return; % found the right environment
       end
   end
+  % otherwise:
+  env = [];
+  versionString = [];
 end
 % =========================================================================
 function msg = format_error_message(e)
