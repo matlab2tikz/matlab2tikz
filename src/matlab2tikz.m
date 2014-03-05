@@ -1518,7 +1518,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
       % if not, don't add anything in case of default marker size
       % and effectively take Pgfplots' default.
       if m2t.cmdOpts.Results.strict || ~isDefault
-         drawOptions{end+1} = sprintf('mark size=%.1fpt', tikzMarkerSize);
+          drawOptions{end+1} = sprintf('mark size=%.1fpt', tikzMarkerSize);
       end
 
       markOptions = cell(0);
@@ -1540,11 +1540,15 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
                            markOptions, ~strcmp(markerFaceColor,'none'));
       if ~strcmp(markerFaceColor,'none')
           [m2t, xcolor] = getColor(m2t, h, markerFaceColor, 'patch');
-          markOptions{end+1} = sprintf('fill=%s', xcolor);
+          if ~isempty(xcolor)
+              markOptions{end+1} = sprintf('fill=%s', xcolor);
+          end
       end
       if ~strcmp(markerEdgeColor,'none') && ~strcmp(markerEdgeColor,'auto')
           [m2t, xcolor] = getColor(m2t, h, markerEdgeColor, 'patch');
-          markOptions{end+1} = sprintf('draw=%s', xcolor);
+          if ~isempty(xcolor)
+              markOptions{end+1} = sprintf('draw=%s', xcolor);
+          end
       end
 
       % add it all to drawOptions
@@ -1755,6 +1759,9 @@ function [m2t, str] = drawPatch(m2t, handle)
       % Use the '\\' as a row separator to make sure that the generated figures
       % work in subplot environments.
       tableOptions = {'row sep=crcr'};
+
+      [m2t, markerOptions] = getMarkerOptions(m2t, handle);
+      drawOptions = [drawOptions, markerOptions];
 
       % Add the proper color map even if the map data isn't directly used in
       % the plot to make sure that we get correct color bars.
