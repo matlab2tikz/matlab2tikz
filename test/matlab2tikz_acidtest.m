@@ -95,19 +95,9 @@ function matlab2tikz_acidtest(varargin)
           [desc{k}, extraOpts, extraCFOpts, funcName{k}] = testfunctions(indices(k));
       catch %#ok
           e = lasterror('reset'); %#ok
-          if ~isempty(e.message)
-              ploterrmsg{k} = [ploterrmsg{k}, sprintf('error: %s\n', e.message)];
-          end
-          if ~isempty(e.identifier)
-              ploterrmsg{k} = [ploterrmsg{k}, sprintf('error: %s\n', e.identifier)];
-          end
-          if ~isempty(e.stack)
-              ploterrmsg{k} = [ploterrmsg{k}, sprintf('error: called from:\n')];
-          end
+          ploterrmsg{k} = format_error_message(e);
+          
           for ee = e.stack
-              ploterrmsg{k} = [ploterrmsg{k}, ...
-                                sprintf('error:   %s at line %d, in function %s\n', ...
-                                         ee.file, ee.line, ee.name)];
               if isempty(funcName{k}) && ~isempty(regexp(ee.name, '^testfunctions>','once'))
                   % extract function name
                   funcName{k} = regexprep(ee.name, '^testfunctions>(.*)', '$1');
@@ -155,20 +145,8 @@ function matlab2tikz_acidtest(varargin)
           end
       catch %#ok
           e = lasterror('reset'); %#ok
-          if ~isempty(e.message)
-              pdferrmsg{k} = [pdferrmsg{k}, sprintf('error: %s\n', e.message)];
-          end
-          if ~isempty(e.identifier)
-              pdferrmsg{k} = [pdferrmsg{k}, sprintf('error: %s\n', e.identifier)];
-          end
-          if ~isempty(e.stack)
-              pdferrmsg{k} = [pdferrmsg{k}, sprintf('error: called from:\n')];
-          end
-          for j = 1:length(e.stack)
-              pdferrmsg{k} = [pdferrmsg{k}, ...
-                                sprintf('error:   %s at line %d, in function %s\n', ...
-                                         e.stack(j).file, e.stack(j).line, e.stack(j).name)];
-          end
+          pdferrmsg{k} = format_error_message(e);
+          
           % When displaying the error message in MATLAB, all backslashes have
           % to be replaced by two backslashes. This must not, however, be
           % applied constantly as the string that's saved to the LaTeX output
@@ -193,20 +171,7 @@ function matlab2tikz_acidtest(varargin)
                      );
       catch %#ok
           e = lasterror('reset'); %#ok
-          if ~isempty(e.message)
-              tikzerrmsg{k} = [tikzerrmsg{k}, sprintf('error: %s\n', e.message)];
-          end
-          if ~isempty(e.identifier)
-              tikzerrmsg{k} = [tikzerrmsg{k}, sprintf('error: %s\n', e.identifier)];
-          end
-          if ~isempty(e.stack)
-              tikzerrmsg{k} = [tikzerrmsg{k}, sprintf('error: called from:\n')];
-          end
-          for j = 1:length(e.stack)
-              tikzerrmsg{k} = [tikzerrmsg{k}, ...
-                                sprintf('error:   %s at line %d, in function %s\n', ...
-                                         e.stack(j).file, e.stack(j).line, e.stack(j).name)];
-          end
+          tikzerrmsg{k} = format_error_message(e);
           % When displaying the error message in MATLAB, all backslashes have
           % to be replaced by two backslashes. This must not, however, be
           % applied constantly as the string that's saved to the LaTeX output
@@ -414,5 +379,22 @@ function env = getEnvironment()
           break;
       end
   end
+end
+% =========================================================================
+function msg = format_error_message(e)
+    msg = '';
+    if ~isempty(e.message)
+        msg = sprintf('%serror: %s\n', msg, e.message);
+    end
+    if ~isempty(e.identifier)
+        msg = sprintf('%serror: %s\n', msg, e.identifier);
+    end
+    if ~isempty(e.stack)
+        msg = sprintf('%serror: called from:\n', msg);
+        for ee = e.stack
+            msg = sprintf('%serror:   %s at line %d, in function %s\n', ...
+                          msg, ee.file, ee.line, ee.name);
+        end
+    end
 end
 % =========================================================================
