@@ -62,7 +62,6 @@ function matlab2tikz_acidtest(varargin)
 
   % output streams
   stdout = 1;
-  stderr = 2;
 
   % query the number of test functions
   [dummya, dummyb, dummyc, dummy, n] = testfunctions(0);
@@ -104,15 +103,7 @@ function matlab2tikz_acidtest(varargin)
               end
           end
           desc{k} = '\textcolor{red}{Error during plot generation.}';
-          % When displaying the error message in MATLAB, all backslashes
-          % have to be replaced by two backslashes. This must not, however,
-          % be applied constantly as the string that's saved to the LaTeX
-          % output must have only one backslash.
-          if strcmp(env, 'MATLAB')
-              fprintf(stderr,  strrep(ploterrmsg{k}, '\', '\\'));
-          else
-              fprintf(stderr, ploterrmsg{k});
-          end
+          disp_error_message(env, ploterrmsg{k});
           ploterror(k) = true;
       end
 
@@ -146,16 +137,7 @@ function matlab2tikz_acidtest(varargin)
       catch %#ok
           e = lasterror('reset'); %#ok
           pdferrmsg{k} = format_error_message(e);
-          
-          % When displaying the error message in MATLAB, all backslashes have
-          % to be replaced by two backslashes. This must not, however, be
-          % applied constantly as the string that's saved to the LaTeX output
-          % must have only one backslash.
-          if strcmp(env, 'MATLAB')
-              fprintf(stderr, strrep(pdferrmsg{k}, '\', '\\'));
-          else
-              fprintf(stderr, pdferrmsg{k});
-          end
+          disp_error_message(env, pdferrmsg{k});
           pdferror(k) = true;
       end
       % now, test matlab2tikz
@@ -172,15 +154,7 @@ function matlab2tikz_acidtest(varargin)
       catch %#ok
           e = lasterror('reset'); %#ok
           tikzerrmsg{k} = format_error_message(e);
-          % When displaying the error message in MATLAB, all backslashes have
-          % to be replaced by two backslashes. This must not, however, be
-          % applied constantly as the string that's saved to the LaTeX output
-          % must have only one backslash.
-          if strcmp(env, 'MATLAB')
-              fprintf(stderr, strrep(tikzerrmsg{k}, '\', '\\'));
-          else
-              fprintf(stderr, tikzerrmsg{k});
-          end
+          disp_error_message(env, tikzerrmsg{k});
           tikzerror(k) = true;
       end
 
@@ -395,6 +369,19 @@ function msg = format_error_message(e)
             msg = sprintf('%serror:   %s at line %d, in function %s\n', ...
                           msg, ee.file, ee.line, ee.name);
         end
+    end
+end
+% =========================================================================
+function disp_error_message(env, msg)
+    stderr = 2;
+    % When displaying the error message in MATLAB, all backslashes
+    % have to be replaced by two backslashes. This must not, however,
+    % be applied constantly as the string that's saved to the LaTeX
+    % output must have only one backslash.
+    if strcmp(env, 'MATLAB')
+        fprintf(stderr, strrep(msg, '\', '\\'));
+    else
+        fprintf(stderr, msg);
     end
 end
 % =========================================================================
