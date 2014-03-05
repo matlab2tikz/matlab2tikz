@@ -429,10 +429,13 @@ function [description, extraOpts] = subplot_colorbar()
 
   img = rand(100);
   vec = rand(100,1);
-  subplot(211),imagesc(img,[0 1]);
+  
+  subplot(2,1,1);
+  imagesc(img,[0 1]);
   colorbar;
-  subplot(212),plot(vec);
-  matlab2tikz('colorbarError.tex');
+  
+  subplot(2,1,2);
+  plot(vec);
 
   description = 'Subplot colorbar.';
   extraOpts = {};
