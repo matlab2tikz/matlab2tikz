@@ -1847,7 +1847,7 @@ function [m2t, str] = drawPatch(m2t, handle)
       % Plot the actual data.
       [m2t, table] = makeTable(m2t, columnNames, data);
 
-      str = sprintf('%s\n\\%s[%s]\ntable[%s] {%%\n%s};\n\n',...
+      str = sprintf('%s\n\\%s[%s]\ntable[%s] {%%\n%s} -- cycle;\n\n',...
                     str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
