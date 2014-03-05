@@ -2461,7 +2461,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
       end
       if constMarkerkSize % if constant marker size, do nothing special
           drawOptions = { 'only marks', ...
-                          ['mark=' tikzMarker] };
+                          ['mark=' tikzMarker], ...
+                          ['mark options={', join(m2t, markOptions, ','), '}'] };
           if hasFaceColor && hasEdgeColor
               drawOptions{end+1} = { ['draw=' ecolor], ...
                                      ['fill=' xcolor] };
@@ -2469,7 +2470,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
               drawOptions{end+1} = ['color=' xcolor];
           end
       else % if changing marker size but same color on all marks
-          markerOptions = { ['mark=', tikzMarker] };
+          markerOptions = { ['mark=', tikzMarker], ...
+                            ['mark options={', join(m2t, markOptions, ','), '}'] };
           if hasEdgeColor
               markerOptions{end+1} = ['draw=' ecolor];
           else
@@ -2482,7 +2484,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
           drawOptions = { 'scatter', ...
                           'only marks', ...
                           ['color=' xcolor], ...
-                          ['mark=' tikzMarker] };
+                          ['mark=' tikzMarker], ...
+                          ['mark options={', join(m2t, markOptions, ','), '}'] };
           if ~hasFaceColor
               drawOptions{end+1} = { ['scatter/use mapped color=' xcolor] };
           else
@@ -2495,7 +2498,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 %                        'scatter rgb' ...
                     };
   else
-      markerOptions = { ['mark=', tikzMarker] };
+      markerOptions = { ['mark=', tikzMarker], ...
+                        ['mark options={', join(m2t, markOptions, ','), '}'] };
       if hasEdgeColor && hasFaceColor
           [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
           markerOptions{end+1} = ['draw=' ecolor];
