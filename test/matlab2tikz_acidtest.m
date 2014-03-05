@@ -277,14 +277,11 @@ function matlab2tikz_acidtest(varargin)
   if any([ploterror ; tikzerror ; pdferror])
       fprintf(fh, '\\section*{Error messages}\n\\scriptsize\n');
       for k = 1:length(indices)
-          if ~isempty(ploterrmsg{k}) || ~isempty(tikzerrmsg{k}) || ~isempty(pdferrmsg{k})
-              % There are error messages for this test case
-              fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), funcName{k});
-          else
-              % No error messages for this test case
-              continue
+          if isempty(ploterrmsg{k}) && isempty(tikzerrmsg{k}) && isempty(pdferrmsg{k})
+              continue % No error messages for this test case
           end
           
+          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), funcName{k});
           print_verbatim_information(fh, 'Plot generation', ploterrmsg{k});
           print_verbatim_information(fh, 'PDF generation' , pdferrmsg{k} );
           print_verbatim_information(fh, 'matlab2tikz'    , tikzerrmsg{k});
