@@ -133,9 +133,12 @@ function matlab2tikz_acidtest( varargin )
           continue
       end
 
+      
       pdf_file = sprintf( 'data/test%d-reference.pdf' , indices(k) );
       eps_file = sprintf( 'data/test%d-reference.eps' , indices(k) );
+      fig_file = sprintf( 'data/test%d-reference' , indices(k) );
       gen_file = sprintf( 'data/test%d-converted.tex', indices(k) );
+      
 
       tic;
       % Save reference output as PDF
@@ -162,9 +165,7 @@ function matlab2tikz_acidtest( varargin )
                   % create an EPS (which has a tight bounding box) and then
                   % convert it to PDF.
                   print(gcf, '-depsc2', eps_file);
-                  eps2pdf(eps_file);
-                  %print(gcf, '-dpdf', pdf_file);
-                  %savefig( pdf_file, 'pdf' );
+                  
               case 'Octave'
                   % In Octave, figures are automatically cropped when using print().
                   print(pdf_file, '-dpdf', '-S415,311', '-r150' );
@@ -253,7 +254,7 @@ function matlab2tikz_acidtest( varargin )
       funcName{k} = strrep( funcName{k}, '_', '\_' );
 
       % ...and finally write the bits to the LaTeX file
-      texfile_addtest(fh, pdf_file, gen_file, desc{k}, funcName{k}, ...
+      texfile_addtest(fh, fig_file, gen_file, desc{k}, funcName{k}, ...
                       indices(k), pdferror(k), tikzerror(k));
 
       if ~closeAll
@@ -341,6 +342,7 @@ function texfile_init( texfile_handle )
              '\\pdfminorversion=6\n\n', ...
              '\\usepackage{amsmath} %% required for $\text{xyz}$\n\n', ...
              '\\usepackage{graphicx}\n'                              , ...
+             '\\usepackage{epstopdf}\n', ...
              '\\usepackage{tikz}\n'                                  , ...
              '\\usetikzlibrary{plotmarks}\n\n'                       , ...
              '\\usepackage{pgfplots}\n'                              , ...
