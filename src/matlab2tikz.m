@@ -3880,7 +3880,7 @@ function [m2t, table] = makeTable(m2t, varargin)
     end
     nRows = min(nRows);
 
-    FORMAT = repmat({m2t.ff}, nColumns);
+    FORMAT = repmat({m2t.ff}, 1, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
     FORMAT = join(m2t, FORMAT, COLSEP);
     if all(cellfun(@isempty, variables))
