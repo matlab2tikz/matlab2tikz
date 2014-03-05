@@ -20,7 +20,7 @@ main: eps2pdf
 
 .PHONY: clean
 
-# make sure the EPS's got converted to PDF's
+# make sure the EPS files got converted to PDFs
 eps2pdf:
 	@echo -e -n "Building PDF files..."
 	@find ../data/ -name "*.eps" -exec epstopdf {} \;
