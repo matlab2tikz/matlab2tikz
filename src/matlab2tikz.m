@@ -1674,15 +1674,15 @@ function [tikzMarker, markOptions] = ...
 
               case 'v'
                   tikzMarker = 'triangle';
-                  markOptions = [markOptions, ',rotate=180'];
+                  markOptions{end+1} = 'rotate=180';
 
               case '<'
                   tikzMarker = 'triangle';
-                  markOptions = [markOptions, ',rotate=90'];
+                  markOptions{end+1} = 'rotate=90';
 
               case '>'
                   tikzMarker = 'triangle';
-                  markOptions = [markOptions, ',rotate=270'];
+                  markOptions{end+1} = 'rotate=270';
 
               case {'p','pentagram'}
                   tikzMarker = 'star';
@@ -1721,6 +1721,9 @@ function [m2t, str] = drawPatch(m2t, handle)
   YData = get(handle, 'YData');
   ZData = get(handle, 'ZData');
 
+  % see if individual color values are present
+  CData = get(handle, 'CData');
+
   % If the data points are given in three vectors, we are dealing with one
   % single patch. If they are all matrices, then the columns of matrix
   % represent one patch each.
@@ -1729,6 +1732,7 @@ function [m2t, str] = drawPatch(m2t, handle)
       XData = XData(:);
       YData = YData(:);
       ZData = ZData(:);
+      CData = CData(:);
   end
 
   numPatches = size(XData, 2);
@@ -1748,13 +1752,12 @@ function [m2t, str] = drawPatch(m2t, handle)
           plotType = 'addplot3';
           m2t.currentAxesContain3dData = true;
       end
+
+      cData = CData(:, k);
       % -----------------------------------------------------------------------
       % gather the draw options
       % Make sure that legends are shown in area mode.
       drawOptions = {'area legend'};
-
-      % see if individual color values are present
-      cData = get(handle, 'CData');
 
       % Use the '\\' as a row separator to make sure that the generated figures
       % work in subplot environments.
@@ -1796,7 +1799,7 @@ function [m2t, str] = drawPatch(m2t, handle)
               [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
               drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
               xFaceAlpha = get(handle, 'FaceAlpha');
-              if abs(xFaceAlpha-1.0) > m2t.tol
+              if abs(xFaceAlpha - 1.0) > m2t.tol
                   drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
               end
           end
@@ -2423,7 +2426,9 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   markerEdgeColor = get(h, 'MarkerEdgeColor');
   hasFaceColor = ~strcmp(markerFaceColor,'none');
   hasEdgeColor = ~strcmp(markerEdgeColor,'none');
-  [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, [], hasFaceColor);
+  markOptions = cell(0);
+  [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, ...
+                                              markOptions, hasFaceColor);
 
   if length(sData) == 1
       constMarkerkSize = true; % constant marker size
