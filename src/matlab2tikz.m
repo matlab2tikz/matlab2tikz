@@ -1698,10 +1698,8 @@ function [tikzMarker, markOptions] = ...
 end
 % =========================================================================
 function [m2t, str] = drawPatch(m2t, handle)
-  % Draws a 'patch' graphics object (as found in contourf plots, for
-  % example).
+  % Draws a 'patch' graphics object (as found in contourf plots, for example).
   %
-
   str = [];
 
   if ~isVisible(handle)
@@ -1711,10 +1709,10 @@ function [m2t, str] = drawPatch(m2t, handle)
   % This is for a quirky workaround for stacked bar plots.
   m2t.axesContainers{end}.nonbarPlotsPresent = true;
 
-  % MATLAB's patch elements are matrices in which each column represents a
-  % a distinct graphical object. Usually there is only one column, but
-  % there may be more (-->hist plots, although they are now handled
-  % within the barplot framework).
+  % MATLAB's patch elements are matrices in which each column represents a a
+  % distinct graphical object. Usually there is only one column, but there may
+  % be more (-->hist plots, although they are now handled within the barplot
+  % framework).
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   zData = get(handle, 'ZData');
@@ -1833,7 +1831,7 @@ function [m2t, str] = drawPatch(m2t, handle)
   % Plot the actual data.
   [m2t, table] = makeTable(m2t, columnNames, data);
 
-  str = sprintf('%s\n\\%s[%s]\n table[%s] {%s};\n\n',...
+  str = sprintf('%s\n\\%s[%s]\ntable[%s] {%%\n%s};\n\n',...
                 str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 end
@@ -3905,7 +3903,7 @@ function [m2t, table] = makeTable(m2t, varargin)
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
 
     if ~m2t.cmdOpts.Results.externalData
-        table = sprintf('\n%s', table); % add newline for clarity
+        table = sprintf('%s', table);
     else
         % output data to external file
         m2t.dataFileNo = m2t.dataFileNo + 1;
