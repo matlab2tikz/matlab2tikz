@@ -180,57 +180,18 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
   return;
 end
 % =========================================================================
-% *** FUNCTION one_point
 function [description, extraOpts] = one_point()
-
-%%--------------------------------------------------
-%t_start=0.0;
-%t_end=60;
-%delta_t = 0.1;
-%number_of_intpoints = (t_end - t_start ) / delta_t;
-%
-%xp = linspace(t_start, t_end, number_of_intpoints);
-%yp1 = xp.^2+2;
-%yp2 = xp.^2+50.*sin(xp)-1;
-%yp3 = sin(xp);
-%
-%xp = reshape(xp,size(xp,2),size(xp,1));
-%yp1 = reshape(yp1,size(yp1,2),size(yp1,1));
-%yp2 = reshape(yp2,size(yp2,2),size(yp2,1));
-%yp3 = reshape(yp3,size(yp3,2),size(yp3,1));
-%%--------------------------------------------------
-%
-%% figure
-%% plotyy
-%[AX,P1,P2] = plotyy(xp, [ yp2  , yp1      ], xp     ,   yp3);
-%% setting axis labels
-%set(get(AX(1),'Ylabel'),'String','$E_{kin}$,$E_{pot}$ [J] x $10^{-3}$','Interpreter','tex');
-%set(get(AX(2),'Ylabel'),'String','$E_{pot}$ [J] x $10^{-3}$');
-%xlabel('t [ns]');
-%% line Properties
-%set(P1,'LineWidth',1);
-%set(P1(1),'LineStyle','-','Color',[1 0 0])
-%set(P1(2),'LineStyle','-','Color',[0 0 0]);
-%set(P2,'LineStyle','-','LineWidth',1,'Color',[0 0 1])
-%grid on;
-%hold on;
-%legend1 = legend([P1(1) P1(2) P2],'$E_{tot}$','$E_{kin}$','$E_{pot}$');
-%set(legend1,'Box','off','Orientation','horizontal','Location','NorthOutside');
-%--------------------------------------------------
-% output
-%matlab2tikz('parseStrings', false, 'interpretTickLabelsAsTex', true,'width', '\figurewidth', 'height','\figureheight', 'test.tex')
 
   m = [0 1 1.5 1 -1];
   k = 1:1:length(m);
   plot(k,m,'*-');
-  %plot(1:10)
+
   title({'title', 'multline'})
   %legend(char('Multi-Line Legend Entry','Wont Work 2^2=4'))
   legend('Multi-Line Legend Entry Wont Work 2^2=4')
   xlabel({'one','two','three'});
   ylabel({'one','° ∞', 'three'});
 
-%  plot(0.123, 0.145, 'x');
   set(gca, 'YTick', []);
   set(gca,'XTick',0:1:length(m)-1);
 
