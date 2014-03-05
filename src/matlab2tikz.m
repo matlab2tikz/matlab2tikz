@@ -3883,10 +3883,10 @@ function [m2t, table] = makeTable(m2t, varargin)
     FORMAT = repmat({m2t.ff}, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
     FORMAT = join(m2t, FORMAT, COLSEP);
-    if ~all(cellfun(@isempty, variables))
-        header = {join(m2t, variables, COLSEP)};
-    else
+    if all(cellfun(@isempty, variables))
         header = {};
+    else
+        header = {join(m2t, variables, COLSEP)};
     end
 
     table = cell(nRows,1);
@@ -3902,9 +3902,7 @@ function [m2t, table] = makeTable(m2t, varargin)
     table = lower(table); % convert NaN and Inf to lower case for TikZ
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
 
-    if ~m2t.cmdOpts.Results.externalData
-        table = sprintf('%s', table);
-    else
+    if m2t.cmdOpts.Results.externalData
         % output data to external file
         m2t.dataFileNo = m2t.dataFileNo + 1;
 
@@ -3921,6 +3919,9 @@ function [m2t, table] = makeTable(m2t, varargin)
 
         % put the filename in the TikZ output
         table = TeXpath(relativeFilename);
+    else
+        % output data literally
+        table = sprintf('%s', table);
     end
 end
 % =========================================================================
