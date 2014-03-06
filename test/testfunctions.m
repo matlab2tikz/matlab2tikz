@@ -129,7 +129,8 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @hgTransformPlot     , ...
                            @scatter3Plot3       , ...
                            @scatterPlotMarkers  , ...
-                           @multiplePatches
+                           @multiplePatches     , ...
+                           @logbaseline
                          };
 
   numFunctions = length( testfunction_handles );
@@ -390,11 +391,11 @@ function [description, extraOpts] = subplot_colorbar()
 
   img = rand(100);
   vec = rand(100,1);
-  
+
   subplot(2,1,1);
   imagesc(img,[0 1]);
   colorbar;
-  
+
   subplot(2,1,2);
   plot(vec);
 
@@ -2246,6 +2247,15 @@ function [description, extraOpts] = hgTransformPlot()
   drawnow
 
   description = 'hgtransform() plot.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = logbaseline()
+
+  bar([0 1 2], [1 1e-2 1e-5],'basevalue', 1e-6);
+  set(gca,'YScale','log')
+
+  description = 'Logplot with modified baseline.';
   extraOpts = {};
 end
 % =========================================================================

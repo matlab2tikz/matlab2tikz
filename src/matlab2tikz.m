@@ -580,7 +580,6 @@ end
 % =========================================================================
 function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
   % Draw all children of a graphics object (if they need to be drawn).
-
   children = get(handle, 'Children');
 
   % prepare cell array of pgfEnvironments
@@ -2587,6 +2586,15 @@ function [m2t, str] = drawBarseries(m2t, h)
       m2t.addedAxisOption = false;
   end
 
+  % Add 'log origin = infty' if BaseValue differs from zero (log origin=0 is
+  % the default behaviour since Pgfplots v1.5).
+  baseValue = get(h, 'BaseValue');
+  if baseValue ~= 0.0
+      m2t.axesContainers{end}.options = ...
+          addToOptions(m2t.axesContainers{end}.options, ...
+                       'log origin', 'infty');
+  end
+
   str = [];
 
   % -----------------------------------------------------------------------
@@ -2789,7 +2797,7 @@ function [m2t, str] = drawBarseries(m2t, h)
 
   drawOpts = join(m2t, drawOptions, ',');
   [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
-  str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%s};\n', ...
+  str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%%\n%s};\n', ...
                 str, drawOpts, table);
 
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
