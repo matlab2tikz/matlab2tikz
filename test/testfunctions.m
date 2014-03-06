@@ -39,6 +39,7 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @plain_cos           , ...
                            @sine_with_markers   , ...
                            @markerSizes         , ...
+                           @markerSizes2        , ...
                            @sine_with_annotation, ...
                            @linesWithOutliers   , ...
                            @peaks_contour       , ...
@@ -271,6 +272,31 @@ function [description, extraOpts] = markerSizes()
   plot([0],[0],'bo','Markersize',14,'LineWidth',1)
 
   description = 'Marker sizes.';
+  extraOpts = {};
+end
+
+% =========================================================================
+function [description, extraOpts] = markerSizes2()
+  hold on;
+  grid on;
+  
+  n = 1:10;
+  d = 10;
+  s = round(linspace(6,25,10));
+  e = d * ones(size(n));
+  style = {'bx','rd','go','c.','m+','y*','bs','mv','k^','r<','g>','cp','bh'};
+  nStyles = numel(style);
+
+  for ii = 1:nStyles
+      for jj = 1:10
+        plot(n(jj), ii * e(jj),style{ii},'MarkerSize',s(jj));
+      end
+  end
+  xlim([min(n)-1 max(n)+1]);
+  ylim([0 d*(nStyles+1)]);
+  set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
+
+  description = 'Line plot with with different marker sizes.';
   extraOpts = {};
 end
 % =========================================================================
