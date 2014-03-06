@@ -1891,8 +1891,10 @@ function [m2t, str] = drawImage(m2t, handle)
       % draw a png image
       % Take the TikZ file base name and change the extension .png.
       [pathstr, name] = fileparts(m2t.tikzFileName);
-      pngFileName = fullfile(pathstr, [name '-' num2str(m2t.imageAsPngNo) '.png']);
-      pngReferencePath = fullfile(m2t.relativeDataPath, [name '-' num2str(m2t.imageAsPngNo) '.png']);
+      pngFileName = fullfile(pathstr, ...
+                             [name '-' num2str(m2t.imageAsPngNo) '.png']);
+      pngReferencePath = fullfile(m2t.relativeDataPath, ...
+                                  [name '-' num2str(m2t.imageAsPngNo) '.png']);
       pngReferencePath = TeXpath(pngReferencePath);
 
       % Get color indices for indexed color images and truecolor values
@@ -1912,8 +1914,27 @@ function [m2t, str] = drawImage(m2t, handle)
           colorData = colorData(m:-1:1, :, :);
       end
 
-      % write the image
-      imwriteWrapperPNG(colorData, m2t.currentHandles.colormap, pngFileName);
+      % Write an indexed or a truecolor image
+      % Don't use ismatrix(), cf.
+      % <https://github.com/nschloe/matlab2tikz/issues/143>.
+      get(handle)
+      if (ndims(colorData) == 2)
+          % According to imwrite's documentation there is support for 1-bit,
+          % 2-bit, 4-bit and 8-bit (i.e., 256 colors) indexed images only.
+          % When having more colors, a truecolor image must be generated and
+          % used instead.
+          if size(m2t.currentHandles.colormap, 1) <= 256
+              imwrite(colorData, m2t.currentHandles.colormap, ...
+                      pngFileName, 'png');
+          else
+              imwrite(ind2rgb(colorData, m2t.currentHandles.colormap), ...
+                      pngFileName, 'png');
+          end
+      else
+          imwrite(colorData, ...
+                  pngFileName, 'png', ...
+                  'Alpha', get(handle, 'AlphaData'));
+      end
       % ------------------------------------------------------------------------
       % dimensions of a pixel in axes units
       if n==1
@@ -4763,24 +4784,6 @@ function printAll(m2t, env, fid)
         fprintf(fid, '\\end{%s}%%', env.name);
     else
         fprintf(fid, '\\end{%s}\n', env.name);
-    end
-end
-% =========================================================================
-function imwriteWrapperPNG(colorData, cmap, fileName)
-    % Write an indexed or a truecolor image
-    % Don't use ismatrix(), cf. <https://github.com/nschloe/matlab2tikz/issues/143>.
-    if (ndims(colorData) == 2)
-        % According to imwrite's documentation there is support for 1-bit,
-        % 2-bit, 4-bit and 8-bit (i.e., 256 colors) indexed images only.
-        % When having more colors, a truecolor image must be generated and
-        % used instead.
-        if size(cmap, 1) <= 256
-            imwrite(colorData, cmap, fileName, 'png');
-        else
-            imwrite(ind2rgb(colorData, cmap), fileName, 'png');
-        end
-    else
-        imwrite(colorData, fileName, 'png');
     end
 end
 % =========================================================================

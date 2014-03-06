@@ -130,7 +130,8 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @scatter3Plot3       , ...
                            @scatterPlotMarkers  , ...
                            @multiplePatches     , ...
-                           @logbaseline
+                           @logbaseline         , ...
+                           @alphaImage
                          };
 
   numFunctions = length( testfunction_handles );
@@ -2256,6 +2257,20 @@ function [description, extraOpts] = logbaseline()
   set(gca,'YScale','log')
 
   description = 'Logplot with modified baseline.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = alphaImage()
+
+  N = 20;
+  h_imsc = imagesc(repmat(1:N, N, 1));
+  mask = zeros(N);
+  mask(N/4:3*N/4, N/4:3*N/4) = 1;
+  set(h_imsc, 'AlphaData', double(~mask));
+  set(h_imsc, 'AlphaDataMapping', 'scaled');
+  set(gca, 'ALim', [-1,1]);
+
+  description = 'Image with alpha channel.';
   extraOpts = {};
 end
 % =========================================================================
