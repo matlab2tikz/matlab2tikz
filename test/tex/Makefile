@@ -15,11 +15,11 @@ TARGET:=acid
 default: main
 
 #main:
-main: 
+main:
 	@$(PDFLATEX) $(TARGET)
 
 .PHONY: clean
-	
+
 clean:
 	@rm -f $(TARGET).aux \
 	$(TARGET).log \

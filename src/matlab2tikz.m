@@ -35,14 +35,14 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('externalData',BOOL,...) stores all data points in external
 %   files as tab separated values (TSV files). (default: false)
 %
-%   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the given
-%   path to follow the external data files and PNG files.  If LaTeX source and
-%   the external files will reside in the same directory,
-%   this can be set to '.'. (default: [])
+%   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the
+%   given path to follow the external data files and PNG files.  If LaTeX
+%   source and the external files will reside in the same directory, this can
+%   be set to '.'. (default: [])
 %
-%   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be any
-%   LaTeX-compatible length, e.g., '3in' or '5cm' or '0.5\textwidth'.
-%   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
+%   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be
+%   any LaTeX-compatible length, e.g., '3in' or '5cm' or '0.5\textwidth'.  If
+%   unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
 %   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
@@ -76,9 +76,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('parseStringsAsMath',BOOL,...) determines whether to use TeX's
 %   math mode for more characters (e.g. operators and figures). (default: false)
 %
-%   MATLAB2TIKZ('showHiddenStrings',BOOL,...) determines whether to show strings
-%   whose were deliberately hidden. This is usually unnecessary, but can come
-%   in handy for unusual plot types (e.g., polar plots). (default: false)
+%   MATLAB2TIKZ('showHiddenStrings',BOOL,...) determines whether to show
+%   strings whose were deliberately hidden. This is usually unnecessary, but
+%   can come in handy for unusual plot types (e.g., polar plots). (default:
+%   false)
 %
 %   MATLAB2TIKZ('interpretTickLabelsAsTex',BOOL,...) determines whether to
 %   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
@@ -1856,7 +1857,9 @@ function [m2t, str] = drawPatch(m2t, handle)
       % Plot the actual data.
       [m2t, table] = makeTable(m2t, columnNames, data);
 
-      str = sprintf('%s\n\\%s[%s]\ntable[%s] {%%\n%s} -- cycle;\n\n',...
+      % Some patches need to be closed by adding a "--cycle"; some don't.
+      % TODO find out when to insert --cycle
+      str = sprintf('%s\n\\%s[%s]\ntable[%s] {%%\n%s};\n\n',...
                     str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
       % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end
@@ -1917,7 +1920,6 @@ function [m2t, str] = drawImage(m2t, handle)
       % Write an indexed or a truecolor image
       % Don't use ismatrix(), cf.
       % <https://github.com/nschloe/matlab2tikz/issues/143>.
-      get(handle)
       if (ndims(colorData) == 2)
           % According to imwrite's documentation there is support for 1-bit,
           % 2-bit, 4-bit and 8-bit (i.e., 256 colors) indexed images only.
@@ -1935,7 +1937,7 @@ function [m2t, str] = drawImage(m2t, handle)
                   pngFileName, 'png', ...
                   'Alpha', get(handle, 'AlphaData'));
       end
-      % ------------------------------------------------------------------------
+      % -----------------------------------------------------------------------
       % dimensions of a pixel in axes units
       if n==1
           xLim = get(m2t.currentHandles.gca, 'XLim');
@@ -1966,12 +1968,13 @@ function [m2t, str] = drawImage(m2t, handle)
                 'locations of the master TeX file and the included TikZ file.\n'], ...
                 pngFileName, pngReferencePath);
   else
-      % ------------------------------------------------------------------------
+      % -----------------------------------------------------------------------
       % draw the thing
       userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
                         'Make sure to set ''imagesAsPng'' to true.']);
 
-      % Generate uniformly distributed X, Y, although xData and yData may be non-uniform.
+      % Generate uniformly distributed X, Y, although xData and yData may be
+      % non-uniform.
       % This is MATLAB(R) behaviour.
       switch length(xData)
           case 2 % only the limits given; common for generic image plots
@@ -2023,10 +2026,9 @@ end
 % =========================================================================
 function [m2t, str] = drawHggroup(m2t, h)
 
-  % Octave doesn't have the handle() function, so there's no way to
-  % determine the nature of the plot anymore at this point.
-  % Set to 'unknown' to force fallback handling. This produces something
-  % for bar plots, for example.
+  % Octave doesn't have the handle() function, so there's no way to determine
+  % the nature of the plot anymore at this point.  Set to 'unknown' to force
+  % fallback handling. This produces something for bar plots, for example.
   try
       cl = class(handle(h));
   catch %#ok
@@ -2210,22 +2212,21 @@ end
 function [m2t, str] = drawText(m2t, handle)
   % Adding text node anywhere in the axex environment.
   % Not that, in Pgfplots, long texts get cut off at the axes. This is
-  % Different from the default MATLAB behavior. To fix this, one could
-  % use /pgfplots/after end axis/.code.
+  % Different from the default MATLAB behavior. To fix this, one could use
+  % /pgfplots/after end axis/.code.
 
   str = [];
 
-  % There may be some text objects floating around a MATLAB figure which
-  % are handled by other subfunctions (labels etc.) or don't need to be
-  % handled at all.
+  % There may be some text objects floating around a MATLAB figure which are
+  % handled by other subfunctions (labels etc.) or don't need to be handled at
+  % all.
   % The HandleVisibility says something about whether the text handle is
-  % visible as a data structure or not. Typically, a handle is hidden
-  % if the graphics aren't supposed to be altered, e.g., axis labels.
-  % Most of those entities are captured by matlab2tikz one way or
-  % another, but sometimes they are not. This is the case, for
-  % example, with polar plots and the axis descriptions therein.
-  % Also, Matlab treats text objects with a NaN in the position as
-  % invisible.
+  % visible as a data structure or not. Typically, a handle is hidden if the
+  % graphics aren't supposed to be altered, e.g., axis labels.  Most of those
+  % entities are captured by matlab2tikz one way or another, but sometimes they
+  % are not. This is the case, for example, with polar plots and the axis
+  % descriptions therein.  Also, Matlab treats text objects with a NaN in the
+  % position as invisible.
   if any(isnan(get(handle, 'Position')) | isnan(get(handle, 'Rotation'))) ...
      || strcmp(get(handle, 'Visible'), 'off') ...
      || (strcmp(get(handle, 'HandleVisibility'), 'off') && ~m2t.cmdOpts.Results.showHiddenStrings)
