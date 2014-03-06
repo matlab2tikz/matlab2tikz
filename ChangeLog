@@ -1,3 +1,14 @@
+2014-03-07  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.4.7.
+	* Acid tests: Remove MATLAB-based eps2pdf.
+	* Bugfixes:
+	    - multiple patches
+	    - log plot with nonzero baseline
+	    - marker options for scatter plots
+	    - table data formatting
+	    - several fixes for Octave
+
 2014-02-07  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.4.6.
