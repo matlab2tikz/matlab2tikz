@@ -3,7 +3,7 @@
 # ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
 
 ECHOCMD:=/bin/echo -e
-PDFLATEX:=lualatex
+PDFLATEX:=lualatex --shell-escape
 
 # ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
 
@@ -15,16 +15,10 @@ TARGET:=acid
 default: main
 
 #main:
-main: eps2pdf
+main: 
 	@$(PDFLATEX) $(TARGET)
 
 .PHONY: clean
-
-# make sure the EPS's got converted to PDF's
-eps2pdf:
-	@echo -e -n "Building PDF files..."
-	@find ../data/ -name "*.eps" -exec epstopdf {} \;
-	@echo -e " done.\n\n"
 	
 clean:
 	@rm -f $(TARGET).aux \

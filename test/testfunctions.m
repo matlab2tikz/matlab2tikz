@@ -39,7 +39,6 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @plain_cos           , ...
                            @sine_with_markers   , ...
                            @markerSizes         , ...
-                           @markerSizes2        , ...
                            @sine_with_annotation, ...
                            @linesWithOutliers   , ...
                            @peaks_contour       , ...
@@ -47,6 +46,7 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @peaks_contourf      , ...
                            @many_random_points  , ...
                            @double_colorbar     , ...
+                           @subplot_colorbar    , ...
                            @randomWithLines     , ...
                            @double_axes         , ...
                            @double_axes2        , ...
@@ -128,7 +128,10 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @pColorPlot          , ...
                            @hgTransformPlot     , ...
                            @scatter3Plot3       , ...
-                           @scatterPlotMarkers
+                           @scatterPlotMarkers  , ...
+                           @multiplePatches     , ...
+                           @logbaseline         , ...
+                           @alphaImage
                          };
 
   numFunctions = length( testfunction_handles );
@@ -138,13 +141,13 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
   extraOpts = {};
   extraCFOptions = {};
 
-  
+
   if (k<=0)
       return;  % This is used for querying numFunctions.
 
   elseif (k<=numFunctions)
       funcName = func2str(testfunction_handles{k});
-      
+
       try
           nargs = nargout(funcName);
       catch %#ok
@@ -158,7 +161,7 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
               'Cannot determine number of output of "%s". Assuming 2.',funcName)
           nargs = 2;
       end
-      
+
       switch nargs
           case 3
               [desc, extraOpts, extraCFOptions] = testfunction_handles{k}();
@@ -179,57 +182,18 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
   return;
 end
 % =========================================================================
-% *** FUNCTION one_point
 function [description, extraOpts] = one_point()
-
-%%--------------------------------------------------
-%t_start=0.0;
-%t_end=60;
-%delta_t = 0.1;
-%number_of_intpoints = (t_end - t_start ) / delta_t;
-%
-%xp = linspace(t_start, t_end, number_of_intpoints);
-%yp1 = xp.^2+2;
-%yp2 = xp.^2+50.*sin(xp)-1;
-%yp3 = sin(xp);
-%
-%xp = reshape(xp,size(xp,2),size(xp,1));
-%yp1 = reshape(yp1,size(yp1,2),size(yp1,1));
-%yp2 = reshape(yp2,size(yp2,2),size(yp2,1));
-%yp3 = reshape(yp3,size(yp3,2),size(yp3,1));
-%%--------------------------------------------------
-%
-%% figure
-%% plotyy
-%[AX,P1,P2] = plotyy(xp, [ yp2  , yp1      ], xp     ,   yp3);
-%% setting axis labels
-%set(get(AX(1),'Ylabel'),'String','$E_{kin}$,$E_{pot}$ [J] x $10^{-3}$','Interpreter','tex');
-%set(get(AX(2),'Ylabel'),'String','$E_{pot}$ [J] x $10^{-3}$');
-%xlabel('t [ns]');
-%% line Properties
-%set(P1,'LineWidth',1);
-%set(P1(1),'LineStyle','-','Color',[1 0 0])
-%set(P1(2),'LineStyle','-','Color',[0 0 0]);
-%set(P2,'LineStyle','-','LineWidth',1,'Color',[0 0 1])
-%grid on;
-%hold on;
-%legend1 = legend([P1(1) P1(2) P2],'$E_{tot}$','$E_{kin}$','$E_{pot}$');
-%set(legend1,'Box','off','Orientation','horizontal','Location','NorthOutside');
-%--------------------------------------------------
-% output
-%matlab2tikz('parseStrings', false, 'interpretTickLabelsAsTex', true,'width', '\figurewidth', 'height','\figureheight', 'test.tex')
 
   m = [0 1 1.5 1 -1];
   k = 1:1:length(m);
   plot(k,m,'*-');
-  %plot(1:10)
+
   title({'title', 'multline'})
   %legend(char('Multi-Line Legend Entry','Wont Work 2^2=4'))
   legend('Multi-Line Legend Entry Wont Work 2^2=4')
   xlabel({'one','two','three'});
   ylabel({'one','° ∞', 'three'});
 
-%  plot(0.123, 0.145, 'x');
   set(gca, 'YTick', []);
   set(gca,'XTick',0:1:length(m)-1);
 
@@ -307,32 +271,6 @@ function [description, extraOpts] = markerSizes()
   plot([0],[0],'bo','Markersize',14,'LineWidth',1)
 
   description = 'Marker sizes.';
-  extraOpts = {};
-end
-% =========================================================================
-function [description, extraOpts] = markerSizes2()
-  hold on;
-  grid on;
-  
-  n = 1:10;
-  d = 10;
-  s = round(linspace(6,25,10));
-  e = d * ones(size(n));
-  
-  style = {'bx','rd','go','c.','m+','y*','bs','mv','k^','r<','g>','cp','bh'};
-  
-  nStyles = numel(style);
-
-  for ii = 1:nStyles
-      for jj = 1:10
-        plot(n(jj), ii * e(jj),style{ii},'MarkerSize',s(jj));
-      end
-  end
-  xlim([min(n)-1 max(n)+1]);
-  ylim([0 d*(nStyles+1)]);
-  set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
-    
-  description = 'Line plot with different markers and marker sizes.';
   extraOpts = {};
 end
 % =========================================================================
@@ -448,6 +386,22 @@ function [description, extraOpts] = double_colorbar()
   description = 'Double colorbar.';
   extraOpts = {};
 
+end
+% =========================================================================
+function [description, extraOpts] = subplot_colorbar()
+
+  img = rand(100);
+  vec = rand(100,1);
+
+  subplot(2,1,1);
+  imagesc(img,[0 1]);
+  colorbar;
+
+  subplot(2,1,2);
+  plot(vec);
+
+  description = 'Subplot colorbar.';
+  extraOpts = {};
 end
 % =========================================================================
 function [description, extraOpts] = randomWithLines()
@@ -1407,11 +1361,11 @@ function [description, extraOpts] = scatterPlotMarkers()
   e = d * ones(size(n));
   grid on;
   hold on;
-  
+
   style = {'bx','rd','go','c.','m+','y*','bs','mv','k^','r<','g>','cp','bh'};
   names = {'bx','rd','go','c.','m plus','y star','bs','mv',...
            'k up triangle','r left triangle','g right triangle','cp','bh'};
-  
+
   nStyles = numel(style);
   for ii = 1:nStyles
       scatter(n, ii * e, s, style{ii});
@@ -1419,9 +1373,9 @@ function [description, extraOpts] = scatterPlotMarkers()
   xlim([min(n)-1 max(n)+1]);
   ylim([0 d*(nStyles+1)]);
   set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
-  
-%   legend(names{:});
-  
+
+  legend(names{:});
+
   description = 'Scatter plot with with different marker sizes and legend.';
   extraOpts = {};
 
@@ -2247,6 +2201,25 @@ function [description, extraOpts] = pColorPlot()
   extraOpts = {};
 end
 % =========================================================================
+function [description, extraOpts] = multiplePatches()
+
+  xdata = [2     2     0     2     5;
+           2     8     2     4     5;
+           8     8     2     4     8];
+  ydata = [4     4     4     2     0;
+           8     4     6     2     2;
+           4     0     4     0     0];
+  cdata = [15     0     4     6    10;
+           1     2     5     7     9;
+           2     3     0     8     3];
+  p = patch(xdata,ydata,cdata,'Marker','o',...
+            'MarkerFaceColor','flat',...
+            'FaceColor','none');
+
+  description = 'Multiple patches.';
+  extraOpts = {};
+end
+% =========================================================================
 function [description, extraOpts] = hgTransformPlot()
   % Check out
   % http://www.mathworks.de/de/help/matlab/ref/hgtransform.html.
@@ -2275,6 +2248,29 @@ function [description, extraOpts] = hgTransformPlot()
   drawnow
 
   description = 'hgtransform() plot.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = logbaseline()
+
+  bar([0 1 2], [1 1e-2 1e-5],'basevalue', 1e-6);
+  set(gca,'YScale','log')
+
+  description = 'Logplot with modified baseline.';
+  extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = alphaImage()
+
+  N = 20;
+  h_imsc = imagesc(repmat(1:N, N, 1));
+  mask = zeros(N);
+  mask(N/4:3*N/4, N/4:3*N/4) = 1;
+  set(h_imsc, 'AlphaData', double(~mask));
+  set(h_imsc, 'AlphaDataMapping', 'scaled');
+  set(gca, 'ALim', [-1,1]);
+
+  description = 'Image with alpha channel.';
   extraOpts = {};
 end
 % =========================================================================
