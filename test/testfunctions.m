@@ -276,17 +276,16 @@ function [description, extraOpts] = markerSizes()
 end
 % =========================================================================
 function [description, extraOpts] = markerSizes2()
+  hold on;
+  grid on;
+  
   n = 1:10;
   d = 10;
   s = round(linspace(6,25,10));
   e = d * ones(size(n));
-
   style = {'bx','rd','go','c.','m+','y*','bs','mv','k^','r<','g>','cp','bh'};
-
   nStyles = numel(style);
-  figure
-  hold on;
-  grid on;
+
   for ii = 1:nStyles
       for jj = 1:10
         plot(n(jj), ii * e(jj),style{ii},'MarkerSize',s(jj));
