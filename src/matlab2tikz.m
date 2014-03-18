@@ -50,6 +50,9 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...) explicitly adds extra code
 %   at the beginning of the output file. (default: [])
 %
+%   MATLAB2TIKZ('extraCodeAtEnd',CHAR or CELLCHAR,...) explicitly adds extra 
+%   code at the end of the output file. (default: [])
+%
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
 %
@@ -209,6 +212,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
   ipp = ipp.addParamValue(ipp, 'extraColors', {}, @iscolordefinitions);
   ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrChar);
+  ipp = ipp.addParamValue(ipp, 'extraCodeAtEnd', {}, @isCellOrChar);
   ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
   ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
   ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
@@ -568,6 +572,20 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   end
   % printAll() handles the actual figure plotting.
   printAll(m2t, m2t.content, fid);
+  
+  if ~isempty(m2t.cmdOpts.Results.extraCodeAtEnd)
+      fprintf(fid,'\n');
+      if ischar(m2t.cmdOpts.Results.extraCodeAtEnd)
+          fprintf(fid, '%s\n', m2t.cmdOpts.Results.extraCodeAtEnd);
+      elseif iscellstr(m2t.cmdOpts.Results.extraCodeAtEnd)
+          for str = m2t.cmdOpts.Results.extraCodeAtEnd(:)'
+              fprintf(fid, '%s\n', str{1});
+          end
+      else
+          error('matlab2tikz:saveToFile', 'Need str or cellstr.');
+      end
+  end
+  
   if m2t.cmdOpts.Results.standalone
       fprintf(fid, '\n\\end{document}');
   end
