@@ -50,6 +50,9 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...) explicitly adds extra code
 %   at the beginning of the output file. (default: [])
 %
+%   MATLAB2TIKZ('extraCodeAtEnd',CHAR or CELLCHAR,...) explicitly adds extra 
+%   code at the end of the output file. (default: [])
+%
 %   MATLAB2TIKZ('extraAxisOptions',CHAR or CELLCHAR,...) explicitly adds extra
 %   options to the Pgfplots axis environment. (default: [])
 %
@@ -209,6 +212,7 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
   ipp = ipp.addParamValue(ipp, 'extraColors', {}, @iscolordefinitions);
   ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrChar);
+  ipp = ipp.addParamValue(ipp, 'extraCodeAtEnd', {}, @isCellOrChar);
   ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
   ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
   ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
@@ -550,24 +554,16 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
       fprintf(fid, '\\documentclass[tikz]{standalone}\n%s\n',  m2t.preamble);
   end
 
-  % Add custom code.
-  if ~isempty(m2t.cmdOpts.Results.extraCode)
-      if ischar(m2t.cmdOpts.Results.extraCode)
-          fprintf(fid, '%s\n', m2t.cmdOpts.Results.extraCode);
-      elseif iscellstr(m2t.cmdOpts.Results.extraCode)
-          for str = m2t.cmdOpts.Results.extraCode(:)'
-              fprintf(fid, '%s\n', str{1});
-          end
-      else
-          error('matlab2tikz:saveToFile', 'Need str or cellstr.');
-      end
-  end
+  addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode);
 
   if m2t.cmdOpts.Results.standalone
       fprintf(fid, '\\begin{document}\n');
   end
   % printAll() handles the actual figure plotting.
   printAll(m2t, m2t.content, fid);
+  
+  addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd);
+  
   if m2t.cmdOpts.Results.standalone
       fprintf(fid, '\n\\end{document}');
   end
@@ -576,6 +572,23 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
   % close the file if necessary
   if ~fileWasOpen
       fclose(fid);
+  end
+end
+% =========================================================================
+function addCustomCode(fid, before, code)
+  if ~isempty(code)
+    fprintf(fid, before);
+    if ischar(code)
+      code = {code};
+    end
+    if iscellstr(code)
+      for str = code(:)'
+          fprintf(fid, '%s\n', str{1});
+      end
+    else
+      error('matlab2tikz:saveToFile', 'Need str or cellstr.');
+    end
+    fprintf(fid,after);
   end
 end
 % =========================================================================
