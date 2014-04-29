@@ -801,19 +801,28 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   dim = getAxesDimensions(handle, ...
                           m2t.cmdOpts.Results.width, ...
                           m2t.cmdOpts.Results.height);
+  if strcmp(dim.x.unit, 'px')
+      % TikZ doesn't know pixels. -- Convert to inches.
+      dpi = get(0, 'ScreenPixelsPerInch');
+      dim.x.value = dim.x.value / dpi;
+      dim.x.unit = 'in';
+  end
+  if strcmp(dim.y.unit, 'px')
+      % TikZ doesn't know pixels. -- Convert to inches.
+      dpi = get(0, 'ScreenPixelsPerInch');
+      dim.y.value = dim.y.value / dpi;
+      dim.y.unit = 'in';
+  end
+  
   % set the width
   if ~m2t.cmdOpts.Results.noSize
+      % optionally prevents setting the width and height of the axis
       if dim.x.unit(1)=='\' && dim.x.value==1.0
           % only return \figurewidth instead of 1.0\figurewidth
           m2t.axesContainers{end}.options = ...
               addToOptions(m2t.axesContainers{end}.options, 'width', dim.x.unit);
       else
-          if strcmp(dim.x.unit, 'px')
-              % TikZ doesn't know pixels. -- Convert to inches.
-              dpi = get(0, 'ScreenPixelsPerInch');
-              dim.x.value = dim.x.value / dpi;
-              dim.x.unit = 'in';
-          end
+          
           m2t.axesContainers{end}.options = ...
               addToOptions(m2t.axesContainers{end}.options, 'width', ...
               sprintf([m2t.ff, '%s'], dim.x.value, dim.x.unit));
@@ -823,12 +832,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
           m2t.axesContainers{end}.options = ...
               addToOptions(m2t.axesContainers{end}.options, 'height', dim.y.unit);
       else
-          if strcmp(dim.y.unit, 'px')
-              % TikZ doesn't know pixels. -- Convert to inches.
-              dpi = get(0, 'ScreenPixelsPerInch');
-              dim.y.value = dim.y.value / dpi;
-              dim.y.unit = 'in';
-          end
+          
           m2t.axesContainers{end}.options = ...
               addToOptions(m2t.axesContainers{end}.options, 'height', ...
               sprintf([m2t.ff, '%s'], dim.y.value, dim.y.unit));
