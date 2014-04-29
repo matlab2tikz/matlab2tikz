@@ -47,6 +47,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
+%   MATLAB2TIKZ('noSize',BOOL,...) determines whether 'width', 'height', and
+%   'scale only axis' are included in LaTeX source. For compatibility with the
+%   tikzscale package set this to true. (default: false)
+%
 %   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...) explicitly adds extra code
 %   at the beginning of the output file. (default: [])
 %
