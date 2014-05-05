@@ -48,7 +48,7 @@ function matlab2tikz(varargin)
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
 %   MATLAB2TIKZ('noSize',BOOL,...) determines whether 'width', 'height', and
-%   'scale only axis' are included in LaTeX source. For compatibility with the
+%   'scale only axis' are specified in the generated TikZ output. For compatibility with the
 %   tikzscale package set this to true. (default: false)
 %
 %   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...) explicitly adds extra code
@@ -228,8 +228,8 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
   
-  ipp = ipp.addParamValue(ipp, 'noSize',false,@islogical);
-  
+  ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
+
   % Maximum chunk length.
   % TeX parses files line by line with a buffer of size buf_size. If the
   % plot has too many data points, pdfTeX's buffer size may be exceeded.
@@ -819,7 +819,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   end
   
   % set the width
-  if ~m2t.cmdOpts.Results.noSize
+  if (~m2t.cmdOpts.Results.noSize)
       % optionally prevents setting the width and height of the axis
       if dim.x.unit(1)=='\' && dim.x.value==1.0
           % only return \figurewidth instead of 1.0\figurewidth
@@ -1458,7 +1458,7 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
       tabOpts = 'row sep=crcr';
   end
   [m2t, table] = makeTable(m2t, repmat({''}, size(data,2)), data);
-  str = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
+      str = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
                 opts, str, tabOpts, table);
 end
 % =========================================================================
@@ -1935,7 +1935,7 @@ function [m2t, str] = drawImage(m2t, handle)
       else
           colorData = cdata;
       end
-
+      
       % flip the image if reverse
       if m2t.xAxisReversed
           colorData = colorData(:, n:-1:1, :);
