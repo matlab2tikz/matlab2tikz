@@ -47,6 +47,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('width',CHAR,...) sets the width of the image.
 %   If unspecified, MATLAB2TIKZ tries to make a reasonable guess.
 %
+%   MATLAB2TIKZ('noSize',BOOL,...) determines whether 'width', 'height', and
+%   'scale only axis' are specified in the generated TikZ output. For compatibility with the
+%   tikzscale package set this to true. (default: false)
+%
 %   MATLAB2TIKZ('extraCode',CHAR or CELLCHAR,...) explicitly adds extra code
 %   at the beginning of the output file. (default: [])
 %
@@ -223,6 +227,8 @@ function matlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
+  
+  ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
 
   % Maximum chunk length.
   % TeX parses files line by line with a buffer of size buf_size. If the
@@ -799,36 +805,42 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   dim = getAxesDimensions(handle, ...
                           m2t.cmdOpts.Results.width, ...
                           m2t.cmdOpts.Results.height);
-  % set the width
-  if dim.x.unit(1)=='\' && dim.x.value==1.0
-      % only return \figurewidth instead of 1.0\figurewidth
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, 'width', dim.x.unit);
-  else
-      if strcmp(dim.x.unit, 'px')
-          % TikZ doesn't know pixels. -- Convert to inches.
-          dpi = get(0, 'ScreenPixelsPerInch');
-          dim.x.value = dim.x.value / dpi;
-          dim.x.unit = 'in';
-      end
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, 'width', ...
-            sprintf([m2t.ff, '%s'], dim.x.value, dim.x.unit));
+  if strcmp(dim.x.unit, 'px')
+      % TikZ doesn't know pixels. -- Convert to inches.
+      dpi = get(0, 'ScreenPixelsPerInch');
+      dim.x.value = dim.x.value / dpi;
+      dim.x.unit = 'in';
   end
-  if dim.y.unit(1)=='\' && dim.y.value==1.0
-      % only return \figureheight instead of 1.0\figureheight
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, 'height', dim.y.unit);
-  else
-      if strcmp(dim.y.unit, 'px')
-          % TikZ doesn't know pixels. -- Convert to inches.
-          dpi = get(0, 'ScreenPixelsPerInch');
-          dim.y.value = dim.y.value / dpi;
-          dim.y.unit = 'in';
+  if strcmp(dim.y.unit, 'px')
+      % TikZ doesn't know pixels. -- Convert to inches.
+      dpi = get(0, 'ScreenPixelsPerInch');
+      dim.y.value = dim.y.value / dpi;
+      dim.y.unit = 'in';
+  end
+  
+  % set the width
+  if (~m2t.cmdOpts.Results.noSize)
+      % optionally prevents setting the width and height of the axis
+      if dim.x.unit(1)=='\' && dim.x.value==1.0
+          % only return \figurewidth instead of 1.0\figurewidth
+          m2t.axesContainers{end}.options = ...
+              addToOptions(m2t.axesContainers{end}.options, 'width', dim.x.unit);
+      else
+          
+          m2t.axesContainers{end}.options = ...
+              addToOptions(m2t.axesContainers{end}.options, 'width', ...
+              sprintf([m2t.ff, '%s'], dim.x.value, dim.x.unit));
       end
-      m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, 'height', ...
-                     sprintf([m2t.ff, '%s'], dim.y.value, dim.y.unit));
+      if dim.y.unit(1)=='\' && dim.y.value==1.0
+          % only return \figureheight instead of 1.0\figureheight
+          m2t.axesContainers{end}.options = ...
+              addToOptions(m2t.axesContainers{end}.options, 'height', dim.y.unit);
+      else
+          
+          m2t.axesContainers{end}.options = ...
+              addToOptions(m2t.axesContainers{end}.options, 'height', ...
+              sprintf([m2t.ff, '%s'], dim.y.value, dim.y.unit));
+      end
   end
   % Add the physical dimension of one unit of length in the coordinate system.
   % This is used later on to translate lenghts to physical units where
@@ -869,9 +881,11 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % the following is general MATLAB behavior
-  m2t.axesContainers{end}.options = ...
-    addToOptions(m2t.axesContainers{end}.options, ...
-                'scale only axis', []);
+  if ~m2t.cmdOpts.Results.noSize
+      m2t.axesContainers{end}.options = ...
+          addToOptions(m2t.axesContainers{end}.options, ...
+          'scale only axis', []);
+  end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Get other axis options (ticks, axis color, label,...).
   % This is set here such that the axis orientation indicator in m2t is set
@@ -1444,7 +1458,7 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
       tabOpts = 'row sep=crcr';
   end
   [m2t, table] = makeTable(m2t, repmat({''}, size(data,2)), data);
-  str = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
+      str = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
                 opts, str, tabOpts, table);
 end
 % =========================================================================
@@ -1921,7 +1935,7 @@ function [m2t, str] = drawImage(m2t, handle)
       else
           colorData = cdata;
       end
-
+      
       % flip the image if reverse
       if m2t.xAxisReversed
           colorData = colorData(:, n:-1:1, :);
