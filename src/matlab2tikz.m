@@ -5426,49 +5426,42 @@ function [formatted,treeish] = VersionControlIdentifier()
 % This function gives the (git) commit ID of matlab2tikz
 %
 % This assumes the standard directory structure as used by Nico's master branch:
-%          SOMEPATH/src/matlab2tikz.m with a .git directory in SOMEPATH.
+%     SOMEPATH/src/matlab2tikz.m with a .git directory in SOMEPATH.
 %
-% The HEAD of that repository is determined from file information
-% only (i.e. git doesn't have to be installed at the user side): in git, a
-% branch file just contains a tree-ish (commit hash OR dynamic reference)
-%
-% When the tree-ish is a dynamic reference (ref:refs/heads/master),
-% this reference is followed as to obtain an absolute tree-ish (hash).
-  maxIter  = 10; % stop following dynamic references after a while
-  refPrefix = 'ref:';
-  try
-    % get the matlab2tikz directory
-    m2tDir = fileparts(mfilename('fullpath'));
-    gitDir = fullfile(m2tDir,'..','.git');
+% The HEAD of that repository is determined from file system information only
+% by following dynamic references (e.g. ref:refs/heds/master) in branch files 
+% until an absolute commit hash (e.g. 1a3c9d1...) is found. 
+% NOTE: Packed branch references are NOT supported by this approach
+    MAXITER     = 10; % stop following dynamic references after a while
+    formatted   = '';
+    REFPREFIX   = 'ref:';
+    isReference = @(treeish)(any(strfind(treeish, REFPREFIX)));
+    treeish     = [REFPREFIX 'HEAD'];
+    try
+        % get the matlab2tikz directory
+        m2tDir = fileparts(mfilename('fullpath'));
+        gitDir = fullfile(m2tDir,'..','.git');
 
-    treeish = [refPrefix,'HEAD'];
-    formatted = '';
+        nIter = 1;
+        while isReference(treeish)
+            refName    = treeish(numel(REFPREFIX)+1:end);
+            branchFile = fullfile(gitDir, refName);
 
-    nIter = 1;
-    while any(strfind(treeish, refPrefix)) && nIter < maxIter
-        refName = treeish(numel(refPrefix)+1:end);
-        branchFile = fullfile(gitDir, refName);
-
-        if exist(branchFile, 'file')
-            fid = fopen(branchFile,'r');
-            treeish = fscanf(fid,'%s');
-            fclose(fid);
-        else
-            treeish = '';
-            return;
+            if exist(branchFile, 'file') && nIter < MAXITER
+                fid     = fopen(branchFile,'r');
+                treeish = fscanf(fid,'%s');
+                fclose(fid);
+                nIter   = nIter + 1;
+            else % no branch file or iteration limit reached
+                treeish = '';
+                return;
+            end
         end
-
-        nIter = nIter + 1;
-    end
-    if nIter >= maxIter
+    catch %#ok
         treeish = '';
-        return;
     end
-  catch %#ok
-    treeish = '';
-  end
-  if ~isempty(treeish)
-      formatted = sprintf('(commit %s)',treeish);
-  end
+    if ~isempty(treeish)
+        formatted = sprintf('(commit %s)',treeish);
+    end
 end
 % =========================================================================
