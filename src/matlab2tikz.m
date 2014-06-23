@@ -737,20 +737,14 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   %                           This argument is optional.
 
   % Handle special cases.
-  % MATLAB(R) uses 'Tag', Octave 'tag' for their tags. :/
-  tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
-  colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
-  switch get(handle, tagKeyword)
-      case colorbarKeyword
-          % Handle a colorbar separately.
+  switch lower(get(handle, switchMatOct(m2t, 'Tag', 'tag')))
+      case 'colorbar'
           m2t = handleColorbar(m2t, handle);
           return
       case 'legend'
-          % Don't handle the legend here, but further below in the 'axis'
-          % environment.
-          % In MATLAB, an axes environment and its corresponding legend are
-          % children of the same figure (siblings), while in Pgfplots, the
-          % \legend (or \addlegendentry) command must appear within the axis
+          % Don't handle the legend here, but in the 'axis' environment.
+          % In MATLAB, an axis and its legend are siblings, while in Pgfplots, 
+          % the \legend (or \addlegendentry) command must appear within the axis
           % environment.
           return
       otherwise
@@ -937,9 +931,6 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
   %    return
   %end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  % This used to discriminate between semilog{x,y}axis, loglog, and axis.
-  % Now, the log-scale is handled by the {x,y,z}mode argument, so just go for
-  % axis.
   m2t.axesContainers{end}.name = 'axis';
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % set alignment options
