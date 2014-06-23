@@ -5352,8 +5352,7 @@ function arr = versionArray(env, str)
 end
 % =========================================================================
 function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
-  % Returns one of two provided values depending on whether matlab2tikz is
-  % run on MATLAB or on Octave.
+  % Returns a different value for MATLAB and Octave
 
   switch m2t.env
       case 'MATLAB'
