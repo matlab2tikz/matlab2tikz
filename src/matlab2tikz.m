@@ -4288,14 +4288,10 @@ function out = extractValueUnit(str)
     end
 end
 % =========================================================================
-function newstr = escapeCharacters(str)
-  % Replaces the single characters % and \ by their escaped versions
-  % %% and \\, respectively.
-
-  newstr = str;
-  newstr = strrep(newstr, '%' , '%%');
-  newstr = strrep(newstr, '\' , '\\');
-
+function str = escapeCharacters(str)
+  % Replaces "%" and "\" with respectively "%%" and "\\"
+  str = strrep(str, '%' , '%%');
+  str = strrep(str, '\' , '\\');
 end
 % =========================================================================
 function out = isVisible(handles)
