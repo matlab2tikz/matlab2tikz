@@ -139,16 +139,9 @@ function matlab2tikz(varargin)
 %   POSSIBILITY OF SUCH DAMAGE.
 
 %   Note:
-%   This program is originally based on Paul Wagenaars' Matfig2PGF which itself
-%   uses pure PGF as output format <paul@wagenaars.org>, see
-%
-%      http://www.mathworks.com/matlabcentral/fileexchange/12962
-%
-%   In an attempt to simplify and extend things, the idea for matlab2tikz has
-%   emerged. The goal is to provide the user with a clean interface between the
-%   very handy figure creation in MATLAB and the powerful means that TikZ with
-%   Pgfplots has to offer.
-%
+%   This program was based on Paul Wagenaars' Matfig2PGF that can be
+%   found on http://www.mathworks.com/matlabcentral/fileexchange/12962 .
+
 % =========================================================================
   % Check if we are in MATLAB or Octave.
   [m2t.env, m2t.envVersion] = getEnvironment();
