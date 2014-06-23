@@ -142,21 +142,17 @@ function matlab2tikz(varargin)
 %   This program was based on Paul Wagenaars' Matfig2PGF that can be
 %   found on http://www.mathworks.com/matlabcentral/fileexchange/12962 .
 
-% ==============================================================================
-% Check if we are in MATLAB or Octave.
+%% Check if we are in MATLAB or Octave.
 [m2t.env, m2t.envVersion] = getEnvironment();
 
 minimalVersion = struct('MATLAB', struct('name','2008b', 'num',[7 7]), ...
-    'Octave', struct('name','3.4.0', 'num',[3 4 0]));
+                        'Octave', struct('name','3.4.0', 'num',[3 4 0]));
 checkDeprecatedEnvironment(m2t, minimalVersion);
 
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 m2t.cmdOpts = [];
-
 m2t.currentHandles = [];
 
-% For hgtransform groups.
-m2t.transform = [];
+m2t.transform = []; % For hgtransform groups
 m2t.pgfplotsVersion = [1,3];
 m2t.name = 'matlab2tikz';
 m2t.version = '0.4.7';
@@ -167,8 +163,7 @@ m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2
 VCID = VersionControlIdentifier();
 m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
 
-m2t.tol = 1.0e-15; % global round-off tolerance;
-% used, for example, in equality test for doubles
+m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
 
@@ -179,18 +174,17 @@ m2t.colorFormat    = sprintf('%%0.%df',ceil(-log10(m2t.colorPrecision)));
 
 % the actual contents of the TikZ file go here
 m2t.content = struct('name',     [], ...
-    'comment',  [], ...
-    'options',  {cell(0,2)}, ...
-    'content',  {cell(0)}, ...
-    'children', {cell(0)}  ...
-    );
+                     'comment',  [], ...
+                     'options',  {cell(0,2)}, ...
+                     'content',  {cell(0)}, ...
+                     'children', {cell(0)});
 m2t.preamble = sprintf(['\\usepackage{pgfplots}\n', ...
-    '\\usepackage{grffile}\n', ...
-    '\\pgfplotsset{compat=newest}\n', ...
-    '\\usetikzlibrary{plotmarks}\n', ...
-    '\\usepackage{amsmath}\n']);
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% scan the options
+                        '\\usepackage{grffile}\n', ...
+                        '\\pgfplotsset{compat=newest}\n', ...
+                        '\\usetikzlibrary{plotmarks}\n', ...
+                        '\\usepackage{amsmath}\n']);
+
+%% scan the options
 ipp = matlab2tikzInputParser;
 
 ipp = ipp.addOptional(ipp, 'filename',   [], @(x) filenameValidation(x,ipp));
@@ -251,18 +245,15 @@ ipp = ipp.addParamValue(ipp, 'parseStringsAsMath', false, @islogical);
 % interpret the tick labels as TeX, set this option to true.
 ipp = ipp.addParamValue(ipp, 'interpretTickLabelsAsTex', false, @islogical);
 
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% deprecated parameters (will auto-generate warnings upon parse)
+%% deprecated parameters (will auto-generate warnings upon parse)
 ipp = ipp.addParamValue(ipp, 'relativePngPath', [], @ischar);
 ipp = ipp.deprecateParam(ipp, 'relativePngPath', 'relativeDataPath');
 
-% Finally parse all the elements.
+%% Finally parse all the arguments
 ipp = ipp.parse(ipp, varargin{:});
-
 m2t.cmdOpts = ipp; % store the input parser back into the m2t data struct
 
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% inform users of potentially dangerous options
+%% inform users of potentially dangerous options
 if m2t.cmdOpts.Results.parseStringsAsMath
     userInfo(m2t, ['\n' repmat('=',1,80) '\n', ...
         'You are using the parameter ''parseStringsAsMath''.\n', ...
@@ -277,12 +268,10 @@ end
 [m2t.extraRgbColorNames, m2t.extraRgbColorSpecs] = ...
     dealColorDefinitions(m2t.cmdOpts.Results.extraColors);
 
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% shortcut
+%% shortcut
 m2t.ff = m2t.cmdOpts.Results.floatFormat;
 
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% add global elements
+%% add global elements
 if isempty(m2t.cmdOpts.Results.figurehandle)
     error('matlab2tikz:figureNotFound','MATLAB figure not found.');
 end
@@ -293,8 +282,7 @@ else
     m2t.currentHandles.colormap = get(m2t.currentHandles.gcf, 'colormap');
 end
 
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% handle output file handle/file name
+%% handle output file handle/file name
 if ~isempty(m2t.cmdOpts.Results.filehandle)
     fid     = m2t.cmdOpts.Results.filehandle;
     fileWasOpen = true;
@@ -312,10 +300,8 @@ else
         filename = fullfile(pathname, filename);
     end
     
-    % open the file for writing
     fid = fileOpenForWrite(m2t, filename);
 end
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 m2t.tikzFileName = fopen(fid);
 
 if m2t.cmdOpts.Results.automaticLabels
@@ -343,7 +329,7 @@ userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2
 
 userInfo(m2t, '\nThis is %s %s.\n', m2t.name, m2t.versionFull)
 
-% Conditionally check for a new matlab2tikz version outside version control
+%% Check for a new matlab2tikz version outside version control
 if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
     updater(m2t.name, ...
             m2t.website, ...
@@ -352,7 +338,7 @@ if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
             m2t.env);
 end
 
-% print some version info to the screen
+%% print some version info to the screen
 versionInfo = ['The latest updates can be retrieved from\n'         ,...
                '   %s\n'                                            ,...
                'where you can also make suggestions and rate %s.\n' ,...
@@ -362,8 +348,8 @@ versionInfo = ['The latest updates can be retrieved from\n'         ,...
                '   https://github.com/nschloe/matlab2tikz/wiki,\n'  ,...
                '   https://github.com/nschloe/matlab2tikz/issues.\n'];
 userInfo(m2t, versionInfo, m2t.website, m2t.name);
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% Save the figure as pgf to file -- here's where the work happens
+
+%% Save the figure as TikZ to file
 saveToFile(m2t, fid, fileWasOpen);
 end
 % ==============================================================================
@@ -405,14 +391,12 @@ function path = TeXpath(path)
 end
 % ==============================================================================
 function m2t = saveToFile(m2t, fid, fileWasOpen)
-% Save the figure as TikZ to a file.
-% All other routines are called from here.
+% Save the figure as TikZ to a file. All other routines are called from here.
 
-% enter plot recursion --
-% It is important to turn hidden handles on, as visible lines (such as the
-% axes in polar plots, for example), are otherwise hidden from their
-% parental handles (and can hence not be discovered by matlab2tikz).
-% With ShowHiddenHandles 'on', there is no escape. :)
+    % It is important to turn hidden handles on, as visible lines (such as the
+    % axes in polar plots, for example), are otherwise hidden from their
+    % parental handles (and can hence not be discovered by matlab2tikz).
+    % With ShowHiddenHandles 'on', there is no escape. :)
     set(0, 'ShowHiddenHandles', 'on');
 
     % get all axes handles
@@ -501,14 +485,13 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     % Add custom TikZ options if any given.
     if ~isempty(m2t.cmdOpts.Results.extraTikzpictureOptions)
-        if ischar(m2t.cmdOpts.Results.extraTikzpictureOptions)
-            m2t.cmdOpts.Results.extraTikzpictureOptions = ...
-                {m2t.cmdOpts.Results.extraTikzpictureOptions};
+        extraTikzOpts = m2t.cmdOpts.Results.extraTikzpictureOptions;
+        if ischar(extraTikzOpts)
+            extraTikzOpts = {extraTikzOpts};
         end
-        for k = 1:length(m2t.cmdOpts.Results.extraTikzpictureOptions)
+        for k = 1:length(extraTikzOpts)
             m2t.content.options = ...
-                addToOptions(m2t.content.options, ...
-                m2t.cmdOpts.Results.extraTikzpictureOptions{k}, []);
+                addToOptions(m2t.content.options, extraTikzOpts{k});
         end
     end
 
@@ -4072,7 +4055,6 @@ function [width, height, unit] = getNaturalAxesDimensions(handle)
 
     switch daspectmode
         case 'auto'
-            % ---------------------------------------------------------------------
             % The plot will use the full size of the current figure.,
             if strcmp(units, 'normalized')
                 % The dpi is needed to associate the size on the screen (in pixels)
@@ -4096,10 +4078,8 @@ function [width, height, unit] = getNaturalAxesDimensions(handle)
                 width  = position(3);
                 height = position(4);
             end
-            % ---------------------------------------------------------------------
 
         case 'manual'
-            % ---------------------------------------------------------------------
             % When daspect was manually set, stick to it.
             % This is achieved here by explicitly determining the x-axis size
             % and adjusting the y-axis size based on this length.
@@ -4137,7 +4117,6 @@ function [width, height, unit] = getNaturalAxesDimensions(handle)
             height = width                                  ...
                 * aspectRatio(1)    / aspectRatio(2)     ...
                 * (yLim(2)-yLim(1)) / (xLim(2)-xLim(1));
-            % ---------------------------------------------------------------------
         otherwise
             error('getAxesDimensions:illDaspectMode', ...
                 'Illegal DataAspectRatioMode ''%s''.', daspectmode);
@@ -5112,7 +5091,7 @@ function dims = pos2dims(pos)
 end
 % ==============================================================================
 function opts = addToOptions(opts, key, value)
-% Adds a key-value pair to a struct and does some sanity-checking before.
+% Adds a key-value pair to a structure and does some sanity-checking.
     if ~exist('value','var')
         value = [];
     end
@@ -5123,12 +5102,10 @@ function opts = addToOptions(opts, key, value)
         if strcmp(opts{k,1}, key)
             % The key already exists in struct.
             if strcmp(opts{k,2}, value)
-                % The suggested value is the same as the one that's already
-                % there. Do nothing.
-                return;
+                return; % same value -> do nothing
             else
                 error('matlab2tikz:addToOptions', ...
-                    ['Trying to add (%s, %s) to struct, but it already ' ...
+                    ['Trying to add (%s, %s) to options, but it already ' ...
                     'contains the conflicting key-value pair (%s, %s).'], ...
                     key, value, key, opts{k,2});
             end
