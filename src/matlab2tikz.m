@@ -1806,7 +1806,7 @@ function [m2t, str] = drawPatch(m2t, handle)
 
         % Some patches need to be closed by adding a "--cycle"; some don't.
         % TODO find out when to insert --cycle
-        str = sprintf('%s\n\\%s[%s]\ntable[%s] {%%\n%s};\n\n',...
+        str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s};\n\n',...
             str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
 end
 end
@@ -2135,7 +2135,7 @@ function [m2t,env] = drawSurface(m2t, handle)
     end
     [m2t, table] = makeTable(m2t, tabArgs{:});
 
-    str = sprintf('%s\n%s {%s};\n', str, formatType, table);
+    str = sprintf('%s\n%s {%%\n%s};\n', str, formatType, table);
     env = str;
 
     % TODO:
@@ -2757,7 +2757,7 @@ function [m2t, str] = drawBarseries(m2t, h)
 
     drawOpts = join(m2t, drawOptions, ',');
     [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
-    str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%%\n%s};\n', ...
+    str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%s};\n', ...
         str, drawOpts, table);
 end
 % ==============================================================================
@@ -3899,8 +3899,9 @@ function [m2t, table] = makeTable(m2t, varargin)
         % put the filename in the TikZ output
         table = TeXpath(relativeFilename);
     else
-        % output data literally
-        table = sprintf('%s', table);
+        % output data with "%newline" prepended for formatting consistency
+        % do NOT prepend another newline in the output: LaTeX will crash.
+        table = sprintf('%%\n%s', table);
     end
 end
 % ==============================================================================
