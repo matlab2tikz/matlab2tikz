@@ -1347,8 +1347,8 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
        return
   end
 
-  hasLines = ~strcmp(lineStyle,'none') && lineWidth>0.0;
-  hasMarkers = ~strcmp(marker,'none');
+  hasLines = ~isNone(lineStyle) && lineWidth>0.0;
+  hasMarkers = ~isNone(marker);
   if ~hasLines && ~hasMarkers
       return
   end
@@ -1542,7 +1542,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
       end
 
       % print no lines
-      if strcmp(lineStyle,'none') || lineWidth==0
+      if isNone(lineStyle) || lineWidth==0
           drawOptions{end+1} = 'only marks';
       end
 
@@ -1550,14 +1550,14 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
       markerFaceColor = get(h, 'markerfaceColor');
       markerEdgeColor = get(h, 'markeredgeColor');
       [tikzMarker, markOptions] = translateMarker(m2t, marker,         ...
-                           markOptions, ~strcmp(markerFaceColor,'none'));
-      if ~strcmp(markerFaceColor,'none')
+                           markOptions, ~isNone(markerFaceColor));
+      if ~isNone(markerFaceColor)
           [m2t, xcolor] = getColor(m2t, h, markerFaceColor, 'patch');
           if ~isempty(xcolor)
               markOptions{end+1} = sprintf('fill=%s', xcolor);
           end
       end
-      if ~strcmp(markerEdgeColor,'none') && ~strcmp(markerEdgeColor,'auto')
+      if ~isNone(markerEdgeColor) && ~strcmp(markerEdgeColor,'auto')
           [m2t, xcolor] = getColor(m2t, h, markerEdgeColor, 'patch');
           if ~isempty(xcolor)
               markOptions{end+1} = sprintf('draw=%s', xcolor);
@@ -2265,7 +2265,7 @@ function [m2t, str] = drawText(m2t, handle)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % translate them to pgf style
   style = cell(0);
-  if ~strcmpi(bgColor,'none')
+  if ~isNone(bgColor)
       [m2t, bcolor] = getColor(m2t, handle, bgColor, 'patch');
       style{end+1} = ['fill=' bcolor];
   end
@@ -2362,7 +2362,7 @@ function [m2t, str] = drawRectangle(m2t, handle)
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   lineStyle = get(handle, 'LineStyle');
   lineWidth = get(handle, 'LineWidth');
-  if (strcmp(lineStyle,'none') || lineWidth==0)
+  if isNone(lineStyle) || lineWidth==0
       return
   end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2458,8 +2458,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
   matlabMarker = get(h, 'Marker');
   markerFaceColor = get(h, 'MarkerFaceColor');
   markerEdgeColor = get(h, 'MarkerEdgeColor');
-  hasFaceColor = ~strcmp(markerFaceColor,'none');
-  hasEdgeColor = ~strcmp(markerEdgeColor,'none');
+  hasFaceColor = ~isNone(markerFaceColor);
+  hasEdgeColor = ~isNone(markerEdgeColor);
   markOptions = cell(0);
   [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, ...
                                               markOptions, hasFaceColor);
@@ -2851,7 +2851,7 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
   lineWidth = get(h, 'LineWidth');
   marker    = get(h, 'Marker');
 
-  if ((strcmp(lineStyle,'none') || lineWidth==0) && strcmp(marker,'none'))
+  if ((isNone(lineStyle) || lineWidth==0) && isNone(marker))
       return % nothing to plot!
   end
 
@@ -2986,7 +2986,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
   lineStyle     = get(h, 'LineStyle');
   lineWidth     = get(h, 'LineWidth');
 
-  if (strcmp(lineStyle,'none') || lineWidth==0)  && ~showArrowHead
+  if (isNone(lineStyle) || lineWidth==0)  && ~showArrowHead
       return
   end
 
@@ -4278,6 +4278,11 @@ function str = escapeCharacters(str)
   % Replaces "%" and "\" with respectively "%%" and "\\"
   str = strrep(str, '%' , '%%');
   str = strrep(str, '\' , '\\');
+end
+% =========================================================================
+function bool = isNone(value)
+  % Checks whether a value is 'none'
+  bool = strcmpi(value, 'none');
 end
 % =========================================================================
 function out = isVisible(handles)
