@@ -4760,12 +4760,9 @@ function userWarning(m2t, message, varargin)
 end
 % =========================================================================
 function parent = addChildren(parent, children)
-
     if isempty(children)
         return;
-    end
-
-    if iscell(children)
+    elseif iscell(children)
         for k = 1:length(children)
             parent = addChildren(parent, children{k});
         end
