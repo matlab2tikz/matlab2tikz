@@ -5326,30 +5326,26 @@ function isBelow = isVersionBelow(env, versionA, versionB)
   % Checks if version string or vector versionA is smaller than
   % version string or vector versionB.
 
-  vA = versionArray(env, versionA);
-  vB = versionArray(env, versionB);
-
-  isBelow = false;
-  for i = 1:min(length(vA), length(vB))
-    if vA(i) > vB(i)
-      isBelow = false;
-      break;
-    elseif vA(i) < vB(i)
-      isBelow = true;
-      break
-    end
+  vA         = versionArray(env, versionA);
+  vB         = versionArray(env, versionB);
+  n          = min(length(vA), length(vB));
+  deltaAB    = vA(1:n) - vB(1:n);
+  difference = find(deltaAB, 1, 'first'); 
+  if isempty(difference) 
+      isBelow = false; % equal versions
+  else
+      isBelow = (deltaAB(difference) < 0);
   end
-
 end
 % =========================================================================
 function arr = versionArray(env, str)
   % Converts a version string to an array.
 
   if ischar(str)
-    % Translate version string from '2.62.8.1' to [2, 62, 8, 1].
+    % Translate version string from '2.62.8.1' to [2; 62; 8; 1].
     switch env
       case 'MATLAB'
-        split = regexp(str, '\.', 'split');
+        split = regexp(str, '\.', 'split'); % compatibility MATLAB < R2013a
       case  'Octave'
         split = strsplit(str, '.');
       otherwise
@@ -5359,6 +5355,7 @@ function arr = versionArray(env, str)
   else
     arr = str;
   end
+  arr = arr(:)';
 end
 % =========================================================================
 function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
