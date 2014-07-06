@@ -531,7 +531,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
         fprintf(fid, '\\documentclass[tikz]{standalone}\n%s\n',  m2t.preamble);
     end
 
-    addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode);
+    addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
 
     if m2t.cmdOpts.Results.standalone
         fprintf(fid, '\\begin{document}\n');
@@ -539,7 +539,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % printAll() handles the actual figure plotting.
     printAll(m2t, m2t.content, fid);
 
-    addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd);
+    addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
 
     if m2t.cmdOpts.Results.standalone
         fprintf(fid, '\n\\end{document}');
@@ -552,7 +552,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     end
 end
 % ==============================================================================
-function addCustomCode(fid, before, code)
+function addCustomCode(fid, before, code, after)
     if ~isempty(code)
         fprintf(fid, before);
         if ischar(code)
