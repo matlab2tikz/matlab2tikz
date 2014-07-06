@@ -172,6 +172,7 @@ m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
 m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
+m2t.barplotId    = 0; % identification flag for bar plots
 
 % definition of color depth
 m2t.colorDepth     = 48; %[bit] RGB color depth (typical values: 24, 30, 48)
@@ -754,11 +755,10 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
     % update gca
     m2t.currentHandles.gca = handle;
 
-    % This is an ugly workaround for bar plots.
-    % Bar plots need to have several values counted on a per-axes basis, e.g.,
-    % the number of bars. Setting m2t.barplotId to [] here makes sure those
-    % values are recomputed in drawBarseries().
-    m2t.barplotId = [];
+    % Bar plots need to have some values counted per axis. Setting 
+    % m2t.barplotId to 0 makes sure these are recomputed in drawBarSeries()
+    % TODO: find nicer approach for barplots
+    m2t.barplotId = 0;
 
     % Octave:
     % Check if this axis environment is referenced by a legend.
@@ -2561,12 +2561,10 @@ function [m2t, str] = drawBarseries(m2t, h)
 %
 % TODO Get rid of code duplication with 'drawAxes'.
 
-% m2t.barplotId is set to [] in drawAxes(), so all of the values are computed
-% anew for subplots.
-    if ~isfield(m2t, 'barplotId') || isempty(m2t.barplotId)
+    % drawAxes sets m2t.barplotId to 0, so all values are recomputed for subplots.
+    if m2t.barplotId == 0
         % 'barplotId' provides a consecutively numbered ID for each
         % barseries plot. This allows for a proper handling of multiple bars.
-        m2t.barplotId = [];
         m2t.barplotTotalNumber = [];
         m2t.barShifts = [];
         m2t.addedAxisOption = false;
@@ -2641,11 +2639,7 @@ function [m2t, str] = drawBarseries(m2t, h)
             % grouped plots
             % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             % set ID
-            if isempty(m2t.barplotId)
-                m2t.barplotId = 1;
-            else
-                m2t.barplotId = m2t.barplotId + 1;
-            end
+            m2t.barplotId = m2t.barplotId + 1;
 
             %            % From <MATLAB>/toolbox/matlab/specgraph/makebars.m
             %            % plottype==0 means 'grouped'
