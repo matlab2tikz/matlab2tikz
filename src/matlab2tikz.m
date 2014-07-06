@@ -35,10 +35,16 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('externalData',BOOL,...) stores all data points in external
 %   files as tab separated values (TSV files). (default: false)
 %
+%   MATLAB2TIKZ('dataPath',CHAR, ...) defines where external data files
+%   and/or PNG figures are saved. It can be either an absolute or a relative
+%   path with respect to your MATLAB work directory. By default, data files are
+%   placed in the same directory as the TikZ output file. To place data files 
+%   in your MATLAB work directory, you can use '.'. (default: [])
+%
 %   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the
-%   given path to follow the external data files and PNG files.  If LaTeX
-%   source and the external files will reside in the same directory, this can
-%   be set to '.'. (default: [])
+%   given path to follow the external data files and PNG files. This is the
+%   relative path from your main LaTeX file to the data file directory.
+%   By default the same directory is used as the output (default: [])
 %
 %   MATLAB2TIKZ('height',CHAR,...) sets the height of the image. This can be
 %   any LaTeX-compatible length, e.g., '3in' or '5cm' or '0.5\textwidth'.  If
@@ -213,6 +219,7 @@ ipp = ipp.addParamValue(ipp, 'height', [], @ischar);
 ipp = ipp.addParamValue(ipp, 'width' , [], @ischar);
 ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
+ipp = ipp.addParamValue(ipp, 'dataPath', [], @ischar);
 ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
 ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
 
@@ -322,7 +329,13 @@ if isempty(m2t.cmdOpts.Results.relativeDataPath)
     end
 else
     m2t.relativeDataPath = m2t.cmdOpts.Results.relativeDataPath;
+end 
+if isempty(m2t.cmdOpts.Results.dataPath)
+    m2t.dataPath = fileparts(m2t.tikzFileName);
+else
+    m2t.dataPath = m2t.cmdOpts.Results.dataPath;
 end
+
 
 userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2tikz.)\n', ...
     '(For all other options, type ''help matlab2tikz''.)\n']);
@@ -1820,13 +1833,7 @@ function [m2t, str] = drawImage(m2t, handle)
         m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
         % ------------------------------------------------------------------------
         % draw a png image
-        % Take the TikZ file base name and change the extension .png.
-        [pathstr, name] = fileparts(m2t.tikzFileName);
-        pngFileName = fullfile(pathstr, ...
-            [name '-' num2str(m2t.imageAsPngNo) '.png']);
-        pngReferencePath = fullfile(m2t.relativeDataPath, ...
-            [name '-' num2str(m2t.imageAsPngNo) '.png']);
-        pngReferencePath = TeXpath(pngReferencePath);
+        [pngFileName, pngReferencePath] = externalFilename(m2t, m2t.imageAsPngNo, '.png');
 
         % Get color indices for indexed color images and truecolor values
         % otherwise. Don't use ismatrix(), c.f.
@@ -3867,12 +3874,7 @@ function [m2t, table] = makeTable(m2t, varargin)
     if m2t.cmdOpts.Results.externalData
         % output data to external file
         m2t.dataFileNo = m2t.dataFileNo + 1;
-
-        %TODO: extract method: absolute/relative filename for PNG/DAT files
-        [pathstr, name] = fileparts(m2t.tikzFileName);
-        baseFilename = [name '-' num2str(m2t.dataFileNo) '.tsv'];
-        filename = fullfile(pathstr, baseFilename);
-        relativeFilename = fullfile(m2t.relativeDataPath, baseFilename);
+        [filename, latexFilename] = externalFilename(m2t, m2t.dataFileNo, '.tsv');
 
         % write the data table to an external file
         fid = fileOpenForWrite(m2t, filename);
@@ -3880,12 +3882,21 @@ function [m2t, table] = makeTable(m2t, varargin)
         fclose(fid);
 
         % put the filename in the TikZ output
-        table = TeXpath(relativeFilename);
+        table = latexFilename;
     else
         % output data with "%newline" prepended for formatting consistency
         % do NOT prepend another newline in the output: LaTeX will crash.
         table = sprintf('%%\n%s', table);
     end
+end
+% ==============================================================================
+function [path, texpath] = externalFilename(m2t, counter, extension)
+% generates a file name for an external data file and its relative TeX path
+
+    [dummy, name] = fileparts(m2t.tikzFileName); %#ok
+    baseFilename  = [name '-' num2str(counter) extension];
+    path    = fullfile(m2t.dataPath, baseFilename);
+    texpath = TeXpath(fullfile(m2t.relativeDataPath, baseFilename));
 end
 % ==============================================================================
 function [names,definitions] = dealColorDefinitions(mergedColorDefs)
