@@ -594,7 +594,7 @@ function addCustomCode(fid, before, code)
     else
       error('matlab2tikz:saveToFile', 'Need str or cellstr.');
     end
-    fprintf(fid,after);
+%    fprintf(fid,after);
   end
 end
 % =========================================================================
