@@ -3240,11 +3240,14 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     % Build a custom color map.
     % Loop over the data, stop at each spot where the linear
     % interpolation is interrupted, and set a color mark there.
+    m = size(matlabColormap, 1);
     steps = [1, 2];
+    if m==1
+        colors=[matlabColormap(1,:);matlabColormap(1,:)];
+    else
     colors = [matlabColormap(1,:); matlabColormap(2,:)];
     f = linearFunction(steps, colors);
     k = 3;
-    m = size(matlabColormap, 1);
     while k <= m
         if norm(matlabColormap(k,:) - f(k)) > 1.0e-10
             % Add the previous step to the color list
@@ -3258,6 +3261,7 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     end
     steps(end) = m;
     colors(end,:) = matlabColormap(m,:);
+    end
 
     % Get it in Pgfplots-readable form.
     unit = 'pt';
