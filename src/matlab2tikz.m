@@ -625,7 +625,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                 errorUnknownEnvironment();
         end
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        switch get(child, 'Type')
+        switch char(get(child, 'Type'))
             % 'axes' environments are treated separately.
 
             case 'line'
@@ -664,6 +664,11 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                     'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
                 % don't to anything for these handles and its children
                 str = [];
+                
+            case ''
+                warning('matlab2tikz:NoChildren',...
+                        ['No children found for handle %d. ',...
+                         'Carrying on as if nothing happened'], handle);
 
             otherwise
                 error('matlab2tikz:handleAllChildren',                 ...
