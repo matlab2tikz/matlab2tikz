@@ -25,7 +25,7 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('showInfo',BOOL,...) turns informational output on or off.
 %   (default: true)
 %
-%   MATLAB2TIKZ('showWarning',BOOL,...) turns warnings on or off.
+%   MATLAB2TIKZ('showWarnings',BOOL,...) turns warnings on or off.
 %   (default: true)
 %
 %   MATLAB2TIKZ('imagesAsPng',BOOL,...) stores MATLAB(R) images as (lossless)
