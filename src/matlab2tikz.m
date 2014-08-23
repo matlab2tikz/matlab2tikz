@@ -637,7 +637,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
 
-            case {'hggroup','scatter'}
+            case {'hggroup','scatter', 'matlab.graphics.primitive.Group'}
                 [m2t, str] = drawHggroup(m2t, child);
 
             case 'hgtransform'
@@ -1998,7 +1998,7 @@ function [m2t, str] = drawHggroup(m2t, h)
             % scatter plots
             [m2t,str] = drawScatterPlot(m2t, h);
 
-        case {'specgraph.contourgroup', 'hggroup'}
+        case {'specgraph.contourgroup', 'hggroup', 'matlab.graphics.primitive.Group'}
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
 
