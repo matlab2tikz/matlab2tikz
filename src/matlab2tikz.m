@@ -637,7 +637,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
 
-            case {'hggroup','scatter', 'matlab.graphics.primitive.Group'}
+            case {'hggroup','scatter', 'stair', 'stem', 'matlab.graphics.primitive.Group'}
                 [m2t, str] = drawHggroup(m2t, child);
 
             case 'hgtransform'
@@ -1979,11 +1979,11 @@ function [m2t, str] = drawHggroup(m2t, h)
             % hist plots and friends
             [m2t, str] = drawBarseries(m2t, h);
 
-        case 'specgraph.stemseries'
+        case {'specgraph.stemseries', 'matlab.graphics.chart.primitive.Stem'}
             % stem plots
             [m2t, str] = drawStemSeries(m2t, h);
 
-        case 'specgraph.stairseries'
+        case {'specgraph.stairseries', 'matlab.graphics.chart.primitive.Stair'}
             % stair plots
             [m2t, str] = drawStairSeries(m2t, h);
 
