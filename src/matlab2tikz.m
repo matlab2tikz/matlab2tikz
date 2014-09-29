@@ -902,7 +902,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % background color
     backgroundColor = get(handle, 'Color');
-    if ~strcmp(backgroundColor, 'none')
+    if ~isNone(backgroundColor)
         [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
         if ~strcmp(col, 'white')
             m2t.axesContainers{end}.options = ...
@@ -1436,7 +1436,7 @@ function lineOpts = getLineOptions(m2t, lineStyle, lineWidth)
 % Gathers the line options.
     lineOpts = cell(0);
 
-    if ~strcmp(lineStyle, 'none') && (lineWidth > m2t.tol)
+    if ~isNone(lineStyle) && (lineWidth > m2t.tol)
         lineOpts{end+1} = sprintf('%s', translateLineStyle(lineStyle));
     end
 
@@ -1458,7 +1458,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
 
     marker = get(h, 'Marker');
 
-    if ~strcmp(marker, 'none')
+    if ~isNone(marker)
         markerSize = get(h, 'MarkerSize');
         lineStyle  = get(h, 'LineStyle');
         lineWidth  = get(h, 'LineWidth');
@@ -1726,7 +1726,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         % For some reason, this only works for filled contours in Pgfplots, so
         % fall back to explicit color specifications for line plots.
         if length(cData) == length(xData) ...
-                && ~strcmp(get(handle, 'FaceColor'), 'none')
+                && ~isNone(get(handle, 'FaceColor'))
             data = [data, cData(:)];
             drawOptions{end+1} = 'patch';
             columnNames{end+1} = 'c';
@@ -1743,7 +1743,7 @@ function [m2t, str] = drawPatch(m2t, handle)
             % Find out color values.
             % fill color
             faceColor = get(handle, 'FaceColor');
-            if ~strcmp(faceColor, 'none')
+            if ~isNone(faceColor)
                 [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
                 drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
                 xFaceAlpha = get(handle, 'FaceAlpha');
@@ -1755,7 +1755,7 @@ function [m2t, str] = drawPatch(m2t, handle)
             % draw color
             edgeColor = get(handle, 'EdgeColor');
             lineStyle = get(handle, 'LineStyle');
-            if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+            if isNone(lineStyle) || isNone(edgeColor)
                 drawOptions{end+1} = 'draw=none';
             else
                 [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
@@ -2221,7 +2221,7 @@ function [m2t, str] = drawText(m2t, handle)
     end
 
     style{end+1} = ['text=' tcolor];
-    if ~strcmp(EdgeColor, 'none')
+    if ~isNone(EdgeColor)
         [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
         style{end+1} = ['draw=', ecolor];
     end
@@ -2296,14 +2296,14 @@ function [m2t, str] = drawRectangle(m2t, handle)
     colorOptions = cell(0);
     % fill color
     faceColor  = get(handle, 'FaceColor');
-    if ~strcmp(faceColor, 'none')
+    if ~isNone(faceColor)
         [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
         colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
     % draw color
     edgeColor = get(handle, 'EdgeColor');
     lineStyle = get(handle, 'LineStyle');
-    if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+    if isNone(lineStyle) || isNone(edgeColor)
         colorOptions{end+1} = 'draw=none';
     else
         [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
@@ -2325,7 +2325,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
 
     % Check for surf or mesh plot. Second argument in if-check corresponds to
     % default values for mesh plot in MATLAB.
-    if strcmpi(faceColor, 'none') || ...
+    if isNone(faceColor) || ...
             (strcmpi(edgeColor, 'flat') && isequal(faceColor, [1 1 1]))
         plotType = 'mesh';
     else
@@ -2343,7 +2343,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
     % TODO Revisit this selection and create a bunch of test plots.
     if strcmpi(plotType, 'surf')
         % Set shader for surface plot.
-        if strcmpi(edgeColor, 'none') && strcmpi(faceColor, 'flat')
+        if isNone(edgeColor) && strcmpi(faceColor, 'flat')
             surfOptions{end+1} = 'shader=flat';
         elseif isnumeric(edgeColor) && strcmpi(faceColor, 'flat')
             [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
@@ -2354,7 +2354,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
                 surfOptions{end+1} = 'shader=faceted';
             end
             surfOptions{end+1} = sprintf('draw=%s', xEdgeColor);
-        elseif strcmpi(edgeColor, 'none') && strcmpi(faceColor, 'interp')
+        elseif isNone(edgeColor) && strcmpi(faceColor, 'interp')
             surfOptions{end+1} = 'shader=interp';
         else
             surfOptions{end+1} = 'shader=faceted interp';
@@ -2721,7 +2721,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     % define edge color
     edgeColor = get(h, 'EdgeColor');
     lineStyle = get(h, 'LineStyle');
-    if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+    if isNone(lineStyle) || isNone(edgeColor)
         drawOptions{end+1} = 'draw=none';
     else
         [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
@@ -2733,7 +2733,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     % child patch.
     child = get(h, 'Children');
     faceColor = get(child, 'FaceColor');
-    if ~strcmp(faceColor, 'none')
+    if ~isNone(faceColor)
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
         drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
@@ -2829,7 +2829,7 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     % gather the draw options
     lineStyle = get(h, 'LineStyle');
     drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
-    if strcmp(lineStyle, 'none')
+    if isNone(lineStyle)
         drawOptions{end+1} = 'draw=none';
     else
         drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
