@@ -637,7 +637,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
 
-            case {'hggroup','scatter', 'stair', 'stem', 'matlab.graphics.primitive.Group'}
+            case {'hggroup', 'matlab.graphics.primitive.Group', ...
+                  'scatter', 'bar', 'stair', 'stem' }
                 [m2t, str] = drawHggroup(m2t, child);
 
             case 'hgtransform'
@@ -1975,7 +1976,7 @@ function [m2t, str] = drawHggroup(m2t, h)
     end
 
     switch(cl)
-        case 'specgraph.barseries'
+        case {'specgraph.barseries', 'matlab.graphics.chart.primitive.Bar'}
             % hist plots and friends
             [m2t, str] = drawBarseries(m2t, h);
 
@@ -2568,10 +2569,10 @@ function [m2t, str] = drawBarseries(m2t, h)
                 continue;
             end
 
-            if strcmpi(get(s, 'Type'), 'hggroup')
+            if any(strcmpi(get(s, 'Type'), {'hggroup','Bar'}))
                 cl = class(handle(s));
                 switch cl
-                    case 'specgraph.barseries'
+                    case {'specgraph.barseries', 'matlab.graphics.chart.primitive.Bar'} 
                         m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
                     case 'specgraph.errorbarseries'
                         % TODO
@@ -2729,12 +2730,16 @@ function [m2t, str] = drawBarseries(m2t, h)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % define face color;
-    % quite oddly, this value is not coded in the handle itself, but in its
-    % child patch.
-    child = get(h, 'Children');
-    faceColor = get(child, 'FaceColor');
+    if ~isempty(get(h,'Children'))
+        % quite oddly, before MATLAB R2014b this value is stored in a child
+        % patch and not in the object itself
+        obj = get(h, 'Children'); 
+    else % R2014b and newer
+        obj = h;
+    end
+    faceColor = get(obj, 'FaceColor');
     if ~isNone(faceColor)
-        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
+        [m2t, xFaceColor] = getColor(m2t, h, faceColor, get(obj, 'type'));
         drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3360,7 +3365,9 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
         % everything alright: rgb color here
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
     else
-        switch mode
+        switch lower(mode)
+            case 'bar' % R2014b bar
+                [m2t, xcolor] = barcolor2xcolor(m2t, color, handle);
             case 'patch'
                 [m2t, xcolor] = patchcolor2xcolor(m2t, color, handle);
             case 'image'
@@ -3380,6 +3387,46 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
                     mode);
         end
     end
+end
+% ==============================================================================
+function [m2t, xcolor] = barcolor2xcolor(m2t, color, barhandle)
+    if isnumeric(color)
+        [m2t, xcolor] = rgb2colorliteral(m2t, color);
+    else
+        switch color
+            case {'r', 'red'}
+                [m2t, xcolor] = rgb2colorliteral(m2t, [1 0 0]);
+            case {'g', 'green'}
+                [m2t, xcolor] = rgb2colorliteral(m2t, [0 1 0]);
+            case {'b', 'blue'}
+                [m2t, xcolor] = rgb2colorliteral(m2t, [0 0 1]);
+            case {'c', 'cyan'}
+                [m2t, xcolor] = rgb2colorliteral(m2t, [0 1 1]);
+            case {'m', 'magenta'}
+                [m2t, xcolor] = rgb2colorliteral(m2t, [1 0 1]);
+            case {'y', 'yellow'}
+                [m2t, xcolor] = rgb2colorliteral(m2t, [1 1 0]);
+            case {'k', 'black'}
+                [m2t, xcolor] = rgb2colorliteral(m2t, [0 0 0]);
+            case {'w', 'white'}
+                [m2t, xcolor] = rgb2colorliteral(m2t, [1 1 1]);
+            case 'flat'
+                %FIXME: implement "flat" color for bar objects (R2014b)
+                % When the "flat" color mode is used, the colormap of the parent
+                % axis is used according to the MATLAB R2014b help.
+                % TODO: retrieve relevant color map and CLim
+                % TODO: find index of current handle in CLim
+                % TODO: interpolate colormap in this position
+                [m2t, xcolor] = rgb2colorliteral(m2t, rand(3,1));
+                userWarning(m2t, ...
+                    ['"flat" color mode has not been implemented yet. ' ...
+                     'Using the random color "%s" instead.'], xcolor);
+            otherwise
+                error('matlab2tikz:InvalidColor',...
+                      'Invalid color specification "%s"', color);
+        end
+    end
+    
 end
 % ==============================================================================
 function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
@@ -3458,7 +3505,7 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
         otherwise
             error('matlab2tikz:anycolor2rgb:unknownCDataMapping',...
                 'Unknown CDataMapping ''%s''.',cdatamapping);
-end
+    end
 end
 % ==============================================================================
 function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
