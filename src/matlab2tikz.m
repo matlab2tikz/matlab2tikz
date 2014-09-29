@@ -638,7 +638,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                 [m2t, str] = drawImage(m2t, child);
 
             case {'hggroup', 'matlab.graphics.primitive.Group', ...
-                  'scatter', 'bar', 'stair', 'stem' }
+                  'scatter', 'bar', 'stair', 'stem' ,'errorbar'}
                 [m2t, str] = drawHggroup(m2t, child);
 
             case 'hgtransform'
@@ -1309,7 +1309,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
     % This also implicitly makes sure that the lengths match.
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
-    zData = get(handle, 'ZData');
+    zData = getOrDefault(handle, 'ZData', []);
     % We would like to do
     %   data = [xData(:), yData(:), zData(:)],
     % but Octave fails. Hence this isempty() construction.
@@ -1996,7 +1996,7 @@ function [m2t, str] = drawHggroup(m2t, h)
             % quiver arrows
             [m2t, str] = drawQuiverGroup(m2t, h);
 
-        case {'specgraph.errorbarseries'}
+        case {'specgraph.errorbarseries', 'matlab.graphics.chart.primitive.ErrorBar'}
             % error bars
             [m2t,str] = drawErrorBars(m2t, h);
 
@@ -2945,83 +2945,94 @@ end
 % ==============================================================================
 function [m2t, str] = drawErrorBars(m2t, h)
 % Takes care of MATLAB's error bar plots.
-%
-% 'errorseries' plots have two line-plot children, one of which contains
-% the information about the center points; 'XData' and 'YData' components
-% are both of length n.
-% The other contains the information about the deviations (errors), more
-% more precisely: the lines to be drawn. Those are
-%        ___
-%         |
-%         |
-%         X  <-- (x0,y0)
-%         |
-%        _|_
-%
-%    X: x0,     x0,     x0-eps, x0+eps, x0-eps, x0+eps;
-%    Y: y0-dev, y0+dev, y0-dev, y0-dev, y0+dev, y0+dev.
-%
-% Hence, 'XData' and 'YData' are of length 6*n and contain redundant info.
-% Some versions of MATLAB(R) insert more columns with NaNs (to be able to
-% pass the entire X, Y arrays into plot()) such that the data is laid out as
-%
-%    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps;
-%    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev,
-%
-% or with another columns of NaNs added at the end.
-    c = get(h, 'Children');
+    if isa(h,'matlab.graphics.chart.primitive.ErrorBar') % MATLAB R2014b+
+        hData = h;
+        upDev = get(h, 'UData');
+        loDev = get(h, 'LData');
+        
+        yDeviations = [upDev(:), loDev(:)];
+        
+    else % Legacy Handling (Octave and MATLAB R2014a and older):
+        % 'errorseries' plots have two line-plot children, one of which contains
+        % the information about the center points; 'XData' and 'YData' components
+        % are both of length n.
+        % The other contains the information about the deviations (errors), more
+        % more precisely: the lines to be drawn. Those are
+        %        ___
+        %         |
+        %         |
+        %         X  <-- (x0,y0)
+        %         |
+        %        _|_
+        %
+        %    X: x0,     x0,     x0-eps, x0+eps, x0-eps, x0+eps;
+        %    Y: y0-dev, y0+dev, y0-dev, y0-dev, y0+dev, y0+dev.
+        %
+        % Hence, 'XData' and 'YData' are of length 6*n and contain redundant info.
+        % Some versions of MATLAB(R) insert more columns with NaNs (to be able to
+        % pass the entire X, Y arrays into plot()) such that the data is laid out as
+        %
+        %    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps;
+        %    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev,
+        %
+        % or with another columns of NaNs added at the end.
+        c = get(h, 'Children');
 
-    % Find out which contains the data and which the deviations.
-    n1 = length(get(c(1),'XData'));
-    n2 = length(get(c(2),'XData'));
-    if n2 == 6*n1
-        % 1 contains centerpoint info
-        dataIdx  = 1;
-        errorIdx = 2;
-        numDevData = 6;
-    elseif n1 == 6*n2
-        % 2 contains centerpoint info
-        dataIdx  = 2;
-        errorIdx = 1;
-        numDevData = 6;
-    elseif n2 == 9*n1-1 || n2 == 9*n1
-        % 1 contains centerpoint info
-        dataIdx  = 1;
-        errorIdx = 2;
-        numDevData = 9;
-    elseif n1 == 9*n2-1 || n1 == 9*n2
-        % 2 contains centerpoint info
-        dataIdx  = 2;
-        errorIdx = 1;
-        numDevData = 9;
-    else
-        error('drawErrorBars:errorMatch', ...
-            'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d, 9*%d-1 ~= %d, 9*%d-1 ~= %d).', ...
-            n1, n2, n2, n1, n1, n2, n2, n1);
+        % Find out which contains the data and which the deviations.
+        %TODO: this can be simplified using sort
+        n1 = length(get(c(1),'XData'));
+        n2 = length(get(c(2),'XData'));
+        if n2 == 6*n1
+            % 1 contains centerpoint info
+            dataIdx  = 1;
+            errorIdx = 2;
+            numDevData = 6;
+        elseif n1 == 6*n2
+            % 2 contains centerpoint info
+            dataIdx  = 2;
+            errorIdx = 1;
+            numDevData = 6;
+        elseif n2 == 9*n1-1 || n2 == 9*n1
+            % 1 contains centerpoint info
+            dataIdx  = 1;
+            errorIdx = 2;
+            numDevData = 9;
+        elseif n1 == 9*n2-1 || n1 == 9*n2
+            % 2 contains centerpoint info
+            dataIdx  = 2;
+            errorIdx = 1;
+            numDevData = 9;
+        else
+            error('drawErrorBars:errorMatch', ...
+                'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d, 9*%d-1 ~= %d, 9*%d-1 ~= %d).', ...
+                n1, n2, n2, n1, n1, n2, n2, n1);
+        end
+        hData  = c(dataIdx);
+        hError = c(errorIdx);
+        
+        % prepare error array (that is, gather the y-deviations)
+        yValues = get(hData , 'YData');
+        yErrors = get(hError, 'YData');
+        
+        n = length(yValues);
+        
+        yDeviations = zeros(n, 2);
+        
+        %TODO: this can be vectorized
+        for k = 1:n
+            % upper deviation
+            kk = numDevData*(k-1) + 1;
+            upDev = abs(yValues(k) - yErrors(kk));
+            
+            % lower deviation
+            kk = numDevData*(k-1) + 2;
+            loDev = abs(yValues(k) - yErrors(kk));
+            
+            yDeviations(k,:) = [upDev loDev];
+        end
     end
-
-    % prepare error array (that is, gather the y-deviations)
-    yValues = get(c(dataIdx) , 'YData');
-    yErrors = get(c(errorIdx), 'YData');
-
-    n = length(yValues);
-
-    yDeviations = zeros(n, 2);
-
-    for k = 1:n
-        % upper deviation
-        kk = numDevData*(k-1) + 1;
-        upDev = abs(yValues(k) - yErrors(kk));
-
-        % lower deviation
-        kk = numDevData*(k-1) + 2;
-        loDev = abs(yValues(k) - yErrors(kk));
-
-        yDeviations(k,:) = [upDev loDev];
-    end
-
-    % Now, pull drawLine() with deviation information.
-    [m2t, str] = drawLine(m2t, c(dataIdx), yDeviations);
+    % Now run drawLine() with deviation information.
+    [m2t, str] = drawLine(m2t, hData, yDeviations);
 end
 % ==============================================================================
 function out = linearFunction(X, Y)
@@ -4226,6 +4237,15 @@ end
 function bool = isNone(value)
 % Checks whether a value is 'none'
     bool = strcmpi(value, 'none');
+end
+% ==============================================================================
+function val = getOrDefault(handle, key, default)
+% gets the value or returns the default value if no such property exists
+    if all(isprop(handle, key))
+        val = get(handle, key);
+    else
+        val = default;
+    end 
 end
 % ==============================================================================
 function out = isVisible(handles)
