@@ -638,7 +638,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                 [m2t, str] = drawImage(m2t, child);
 
             case {'hggroup', 'matlab.graphics.primitive.Group', ...
-                  'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area'}
+                  'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area', ...
+                  'quiver'}
                 [m2t, str] = drawHggroup(m2t, child);
 
             case 'hgtransform'
@@ -1992,7 +1993,7 @@ function [m2t, str] = drawHggroup(m2t, h)
             % scatter plots
             [m2t,str] = drawAreaSeries(m2t, h);
 
-        case {'specgraph.quivergroup'}
+        case {'specgraph.quivergroup', 'matlab.graphics.chart.primitive.Quiver'}
             % quiver arrows
             [m2t, str] = drawQuiverGroup(m2t, h);
 
@@ -2864,46 +2865,74 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     str = [];
 
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % One could get(h,'{X,Y,U,V}Data') in which the intended arrow lengths
-    % are stored. MATLAB(R) however applies some quite sophisticated scaling
-    % here to avoid overlap of arrows.
-    % The actual length of the arrows is stored in c(1) of
-    %
-    %      c = get(h, 'Children');
-    %
-    % 'XData' and 'YData' of c(1) will be of the form
-    %
-    % [arrow1point1, arrow1point2, NaN, arrow2point1, arrow2point2, NaN].
-    c = get(h, 'Children');
+    % MATLAB uses a scaling algorithm to determine the size of the arrows.
+    % Before R2014b, the processed coordinates were available. This is no longer
+    % the case, so we have to re-implement it. In MATLAB it is implemented in
+    % the |quiver3|  (and |quiver|) function.
+    xData = get(h, 'XData');
+    yData = get(h, 'YData');
+    zData = getOrDefault(h, 'ZData', []);
 
-    xData = get(c(1), 'XData');
-    yData = get(c(1), 'YData');
-    zData = get(c(1), 'ZData');
+    uData = get(h, 'UData');
+    vData = get(h, 'VData');
+    wData = getOrDefault(h, 'WData', []);
 
-    step = 3;
-    m = length(xData(1:step:end));   % number of arrows
-
-    if(isempty(zData))
-        name = 'addplot';
-        format = [m2t.ff,',',m2t.ff];
-        data = zeros(4,m);
-        data(1,:) = xData(1:step:end);
-        data(2,:) = yData(1:step:end);
-        data(3,:) = xData(2:step:end);
-        data(4,:) = yData(2:step:end);
+    if isempty(zData)
+        zData = 0;
+        wData = 0;
+        is3D  = false;
     else
-        m2t.currentAxesContain3dData = true;
+        is3D = true;
+    end
+
+    % MATLAB scaling algorithm
+    if any(size(xData)==1)
+        nX = sqrt(numel(xData)); nY = nX;
+    else
+        [nY, nX] = size(xData);
+    end
+    range  = @(xyzData)(max(xyzData(:)) - min(xyzData(:)));
+    euclid = @(x,y,z)(sqrt(x.^2 + y.^2 + z.^2));
+    dx = range(xData)/nX;
+    dy = range(yData)/nY;
+    dz = range(zData)/max(nX,nY);
+    dd = euclid(dx, dy, dz);
+    if dd > 0
+        vectorLength = euclid(uData/dd,vData/dd,wData/dd);
+        maxLength = max(vectorLength(:));
+    else  
+        maxLength = 1;
+    end
+    if getOrDefault(h, 'AutoScale', true)
+        scaleFactor = getOrDefault(h,'AutoScaleFactor', 0.9) / maxLength;
+    else
+        scaleFactor = 1;
+    end
+    xData = xData(:).'; uData = uData(:).'*scaleFactor;
+    yData = yData(:).'; vData = vData(:).'*scaleFactor;
+    zData = zData(:).'; wData = wData(:).'*scaleFactor;
+
+    % prepare output
+    if is3D
         name = 'addplot3';
         format = [m2t.ff,',',m2t.ff,',',m2t.ff];
-        data = zeros(6,m);
-        data(1,:) = xData(1:step:end);
-        data(2,:) = yData(1:step:end);
-        data(3,:) = zData(1:step:end);
-        data(4,:) = xData(2:step:end);
-        data(5,:) = yData(2:step:end);
-        data(6,:) = zData(2:step:end);
+    else % 2D plotting
+        name   = 'addplot';
+        format = [m2t.ff,',',m2t.ff];
     end
+
+    data = NaN(6,numel(xData));
+    data(1,:) = xData;
+    data(2,:) = yData;
+    data(3,:) = zData;
+    data(4,:) = xData + uData;
+    data(5,:) = yData + vData;
+    data(6,:) = zData + wData;
+
+    if ~is3D
+        data([3 6],:) = []; % remove Z-direction
+    end
+
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % gather the arrow options
     showArrowHead = get(h, 'ShowArrowHead');
