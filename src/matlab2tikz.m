@@ -571,6 +571,7 @@ end
 % ==============================================================================
 function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 % Draw all children of a graphics object (if they need to be drawn).
+    str = '';
     children = get(handle, 'Children');
 
     % prepare cell array of pgfEnvironments
