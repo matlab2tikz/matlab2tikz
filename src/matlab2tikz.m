@@ -638,7 +638,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                 [m2t, str] = drawImage(m2t, child);
 
             case {'hggroup', 'matlab.graphics.primitive.Group', ...
-                  'scatter', 'bar', 'stair', 'stem' ,'errorbar'}
+                  'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area'}
                 [m2t, str] = drawHggroup(m2t, child);
 
             case 'hgtransform'
@@ -1988,7 +1988,7 @@ function [m2t, str] = drawHggroup(m2t, h)
             % stair plots
             [m2t, str] = drawStairSeries(m2t, h);
 
-        case {'specgraph.areaseries'}
+        case {'specgraph.areaseries', 'matlab.graphics.chart.primitive.Area'}
             % scatter plots
             [m2t,str] = drawAreaSeries(m2t, h);
 
@@ -2739,7 +2739,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     end
     faceColor = get(obj, 'FaceColor');
     if ~isNone(faceColor)
-        [m2t, xFaceColor] = getColor(m2t, h, faceColor, get(obj, 'type'));
+        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
         drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2825,10 +2825,14 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % define face color;
-    % quite oddly, this value is not coded in the handle itself, but in its
-    % child patch.
-    child      = get(h, 'Children');
-    faceColor  = get(child, 'FaceColor');
+    if ~isempty(get(h,'Children'))
+        % quite oddly, before MATLAB R2014b this value is stored in a child
+        % patch and not in the object itself
+        obj = get(h, 'Children'); 
+    else % R2014b and newer
+        obj = h;
+    end
+    faceColor = get(obj, 'FaceColor');
     [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % gather the draw options
@@ -3377,8 +3381,6 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
     else
         switch lower(mode)
-            case 'bar' % R2014b bar
-                [m2t, xcolor] = barcolor2xcolor(m2t, color, handle);
             case 'patch'
                 [m2t, xcolor] = patchcolor2xcolor(m2t, color, handle);
             case 'image'
@@ -3400,90 +3402,58 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
     end
 end
 % ==============================================================================
-function [m2t, xcolor] = barcolor2xcolor(m2t, color, barhandle)
+function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
+% Transforms a color of the edge or the face of a patch to an xcolor literal.
+    if ~ischar(color) && ~isnumeric(color)
+        error('patchcolor2xcolor:illegalInput', ...
+            'Input argument ''color'' not a string or numeric.');
+    end
     if isnumeric(color)
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
     else
         switch color
-            case {'r', 'red'}
-                [m2t, xcolor] = rgb2colorliteral(m2t, [1 0 0]);
-            case {'g', 'green'}
-                [m2t, xcolor] = rgb2colorliteral(m2t, [0 1 0]);
-            case {'b', 'blue'}
-                [m2t, xcolor] = rgb2colorliteral(m2t, [0 0 1]);
-            case {'c', 'cyan'}
-                [m2t, xcolor] = rgb2colorliteral(m2t, [0 1 1]);
-            case {'m', 'magenta'}
-                [m2t, xcolor] = rgb2colorliteral(m2t, [1 0 1]);
-            case {'y', 'yellow'}
-                [m2t, xcolor] = rgb2colorliteral(m2t, [1 1 0]);
-            case {'k', 'black'}
-                [m2t, xcolor] = rgb2colorliteral(m2t, [0 0 0]);
-            case {'w', 'white'}
-                [m2t, xcolor] = rgb2colorliteral(m2t, [1 1 1]);
             case 'flat'
-                %FIXME: implement "flat" color for bar objects (R2014b)
-                % When the "flat" color mode is used, the colormap of the parent
-                % axis is used according to the MATLAB R2014b help.
-                % TODO: retrieve relevant color map and CLim
-                % TODO: find index of current handle in CLim
-                % TODO: interpolate colormap in this position
-                [m2t, xcolor] = rgb2colorliteral(m2t, rand(3,1));
-                userWarning(m2t, ...
-                    ['"flat" color mode has not been implemented yet. ' ...
-                     'Using the random color "%s" instead.'], xcolor);
+                % look for CData at different places
+                cdata = getOrDefault(patchhandle, 'CData', []);
+                if isempty(cdata) || ~isnumeric(cdata)
+                    c = get(patchhandle, 'Children');
+                    cdata = get(c, 'CData');
+                end
+                if isempty(cdata) || ~isnumeric(cdata)
+                    % R2014b+: CData is implicit
+                    siblings = get(get(patchhandle, 'Parent'), 'Children');
+                    cdata = find(siblings(end:-1:1)==patchhandle);
+                end
+
+                col1 = cdata(1,1);
+                if all(isnan(cdata) | abs(cdata-col1)<1.0e-10)
+                    [m2t, colorindex] = cdata2colorindex(m2t, col1, patchhandle);
+                    [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
+                else
+                    % Don't return anything meaningful and count on the caller to
+                    % make soemthing of it.
+                    xcolor = [];
+                end
+
+            case 'auto'
+                color = get(patchhandle, 'Color');
+                [m2t, xcolor] = rgb2colorliteral(m2t, color);
+
+            case 'none'
+                error('matlab2tikz:anycolor2rgb:ColorModelNoneNotAllowed',...
+                    ['Color model ''none'' not allowed here. ',...
+                    'Make sure this case gets intercepted before.']);
+
             otherwise
-                error('matlab2tikz:InvalidColor',...
-                      'Invalid color specification "%s"', color);
+                    error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
+                    'Don''t know how to handle the color model ''%s''.',color);
         end
     end
-    
 end
 % ==============================================================================
-function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
-% Transforms a color of the edge or the face of a patch to an xcolor literal.
-    if ~ischar(color)
-        error('patchcolor2xcolor:illegalInput', ...
-            'Input argument ''color'' not a string.');
-    end
-
-    switch color
-        case 'flat'
-            % look for CData at different places
-            cdata = get(patchhandle, 'CData');
-            if isempty(cdata) || ~isnumeric(cdata)
-                c = get(patchhandle, 'Children');
-                cdata = get(c, 'CData');
-            end
-
-            col1 = cdata(1,1);
-            if all(isnan(cdata) | abs(cdata-col1)<1.0e-10)
-                [m2t, colorindex] = cdata2colorindex(m2t, col1, patchhandle);
-                [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
-            else
-                % Don't return anything meaningful and count on the caller to
-                % make soemthing of it.
-                xcolor = [];
-            end
-
-        case 'auto'
-            color = get(patchhandle, 'Color');
-            [m2t, xcolor] = rgb2colorliteral(m2t, color);
-
-        case 'none'
-            error('matlab2tikz:anycolor2rgb:ColorModelNoneNotAllowed',...
-                ['Color model ''none'' not allowed here. ',...
-                'Make sure this case gets intercepted before.']);
-
-        otherwise
-            error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
-                'Don''t know how to handle the color model ''%s''.',color);
-    end
-    end
-    % ==============================================================================
-    function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
-    % Transforms a color in CData format to an index in the color map.
-    % Only does something if CDataMapping is 'scaled', really.
+function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
+% Transforms a color in CData format to an index in the color map.
+% Only does something if CDataMapping is 'scaled', really.
 
     if ~isnumeric(cdata) && ~islogical(cdata)
         error('matlab2tikz:cdata2colorindex:unknownCDataType',...
