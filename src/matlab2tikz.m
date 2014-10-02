@@ -3955,7 +3955,7 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
             Ck = p * Ci + (1-p)*Cj; % approximated mixed color
 
             if p <= 1 && p >= 0 && max(abs(Ck(:) - rgb(:))) < m2t.colorPrecision
-                colorLiteral = sprintf('%s!%d!%s', colorNames{iColor}, uint8(p*100), ...
+                colorLiteral = sprintf('%s!%d!%s', colorNames{iColor}, round(p*100), ...
                     colorNames{jColor});
                 return % linear combination found
             end
