@@ -3128,24 +3128,31 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     % Build a custom color map.
     % Loop over the data, stop at each spot where the linear
     % interpolation is interrupted, and set a color mark there.
-    steps = [1, 2];
-    colors = [matlabColormap(1,:); matlabColormap(2,:)];
-    f = linearFunction(steps, colors);
-    k = 3;
     m = size(matlabColormap, 1);
-    while k <= m
-        if norm(matlabColormap(k,:) - f(k)) > 1.0e-10
-            % Add the previous step to the color list
-            steps(end) = k-1;
-            colors(end,:) = matlabColormap(k-1,:);
-            steps = [steps, k];
-            colors = [colors; matlabColormap(k,:)];
-            f = linearFunction(steps(end-1:end), colors(end-1:end,:));
+    steps = [1, 2];
+    % A colormap with a single color is valid in MATLAB but an error in
+    % pgfplots. Repeating the color produces the desired effect in this
+    % case.
+    if m==1 
+        colors=[matlabColormap(1,:);matlabColormap(1,:)];
+    else
+        colors = [matlabColormap(1,:); matlabColormap(2,:)];
+        f = linearFunction(steps, colors);
+        k = 3;
+        while k <= m
+            if norm(matlabColormap(k,:) - f(k)) > 1.0e-10
+                % Add the previous step to the color list
+                steps(end) = k-1;
+                colors(end,:) = matlabColormap(k-1,:);
+                steps = [steps, k];
+                colors = [colors; matlabColormap(k,:)];
+                f = linearFunction(steps(end-1:end), colors(end-1:end,:));
+            end
+            k = k+1;
         end
-        k = k+1;
+        steps(end) = m;
+        colors(end,:) = matlabColormap(m,:);
     end
-    steps(end) = m;
-    colors(end,:) = matlabColormap(m,:);
 
     % Get it in Pgfplots-readable form.
     unit = 'pt';
