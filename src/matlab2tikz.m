@@ -637,6 +637,9 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
+                
+            case 'contour'
+                [m2t, str] = drawContour(m2t, child);
 
             case {'hggroup', 'matlab.graphics.primitive.Group', ...
                   'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area', ...
@@ -1965,6 +1968,29 @@ function [m2t, str] = drawImage(m2t, handle)
     m2t.axesContainers{end}.options = ...
         addToOptions(m2t.axesContainers{end}.options, ...
         'axis on top', []);
+end
+% ==============================================================================
+function [m2t, str] = drawContour(m2t, h)
+% draw a contour group (MATLAB R2014b and newer only)
+plotoptions = cell(0,2);
+plotoptions = addToOptions(plotoptions,'contour prepared');
+plotoptions = addToOptions(plotoptions,'contour prepared format','matlab');
+if strcmpi(get(h,'ShowText'),'off')
+    plotoptions = addToOptions(plotoptions,'contour/labels','false');
+end
+if strcmpi(get(h,'Fill'),'on')
+    userWarning(m2t, 'Filled contour replaced by unfilled contour plot.');
+    %FIXME: implement colored contour plots
+end
+%TODO: explicit color handling for contour plots
+
+contours = get(h,'ContourMatrix');
+
+[m2t, table] = makeTable(m2t, {'',''}, contours.');
+
+str = sprintf('\\addplot[%s] table[row sep=crcr] {%%\n%s};\n', ...
+              prettyprintOpts(m2t, plotoptions, ', '), table);
+
 end
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
