@@ -419,10 +419,10 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
     if ~isempty(axesHandles)
         % Find all legend handles. This is MATLAB-only.
-        legendHandleIdx = strcmp(get(axesHandles, tagKeyword), 'legend');
-        m2t.legendHandles = axesHandles(legendHandleIdx);
+        legendHandles = findobj(fh, tagKeyword, 'legend');
+        m2t.legendHandles = legendHandles;
         % Remove all legend handles as they are treated separately.
-        axesHandles = axesHandles(~legendHandleIdx);
+        axesHandles = setdiff(axesHandles, legendHandles);
     end
 
     colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
@@ -595,22 +595,29 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                     % Make sure that m2t.legendHandles is a row vector.
                     for legendHandle = m2t.legendHandles(:)'
                         ud = get(legendHandle, 'UserData');
-                        % In Octave, the field name is 'handle'. Well, whatever.
-                        % fieldName = switchMatOct(m2t, 'handles', 'handle');
-                        k = find(child == ud.handles);
+                        if isfield(ud, 'handles')
+                            plotChildren = ud.handles;
+                        else
+                            plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
+                        end
+                        k = find(child == plotChildren);
                         if isempty(k)
                             % Lines of error bar plots are not referenced
                             % directly in legends as an error bars plot contains
                             % two "lines": the data and the deviations. Here, the
                             % legends refer to the specgraph.errorbarseries
                             % handle which is 'Parent' to the line handle.
-                            k = find(get(child,'Parent') == ud.handles);
+                            k = find(get(child,'Parent') == plotChildren);
                         end
                         if ~isempty(k)
                             % Legend entry found. Add it to the plot.
                             m2t.currentHandleHasLegend = true;
                             interpreter = get(legendHandle, 'Interpreter');
-                            legendString = ud.lstrings(k);
+                            if ~isempty(ud) && isfield(ud,'strings')
+                                legendString = ud.lstrings(k);
+                            else
+                                legendString = get(child, 'DisplayName');
+                            end
                         end
                     end
                 end
