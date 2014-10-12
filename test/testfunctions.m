@@ -474,7 +474,7 @@ function [description, extraOpts] = double_axes()
   % following code is taken from `floatAxisX.m'
 
   % get position of axes
-  allAxes = get(gcf,'Children');
+  allAxes = findobj(gcf,'type','axes');
   naxes = length(allAxes);
   ax1Pos = get(allAxes(naxes),'position');
 
