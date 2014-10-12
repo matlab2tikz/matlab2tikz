@@ -428,10 +428,10 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
     if ~isempty(axesHandles)
         % Find all colorbar handles. This is MATLAB-only.
-        cbarHandleIdx = strcmp(get(axesHandles, tagKeyword), colorbarKeyword);
-        m2t.cbarHandles = axesHandles(cbarHandleIdx);
+        cbarHandles = findobj(fh, tagKeyword, colorbarKeyword);
+        m2t.cbarHandles = cbarHandles;
         % Remove all legend handles as they are treated separately.
-        axesHandles = axesHandles(~cbarHandleIdx);
+        axesHandles = setdiff(axesHandles, cbarHandles);
     else
         m2t.cbarHandles = [];
     end
@@ -1164,8 +1164,8 @@ function options = getAxisOptions(m2t, handle, axis)
             [axis, ' dir'], 'reverse');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    isAxisLog = strcmp(get(handle,[upper(axis),'Scale']), 'log');
-    if isAxisLog
+    axisScale = getOrDefault(handle, [upper(axis) 'Scale'], 'lin');
+    if strcmp(axisScale, 'log');
         options = addToOptions(options, ...
             [axis,'mode'], 'log');
     end
@@ -1234,16 +1234,11 @@ function options = getAxisOptions(m2t, handle, axis)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get grids
-    hasGrid = false;
-    if strcmp(get(handle, [upper(axis),'Grid']), 'on');
-        options = addToOptions(options, ...
-            [axis, 'majorgrids'], []);
-        hasGrid = true;
+    if strcmp(getOrDefault(handle, [upper(axis),'Grid'], 'off'), 'on');
+        options = addToOptions(options, [axis, 'majorgrids'], []);
     end
-    if strcmp(get(handle, [upper(axis),'MinorGrid']), 'on');
-        options = addToOptions(options, ...
-            [axis, 'minorgrids'], []);
-        hasGrid = true;
+    if strcmp(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'), 'on');
+        options = addToOptions(options, [axis, 'minorgrids'], []);
     end
 end
 % ==============================================================================
@@ -3276,31 +3271,35 @@ function axisOptions = getColorbarOptions(m2t, handle)
     % begin collecting axes options
     axisOptions = cell(0, 2);
     cbarOptions = {};
-    cbarStyleOptions = {};
+    cbarStyleOptions = cell(0,2);
 
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % set position, ticks etc. of the colorbar
     loc = get(handle, 'Location');
 
-    % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-    % small cased ('northoutside'). Hence, use lower() for uniformity.
-    switch lower(loc)
+    switch lower(loc) % case insentitive (MATLAB: CamelCase, Octave: lower case)
         case 'north'
             cbarOptions{end+1} = 'horizontal';
-            cbarStyleOptions = {cbarStyleOptions{:},...
-                'at={(0.5,0.97)}',...
-                'anchor=north', ...
-                'xticklabel pos=lower', ...
-                'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'at',...
+                '{(0.5,0.97)}');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'anchor',...
+                'north');
+            cbarStyleOptions = addToOptions(cbarStyleOptions,...
+                'xticklabel pos', 'lower');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'width',...
+                '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'south'
             cbarOptions{end+1} = 'horizontal';
-            cbarStyleOptions = {cbarStyleOptions{:},...
-                'at={(0.5,0.03)}',...
-                'anchor=south', ...
-                'xticklabel pos=upper', ...
-                'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'at',...
+                '{(0.5,0.03)}');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'anchor', ...
+                'south');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, ...
+                'xticklabel pos','upper');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'width',...
+                '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'east'
             cbarOptions{end+1} = 'right';
+            
             cbarStyleOptions = {cbarStyleOptions{:},...
                 'at={(0.97,0.5)}',...
                 'anchor=east', ...
@@ -3308,11 +3307,14 @@ function axisOptions = getColorbarOptions(m2t, handle)
                 'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
         case 'west'
             cbarOptions{end+1} = 'left';
-            cbarStyleOptions = {cbarStyleOptions{:},...
-                'at={(0.03,0.5)}',...
-                'anchor=west', ...
-                'xticklabel pos=right', ...
-                'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'at',...
+                '{(0.03,0.5)}');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'anchor',...
+                'west');
+            cbarStyleOptions = addToOptions(cbarStyleOptions,...
+                'xticklabel pos', 'right');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'width',...
+                '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'eastoutside'
             %cbarOptions{end+1} = 'right';
         case 'westoutside'
@@ -3320,42 +3322,32 @@ function axisOptions = getColorbarOptions(m2t, handle)
         case 'northoutside'
             % TODO move to top
             cbarOptions{end+1} = 'horizontal';
-            cbarStyleOptions = {cbarStyleOptions{:},...
-                'at={(0.5,1.03)}',...
-                'anchor=south', ...
-                'xticklabel pos=upper'};
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'at',...
+                '{(0.5,1.03)}');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'anchor',...
+                'south');
+            cbarStyleOptions = addToOptions(cbarStyleOptions,...
+                'xticklabel pos', 'upper');
         case 'southoutside'
+            
             cbarOptions{end+1} = 'horizontal';
         otherwise
             error('matlab2tikz:getColorOptions:unknownLocation',...
                 'getColorbarOptions: Unknown ''Location'' %s.', loc)
     end
 
-    % TODO proper use of addToOptions()
+    %TODO: maybe we should NOT rely on colorbars being axes in MATLAB R2014a
+    %(and older) and just access the properties directly here. In R2014b and
+    %newer this is certainly the clearer way to go. However, this does introduce
+    %some duplicate code
     xo = getAxisOptions(m2t, handle, 'x');
-    for k = 1:size(xo, 1)
-        if   strcmp(xo{k,1}, 'xmin') ...
-                || strcmp(xo{k,1}, 'xmax') ...
-                || strcmp(xo{k,1}, 'xtick')
-            % filter a bunch of keywords
-            continue;
-        end
-        cbarStyleOptions{end+1} = [xo{k,1}, '=', xo{k,2}];
-    end
     yo = getAxisOptions(m2t, handle, 'y');
-    for k = 1:size(yo, 1)
-        if   strcmp(yo{k,1}, 'ymin') ...
-                || strcmp(yo{k,1}, 'ymax')
-            % filter a bunch of keywords
-            continue;
-        end
-        cbarStyleOptions{end+1} = [yo{k,1}, '=', yo{k,2}];
-    end
-
-    %if strcmp(get(handle, 'YScale'), 'log')
-    %    cbarStyleOptions{end+1} = 'ymode=log';
-    %end
-    %
+    xyo = merge(xo, yo);
+    unsupportedOptions = {'xmin','xmax','xtick','ymin','ymax','ytick'};
+    xyo(ismember(xyo(:,1), unsupportedOptions),:) = [];
+    
+    cbarStyleOptions = merge(cbarStyleOptions, xyo);
+    
     %% Get axis labels.
     %for axis = 'xy'
     %  axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
@@ -3391,14 +3383,17 @@ function axisOptions = getColorbarOptions(m2t, handle)
                 'title style', '{align=center}');
         end
         title = join(m2t, title, '\\[1ex]');
-        cbarStyleOptions{end+1} = sprintf('title={%s}', title);
+        cbarStyleOptions = addToOptions(cbarStyleOptions, 'title', ...
+            sprintf('{%s}', title));
     end
 
     if m2t.cmdOpts.Results.strict
         % Sampled colors.
         numColors = size(m2t.currentHandles.colormap, 1);
         cbarOptions{end+1} = 'sampled';
-        cbarStyleOptions{end+1} = sprintf('samples=%d', numColors+1);
+        cbarStyleOptions = addToOptions(cbarStyleOptions, 'samples', ...
+            sprintf('%d', numColors+1));
+        
     end
 
     % Merge them together in axisOptions.
@@ -3409,14 +3404,13 @@ function axisOptions = getColorbarOptions(m2t, handle)
             userWarning(m2t, ...
                 'Pgfplots cannot deal with more than one colorbar option yet.');
         end
-        axisOptions = addToOptions(axisOptions, ...
-            ['colorbar ', cbarOptions{1}], []);
+        axisOptions = addToOptions(axisOptions, ['colorbar ', cbarOptions{1}]);
     end
 
     if ~isempty(cbarStyleOptions)
         axisOptions = addToOptions(axisOptions, ...
             'colorbar style', ...
-            ['{', join(m2t, cbarStyleOptions, ','), '}']);
+            ['{' prettyprintOpts(m2t, cbarStyleOptions, ',') '}']);
     end
 
     % Append upper and lower limit of the colorbar.
@@ -3771,13 +3765,13 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, ax
         pgfTickLabels = [];
     else % strcmp(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
         keywordScale = [upper(axis), 'Scale'];
-        isAxisLog = strcmp(get(handle,keywordScale), 'log');
+        isAxisLog = strcmp(getOrDefault(handle,keywordScale, 'lin'), 'log');
         [pgfTicks, pgfTickLabels] = ...
             matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isAxisLog, tickLabelMode);
     end
 
     keywordMinorTick = [upper(axis), 'MinorTick'];
-    hasMinorTicks = strcmp(get(handle, keywordMinorTick), 'on');
+    hasMinorTicks = strcmp(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
 end
 % ==============================================================================
 function [pTicks, pTickLabels] = ...
