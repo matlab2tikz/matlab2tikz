@@ -361,7 +361,7 @@ function msg = format_error_message(e)
     end
     if ~isempty(e.stack)
         msg = sprintf('%serror: called from:\n', msg);
-        for ee = e.stack
+        for ee = e.stack(:)'
             msg = sprintf('%serror:   %s at line %d, in function %s\n', ...
                           msg, ee.file, ee.line, ee.name);
         end
