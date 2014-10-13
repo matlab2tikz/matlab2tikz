@@ -419,19 +419,19 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
     if ~isempty(axesHandles)
         % Find all legend handles. This is MATLAB-only.
-        legendHandleIdx = strcmp(get(axesHandles, tagKeyword), 'legend');
-        m2t.legendHandles = axesHandles(legendHandleIdx);
+        legendHandles = findobj(fh, tagKeyword, 'legend');
+        m2t.legendHandles = legendHandles;
         % Remove all legend handles as they are treated separately.
-        axesHandles = axesHandles(~legendHandleIdx);
+        axesHandles = setdiff(axesHandles, legendHandles);
     end
 
     colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
     if ~isempty(axesHandles)
         % Find all colorbar handles. This is MATLAB-only.
-        cbarHandleIdx = strcmp(get(axesHandles, tagKeyword), colorbarKeyword);
-        m2t.cbarHandles = axesHandles(cbarHandleIdx);
+        cbarHandles = findobj(fh, tagKeyword, colorbarKeyword);
+        m2t.cbarHandles = cbarHandles;
         % Remove all legend handles as they are treated separately.
-        axesHandles = axesHandles(~cbarHandleIdx);
+        axesHandles = setdiff(axesHandles, cbarHandles);
     else
         m2t.cbarHandles = [];
     end
@@ -571,6 +571,7 @@ end
 % ==============================================================================
 function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 % Draw all children of a graphics object (if they need to be drawn).
+    str = '';
     children = get(handle, 'Children');
 
     % prepare cell array of pgfEnvironments
@@ -594,22 +595,29 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                     % Make sure that m2t.legendHandles is a row vector.
                     for legendHandle = m2t.legendHandles(:)'
                         ud = get(legendHandle, 'UserData');
-                        % In Octave, the field name is 'handle'. Well, whatever.
-                        % fieldName = switchMatOct(m2t, 'handles', 'handle');
-                        k = find(child == ud.handles);
+                        if isfield(ud, 'handles')
+                            plotChildren = ud.handles;
+                        else
+                            plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
+                        end
+                        k = find(child == plotChildren);
                         if isempty(k)
                             % Lines of error bar plots are not referenced
                             % directly in legends as an error bars plot contains
                             % two "lines": the data and the deviations. Here, the
                             % legends refer to the specgraph.errorbarseries
                             % handle which is 'Parent' to the line handle.
-                            k = find(get(child,'Parent') == ud.handles);
+                            k = find(get(child,'Parent') == plotChildren);
                         end
                         if ~isempty(k)
                             % Legend entry found. Add it to the plot.
                             m2t.currentHandleHasLegend = true;
                             interpreter = get(legendHandle, 'Interpreter');
-                            legendString = ud.lstrings(k);
+                            if ~isempty(ud) && isfield(ud,'strings')
+                                legendString = ud.lstrings(k);
+                            else
+                                legendString = get(child, 'DisplayName');
+                            end
                         end
                     end
                 end
@@ -625,7 +633,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                 errorUnknownEnvironment();
         end
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        switch get(child, 'Type')
+        switch char(get(child, 'Type'))
             % 'axes' environments are treated separately.
 
             case 'line'
@@ -636,8 +644,13 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
+                
+            case 'contour'
+                [m2t, str] = drawContour(m2t, child);
 
-            case 'hggroup'
+            case {'hggroup', 'matlab.graphics.primitive.Group', ...
+                  'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area', ...
+                  'quiver'}
                 [m2t, str] = drawHggroup(m2t, child);
 
             case 'hgtransform'
@@ -664,6 +677,11 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                     'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
                 % don't to anything for these handles and its children
                 str = [];
+                
+            case ''
+                warning('matlab2tikz:NoChildren',...
+                        ['No children found for handle %d. ',...
+                         'Carrying on as if nothing happened'], handle);
 
             otherwise
                 error('matlab2tikz:handleAllChildren',                 ...
@@ -897,7 +915,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % background color
     backgroundColor = get(handle, 'Color');
-    if ~strcmp(backgroundColor, 'none')
+    if ~isNone(backgroundColor)
         [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
         if ~strcmp(col, 'white')
             m2t.axesContainers{end}.options = ...
@@ -1146,8 +1164,8 @@ function options = getAxisOptions(m2t, handle, axis)
             [axis, ' dir'], 'reverse');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    isAxisLog = strcmp(get(handle,[upper(axis),'Scale']), 'log');
-    if isAxisLog
+    axisScale = getOrDefault(handle, [upper(axis) 'Scale'], 'lin');
+    if strcmp(axisScale, 'log');
         options = addToOptions(options, ...
             [axis,'mode'], 'log');
     end
@@ -1216,16 +1234,11 @@ function options = getAxisOptions(m2t, handle, axis)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get grids
-    hasGrid = false;
-    if strcmp(get(handle, [upper(axis),'Grid']), 'on');
-        options = addToOptions(options, ...
-            [axis, 'majorgrids'], []);
-        hasGrid = true;
+    if strcmp(getOrDefault(handle, [upper(axis),'Grid'], 'off'), 'on');
+        options = addToOptions(options, [axis, 'majorgrids'], []);
     end
-    if strcmp(get(handle, [upper(axis),'MinorGrid']), 'on');
-        options = addToOptions(options, ...
-            [axis, 'minorgrids'], []);
-        hasGrid = true;
+    if strcmp(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'), 'on');
+        options = addToOptions(options, [axis, 'minorgrids'], []);
     end
 end
 % ==============================================================================
@@ -1303,7 +1316,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
     % This also implicitly makes sure that the lengths match.
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
-    zData = get(handle, 'ZData');
+    zData = getOrDefault(handle, 'ZData', []);
     % We would like to do
     %   data = [xData(:), yData(:), zData(:)],
     % but Octave fails. Hence this isempty() construction.
@@ -1431,7 +1444,7 @@ function lineOpts = getLineOptions(m2t, lineStyle, lineWidth)
 % Gathers the line options.
     lineOpts = cell(0);
 
-    if ~strcmp(lineStyle, 'none') && (lineWidth > m2t.tol)
+    if ~isNone(lineStyle) && (lineWidth > m2t.tol)
         lineOpts{end+1} = sprintf('%s', translateLineStyle(lineStyle));
     end
 
@@ -1453,7 +1466,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
 
     marker = get(h, 'Marker');
 
-    if ~strcmp(marker, 'none')
+    if ~isNone(marker)
         markerSize = get(h, 'MarkerSize');
         lineStyle  = get(h, 'LineStyle');
         lineWidth  = get(h, 'LineWidth');
@@ -1721,7 +1734,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         % For some reason, this only works for filled contours in Pgfplots, so
         % fall back to explicit color specifications for line plots.
         if length(cData) == length(xData) ...
-                && ~strcmp(get(handle, 'FaceColor'), 'none')
+                && ~isNone(get(handle, 'FaceColor'))
             data = [data, cData(:)];
             drawOptions{end+1} = 'patch';
             columnNames{end+1} = 'c';
@@ -1738,7 +1751,7 @@ function [m2t, str] = drawPatch(m2t, handle)
             % Find out color values.
             % fill color
             faceColor = get(handle, 'FaceColor');
-            if ~strcmp(faceColor, 'none')
+            if ~isNone(faceColor)
                 [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
                 drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
                 xFaceAlpha = get(handle, 'FaceAlpha');
@@ -1750,7 +1763,7 @@ function [m2t, str] = drawPatch(m2t, handle)
             % draw color
             edgeColor = get(handle, 'EdgeColor');
             lineStyle = get(handle, 'LineStyle');
-            if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+            if isNone(lineStyle) || isNone(edgeColor)
                 drawOptions{end+1} = 'draw=none';
             else
                 [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
@@ -1959,6 +1972,29 @@ function [m2t, str] = drawImage(m2t, handle)
         'axis on top', []);
 end
 % ==============================================================================
+function [m2t, str] = drawContour(m2t, h)
+% draw a contour group (MATLAB R2014b and newer only)
+plotoptions = cell(0,2);
+plotoptions = addToOptions(plotoptions,'contour prepared');
+plotoptions = addToOptions(plotoptions,'contour prepared format','matlab');
+if strcmpi(get(h,'ShowText'),'off')
+    plotoptions = addToOptions(plotoptions,'contour/labels','false');
+end
+if strcmpi(get(h,'Fill'),'on')
+    userWarning(m2t, 'Filled contour replaced by unfilled contour plot.');
+    %FIXME: implement colored contour plots
+end
+%TODO: explicit color handling for contour plots
+
+contours = get(h,'ContourMatrix');
+
+[m2t, table] = makeTable(m2t, {'',''}, contours.');
+
+str = sprintf('\\addplot[%s] table[row sep=crcr] {%%\n%s};\n', ...
+              prettyprintOpts(m2t, plotoptions, ', '), table);
+
+end
+% ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
 % Octave doesn't have the handle() function, so there's no way to determine
 % the nature of the plot anymore at this point.  Set to 'unknown' to force
@@ -1970,35 +2006,35 @@ function [m2t, str] = drawHggroup(m2t, h)
     end
 
     switch(cl)
-        case 'specgraph.barseries'
+        case {'specgraph.barseries', 'matlab.graphics.chart.primitive.Bar'}
             % hist plots and friends
             [m2t, str] = drawBarseries(m2t, h);
 
-        case 'specgraph.stemseries'
+        case {'specgraph.stemseries', 'matlab.graphics.chart.primitive.Stem'}
             % stem plots
             [m2t, str] = drawStemSeries(m2t, h);
 
-        case 'specgraph.stairseries'
+        case {'specgraph.stairseries', 'matlab.graphics.chart.primitive.Stair'}
             % stair plots
             [m2t, str] = drawStairSeries(m2t, h);
 
-        case {'specgraph.areaseries'}
+        case {'specgraph.areaseries', 'matlab.graphics.chart.primitive.Area'}
             % scatter plots
             [m2t,str] = drawAreaSeries(m2t, h);
 
-        case {'specgraph.quivergroup'}
+        case {'specgraph.quivergroup', 'matlab.graphics.chart.primitive.Quiver'}
             % quiver arrows
             [m2t, str] = drawQuiverGroup(m2t, h);
 
-        case {'specgraph.errorbarseries'}
+        case {'specgraph.errorbarseries', 'matlab.graphics.chart.primitive.ErrorBar'}
             % error bars
             [m2t,str] = drawErrorBars(m2t, h);
 
-        case {'specgraph.scattergroup'}
+        case {'specgraph.scattergroup','matlab.graphics.chart.primitive.Scatter'}
             % scatter plots
             [m2t,str] = drawScatterPlot(m2t, h);
 
-        case {'specgraph.contourgroup', 'hggroup'}
+        case {'specgraph.contourgroup', 'hggroup', 'matlab.graphics.primitive.Group'}
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
 
@@ -2216,7 +2252,7 @@ function [m2t, str] = drawText(m2t, handle)
     end
 
     style{end+1} = ['text=' tcolor];
-    if ~strcmp(EdgeColor, 'none')
+    if ~isNone(EdgeColor)
         [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
         style{end+1} = ['draw=', ecolor];
     end
@@ -2291,14 +2327,14 @@ function [m2t, str] = drawRectangle(m2t, handle)
     colorOptions = cell(0);
     % fill color
     faceColor  = get(handle, 'FaceColor');
-    if ~strcmp(faceColor, 'none')
+    if ~isNone(faceColor)
         [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
         colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
     % draw color
     edgeColor = get(handle, 'EdgeColor');
     lineStyle = get(handle, 'LineStyle');
-    if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+    if isNone(lineStyle) || isNone(edgeColor)
         colorOptions{end+1} = 'draw=none';
     else
         [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
@@ -2320,7 +2356,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
 
     % Check for surf or mesh plot. Second argument in if-check corresponds to
     % default values for mesh plot in MATLAB.
-    if strcmpi(faceColor, 'none') || ...
+    if isNone(faceColor) || ...
             (strcmpi(edgeColor, 'flat') && isequal(faceColor, [1 1 1]))
         plotType = 'mesh';
     else
@@ -2338,7 +2374,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
     % TODO Revisit this selection and create a bunch of test plots.
     if strcmpi(plotType, 'surf')
         % Set shader for surface plot.
-        if strcmpi(edgeColor, 'none') && strcmpi(faceColor, 'flat')
+        if isNone(edgeColor) && strcmpi(faceColor, 'flat')
             surfOptions{end+1} = 'shader=flat';
         elseif isnumeric(edgeColor) && strcmpi(faceColor, 'flat')
             [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
@@ -2349,7 +2385,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
                 surfOptions{end+1} = 'shader=faceted';
             end
             surfOptions{end+1} = sprintf('draw=%s', xEdgeColor);
-        elseif strcmpi(edgeColor, 'none') && strcmpi(faceColor, 'interp')
+        elseif isNone(edgeColor) && strcmpi(faceColor, 'interp')
             surfOptions{end+1} = 'shader=interp';
         else
             surfOptions{end+1} = 'shader=faceted interp';
@@ -2563,10 +2599,10 @@ function [m2t, str] = drawBarseries(m2t, h)
                 continue;
             end
 
-            if strcmpi(get(s, 'Type'), 'hggroup')
+            if any(strcmpi(get(s, 'Type'), {'hggroup','Bar'}))
                 cl = class(handle(s));
                 switch cl
-                    case 'specgraph.barseries'
+                    case {'specgraph.barseries', 'matlab.graphics.chart.primitive.Bar'} 
                         m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
                     case 'specgraph.errorbarseries'
                         % TODO
@@ -2716,7 +2752,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     % define edge color
     edgeColor = get(h, 'EdgeColor');
     lineStyle = get(h, 'LineStyle');
-    if strcmp(lineStyle, 'none') || strcmp(edgeColor, 'none')
+    if isNone(lineStyle) || isNone(edgeColor)
         drawOptions{end+1} = 'draw=none';
     else
         [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
@@ -2724,11 +2760,15 @@ function [m2t, str] = drawBarseries(m2t, h)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % define face color;
-    % quite oddly, this value is not coded in the handle itself, but in its
-    % child patch.
-    child = get(h, 'Children');
-    faceColor = get(child, 'FaceColor');
-    if ~strcmp(faceColor, 'none')
+    if ~isempty(get(h,'Children'))
+        % quite oddly, before MATLAB R2014b this value is stored in a child
+        % patch and not in the object itself
+        obj = get(h, 'Children'); 
+    else % R2014b and newer
+        obj = h;
+    end
+    faceColor = get(obj, 'FaceColor');
+    if ~isNone(faceColor)
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
         drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
@@ -2815,16 +2855,20 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % define face color;
-    % quite oddly, this value is not coded in the handle itself, but in its
-    % child patch.
-    child      = get(h, 'Children');
-    faceColor  = get(child, 'FaceColor');
+    if ~isempty(get(h,'Children'))
+        % quite oddly, before MATLAB R2014b this value is stored in a child
+        % patch and not in the object itself
+        obj = get(h, 'Children'); 
+    else % R2014b and newer
+        obj = h;
+    end
+    faceColor = get(obj, 'FaceColor');
     [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % gather the draw options
     lineStyle = get(h, 'LineStyle');
     drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
-    if strcmp(lineStyle, 'none')
+    if isNone(lineStyle)
         drawOptions{end+1} = 'draw=none';
     else
         drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
@@ -2850,46 +2894,74 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     str = [];
 
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % One could get(h,'{X,Y,U,V}Data') in which the intended arrow lengths
-    % are stored. MATLAB(R) however applies some quite sophisticated scaling
-    % here to avoid overlap of arrows.
-    % The actual length of the arrows is stored in c(1) of
-    %
-    %      c = get(h, 'Children');
-    %
-    % 'XData' and 'YData' of c(1) will be of the form
-    %
-    % [arrow1point1, arrow1point2, NaN, arrow2point1, arrow2point2, NaN].
-    c = get(h, 'Children');
+    % MATLAB uses a scaling algorithm to determine the size of the arrows.
+    % Before R2014b, the processed coordinates were available. This is no longer
+    % the case, so we have to re-implement it. In MATLAB it is implemented in
+    % the |quiver3|  (and |quiver|) function.
+    xData = get(h, 'XData');
+    yData = get(h, 'YData');
+    zData = getOrDefault(h, 'ZData', []);
 
-    xData = get(c(1), 'XData');
-    yData = get(c(1), 'YData');
-    zData = get(c(1), 'ZData');
+    uData = get(h, 'UData');
+    vData = get(h, 'VData');
+    wData = getOrDefault(h, 'WData', []);
 
-    step = 3;
-    m = length(xData(1:step:end));   % number of arrows
-
-    if(isempty(zData))
-        name = 'addplot';
-        format = [m2t.ff,',',m2t.ff];
-        data = zeros(4,m);
-        data(1,:) = xData(1:step:end);
-        data(2,:) = yData(1:step:end);
-        data(3,:) = xData(2:step:end);
-        data(4,:) = yData(2:step:end);
+    if isempty(zData)
+        zData = 0;
+        wData = 0;
+        is3D  = false;
     else
-        m2t.currentAxesContain3dData = true;
+        is3D = true;
+    end
+
+    % MATLAB scaling algorithm
+    if any(size(xData)==1)
+        nX = sqrt(numel(xData)); nY = nX;
+    else
+        [nY, nX] = size(xData);
+    end
+    range  = @(xyzData)(max(xyzData(:)) - min(xyzData(:)));
+    euclid = @(x,y,z)(sqrt(x.^2 + y.^2 + z.^2));
+    dx = range(xData)/nX;
+    dy = range(yData)/nY;
+    dz = range(zData)/max(nX,nY);
+    dd = euclid(dx, dy, dz);
+    if dd > 0
+        vectorLength = euclid(uData/dd,vData/dd,wData/dd);
+        maxLength = max(vectorLength(:));
+    else  
+        maxLength = 1;
+    end
+    if getOrDefault(h, 'AutoScale', true)
+        scaleFactor = getOrDefault(h,'AutoScaleFactor', 0.9) / maxLength;
+    else
+        scaleFactor = 1;
+    end
+    xData = xData(:).'; uData = uData(:).'*scaleFactor;
+    yData = yData(:).'; vData = vData(:).'*scaleFactor;
+    zData = zData(:).'; wData = wData(:).'*scaleFactor;
+
+    % prepare output
+    if is3D
         name = 'addplot3';
         format = [m2t.ff,',',m2t.ff,',',m2t.ff];
-        data = zeros(6,m);
-        data(1,:) = xData(1:step:end);
-        data(2,:) = yData(1:step:end);
-        data(3,:) = zData(1:step:end);
-        data(4,:) = xData(2:step:end);
-        data(5,:) = yData(2:step:end);
-        data(6,:) = zData(2:step:end);
+    else % 2D plotting
+        name   = 'addplot';
+        format = [m2t.ff,',',m2t.ff];
     end
+
+    data = NaN(6,numel(xData));
+    data(1,:) = xData;
+    data(2,:) = yData;
+    data(3,:) = zData;
+    data(4,:) = xData + uData;
+    data(5,:) = yData + vData;
+    data(6,:) = zData + wData;
+
+    if ~is3D
+        data([3 6],:) = []; % remove Z-direction
+    end
+
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % gather the arrow options
     showArrowHead = get(h, 'ShowArrowHead');
@@ -2935,83 +3007,94 @@ end
 % ==============================================================================
 function [m2t, str] = drawErrorBars(m2t, h)
 % Takes care of MATLAB's error bar plots.
-%
-% 'errorseries' plots have two line-plot children, one of which contains
-% the information about the center points; 'XData' and 'YData' components
-% are both of length n.
-% The other contains the information about the deviations (errors), more
-% more precisely: the lines to be drawn. Those are
-%        ___
-%         |
-%         |
-%         X  <-- (x0,y0)
-%         |
-%        _|_
-%
-%    X: x0,     x0,     x0-eps, x0+eps, x0-eps, x0+eps;
-%    Y: y0-dev, y0+dev, y0-dev, y0-dev, y0+dev, y0+dev.
-%
-% Hence, 'XData' and 'YData' are of length 6*n and contain redundant info.
-% Some versions of MATLAB(R) insert more columns with NaNs (to be able to
-% pass the entire X, Y arrays into plot()) such that the data is laid out as
-%
-%    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps;
-%    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev,
-%
-% or with another columns of NaNs added at the end.
-    c = get(h, 'Children');
+    if isa(h,'matlab.graphics.chart.primitive.ErrorBar') % MATLAB R2014b+
+        hData = h;
+        upDev = get(h, 'UData');
+        loDev = get(h, 'LData');
+        
+        yDeviations = [upDev(:), loDev(:)];
+        
+    else % Legacy Handling (Octave and MATLAB R2014a and older):
+        % 'errorseries' plots have two line-plot children, one of which contains
+        % the information about the center points; 'XData' and 'YData' components
+        % are both of length n.
+        % The other contains the information about the deviations (errors), more
+        % more precisely: the lines to be drawn. Those are
+        %        ___
+        %         |
+        %         |
+        %         X  <-- (x0,y0)
+        %         |
+        %        _|_
+        %
+        %    X: x0,     x0,     x0-eps, x0+eps, x0-eps, x0+eps;
+        %    Y: y0-dev, y0+dev, y0-dev, y0-dev, y0+dev, y0+dev.
+        %
+        % Hence, 'XData' and 'YData' are of length 6*n and contain redundant info.
+        % Some versions of MATLAB(R) insert more columns with NaNs (to be able to
+        % pass the entire X, Y arrays into plot()) such that the data is laid out as
+        %
+        %    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps;
+        %    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev,
+        %
+        % or with another columns of NaNs added at the end.
+        c = get(h, 'Children');
 
-    % Find out which contains the data and which the deviations.
-    n1 = length(get(c(1),'XData'));
-    n2 = length(get(c(2),'XData'));
-    if n2 == 6*n1
-        % 1 contains centerpoint info
-        dataIdx  = 1;
-        errorIdx = 2;
-        numDevData = 6;
-    elseif n1 == 6*n2
-        % 2 contains centerpoint info
-        dataIdx  = 2;
-        errorIdx = 1;
-        numDevData = 6;
-    elseif n2 == 9*n1-1 || n2 == 9*n1
-        % 1 contains centerpoint info
-        dataIdx  = 1;
-        errorIdx = 2;
-        numDevData = 9;
-    elseif n1 == 9*n2-1 || n1 == 9*n2
-        % 2 contains centerpoint info
-        dataIdx  = 2;
-        errorIdx = 1;
-        numDevData = 9;
-    else
-        error('drawErrorBars:errorMatch', ...
-            'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d, 9*%d-1 ~= %d, 9*%d-1 ~= %d).', ...
-            n1, n2, n2, n1, n1, n2, n2, n1);
+        % Find out which contains the data and which the deviations.
+        %TODO: this can be simplified using sort
+        n1 = length(get(c(1),'XData'));
+        n2 = length(get(c(2),'XData'));
+        if n2 == 6*n1
+            % 1 contains centerpoint info
+            dataIdx  = 1;
+            errorIdx = 2;
+            numDevData = 6;
+        elseif n1 == 6*n2
+            % 2 contains centerpoint info
+            dataIdx  = 2;
+            errorIdx = 1;
+            numDevData = 6;
+        elseif n2 == 9*n1-1 || n2 == 9*n1
+            % 1 contains centerpoint info
+            dataIdx  = 1;
+            errorIdx = 2;
+            numDevData = 9;
+        elseif n1 == 9*n2-1 || n1 == 9*n2
+            % 2 contains centerpoint info
+            dataIdx  = 2;
+            errorIdx = 1;
+            numDevData = 9;
+        else
+            error('drawErrorBars:errorMatch', ...
+                'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d, 9*%d-1 ~= %d, 9*%d-1 ~= %d).', ...
+                n1, n2, n2, n1, n1, n2, n2, n1);
+        end
+        hData  = c(dataIdx);
+        hError = c(errorIdx);
+        
+        % prepare error array (that is, gather the y-deviations)
+        yValues = get(hData , 'YData');
+        yErrors = get(hError, 'YData');
+        
+        n = length(yValues);
+        
+        yDeviations = zeros(n, 2);
+        
+        %TODO: this can be vectorized
+        for k = 1:n
+            % upper deviation
+            kk = numDevData*(k-1) + 1;
+            upDev = abs(yValues(k) - yErrors(kk));
+            
+            % lower deviation
+            kk = numDevData*(k-1) + 2;
+            loDev = abs(yValues(k) - yErrors(kk));
+            
+            yDeviations(k,:) = [upDev loDev];
+        end
     end
-
-    % prepare error array (that is, gather the y-deviations)
-    yValues = get(c(dataIdx) , 'YData');
-    yErrors = get(c(errorIdx), 'YData');
-
-    n = length(yValues);
-
-    yDeviations = zeros(n, 2);
-
-    for k = 1:n
-        % upper deviation
-        kk = numDevData*(k-1) + 1;
-        upDev = abs(yValues(k) - yErrors(kk));
-
-        % lower deviation
-        kk = numDevData*(k-1) + 2;
-        loDev = abs(yValues(k) - yErrors(kk));
-
-        yDeviations(k,:) = [upDev loDev];
-    end
-
-    % Now, pull drawLine() with deviation information.
-    [m2t, str] = drawLine(m2t, c(dataIdx), yDeviations);
+    % Now run drawLine() with deviation information.
+    [m2t, str] = drawLine(m2t, hData, yDeviations);
 end
 % ==============================================================================
 function out = linearFunction(X, Y)
@@ -3195,31 +3278,35 @@ function axisOptions = getColorbarOptions(m2t, handle)
     % begin collecting axes options
     axisOptions = cell(0, 2);
     cbarOptions = {};
-    cbarStyleOptions = {};
+    cbarStyleOptions = cell(0,2);
 
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % set position, ticks etc. of the colorbar
     loc = get(handle, 'Location');
 
-    % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-    % small cased ('northoutside'). Hence, use lower() for uniformity.
-    switch lower(loc)
+    switch lower(loc) % case insentitive (MATLAB: CamelCase, Octave: lower case)
         case 'north'
             cbarOptions{end+1} = 'horizontal';
-            cbarStyleOptions = {cbarStyleOptions{:},...
-                'at={(0.5,0.97)}',...
-                'anchor=north', ...
-                'xticklabel pos=lower', ...
-                'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'at',...
+                '{(0.5,0.97)}');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'anchor',...
+                'north');
+            cbarStyleOptions = addToOptions(cbarStyleOptions,...
+                'xticklabel pos', 'lower');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'width',...
+                '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'south'
             cbarOptions{end+1} = 'horizontal';
-            cbarStyleOptions = {cbarStyleOptions{:},...
-                'at={(0.5,0.03)}',...
-                'anchor=south', ...
-                'xticklabel pos=upper', ...
-                'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'at',...
+                '{(0.5,0.03)}');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'anchor', ...
+                'south');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, ...
+                'xticklabel pos','upper');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'width',...
+                '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'east'
             cbarOptions{end+1} = 'right';
+            
             cbarStyleOptions = {cbarStyleOptions{:},...
                 'at={(0.97,0.5)}',...
                 'anchor=east', ...
@@ -3227,11 +3314,14 @@ function axisOptions = getColorbarOptions(m2t, handle)
                 'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
         case 'west'
             cbarOptions{end+1} = 'left';
-            cbarStyleOptions = {cbarStyleOptions{:},...
-                'at={(0.03,0.5)}',...
-                'anchor=west', ...
-                'xticklabel pos=right', ...
-                'width=0.97*\pgfkeysvalueof{/pgfplots/parent axis width}'};
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'at',...
+                '{(0.03,0.5)}');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'anchor',...
+                'west');
+            cbarStyleOptions = addToOptions(cbarStyleOptions,...
+                'xticklabel pos', 'right');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'width',...
+                '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'eastoutside'
             %cbarOptions{end+1} = 'right';
         case 'westoutside'
@@ -3239,42 +3329,32 @@ function axisOptions = getColorbarOptions(m2t, handle)
         case 'northoutside'
             % TODO move to top
             cbarOptions{end+1} = 'horizontal';
-            cbarStyleOptions = {cbarStyleOptions{:},...
-                'at={(0.5,1.03)}',...
-                'anchor=south', ...
-                'xticklabel pos=upper'};
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'at',...
+                '{(0.5,1.03)}');
+            cbarStyleOptions = addToOptions(cbarStyleOptions, 'anchor',...
+                'south');
+            cbarStyleOptions = addToOptions(cbarStyleOptions,...
+                'xticklabel pos', 'upper');
         case 'southoutside'
+            
             cbarOptions{end+1} = 'horizontal';
         otherwise
             error('matlab2tikz:getColorOptions:unknownLocation',...
                 'getColorbarOptions: Unknown ''Location'' %s.', loc)
     end
 
-    % TODO proper use of addToOptions()
+    %TODO: maybe we should NOT rely on colorbars being axes in MATLAB R2014a
+    %(and older) and just access the properties directly here. In R2014b and
+    %newer this is certainly the clearer way to go. However, this does introduce
+    %some duplicate code
     xo = getAxisOptions(m2t, handle, 'x');
-    for k = 1:size(xo, 1)
-        if   strcmp(xo{k,1}, 'xmin') ...
-                || strcmp(xo{k,1}, 'xmax') ...
-                || strcmp(xo{k,1}, 'xtick')
-            % filter a bunch of keywords
-            continue;
-        end
-        cbarStyleOptions{end+1} = [xo{k,1}, '=', xo{k,2}];
-    end
     yo = getAxisOptions(m2t, handle, 'y');
-    for k = 1:size(yo, 1)
-        if   strcmp(yo{k,1}, 'ymin') ...
-                || strcmp(yo{k,1}, 'ymax')
-            % filter a bunch of keywords
-            continue;
-        end
-        cbarStyleOptions{end+1} = [yo{k,1}, '=', yo{k,2}];
-    end
-
-    %if strcmp(get(handle, 'YScale'), 'log')
-    %    cbarStyleOptions{end+1} = 'ymode=log';
-    %end
-    %
+    xyo = merge(xo, yo);
+    unsupportedOptions = {'xmin','xmax','xtick','ymin','ymax','ytick'};
+    xyo(ismember(xyo(:,1), unsupportedOptions),:) = [];
+    
+    cbarStyleOptions = merge(cbarStyleOptions, xyo);
+    
     %% Get axis labels.
     %for axis = 'xy'
     %  axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
@@ -3310,14 +3390,17 @@ function axisOptions = getColorbarOptions(m2t, handle)
                 'title style', '{align=center}');
         end
         title = join(m2t, title, '\\[1ex]');
-        cbarStyleOptions{end+1} = sprintf('title={%s}', title);
+        cbarStyleOptions = addToOptions(cbarStyleOptions, 'title', ...
+            sprintf('{%s}', title));
     end
 
     if m2t.cmdOpts.Results.strict
         % Sampled colors.
         numColors = size(m2t.currentHandles.colormap, 1);
         cbarOptions{end+1} = 'sampled';
-        cbarStyleOptions{end+1} = sprintf('samples=%d', numColors+1);
+        cbarStyleOptions = addToOptions(cbarStyleOptions, 'samples', ...
+            sprintf('%d', numColors+1));
+        
     end
 
     % Merge them together in axisOptions.
@@ -3328,14 +3411,13 @@ function axisOptions = getColorbarOptions(m2t, handle)
             userWarning(m2t, ...
                 'Pgfplots cannot deal with more than one colorbar option yet.');
         end
-        axisOptions = addToOptions(axisOptions, ...
-            ['colorbar ', cbarOptions{1}], []);
+        axisOptions = addToOptions(axisOptions, ['colorbar ', cbarOptions{1}]);
     end
 
     if ~isempty(cbarStyleOptions)
         axisOptions = addToOptions(axisOptions, ...
             'colorbar style', ...
-            ['{', join(m2t, cbarStyleOptions, ','), '}']);
+            ['{' prettyprintOpts(m2t, cbarStyleOptions, ',') '}']);
     end
 
     % Append upper and lower limit of the colorbar.
@@ -3362,7 +3444,7 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
         % everything alright: rgb color here
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
     else
-        switch mode
+        switch lower(mode)
             case 'patch'
                 [m2t, xcolor] = patchcolor2xcolor(m2t, color, handle);
             case 'image'
@@ -3386,48 +3468,56 @@ end
 % ==============================================================================
 function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
 % Transforms a color of the edge or the face of a patch to an xcolor literal.
-    if ~ischar(color)
+    if ~ischar(color) && ~isnumeric(color)
         error('patchcolor2xcolor:illegalInput', ...
-            'Input argument ''color'' not a string.');
+            'Input argument ''color'' not a string or numeric.');
     end
+    if isnumeric(color)
+        [m2t, xcolor] = rgb2colorliteral(m2t, color);
+    else
+        switch color
+            case 'flat'
+                % look for CData at different places
+                cdata = getOrDefault(patchhandle, 'CData', []);
+                if isempty(cdata) || ~isnumeric(cdata)
+                    c = get(patchhandle, 'Children');
+                    cdata = get(c, 'CData');
+                end
+                if isempty(cdata) || ~isnumeric(cdata)
+                    % R2014b+: CData is implicit
+                    siblings = get(get(patchhandle, 'Parent'), 'Children');
+                    cdata = find(siblings(end:-1:1)==patchhandle);
+                end
 
-    switch color
-        case 'flat'
-            % look for CData at different places
-            cdata = get(patchhandle, 'CData');
-            if isempty(cdata) || ~isnumeric(cdata)
-                c = get(patchhandle, 'Children');
-                cdata = get(c, 'CData');
-            end
+                col1 = cdata(1,1);
+                if all(isnan(cdata) | abs(cdata-col1)<1.0e-10)
+                    [m2t, colorindex] = cdata2colorindex(m2t, col1, patchhandle);
+                    [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
+                else
+                    % Don't return anything meaningful and count on the caller to
+                    % make soemthing of it.
+                    xcolor = [];
+                end
 
-            col1 = cdata(1,1);
-            if all(isnan(cdata) | abs(cdata-col1)<1.0e-10)
-                [m2t, colorindex] = cdata2colorindex(m2t, col1, patchhandle);
-                [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
-            else
-                % Don't return anything meaningful and count on the caller to
-                % make soemthing of it.
-                xcolor = [];
-            end
+            case 'auto'
+                color = get(patchhandle, 'Color');
+                [m2t, xcolor] = rgb2colorliteral(m2t, color);
 
-        case 'auto'
-            color = get(patchhandle, 'Color');
-            [m2t, xcolor] = rgb2colorliteral(m2t, color);
+            case 'none'
+                error('matlab2tikz:anycolor2rgb:ColorModelNoneNotAllowed',...
+                    ['Color model ''none'' not allowed here. ',...
+                    'Make sure this case gets intercepted before.']);
 
-        case 'none'
-            error('matlab2tikz:anycolor2rgb:ColorModelNoneNotAllowed',...
-                ['Color model ''none'' not allowed here. ',...
-                'Make sure this case gets intercepted before.']);
-
-        otherwise
-            error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
-                'Don''t know how to handle the color model ''%s''.',color);
+            otherwise
+                    error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
+                    'Don''t know how to handle the color model ''%s''.',color);
+        end
     end
-    end
-    % ==============================================================================
-    function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
-    % Transforms a color in CData format to an index in the color map.
-    % Only does something if CDataMapping is 'scaled', really.
+end
+% ==============================================================================
+function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
+% Transforms a color in CData format to an index in the color map.
+% Only does something if CDataMapping is 'scaled', really.
 
     if ~isnumeric(cdata) && ~islogical(cdata)
         error('matlab2tikz:cdata2colorindex:unknownCDataType',...
@@ -3460,7 +3550,7 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
         otherwise
             error('matlab2tikz:anycolor2rgb:unknownCDataMapping',...
                 'Unknown CDataMapping ''%s''.',cdatamapping);
-end
+    end
 end
 % ==============================================================================
 function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
@@ -3682,13 +3772,13 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, ax
         pgfTickLabels = [];
     else % strcmp(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
         keywordScale = [upper(axis), 'Scale'];
-        isAxisLog = strcmp(get(handle,keywordScale), 'log');
+        isAxisLog = strcmp(getOrDefault(handle,keywordScale, 'lin'), 'log');
         [pgfTicks, pgfTickLabels] = ...
             matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isAxisLog, tickLabelMode);
     end
 
     keywordMinorTick = [upper(axis), 'MinorTick'];
-    hasMinorTicks = strcmp(get(handle, keywordMinorTick), 'on');
+    hasMinorTicks = strcmp(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
 end
 % ==============================================================================
 function [pTicks, pTickLabels] = ...
@@ -4181,6 +4271,15 @@ end
 function bool = isNone(value)
 % Checks whether a value is 'none'
     bool = strcmpi(value, 'none');
+end
+% ==============================================================================
+function val = getOrDefault(handle, key, default)
+% gets the value or returns the default value if no such property exists
+    if all(isprop(handle, key))
+        val = get(handle, key);
+    else
+        val = default;
+    end 
 end
 % ==============================================================================
 function out = isVisible(handles)

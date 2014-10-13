@@ -474,7 +474,7 @@ function [description, extraOpts] = double_axes()
   % following code is taken from `floatAxisX.m'
 
   % get position of axes
-  allAxes = get(gcf,'Children');
+  allAxes = findobj(gcf,'type','axes');
   naxes = length(allAxes);
   ax1Pos = get(allAxes(naxes),'position');
 
@@ -569,7 +569,12 @@ function [description, extraOpts] = colorbarLogplot()
       otherwise
           error( 'Unknown environment. Need MATLAB(R) or Octave.' )
   end
-  set(colorbar(), 'YScale', 'log');
+  try
+    set(colorbar(), 'YScale', 'log');
+  catch
+    error('Colorbar scaling in MATLAB R2014b is not documented');
+  end
+    
 
   description = 'Logscaled colorbar.';
   extraOpts = {};
@@ -2167,7 +2172,7 @@ function [description, extraOpts] = pixelLegend()
   plot(x, [x;x.^2]);
   set(gca, 'units', 'pixels')
   lh=legend('1', '2');
-  set(lh, 'position', [100 200 65 42])
+  set(lh, 'units','pixels','position', [100 200 65 42])
 
   description = 'Legend with pixel position.';
   extraOpts = {};

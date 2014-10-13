@@ -96,10 +96,16 @@ function matlab2tikz_acidtest(varargin)
           e = lasterror('reset'); %#ok
           ploterrmsg{k} = format_error_message(e);
           
-          for ee = e.stack
-              if isempty(funcName{k}) && ~isempty(regexp(ee.name, '^testfunctions>','once'))
-                  % extract function name
-                  funcName{k} = regexprep(ee.name, '^testfunctions>(.*)', '$1');
+          for kError = 1:numel(e.stack);
+              ee = e.stack(kError);
+              if isempty(funcName{k})
+                  if ~isempty(regexp(ee.name, '^testfunctions>','once'))
+                    % extract function name
+                    funcName{k} = regexprep(ee.name, '^testfunctions>(.*)', '$1');
+                  elseif ~isempty(regexp(ee.name, '^testfunctions','once')) && kError < numel(e.stack)
+                    % new stack trace format (R2014b)
+                    funcName{k} = e.stack(kError-1).name;
+                  end
               end
           end
           desc{k} = '\textcolor{red}{Error during plot generation.}';
