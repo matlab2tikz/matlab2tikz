@@ -172,6 +172,7 @@ m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
 m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
+m2t.barplotId    = 0; % identification flag for bar plots
 
 % definition of color depth
 m2t.colorDepth     = 48; %[bit] RGB color depth (typical values: 24, 30, 48)
@@ -754,11 +755,10 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
     % update gca
     m2t.currentHandles.gca = handle;
 
-    % This is an ugly workaround for bar plots.
-    % Bar plots need to have several values counted on a per-axes basis, e.g.,
-    % the number of bars. Setting m2t.barplotId to [] here makes sure those
-    % values are recomputed in drawBarseries().
-    m2t.barplotId = [];
+    % Bar plots need to have some values counted per axis. Setting 
+    % m2t.barplotId to 0 makes sure these are recomputed in drawBarSeries()
+    % TODO: find nicer approach for barplots
+    m2t.barplotId = 0;
 
     % Octave:
     % Check if this axis environment is referenced by a legend.
@@ -2561,12 +2561,10 @@ function [m2t, str] = drawBarseries(m2t, h)
 %
 % TODO Get rid of code duplication with 'drawAxes'.
 
-% m2t.barplotId is set to [] in drawAxes(), so all of the values are computed
-% anew for subplots.
-    if ~isfield(m2t, 'barplotId') || isempty(m2t.barplotId)
+    % drawAxes sets m2t.barplotId to 0, so all values are recomputed for subplots.
+    if m2t.barplotId == 0
         % 'barplotId' provides a consecutively numbered ID for each
         % barseries plot. This allows for a proper handling of multiple bars.
-        m2t.barplotId = [];
         m2t.barplotTotalNumber = [];
         m2t.barShifts = [];
         m2t.addedAxisOption = false;
@@ -2589,14 +2587,14 @@ function [m2t, str] = drawBarseries(m2t, h)
     % axis (while MATLAB can).
     % The following checks if this is the case and cowardly bails out if so.
     % On top of that, the number of bar plots is counted.
+    % FIXME: bar plots together with different kinds (seems possible in 1.10)
     if isempty(m2t.barplotTotalNumber)
         m2t.barplotTotalNumber = 0;
         siblings = get(get(h, 'Parent'), 'Children');
         for s = siblings(:)'
 
-            % skip invisible objects
             if ~isVisible(s)
-                continue;
+                continue;  % skip invisible objects
             end
 
             if any(strcmpi(get(s, 'Type'), {'hggroup','Bar'}))
@@ -2619,7 +2617,6 @@ function [m2t, str] = drawBarseries(m2t, h)
             end
         end
     end
-    % -----------------------------------------------------------------------
 
     xData = get(h, 'XData');
     yData = get(h, 'YData');
@@ -2636,33 +2633,11 @@ function [m2t, str] = drawBarseries(m2t, h)
     end
     numBars = m2t.barplotTotalNumber;
     switch barlayout
-        case 'grouped'
-            % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            % grouped plots
-            % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            % set ID
-            if isempty(m2t.barplotId)
-                m2t.barplotId = 1;
-            else
-                m2t.barplotId = m2t.barplotId + 1;
-            end
+        case 'grouped'  % grouped bar plots
+            m2t.barplotId = m2t.barplotId + 1;
 
-            %            % From <MATLAB>/toolbox/matlab/specgraph/makebars.m
-            %            % plottype==0 means 'grouped'
-            %            if m==1 || plottype~=0,
-            %                groupWidth = 1.0;
-            %            else
-            %                groupWidth = min(groupWidth, m/(m+1.5));
-            %            end
-            %            xx(:,3:4) = 1;
-            %            if plottype==0,
-            %                xx = (xx-0.5)*barwidth*groupwidth/m;
-            %            else
-            %                xx = (xx-0.5)*barwidth*groupwidth;
-            %            end
-
-            % Maximum group with relative to the minumum distance between to
-            % x-values.
+            % Maximum group width relative to the minumum distance between two
+            % x-values. See <MATLAB>/toolbox/matlab/specgraph/makebars.m
             maxGroupWidth = 0.8;
             if numBars == 1
                 groupWidth = 1.0;
@@ -2670,22 +2645,17 @@ function [m2t, str] = drawBarseries(m2t, h)
                 groupWidth = min(maxGroupWidth, numBars/(numBars+1.5));
             end
 
-            % ---------------------------------------------------------------
-            % Calculate the width of each bar and the center point shift.
-            % The following is taken from MATLAB (see makebars.m) without
-            % the special handling for hist plots or other fancy options.
-            % ---------------------------------------------------------------
+            % Calculate the width of each bar and the center point shift as in
+            % makebars.m
             if isempty(m2t.barShifts)
                 % Get the shifts of the bar centers.
                 % In case of numBars==1, this returns 0,
                 % In case of numBars==2, this returns [-1/4, 1/4],
                 % In case of numBars==3, this returns [-1/3, 0, 1/3],
                 % and so forth.
-                % The bar width is assumed to be groupWidth/numBars.
-                m2t.barShifts = ((1:numBars) - 0.5) * groupWidth / numBars ...
-                    - 0.5* groupWidth;
+                barWidth = groupWidth/numBars; % assumption
+                m2t.barShifts = ((1:numBars) - 0.5) * barWidth - groupWidth/2;
             end
-            % ---------------------------------------------------------------
 
             % From http://www.mathworks.com/help/techdoc/ref/bar.html:
             % bar(...,width) sets the relative bar width and controls the
@@ -2695,9 +2665,7 @@ function [m2t, str] = drawBarseries(m2t, h)
             % another. The value of width must be a scalar.
             barWidth = get(h, 'BarWidth') * groupWidth / numBars;
 
-            % The minimum distance between two x-values. This is the scaling
-            % factor for all other lengths about the bars.
-            dx = min(diff(xData));
+            dx = min(diff(xData)); % used as scaling factor for all other lengths
 
             % MATLAB treats shift and width in normalized coordinate units,
             % whereas Pgfplots requires physical units (pt,cm,...); hence
@@ -2718,16 +2686,9 @@ function [m2t, str] = drawBarseries(m2t, h)
                 drawOptions{end+1} = ...
                     sprintf(['bar shift=',m2t.ff,'%s'], physicalBarShift, phyicalBarUnit);
             end
-            % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            % end grouped plots
-            % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-        case 'stacked'
-            % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            % Stacked plots --
-            % Add option 'ybar stacked' to the options of the surrounding
-            % axis environment (and disallow anything else but stacked
-            % plots).
+        case 'stacked' % stacked plots
+            % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
             if isempty(m2t.addedAxisOption) || ~m2t.addedAxisOption
                 m2t.axesContainers{end}.stackedBarsPresent = true;
@@ -2735,20 +2696,19 @@ function [m2t, str] = drawBarseries(m2t, h)
                 % Add 'ybar stacked' to the containing axes environment.
                 m2t.axesContainers{end}.options = ...
                     addToOptions(m2t.axesContainers{end}.options, ...
-                    [barType,' stacked'], []);
+                    [barType,' stacked']);
                 m2t.axesContainers{end}.options = ...
                     addToOptions(m2t.axesContainers{end}.options, ...
                     'bar width', ...
                     sprintf([m2t.ff,'%s'], m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
                 m2t.addedAxisOption = true;
             end
-            % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         otherwise
             error('matlab2tikz:drawBarseries', ...
                 'Don''t know how to handle BarLayout ''%s''.', barlayout);
     end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
     % define edge color
     edgeColor = get(h, 'EdgeColor');
     lineStyle = get(h, 'LineStyle');
@@ -2758,7 +2718,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
         drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
     end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
     % define face color;
     if ~isempty(get(h,'Children'))
         % quite oddly, before MATLAB R2014b this value is stored in a child
@@ -2772,12 +2732,12 @@ function [m2t, str] = drawBarseries(m2t, h)
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
         drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
     % Add 'area legend' to the options as otherwise the legend indicators
     % will just highlight the edges.
     m2t.axesContainers{end}.options = ...
-        addToOptions(m2t.axesContainers{end}.options, 'area legend', []);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        addToOptions(m2t.axesContainers{end}.options, 'area legend');
+
     % plot the thing
     if isHoriz
         [yDataPlot, xDataPlot] = deal(xData, yData); % swap values
@@ -2787,8 +2747,7 @@ function [m2t, str] = drawBarseries(m2t, h)
 
     drawOpts = join(m2t, drawOptions, ',');
     [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
-    str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%s};\n', ...
-        str, drawOpts, table);
+    str = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
 end
 % ==============================================================================
 function [m2t, str] = drawStemSeries(m2t, h)
