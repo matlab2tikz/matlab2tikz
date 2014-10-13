@@ -924,6 +924,7 @@ function m2t = drawGridOfAxes(m2t, handle)
                 opts_add(m2t.axesContainers{end}.options, ...
                 'axis on top', []);
         end
+        % FIXME: axis background, axis grid, main, axis ticks, axis lines, axis tick labels, axis descriptions, axis foreground
     end
 end
 % ==============================================================================
