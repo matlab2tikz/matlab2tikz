@@ -132,8 +132,18 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @scatterPlotMarkers  , ...
                            @multiplePatches     , ...
                            @logbaseline         , ...
-                           @alphaImage
+                           @alphaImage          , ...
+                           @surfShader1         , ...
+                           @surfShader2         , ...
+                           @surfShader3         , ...
+                           @surfShader4         , ...
+                           @surfShader5         , ...
+                           @surfNoShader        , ...
+                           @surfNoPlot          , ...
+                           @surfMeshInterp      , ...
+                           @surfMeshRGB 
                          };
+                     
 
   numFunctions = length( testfunction_handles );
 
@@ -2303,6 +2313,79 @@ function [description, extraOpts] = alphaImage()
 
   description = 'Image with alpha channel.';
   extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = surfShader1()
+[X,Y,Z]  = peaks(20);
+surf(X,Y,Z,'FaceColor','flat','EdgeColor','none')
+
+description = 'shader=flat/(flat mean) | Fc: flat | Ec: none';
+extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = surfShader2()
+[X,Y,Z]  = peaks(20);
+surf(X,Y,Z,'FaceColor','interp','EdgeColor','none') 
+
+description = 'shader=interp | Fc: interp | Ec: none';
+extraOpts = {};
+
+end
+% =========================================================================
+function [description, extraOpts] = surfShader3()
+[X,Y,Z]  = peaks(20);
+surf(X,Y,Z,'FaceColor','flat','EdgeColor','green')
+
+description = 'shader=faceted | Fc: flat | Ec: RGB';
+extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = surfShader4()
+[X,Y,Z]  = peaks(20);
+surf(X,Y,Z,'FaceColor','blue','EdgeColor','interp')
+
+description = 'shader=faceted | Fc: RGB | Ec: interp';
+extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = surfShader5()
+[X,Y,Z]  = peaks(20);
+surf(X,Y,Z,'FaceColor','interp','EdgeColor','flat')
+
+description = 'shader=faceted interp | Fc: interp | Ec: flat';
+extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = surfNoShader()
+[X,Y,Z]  = peaks(20);
+surf(X,Y,Z,'FaceColor','blue','EdgeColor','yellow')
+
+description = 'no shader | Fc: RGB | Ec: RGB';
+extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = surfNoPlot()
+[X,Y,Z]  = peaks(20);
+surf(X,Y,Z,'FaceColor','none','EdgeColor','none')
+
+description = 'no plot | Fc: none | Ec: none';
+extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = surfMeshInterp()
+[X,Y,Z]  = peaks(20);
+surf(X,Y,Z,'FaceColor','none','EdgeColor','interp')
+
+description = 'mesh | Fc: none | Ec: interp';
+extraOpts = {};
+end
+% =========================================================================
+function [description, extraOpts] = surfMeshRGB()
+[X,Y,Z]  = peaks(20);
+surf(X,Y,Z,'FaceColor','none','EdgeColor','green')
+
+description = 'mesh | Fc: none | Ec: RGB';
+extraOpts = {};
 end
 % =========================================================================
 function env = getEnvironment
