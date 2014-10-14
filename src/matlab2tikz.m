@@ -1730,7 +1730,7 @@ function [m2t, str] = drawPatch(m2t, handle)
 
         % Add the proper color map even if the map data isn't directly used in
         % the plot to make sure that we get correct color bars.
-        if length(cData) == length(xData)
+        if ~all(cData == cData(1)) && length(cData) == length(xData)
             % Add the color map.
             m2t.axesContainers{end}.options = ...
                 addToOptions(m2t.axesContainers{end}.options, ...
@@ -1739,7 +1739,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         % If full color data is provided, we can use point meta color data.
         % For some reason, this only works for filled contours in Pgfplots, so
         % fall back to explicit color specifications for line plots.
-        if length(cData) == length(xData) ...
+        if ~all(cData == cData(1)) && length(cData) == length(xData) ...
                 && ~isNone(get(handle, 'FaceColor'))
             data = [data, cData(:)];
             drawOptions{end+1} = 'patch';
@@ -1757,6 +1757,14 @@ function [m2t, str] = drawPatch(m2t, handle)
             % Find out color values.
             % fill color
             faceColor = get(handle, 'FaceColor');
+            
+            % If it still has 'interp', then the CData for the patch is
+            % just an index into the colormap. Convert to RGB
+            if strcmpi(faceColor,'interp')
+                    [m2t, index] = cdata2colorindex(m2t, cData(1),handle);
+                    faceColor    = m2t.currentHandles.colormap(index,:);
+            end
+            
             if ~isNone(faceColor)
                 [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
                 drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
