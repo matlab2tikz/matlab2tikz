@@ -1819,10 +1819,9 @@ function [m2t, str] = drawPatch(m2t, handle)
         % Plot the actual data.
         [m2t, table] = makeTable(m2t, columnNames, data);
 
-        % Some patches need to be closed by adding a "--cycle"; some don't.
-        % TODO find out when to insert --cycle
-        str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s};\n\n',...
-            str, plotType, drawOpts, join(m2t, tableOptions, ', '), table);
+        cycle = '--cycle';
+        str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n\n',...
+            str, plotType, drawOpts, join(m2t, tableOptions, ', '), table, cycle);
 end
 end
 % ==============================================================================
