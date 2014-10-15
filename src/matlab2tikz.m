@@ -2070,7 +2070,14 @@ end
 function [m2t,env] = drawSurface(m2t, handle)
     str = [];
     [m2t, opts, plotType] = surfaceOpts(m2t, handle);
-
+    
+    % Allow for empty surf
+    if isNone(plotType)
+        m2t.currentAxesContain3dData = true;
+        env = str;
+        return
+    end
+    
     dx = get(handle, 'XData');
     dy = get(handle, 'YData');
     dz = get(handle, 'ZData');
@@ -2369,8 +2376,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
 
     % Check for surf or mesh plot. Second argument in if-check corresponds to
     % default values for mesh plot in MATLAB.
-    if isNone(faceColor) || ...
-            (strcmpi(edgeColor, 'flat') && isequal(faceColor, [1 1 1]))
+    if isNone(faceColor) 
         plotType = 'mesh';
     else
         plotType = 'surf';
@@ -2385,29 +2391,65 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
     end
 
     % TODO Revisit this selection and create a bunch of test plots.
-    if strcmpi(plotType, 'surf')
-        % Set shader for surface plot.
-        if isNone(edgeColor) && strcmpi(faceColor, 'flat')
-            surfOptions{end+1} = 'shader=flat';
-        elseif isnumeric(edgeColor) && strcmpi(faceColor, 'flat')
-            [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
-            % same as shader=flat,draw=\pgfkeysvalueof{/pgfplots/faceted color}
-            if all(get(handle,'ZData')==0) %pcolor plot
-                surfOptions{end+1} = 'shader=flat corner';
-            else % regular surface plot
-                surfOptions{end+1} = 'shader=faceted';
+    switch plotType
+        
+        % SURFACE
+        case 'surf'
+            
+            % Edge 'none'
+            if isNone(edgeColor) 
+                if strcmpi(faceColor, 'flat')
+                    surfOptions{end+1} = 'shader=flat';
+                elseif strcmpi(faceColor, 'interp');
+                    surfOptions{end+1} = 'shader=interp';
+                end
+            
+            % Edge 'interp'
+            elseif strcmpi(edgeColor, 'interp') 
+                if strcmpi(faceColor, 'interp')
+                    surfOptions{end+1} = 'shader=interp';
+                else
+                    surfOptions{end+1} = 'shader=faceted';
+                    [m2t,xFaceColor]   = getColor(m2t, handle, faceColor, 'patch');
+                    surfOptions{end+1} = sprintf('color=%s',xFaceColor);
+                end
+            
+            % Edge 'flat'
+            elseif strcmpi(edgeColor, 'flat')
+                if strcmpi(faceColor, 'flat')
+                    surfOptions{end+1} = 'shader=flat';
+                elseif strcmpi(faceColor, 'interp')
+                    surfOptions{end+1} = 'shader=faceted interp';
+                end
+                
+            % Edge RGB    
+            else
+                [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
+                surfOptions{end+1} = sprintf('faceted color=%s', xEdgeColor);
+                if isnumeric(faceColor)
+                    [m2t, xFaceColor]  = getColor(m2t, handle, faceColor, 'patch');
+                    surfOptions{end+1} = sprintf('color=%s', xFaceColor);
+                else
+                    surfOptions{end+1} = 'shader=faceted';
+                end
             end
-            surfOptions{end+1} = sprintf('draw=%s', xEdgeColor);
-        elseif isNone(edgeColor) && strcmpi(faceColor, 'interp')
-            surfOptions{end+1} = 'shader=interp';
-        else
-            surfOptions{end+1} = 'shader=faceted interp';
-        end
-    elseif strcmpi(plotType, 'mesh')
-        surfOptions{end+1} = 'shader=flat';
-    else
-        error('matlab2tikz:surfaceOpts', ...
-            'Illegal plot type ''%s''.', plotType);
+            
+        % MESH    
+        case 'mesh'
+            if ~isNone(edgeColor)
+                
+                % Edge 'interp'
+                if strcmpi(edgeColor, 'interp')
+                    surfOptions{end+1} = 'shader=flat';
+                
+                % Edge RGB
+                else
+                    [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
+                    surfOptions{end+1} = sprintf('color=%s', xEdgeColor);
+                end
+            else
+                plotType = 'none';
+            end
     end
 end
 % ==============================================================================
