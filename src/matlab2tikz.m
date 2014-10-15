@@ -2723,8 +2723,12 @@ function [m2t, str] = drawBarseries(m2t, h)
             % separation. If width is 1, the bars within a group touch one
             % another. The value of width must be a scalar.
             barWidth = get(h, 'BarWidth') * groupWidth / numBars;
-
-            dx = min(diff(xData)); % used as scaling factor for all other lengths
+            
+            if numel(xData) == 1
+                dx = 1;
+            else
+                dx = min(diff(xData)); % used as scaling factor for all other lengths
+            end
 
             % MATLAB treats shift and width in normalized coordinate units,
             % whereas Pgfplots requires physical units (pt,cm,...); hence
