@@ -2724,7 +2724,7 @@ function [m2t, str] = drawBarseries(m2t, h)
             % another. The value of width must be a scalar.
             barWidth = get(h, 'BarWidth') * groupWidth / numBars;
 
-            dx = min(diff(xData)); % used as scaling factor for all other lengths
+            dx = min([1; diff(xData)]); % used as scaling factor for all other lengths
 
             % MATLAB treats shift and width in normalized coordinate units,
             % whereas Pgfplots requires physical units (pt,cm,...); hence
