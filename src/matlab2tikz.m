@@ -2574,6 +2574,12 @@ function [m2t, str] = drawBarseries(m2t, h)
 %
 % TODO Get rid of code duplication with 'drawAxes'.
 
+    str = '';
+    
+    if ~isVisible(h)
+        return; % don't bother drawing invisible things
+    end
+    
     % drawAxes sets m2t.barplotId to 0, so all values are recomputed for subplots.
     if m2t.barplotId == 0
         % 'barplotId' provides a consecutively numbered ID for each
@@ -2591,8 +2597,6 @@ function [m2t, str] = drawBarseries(m2t, h)
             addToOptions(m2t.axesContainers{end}.options, ...
             'log origin', 'infty');
     end
-
-    str = [];
 
     % -----------------------------------------------------------------------
     % The bar plot implementation in Pgfplots lacks certain functionalities;
