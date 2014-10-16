@@ -42,6 +42,9 @@ function matlab2tikz_acidtest(varargin)
       error('Unknown environment. Need MATLAB(R) or GNU Octave.')
   end
 
+  % Don't actually print any of the plots to the screen.
+  set(0,'DefaultFigureVisible','off');
+
   % -----------------------------------------------------------------------
   matlab2tikzOpts = matlab2tikzInputParser;
 
@@ -95,7 +98,7 @@ function matlab2tikz_acidtest(varargin)
       catch %#ok
           e = lasterror('reset'); %#ok
           ploterrmsg{k} = format_error_message(e);
-          
+
           for kError = 1:numel(e.stack);
               ee = e.stack(kError);
               if isempty(funcName{k})
@@ -226,7 +229,7 @@ function matlab2tikz_acidtest(varargin)
           if isempty(ploterrmsg{k}) && isempty(tikzerrmsg{k}) && isempty(pdferrmsg{k})
               continue % No error messages for this test case
           end
-          
+
           fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), funcName{k});
           print_verbatim_information(fh, 'Plot generation', ploterrmsg{k});
           print_verbatim_information(fh, 'PDF generation' , pdferrmsg{k} );
