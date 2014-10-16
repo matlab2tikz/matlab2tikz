@@ -1415,7 +1415,7 @@ function [description, extraOpts] = scatterPlotMarkers()
   ylim([0 d*(nStyles+1)]);
   set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
 
-  legend(names{:});
+%   legend(names{:});
 
   description = 'Scatter plot with with different marker sizes and legend.';
   extraOpts = {};
