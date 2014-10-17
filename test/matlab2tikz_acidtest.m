@@ -8,6 +8,9 @@ function matlab2tikz_acidtest(varargin)
 % MATLAB2TIKZ_ACIDTEST('extraOptions', {'name',value, ...}, ...)
 %   passes the cell array of options to MATLAB2TIKZ. Default: {}
 %
+% MATLAB2TIKZ_ACIDTEST('figureVisible', LOGICAL, ...)
+%   plots the figure visibly during the test process. Default: false
+%
 % See also matlab2tikz, testfunctions
 
 % Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
@@ -42,16 +45,6 @@ function matlab2tikz_acidtest(varargin)
       error('Unknown environment. Need MATLAB(R) or GNU Octave.')
   end
 
-  if strcmp(env, 'MATLAB')
-    % Don't actually print any of the plots to the screen.
-    % Unfortunately, this doesn't work for Octave right now.
-    % TODO fix this
-    set(0,'DefaultFigureVisible','off');
-  end
-
-  % Add the math where matlab2tikz sits.
-  addpath('../src/');
-  addpath('../tools/');
 
   % -----------------------------------------------------------------------
   matlab2tikzOpts = matlab2tikzInputParser;
@@ -61,6 +54,8 @@ function matlab2tikz_acidtest(varargin)
                                                 [], @isfloat);
   matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
                                                   'extraOptions', {}, @iscell);
+  matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
+                                                  'figureVisible', false, @islocogical);
 
   matlab2tikzOpts = matlab2tikzOpts.parse(matlab2tikzOpts, varargin{:});
   % -----------------------------------------------------------------------
@@ -73,6 +68,10 @@ function matlab2tikz_acidtest(varargin)
 
   % output streams
   stdout = 1;
+  if strcmp(env, 'Octave') && ~matlab2tikzOpts.Results.figureVisible
+      warning('M2TAcid:InvisibleFigure',...
+              'Invisible figures don''t allways work perfectly in Octave');
+  end
 
   % query the number of test functions
   [dummya, dummyb, dummyc, dummy, n] = testfunctions(0);
@@ -98,7 +97,7 @@ function matlab2tikz_acidtest(varargin)
       fprintf(stdout, 'Executing test case no. %d...\n', indices(k));
 
       % open a window
-      fig_handle = figure;
+      fig_handle = figure('visible',onOffBoolean(matlab2tikzOpts.Results.figureVisible));
 
       % plot the figure
       try
@@ -124,10 +123,10 @@ function matlab2tikz_acidtest(varargin)
           ploterror(k) = true;
       end
 
-      % plot not successful
+      % plot not sucessful
       if isempty(desc{k})
           close(fig_handle);
-          continue;
+          continue
       end
 
       pdf_file = sprintf('data/test%d-reference.pdf' , indices(k));
@@ -145,11 +144,9 @@ function matlab2tikz_acidtest(varargin)
                   print(gcf, '-depsc2', eps_file);
 
               case 'Octave'
-                  % In Octave, figures are properly cropped when using
-                  % print().
+                  % In Octave, figures are properly cropped when using  print().
                   print(pdf_file, '-dpdf', '-S415,311', '-r150');
                   pause(1.0)
-
               otherwise
                   error('Unknown environment. Need MATLAB(R) or GNU Octave.')
           end
@@ -394,3 +391,10 @@ function disp_error_message(env, msg)
     end
 end
 % =========================================================================
+function onOff = onOffBoolean(bool)
+if bool
+    onOff = 'on';
+else
+    onOff = 'off';
+end
+end
