@@ -8,6 +8,9 @@ function matlab2tikz_acidtest(varargin)
 % MATLAB2TIKZ_ACIDTEST('extraOptions', {'name',value, ...}, ...)
 %   passes the cell array of options to MATLAB2TIKZ. Default: {}
 %
+% MATLAB2TIKZ_ACIDTEST('figureVisible', LOGICAL, ...)
+%   plots the figure visibly during the test process. Default: false
+%
 % See also matlab2tikz, testfunctions
 
 % Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
@@ -42,8 +45,6 @@ function matlab2tikz_acidtest(varargin)
       error('Unknown environment. Need MATLAB(R) or GNU Octave.')
   end
 
-  % Don't actually print any of the plots to the screen.
-  set(0,'DefaultFigureVisible','off');
 
   % -----------------------------------------------------------------------
   matlab2tikzOpts = matlab2tikzInputParser;
@@ -53,6 +54,8 @@ function matlab2tikz_acidtest(varargin)
                                                 [], @isfloat);
   matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
                                                   'extraOptions', {}, @iscell);
+  matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
+                                                  'figureVisible', false, @islocogical);
 
   matlab2tikzOpts = matlab2tikzOpts.parse(matlab2tikzOpts, varargin{:});
   % -----------------------------------------------------------------------
@@ -65,6 +68,10 @@ function matlab2tikz_acidtest(varargin)
 
   % output streams
   stdout = 1;
+  if strcmp(env, 'Octave') && ~matlab2tikzOpts.Results.figureVisible
+      warning('M2TAcid:InvisibleFigure',...
+              'Invisible figures don''t allways work perfectly in Octave');
+  end
 
   % query the number of test functions
   [dummya, dummyb, dummyc, dummy, n] = testfunctions(0);
@@ -90,7 +97,7 @@ function matlab2tikz_acidtest(varargin)
       fprintf(stdout, 'Executing test case no. %d...\n', indices(k));
 
       % open a window
-      fig_handle = figure;
+      fig_handle = figure('visible',onOffBoolean(matlab2tikzOpts.Results.figureVisible));
 
       % plot the figure
       try
@@ -384,3 +391,10 @@ function disp_error_message(env, msg)
     end
 end
 % =========================================================================
+function onOff = onOffBoolean(bool)
+if bool
+    onOff = 'on';
+else
+    onOff = 'off';
+end
+end
