@@ -477,7 +477,6 @@ function [description, extraOpts] = double_axes()
   x = [0; 24; 48; 72; 96;];
   y = [7.653 7.473 7.637 7.652 7.651];
 
-  figure(1)
   grid on
   h1 = plot(x,y,'Color','k');
 
