@@ -567,21 +567,15 @@ end
 % =========================================================================
 function [description, extraOpts] = colorbarLogplot()
 
-  switch getEnvironment()
-      case 'MATLAB'
-          imagesc([1 10 100]);
-      case 'Octave'
-          % TODO find out what to do for octave here
-          description = 'Logscaled colorbar -- unavailable in Octave.';
-          extraOpts = {};
-          return;
-      otherwise
-          error( 'Unknown environment. Need MATLAB(R) or Octave.' )
-  end
+  imagesc([1 10 100]);
   try
     set(colorbar(), 'YScale', 'log');
   catch
-    error('Colorbar scaling in MATLAB R2014b is not documented');
+    warning('M2TAcid:LogColorBar',...
+        'Logarithmic Colorbars are not documented in MATLAB R2014b and Octave');
+    description = {};
+    extraOpts = {};
+    return;
   end
     
 
