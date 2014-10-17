@@ -42,8 +42,16 @@ function matlab2tikz_acidtest(varargin)
       error('Unknown environment. Need MATLAB(R) or GNU Octave.')
   end
 
-  % Don't actually print any of the plots to the screen.
-  set(0,'DefaultFigureVisible','off');
+  if strcmp(env, 'MATLAB')
+    % Don't actually print any of the plots to the screen.
+    % Unfortunately, this doesn't work for Octave right now.
+    % TODO fix this
+    set(0,'DefaultFigureVisible','off');
+  end
+
+  % Add the math where matlab2tikz sits.
+  addpath('../src/');
+  addpath('../tools/');
 
   % -----------------------------------------------------------------------
   matlab2tikzOpts = matlab2tikzInputParser;
@@ -116,10 +124,10 @@ function matlab2tikz_acidtest(varargin)
           ploterror(k) = true;
       end
 
-      % plot not sucessful
+      % plot not successful
       if isempty(desc{k})
           close(fig_handle);
-          continue
+          continue;
       end
 
       pdf_file = sprintf('data/test%d-reference.pdf' , indices(k));
@@ -137,9 +145,11 @@ function matlab2tikz_acidtest(varargin)
                   print(gcf, '-depsc2', eps_file);
 
               case 'Octave'
-                  % In Octave, figures are properly cropped when using  print().
+                  % In Octave, figures are properly cropped when using
+                  % print().
                   print(pdf_file, '-dpdf', '-S415,311', '-r150');
                   pause(1.0)
+
               otherwise
                   error('Unknown environment. Need MATLAB(R) or GNU Octave.')
           end
