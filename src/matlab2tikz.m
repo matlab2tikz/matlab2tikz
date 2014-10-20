@@ -2058,6 +2058,10 @@ function [m2t, str] = drawHggroup(m2t, h)
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
 
+        case 'scribe.scribeellipse'
+            % Annotation: ellipse
+            [m2t, str] = drawEllipse(m2t, h);
+
         case 'unknown'
             % Weird spurious class from Octave.
             [m2t, str] = handleAllChildren(m2t, h);
@@ -3124,6 +3128,97 @@ function [m2t, str] = drawErrorBars(m2t, h)
     end
     % Now run drawLine() with deviation information.
     [m2t, str] = drawLine(m2t, hData, yDeviations);
+end
+% ==============================================================================
+function [m2t, str] = drawEllipse(m2t, handle)
+% Takes care of MATLAB's ellipse annotations.
+%
+    
+%     c = get(h, 'Children');
+    
+    p = get(handle,'position');
+    radius = p([3 4]) / 2;
+    center = p([1 2]) + radius;
+
+    str = [];
+    
+    lineStyle = get(handle, 'LineStyle');
+    lineWidth = get(handle, 'LineWidth');
+    
+    color = get(handle, 'Color');
+    [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
+    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+    
+    filling = get(handle, 'FaceColor');
+    
+    %% Has a filling?
+    if isequal(filling, 'none')
+        drawOptions = [{sprintf('%s', xcolor)}, ... % color
+            lineOptions];
+        drawCommand = '\draw';
+    else
+        [m2t, xcolorF] = getColor(m2t, handle, filling, 'patch');
+        drawOptions = [{sprintf('draw=%s,fill=%s', xcolor,xcolorF)}, ... % color
+            lineOptions];
+        drawCommand = '\filldraw';
+    end
+
+    opt = join(m2t, drawOptions, ',');
+    
+    str = sprintf('%s [%s] (axis cs:%g,%g) ellipse [x radius=%g, y radius=%g];\n', ...
+        drawCommand, opt, center, radius);
+    
+%     % Find out which contains the data and which the deviations.
+%     n1 = length(get(c(1),'XData'));
+%     n2 = length(get(c(2),'XData'));
+%     if n2 == 6*n1
+%         % 1 contains centerpoint info
+%         dataIdx  = 1;
+%         errorIdx = 2;
+%         numDevData = 6;
+%     elseif n1 == 6*n2
+%         % 2 contains centerpoint info
+%         dataIdx  = 2;
+%         errorIdx = 1;
+%         numDevData = 6;
+%     elseif n2 == 9*n1-1 || n2 == 9*n1
+%         % 1 contains centerpoint info
+%         dataIdx  = 1;
+%         errorIdx = 2;
+%         numDevData = 9;
+%     elseif n1 == 9*n2-1 || n1 == 9*n2
+%         % 2 contains centerpoint info
+%         dataIdx  = 2;
+%         errorIdx = 1;
+%         numDevData = 9;
+%     else
+%         error('drawErrorBars:errorMatch', ...
+%             'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d, 9*%d-1 ~= %d, 9*%d-1 ~= %d).', ...
+%             n1, n2, n2, n1, n1, n2, n2, n1);
+%     end
+% 
+%     % prepare error array (that is, gather the y-deviations)
+%     yValues = get(c(dataIdx) , 'YData');
+%     yErrors = get(c(errorIdx), 'YData');
+% 
+%     n = length(yValues);
+% 
+%     yDeviations = zeros(n, 2);
+% 
+%     for k = 1:n
+%         % upper deviation
+%         kk = numDevData*(k-1) + 1;
+%         upDev = abs(yValues(k) - yErrors(kk));
+% 
+%         % lower deviation
+%         kk = numDevData*(k-1) + 2;
+%         loDev = abs(yValues(k) - yErrors(kk));
+% 
+%         yDeviations(k,:) = [upDev loDev];
+%     end
+%     drawLine
+%     % Now, pull drawLine() with deviation information.
+%     [m2t, str] = drawLine(m2t, c(dataIdx), yDeviations);
 end
 % ==============================================================================
 function out = linearFunction(X, Y)
