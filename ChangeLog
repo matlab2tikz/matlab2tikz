@@ -1,3 +1,15 @@
+2014-10-20  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.5.0.
+	* Support for MATLAB 2014b (with it's substantial graphics changes).
+	  All credit goes to Egon Geerardyn.
+	* Bugfixes:
+	    - single bar width
+	    - invisible bar plots
+	    - surface options
+	    - patch plots and cycling
+	    - patches with literal colors
+
 2014-03-07  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.4.7.
