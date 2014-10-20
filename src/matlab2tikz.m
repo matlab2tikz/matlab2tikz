@@ -2478,21 +2478,23 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, ...
         markOptions, hasFaceColor);
 
-    if length(sData) == 1
-        constMarkerkSize = true; % constant marker size
-    else % changing marker size; rescale the size data according to the marker
-        constMarkerkSize = false;
-        % MathWorks says
-        % <http://www.mathworks.se/help/matlab/ref/scattergroupproperties.html>:
-        % SizeData
-        % Size of markers in square points. Area of the marker in the scatter
-        % graph in units of points. Since there are 72 points to one inch, to
-        % specify a marker that has an area of one square inch you would use a
-        % value of 72^2.
-        %
-        % Pgfplots on the other hand uses the radius.
-        sData = sqrt(sData / pi);
-    end
+    % Re-scale marker size
+    % MathWorks says:
+    % <http://www.mathworks.se/help/matlab/ref/scattergroupproperties.html>:
+    % SizeData
+    % Size of markers in square points. Area of the marker in the scatter
+    % graph in units of points. Since there are 72 points to one inch, to
+    % specify a marker that has an area of one square inch you would use a
+    % value of 72^2.
+    % 
+    % <http://www.mathworks.com/matlabcentral/answers/101738> clarifies:
+    % The SCATTER function expects its 'S' parameter to contain the marker 
+    % area in points squared. This area corresponds to the area of a square 
+    % bounding box around the marker.
+    %
+    % Pgfplots on the other hand uses the radius.
+    sData = translateMarkerSize(m2t, matlabMarker, sqrt(sData)/1.5);
+%     sData = sqrt(sData)/2;
 
     if length(cData) == 3
         % No special treatment for the colors or markers are needed.
@@ -2507,10 +2509,11 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         else
             [m2t, ecolor] = getColor(m2t, h, cData, 'patch');
         end
-        if constMarkerkSize % if constant marker size, do nothing special
+        if numel(sData) == 1 % do nothing special
             drawOptions = { 'only marks', ...
                 ['mark=' tikzMarker], ...
-                ['mark options={', join(m2t, markOptions, ','), '}'] };
+                ['mark options={', join(m2t, markOptions, ','), '}'],...
+                sprintf('mark size=%.4fpt', sData)};
             if hasFaceColor && hasEdgeColor
                 drawOptions{end+1} = { ['draw=' ecolor], ...
                     ['fill=' xcolor] };
@@ -2590,7 +2593,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)]);
         end
     end
-    if ~constMarkerkSize %
+    if numel(sData) > 1 
         drawOptions{end+1} = { ['visualization depends on={\thisrowno{', num2str(sColumn), '} \as \perpointmarksize}'], ...
             'scatter/@pre marker code/.append style={/tikz/mark size=\perpointmarksize}' };
     end
