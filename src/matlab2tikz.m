@@ -38,7 +38,7 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('dataPath',CHAR, ...) defines where external data files
 %   and/or PNG figures are saved. It can be either an absolute or a relative
 %   path with respect to your MATLAB work directory. By default, data files are
-%   placed in the same directory as the TikZ output file. To place data files 
+%   placed in the same directory as the TikZ output file. To place data files
 %   in your MATLAB work directory, you can use '.'. (default: [])
 %
 %   MATLAB2TIKZ('relativeDataPath',CHAR, ...) tells MATLAB2TIKZ to use the
@@ -161,7 +161,7 @@ m2t.currentHandles = [];
 m2t.transform = []; % For hgtransform groups
 m2t.pgfplotsVersion = [1,3];
 m2t.name = 'matlab2tikz';
-m2t.version = '0.4.7';
+m2t.version = '0.5.0';
 m2t.author = 'Nico Schlömer';
 m2t.authorEmail = 'nico.schloemer@gmail.com';
 m2t.years = '2008--2014';
@@ -307,7 +307,7 @@ else
         [filename, pathname] = uiputfile({'*.tex;*.tikz'; '*.*'}, 'Save File');
         filename = fullfile(pathname, filename);
     end
-    
+
     fid = fileOpenForWrite(m2t, filename);
 end
 m2t.tikzFileName = fopen(fid);
@@ -330,7 +330,7 @@ if isempty(m2t.cmdOpts.Results.relativeDataPath)
     end
 else
     m2t.relativeDataPath = m2t.cmdOpts.Results.relativeDataPath;
-end 
+end
 if isempty(m2t.cmdOpts.Results.dataPath)
     m2t.dataPath = fileparts(m2t.tikzFileName);
 else
@@ -645,7 +645,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
-                
+
             case 'contour'
                 [m2t, str] = drawContour(m2t, child);
 
@@ -678,7 +678,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                     'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
                 % don't to anything for these handles and its children
                 str = [];
-                
+
             case ''
                 warning('matlab2tikz:NoChildren',...
                         ['No children found for handle %d. ',...
@@ -755,7 +755,7 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
     % update gca
     m2t.currentHandles.gca = handle;
 
-    % Bar plots need to have some values counted per axis. Setting 
+    % Bar plots need to have some values counted per axis. Setting
     % m2t.barplotId to 0 makes sure these are recomputed in drawBarSeries()
     % TODO: find nicer approach for barplots
     m2t.barplotId = 0;
@@ -1705,7 +1705,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     if isempty(CData)
         CData = zeros(1,numPatches);
     end
-    
+
     for k = 1:numPatches
         xData = XData(:, k);
         yData = YData(:, k);
@@ -1764,14 +1764,14 @@ function [m2t, str] = drawPatch(m2t, handle)
             % Find out color values.
             % fill color
             faceColor = get(handle, 'FaceColor');
-            
+
             % If it still has 'interp', then the CData for the patch is
             % just an index into the colormap. Convert to RGB
             if strcmpi(faceColor,'interp')
                     [m2t, index] = cdata2colorindex(m2t, cData(1),handle);
                     faceColor    = m2t.currentHandles.colormap(index,:);
             end
-            
+
             if ~isNone(faceColor)
                 [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
                 drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
@@ -2077,14 +2077,14 @@ end
 function [m2t,env] = drawSurface(m2t, handle)
     str = [];
     [m2t, opts, plotType] = surfaceOpts(m2t, handle);
-    
+
     % Allow for empty surf
     if isNone(plotType)
         m2t.currentAxesContain3dData = true;
         env = str;
         return
     end
-    
+
     dx = get(handle, 'XData');
     dy = get(handle, 'YData');
     dz = get(handle, 'ZData');
@@ -2383,7 +2383,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
 
     % Check for surf or mesh plot. Second argument in if-check corresponds to
     % default values for mesh plot in MATLAB.
-    if isNone(faceColor) 
+    if isNone(faceColor)
         plotType = 'mesh';
     else
         plotType = 'surf';
@@ -2399,20 +2399,20 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
 
     % TODO Revisit this selection and create a bunch of test plots.
     switch plotType
-        
+
         % SURFACE
         case 'surf'
-            
+
             % Edge 'none'
-            if isNone(edgeColor) 
+            if isNone(edgeColor)
                 if strcmpi(faceColor, 'flat')
                     surfOptions{end+1} = 'shader=flat';
                 elseif strcmpi(faceColor, 'interp');
                     surfOptions{end+1} = 'shader=interp';
                 end
-            
+
             % Edge 'interp'
-            elseif strcmpi(edgeColor, 'interp') 
+            elseif strcmpi(edgeColor, 'interp')
                 if strcmpi(faceColor, 'interp')
                     surfOptions{end+1} = 'shader=interp';
                 else
@@ -2420,7 +2420,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
                     [m2t,xFaceColor]   = getColor(m2t, handle, faceColor, 'patch');
                     surfOptions{end+1} = sprintf('color=%s',xFaceColor);
                 end
-            
+
             % Edge 'flat'
             elseif strcmpi(edgeColor, 'flat')
                 if strcmpi(faceColor, 'flat')
@@ -2428,8 +2428,8 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
                 elseif strcmpi(faceColor, 'interp')
                     surfOptions{end+1} = 'shader=faceted interp';
                 end
-                
-            % Edge RGB    
+
+            % Edge RGB
             else
                 [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
                 surfOptions{end+1} = sprintf('faceted color=%s', xEdgeColor);
@@ -2440,15 +2440,15 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
                     surfOptions{end+1} = 'shader=faceted';
                 end
             end
-            
-        % MESH    
+
+        % MESH
         case 'mesh'
             if ~isNone(edgeColor)
-                
+
                 % Edge 'interp'
                 if strcmpi(edgeColor, 'interp')
                     surfOptions{end+1} = 'shader=flat';
-                
+
                 % Edge RGB
                 else
                     [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
@@ -2624,11 +2624,11 @@ function [m2t, str] = drawBarseries(m2t, h)
 % TODO Get rid of code duplication with 'drawAxes'.
 
     str = '';
-    
+
     if ~isVisible(h)
         return; % don't bother drawing invisible things
     end
-    
+
     % drawAxes sets m2t.barplotId to 0, so all values are recomputed for subplots.
     if m2t.barplotId == 0
         % 'barplotId' provides a consecutively numbered ID for each
@@ -2666,7 +2666,7 @@ function [m2t, str] = drawBarseries(m2t, h)
             if any(strcmpi(get(s, 'Type'), {'hggroup','Bar'}))
                 cl = class(handle(s));
                 switch cl
-                    case {'specgraph.barseries', 'matlab.graphics.chart.primitive.Bar'} 
+                    case {'specgraph.barseries', 'matlab.graphics.chart.primitive.Bar'}
                         m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
                     case 'specgraph.errorbarseries'
                         % TODO
@@ -2730,7 +2730,7 @@ function [m2t, str] = drawBarseries(m2t, h)
             % separation. If width is 1, the bars within a group touch one
             % another. The value of width must be a scalar.
             barWidth = get(h, 'BarWidth') * groupWidth / numBars;
-            
+
             if numel(xData) == 1
                 dx = 1;
             else
@@ -2778,7 +2778,7 @@ function [m2t, str] = drawBarseries(m2t, h)
             error('matlab2tikz:drawBarseries', ...
                 'Don''t know how to handle BarLayout ''%s''.', barlayout);
     end
-    
+
     % define edge color
     edgeColor = get(h, 'EdgeColor');
     lineStyle = get(h, 'LineStyle');
@@ -2788,12 +2788,12 @@ function [m2t, str] = drawBarseries(m2t, h)
         [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
         drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
     end
-    
+
     % define face color;
     if ~isempty(get(h,'Children'))
         % quite oddly, before MATLAB R2014b this value is stored in a child
         % patch and not in the object itself
-        obj = get(h, 'Children'); 
+        obj = get(h, 'Children');
     else % R2014b and newer
         obj = h;
     end
@@ -2802,7 +2802,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
         drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
-    
+
     % Add 'area legend' to the options as otherwise the legend indicators
     % will just highlight the edges.
     m2t.axesContainers{end}.options = ...
@@ -2887,7 +2887,7 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     if ~isempty(get(h,'Children'))
         % quite oddly, before MATLAB R2014b this value is stored in a child
         % patch and not in the object itself
-        obj = get(h, 'Children'); 
+        obj = get(h, 'Children');
     else % R2014b and newer
         obj = h;
     end
@@ -2958,7 +2958,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     if dd > 0
         vectorLength = euclid(uData/dd,vData/dd,wData/dd);
         maxLength = max(vectorLength(:));
-    else  
+    else
         maxLength = 1;
     end
     if getOrDefault(h, 'AutoScale', true)
@@ -3040,9 +3040,9 @@ function [m2t, str] = drawErrorBars(m2t, h)
         hData = h;
         upDev = get(h, 'UData');
         loDev = get(h, 'LData');
-        
+
         yDeviations = [upDev(:), loDev(:)];
-        
+
     else % Legacy Handling (Octave and MATLAB R2014a and older):
         % 'errorseries' plots have two line-plot children, one of which contains
         % the information about the center points; 'XData' and 'YData' components
@@ -3100,25 +3100,25 @@ function [m2t, str] = drawErrorBars(m2t, h)
         end
         hData  = c(dataIdx);
         hError = c(errorIdx);
-        
+
         % prepare error array (that is, gather the y-deviations)
         yValues = get(hData , 'YData');
         yErrors = get(hError, 'YData');
-        
+
         n = length(yValues);
-        
+
         yDeviations = zeros(n, 2);
-        
+
         %TODO: this can be vectorized
         for k = 1:n
             % upper deviation
             kk = numDevData*(k-1) + 1;
             upDev = abs(yValues(k) - yErrors(kk));
-            
+
             % lower deviation
             kk = numDevData*(k-1) + 2;
             loDev = abs(yValues(k) - yErrors(kk));
-            
+
             yDeviations(k,:) = [upDev loDev];
         end
     end
@@ -3245,7 +3245,7 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     % A colormap with a single color is valid in MATLAB but an error in
     % pgfplots. Repeating the color produces the desired effect in this
     % case.
-    if m==1 
+    if m==1
         colors=[matlabColormap(1,:);matlabColormap(1,:)];
     else
         colors = [matlabColormap(1,:); matlabColormap(2,:)];
@@ -3335,7 +3335,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'east'
             cbarOptions{end+1} = 'right';
-            
+
             cbarStyleOptions = {cbarStyleOptions{:},...
                 'at={(0.97,0.5)}',...
                 'anchor=east', ...
@@ -3365,7 +3365,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
             cbarStyleOptions = addToOptions(cbarStyleOptions,...
                 'xticklabel pos', 'upper');
         case 'southoutside'
-            
+
             cbarOptions{end+1} = 'horizontal';
         otherwise
             error('matlab2tikz:getColorOptions:unknownLocation',...
@@ -3381,9 +3381,9 @@ function axisOptions = getColorbarOptions(m2t, handle)
     xyo = merge(xo, yo);
     unsupportedOptions = {'xmin','xmax','xtick','ymin','ymax','ytick'};
     xyo(ismember(xyo(:,1), unsupportedOptions),:) = [];
-    
+
     cbarStyleOptions = merge(cbarStyleOptions, xyo);
-    
+
     %% Get axis labels.
     %for axis = 'xy'
     %  axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
@@ -3429,7 +3429,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
         cbarOptions{end+1} = 'sampled';
         cbarStyleOptions = addToOptions(cbarStyleOptions, 'samples', ...
             sprintf('%d', numColors+1));
-        
+
     end
 
     % Merge them together in axisOptions.
@@ -4309,7 +4309,7 @@ function val = getOrDefault(handle, key, default)
         val = get(handle, key);
     else
         val = default;
-    end 
+    end
 end
 % ==============================================================================
 function out = isVisible(handles)
