@@ -1178,7 +1178,7 @@ function options = getAxisOptions(m2t, handle, axis)
         [axis,'max'], sprintf(m2t.ff, limits(2)));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get ticks along with the labels
-    [ticks, tickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis);
+    [ticks, tickLabels, hasMinorTicks, tickDir] = getAxisTicks(m2t, handle, axis);
 
     % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
     % the number of minor ticks is automatically determined by MATLAB(R) to
@@ -1202,6 +1202,13 @@ function options = getAxisOptions(m2t, handle, axis)
                 sprintf('minor %s tick num', axis), ...
                 sprintf('{%d}', matlabDefaultNumMinorTicks));
         end
+    end
+    if strcmpi(tickDir,'out')
+        options = addToOptions(options, ...
+            'tick align','outside');
+    elseif strcmpi(tickDir,'both')
+        options = addToOptions(options, ...
+        'tick align','center');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis label
@@ -3763,7 +3770,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     end
 end
 % ==============================================================================
-function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, axis)
+function [pgfTicks, pgfTickLabels, hasMinorTicks, tickDirection] = getAxisTicks(m2t, handle, axis)
 % Return axis tick marks Pgfplots style. Nice: Tick lengths and such
 % details are taken care of by Pgfplots.
     if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
@@ -3804,6 +3811,7 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks] = getAxisTicks(m2t, handle, ax
 
     keywordMinorTick = [upper(axis), 'MinorTick'];
     hasMinorTicks = strcmp(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
+    tickDirection = getOrDefault(handle, 'TickDir', 'in');
 end
 % ==============================================================================
 function [pTicks, pTickLabels] = ...
