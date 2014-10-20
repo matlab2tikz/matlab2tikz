@@ -141,9 +141,9 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @surfNoShader        , ...
                            @surfNoPlot          , ...
                            @surfMeshInterp      , ...
-                           @surfMeshRGB 
+                           @surfMeshRGB
                          };
-                     
+
 
   numFunctions = length( testfunction_handles );
 
@@ -289,7 +289,7 @@ end
 function [description, extraOpts] = markerSizes2()
   hold on;
   grid on;
-  
+
   n = 1:10;
   d = 10;
   s = round(linspace(6,25,10));
@@ -400,8 +400,8 @@ end
 function [description, extraOpts] = double_colorbar()
 
   vspace = linspace(-40,40,20);
-  speed_map = rand(20);
-  Q1_map = rand(20);
+  speed_map = magic(20).';
+  Q1_map = magic(20);
 
   subplot(1, 2, 1);
   contour(vspace(9:17),vspace(9:17),speed_map(9:17,9:17),20)
@@ -425,9 +425,13 @@ function [description, extraOpts] = double_colorbar()
 end
 % =========================================================================
 function [description, extraOpts] = subplot_colorbar()
+%NOTE: do we need this test? Alternative: `double_colorbar`
+  x = 1:50;
+  y = 25:75;
+  [xx,yy] = meshgrid(x,y);
+  img = cos(xx.^2).* sin(yy);
 
-  img = rand(100);
-  vec = rand(100,1);
+  vec = cos((1:100).^2);
 
   subplot(2,1,1);
   imagesc(img,[0 1]);
@@ -442,27 +446,38 @@ end
 % =========================================================================
 function [description, extraOpts] = randomWithLines()
 
-  X = randn(150,2);
+  beta = 42.42;
+  t = 1:150;
+  X = [sin(t); cos(beta * t)].';
+
+  %X = randn(150,2);
   X(:,1) = (X(:,1) * 90) + 75;
   plot(X(:,1),X(:,2),'o');
   hold on;
   M(1)=min(X(:,1));
   M(2)=max(X(:,1));
+  mn = mean(X(:,2));
+  s  = std(X(:,2));
   plot(M,[mean(X(:,2)) mean(X(:,2))],'k-');
-  plot(M,[2*std(X(:,2)) 2*std(X(:,2))],'k--');
-  plot(M,[-2*std(X(:,2)) -2*std(X(:,2))],'k--');
+  plot(M,mn + 1*[s s],'--');
+  plot(M,mn - 2*[s s],'--');
   axis('tight');
 
-  description = 'Random points with lines.';
+  description = 'Lissajous points with lines.';
   extraOpts = {};
 end
 % =========================================================================
 function [description, extraOpts] = many_random_points ()
 
   n = 1e3;
+  alpha = 1024;
+  beta = 1;
+  gamma = 5.47;
 
-  xy = rand(n,2);
-  plot ( xy(:,1), xy(:,2), '.r' );
+  x = cos( (1:n) * alpha );
+  y = sin( (1:n) * beta + gamma);
+
+  plot ( x, y, '.r' );
   axis([ 0, 1, 0, 1 ])
 
   description = 'Test the performance when drawing many points.';
@@ -577,7 +592,7 @@ function [description, extraOpts] = colorbarLogplot()
     extraOpts = {};
     return;
   end
-    
+
 
   description = 'Logscaled colorbar.';
   extraOpts = {};
@@ -666,13 +681,17 @@ function [description, extraOpts] = zoom()
 end
 % =========================================================================
 function [description, extraOpts] = bars()
-
+%NOTE: do we need this test when we have `subplotBars`?
   bins = -0.5:0.1:0.5;
   bins = 10 * bins;
   numEntries = length(bins);
-  numBars = 3;
-  data = round(100 * rand(numEntries, numBars));
-
+  
+  alpha = [13 11 7];
+  numBars = numel(alpha);
+  data   = zeros(numEntries, numBars);
+  for iBar = 1:numBars
+      data(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
+  end
   b = bar(bins,data, 1.5);
 
   set(b(1),'FaceColor','m','EdgeColor','none')
@@ -683,15 +702,22 @@ end
 % =========================================================================
 function [description, extraOpts] = subplotBars()
   subplot(2,1,1);
-  X = rand(1,10);
+  X = magic(5);
+  X = X(2:2:20);
+
   bar(X);
 
   subplot(2,1,2);
   bins = -0.5:0.1:0.5;
   bins = 10 * bins;
   numEntries = length(bins);
-  numBars = 3;
-  data = round(100 * rand(numEntries, numBars));
+  
+  alpha = [13 11 7];
+  numBars = numel(alpha);
+  data   = zeros(numEntries, numBars);
+  for iBar = 1:numBars
+      data(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
+  end
 
   bar(bins,data, 1.5);
 
@@ -832,7 +858,7 @@ end
 % =========================================================================
 function [description, extraOpts] = roseplot ()
 
-  theta = 2*pi*rand(1,50);
+  theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
 
   description = 'A simple rose plot.' ;
@@ -842,7 +868,7 @@ end
 % =========================================================================
 function [description, extraOpts] = compassplot ()
 
-  Z = eig(randn(20,20));
+  Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
 
   description = 'A simple compass plot.' ;
@@ -852,15 +878,16 @@ end
 % =========================================================================
 function [description, extraOpts] = imageplot ()
 
-  n = 10;
-  density = 0.5;
+  [u,s,v] = svd(magic(10));
 
   subplot(1,2,1);
-  A = sprand( n, n, density );
+  A = u;
   imagesc( A );
 
   subplot(1,2,2);
-  A = sprand( n, n, density );
+  A = v;
+  A(v<s & v>u) = 0;
+  A = sparse(A);
   imagesc( A );
 
   description = 'An image plot of matrix values.' ;
@@ -870,8 +897,8 @@ function [description, extraOpts] = imageplot ()
 end
 % =========================================================================
 function [description, extraOpts] = logicalImage()
-  data = rand(10,10);
-  imagesc(data > 0.5);
+  [data,dummy,dummy] = svd(magic(10));
+  imagesc(data > mean(data(:)));
   description = 'An image plot of logical matrix values.' ;
   extraOpts = {};
 end
@@ -927,19 +954,19 @@ function [description, extraOpts] = subplot2x2 ()
   x = (1:5);
 
   subplot(2,2,1);
-  y = rand(1,5);
+  y = sin(x);
   plot(x,y);
 
   subplot(2,2,2);
-  y = rand(1,5);
+  y = sin(x.^2);
   plot(x,y);
 
   subplot(2,2,3);
-  y = rand(1,5);
+  y = cos(x);
   plot(x,y);
 
   subplot(2,2,4);
-  y = rand(1,5);
+  y = cos(x.^2);
   plot(x,y);
 
 
@@ -953,15 +980,15 @@ function [description, extraOpts] = subplot2x2b ()
   x = (1:5);
 
   subplot(2,2,1);
-  y = rand(1,5);
+  y = sin(x.^3);
   plot(x,y);
 
   subplot(2,2,2);
-  y = rand(1,5);
+  y = cos(x.^3);
   plot(x,y);
 
   subplot(2,2,3:4);
-  y = rand(1,5);
+  y = tan(x);
   plot(x,y);
 
 
@@ -993,15 +1020,15 @@ function [description, extraOpts] = subplot3x1 ()
   x = (1:5);
 
   subplot(3,1,1);
-  y = rand(1,5);
+  y = sin(3*x);
   plot(x,y);
 
   subplot(3,1,2);
-  y = rand(1,5);
+  y = cos(2*x);
   plot(x,y);
 
   subplot(3,1,3);
-  y = rand(1,5);
+  y = tan(x/5);
   plot(x,y);
 
   description = 'Three aligned subplots on a $3\times 1$ subplot grid.' ;
@@ -1013,16 +1040,15 @@ function [description, extraOpts] = subplotCustom ()
 
   x = (1:5);
 
-  y = rand(1,5);
+  y = cos(sqrt(x));
   subplot( 'Position', [0.05 0.1 0.3 0.3] )
   plot(x,y);
 
-
-  y = rand(1,5);
+  y = sin(sqrt(x));
   subplot( 'Position', [0.35 0.5 0.3 0.3] )
   plot(x,y);
 
-  y = rand(1,5);
+  y = tan(sqrt(x));
   subplot( 'Position', [0.65 0.1 0.3 0.3] )
   plot(x,y);
 
@@ -1034,12 +1060,12 @@ end
 function [description, extraOpts] = errorBars ()
 
   data = 1:10;
-  eH = rand(10,1);
-  eL = rand(10,1);
-  %hold on;
-  %bar(1:10, data)
+  [u,s,v] = svd(magic(11));
+  
+  eH = abs(u(1:10,5));
+  eL = abs(v(1:10,9));
+  
   errorbar(1:10, data, eL, eH, '.')
-
 
   description = 'Generic error bar plot.';
   extraOpts = {};
@@ -1070,8 +1096,8 @@ function [description, extraOpts] = legendsubplots()
   t = 0:(4*pi)/length:4*pi;
   x = t;
   a = t;
-  y = sin(t) + 0.1*randn(1,length+1);
-  b = sin(t) + 0.1*randn(1,length+1) + 0.05*cos(2*t);
+  y = sin(t) + 0.1*sin(134*t.^2);
+  b = sin(t) + 0.1*cos(134*t.^2) + 0.05*cos(2*t);
 
   % plot the top figure
   subplot(rows+2,1,1:rows);
@@ -1308,7 +1334,7 @@ function [description, extraOpts] = freqResponsePlot()
 end
 % =========================================================================
 function [description, extraOpts] = axesLocation()
-  plot(rand(1,10));
+  plot(cos(1:10));
   set(gca,'XAxisLocation','top');
   set(gca,'YAxisLocation','right');
 
@@ -1318,7 +1344,7 @@ end
 % =========================================================================
 function [description, extraOpts] = axesColors()
 
-  plot(rand(1,10));
+  plot(sin(1:15));
   set(gca,'XColor','g','YColor','b');
 %  set(gca,'XColor','b','YColor','k');
   box off;
@@ -1362,10 +1388,8 @@ end
 function [description, extraOpts] = scatterPlotRandom()
 
   n = 1:100;
-  scatter(n, n, 1000*rand(length(n),1), n.^8);
+  scatter(n, n, 1000*(1+cos(n.^1.5)), n.^8);
   colormap autumn;
-  %x = randn( 10, 2 );
-  %scatter( x(:,1), x(:,2)  );
   description = 'Generic scatter plot.';
   extraOpts = {};
 
@@ -1460,9 +1484,12 @@ end
 % =========================================================================
 function [description, extraOpts] = scatter3Plot3()
   hold on;
-  scatter3(rand(5,1),rand(5,1),rand(5,1),150,...
+  x = sin(1:5);
+  y = cos(3.4 *(1:5));
+  z = x.*y;
+  scatter3(x,y,z,150,...
            'MarkerEdgeColor','none','MarkerFaceColor','k');
-  scatter3(rand(5,1),rand(5,1),rand(5,1),150,...
+  scatter3(-x,y,z,150,...
            'MarkerEdgeColor','none','MarkerFaceColor','b');
 
   description = 'Scatter3 plot with 2 colors (Issue 292)';
@@ -1610,11 +1637,12 @@ end
 % =========================================================================
 function [description, extraOpts] = mixedBarLine()
 
-  x = rand(1000,1)*10;
+  [x,s,v] = svd(magic(33));
+  x = x(end:-1:end-1000);
   hist(x,10)
   y = ylim;
   hold on;
-  plot([3 3], y, '-r');
+  plot([mean(x) mean(x)], y, '-r');
   hold off;
 
   description = 'Mixed bar/line plot.';
@@ -1665,6 +1693,13 @@ end
 % =========================================================================
 function [description, extraOpts] = texrandom()
 
+  try
+      rng(42); %fix seed
+      %TODO: fully test tex conversion instead of a random subsample!
+  catch
+      warning('testfuncs:texrandom','Cannot fix seed for random generator!');
+  end
+  
   num = 20; % number of symbols per line
   symbols = {'\it', '\bf', '\rm', '\sl',                                ...
              '\alpha', '\angle', '\ast', '\beta', '\gamma', '\delta',   ...
@@ -2000,14 +2035,19 @@ function [description, extraOpts] = parameterSurf()
       extraOpts = {};
       return;
   end
-
-  x = rand(100,1)*4 - 2;
-  y = rand(100,1)*4 - 2;
+  
+  t = (1:100).';
+  t1 = cos(5.75352*t).^2;
+  t2 = abs(sin(t));
+  
+  x = t1*4 - 2;
+  y = t2*4 - 2;
   z = x.*exp(-x.^2 - y.^2);
+  
+  %TODO: do we really need this TriScatteredInterp? 
+  % It will be removed from MATLAB
 
   % Construct the interpolant
-  % F = TriScatteredInterp(x,y,z,'nearest');
-  % F = TriScatteredInterp(x,y,z,'natural');
   F = TriScatteredInterp(x,y,z,'linear');
 
   % Evaluate the interpolant at the locations (qx, qy), qz
@@ -2147,7 +2187,9 @@ end
 % =========================================================================
 function [description, extraOpts] = areaPlot()
 
-  area(1:3, rand(3));
+  M = magic(5);
+  M = M(1:3,2:4);
+  area(1:3, M);
   legend('foo', 'bar', 'foobar');
 
   description = 'Area plot.';
@@ -2318,7 +2360,7 @@ end
 % =========================================================================
 function [description, extraOpts] = surfShader2()
 [X,Y,Z]  = peaks(20);
-surf(X,Y,Z,'FaceColor','interp','EdgeColor','none') 
+surf(X,Y,Z,'FaceColor','interp','EdgeColor','none')
 
 description = 'shader=interp | Fc: interp | Ec: none';
 extraOpts = {};
