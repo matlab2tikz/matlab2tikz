@@ -55,7 +55,7 @@ function matlab2tikz_acidtest(varargin)
   matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
                                                   'extraOptions', {}, @iscell);
   matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
-                                                  'figureVisible', false, @islocogical);
+                                                  'figureVisible', false, @islogical);
 
   matlab2tikzOpts = matlab2tikzOpts.parse(matlab2tikzOpts, varargin{:});
   % -----------------------------------------------------------------------
