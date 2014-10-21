@@ -3175,58 +3175,6 @@ function [m2t, str] = drawEllipse(m2t, handle)
     
     str = sprintf('%s [%s] (axis cs:%g,%g) ellipse [x radius=%g, y radius=%g];\n', ...
         drawCommand, opt, center, radius);
-    
-%     % Find out which contains the data and which the deviations.
-%     n1 = length(get(c(1),'XData'));
-%     n2 = length(get(c(2),'XData'));
-%     if n2 == 6*n1
-%         % 1 contains centerpoint info
-%         dataIdx  = 1;
-%         errorIdx = 2;
-%         numDevData = 6;
-%     elseif n1 == 6*n2
-%         % 2 contains centerpoint info
-%         dataIdx  = 2;
-%         errorIdx = 1;
-%         numDevData = 6;
-%     elseif n2 == 9*n1-1 || n2 == 9*n1
-%         % 1 contains centerpoint info
-%         dataIdx  = 1;
-%         errorIdx = 2;
-%         numDevData = 9;
-%     elseif n1 == 9*n2-1 || n1 == 9*n2
-%         % 2 contains centerpoint info
-%         dataIdx  = 2;
-%         errorIdx = 1;
-%         numDevData = 9;
-%     else
-%         error('drawErrorBars:errorMatch', ...
-%             'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d, 9*%d-1 ~= %d, 9*%d-1 ~= %d).', ...
-%             n1, n2, n2, n1, n1, n2, n2, n1);
-%     end
-% 
-%     % prepare error array (that is, gather the y-deviations)
-%     yValues = get(c(dataIdx) , 'YData');
-%     yErrors = get(c(errorIdx), 'YData');
-% 
-%     n = length(yValues);
-% 
-%     yDeviations = zeros(n, 2);
-% 
-%     for k = 1:n
-%         % upper deviation
-%         kk = numDevData*(k-1) + 1;
-%         upDev = abs(yValues(k) - yErrors(kk));
-% 
-%         % lower deviation
-%         kk = numDevData*(k-1) + 2;
-%         loDev = abs(yValues(k) - yErrors(kk));
-% 
-%         yDeviations(k,:) = [upDev loDev];
-%     end
-%     drawLine
-%     % Now, pull drawLine() with deviation information.
-%     [m2t, str] = drawLine(m2t, c(dataIdx), yDeviations);
 end
 
 function [m2t, str] = drawTextbox(m2t, handle)
