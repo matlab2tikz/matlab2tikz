@@ -2058,6 +2058,18 @@ function [m2t, str] = drawHggroup(m2t, h)
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
 
+        case 'scribe.scribeellipse'
+            % Annotation: ellipse
+            [m2t, str] = drawEllipse(m2t, h);
+                
+        case {'scribe.arrow', 'scribe.doublearrow'}
+            % Annotation: single and double Arrow
+            [m2t, str] = handleAllChildren(m2t, h);
+        
+        case 'scribe.textbox'
+            % Annotation: text box
+            [m2t, str] = drawTextbox(m2t, h);
+
         case 'unknown'
             % Weird spurious class from Octave.
             [m2t, str] = handleAllChildren(m2t, h);
@@ -3124,6 +3136,139 @@ function [m2t, str] = drawErrorBars(m2t, h)
     end
     % Now run drawLine() with deviation information.
     [m2t, str] = drawLine(m2t, hData, yDeviations);
+end
+% ==============================================================================
+function [m2t, str] = drawEllipse(m2t, handle)
+% Takes care of MATLAB's ellipse annotations.
+%
+    
+%     c = get(h, 'Children');
+    
+    p = get(handle,'position');
+    radius = p([3 4]) / 2;
+    center = p([1 2]) + radius;
+
+    str = [];
+    
+    lineStyle = get(handle, 'LineStyle');
+    lineWidth = get(handle, 'LineWidth');
+    
+    color = get(handle, 'Color');
+    [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
+    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+    
+    filling = get(handle, 'FaceColor');
+    
+    %% Has a filling?
+    if isNone(filling)
+        drawOptions = [{sprintf('%s', xcolor)}, ... % color
+            lineOptions];
+        drawCommand = '\draw';
+    else
+        [m2t, xcolorF] = getColor(m2t, handle, filling, 'patch');
+        drawOptions = [{sprintf('draw=%s,fill=%s', xcolor,xcolorF)}, ... % color
+            lineOptions];
+        drawCommand = '\filldraw';
+    end
+
+    opt = join(m2t, drawOptions, ',');
+    
+    str = sprintf('%s [%s] (axis cs:%g,%g) ellipse [x radius=%g, y radius=%g];\n', ...
+        drawCommand, opt, center, radius);
+end
+% ==============================================================================
+function [m2t, str] = drawTextbox(m2t, handle)
+% Takes care of MATLAB's textbox annotations.
+%TODO: refactor out common part of drawText and drawTextbox
+    color  = get(handle, 'Color');
+    [m2t, tcolor] = getColor(m2t, handle, color, 'patch');
+    bgColor = get(handle,'BackgroundColor');
+    EdgeColor = get(handle, 'EdgeColor');
+    HorizontalAlignment = get(handle, 'HorizontalAlignment');
+    String = get(handle, 'String');
+    Interpreter = get(handle, 'Interpreter');
+    String = prettyPrint(m2t, String, Interpreter);
+    % For now, don't handle multiline strings.
+    % Sometimes, the cells are nested; take care of this, too.
+    while iscell(String)
+        String = String{1};
+    end
+    VerticalAlignment = get(handle, 'VerticalAlignment');
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % translate them to pgf style
+    style = cell(0);
+    if ~isNone(bgColor)
+        [m2t, bcolor] = getColor(m2t, handle, bgColor, 'patch');
+        style{end+1} = ['fill=' bcolor];
+    end
+    switch VerticalAlignment
+        case {'top', 'cap'}
+            style{end+1} = 'below';
+        case {'baseline', 'bottom'}
+            style{end+1} = 'above';
+    end
+    switch HorizontalAlignment
+        case 'left'
+            style{end+1} = 'right';
+        case 'right'
+            style{end+1} = 'left';
+    end
+    % remove invisible border around \node to make the text align precisely
+    style{end+1} = 'inner sep=0mm';
+
+    fontStyle = getFontStyle(m2t, handle);
+    if ~isempty(fontStyle)
+        style{end+1} = prettyprintOpts(m2t, fontStyle, ', ');
+    end
+
+    style{end+1} = ['text=' tcolor];
+    if ~isNone(EdgeColor)
+        [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
+        style{end+1} = ['draw=', ecolor];
+    end
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % plot the thing
+    pos = get(handle, 'Position');
+    units = get(handle, 'Units');
+    if length(pos) == 2 || length(pos) == 4
+        if strcmp(units, 'normalized')
+            posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
+        else
+            posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
+        end
+
+        xlim = get(m2t.currentHandles.gca,'XLim');
+        ylim = get(m2t.currentHandles.gca,'YLim');
+        if pos(1) < xlim(1) || pos(1) > xlim(2) ...
+                || pos(2) < ylim(1) || pos(2) > ylim(2)
+            m2t.axesContainers{end}.options = ...
+                addToOptions(m2t.axesContainers{end}.options, ...
+                'clip', 'false');
+        end
+    elseif length(pos) == 3
+        pos = applyHgTransform(m2t, pos);
+        if strcmp(units, 'normalized')
+            posString = sprintf(['(rel axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
+        else
+            posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
+        end
+
+        xlim = get(m2t.currentHandles.gca, 'XLim');
+        ylim = get(m2t.currentHandles.gca, 'YLim');
+        zlim = get(m2t.currentHandles.gca, 'ZLim');
+        if pos(1) < xlim(1) || pos(1) > xlim(2) ...
+                || pos(2) < ylim(1) || pos(2) > ylim(2) ...
+                || pos(3) < zlim(1) || pos(3) > zlim(2)
+            m2t.axesContainers{end}.options = ...
+                addToOptions(m2t.axesContainers{end}.options, ...
+                'clip', 'false');
+        end
+    else
+        error('matlab2tikz:drawText', ...
+            'Illegal text position specification.');
+    end
+    str = sprintf('\\node[%s]\nat %s {%s};\n', ...
+        join(m2t, style,', '), posString, String);
 end
 % ==============================================================================
 function out = linearFunction(X, Y)

@@ -79,7 +79,7 @@ function matlab2tikz_acidtest(varargin)
   if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
       indices = matlab2tikzOpts.Results.testFunctionIndices;
       % kick out the illegal stuff
-      I = find(indices>=1) & find(indices<=n);
+      I = find(indices>=1 & indices<=n);
       indices = indices(I);
   else
       indices = 1:n;
