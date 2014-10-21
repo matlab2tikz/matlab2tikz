@@ -141,7 +141,9 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
                            @surfNoShader        , ...
                            @surfNoPlot          , ...
                            @surfMeshInterp      , ...
-                           @surfMeshRGB 
+                           @surfMeshRGB         , ...
+                           @annotation1         , ...
+                           @annotation2
                          };
                      
 
@@ -2381,6 +2383,45 @@ description = 'mesh | Fc: none | Ec: RGB';
 extraOpts = {};
 end
 % =========================================================================
+function [description, extraOpts] = annotation1()
+
+annotation(gcf,'arrow',[0.192857142857143 0.55],...
+    [0.729952380952381 0.433333333333333]);
+
+annotation(gcf,'ellipse',...
+    [0.538499999999999 0.240476190476191 0.157928571428572 0.2452380952381]);
+
+annotation(gcf,'textbox',...
+    [0.3 0.348251748251748 0.0328486806677437 0.0517482517482517],...
+    'String',{'y-x'},...
+    'FontSize',16);
+
+description = 'Annotations only';
+extraOpts = {};
+end
+function [description, extraOpts] = annotation2()
+axes1 = axes('Parent',gcf);
+hold(axes1,'all');
+
+plot(0:pi/20:2*pi,sin(0:pi/20:2*pi))
+
+annotation(gcf,'arrow',[0.192857142857143 0.55],...
+    [0.729952380952381 0.433333333333333]);
+
+annotation(gcf,'ellipse',...
+    [0.538499999999999 0.240476190476191 0.157928571428572 0.2452380952381]);
+
+annotation(gcf,'textbox',...
+    [0.3 0.348251748251748 0.0328486806677437 0.0517482517482517],...
+    'String',{'y-x'},...
+    'FontSize',16,...
+    'FitBoxToText','off',...
+    'LineStyle','none');
+
+description = 'Annotation over plot';
+extraOpts = {};
+end
+% =========================================================================
 function env = getEnvironment
   if ~isempty(ver('MATLAB'))
      env = 'MATLAB';
@@ -2423,3 +2464,5 @@ function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
   noenv = false;
 end
 % =========================================================================
+
+
