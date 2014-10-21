@@ -3160,7 +3160,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
     filling = get(handle, 'FaceColor');
     
     %% Has a filling?
-    if isequal(filling, 'none')
+    if isNone(filling)
         drawOptions = [{sprintf('%s', xcolor)}, ... % color
             lineOptions];
         drawCommand = '\draw';
@@ -3176,10 +3176,10 @@ function [m2t, str] = drawEllipse(m2t, handle)
     str = sprintf('%s [%s] (axis cs:%g,%g) ellipse [x radius=%g, y radius=%g];\n', ...
         drawCommand, opt, center, radius);
 end
-
+% ==============================================================================
 function [m2t, str] = drawTextbox(m2t, handle)
 % Takes care of MATLAB's textbox annotations.
-% this code is basically copied from drowText (with removed rotation)
+%TODO: refactor out common part of drawText and drawTextbox
     color  = get(handle, 'Color');
     [m2t, tcolor] = getColor(m2t, handle, color, 'patch');
     bgColor = get(handle,'BackgroundColor');
