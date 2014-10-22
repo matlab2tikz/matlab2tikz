@@ -443,11 +443,13 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % In fact, this is not really important but makes things more 'natural'.
     axesHandles = axesHandles(end:-1:1);
 
-    % find alignments
-    [relevantAxesHandles, alignmentOptions, IX] = alignSubPlots(m2t, axesHandles);
+    % Alternative Positioning of axes.
+    % Select relevant Axes and draw them.
+    relevantAxesHandles = getRelevantAxes(axesHandles);
+    
     m2t.axesContainers = {};
-    for ix = IX(:)'
-        m2t = drawAxes(m2t, relevantAxesHandles(ix), alignmentOptions(ix));
+    for ix = 1:numel(relevantAxesHandles)
+        m2t = drawAxes(m2t, relevantAxesHandles(ix));
     end
 
     % Handle color bars.
@@ -717,12 +719,9 @@ function data = applyHgTransform(m2t, data)
     end
 end
 % ==============================================================================
-function m2t = drawAxes(m2t, handle, alignmentOptions)
+function m2t = drawAxes(m2t, handle)
 % Input arguments:
 %    handle.................The axes environment handle.
-%    alignmentOptions.......The alignment options as defined in the
-%                           function 'alignSubPlots()'.
-%                           This argument is optional.
 
 % Handle special cases.
     switch lower(get(handle, switchMatOct(m2t, 'Tag', 'tag')))
@@ -781,55 +780,47 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
             errorUnknownEnvironment();
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % get the axes dimensions
-    dim = getAxesDimensions(handle, ...
+    % get the axes position
+    pos = getAxesPosition(handle, ...
         m2t.cmdOpts.Results.width, ...
         m2t.cmdOpts.Results.height);
-    if strcmp(dim.x.unit, 'px')
-        % TikZ doesn't know pixels. -- Convert to inches.
-        dpi = get(0, 'ScreenPixelsPerInch');
-        dim.x.value = dim.x.value / dpi;
-        dim.x.unit = 'in';
-    end
-    if strcmp(dim.y.unit, 'px')
-        % TikZ doesn't know pixels. -- Convert to inches.
-        dpi = get(0, 'ScreenPixelsPerInch');
-        dim.y.value = dim.y.value / dpi;
-        dim.y.unit = 'in';
-    end
+    % Axes should not be in px any more
 
     % set the width
     if (~m2t.cmdOpts.Results.noSize)
         % optionally prevents setting the width and height of the axis
-        if dim.x.unit(1)=='\' && dim.x.value==1.0
+        if pos.w.unit(1)=='\' && pos.w.value==1.0
             % only return \figurewidth instead of 1.0\figurewidth
             m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, 'width', dim.x.unit);
+                addToOptions(m2t.axesContainers{end}.options, 'width', pos.w.unit);
         else
-
             m2t.axesContainers{end}.options = ...
                 addToOptions(m2t.axesContainers{end}.options, 'width', ...
-                sprintf([m2t.ff, '%s'], dim.x.value, dim.x.unit));
+                sprintf([m2t.ff, '%s'], pos.w.value, pos.w.unit));
         end
-        if dim.y.unit(1)=='\' && dim.y.value==1.0
+        if pos.h.unit(1)=='\' && pos.h.value==1.0
             % only return \figureheight instead of 1.0\figureheight
             m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, 'height', dim.y.unit);
+                addToOptions(m2t.axesContainers{end}.options, 'height', pos.h.unit);
         else
             m2t.axesContainers{end}.options = ...
                 addToOptions(m2t.axesContainers{end}.options, 'height', ...
-                sprintf([m2t.ff, '%s'], dim.y.value, dim.y.unit));
+                sprintf([m2t.ff, '%s'], pos.h.value, pos.h.unit));
         end
+        m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, 'at', ...
+                sprintf(['{(', m2t.ff, '%s,', m2t.ff, '%s)}'], pos.x.value, pos.x.unit, ...
+                pos.y.value, pos.y.unit));
     end
     % Add the physical dimension of one unit of length in the coordinate system.
     % This is used later on to translate lenghts to physical units where
     % necessary (e.g., in bar plots).
-    m2t.unitlength.x.unit = dim.x.unit;
+    m2t.unitlength.x.unit = pos.w.unit;
     xLim = get(m2t.currentHandles.gca, 'XLim');
-    m2t.unitlength.x.value = dim.x.value / (xLim(2)-xLim(1));
-    m2t.unitlength.y.unit = dim.y.unit;
+    m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
+    m2t.unitlength.y.unit = pos.h.unit;
     yLim = get(m2t.currentHandles.gca, 'YLim');
-    m2t.unitlength.y.value = dim.y.value / (yLim(2)-yLim(1));
+    m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
     for axis = 'xyz'
         m2t.([axis 'AxisReversed']) = ...
             strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
@@ -906,12 +897,6 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     m2t.axesContainers{end}.name = 'axis';
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % set alignment options
-    if ~isempty(alignmentOptions.opts)
-        m2t.axesContainers{end}.options = cat(1,m2t.axesContainers{end}.options,...
-            alignmentOptions.opts);
-    end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % background color
     backgroundColor = get(handle, 'Color');
@@ -4608,6 +4593,20 @@ function out = isVisible(handles)
     % whenever we're dealing with an object that's not user-created, such as
     % automatic axis ticks, baselines in bar plots, axis lines for polar plots
     % and so forth. For now, don't check 'HandleVisibility'.
+end
+% ==============================================================================
+function relevantAxesHandles = getRelevantAxes(axesHandles)
+% Returns relevant axes. These are defines as visible axes that are no
+% colorbars
+% This function is the remaining code of alignSubPlots() in the alternative
+% positioning system.
+    relevantAxesHandles = [];
+    for axesHandle = axesHandles(:)'
+        % Only handle visible non-colorbar handles.
+        if axisIsVisible(axesHandle) && ~strcmp(get(axesHandle,'Tag'), 'Colorbar')
+            relevantAxesHandles(end+1) = axesHandle;
+        end
+    end
 end
 % ==============================================================================
 function [relevantAxesHandles, alignmentOptions, plotOrder] =...
