@@ -69,8 +69,9 @@ function matlab2tikz_acidtest(varargin)
   % output streams
   stdout = 1;
   if strcmp(env, 'Octave') && ~matlab2tikzOpts.Results.figureVisible
-      warning('M2TAcid:InvisibleFigure',...
-              'Invisible figures don''t allways work perfectly in Octave');
+      % Use the gnuplot backend to work around an fltk bug, see
+      % <http://savannah.gnu.org/bugs/?43429>.
+      graphics_toolkit gnuplot
   end
 
   % query the number of test functions
