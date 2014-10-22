@@ -4272,6 +4272,149 @@ function newstr = join(m2t, cellstr, delimiter)
     newstr = [newstr{:}];
 end
 % ==============================================================================
+function [width, height, unit] = getNaturalFigureDimension()
+    % Returns the size of figure (in inch)
+    % To stay compatible with getNaturalAxesDimensions, the unit 'in' is
+    % also returned.
+    
+    figuresize = get(gcf, 'Position');
+    dpi = get(0, 'ScreenPixelsPerInch');
+            
+    width  = figuresize(3) / dpi;
+    height = figuresize(4) / dpi;
+
+    % Keep from Axes - Version
+    unit = 'in';
+end
+% ==============================================================================
+function dimension = getFigureDimensions(widthString, heightString)
+% Returns the physical dimension of the figure.
+    
+    [width, height, unit] = getNaturalFigureDimension();
+
+    % get the natural width-height ration of the plot
+    axesWidthHeightRatio = width / height;
+    % check matlab2tikz arguments
+    if ~isempty(widthString)
+        width = extractValueUnit(widthString);
+    end
+    if ~isempty(heightString)
+        height = extractValueUnit(heightString);
+    end
+
+    % prepare the output
+    if ~isempty(widthString) && ~isempty(heightString)
+        dimension.x.unit  = width.unit;
+        dimension.x.value = width.value;
+        dimension.y.unit  = height.unit;
+        dimension.y.value = height.value;
+    elseif ~isempty(widthString)
+        dimension.x.unit  = width.unit;
+        dimension.x.value = width.value;
+        dimension.y.unit  = width.unit;
+        dimension.y.value = width.value / axesWidthHeightRatio;
+    elseif ~isempty(heightString)
+        dimension.y.unit  = height.unit;
+        dimension.y.value = height.value;
+        dimension.x.unit  = height.unit;
+        dimension.x.value = height.value * axesWidthHeightRatio;
+    else % neither width nor height given
+        dimension.x.unit  = unit;
+        dimension.x.value = width;
+        dimension.y.unit  = unit;
+        dimension.y.value = height;
+    end
+end
+% ==============================================================================
+function position = getAxesPosition(handle, widthString, heightString)
+% Returns the physical position of the axes. This includes - in difference
+% to the Dimension - also an offset to shift the axes inside the figure
+    
+    % First get the whole figures size
+    figDim = getFigureDimensions(widthString, heightString);
+    
+    % Get the relative position of the axis
+    relPos = getRelativeAxesPosition(handle);
+    
+    position.x.value = relPos(1) * figDim.x.value;
+    position.x.unit  = figDim.x.unit;
+    position.y.value = relPos(2) * figDim.y.value;
+    position.y.unit  = figDim.y.unit;
+    position.w.value = relPos(3) * figDim.x.value;
+    position.w.unit  = figDim.x.unit;
+    position.h.value = relPos(4) * figDim.y.value;
+    position.h.unit  = figDim.y.unit;
+end
+% ==============================================================================
+function [position] = getRelativeAxesPosition(axesHandles)
+% Returns the relative position of axes within the figure.
+% Position is an (n,4) matrix with [minX, minY, width, height] for each
+% handle. All these values are relative to the figure size, which means
+% that [0, 0, 1, 1] covers the whole figure.
+    
+
+    % Get Figure Position
+    figurePosPx = get(gcf, 'Position');
+    % TODO: Check if this can be other than pixels. In this case use screen size to
+    % convert to pixels
+    [figWidthIn, figHeightIn] = getNaturalFigureDimension();
+
+    % Initialize position
+    position = zeros(numel(axesHandles), 4);
+    % Iterate over all handles
+    for i = 1:numel(axesHandles)
+        axesHandle = axesHandles(i);
+        axesPos = get(axesHandle, 'Position');
+        axesUnits = get(axesHandle, 'Units');
+        switch lower(axesUnits)
+            case 'normalized'
+                % Position is already relative
+                position(i,:) = axesPos;
+            case 'pixels'
+                % Divide axis coordinates by figure size (in pixels)
+                position(i,:) = axesPos ./ figurePosPx([3 4 3 4]);
+            case 'inch'
+                % Divide axis coordinates by figure size
+                position(i,[1 3]) = axesPos([1 3]) / figWidthIn;
+                position(i,[2 4]) = axesPos([2 4]) / figHeightIn;
+            otherwise
+                % TODO: Convert Position
+                error('Unsupported axes size');
+        end
+        
+        % Change size if DataAspectRatioMode is manual
+        if isequal(lower(get(axesHandle,'DataAspectRatioMode')),'manual')
+            % get limits
+            xLim = get(axesHandle, 'XLim');
+            yLim = get(axesHandle, 'YLim');
+            % Get Aspect Ratio between width and height
+            aspectRatio = get(axesHandle,'DataAspectRatio');
+            % And Adjust it to the figure dimensions
+            aspectRatio = aspectRatio(1) * figWidthIn * (yLim(2) - yLim(1)) ...
+                / (aspectRatio(2) * figHeightIn * (xLim(2)-xLim(1)));
+            % Recompute height
+            newHeight = position(3) * aspectRatio;
+            % shrink width if newHeight is too large
+            if newHeight > position(4)
+                % Recompute width
+                newWidth = position(4) / aspectRatio;
+                % Center Axis
+                offset = (position(3) - newWidth) / 2;
+                position(1) = position(1) + offset;
+                % Store new width
+                position(3) = newWidth;
+            else
+                % Center Axis
+                offset = (position(4) - newHeight) / 2;
+                position(2) = position(2) + offset;
+                % Store new height
+                position(4) = newHeight;
+            end
+        end
+    end
+    
+end
+% ==============================================================================
 function dimension = getAxesDimensions(handle, widthString, heightString)
 % Returns the physical dimension of the axes.
     [width, height, unit] = getNaturalAxesDimensions(handle);
