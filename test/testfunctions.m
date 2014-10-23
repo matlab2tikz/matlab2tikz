@@ -2194,51 +2194,44 @@ annotation(gcf,'textbox',...
     'FitBoxToText','off',...
     'LineStyle','none');
 end
-function [description, extraOpts] = annotation3()
+function [stat] = annotation3()
+stat.description = 'Annotated and unaligned subplots';
+
 X1 = 0:0.01:1;
 Y1 = X1.^2;
 Y2 = Y1.^2;
 Y3 = X1.^(1/4);
 
-figure1 = figure('Position', [100 100 1500 600]);
+set(gcf, 'Position', [100 100 1500 600]);
 
-axes1 = axes('Parent',figure1,...
-    'Position',[0.0700053850296176 0.401537112724727 0.248788368336026 0.514600139082057]);
+axes1 = axes('Parent',gcf, 'Position',[0.07 0.4015 0.2488 0.5146]);
 box(axes1,'on');
 hold(axes1,'all');
 
 title('f(x)=x^2');
 
-plot(X1,Y1,'Parent',axes1,'DisplayName','(0:0.05:1).^2 vs 0:0.05:1');
+plot(X1,Y1,'Parent',axes1, 'DisplayName','(0:0.05:1).^2 vs 0:0.05:1');
 
-axes2 = axes('Parent',figure1,...
-    'OuterPosition',[0.406159779040075 0 0.276547327461914 0.631411213597616]);
+axes2 = axes('Parent',gcf, 'OuterPosition',[0.4062 0 0.2765 0.6314]);
 box(axes2,'on');
 hold(axes2,'all');
 
 plot(X1,Y2,'Parent',axes2,'DisplayName','(0:0.05:1).^4 vs 0:0.05:1');
 
-axes3 = axes('Parent',figure1,...
-    'Position',[0.742057081313947 0.318497913769124 0.210016155088853 0.54798331015299]);
+axes3 = axes('Parent',gcf, 'Position',[0.7421 0.3185 0.21 0.5480]);
 box(axes3,'on');
 hold(axes3,'all');
 
 plot(X1,Y3,'Parent',axes3,'DisplayName','(0:0.05:1).^(1/4) vs 0:0.05:1');
 
-annotation(figure1,'textbox',...
-    [0.366720516962843 0.552155771905424 0.0123855681206247 0.0393337969401941],...
-    'String',{'f^2'},...
-    'FitBoxToText','off');
+annotation(gcf,'textbox',[0.3667 0.5521 0.0124 0.0393], ...
+           'String',{'f^2'}, 'FitBoxToText','off');
 
-annotation(figure1,'arrow',[0.326332794830372 0.4281098546042],...
-    [0.660639777468707 0.351877607788595]);
+annotation(gcf,'arrow',[0.3263 0.4281], [0.6606 0.3519]);
 
-annotation(figure1,'textarrow',[0.676587301587302 0.722883597883598],...
-    [0.310751104565538 0.633284241531664],'TextEdgeColor','none',...
-    'HorizontalAlignment','center',...
-    'String',{'invert'});
-description = 'Annotated and unaligned subplots';
-extraOpts = {};
+annotation(gcf,'textarrow',[0.6766 0.7229], [0.3108 0.6333],...
+           'TextEdgeColor','none', 'HorizontalAlignment','center', ...
+           'String',{'invert'});
 end
 % =========================================================================
 function env = getEnvironment
