@@ -93,6 +93,7 @@ function matlab2tikz_acidtest(varargin)
   dataDir = './data/';
   delete(fullfile(dataDir, 'test*'))
 
+  %TODO: these should move into status
   ploterrmsg = cell(length(indices), 1);
   tikzerrmsg = cell(length(indices), 1);
   pdferrmsg  = cell(length(indices), 1);
@@ -115,19 +116,11 @@ function matlab2tikz_acidtest(varargin)
       catch %#ok
           e = lasterror('reset'); %#ok
           ploterrmsg{k} = format_error_message(e);
-
-          for kError = 1:numel(e.stack);
-              ee = e.stack(kError);
-              if isempty(status{k}.function)
-                  if ~isempty(regexp(ee.name, '^testfunctions>','once'))
-                    % extract function name
-                    status{k}.function = regexprep(ee.name, '^testfunctions>(.*)', '$1');
-                  elseif ~isempty(regexp(ee.name, '^testfunctions','once')) && kError < numel(e.stack)
-                    % new stack trace format (R2014b)
-                    status{k}.function = e.stack(kError-1).name;
-                  end
-              end
+          
+          if isempty(status{k}) || isempty(status{k}.function)
+              status{k}.function = extractFunctionFromError(e);
           end
+
           status{k}.description = '\textcolor{red}{Error during plot generation.}';
           disp_error_message(env, ploterrmsg{k});
           ploterror(k) = true;
@@ -510,5 +503,23 @@ function [status] = fillStruct(status, defaultStatus)
           status.(field) = defaultStatus.(field);
       end
   end
+end
+% =========================================================================
+function name = extractFunctionFromError(e)
+% extract function name from an error (using the stack)
+    name = '';
+    for kError = 1:numel(e.stack);
+        ee = e.stack(kError);
+        if isempty(name)
+            if ~isempty(regexp(ee.name, '^testfunctions>','once'))
+                % extract function name
+                name = regexprep(ee.name, '^testfunctions>(.*)', '$1');
+            elseif ~isempty(regexp(ee.name, '^testfunctions','once')) && ...
+                    kError < numel(e.stack)
+                % new stack trace format (R2014b)
+                name = e.stack(kError-1).name;
+            end
+        end
+    end
 end
 % =========================================================================
