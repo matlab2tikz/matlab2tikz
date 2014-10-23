@@ -445,8 +445,9 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     % Alternative Positioning of axes.
     % Select relevant Axes and draw them.
-    relevantAxesHandles = getRelevantAxes(axesHandles);
+    [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(axesHandles);
     
+    m2t.axesBoundingBox = axesBoundingBox;
     m2t.axesContainers = {};
     for ix = 1:numel(relevantAxesHandles)
         m2t = drawAxes(m2t, relevantAxesHandles(ix));
@@ -783,7 +784,8 @@ function m2t = drawAxes(m2t, handle)
     % get the axes position
     pos = getAxesPosition(handle, ...
         m2t.cmdOpts.Results.width, ...
-        m2t.cmdOpts.Results.height);
+        m2t.cmdOpts.Results.height, ...
+        m2t.axesBoundingBox);
     % Axes should not be in px any more
 
     % set the width
@@ -4311,15 +4313,21 @@ function dimension = getFigureDimensions(widthString, heightString)
     end
 end
 % ==============================================================================
-function position = getAxesPosition(handle, widthString, heightString)
+function position = getAxesPosition(handle, widthString, heightString, axesBoundingBox)
 % Returns the physical position of the axes. This includes - in difference
 % to the Dimension - also an offset to shift the axes inside the figure
+% An optional bounding box can be used to omit empty borders.
+
+    % Deal with optional parameter
+    if nargin < 4
+        axesBoundingBox = [0 0 1 1];
+    end
     
     % First get the whole figures size
     figDim = getFigureDimensions(widthString, heightString);
     
     % Get the relative position of the axis
-    relPos = getRelativeAxesPosition(handle);
+    relPos = getRelativeAxesPosition(handle, axesBoundingBox);
     
     position.x.value = relPos(1) * figDim.x.value;
     position.x.unit  = figDim.x.unit;
@@ -4331,12 +4339,15 @@ function position = getAxesPosition(handle, widthString, heightString)
     position.h.unit  = figDim.y.unit;
 end
 % ==============================================================================
-function [position] = getRelativeAxesPosition(axesHandles)
+function [position] = getRelativeAxesPosition(axesHandles, axesBoundingBox)
 % Returns the relative position of axes within the figure.
 % Position is an (n,4) matrix with [minX, minY, width, height] for each
 % handle. All these values are relative to the figure size, which means
 % that [0, 0, 1, 1] covers the whole figure.
-    
+% It is possible to add a second parameter with the relative coordinates of
+% a bounding box around all axes of the figure (see getRelevantAxes()). In
+% this case, relative positions are rescaled so that the bounding box is 
+% [0, 0, 1, 1]
 
     % Get Figure Position
     figurePosPx = get(gcf, 'Position');
@@ -4398,6 +4409,16 @@ function [position] = getRelativeAxesPosition(axesHandles)
         end
     end
     
+    %% Rescale if second parameter is given
+    if nargin >= 2
+        % shift position so that [0, 0] is the lower left corner of the
+        % bounding box
+        position(:,1) = position(:,1) - axesBoundingBox(1);
+        position(:,2) = position(:,2) - axesBoundingBox(2);
+        % Recale
+        position(:,[1 3]) = position(:,[1 3]) / max(axesBoundingBox([3 4]));
+        position(:,[2 4]) = position(:,[2 4]) / max(axesBoundingBox([3 4]));
+    end
 end
 % ==============================================================================
 function dimension = getAxesDimensions(handle, widthString, heightString)
@@ -4595,9 +4616,10 @@ function out = isVisible(handles)
     % and so forth. For now, don't check 'HandleVisibility'.
 end
 % ==============================================================================
-function relevantAxesHandles = getRelevantAxes(axesHandles)
+function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(axesHandles)
 % Returns relevant axes. These are defines as visible axes that are no
-% colorbars
+% colorbars. In addition, a bounding box around all relevant Axes is
+% computed. This can be used to avoid undesired borders.
 % This function is the remaining code of alignSubPlots() in the alternative
 % positioning system.
     relevantAxesHandles = [];
@@ -4607,6 +4629,16 @@ function relevantAxesHandles = getRelevantAxes(axesHandles)
             relevantAxesHandles(end+1) = axesHandle;
         end
     end
+    
+    % Compute the bounding box
+    % TODO: check if relevant Axes or all Axes are better.
+    axesBoundingBox = getRelativeAxesPosition(relevantAxesHandles);
+    % Compute second corner from width and height for each axes
+    axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[1 2]) + axesBoundingBox(:,[3 4]);
+    % Combine axes corners to get the bounding box
+    axesBoundingBox = [min(axesBoundingBox(:,[1 2]),[],1), max(axesBoundingBox(:,[3 4]), [], 1)];
+    % Compute width and height of the bounding box
+    axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[3 4]) - axesBoundingBox(:,[1 2]);
 end
 % ==============================================================================
 function [relevantAxesHandles, alignmentOptions, plotOrder] =...
