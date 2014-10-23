@@ -4378,22 +4378,22 @@ function [position] = getRelativeAxesPosition(axesHandles)
             aspectRatio = aspectRatio(1) * figWidthIn * (yLim(2) - yLim(1)) ...
                 / (aspectRatio(2) * figHeightIn * (xLim(2)-xLim(1)));
             % Recompute height
-            newHeight = position(3) * aspectRatio;
+            newHeight = position(i,3) * aspectRatio;
             % shrink width if newHeight is too large
-            if newHeight > position(4)
+            if newHeight > position(i,4)
                 % Recompute width
-                newWidth = position(4) / aspectRatio;
+                newWidth = position(i,4) / aspectRatio;
                 % Center Axis
-                offset = (position(3) - newWidth) / 2;
-                position(1) = position(1) + offset;
+                offset = (position(i,3) - newWidth) / 2;
+                position(i,1) = position(i,1) + offset;
                 % Store new width
-                position(3) = newWidth;
+                position(i,3) = newWidth;
             else
                 % Center Axis
-                offset = (position(4) - newHeight) / 2;
-                position(2) = position(2) + offset;
+                offset = (position(i,4) - newHeight) / 2;
+                position(i,2) = position(i,2) + offset;
                 % Store new height
-                position(4) = newHeight;
+                position(i,4) = newHeight;
             end
         end
     end
