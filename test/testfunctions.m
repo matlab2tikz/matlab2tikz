@@ -31,7 +31,7 @@
 % *** POSSIBILITY OF SUCH DAMAGE.
 % ***
 % =========================================================================
-function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctions(k)
+function [status, numFunctions] = testfunctions(k)
 
   % assign the functions to test
   testfunction_handles = {                        ...
@@ -148,54 +148,31 @@ function [desc, extraOpts, extraCFOptions, funcName, numFunctions] = testfunctio
 
 
   numFunctions = length( testfunction_handles );
-
-  desc = '';
-  funcName = '';
-  extraOpts = {};
-  extraCFOptions = {};
-
+  defaultStatus = struct('function',               '', ...
+                       'description',            '',...
+                       'issues',                 [],...
+                       'skip',                   false, ... % skipped this test?
+                       'closeall',               false, ... % call close all after?
+                       'extraOptions',           {cell(0)}, ...
+                       'extraCleanfigureOptions',{cell(0)});
 
   if (k<=0)
+      status = defaultStatus;
       return;  % This is used for querying numFunctions.
 
   elseif (k<=numFunctions)
-      funcName = func2str(testfunction_handles{k});
-
-      try
-          nargs = nargout(funcName);
-      catch %#ok
-          % In Octave 3.6.4, `nargout` seems not to be able to handle
-          % everything as MATLAB does:
-          %  * it does not support function handles (so using strings)
-          %  * it cannot handle subfunctions apparently, so always use the
-          %    default syntax there
-          %TODO: handle diferent number of arguments in Octave
-          warning('testfunctions:nargoutOctave',...
-              'Cannot determine number of output of "%s". Assuming 2.',funcName)
-          nargs = 2;
-      end
-
-      switch nargs
-          case 3
-              [desc, extraOpts, extraCFOptions] = testfunction_handles{k}();
-
-          case 1
-              desc = testfunction_handles{k}();
-
-          otherwise
-              [desc, extraOpts] = testfunction_handles{k}();
-
-      end
+      status = testfunction_handles{k}();
+      status.function = func2str(testfunction_handles{k});
+      status = fillStruct(status, defaultStatus);
 
   else
       error('testfunctions:outOfBounds', ...
             'Out of bounds (number of testfunctions=%d)', numFunctions);
   end
 
-  return;
 end
 % =========================================================================
-function [description, extraOpts] = one_point()
+function [stat] = one_point()
 
   m = [0 1 1.5 1 -1];
   k = 1:1:length(m);
@@ -212,12 +189,13 @@ function [description, extraOpts] = one_point()
 
   set(gca,'XTickLabel',{});
 
-  description = 'Plot only one single point.';
-  extraOpts = {};
+  stat.description = 'Plot only one single point.';
 
 end
 % =========================================================================
-function [description, extraOpts, extraOptsCleanFigure] = plain_cos()
+function [stat] = plain_cos()
+  stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
+  stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
 
   fplot( @cos, [0,2*pi] );
 
@@ -227,28 +205,18 @@ function [description, extraOpts, extraOptsCleanFigure] = plain_cos()
 
   % Adjust the aspect ratio when in MATLAB(R) or Octave >= 3.4.
   env = getEnvironment();
-  switch env
-      case 'MATLAB'
-          daspect([ 1 2 1 ])
-      case 'Octave'
-          if isVersionBelow( env, 3, 4 )
-              % Octave < 3.4 doesn't have daspect unfortunately.
-          else
-              daspect([ 1 2 1 ])
-          end
-      otherwise
-          error( 'Unknown environment. Need MATLAB(R) or GNU Octave.' )
+  if strcmpi(env,'Octave') && isVersionBelow(env, 3,4)
+      % Octave < 3.4 doesn't have daspect unfortunately.
+  else
+      daspect([ 1 2 1 ])
   end
-
-  description = 'Plain cosine function with minimumPointsDistance of $0.5$.' ;
-  extraOpts = {};
-  extraOptsCleanFigure = {'minimumPointsDistance', 0.5};
-
 end
 % =========================================================================
-function [description, extraOpts] = sine_with_markers ()
+function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
-
+  stat.description = [ 'Twisted plot of the sine function. '                   ,...
+         'Pay particular attention to how markers and Infs/NaNs are treated.' ];
+                   
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
   y(3) = NaN;
@@ -267,14 +235,11 @@ function [description, extraOpts] = sine_with_markers ()
 
   set(gca,'XTick',[0]);
   set(gca,'XTickLabel',{'null'});
-
-  description = [ 'Twisted plot of the sine function. '                   ,...
-                  'Pay particular attention to how markers and Infs/NaNs are treated.' ];
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = markerSizes()
+function [stat] = markerSizes()
+  stat.description = 'Marker sizes.';
+
   hold on;
 
   h = fill([1 1 2 2],[1 2 2 1],'r');
@@ -282,13 +247,11 @@ function [description, extraOpts] = markerSizes()
 
   plot([0],[0],'go','Markersize',14,'LineWidth',10)
   plot([0],[0],'bo','Markersize',14,'LineWidth',1)
-
-  description = 'Marker sizes.';
-  extraOpts = {};
 end
-
 % =========================================================================
-function [description, extraOpts] = markerSizes2()
+function [stat] = markerSizes2()
+  stat.description = 'Line plot with with different marker sizes.';
+
   hold on;
   grid on;
 
@@ -307,13 +270,12 @@ function [description, extraOpts] = markerSizes2()
   xlim([min(n)-1 max(n)+1]);
   ylim([0 d*(nStyles+1)]);
   set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
-
-  description = 'Line plot with with different marker sizes.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = sine_with_annotation ()
-
+function [stat] = sine_with_annotation ()
+  stat.description = [ 'Plot of the sine function. ',...
+        'Pay particular attention to how titles and annotations are treated.' ];
+              
   x = -pi:.1:pi;
   y = sin(x);
   h = plot(x,y);
@@ -331,24 +293,20 @@ function [description, extraOpts] = sine_with_annotation ()
       'Color','red',...
       'LineWidth',10);
 
-  description = [ 'Plot of the sine function. '                        ,...
-                  'Pay particular attention to how titles and annotations are treated.' ];
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = linesWithOutliers()
+function [stat] = linesWithOutliers()
+    stat.description = 'Lines with outliers.';
+
     far = 200;
     x = [ -far, -1,   -1,  -far, -10, -0.5, 0.5, 10,  far, 1,   1,    far, 10,   0.5, -0.5, -10,  -far ];
     y = [ -10,  -0.5, 0.5, 10,   far, 1,    1,   far, 10,  0.5, -0.5, -10, -far, -1,  -1,   -far, -0.5 ];
     plot( x, y,'o-');
     axis( [-2,2,-2,2] );
-
-    description = 'Lines with outliers.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = peaks_contour()
+function [stat] = peaks_contour()
+  stat.description = 'Test contour plots.';
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -359,17 +317,14 @@ function [description, extraOpts] = peaks_contour()
 
   colormap winter;
 
-  description = 'Test contour plots.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = contourPenny()
-
+function [stat] = contourPenny()
+  stat.description = 'Contour plot of a US\$ Penny.';
+  
   if ~exist('penny.mat','file')
       fprintf( 'penny data set not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return;
   end
 
@@ -377,12 +332,10 @@ function [description, extraOpts] = contourPenny()
   contour(flipud(P));
   axis square;
 
-  description = 'Contour plot of a US\$ Penny.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = peaks_contourf ()
+function [stat] = peaks_contourf ()
+  stat.description = 'Test the contourfill plots.';
 
   contourf(peaks(20), 10);
   colorbar();
@@ -394,12 +347,10 @@ function [description, extraOpts] = peaks_contourf ()
 %  colormap([0:0.1:1; 1:-0.1:0; 0:0.1:1]')
   colormap hsv;
 
-  description = 'Test the contourfill plots.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = double_colorbar()
+function [stat] = double_colorbar()
+  stat.description = 'Double colorbar.';
 
   vspace = linspace(-40,40,20);
   speed_map = magic(20).';
@@ -420,14 +371,12 @@ function [description, extraOpts] = double_colorbar()
   axis square
   xlabel('$v_{2d}$')
   ylabel('$v_{2q}$')
-
-  description = 'Double colorbar.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = subplot_colorbar()
+function [stat] = subplot_colorbar()
 %NOTE: do we need this test? Alternative: `double_colorbar`
+  stat.description = 'Subplot colorbar.';
+  
   x = 1:50;
   y = 25:75;
   [xx,yy] = meshgrid(x,y);
@@ -441,13 +390,11 @@ function [description, extraOpts] = subplot_colorbar()
 
   subplot(2,1,2);
   plot(vec);
-
-  description = 'Subplot colorbar.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = randomWithLines()
-
+function [stat] = randomWithLines()
+  stat.description = 'Lissajous points with lines.';
+  
   beta = 42.42;
   t = 1:150;
   X = [sin(t); cos(beta * t)].';
@@ -464,12 +411,10 @@ function [description, extraOpts] = randomWithLines()
   plot(M,mn + 1*[s s],'--');
   plot(M,mn - 2*[s s],'--');
   axis('tight');
-
-  description = 'Lissajous points with lines.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = many_random_points ()
+function [stat] = many_random_points ()
+  stat.description = 'Test the performance when drawing many points.';
 
   n = 1e3;
   alpha = 1024;
@@ -481,13 +426,11 @@ function [description, extraOpts] = many_random_points ()
 
   plot ( x, y, '.r' );
   axis([ 0, 1, 0, 1 ])
-
-  description = 'Test the performance when drawing many points.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = double_axes()
+function [stat] = double_axes()
+  stat.description = 'Double axes';
+
   dyb = 0.1;   % normalized units, bottom offset
   dyt = 0.1;   % separation between subsequent axes bottoms
 
@@ -544,12 +487,10 @@ function [description, extraOpts] = double_axes()
   set(ax3,'XMinorTick','on','color','none','xcolor',get(hl1,'color'))
 
   xlabel('secondary axis')
-
-  description = 'Double axes';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = double_axes2()
+function [stat] = double_axes2()
+  stat.description = 'Double overlayed axes with a flip.' ;
 
   ah1=axes;
   ph=plot([0 1],[0 1]);
@@ -565,44 +506,31 @@ function [description, extraOpts] = double_axes2()
   set(ah1,'color','none')
   % move these axes to the back
   set(gcf,'Child',flipud(get(gcf,'Children')))
-
-  description = 'Double overlayed axes with a flip.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = logplot()
-
+function [stat] = logplot()
+  stat.description = 'Test logscaled axes.';
+  
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
   grid on;
-
-  description = 'Test logscaled axes.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = colorbarLogplot()
-
+function [stat] = colorbarLogplot()
+  stat.description = 'Logscaled colorbar.';
+  
   imagesc([1 10 100]);
   try
     set(colorbar(), 'YScale', 'log');
   catch
     warning('M2TAcid:LogColorBar',...
         'Logarithmic Colorbars are not documented in MATLAB R2014b and Octave');
-    description = {};
-    extraOpts = {};
-    return;
+    stat.skip = true;
   end
-
-
-  description = 'Logscaled colorbar.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = legendplot()
-
+function [stat] = legendplot()
+  stat.description = 'Test inserting of legends.';
 %    x = -pi:pi/20:pi;
 %    plot(x,cos(x),'-ro',x,sin(x),'-.b');
 %    h = legend('one pretty long legend cos_x','sin_x',2);
@@ -619,14 +547,11 @@ function [description, extraOpts] = legendplot()
   legend( 'sin(x)', 'cos(x)', 'Location','NorthOutside', ...
                               'Orientation', 'Horizontal' );
   grid on;
-
-  description = 'Test inserting of legends.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = legendplotBoxoff ()
-
+function [stat] = legendplotBoxoff ()
+  stat.description = 'Test inserting of legends.';
+  
   x = -pi:pi/20:pi;
   plot( x, cos(x),'-ro',...
         x, sin(x),'-.b' ...
@@ -634,27 +559,21 @@ function [description, extraOpts] = legendplotBoxoff ()
   h = legend( 'cos_x', 'one pretty long legend sin_x', 2 );
   set( h, 'Interpreter', 'none' );
   legend boxoff;
-
-  description = 'Test inserting of legends.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = moreLegends()
+function [stat] = moreLegends()
+  stat.description = 'More legends.';
 
   x = 0:.1:7;
   y1 = sin(x);
   y2 = cos(x);
   [ax,h1,h2] = plotyy(x,y1,x,y2);
   legend([h1;h2],'Sine','Cosine');
-
-  description = 'More legends.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = zoom()
-
+function [stat] = zoom()
+  stat.description = 'Plain cosine function, zoomed in.';
+  
   fplot( @sin, [0,2*pi], '-*' );
   hold on;
   delta = pi/10;
@@ -677,32 +596,30 @@ function [description, extraOpts] = zoom()
   hold off;
 
   axis([pi/2-delta, pi/2+delta, 1-delta, 1+delta] );
-
-  description = 'Plain cosine function, zoomed in.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = bars()
+function [stat] = bars()
 %NOTE: do we need this test when we have `subplotBars`?
+  stat.description = 'Plot with bars.';
+
   bins = -0.5:0.1:0.5;
   bins = 10 * bins;
   numEntries = length(bins);
   
   alpha = [13 11 7];
   numBars = numel(alpha);
-  data   = zeros(numEntries, numBars);
+  plotData   = zeros(numEntries, numBars);
   for iBar = 1:numBars
-      data(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
+      plotData(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
   end
-  b = bar(bins,data, 1.5);
+  b = bar(bins,plotData, 1.5);
 
   set(b(1),'FaceColor','m','EdgeColor','none')
-
-  description = 'Plot with bars.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = subplotBars()
+function [stat] = subplotBars()
+  stat.description = 'Bars in subplots.';
+  
   subplot(2,1,1);
   X = magic(5);
   X = X(2:2:20);
@@ -716,46 +633,43 @@ function [description, extraOpts] = subplotBars()
   
   alpha = [13 11 7];
   numBars = numel(alpha);
-  data   = zeros(numEntries, numBars);
+  plotData   = zeros(numEntries, numBars);
   for iBar = 1:numBars
-      data(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
+      plotData(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
   end
 
-  bar(bins,data, 1.5);
-
-  description = 'Bars in subplots.';
-  extraOpts = {};
+  bar(bins,plotData, 1.5);
 end
 % =========================================================================
-function [description, extraOpts] = hbars()
+function [stat] = hbars()
+  stat.description = 'Horizontal bars.';
+  
   y = [75.995 91.972 105.711 123.203 131.669 ...
      150.697 179.323 203.212 226.505 249.633 281.422];
   barh(y);
-  description = 'Horizontal bars.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = groupbars()
+function [stat] = groupbars()
+  stat.description = 'Plot with bars in groups.';
+
   X = [1,2,3,4,5];
   Y = round(rand(5,2)*20);
-%    bar(X,Y,'group','BarWidth',1.0);
+  %    bar(X,Y,'group','BarWidth',1.0);
   makebars(X,Y,1.0,'grouped');
-%    set(gca,'XTick',[4,4.2,4.25,4.3,4.4,4.45,4.5]);
+  %    set(gca,'XTick',[4,4.2,4.25,4.3,4.4,4.45,4.5]);
   title 'Group';
-  description = 'Plot with bars in groups.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = stackbars()
+function [stat] = stackbars()
+  stat.description = 'Plot of stacked bars.';
+  
   Y = round(rand(5,3)*10);
   bar(Y,'stack');
   title 'Stack';
-
-  description = 'Plot of stacked bars.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = stemplot()
+function [stat] = stemplot()
+  stat.description = 'A simple stem plot.' ;
 
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
@@ -764,36 +678,27 @@ function [description, extraOpts] = stemplot()
   legend( 'exp(-.07x)*cos(x)', 'exp(.05*x)*cos(x)', 'Location', 'NorthWest');
   set(h(1),'MarkerFaceColor','blue')
   set(h(2),'MarkerFaceColor','red','Marker','square')
-
-  description = 'A simple stem plot.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = stemplot2()
-
+function [stat] = stemplot2()
+  stat.description = 'Another simple stem plot.';
+  
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
        exp(.05*x).*cos(x)]';
   h = stem(x, y, 'filled');
   legend( 'exp(-.07x)*cos(x)', 'exp(.05*x)*cos(x)', 'Location', 'NorthWest');
-
-  description = 'Another simple stem plot.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = stairsplot()
-
+function [stat] = stairsplot()
+  stat.description = 'A simple stairs plot.' ;
+  
   x = linspace(-2*pi,2*pi,40);
   stairs(x,sin(x))
-
-  description = 'A simple stairs plot.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = quiverplot()
+function [stat] = quiverplot()
+  stat.description = 'A combined quiver/contour plot of $x\exp(-x^2-y^2)$.' ;
 
   [X,Y] = meshgrid(-2:.2:2);
   Z = X.*exp(-X.^2 - Y.^2);
@@ -803,14 +708,11 @@ function [description, extraOpts] = quiverplot()
   quiver(X,Y,DX,DY);
   colormap hsv;
   hold off
-
-  description = 'A combined quiver/contour plot of $x\exp(-x^2-y^2)$.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = quiver3plot()
-
+function [stat] = quiver3plot()
+  stat.description = 'Three-dimensional quiver plot.' ;
+  
   vz = 10;            % Velocity
   a = -32;            % Acceleration
 
@@ -828,58 +730,44 @@ function [description, extraOpts] = quiver3plot()
   scale = 0;
   quiver3(x,y,z,u,v,w,scale)
   view([70 18])
-
-  description = 'Three-dimensional quiver plot.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = quiveroverlap ()
-
+function [stat] = quiveroverlap ()
+  stat.description = 'Quiver plot with avoided overlap.';
+  
   x = [0 1];
   y = [0 0];
   u = [1 -1];
   v = [1 1];
 
   quiver(x,y,u,v);
-
-  description = 'Quiver plot with avoided overlap.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = polarplot ()
+function [stat] = polarplot ()
+  stat.description = 'A simple polar plot.' ;
 
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
-
-  description = 'A simple polar plot.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = roseplot ()
+function [stat] = roseplot ()
+  stat.description = 'A simple rose plot.' ;
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
-
-  description = 'A simple rose plot.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = compassplot ()
-
+function [stat] = compassplot ()
+  stat.description = 'A simple compass plot.' ;
+  
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
-
-  description = 'A simple compass plot.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = imageplot ()
-
+function [stat] = imageplot ()
+  stat.description = 'An image plot of matrix values.' ;
+  %stat.extraOptions = {'imagesAsPng', false};
+  
   [u,s,v] = svd(magic(10));
 
   subplot(1,2,1);
@@ -891,21 +779,17 @@ function [description, extraOpts] = imageplot ()
   A(v<s & v>u) = 0;
   A = sparse(A);
   imagesc( A );
-
-  description = 'An image plot of matrix values.' ;
-  %extraOpts = {'imagesAsPng', false};
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = logicalImage()
-  [data,dummy,dummy] = svd(magic(10));
-  imagesc(data > mean(data(:)));
-  description = 'An image plot of logical matrix values.' ;
-  extraOpts = {};
+function [stat] = logicalImage()
+  stat.description = 'An image plot of logical matrix values.' ;
+  
+  [plotData,dummy,dummy] = svd(magic(10)); %#ok
+  imagesc(plotData > mean(plotData(:)));
 end
 % =========================================================================
-function [description, extraOpts] = imagescplot()
+function [stat] = imagescplot()
+  stat.description = 'An imagesc plot of $\sin(x)\cos(y)$.';
 
   pointsX = 10;
   pointsY = 20;
@@ -913,13 +797,10 @@ function [description, extraOpts] = imagescplot()
   y = 0:1/pointsY:1;
   z = sin(x)'*cos(y);
   imagesc(x,y,z);
-
-  description = 'An imagesc plot of $\sin(x)\cos(y)$.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = imagescplot2()
+function [stat] = imagescplot2()
+  stat.description = 'A trimmed imagesc plot.';
 
   a=magic(10);
   x=-5:1:4;
@@ -930,13 +811,10 @@ function [description, extraOpts] = imagescplot2()
   ylim([12,15])
 
   grid on;
-
-  description = 'A trimmed imagesc plot.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = xAxisReversed ()
+function [stat] = xAxisReversed ()
+  stat.description = 'Reversed axes with legend.' ;
 
   n = 100;
   x = (0:1/n:1);
@@ -945,13 +823,10 @@ function [description, extraOpts] = xAxisReversed ()
   set(gca,'XDir','reverse');
   set(gca,'YDir','reverse');
   legend( 'Location', 'SouthWest' );
-
-  description = 'Reversed axes with legend.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = subplot2x2 ()
+function [stat] = subplot2x2 ()
+  stat.description = 'Four aligned subplots on a $2\times 2$ subplot grid.' ;
 
   x = (1:5);
 
@@ -970,15 +845,11 @@ function [description, extraOpts] = subplot2x2 ()
   subplot(2,2,4);
   y = cos(x.^2);
   plot(x,y);
-
-
-  description = 'Four aligned subplots on a $2\times 2$ subplot grid.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = subplot2x2b ()
-
+function [stat] = subplot2x2b ()
+  stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
+  
   x = (1:5);
 
   subplot(2,2,1);
@@ -992,14 +863,10 @@ function [description, extraOpts] = subplot2x2b ()
   subplot(2,2,3:4);
   y = tan(x);
   plot(x,y);
-
-
-  description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = manualAlignment()
+function [stat] = manualAlignment()
+  stat.description = 'Manually aligned figures.';
 
   xrange = linspace(-3,4,2*1024);
 
@@ -1011,13 +878,10 @@ function [description, extraOpts] = manualAlignment()
   axes('Position', [0.1 0.25 0.85 0.6]);
   plot(xrange);
   set(gca,'XTick',[]);
-
-  description = 'Manually aligned figures.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = subplot3x1 ()
+function [stat] = subplot3x1 ()
+  stat.description = 'Three aligned subplots on a $3\times 1$ subplot grid.' ;
 
   x = (1:5);
 
@@ -1032,13 +896,10 @@ function [description, extraOpts] = subplot3x1 ()
   subplot(3,1,3);
   y = tan(x/5);
   plot(x,y);
-
-  description = 'Three aligned subplots on a $3\times 1$ subplot grid.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = subplotCustom ()
+function [stat] = subplotCustom ()
+  stat.description = 'Three customized aligned subplots.' ;
 
   x = (1:5);
 
@@ -1053,40 +914,33 @@ function [description, extraOpts] = subplotCustom ()
   y = tan(sqrt(x));
   subplot( 'Position', [0.65 0.1 0.3 0.3] )
   plot(x,y);
-
-  description = 'Three customized aligned subplots.' ;
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = errorBars ()
+function [stat] = errorBars ()
+  stat.description = 'Generic error bar plot.';
 
-  data = 1:10;
+  plotData = 1:10;
   [u,s,v] = svd(magic(11));
   
   eH = abs(u(1:10,5));
   eL = abs(v(1:10,9));
   
-  errorbar(1:10, data, eL, eH, '.')
-
-  description = 'Generic error bar plot.';
-  extraOpts = {};
-
+  errorbar(1:10, plotData, eL, eH, '.')
 end
 % =========================================================================
-function [description, extraOpts] = errorBars2 ()
+function [stat] = errorBars2 ()
+  stat.description = 'Another error bar example.';
 
   data = load( 'myCount.dat' );
   y = mean( data, 2 );
   e = std( data, 1, 2 );
   errorbar( y, e, 'xr' );
-
-  description = 'Another error bar example.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = legendsubplots()
+function [stat] = legendsubplots()
+  stat.description = [ 'Subplots with legends. ' , ...
+    'Increase value of "length" in the code to stress-test your TeX installation.' ];
+
   % size of upper subplot
   rows = 4;
   % number of points.  A large number here (eg 1000) will stress-test
@@ -1136,18 +990,14 @@ function [description, extraOpts] = legendsubplots()
   xlabel('Time/s')
   ylabel('\Delta V')
   title('Differential time traces');
-
-  description = [ 'Subplots with legends. '                             , ...
-                  'Increase value of "length" in the code to stress-test your TeX installation.' ];
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = legendsubplots2()
+function [stat] = legendsubplots2()
+  stat.description = ['Another subplot with legends.'];
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
@@ -1172,7 +1022,6 @@ function [description, extraOpts] = legendsubplots2()
   LCL=(s^2*C*L2+1)/(s^2*C*L1+1);
 
   t=logspace(3,5,1000);
-  hold off
   bode(LCL,t)
   hold on
   bode(LCLd,t)
@@ -1181,49 +1030,41 @@ function [description, extraOpts] = legendsubplots2()
   grid on
 
   legend('Perfect LCL',' Real LCL','Location','SW')
-
-  description = ['Another subplot with legends.'];
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = bodeplots()
+function [stat] = bodeplots()
+  stat.description = 'Bode diagram of frequency response.';
 
   % check if the control toolbox is installed
   if length(ver('control')) ~= 1
       fprintf( 'Control toolbox not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
   g = tf([1 0.1 7.5],[1 0.12 9 0 0]);
   bode(g)
-  description = 'Bode diagram of frequency response.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = rlocusPlot()
+function [stat] = rlocusPlot()
+  stat.description = 'rlocus plot.';
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
   s=tf('s');
   rlocus(tf([1 1],[4 3 1]))
-
-  description = 'rlocus plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = mandrillImage()
+function [stat] = mandrillImage()
+  stat.description = 'Picture of a mandrill.';
 
   if ~exist('mandrill.mat','file')
       fprintf( 'mandrill data set not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
@@ -1233,12 +1074,10 @@ function [description, extraOpts] = mandrillImage()
   colormap( data.map )
   axis off
   axis image
-
-  description = 'Picture of a mandrill.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = besselImage()
+function [stat] = besselImage()
+  stat.description = 'Bessel function.';
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1259,103 +1098,89 @@ function [description, extraOpts] = besselImage()
   xlabel('Order')
   ylabel('\beta')
   set(gca,'YDir','normal')
-
-  description = 'Bessel function.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = clownImage()
+function [stat] = clownImage()
+  stat.description = 'Picture of a clown.';
 
   if ~exist('clown.mat','file')
       fprintf( 'clown data set not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
   data = load( 'clown' );
   imagesc( data.X )
   colormap( gray )
-
-  description = 'Picture of a clown.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = zplanePlot1()
+function [stat] = zplanePlot1()
+  stat.description = 'Representation of the complex plane with zplane.';
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
+      
       return
   end
 
   [z,p] = ellip(4,3,30,200/500);
   zplane(z,p);
   title('4th-Order Elliptic Lowpass Digital Filter');
-
-  description = 'Representation of the complex plane with zplane.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = zplanePlot2()
+function [stat] = zplanePlot2()
+  stat.description = 'Representation of the complex plane with zplane.';
+  stat.closeall = true;
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
   [b,a] = ellip(4,3,30,200/500);
   Hd = dfilt.df1(b,a);
   zplane(Hd) % FIXME: This opens a new figure that doesn't get closed automatically
-
-  description = 'Representation of the complex plane with zplane.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = freqResponsePlot()
+function [stat] = freqResponsePlot()
+  stat.description = 'Frequency response plot.';
+  stat.closeall = true;
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
   b  = fir1(80,0.5,kaiser(81,8));
   hd = dfilt.dffir(b);
   freqz(hd); % FIXME: This opens a new figure that doesn't get closed automatically
-
-  description = 'Frequency response plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = axesLocation()
+function [stat] = axesLocation()
+  stat.description = 'Swapped axis locations.';
+
   plot(cos(1:10));
   set(gca,'XAxisLocation','top');
   set(gca,'YAxisLocation','right');
-
-  description = 'Swapped axis locations.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = axesColors()
+function [stat] = axesColors()
+  stat.description = 'Custom axes colors.';
 
   plot(sin(1:15));
   set(gca,'XColor','g','YColor','b');
 %  set(gca,'XColor','b','YColor','k');
   box off;
-
-  description = 'Custom axes colors.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = multipleAxes()
+function [stat] = multipleAxes()
+  stat.description = 'Multiple axes.';
 
   x1 = 0:.1:40;
   y1 = 4.*cos(x1)./(x1+2);
@@ -1382,38 +1207,30 @@ function [description, extraOpts] = multipleAxes()
   % Now set the tick mark locations.
   set(ax1,'XTick',xlimits(1):xinc:xlimits(2) ,...
           'YTick',ylimits(1):yinc:ylimits(2) )
-
-  description = 'Multiple axes.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = scatterPlotRandom()
+function [stat] = scatterPlotRandom()
+  stat.description = 'Generic scatter plot.';
 
   n = 1:100;
   scatter(n, n, 1000*(1+cos(n.^1.5)), n.^8);
   colormap autumn;
-  description = 'Generic scatter plot.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = scatterPlot()
-
+function [stat] = scatterPlot()
+  stat.description = 'Scatter plot with MATLAB(R) stat.';
   if ~exist('seamount.mat','file')
       fprintf( 'seamount data set not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
   data = load( 'seamount' );
   scatter( data.x, data.y, 5, data.z, '^' );
-  description = 'Scatter plot with MATLAB(R) data.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = scatterPlotMarkers()
+function [stat] = scatterPlotMarkers()
+  stat.description = 'Scatter plot with with different marker sizes and legend.';
 
   n = 1:10;
   d = 10;
@@ -1435,13 +1252,10 @@ function [description, extraOpts] = scatterPlotMarkers()
   set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
 
   legend(names{:});
-
-  description = 'Scatter plot with with different marker sizes and legend.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = scatter3Plot()
+function [stat] = scatter3Plot()
+  stat.description = 'Scatter3 plot with MATLAB(R) stat.';
 
   [x,y,z] = sphere(16);
   X = [x(:)*.5 x(:)*.75 x(:)];
@@ -1451,13 +1265,10 @@ function [description, extraOpts] = scatter3Plot()
   C = repmat([1 2 3],numel(x),1);
   scatter3(X(:),Y(:),Z(:),S(:),C(:),'filled'), view(-60,60)
   view(40,35)
-
-  description = 'Scatter3 plot with MATLAB(R) data.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = scatter3Plot2()
+function [stat] = scatter3Plot2()
+  stat.description = 'Another Scatter3 plot.';
 
   % Read image (Note: "peppers.png" is available with MATLAB)
   InpImg_RGB = imread('peppers.png');
@@ -1477,14 +1288,12 @@ function [description, extraOpts] = scatter3Plot2()
   xlabel('R');
   ylabel('G');
   zlabel('B');
-
-  description = 'Another Scatter3 plot.';
-  extraOpts = {};
-
-  return
 end
 % =========================================================================
-function [description, extraOpts] = scatter3Plot3()
+function [stat] = scatter3Plot3()
+  stat.description = 'Scatter3 plot with 2 colors (Issue 292)';
+  stat.issues = 292;
+  
   hold on;
   x = sin(1:5);
   y = cos(3.4 *(1:5));
@@ -1493,12 +1302,10 @@ function [description, extraOpts] = scatter3Plot3()
            'MarkerEdgeColor','none','MarkerFaceColor','k');
   scatter3(-x,y,z,150,...
            'MarkerEdgeColor','none','MarkerFaceColor','b');
-
-  description = 'Scatter3 plot with 2 colors (Issue 292)';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = spherePlot()
+function [stat] = spherePlot()
+  stat.description = 'Plot a sphere.';
 
   sphere(30);
   title('a sphere: x^2+y^2+z^2');
@@ -1506,12 +1313,11 @@ function [description, extraOpts] = spherePlot()
   ylabel('y');
   zlabel('z');
   axis equal;
-
-  description = 'Plot a sphere.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = surfPlot()
+function [stat] = surfPlot()
+  stat.description = 'Surface plot.';
+  
   [X,Y,Z] = peaks(30);
   surf(X,Y,Z)
   colormap hsv
@@ -1536,26 +1342,22 @@ function [description, extraOpts] = surfPlot()
   xlabel( 'x' )
   ylabel( 'y' )
   zlabel( 'z' )
-
-  description = 'Surface plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = surfPlot2()
-  z = [ ones(15, 5) zeros(15,5); ...
-        zeros(5,5) zeros(5,5)
-      ];
+function [stat] = surfPlot2()
+  stat.description = 'Another surface plot.';
+
+  z = [ ones(15, 5) zeros(15,5); 
+        zeros(5, 5) zeros( 5,5)];
 
   surf(abs(fftshift(fft2(z))) + 1);
   set(gca,'ZScale','log');
 
   legend( 'legendary', 'Location', 'NorthEastOutside' );
-
-  description = 'Another surface plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = superkohle()
+function [stat] = superkohle()
+  stat.description = 'Superkohle plot.';
 
   x1=0;
   x2=pi;
@@ -1584,12 +1386,11 @@ function [description, extraOpts] = superkohle()
   ylabel('x2 axis');
   axis([0 pi 0 pi -1 1]);
   grid on;
-
-  description = 'Superkohle plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = meshPlot()
+function [stat] = meshPlot()
+  stat.description = 'Mesh plot.';
+
   [X,Y,Z] = peaks(30);
   mesh(X,Y,Z)
   colormap hsv
@@ -1598,12 +1399,10 @@ function [description, extraOpts] = meshPlot()
   xlabel( 'x' )
   ylabel( 'y' )
   zlabel( 'z' )
-
-  description = 'Mesh plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = ylabels()
+function [stat] = ylabels()
+  stat.description = 'Separate y-labels.';
 
   x = 0:.01:2*pi;
   H = plotyy(x,sin(x),x,3*cos(x));
@@ -1612,19 +1411,17 @@ function [description, extraOpts] = ylabels()
   ylabel(H(2),'3cos(x)');
 
   xlabel(gca,'time')
-
-  description = 'Separate y-labels.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = spectro()
+function [stat] = spectro()
+  stat.description = 'Spectrogram plot';
 
   % In the original test case, this is 0:0.001:2, but that takes forever
   % for LaTeX to process.
   if isempty(which('chirp'))
       fprintf( 'chirp() not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.description = [];
+      
       return
   end
 
@@ -1632,12 +1429,10 @@ function [description, extraOpts] = spectro()
   X = chirp(T,100,1,200,'q');
   spectrogram(X,128,120,128,1E3);
   title('Quadratic Chirp');
-
-  description = 'Spectrogram plot';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = mixedBarLine()
+function [stat] = mixedBarLine()
+  stat.description = 'Mixed bar/line plot.';
 
   [x,s,v] = svd(magic(33));
   x = x(end:-1:end-1000);
@@ -1646,12 +1441,11 @@ function [description, extraOpts] = mixedBarLine()
   hold on;
   plot([mean(x) mean(x)], y, '-r');
   hold off;
-
-  description = 'Mixed bar/line plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = decayingharmonic()
+function [stat] = decayingharmonic()
+  stat.description = 'Decaying harmonic oscillation with \TeX{} title.';
+
   % Based on an example from
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
   A = 0.25;
@@ -1663,22 +1457,20 @@ function [description, extraOpts] = decayingharmonic()
   title('{\itAe}^{-\alpha\itt}sin\beta{\itt}, \alpha<<\beta')
   xlabel('Time \musec.')
   ylabel('Amplitude')
-
-  description = 'Decaying harmonic oscillation with \TeX{} title.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = texcolor()
+function [stat] = texcolor()
+  stat.description = 'Multi-colored text using \TeX{} commands.';
+
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
   text(.1, .5, ['\fontsize{16}black {\color{magenta}magenta '...
                 '\color[rgb]{0 .5 .5}teal \color{red}red} black again'])
-
-  description = 'Multi-colored text using \TeX{} commands.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = textext()
+function [stat] = textext()
+  stat.description = 'Formatted text and special characters using \TeX{}.';
+
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
   txstr(1) = { 'Each cell is a quoted string' };
@@ -1688,12 +1480,10 @@ function [description, extraOpts] = textext()
   txstr(5) = { '\fontname{courier}Or even change fonts' };
   plot( 0:6, sin(0:6) )
   text( 5.75, sin(2.5), txstr, 'HorizontalAlignment', 'right' )
-
-  description = 'Formatted text and special characters using \TeX{}.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = texrandom()
+function [stat] = texrandom()
+  stat.description = 'Random TeX symbols';
 
   try
       rng(42); %fix seed
@@ -1955,26 +1745,24 @@ function [description, extraOpts] = texrandom()
       fprintf( 'Original string: %s\n', string )
   end
 
-  title('Random TeX symbols \\\{\}\_\^$%#&')
-
-  description = 'Random TeX symbols';
-  extraOpts = {};
+  title('Random TeX symbols \\\{\}\_\^$%#&')  
 end
 % =========================================================================
-function [description, extraOpts] = latexmath1()
+function [stat] = latexmath1()
+  stat.description = 'A formula typeset using the \LaTeX{} interpreter.';
+
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/ref/text_props.html#Interpreter
   axes
   title( '\omega\subseteq\Omega' );
   text( 0.5, 0.5, '$$\int_0^x\!\int_{\Omega} dF(u,v) d\omega$$', ...
         'Interpreter', 'latex',                   ...
-        'FontSize', 16                            )
-
-  description = 'A formula typeset using the \LaTeX{} interpreter.';
-  extraOpts = {};
+        'FontSize', 16                            ) 
 end
 % =========================================================================
-function [description, extraOpts] = latexmath2()
+function [stat] = latexmath2()
+  stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
+
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
   set(gcf, 'color', 'white')
@@ -2016,25 +1804,22 @@ function [description, extraOpts] = latexmath2()
   % TODO: On processing the matlab2tikz_acidtest output, LaTeX complains
   %       about the use of \over:
   %         Package amsmath Warning: Foreign command \over;
-  %         (amsmath)                \frac or \genfrac should be used instead
-
-  description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
-  extraOpts = {};
+  %         (amsmath)                \frac or \genfrac should be used instead 
 end
 % =========================================================================
-function [description, extraOpts] = parameterCurve3d()
+function [stat] = parameterCurve3d()
+  stat.description = 'Parameter curve in 3D.';
+
   ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
   text(0.5, 0.5, 10, 'abs');
-  description = 'Parameter curve in 3D.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = parameterSurf()
+function [stat] = parameterSurf()
+  stat.description = 'Parameter and surface plot.';
 
   if ~exist('TriScatteredInterp')
       fprintf( 'TriScatteredInterp() not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return;
   end
   
@@ -2063,17 +1848,14 @@ function [description, extraOpts] = parameterSurf()
   plot3(x,y,z,'o')
   view(gca,[-69 14]);
   hold off
-
-  description = 'Parameter and surface plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = fill3plot()
+function [stat] = fill3plot()
+  stat.description = 'fill3 plot.';
 
   if ~exist('fill3','builtin')
       fprintf( 'fill3() not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
@@ -2087,24 +1869,22 @@ function [description, extraOpts] = fill3plot()
   fill3(x1,x2,h,'k');
   view(45,22.5);
   box on;
-
-  description = 'fill3 plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = rectanglePlot()
+function [stat] = rectanglePlot()
+  stat.description = 'Rectangle handle.';
+
   rectangle('Position', [0.59,0.35,3.75,1.37],...
             'Curvature', [0.8,0.4],...
             'LineWidth', 2, ...
             'LineStyle', '--' ...
            );
-  daspect([1,1,1]);
-
-  description = 'Rectangle handle.';
-  extraOpts = {};
+  daspect([1,1,1]);  
 end
 % =========================================================================
-function [description, extraOpts] = herrorbarPlot()
+function [stat] = herrorbarPlot()
+  stat.description = 'herrorbar plot.';
+
   hold on;
   X = 1:10;
   Y = 1:10;
@@ -2120,17 +1900,14 @@ function [description, extraOpts] = herrorbarPlot()
       set(h, 'color', [0 1 0]);
   end
   legend([h1 h2], {'test1', 'test2'})
-
-  description = 'herrorbar plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = hist3d()
+function [stat] = hist3d()
+  stat.description = '3D histogram plot.';
 
   if ~exist('hist3','builtin') && isempty(which('hist3'))
       fprintf( 'Statistics toolbox not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
@@ -2154,18 +1931,14 @@ function [description, extraOpts] = hist3d()
 %  n = hist3(dat); % Extract histogram data;
 %                  % default to 10x10 bins
 %  view([-37.5, 30]);
-
-  description = '3D histogram plot.';
-  extraOpts = {};
-
 end
 % =========================================================================
-function [description, extraOpts] = myBoxplot()
+function [stat] = myBoxplot()
+  stat.description = 'Boxplot.';
 
   if ~exist('boxplot','builtin') && isempty(which('boxplot'))
       fprintf( 'Statistics toolbox not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return
   end
 
@@ -2182,23 +1955,19 @@ function [description, extraOpts] = myBoxplot()
   ];
 
   boxplot(errors);
-
-  description = 'Boxplot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = areaPlot()
+function [stat] = areaPlot()
+  stat.description = 'Area plot.';
 
   M = magic(5);
   M = M(1:3,2:4);
   area(1:3, M);
   legend('foo', 'bar', 'foobar');
-
-  description = 'Area plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = customLegend()
+function [stat] = customLegend()
+  stat.description = 'Custom legend.';
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -2208,29 +1977,24 @@ function [description, extraOpts] = customLegend()
   set(lh,'color','g')
   set(lh,'edgecolor','r')
   set(lh, 'position',[.5 .6 .1 .05])
-
-  description = 'Custom legend.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = pixelLegend()
+function [stat] = pixelLegend()
+  stat.description = 'Legend with pixel position.';
 
   x = linspace(0,1);
   plot(x, [x;x.^2]);
   set(gca, 'units', 'pixels')
   lh=legend('1', '2');
   set(lh, 'units','pixels','position', [100 200 65 42])
-
-  description = 'Legend with pixel position.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = croppedImage()
+function [stat] = croppedImage()
+  stat.description = 'Custom legend.';
 
   if ~exist('flujet.mat','file')
       fprintf( 'flujet data set not found. Abort.\n\n' );
-      description = [];
-      extraOpts = {};
+      stat.skip = true;
       return;
   end
 
@@ -2244,12 +2008,10 @@ function [description, extraOpts] = croppedImage()
   % colorbar at top
   colorbar('north');
   set(gca,'Units','normalized');
-
-  description = 'Custom legend.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = doubleAxes()
+function [stat] = doubleAxes()
+  stat.description = 'Double axes.';
 
   ah = axes;
   set(ah,'Units','pixels');
@@ -2259,12 +2021,10 @@ function [description, extraOpts] = doubleAxes()
   set(ah2,'position',[18*4 18*3 114*4 114*3])
   grid(ah2,'on')
   set(ah2,'GridLineStyle','-')
-
-  description = 'Double axes.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = pColorPlot()
+function [stat] = pColorPlot()
+  stat.description = 'pcolor() plot.';
 
   n = 6;
   r = (0:n)'/n;
@@ -2274,12 +2034,10 @@ function [description, extraOpts] = pColorPlot()
   C = r*cos(2*theta);
   pcolor(X,Y,C)
   axis equal tight
-
-  description = 'pcolor() plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = multiplePatches()
+function [stat] = multiplePatches()
+  stat.description = 'Multiple patches.';
 
   xdata = [2     2     0     2     5;
            2     8     2     4     5;
@@ -2293,12 +2051,11 @@ function [description, extraOpts] = multiplePatches()
   p = patch(xdata,ydata,cdata,'Marker','o',...
             'MarkerFaceColor','flat',...
             'FaceColor','none');
-
-  description = 'Multiple patches.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = hgTransformPlot()
+function [stat] = hgTransformPlot()
+  stat.description = 'hgtransform() plot.';
+
   % Check out
   % http://www.mathworks.de/de/help/matlab/ref/hgtransform.html.
 
@@ -2324,21 +2081,17 @@ function [description, extraOpts] = hgTransformPlot()
   Txy = makehgtform('translate',[-1.5 -1.5 0]);
   set(t2,'Matrix',Txy)
   drawnow
-
-  description = 'hgtransform() plot.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = logbaseline()
+function [stat] = logbaseline()
+  stat.description = 'Logplot with modified baseline.';
 
   bar([0 1 2], [1 1e-2 1e-5],'basevalue', 1e-6);
-  set(gca,'YScale','log')
-
-  description = 'Logplot with modified baseline.';
-  extraOpts = {};
+  set(gca,'YScale','log');
 end
 % =========================================================================
-function [description, extraOpts] = alphaImage()
+function [stat] = alphaImage()
+  stat.description = 'Image with alpha channel.';
 
   N = 20;
   h_imsc = imagesc(repmat(1:N, N, 1));
@@ -2347,85 +2100,73 @@ function [description, extraOpts] = alphaImage()
   set(h_imsc, 'AlphaData', double(~mask));
   set(h_imsc, 'AlphaDataMapping', 'scaled');
   set(gca, 'ALim', [-1,1]);
-
-  description = 'Image with alpha channel.';
-  extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = surfShader1()
-[X,Y,Z]  = peaks(20);
-surf(X,Y,Z,'FaceColor','flat','EdgeColor','none')
+function [stat] = surfShader1()
+  stat.description = 'shader=flat/(flat mean) | Fc: flat | Ec: none';
 
-description = 'shader=flat/(flat mean) | Fc: flat | Ec: none';
-extraOpts = {};
+  [X,Y,Z]  = peaks(20);
+  surf(X,Y,Z,'FaceColor','flat','EdgeColor','none')
 end
 % =========================================================================
-function [description, extraOpts] = surfShader2()
-[X,Y,Z]  = peaks(20);
-surf(X,Y,Z,'FaceColor','interp','EdgeColor','none')
+function [stat] = surfShader2()
+  stat.description = 'shader=interp | Fc: interp | Ec: none';
 
-description = 'shader=interp | Fc: interp | Ec: none';
-extraOpts = {};
-
+  [X,Y,Z]  = peaks(20);
+  surf(X,Y,Z,'FaceColor','interp','EdgeColor','none')
 end
 % =========================================================================
-function [description, extraOpts] = surfShader3()
-[X,Y,Z]  = peaks(20);
-surf(X,Y,Z,'FaceColor','flat','EdgeColor','green')
+function [stat] = surfShader3()
+  stat.description = 'shader=faceted | Fc: flat | Ec: RGB';
 
-description = 'shader=faceted | Fc: flat | Ec: RGB';
-extraOpts = {};
+  [X,Y,Z]  = peaks(20);
+  surf(X,Y,Z,'FaceColor','flat','EdgeColor','green')
 end
 % =========================================================================
-function [description, extraOpts] = surfShader4()
+function [stat] = surfShader4()
+stat.description = 'shader=faceted | Fc: RGB | Ec: interp';
+
 [X,Y,Z]  = peaks(20);
 surf(X,Y,Z,'FaceColor','blue','EdgeColor','interp')
-
-description = 'shader=faceted | Fc: RGB | Ec: interp';
-extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = surfShader5()
+function [stat] = surfShader5()
+stat.description = 'shader=faceted interp | Fc: interp | Ec: flat';
+
 [X,Y,Z]  = peaks(20);
 surf(X,Y,Z,'FaceColor','interp','EdgeColor','flat')
-
-description = 'shader=faceted interp | Fc: interp | Ec: flat';
-extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = surfNoShader()
+function [stat] = surfNoShader()
+stat.description = 'no shader | Fc: RGB | Ec: RGB';
+
 [X,Y,Z]  = peaks(20);
 surf(X,Y,Z,'FaceColor','blue','EdgeColor','yellow')
-
-description = 'no shader | Fc: RGB | Ec: RGB';
-extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = surfNoPlot()
+function [stat] = surfNoPlot()
+stat.description = 'no plot | Fc: none | Ec: none';
+
 [X,Y,Z]  = peaks(20);
 surf(X,Y,Z,'FaceColor','none','EdgeColor','none')
-
-description = 'no plot | Fc: none | Ec: none';
-extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = surfMeshInterp()
+function [stat] = surfMeshInterp()
+stat.description = 'mesh | Fc: none | Ec: interp';
+
 [X,Y,Z]  = peaks(20);
 surf(X,Y,Z,'FaceColor','none','EdgeColor','interp')
-
-description = 'mesh | Fc: none | Ec: interp';
-extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = surfMeshRGB()
+function [stat] = surfMeshRGB()
+stat.description = 'mesh | Fc: none | Ec: RGB';
+
 [X,Y,Z]  = peaks(20);
 surf(X,Y,Z,'FaceColor','none','EdgeColor','green')
-
-description = 'mesh | Fc: none | Ec: RGB';
-extraOpts = {};
 end
 % =========================================================================
-function [description, extraOpts] = annotation1()
+function [stat] = annotation1()
+stat.description = 'Annotations only';
 
 annotation(gcf,'arrow',[0.192857142857143 0.55],...
     [0.729952380952381 0.433333333333333]);
@@ -2437,11 +2178,11 @@ annotation(gcf,'textbox',...
     [0.3 0.348251748251748 0.0328486806677437 0.0517482517482517],...
     'String',{'y-x'},...
     'FontSize',16);
-
-description = 'Annotations only';
-extraOpts = {};
 end
-function [description, extraOpts] = annotation2()
+% =========================================================================
+function [stat] = annotation2()
+stat.description = 'Annotations over plot';
+
 axes1 = axes('Parent',gcf);
 hold(axes1,'all');
 
@@ -2459,9 +2200,6 @@ annotation(gcf,'textbox',...
     'FontSize',16,...
     'FitBoxToText','off',...
     'LineStyle','none');
-
-description = 'Annotation over plot';
-extraOpts = {};
 end
 % =========================================================================
 function env = getEnvironment
@@ -2506,5 +2244,14 @@ function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
   noenv = false;
 end
 % =========================================================================
-
-
+function [status] = fillStruct(status, defaultStatus)
+% fills non-existant fields of |data| with those of |defaultData|
+  fields = fieldnames(defaultStatus);
+  for iField = 1:numel(fields)
+      field = fields{iField};
+      if ~isfield(status,field)
+          status.(field) = defaultStatus.(field);
+      end
+  end
+end
+% =========================================================================

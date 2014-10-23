@@ -75,7 +75,7 @@ function matlab2tikz_acidtest(varargin)
   end
 
   % query the number of test functions
-  [dummya, dummyb, dummyc, dummy, n] = testfunctions(0);
+  [emptyData, n] = testfunctions(0);
 
   if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
       indices = matlab2tikzOpts.Results.testFunctionIndices;
@@ -99,6 +99,8 @@ function matlab2tikz_acidtest(varargin)
   pdferror  = false(length(indices), 1);
   desc = cell(length(indices), 1);
   funcName = cell(length(indices), 1);
+  status = cell(length(indices), 1); % cell array to accomodate different structure
+  
   for k = 1:length(indices)
       fprintf(stdout, 'Executing test case no. %d...\n', indices(k));
 
@@ -107,7 +109,13 @@ function matlab2tikz_acidtest(varargin)
 
       % plot the figure
       try
-          [desc{k}, extraOpts, extraCFOpts, funcName{k}] = testfunctions(indices(k));
+          status{k} = testfunctions(indices(k));
+          % TODO: replace those variables everywhere with data.field
+          funcName{k} = status{k}.function;
+          desc{k} = status{k}.description;
+          extraOpts = status{k}.extraOptions;
+          extraCFOpts = status{k}.extraCleanfigureOptions;
+          
       catch %#ok
           e = lasterror('reset'); %#ok
           ploterrmsg{k} = format_error_message(e);
@@ -130,7 +138,7 @@ function matlab2tikz_acidtest(varargin)
       end
 
       % plot not sucessful
-      if isempty(desc{k})
+      if status{k}.skip
           close(fig_handle);
           continue
       end
@@ -182,17 +190,6 @@ function matlab2tikz_acidtest(varargin)
           tikzerror(k) = true;
       end
 
-      % Add new entries as they should be discovered
-      manualCloseFuncs = {'freqResponsePlot', ...
-                          'zplanePlot2'};
-
-      switch funcName{k}
-          case manualCloseFuncs
-              closeAll = true;
-          otherwise
-              closeAll = false;
-      end
-
       % Make underscores in function names TeX compatible
       funcName{k} = strrep(funcName{k}, '_', '\_');
 
@@ -200,7 +197,7 @@ function matlab2tikz_acidtest(varargin)
       texfile_addtest(fh, fig_file, gen_file, desc{k}, funcName{k}, ...
                       indices(k), pdferror(k), tikzerror(k));
 
-      if ~closeAll
+      if ~status{k}.closeall
           close(fig_handle);
       else
           close all;
@@ -221,7 +218,7 @@ function matlab2tikz_acidtest(varargin)
       end
 
       fprintf(fh, '%d & \\texttt{%s}', indices(k), funcName{k});
-      if isempty(desc{k})
+      if status{k}.skip
           fprintf(fh, ' & --- & skipped & ---');
       else
           for err = [ploterror(k), pdferror(k), tikzerror(k)]
