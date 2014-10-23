@@ -11,6 +11,9 @@ function matlab2tikz_acidtest(varargin)
 % MATLAB2TIKZ_ACIDTEST('figureVisible', LOGICAL, ...)
 %   plots the figure visibly during the test process. Default: false
 %
+% MATLAB2TIKZ_ACIDTEST('testsuite', FUNCTION_HANDLE, ...)
+%   Determines which test suite is to be run. Default: @testfunctions
+%
 % See also matlab2tikz, testfunctions
 
 % Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
@@ -47,18 +50,17 @@ function matlab2tikz_acidtest(varargin)
 
 
   % -----------------------------------------------------------------------
-  matlab2tikzOpts = matlab2tikzInputParser;
+  ipp = matlab2tikzInputParser;
+  
+  ipp = ipp.addOptional(ipp, 'testFunctionIndices', [], @isfloat);
+  ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
+  ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'testsuite', @testfunctions, @(x)(isa(x,'function_handle')));
 
-  matlab2tikzOpts = matlab2tikzOpts.addOptional(matlab2tikzOpts, ...
-                                                'testFunctionIndices', ...
-                                                [], @isfloat);
-  matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
-                                                  'extraOptions', {}, @iscell);
-  matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
-                                                  'figureVisible', false, @islogical);
-
-  matlab2tikzOpts = matlab2tikzOpts.parse(matlab2tikzOpts, varargin{:});
+  ipp = ipp.parse(ipp, varargin{:});
   % -----------------------------------------------------------------------
+  
+  testsuite = ipp.Results.testsuite;
 
   % first, initialize the tex output
   texfile = 'tex/acid.tex';
@@ -68,17 +70,19 @@ function matlab2tikz_acidtest(varargin)
 
   % output streams
   stdout = 1;
-  if strcmp(env, 'Octave') && ~matlab2tikzOpts.Results.figureVisible
+  if strcmp(env, 'Octave') && ~ipp.Results.figureVisible
       % Use the gnuplot backend to work around an fltk bug, see
       % <http://savannah.gnu.org/bugs/?43429>.
       graphics_toolkit gnuplot
   end
 
   % query the number of test functions
-  [dummya, dummyb, dummyc, dummy, n] = testfunctions(0);
+  [dummy, n] = testsuite(0); %#ok
+  
+  defaultStatus = emptyStatus();
 
-  if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
-      indices = matlab2tikzOpts.Results.testFunctionIndices;
+  if ~isempty(ipp.Results.testFunctionIndices)
+      indices = ipp.Results.testFunctionIndices;
       % kick out the illegal stuff
       I = find(indices>=1 & indices<=n);
       indices = indices(I);
@@ -86,46 +90,43 @@ function matlab2tikz_acidtest(varargin)
       indices = 1:n;
   end
 
-  ploterrmsg = cell(length(indices), 1);
-  tikzerrmsg = cell(length(indices), 1);
-  pdferrmsg  = cell(length(indices), 1);
-  ploterror = false(length(indices), 1);
-  tikzerror = false(length(indices), 1);
-  pdferror  = false(length(indices), 1);
-  desc = cell(length(indices), 1);
-  funcName = cell(length(indices), 1);
+  % clean data directory
+  fprintf(stdout, 'Cleaning data directory\n\n');
+  dataDir = './data/';
+  delete(fullfile(dataDir, 'test*'))
+
+  %TODO: these should move into status
+  errorHasOccurred = false;
+  
+  status = cell(length(indices), 1); % cell array to accomodate different structure
+  
   for k = 1:length(indices)
       fprintf(stdout, 'Executing test case no. %d...\n', indices(k));
 
       % open a window
-      fig_handle = figure('visible',onOffBoolean(matlab2tikzOpts.Results.figureVisible));
+      fig_handle = figure('visible',onOffBoolean(ipp.Results.figureVisible));
 
       % plot the figure
       try
-          [desc{k}, extraOpts, extraCFOpts, funcName{k}] = testfunctions(indices(k));
+          status{k} = testsuite(indices(k));
+          
       catch %#ok
           e = lasterror('reset'); %#ok
-          ploterrmsg{k} = format_error_message(e);
-
-          for kError = 1:numel(e.stack);
-              ee = e.stack(kError);
-              if isempty(funcName{k})
-                  if ~isempty(regexp(ee.name, '^testfunctions>','once'))
-                    % extract function name
-                    funcName{k} = regexprep(ee.name, '^testfunctions>(.*)', '$1');
-                  elseif ~isempty(regexp(ee.name, '^testfunctions','once')) && kError < numel(e.stack)
-                    % new stack trace format (R2014b)
-                    funcName{k} = e.stack(kError-1).name;
-                  end
-              end
+          
+          status{k}.description = '\textcolor{red}{Error during plot generation.}';
+          if isempty(status{k}) || isempty(status{k}.function)
+              status{k}.function = extractFunctionFromError(e, testsuite);
           end
-          desc{k} = '\textcolor{red}{Error during plot generation.}';
-          disp_error_message(env, ploterrmsg{k});
-          ploterror(k) = true;
+          
+          [status{k}.plotStage, errorHasOccurred] = errorHandler(e, env);
       end
-
+      
+      status{k} = fillStruct(status{k}, defaultStatus);
+      % Make underscores in function names TeX compatible
+      status{k}.functionTeX = strrep(status{k}.function, '_', '\_');
+      
       % plot not sucessful
-      if isempty(desc{k})
+      if status{k}.skip
           close(fig_handle);
           continue
       end
@@ -154,72 +155,56 @@ function matlab2tikz_acidtest(varargin)
           end
       catch %#ok
           e = lasterror('reset'); %#ok
-          pdferrmsg{k} = format_error_message(e);
-          disp_error_message(env, pdferrmsg{k});
-          pdferror(k) = true;
+          [status{k}.saveStage, errorHasOccurred] = errorHandler(e, env);
       end
       % now, test matlab2tikz
       try
-          cleanfigure(extraCFOpts{:});
+          cleanfigure(status{k}.extraCleanfigureOptions{:});
           matlab2tikz('filename', gen_file, ...
                       'showInfo', false, ...
                       'checkForUpdates', false, ...
                       'relativeDataPath', '../data/', ...
-                      'dataPath', './data/', ...
+                      'dataPath', dataDir, ...
                       'width', '\figurewidth', ...
-                      matlab2tikzOpts.Results.extraOptions{:}, ...
-                      extraOpts{:} ...
+                      ipp.Results.extraOptions{:}, ...
+                      status{k}.extraOptions{:} ...
                      );
       catch %#ok
           e = lasterror('reset'); %#ok
-          tikzerrmsg{k} = format_error_message(e);
-          disp_error_message(env, tikzerrmsg{k});
-          tikzerror(k) = true;
+          [status{k}.tikzStage, errorHasOccurred] = errorHandler(e, env);
       end
-
-      % Add new entries as they should be discovered
-      manualCloseFuncs = {'freqResponsePlot', ...
-                          'zplanePlot2'};
-
-      switch funcName{k}
-          case manualCloseFuncs
-              closeAll = true;
-          otherwise
-              closeAll = false;
-      end
-
-      % Make underscores in function names TeX compatible
-      funcName{k} = strrep(funcName{k}, '_', '\_');
 
       % ...and finally write the bits to the LaTeX file
-      texfile_addtest(fh, fig_file, gen_file, desc{k}, funcName{k}, ...
-                      indices(k), pdferror(k), tikzerror(k));
+      texfile_addtest(fh, fig_file, gen_file, status{k}, indices(k));
 
-      if ~closeAll
+      if ~status{k}.closeall
           close(fig_handle);
       else
           close all;
       end
 
       elapsedTime = toc;
-      fprintf(stdout, '%s ', strrep(funcName{k}, '\_', '_'));
+      fprintf(stdout, '%s ', status{k}.function);
       fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
   end
 
   % Write the summary table to the LaTeX file
   texfile_tab_completion_init(fh)
   for k = 1:length(indices)
+      stat = status{k};
       % Break table up into pieces if it gets too long for one page
       if ~mod(k,35)
           texfile_tab_completion_finish(fh);
           texfile_tab_completion_init(fh);
       end
 
-      fprintf(fh, '%d & \\texttt{%s}', indices(k), funcName{k});
-      if isempty(desc{k})
+      fprintf(fh, '%d & \\texttt{%s}', indices(k), stat.functionTeX);
+      if stat.skip
           fprintf(fh, ' & --- & skipped & ---');
       else
-          for err = [ploterror(k), pdferror(k), tikzerror(k)]
+          for err = [stat.plotStage.error, ...
+                     stat.saveStage.error, ...
+                     stat.tikzStage.error]
               if err
                   fprintf(fh, ' & \\textcolor{red}{failed}');
               else
@@ -232,17 +217,20 @@ function matlab2tikz_acidtest(varargin)
   texfile_tab_completion_finish(fh);
 
   % Write the error messages to the LaTeX file if there are any
-  if any([ploterror ; tikzerror ; pdferror])
+  if errorHasOccurred
       fprintf(fh, '\\section*{Error messages}\n\\scriptsize\n');
       for k = 1:length(indices)
-          if isempty(ploterrmsg{k}) && isempty(tikzerrmsg{k}) && isempty(pdferrmsg{k})
+          stat = status{k};
+          if isempty(stat.plotStage.message) && ...
+             isempty(stat.saveStage.message) && ...
+             isempty(stat.tikzStage.message)
               continue % No error messages for this test case
           end
 
-          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), funcName{k});
-          print_verbatim_information(fh, 'Plot generation', ploterrmsg{k});
-          print_verbatim_information(fh, 'PDF generation' , pdferrmsg{k} );
-          print_verbatim_information(fh, 'matlab2tikz'    , tikzerrmsg{k});
+          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), stat.functionTeX);
+          print_verbatim_information(fh, 'Plot generation', stat.plotStage.message);
+          print_verbatim_information(fh, 'PDF generation' , stat.saveStage.message);
+          print_verbatim_information(fh, 'matlab2tikz'    , stat.tikzStage.message);
       end
       fprintf(fh, '\n\\normalsize\n\n');
   end
@@ -274,7 +262,20 @@ end
 % =========================================================================
 function texfile_finish(texfile_handle)
 
-  fprintf(texfile_handle, '\\end{document}');
+    [env,versionString] = getEnvironment();
+
+
+  fprintf(texfile_handle, ...
+      [
+      '\\newpage\n',...
+      '\\begin{tabular}{ll}\n',...
+      '  Created  & ' datestr(now) ' \\\\ \n', ...
+      '  OS       & ' OSVersion ' \\\\ \n',...
+      '  ' env '  & ' versionString ' \\\\ \n', ...
+      VersionControlIdentifier, ...
+      '  Pgfplots & \\expandafter\\csname ver@pgfplots.sty\\endcsname \\\\ \n',...
+      '\\end{tabular}\n',...
+      '\\end{document}']);
 
 end
 % =========================================================================
@@ -287,10 +288,12 @@ function print_verbatim_information(texfile_handle, title, contents)
     end
 end
 % =========================================================================
-function texfile_addtest(texfile_handle, ref_file, gen_file, desc, ...
-                          funcName, funcId, ref_error, gen_error)
+function texfile_addtest(texfile_handle, ref_file, gen_file, status, funcId)
   % Actually add the piece of LaTeX code that'll later be used to display
   % the given test.
+  
+  ref_error = status.plotStage.error;
+  gen_error = status.tikzStage.error;
 
   fprintf(texfile_handle, ...
           ['\\begin{figure}\n'                                          , ...
@@ -304,7 +307,7 @@ function texfile_addtest(texfile_handle, ref_file, gen_file, desc, ...
           '\\clearpage\n\n'],...
           include_figure(ref_error, 'includegraphics', ref_file), ...
           include_figure(gen_error, 'input', gen_file), ...
-          desc, funcName, funcId);
+          status.description, status.functionTeX, funcId);
 
 end
 % =========================================================================
@@ -363,6 +366,23 @@ function [env,versionString] = getEnvironment()
   versionString = [];
 end
 % =========================================================================
+function [formatted, OSType, OSVersion] = OSVersion()
+    if ismac
+        OSType = 'Mac OS';
+        [dummy, OSVersion] = system('sw_vers -productVersion');
+    elseif ispc
+        OSType = 'Windows';
+        [dummy, OSVersion] = system('ver');
+    elseif isunix
+        OSType = 'Unix';
+        [dummy, OSVersion] = system('uname -r');
+    else
+        OSType = '';
+        OSVersion = '';
+    end
+    formatted = strtrim([OSType ' ' OSVersion]);
+end
+% =========================================================================
 function msg = format_error_message(e)
     msg = '';
     if ~isempty(e.message)
@@ -393,6 +413,49 @@ function disp_error_message(env, msg)
     end
 end
 % =========================================================================
+function [formatted,treeish] = VersionControlIdentifier()
+% This function gives the (git) commit ID of matlab2tikz
+%
+% This assumes the standard directory structure as used by Nico's master branch:
+%     SOMEPATH/src/matlab2tikz.m with a .git directory in SOMEPATH.
+%
+% The HEAD of that repository is determined from file system information only
+% by following dynamic references (e.g. ref:refs/heds/master) in branch files
+% until an absolute commit hash (e.g. 1a3c9d1...) is found.
+% NOTE: Packed branch references are NOT supported by this approach
+    MAXITER     = 10; % stop following dynamic references after a while
+    formatted   = '';
+    REFPREFIX   = 'ref:';
+    isReference = @(treeish)(any(strfind(treeish, REFPREFIX)));
+    treeish     = [REFPREFIX 'HEAD'];
+    try
+        % get the matlab2tikz directory
+        m2tDir = fileparts(mfilename('fullpath'));
+        gitDir = fullfile(m2tDir,'..','.git');
+
+        nIter = 1;
+        while isReference(treeish)
+            refName    = treeish(numel(REFPREFIX)+1:end);
+            branchFile = fullfile(gitDir, refName);
+
+            if exist(branchFile, 'file') && nIter < MAXITER
+                fid     = fopen(branchFile,'r');
+                treeish = fscanf(fid,'%s');
+                fclose(fid);
+                nIter   = nIter + 1;
+            else % no branch file or iteration limit reached
+                treeish = '';
+                return;
+            end
+        end
+    catch %#ok
+        treeish = '';
+    end
+    if ~isempty(treeish)
+        formatted = ['  Commit & ' treeish ' \\\\ \n'];
+    end
+end
+% =========================================================================
 function onOff = onOffBoolean(bool)
 if bool
     onOff = 'on';
@@ -417,3 +480,65 @@ if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
     fclose(fid);
 end
 end
+% =========================================================================
+function defaultStatus = emptyStatus()
+% constructs an empty status struct
+defaultStatus = struct('function',               '', ...
+                       'description',            '',...
+                       'issues',                 [],...
+                       'skip',                   false, ... % skipped this test?
+                       'closeall',               false, ... % call close all after?
+                       'extraOptions',           {cell(0)}, ...
+                       'extraCleanfigureOptions',{cell(0)}, ...
+                       'plotStage',              emptyStage(), ...
+                       'saveStage',              emptyStage(), ...
+                       'tikzStage',              emptyStage());
+end
+% =========================================================================
+function stage = emptyStage()
+% constructs an empty (workflow) stage struct
+stage = struct('message', '', 'error'  , false);
+end
+% =========================================================================
+function [status] = fillStruct(status, defaultStatus)
+% fills non-existant fields of |data| with those of |defaultData|
+  fields = fieldnames(defaultStatus);
+  for iField = 1:numel(fields)
+      field = fields{iField};
+      if ~isfield(status,field)
+          status.(field) = defaultStatus.(field);
+      end
+  end
+end
+% =========================================================================
+function name = extractFunctionFromError(e, testsuite)
+% extract function name from an error (using the stack)
+    name = '';
+    if isa(testsuite, 'function_handle')
+        testsuite = func2str(testsuite);
+    end
+    for kError = 1:numel(e.stack);
+        ee = e.stack(kError);
+        if isempty(name)
+            if ~isempty(regexp(ee.name, ['^' testsuite '>'],'once'))
+                % extract function name
+                name = regexprep(ee.name, ['^' testsuite '>(.*)'], '$1');
+            elseif ~isempty(regexp(ee.name, ['^' testsuite],'once')) && ...
+                    kError < numel(e.stack)
+                % new stack trace format (R2014b)
+                name = e.stack(kError-1).name;
+            end
+        end
+    end
+end
+% =========================================================================
+function [stage, errorHasOccurred] = errorHandler(e,env)
+% common error handler code: save and print to console
+errorHasOccurred = true;
+stage = emptyStage();
+stage.message = format_error_message(e);
+stage.error   = errorHasOccurred;
+
+disp_error_message(env, stage.message);
+end
+% =========================================================================
