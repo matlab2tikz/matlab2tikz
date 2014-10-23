@@ -143,7 +143,8 @@ function matlab2tikz_acidtest(varargin)
                   % MATLAB does not generate properly cropped PDF files.
                   % So, we generate EPS files that are converted later on.
                   print(gcf, '-depsc2', eps_file);
-
+                  ensureLineEndings(eps_file);
+                  
               case 'Octave'
                   % In Octave, figures are properly cropped when using  print().
                   print(pdf_file, '-dpdf', '-S415,311', '-r150');
@@ -397,5 +398,22 @@ if bool
     onOff = 'on';
 else
     onOff = 'off';
+end
+end
+% =========================================================================
+function ensureLineEndings(filename)
+% Read in one line and test the ending
+fid = fopen(filename,'r+');
+testline = fgets(fid);
+if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
+    % Rewind, read the whole
+    fseek(fid,0,'bof'); 
+    str = fread(fid,'*char')'; 
+
+    % Replace, overwrite and close
+    str = regexprep(str, '\n|\r','\r\n');
+    fseek(fid,0,'bof'); 
+    fprintf(fid,'%s',str);
+    fclose(fid);
 end
 end
