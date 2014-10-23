@@ -75,7 +75,9 @@ function matlab2tikz_acidtest(varargin)
   end
 
   % query the number of test functions
-  [emptyData, n] = testfunctions(0);
+  [dummy, n] = testfunctions(0); %#ok
+  
+  defaultStatus = emptyStatus();
 
   if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
       indices = matlab2tikzOpts.Results.testFunctionIndices;
@@ -97,8 +99,7 @@ function matlab2tikz_acidtest(varargin)
   ploterror = false(length(indices), 1);
   tikzerror = false(length(indices), 1);
   pdferror  = false(length(indices), 1);
-  desc = cell(length(indices), 1);
-  funcName = cell(length(indices), 1);
+  
   status = cell(length(indices), 1); % cell array to accomodate different structure
   
   for k = 1:length(indices)
@@ -110,11 +111,6 @@ function matlab2tikz_acidtest(varargin)
       % plot the figure
       try
           status{k} = testfunctions(indices(k));
-          % TODO: replace those variables everywhere with data.field
-          funcName{k} = status{k}.function;
-          desc{k} = status{k}.description;
-          extraOpts = status{k}.extraOptions;
-          extraCFOpts = status{k}.extraCleanfigureOptions;
           
       catch %#ok
           e = lasterror('reset'); %#ok
@@ -122,21 +118,25 @@ function matlab2tikz_acidtest(varargin)
 
           for kError = 1:numel(e.stack);
               ee = e.stack(kError);
-              if isempty(funcName{k})
+              if isempty(status{k}.function)
                   if ~isempty(regexp(ee.name, '^testfunctions>','once'))
                     % extract function name
-                    funcName{k} = regexprep(ee.name, '^testfunctions>(.*)', '$1');
+                    status{k}.function = regexprep(ee.name, '^testfunctions>(.*)', '$1');
                   elseif ~isempty(regexp(ee.name, '^testfunctions','once')) && kError < numel(e.stack)
                     % new stack trace format (R2014b)
-                    funcName{k} = e.stack(kError-1).name;
+                    status{k}.function = e.stack(kError-1).name;
                   end
               end
           end
-          desc{k} = '\textcolor{red}{Error during plot generation.}';
+          status{k}.description = '\textcolor{red}{Error during plot generation.}';
           disp_error_message(env, ploterrmsg{k});
           ploterror(k) = true;
       end
-
+      
+      status{k} = fillStruct(status{k}, defaultStatus);
+      % Make underscores in function names TeX compatible
+      status{k}.functionTeX = strrep(status{k}.function, '_', '\_');
+      
       % plot not sucessful
       if status{k}.skip
           close(fig_handle);
@@ -173,7 +173,7 @@ function matlab2tikz_acidtest(varargin)
       end
       % now, test matlab2tikz
       try
-          cleanfigure(extraCFOpts{:});
+          cleanfigure(status{k}.extraCleanfigureOptions{:});
           matlab2tikz('filename', gen_file, ...
                       'showInfo', false, ...
                       'checkForUpdates', false, ...
@@ -181,7 +181,7 @@ function matlab2tikz_acidtest(varargin)
                       'dataPath', dataDir, ...
                       'width', '\figurewidth', ...
                       matlab2tikzOpts.Results.extraOptions{:}, ...
-                      extraOpts{:} ...
+                      status{k}.extraOptions{:} ...
                      );
       catch %#ok
           e = lasterror('reset'); %#ok
@@ -190,12 +190,9 @@ function matlab2tikz_acidtest(varargin)
           tikzerror(k) = true;
       end
 
-      % Make underscores in function names TeX compatible
-      funcName{k} = strrep(funcName{k}, '_', '\_');
-
       % ...and finally write the bits to the LaTeX file
-      texfile_addtest(fh, fig_file, gen_file, desc{k}, funcName{k}, ...
-                      indices(k), pdferror(k), tikzerror(k));
+      texfile_addtest(fh, fig_file, gen_file, status{k}.description, ...
+                      status{k}.functionTeX, indices(k), pdferror(k), tikzerror(k));
 
       if ~status{k}.closeall
           close(fig_handle);
@@ -204,7 +201,7 @@ function matlab2tikz_acidtest(varargin)
       end
 
       elapsedTime = toc;
-      fprintf(stdout, '%s ', strrep(funcName{k}, '\_', '_'));
+      fprintf(stdout, '%s ', status{k}.function);
       fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
   end
 
@@ -217,7 +214,7 @@ function matlab2tikz_acidtest(varargin)
           texfile_tab_completion_init(fh);
       end
 
-      fprintf(fh, '%d & \\texttt{%s}', indices(k), funcName{k});
+      fprintf(fh, '%d & \\texttt{%s}', indices(k), status{k}.functionTeX);
       if status{k}.skip
           fprintf(fh, ' & --- & skipped & ---');
       else
@@ -241,7 +238,7 @@ function matlab2tikz_acidtest(varargin)
               continue % No error messages for this test case
           end
 
-          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), funcName{k});
+          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), status{k}.functionTeX);
           print_verbatim_information(fh, 'Plot generation', ploterrmsg{k});
           print_verbatim_information(fh, 'PDF generation' , pdferrmsg{k} );
           print_verbatim_information(fh, 'matlab2tikz'    , tikzerrmsg{k});
@@ -492,3 +489,26 @@ if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
     fclose(fid);
 end
 end
+% =========================================================================
+function defaultStatus = emptyStatus()
+% constructs an empty status struct
+defaultStatus = struct('function',               '', ...
+                       'description',            '',...
+                       'issues',                 [],...
+                       'skip',                   false, ... % skipped this test?
+                       'closeall',               false, ... % call close all after?
+                       'extraOptions',           {cell(0)}, ...
+                       'extraCleanfigureOptions',{cell(0)});
+end
+% =========================================================================
+function [status] = fillStruct(status, defaultStatus)
+% fills non-existant fields of |data| with those of |defaultData|
+  fields = fieldnames(defaultStatus);
+  for iField = 1:numel(fields)
+      field = fields{iField};
+      if ~isfield(status,field)
+          status.(field) = defaultStatus.(field);
+      end
+  end
+end
+% =========================================================================

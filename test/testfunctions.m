@@ -148,22 +148,14 @@ function [status, numFunctions] = testfunctions(k)
 
 
   numFunctions = length( testfunction_handles );
-  defaultStatus = struct('function',               '', ...
-                       'description',            '',...
-                       'issues',                 [],...
-                       'skip',                   false, ... % skipped this test?
-                       'closeall',               false, ... % call close all after?
-                       'extraOptions',           {cell(0)}, ...
-                       'extraCleanfigureOptions',{cell(0)});
 
   if (k<=0)
-      status = defaultStatus;
+      status = struct();
       return;  % This is used for querying numFunctions.
 
   elseif (k<=numFunctions)
       status = testfunction_handles{k}();
       status.function = func2str(testfunction_handles{k});
-      status = fillStruct(status, defaultStatus);
 
   else
       error('testfunctions:outOfBounds', ...
@@ -2242,16 +2234,5 @@ function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
       below = false;
   end
   noenv = false;
-end
-% =========================================================================
-function [status] = fillStruct(status, defaultStatus)
-% fills non-existant fields of |data| with those of |defaultData|
-  fields = fieldnames(defaultStatus);
-  for iField = 1:numel(fields)
-      field = fields{iField};
-      if ~isfield(status,field)
-          status.(field) = defaultStatus.(field);
-      end
-  end
 end
 % =========================================================================
