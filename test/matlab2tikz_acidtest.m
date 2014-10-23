@@ -94,12 +94,7 @@ function matlab2tikz_acidtest(varargin)
   delete(fullfile(dataDir, 'test*'))
 
   %TODO: these should move into status
-  ploterrmsg = cell(length(indices), 1);
-  tikzerrmsg = cell(length(indices), 1);
-  pdferrmsg  = cell(length(indices), 1);
-  ploterror = false(length(indices), 1);
-  tikzerror = false(length(indices), 1);
-  pdferror  = false(length(indices), 1);
+  errorHasOccurred = false;
   
   status = cell(length(indices), 1); % cell array to accomodate different structure
   
@@ -115,15 +110,13 @@ function matlab2tikz_acidtest(varargin)
           
       catch %#ok
           e = lasterror('reset'); %#ok
-          ploterrmsg{k} = format_error_message(e);
           
+          status{k}.description = '\textcolor{red}{Error during plot generation.}';
           if isempty(status{k}) || isempty(status{k}.function)
               status{k}.function = extractFunctionFromError(e);
           end
-
-          status{k}.description = '\textcolor{red}{Error during plot generation.}';
-          disp_error_message(env, ploterrmsg{k});
-          ploterror(k) = true;
+          
+          [status{k}.plotStage, errorHasOccurred] = errorHandler(e, env);
       end
       
       status{k} = fillStruct(status{k}, defaultStatus);
@@ -160,9 +153,7 @@ function matlab2tikz_acidtest(varargin)
           end
       catch %#ok
           e = lasterror('reset'); %#ok
-          pdferrmsg{k} = format_error_message(e);
-          disp_error_message(env, pdferrmsg{k});
-          pdferror(k) = true;
+          [status{k}.saveStage, errorHasOccurred] = errorHandler(e, env);
       end
       % now, test matlab2tikz
       try
@@ -178,14 +169,11 @@ function matlab2tikz_acidtest(varargin)
                      );
       catch %#ok
           e = lasterror('reset'); %#ok
-          tikzerrmsg{k} = format_error_message(e);
-          disp_error_message(env, tikzerrmsg{k});
-          tikzerror(k) = true;
+          [status{k}.tikzStage, errorHasOccurred] = errorHandler(e, env);
       end
 
       % ...and finally write the bits to the LaTeX file
-      texfile_addtest(fh, fig_file, gen_file, status{k}.description, ...
-                      status{k}.functionTeX, indices(k), pdferror(k), tikzerror(k));
+      texfile_addtest(fh, fig_file, gen_file, status{k}, indices(k));
 
       if ~status{k}.closeall
           close(fig_handle);
@@ -201,17 +189,20 @@ function matlab2tikz_acidtest(varargin)
   % Write the summary table to the LaTeX file
   texfile_tab_completion_init(fh)
   for k = 1:length(indices)
+      stat = status{k};
       % Break table up into pieces if it gets too long for one page
       if ~mod(k,35)
           texfile_tab_completion_finish(fh);
           texfile_tab_completion_init(fh);
       end
 
-      fprintf(fh, '%d & \\texttt{%s}', indices(k), status{k}.functionTeX);
-      if status{k}.skip
+      fprintf(fh, '%d & \\texttt{%s}', indices(k), stat.functionTeX);
+      if stat.skip
           fprintf(fh, ' & --- & skipped & ---');
       else
-          for err = [ploterror(k), pdferror(k), tikzerror(k)]
+          for err = [stat.plotStage.error, ...
+                     stat.saveStage.error, ...
+                     stat.tikzStage.error]
               if err
                   fprintf(fh, ' & \\textcolor{red}{failed}');
               else
@@ -224,17 +215,20 @@ function matlab2tikz_acidtest(varargin)
   texfile_tab_completion_finish(fh);
 
   % Write the error messages to the LaTeX file if there are any
-  if any([ploterror ; tikzerror ; pdferror])
+  if errorHasOccurred
       fprintf(fh, '\\section*{Error messages}\n\\scriptsize\n');
       for k = 1:length(indices)
-          if isempty(ploterrmsg{k}) && isempty(tikzerrmsg{k}) && isempty(pdferrmsg{k})
+          stat = status{k};
+          if isempty(stat.plotStage.message) && ...
+             isempty(stat.saveStage.message) && ...
+             isempty(stat.tikzStage.message)
               continue % No error messages for this test case
           end
 
-          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), status{k}.functionTeX);
-          print_verbatim_information(fh, 'Plot generation', ploterrmsg{k});
-          print_verbatim_information(fh, 'PDF generation' , pdferrmsg{k} );
-          print_verbatim_information(fh, 'matlab2tikz'    , tikzerrmsg{k});
+          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), stat.functionTeX);
+          print_verbatim_information(fh, 'Plot generation', stat.plotStage.message);
+          print_verbatim_information(fh, 'PDF generation' , stat.saveStage.message);
+          print_verbatim_information(fh, 'matlab2tikz'    , stat.tikzStage.message);
       end
       fprintf(fh, '\n\\normalsize\n\n');
   end
@@ -292,10 +286,12 @@ function print_verbatim_information(texfile_handle, title, contents)
     end
 end
 % =========================================================================
-function texfile_addtest(texfile_handle, ref_file, gen_file, desc, ...
-                          funcName, funcId, ref_error, gen_error)
+function texfile_addtest(texfile_handle, ref_file, gen_file, status, funcId)
   % Actually add the piece of LaTeX code that'll later be used to display
   % the given test.
+  
+  ref_error = status.plotStage.error;
+  gen_error = status.tikzStage.error;
 
   fprintf(texfile_handle, ...
           ['\\begin{figure}\n'                                          , ...
@@ -309,7 +305,7 @@ function texfile_addtest(texfile_handle, ref_file, gen_file, desc, ...
           '\\clearpage\n\n'],...
           include_figure(ref_error, 'includegraphics', ref_file), ...
           include_figure(gen_error, 'input', gen_file), ...
-          desc, funcName, funcId);
+          status.description, status.functionTeX, funcId);
 
 end
 % =========================================================================
@@ -491,7 +487,15 @@ defaultStatus = struct('function',               '', ...
                        'skip',                   false, ... % skipped this test?
                        'closeall',               false, ... % call close all after?
                        'extraOptions',           {cell(0)}, ...
-                       'extraCleanfigureOptions',{cell(0)});
+                       'extraCleanfigureOptions',{cell(0)}, ...
+                       'plotStage',              emptyStage(), ...
+                       'saveStage',              emptyStage(), ...
+                       'tikzStage',              emptyStage());
+end
+% =========================================================================
+function stage = emptyStage()
+% constructs an empty (workflow) stage struct
+stage = struct('message', '', 'error'  , false);
 end
 % =========================================================================
 function [status] = fillStruct(status, defaultStatus)
@@ -521,5 +525,15 @@ function name = extractFunctionFromError(e)
             end
         end
     end
+end
+% =========================================================================
+function [stage, errorHasOccurred] = errorHandler(e,env)
+% common error handler code: save and print to console
+errorHasOccurred = true;
+stage = emptyStage();
+stage.message = format_error_message(e);
+stage.error   = errorHasOccurred;
+
+disp_error_message(env, stage.message);
 end
 % =========================================================================
