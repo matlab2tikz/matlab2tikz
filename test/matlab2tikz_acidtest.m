@@ -11,6 +11,9 @@ function matlab2tikz_acidtest(varargin)
 % MATLAB2TIKZ_ACIDTEST('figureVisible', LOGICAL, ...)
 %   plots the figure visibly during the test process. Default: false
 %
+% MATLAB2TIKZ_ACIDTEST('testsuite', FUNCTION_HANDLE, ...)
+%   Determines which test suite is to be run. Default: @testfunctions
+%
 % See also matlab2tikz, testfunctions
 
 % Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
@@ -47,18 +50,17 @@ function matlab2tikz_acidtest(varargin)
 
 
   % -----------------------------------------------------------------------
-  matlab2tikzOpts = matlab2tikzInputParser;
+  ipp = matlab2tikzInputParser;
+  
+  ipp = ipp.addOptional(ipp, 'testFunctionIndices', [], @isfloat);
+  ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
+  ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'testsuite', @testfunctions, @(x)(isa(x,'function_handle')));
 
-  matlab2tikzOpts = matlab2tikzOpts.addOptional(matlab2tikzOpts, ...
-                                                'testFunctionIndices', ...
-                                                [], @isfloat);
-  matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
-                                                  'extraOptions', {}, @iscell);
-  matlab2tikzOpts = matlab2tikzOpts.addParamValue(matlab2tikzOpts, ...
-                                                  'figureVisible', false, @islogical);
-
-  matlab2tikzOpts = matlab2tikzOpts.parse(matlab2tikzOpts, varargin{:});
+  ipp = ipp.parse(ipp, varargin{:});
   % -----------------------------------------------------------------------
+  
+  testsuite = ipp.Results.testsuite;
 
   % first, initialize the tex output
   texfile = 'tex/acid.tex';
@@ -68,19 +70,19 @@ function matlab2tikz_acidtest(varargin)
 
   % output streams
   stdout = 1;
-  if strcmp(env, 'Octave') && ~matlab2tikzOpts.Results.figureVisible
+  if strcmp(env, 'Octave') && ~ipp.Results.figureVisible
       % Use the gnuplot backend to work around an fltk bug, see
       % <http://savannah.gnu.org/bugs/?43429>.
       graphics_toolkit gnuplot
   end
 
   % query the number of test functions
-  [dummy, n] = testfunctions(0); %#ok
+  [dummy, n] = testsuite(0); %#ok
   
   defaultStatus = emptyStatus();
 
-  if ~isempty(matlab2tikzOpts.Results.testFunctionIndices)
-      indices = matlab2tikzOpts.Results.testFunctionIndices;
+  if ~isempty(ipp.Results.testFunctionIndices)
+      indices = ipp.Results.testFunctionIndices;
       % kick out the illegal stuff
       I = find(indices>=1 & indices<=n);
       indices = indices(I);
@@ -102,18 +104,18 @@ function matlab2tikz_acidtest(varargin)
       fprintf(stdout, 'Executing test case no. %d...\n', indices(k));
 
       % open a window
-      fig_handle = figure('visible',onOffBoolean(matlab2tikzOpts.Results.figureVisible));
+      fig_handle = figure('visible',onOffBoolean(ipp.Results.figureVisible));
 
       % plot the figure
       try
-          status{k} = testfunctions(indices(k));
+          status{k} = testsuite(indices(k));
           
       catch %#ok
           e = lasterror('reset'); %#ok
           
           status{k}.description = '\textcolor{red}{Error during plot generation.}';
           if isempty(status{k}) || isempty(status{k}.function)
-              status{k}.function = extractFunctionFromError(e);
+              status{k}.function = extractFunctionFromError(e, testsuite);
           end
           
           [status{k}.plotStage, errorHasOccurred] = errorHandler(e, env);
@@ -164,7 +166,7 @@ function matlab2tikz_acidtest(varargin)
                       'relativeDataPath', '../data/', ...
                       'dataPath', dataDir, ...
                       'width', '\figurewidth', ...
-                      matlab2tikzOpts.Results.extraOptions{:}, ...
+                      ipp.Results.extraOptions{:}, ...
                       status{k}.extraOptions{:} ...
                      );
       catch %#ok
@@ -509,16 +511,19 @@ function [status] = fillStruct(status, defaultStatus)
   end
 end
 % =========================================================================
-function name = extractFunctionFromError(e)
+function name = extractFunctionFromError(e, testsuite)
 % extract function name from an error (using the stack)
     name = '';
+    if isa(testsuite, 'function_handle')
+        testsuite = func2str(testsuite);
+    end
     for kError = 1:numel(e.stack);
         ee = e.stack(kError);
         if isempty(name)
-            if ~isempty(regexp(ee.name, '^testfunctions>','once'))
+            if ~isempty(regexp(ee.name, ['^' testsuite '>'],'once'))
                 % extract function name
-                name = regexprep(ee.name, '^testfunctions>(.*)', '$1');
-            elseif ~isempty(regexp(ee.name, '^testfunctions','once')) && ...
+                name = regexprep(ee.name, ['^' testsuite '>(.*)'], '$1');
+            elseif ~isempty(regexp(ee.name, ['^' testsuite],'once')) && ...
                     kError < numel(e.stack)
                 % new stack trace format (R2014b)
                 name = e.stack(kError-1).name;
