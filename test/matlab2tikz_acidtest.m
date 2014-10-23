@@ -114,7 +114,8 @@ function matlab2tikz_acidtest(varargin)
           e = lasterror('reset'); %#ok
           
           status{k}.description = '\textcolor{red}{Error during plot generation.}';
-          if isempty(status{k}) || isempty(status{k}.function)
+          if isempty(status{k}) || ~isfield(status{k}, 'function') ...
+                  || isempty(status{k}.function)
               status{k}.function = extractFunctionFromError(e, testsuite);
           end
           

@@ -143,7 +143,8 @@ function [status, numFunctions] = testfunctions(k)
                            @surfMeshInterp      , ...
                            @surfMeshRGB         , ...
                            @annotation1         , ...
-                           @annotation2
+                           @annotation2         , ...
+                           @annotation3
                          };
 
 
@@ -2192,6 +2193,45 @@ annotation(gcf,'textbox',...
     'FontSize',16,...
     'FitBoxToText','off',...
     'LineStyle','none');
+end
+function [stat] = annotation3()
+stat.description = 'Annotated and unaligned subplots';
+
+X1 = 0:0.01:1;
+Y1 = X1.^2;
+Y2 = Y1.^2;
+Y3 = X1.^(1/4);
+
+set(gcf, 'Position', [100 100 1500 600]);
+
+axes1 = axes('Parent',gcf, 'Position',[0.07 0.4015 0.2488 0.5146]);
+box(axes1,'on');
+hold(axes1,'all');
+
+title('f(x)=x^2');
+
+plot(X1,Y1,'Parent',axes1, 'DisplayName','(0:0.05:1).^2 vs 0:0.05:1');
+
+axes2 = axes('Parent',gcf, 'OuterPosition',[0.4062 0 0.2765 0.6314]);
+box(axes2,'on');
+hold(axes2,'all');
+
+plot(X1,Y2,'Parent',axes2,'DisplayName','(0:0.05:1).^4 vs 0:0.05:1');
+
+axes3 = axes('Parent',gcf, 'Position',[0.7421 0.3185 0.21 0.5480]);
+box(axes3,'on');
+hold(axes3,'all');
+
+plot(X1,Y3,'Parent',axes3,'DisplayName','(0:0.05:1).^(1/4) vs 0:0.05:1');
+
+annotation(gcf,'textbox',[0.3667 0.5521 0.0124 0.0393], ...
+           'String',{'f^2'}, 'FitBoxToText','off');
+
+annotation(gcf,'arrow',[0.3263 0.4281], [0.6606 0.3519]);
+
+annotation(gcf,'textarrow',[0.6766 0.7229], [0.3108 0.6333],...
+           'TextEdgeColor','none', 'HorizontalAlignment','center', ...
+           'String',{'invert'});
 end
 % =========================================================================
 function env = getEnvironment
