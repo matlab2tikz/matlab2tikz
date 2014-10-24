@@ -443,11 +443,14 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % In fact, this is not really important but makes things more 'natural'.
     axesHandles = axesHandles(end:-1:1);
 
-    % find alignments
-    [relevantAxesHandles, alignmentOptions, IX] = alignSubPlots(m2t, axesHandles);
+    % Alternative Positioning of axes.
+    % Select relevant Axes and draw them.
+    [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(axesHandles);
+    
+    m2t.axesBoundingBox = axesBoundingBox;
     m2t.axesContainers = {};
-    for ix = IX(:)'
-        m2t = drawAxes(m2t, relevantAxesHandles(ix), alignmentOptions(ix));
+    for ix = 1:numel(relevantAxesHandles)
+        m2t = drawAxes(m2t, relevantAxesHandles(ix));
     end
 
     % Handle color bars.
@@ -717,12 +720,9 @@ function data = applyHgTransform(m2t, data)
     end
 end
 % ==============================================================================
-function m2t = drawAxes(m2t, handle, alignmentOptions)
+function m2t = drawAxes(m2t, handle)
 % Input arguments:
 %    handle.................The axes environment handle.
-%    alignmentOptions.......The alignment options as defined in the
-%                           function 'alignSubPlots()'.
-%                           This argument is optional.
 
 % Handle special cases.
     switch lower(get(handle, switchMatOct(m2t, 'Tag', 'tag')))
@@ -781,55 +781,48 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
             errorUnknownEnvironment();
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % get the axes dimensions
-    dim = getAxesDimensions(handle, ...
+    % get the axes position
+    pos = getAxesPosition(handle, ...
         m2t.cmdOpts.Results.width, ...
-        m2t.cmdOpts.Results.height);
-    if strcmp(dim.x.unit, 'px')
-        % TikZ doesn't know pixels. -- Convert to inches.
-        dpi = get(0, 'ScreenPixelsPerInch');
-        dim.x.value = dim.x.value / dpi;
-        dim.x.unit = 'in';
-    end
-    if strcmp(dim.y.unit, 'px')
-        % TikZ doesn't know pixels. -- Convert to inches.
-        dpi = get(0, 'ScreenPixelsPerInch');
-        dim.y.value = dim.y.value / dpi;
-        dim.y.unit = 'in';
-    end
+        m2t.cmdOpts.Results.height, ...
+        m2t.axesBoundingBox);
+    % Axes should not be in px any more
 
     % set the width
     if (~m2t.cmdOpts.Results.noSize)
         % optionally prevents setting the width and height of the axis
-        if dim.x.unit(1)=='\' && dim.x.value==1.0
+        if pos.w.unit(1)=='\' && pos.w.value==1.0
             % only return \figurewidth instead of 1.0\figurewidth
             m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, 'width', dim.x.unit);
+                addToOptions(m2t.axesContainers{end}.options, 'width', pos.w.unit);
         else
-
             m2t.axesContainers{end}.options = ...
                 addToOptions(m2t.axesContainers{end}.options, 'width', ...
-                sprintf([m2t.ff, '%s'], dim.x.value, dim.x.unit));
+                sprintf([m2t.ff, '%s'], pos.w.value, pos.w.unit));
         end
-        if dim.y.unit(1)=='\' && dim.y.value==1.0
+        if pos.h.unit(1)=='\' && pos.h.value==1.0
             % only return \figureheight instead of 1.0\figureheight
             m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, 'height', dim.y.unit);
+                addToOptions(m2t.axesContainers{end}.options, 'height', pos.h.unit);
         else
             m2t.axesContainers{end}.options = ...
                 addToOptions(m2t.axesContainers{end}.options, 'height', ...
-                sprintf([m2t.ff, '%s'], dim.y.value, dim.y.unit));
+                sprintf([m2t.ff, '%s'], pos.h.value, pos.h.unit));
         end
+        m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, 'at', ...
+                sprintf(['{(', m2t.ff, '%s,', m2t.ff, '%s)}'], pos.x.value, pos.x.unit, ...
+                pos.y.value, pos.y.unit));
     end
     % Add the physical dimension of one unit of length in the coordinate system.
     % This is used later on to translate lenghts to physical units where
     % necessary (e.g., in bar plots).
-    m2t.unitlength.x.unit = dim.x.unit;
+    m2t.unitlength.x.unit = pos.w.unit;
     xLim = get(m2t.currentHandles.gca, 'XLim');
-    m2t.unitlength.x.value = dim.x.value / (xLim(2)-xLim(1));
-    m2t.unitlength.y.unit = dim.y.unit;
+    m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
+    m2t.unitlength.y.unit = pos.h.unit;
     yLim = get(m2t.currentHandles.gca, 'YLim');
-    m2t.unitlength.y.value = dim.y.value / (yLim(2)-yLim(1));
+    m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
     for axis = 'xyz'
         m2t.([axis 'AxisReversed']) = ...
             strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
@@ -906,12 +899,6 @@ function m2t = drawAxes(m2t, handle, alignmentOptions)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     m2t.axesContainers{end}.name = 'axis';
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % set alignment options
-    if ~isempty(alignmentOptions.opts)
-        m2t.axesContainers{end}.options = cat(1,m2t.axesContainers{end}.options,...
-            alignmentOptions.opts);
-    end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % background color
     backgroundColor = get(handle, 'Color');
@@ -3792,22 +3779,19 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
             position = [-dist, 0];
             anchor = 'south east';
         case 'none'
-            % TODO handle position with pixels
             legendPos = get(handle, 'Position');
             unit = get(handle, 'Units');
-            switch unit
-                case 'normalized'
-                    position = legendPos(1:2);
-                case 'pixels'
-                    % Calculate where the legend is located w.r.t. the axes.
-                    axesPos = get(m2t.currentHandles.gca, 'Position');
-                    % By default, the axes position is given w.r.t. to the figure,
-                    % and so is the legend.
-                    position = (legendPos(1:2)-axesPos(1:2)) ./ axesPos(3:4);
-                otherwise
-                    position = pos(1:2);
-                    userWarning(m2t, [' Unknown legend length unit ''', unit, '''' ...
-                        '. Handling like ''normalized''.']);
+            if isequal(unit, 'normalized')
+                position = legendPos(1:2);
+            else
+                % Calculate where the legend is located w.r.t. the axes.
+                axesPos = get(m2t.currentHandles.gca, 'Position');
+                axesUnit = get(m2t.currentHandles.gca, 'Units');
+                % Convert to legend unit
+                axesPos = convertUnits(axesPos, axesUnit, unit);
+                % By default, the axes position is given w.r.t. to the figure,
+                % and so is the legend.
+                position = (legendPos(1:2)-axesPos(1:2)) ./ axesPos(3:4);
             end
             anchor = 'south west';
         case {'best','bestoutside'}
@@ -4272,9 +4256,30 @@ function newstr = join(m2t, cellstr, delimiter)
     newstr = [newstr{:}];
 end
 % ==============================================================================
-function dimension = getAxesDimensions(handle, widthString, heightString)
-% Returns the physical dimension of the axes.
-    [width, height, unit] = getNaturalAxesDimensions(handle);
+function [width, height, unit] = getNaturalFigureDimension()
+    % Returns the size of figure (in inch)
+    % To stay compatible with getNaturalAxesDimensions, the unit 'in' is
+    % also returned.
+    
+    % Get current figure size
+    figuresize = get(gcf, 'Position');
+    figuresize = figuresize([3 4]);
+    figureunit = get(gcf, 'Units');
+    
+    % Convert Figure Size
+    unit = 'in';
+    figuresize = convertUnits(figuresize, figureunit, unit);
+    
+    % Split size into width and height
+    width  = figuresize(1);
+    height = figuresize(2);
+    
+end
+% ==============================================================================
+function dimension = getFigureDimensions(widthString, heightString)
+% Returns the physical dimension of the figure.
+    
+    [width, height, unit] = getNaturalFigureDimension();
 
     % get the natural width-height ration of the plot
     axesWidthHeightRatio = width / height;
@@ -4310,6 +4315,106 @@ function dimension = getAxesDimensions(handle, widthString, heightString)
     end
 end
 % ==============================================================================
+function position = getAxesPosition(handle, widthString, heightString, axesBoundingBox)
+% Returns the physical position of the axes. This includes - in difference
+% to the Dimension - also an offset to shift the axes inside the figure
+% An optional bounding box can be used to omit empty borders.
+
+    % Deal with optional parameter
+    if nargin < 4
+        axesBoundingBox = [0 0 1 1];
+    end
+    
+    % First get the whole figures size
+    figDim = getFigureDimensions(widthString, heightString);
+    
+    % Get the relative position of the axis
+    relPos = getRelativeAxesPosition(handle, axesBoundingBox);
+    
+    position.x.value = relPos(1) * figDim.x.value;
+    position.x.unit  = figDim.x.unit;
+    position.y.value = relPos(2) * figDim.y.value;
+    position.y.unit  = figDim.y.unit;
+    position.w.value = relPos(3) * figDim.x.value;
+    position.w.unit  = figDim.x.unit;
+    position.h.value = relPos(4) * figDim.y.value;
+    position.h.unit  = figDim.y.unit;
+end
+% ==============================================================================
+function [position] = getRelativeAxesPosition(axesHandles, axesBoundingBox)
+% Returns the relative position of axes within the figure.
+% Position is an (n,4) matrix with [minX, minY, width, height] for each
+% handle. All these values are relative to the figure size, which means
+% that [0, 0, 1, 1] covers the whole figure.
+% It is possible to add a second parameter with the relative coordinates of
+% a bounding box around all axes of the figure (see getRelevantAxes()). In
+% this case, relative positions are rescaled so that the bounding box is 
+% [0, 0, 1, 1]
+
+    % Get Figure Dimension
+    [figWidth, figHeight, figUnits] = getNaturalFigureDimension();
+
+    % Initialize position
+    position = zeros(numel(axesHandles), 4);
+    % Iterate over all handles
+    for i = 1:numel(axesHandles)
+        axesHandle = axesHandles(i);
+        axesPos = get(axesHandle, 'Position');
+        axesUnits = get(axesHandle, 'Units');
+        if isequal(lower(axesUnits), 'normalized')
+            % Position is already relative
+            position(i,:) = axesPos;
+        else
+            % Convert figure size into axes units
+            figureSize = convertUnits([figWidth, figHeight], figUnits, axesUnits);
+            % Figure size into axes units to get the realtive size
+            position(i,:) = axesPos ./ [figureSize, figureSize];
+                
+        end
+        
+        % Change size if DataAspectRatioMode is manual
+        if isequal(lower(get(axesHandle,'DataAspectRatioMode')),'manual')
+            % get limits
+            xLim = get(axesHandle, 'XLim');
+            yLim = get(axesHandle, 'YLim');
+            % Get Aspect Ratio between width and height
+            aspectRatio = get(axesHandle,'DataAspectRatio');
+            % And Adjust it to the figure dimensions
+            aspectRatio = aspectRatio(1) * figWidth * (yLim(2) - yLim(1)) ...
+                / (aspectRatio(2) * figHeight * (xLim(2)-xLim(1)));
+            % Recompute height
+            newHeight = position(i,3) * aspectRatio;
+            % shrink width if newHeight is too large
+            if newHeight > position(i,4)
+                % Recompute width
+                newWidth = position(i,4) / aspectRatio;
+                % Center Axis
+                offset = (position(i,3) - newWidth) / 2;
+                position(i,1) = position(i,1) + offset;
+                % Store new width
+                position(i,3) = newWidth;
+            else
+                % Center Axis
+                offset = (position(i,4) - newHeight) / 2;
+                position(i,2) = position(i,2) + offset;
+                % Store new height
+                position(i,4) = newHeight;
+            end
+        end
+    end
+    
+    %% Rescale if second parameter is given
+    if nargin >= 2
+        % shift position so that [0, 0] is the lower left corner of the
+        % bounding box
+        position(:,1) = position(:,1) - axesBoundingBox(1);
+        position(:,2) = position(:,2) - axesBoundingBox(2);
+        % Recale
+        position(:,[1 3]) = position(:,[1 3]) / max(axesBoundingBox([3 4]));
+        position(:,[2 4]) = position(:,[2 4]) / max(axesBoundingBox([3 4]));
+    end
+end
+% ==============================================================================
 function texUnits = matlab2texUnits(matlabUnits, fallbackValue)
     switch matlabUnits
         case 'pixels'
@@ -4327,84 +4432,47 @@ function texUnits = matlab2texUnits(matlabUnits, fallbackValue)
     end
 end
 % ==============================================================================
-function [width, height, unit] = getNaturalAxesDimensions(handle)
+function dstValue = convertUnits(srcValue, srcUnit, dstUnit)
+% Converts values between different units.
+% srcValue stores a length in srcUnit. It can also be a vector of values.
+% The resulting dstValue is the
+% converted length into dstUnit. 
+% Currently supported units are: 
+%   in, cm, px
 
-    daspectmode = get(handle, 'DataAspectRatioMode');
-    position    = get(handle, 'Position');
-    units       = get(handle, 'Units');
+    % make it simple: just use tex units, if possible
+    srcUnit = matlab2texUnits(lower(srcUnit),lower(srcUnit));
+    dstUnit = matlab2texUnits(lower(dstUnit),lower(dstUnit));
 
-    % Convert the MATLAB unit strings into TeX unit strings.
-    units = matlab2texUnits(units, units);
-
-    switch daspectmode
-        case 'auto'
-            % The plot will use the full size of the current figure.,
-            if strcmp(units, 'normalized')
-                % The dpi is needed to associate the size on the screen (in pixels)
-                % to the physical size of the plot.
-                % Unfortunately, MATLAB doesn't seem to be able to always make a
-                % good guess about the current DPI (a bug is filed for this on
-                % mathworks.com).
-                dpi = get(0, 'ScreenPixelsPerInch');
-
-                unit = 'in';
-                figuresize = get(gcf, 'Position');
-
-                % This assumes that figuresize is always in units of dots (pixels).
-                % Apparently, this isn't always the case, so we're going to need to
-                % fix things here.
-                width  = position(3) * figuresize(3) / dpi;
-                height = position(4) * figuresize(4) / dpi;
-
-            else % assume that TikZ knows the unit (in, cm,...)
-                unit   = units;
-                width  = position(3);
-                height = position(4);
-            end
-
-        case 'manual'
-            % When daspect was manually set, stick to it.
-            % This is achieved here by explicitly determining the x-axis size
-            % and adjusting the y-axis size based on this length.
-
-            if strcmp(units, 'normalized')
-                % The dpi is needed to associate the size on the screen (in pixels)
-                % to the physical size of the plot (on a pdf, for example).
-                % Unfortunately, MATLAB doesn't seem to be able to always make a
-                % good guess about the current DPI (a bug is filed for this on
-                % mathworks.com).
-                dpi = get(0, 'ScreenPixelsPerInch');
-
-                unit = 'in';
-                figuresize = get(gcf, 'Position');
-
-                width = position(3) * figuresize(3) / dpi;
-
-            else % assume that TikZ knows the unit
-                unit  = units;
-                width = position(3);
-            end
-
-            % set y-axis length
-            xLim        = get (handle, 'XLim');
-            yLim        = get (handle, 'YLim');
-            aspectRatio = get (handle, 'DataAspectRatio'); % = daspect
-
-            % Actually, we'd have
-            %
-            %    xlength = (xLim(2)-xLim(1)) / aspectRatio(1);
-            %    ylength = (yLim(2)-yLim(1)) / aspectRatio(2);
-            %
-            % but as xlength is scaled to a fixed 'dimension.x', 'dimension.y'
-            % needs to be rescaled accordingly.
-            height = width                                  ...
-                * aspectRatio(1)    / aspectRatio(2)     ...
-                * (yLim(2)-yLim(1)) / (xLim(2)-xLim(1));
-        otherwise
-            error('getAxesDimensions:illDaspectMode', ...
-                'Illegal DataAspectRatioMode ''%s''.', daspectmode);
+    % if both units are the same, don't convert anything
+    if isequal(srcUnit, dstUnit)
+        dstValue = srcValue;
+        return
     end
-end
+
+    % Special treatment:
+    %    no special cases, yet.
+
+    % Use inches as internal unit for default computation
+    % Compute the factor to convert an inch into another unit
+    units   = {srcUnit, dstUnit};
+    factor = ones(1,2);
+    % Small loop because the code is the same for srcUnit and dstUnit
+    for i = 1:2
+        switch units{i}
+            case 'cm'
+               factor(i) = 2.54;
+            case 'px'
+               factor(i) = get(0, 'ScreenPixelsPerInch');
+            case 'in'
+                factor(i) = 1;
+            otherwise
+                warning('Can not convert unit ''%s''. Using conversion factor 1.', units{i});
+        end
+    end
+    % The total conversion factor is factor(2) / factor(1)
+    dstValue = srcValue * factor(2) / factor(1);
+end     
 % ==============================================================================
 function out = extractValueUnit(str)
 % Decompose m2t.cmdOpts.Results.width into value and unit.
@@ -4467,40 +4535,12 @@ function out = isVisible(handles)
     % and so forth. For now, don't check 'HandleVisibility'.
 end
 % ==============================================================================
-function [relevantAxesHandles, alignmentOptions, plotOrder] =...
-    alignSubPlots(m2t, axesHandles)
-% Returns the alignment options for all the axes enviroments.
-% The question whether two plots are aligned on the left, right, top, or
-% bottom is answered by looking at the 'Position' property of the
-% axes object.
-%
-% The second output argument 'ix' is the order in which the axes
-% environments need to be created. This is to make sure that plots
-% which act as a reference are processed first.
-%
-% The output vector 'alignmentOptions' contains:
-%     - whether or not it is a reference (.isRef)
-%     - axes name  (.name), only set if .isRef is true
-%     - the actual Pgfplots options (.opts)
-%
-% The routine tries to be smart in the sense that it will detect that in
-% a setup such as
-%
-%  [AXES1 AXES2]
-%  [AXES3      ]
-%
-% 'AXES1' will serve as a reference for AXES2 and AXES3.
-% It does so by first computing a 'dependency' graph, then traversing
-% the graph starting from a node (AXES) with maximal connections.
-%
-% TODO:
-%     - diagonal connections 'a la
-%              [AXES1      ]
-%              [      AXES2]
-%
-% TODO: fix this function
-% TODO: look for unique IDs of the axes enviroments
-%       which could be returned along with its properties
+function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(axesHandles)
+% Returns relevant axes. These are defines as visible axes that are no
+% colorbars. In addition, a bounding box around all relevant Axes is
+% computed. This can be used to avoid undesired borders.
+% This function is the remaining code of alignSubPlots() in the alternative
+% positioning system.
     relevantAxesHandles = [];
     for axesHandle = axesHandles(:)'
         % Only handle visible non-colorbar handles.
@@ -4508,308 +4548,16 @@ function [relevantAxesHandles, alignmentOptions, plotOrder] =...
             relevantAxesHandles(end+1) = axesHandle;
         end
     end
-    numRelevantHandles = length(relevantAxesHandles);
-
-    % initialize alignmentOptions
-    alignmentOptions = struct();
-    for k = 1:numRelevantHandles
-        alignmentOptions(k).opts = cell(0);
-    end
-
-    % return immediately if nothing is to be aligned
-    if numRelevantHandles <= 1
-        plotOrder = 1;
-        return
-    end
-
-    % Connectivity matrix of the graph.
-    % Contains 0's where the axes environments are not aligned, and
-    % positive integers where they are. The integer encodes how the axes
-    % are aligned (top right:bottom left, and so on).
-    C = zeros(numRelevantHandles, numRelevantHandles);
-
-    % 'isRef' tells whether the respective plot acts as a position reference
-    % for another plot.
-    % TODO: preallocate this
-    % Also, gather all the positions.
-    axesPos = zeros(numRelevantHandles, 4);
-    for k = 1:numRelevantHandles
-        % `axesPos(i,:)` contains
-        %     (indices 1,3): the x-value of the left and the right axis, and
-        %     (indices 2,4): the y-value of the bottom and top axis,
-        % of plot `i`.
-        axesPos(k,:) = get(relevantAxesHandles(k), 'Position');
-        axesPos(k,3) = axesPos(k,1) + axesPos(k,3);
-        axesPos(k,4) = axesPos(k,2) + axesPos(k,4);
-    end
-
-
-    % Loop over all figures to see if axes are aligned.
-    % Look for exactly *one* alignment, even if there might be more.
-    %
-    % Among all the {x,y}-alignments choose the one with the closest
-    % {y,x}-distance. This is important, for example, in situations where
-    % there are 3 plots on top of each other:
-    % We want no. 2 to align below no. 1, and no. 3 below no. 2
-    % (and not no. 1 again).
-    %
-    % There are nine alignments this algorithm can deal with:
-    %
-    %    3|             |4
-    %  __  _____________   __
-    %  -2 |             |  2
-    %     |             |
-    %     |      5      |
-    %     |             |
-    %     |             |
-    % -1_ |_____________|  1_
-    %
-    %   -3|             |-4
-    %
-    % They are coded in numbers -4 through 5. The matrix C will contain the
-    % corresponding code at position (i,j), if plot number i and j are
-    % aligned in such a way.
-    % If two plots happen to coincide at both left and right axes, for
-    % example, only one relation is stored.
-    %
-    for i = 1:numRelevantHandles
-        for j = i+1:numRelevantHandles
-            if max(abs(axesPos(i,:)-axesPos(j,:))) < m2t.tol
-                % twins
-                C(i,j) =  5;
-                C(j,i) = -5;
-
-            elseif abs(axesPos(i,1)-axesPos(j,1)) < m2t.tol;
-                % Left axes align.
-                % Check if the axes are on top of each other.
-                if axesPos(i,2) > axesPos(j,4)
-                    C(i,j) = -3;
-                    C(j,i) =  3;
-                elseif axesPos(j,2) > axesPos(i,4)
-                    C(i,j) =  3;
-                    C(j,i) = -3;
-                end
-
-            elseif abs(axesPos(i,1)-axesPos(j,3)) < m2t.tol
-                % left axis of 'i' aligns with right axis of 'j'
-                if axesPos(i,2) > axesPos(j,4)
-                    C(i,j) = -3;
-                    C(j,i) =  4;
-                elseif axesPos(j,2) > axesPos(i,4)
-                    C(i,j) =  3;
-                    C(j,i) = -4;
-                end
-
-            elseif abs(axesPos(i,3)-axesPos(j,1)) < m2t.tol
-                % right axis of 'i' aligns with left axis of 'j'
-                if axesPos(i,2) > axesPos(j,4)
-                    C(i,j) = -4;
-                    C(j,i) =  3;
-                elseif axesPos(j,2) > axesPos(i,4)
-                    C(i,j) =  4;
-                    C(j,i) = -3;
-                end
-
-            elseif abs(axesPos(i,3)-axesPos(j,1)) < m2t.tol
-                % right axes of 'i' and 'j' align
-                if axesPos(i,2) > axesPos(j,4)
-                    C(i,j) = -4;
-                    C(j,i) =  4;
-                elseif axesPos(j,2) > axesPos(i,4)
-                    C(i,j) =  4;
-                    C(j,i) = -4;
-                end
-
-            elseif abs(axesPos(i,2)-axesPos(j,2)) < m2t.tol
-                % lower axes of 'i' and 'j' align
-                if axesPos(i,1) > axesPos(j,3)
-                    C(i,j) = -1;
-                    C(j,i) =  1;
-                elseif axesPos(j,1) > axesPos(i,3)
-                    C(i,j) =  1;
-                    C(j,i) = -1;
-                end
-
-            elseif abs(axesPos(i,2)-axesPos(j,4)) < m2t.tol
-                % lower axis of 'i' aligns with upper axis of 'j'
-                if axesPos(i,1) > axesPos(j,3)
-                    C(i,j) = -1;
-                    C(j,i) =  2;
-                elseif axesPos(j,1) > axesPos(i,3)
-                    C(i,j) =  1;
-                    C(j,i) = -2;
-                end
-
-            elseif abs(axesPos(i,4)-axesPos(j,2)) < m2t.tol
-                % upper axis of 'i' aligns with lower axis of 'j'
-                if axesPos(i,1) > axesPos(j,3)
-                    C(i,j) = -2;
-                    C(j,i) =  1;
-                elseif axesPos(j,1) > axesPos(i,3)
-                    C(i,j) =  2;
-                    C(j,i) = -1;
-                end
-
-            elseif abs(axesPos(i,4)-axesPos(j,4)) < m2t.tol
-                % upper axes of 'i' and 'j' align
-                if axesPos(i,1) > axesPos(j,3)
-                    C(i,j) = -2;
-                    C(j,i) =  2;
-                elseif axesPos(j,1) > axesPos(i,3)
-                    C(i,j) =  2;
-                    C(j,i) = -2;
-                end
-            end
-        end
-    end
-
-    % Now, the matrix C contains all alignment information.
-    % If, for any node, there is more than one plot that aligns with it in the
-    % same way (e.g., upper left), then pick exactly *one* of them.
-    % Take the one that is closest to the correspondig plot.
-    for i = 1:numRelevantHandles
-        for j = 1:numRelevantHandles
-
-            if C(i,j)==0 || abs(C(i,j))==5 % don't check for double zeros (aka "no relation"'s) or triplets, quadruplets,...
-                continue
-            end
-
-            % find doubles, and count C(i,j) in
-            doub = find(C(i,j:numRelevantHandles)==C(i,j)) ...
-                + j-1; % to get the actual index
-
-            if length(doub)>1
-                % Uh-oh, found doubles:
-                % Pick the one with the minimal distance, delete the other
-                % relations.
-                switch C(i,j)
-                    case {1,2}    % all plots sit right of 'i'
-                        dist = axesPos(doub,1) - axesPos(i,3);
-                    case {-1,-2}  % all plots sit left of 'i'
-                        dist = axesPos(i,1) - axesPos(doub,3);
-                    case {3,4}    % all plots sit above 'i'
-                        dist = axesPos(doub,2) - axesPos(i,4);
-                    case {-3,-4}  % all plots sit below 'i'
-                        dist = axesPos(i,2) - axesPos(doub,4);
-                    otherwise
-                        error('alignSubPlots:illCode', ...
-                            'Illegal alignment code %d.', C(i,j));
-                end
-
-                [dummy,idx] = min(dist); %#ok
-                % 'idx' holds the index of the minimum.
-                % If there is more than one, then
-                % 'idx' has twins. min returns the one
-                % with the lowest index.
-
-                % delete the index from the 'remove list'
-                doub(idx) = [];
-                C(i,doub) = 0;
-                C(doub,i) = 0;
-            end
-        end
-    end
-
-    % Alright. The matrix 'C' now contains exactly the alignment info that
-    % we are looking for.
-
-    %% Is each axes environment connected to at least one other?
-    %noConn = find(~any(C,2));
-    %for nc = noConn(:)'
-    %    userWarning(m2t, ['The axes environment no. %d is not aligned with',...
-    %                      ' any other axes environment and will be plotted',...
-    %                      ' right in the middle.'], nc);
-    %end
-
-    % Now, actually go ahead and process the info to return Pgfplots alignment
-    % options.
-
-    % Sort the axes environments by the number of connections they have.
-    % That means: start with the plot which has the most connections.
-    [dummy, IX] = sort(sum(C~=0, 2), 'descend'); %#ok
-
-    plotOrder = zeros(1,numRelevantHandles);
-    plotNumber = 0;
-    for ix = IX(:)'
-        [plotOrder,plotNumber,alignmentOptions] = ...
-            setOptionsRecursion(plotOrder, plotNumber, C, alignmentOptions, ix, []);
-    end
-
-    % Burkart, July 23, 2011:
-    % Now let's rearrange the plot order.
-    % Theoretically this should be harmful in that it would result in
-    % subplots that refer to another named subplot to be drawn before the
-    % named subplot itself is drawn. However, this reordering actually fixes
-    % one such problem that only occurred in Octave with test case
-    % subplot2x2b. Oddly enough the error only showed when certain other test
-    % cases (including subplot2x2b itself) had been run beforehand and not if
-    % subplot2x2b was the first / only test case to be run or if a harmless
-    % test case like one_point preceded subplot2x2b.
-    % The exact mechanism that led to this bug was not uncovered but a
-    % differently ordered axesPos near the top of this function eventually
-    % led to the wrong plotOrder and thus to a subplot referring to one that
-    % came later in the TikZ output.
-    % The reordering was tested against the test suite and didn't break any
-    % of the test cases, neither on Octave nor on MATLAB.
-    newPlotOrder = zeros(1,numRelevantHandles);
-    for k = 1:numRelevantHandles
-        newPlotOrder(plotOrder(k)) = k;
-    end
-    plotOrder = newPlotOrder;
-end
-% ==============================================================================
-function [plotOrder, plotNumber, alignmentOptions] = setOptionsRecursion(plotOrder, plotNumber, C, alignmentOptions, k, parent)
-% sets the alignment options for a specific node and passes on the its children
-    if plotOrder(k)
-        return % it has been processed before
-    end
-
-    plotNumber = plotNumber + 1;
-
-    % TODO not looking at twins is probably not the right thing to do
-    % find the non-zero elements in the k-th row
-    unprocessedFriends = find(C(k,:)~=0 & ~plotOrder);
-
-    unprocessedChildren = unprocessedFriends(abs(C(k,unprocessedFriends))~=5);
-    unprocessedTwins    = unprocessedFriends(abs(C(k,unprocessedFriends))==5);
-
-    if ~isempty(unprocessedChildren) % Are there unprocessed children?
-        % Give these axes a name.
-        alignmentOptions(k).opts = ...
-            addToOptions(alignmentOptions(k).opts, 'name', sprintf('plot%d', k));
-    end
-
-    if ~isempty(parent) % if a parent is given
-        if (abs(C(parent,k))==5)
-            % don't apply "at=" for younger twins
-        else
-            % See were this node sits with respect to its parent,
-            % and adapt the option accordingly.
-            anchor = cornerCode2pgfplotOption(C(k,parent));
-            refPos = cornerCode2pgfplotOption(C(parent,k));
-
-            % add the option
-            alignmentOptions(k).opts = ...
-                addToOptions(alignmentOptions(k).opts, 'at', sprintf('(plot%d.%s)',  parent, refPos));
-            alignmentOptions(k).opts = ...
-                addToOptions(alignmentOptions(k).opts, 'anchor', anchor);
-        end
-    end
-
-    plotOrder(k) = plotNumber;
-
-    % Recursively loop over all dependent 'child' axes;
-    % first the twins, though, to make sure they appear consecutively
-    % in the TikZ file.
-    for ii = unprocessedTwins
-        [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion(...
-            plotOrder, plotNumber, C, alignmentOptions, ii, k);
-    end
-    for ii = unprocessedChildren
-        [plotOrder,plotNumber,alignmentOptions] = setOptionsRecursion(...
-            plotOrder, plotNumber, C, alignmentOptions, ii, k);
-    end
-
+    
+    % Compute the bounding box
+    % TODO: check if relevant Axes or all Axes are better.
+    axesBoundingBox = getRelativeAxesPosition(relevantAxesHandles);
+    % Compute second corner from width and height for each axes
+    axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[1 2]) + axesBoundingBox(:,[3 4]);
+    % Combine axes corners to get the bounding box
+    axesBoundingBox = [min(axesBoundingBox(:,[1 2]),[],1), max(axesBoundingBox(:,[3 4]), [], 1)];
+    % Compute width and height of the bounding box
+    axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[3 4]) - axesBoundingBox(:,[1 2]);
 end
 % ==============================================================================
 % translates the corner code in a real option to Pgfplots
