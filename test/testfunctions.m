@@ -1244,7 +1244,6 @@ function [stat] = scatterPlotMarkers()
   ylim([0 d*(nStyles+1)]);
   set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
 
-  legend(names{:});
 end
 % =========================================================================
 function [stat] = scatter3Plot()
