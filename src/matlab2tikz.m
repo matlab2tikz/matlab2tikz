@@ -672,7 +672,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                 [m2t, str] = drawSurface(m2t, child);
 
             case 'text'
-                [m2t, str] = drawText(m2t, child);
+                [m2t, str] = drawVisibleText(m2t, child);
 
             case 'rectangle'
                 [m2t, str] = drawRectangle(m2t, child);
@@ -2076,14 +2076,18 @@ function [m2t, str] = drawHggroup(m2t, h)
             % Annotation: ellipse
             [m2t, str] = drawEllipse(m2t, h);
 
-        case {'scribe.arrow', 'scribe.doublearrow'}
-            % Annotation: single and double Arrow
+        case {'scribe.arrow', 'scribe.doublearrow', 'scribe.line'}
+            % Annotation: single and double Arrow, line
+            % These annotations are fully represented by their children
             [m2t, str] = handleAllChildren(m2t, h);
 
         case 'scribe.textbox'
             % Annotation: text box
-            [m2t, str] = drawTextbox(m2t, h);
-
+            [m2t, str] = drawText(m2t, h);
+            
+        case 'scribe.textarrow'
+            [m2t, str] = drawTextarrow(m2t, h);
+            
         case 'unknown'
             % Weird spurious class from Octave.
             [m2t, str] = handleAllChildren(m2t, h);
@@ -2230,14 +2234,9 @@ function [m2t,env] = drawSurface(m2t, handle)
     m2t.currentAxesContain3dData = true;
 end
 % ==============================================================================
-function [m2t, str] = drawText(m2t, handle)
-% Adding text node anywhere in the axex environment.
-% Not that, in Pgfplots, long texts get cut off at the axes. This is
-% Different from the default MATLAB behavior. To fix this, one could use
-% /pgfplots/after end axis/.code.
-
-    str = [];
-
+function [m2t, str] = drawVisibleText(m2t, handle)
+% Wrapper for drawText() that only draws visible text
+    
     % There may be some text objects floating around a MATLAB figure which are
     % handled by other subfunctions (labels etc.) or don't need to be handled at
     % all.
@@ -2252,8 +2251,22 @@ function [m2t, str] = drawText(m2t, handle)
             || strcmp(get(handle, 'Visible'), 'off') ...
             || (strcmp(get(handle, 'HandleVisibility'), 'off') && ...
                 ~m2t.cmdOpts.Results.showHiddenStrings)
+            
+        str = [];
         return;
     end
+    
+    [m2t, str] = drawText(m2t, handle);
+    
+end
+% ==============================================================================
+function [m2t, str] = drawText(m2t, handle)
+% Adding text node anywhere in the axex environment.
+% Not that, in Pgfplots, long texts get cut off at the axes. This is
+% Different from the default MATLAB behavior. To fix this, one could use
+% /pgfplots/after end axis/.code.
+
+    str = [];
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get required properties
@@ -2293,8 +2306,8 @@ function [m2t, str] = drawText(m2t, handle)
     % remove invisible border around \node to make the text align precisely
     style{end+1} = 'inner sep=0mm';
 
-    % Add rotation.
-    rot = get(handle, 'Rotation');
+    % Add rotation, if existing
+    rot = getOrDefault(handle, 'Rotation', 0.0);
     if rot ~= 0.0
         style{end+1} = sprintf(['rotate=', m2t.ff], rot);
     end
@@ -2313,10 +2326,13 @@ function [m2t, str] = drawText(m2t, handle)
     % plot the thing
     pos = get(handle, 'Position');
     units = get(handle, 'Units');
-    if length(pos) == 2
+    if length(pos) == 2 || length(pos) == 4
+        % TODO: seperate handling to support bigger text boxes
         if strcmp(units, 'normalized')
             posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
         else
+            % TODO: does this size has to be adjusted if the figure size in
+            % tikz does not match the figure size in matlab?
             posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
         end
 
@@ -3185,98 +3201,22 @@ function [m2t, str] = drawEllipse(m2t, handle)
         drawCommand, opt, center, radius);
 end
 % ==============================================================================
-function [m2t, str] = drawTextbox(m2t, handle)
-% Takes care of MATLAB's textbox annotations.
-%TODO: refactor out common part of drawText and drawTextbox
-    color  = get(handle, 'Color');
-    [m2t, tcolor] = getColor(m2t, handle, color, 'patch');
-    bgColor = get(handle,'BackgroundColor');
-    EdgeColor = get(handle, 'EdgeColor');
-    HorizontalAlignment = get(handle, 'HorizontalAlignment');
-    String = get(handle, 'String');
-    Interpreter = get(handle, 'Interpreter');
-    String = prettyPrint(m2t, String, Interpreter);
-    % For now, don't handle multiline strings.
-    % Sometimes, the cells are nested; take care of this, too.
-    while iscell(String)
-        String = String{1};
-    end
-    VerticalAlignment = get(handle, 'VerticalAlignment');
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % translate them to pgf style
-    style = cell(0);
-    if ~isNone(bgColor)
-        [m2t, bcolor] = getColor(m2t, handle, bgColor, 'patch');
-        style{end+1} = ['fill=' bcolor];
-    end
-    switch VerticalAlignment
-        case {'top', 'cap'}
-            style{end+1} = 'below';
-        case {'baseline', 'bottom'}
-            style{end+1} = 'above';
-    end
-    switch HorizontalAlignment
-        case 'left'
-            style{end+1} = 'right';
-        case 'right'
-            style{end+1} = 'left';
-    end
-    % remove invisible border around \node to make the text align precisely
-    style{end+1} = 'inner sep=0mm';
-
-    fontStyle = getFontStyle(m2t, handle);
-    if ~isempty(fontStyle)
-        style{end+1} = prettyprintOpts(m2t, fontStyle, ', ');
-    end
-
-    style{end+1} = ['text=' tcolor];
-    if ~isNone(EdgeColor)
-        [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
-        style{end+1} = ['draw=', ecolor];
-    end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % plot the thing
-    pos = get(handle, 'Position');
-    units = get(handle, 'Units');
-    if length(pos) == 2 || length(pos) == 4
-        if strcmp(units, 'normalized')
-            posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
-        else
-            posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
+function [m2t, str] = drawTextarrow(m2t, handle)
+% Takes care of MATLAB's textarrow annotations.
+    
+    % handleAllChildren to draw the arrow
+    [m2t, str] = handleAllChildren(m2t, handle);
+    
+    % handleAllChildren ignores the text, unless hidden strings are shown
+    if ~m2t.cmdOpts.Results.showHiddenStrings
+        children = get(handle, 'Children');
+        for i = 1:numel(children)
+            child = children(i);
+            if isequal(get(child,'type'), 'text')
+                [m2t, str{end+1}] = drawText(m2t, child);
+            end
         end
-
-        xlim = get(m2t.currentHandles.gca,'XLim');
-        ylim = get(m2t.currentHandles.gca,'YLim');
-        if pos(1) < xlim(1) || pos(1) > xlim(2) ...
-                || pos(2) < ylim(1) || pos(2) > ylim(2)
-            m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                'clip', 'false');
-        end
-    elseif length(pos) == 3
-        pos = applyHgTransform(m2t, pos);
-        if strcmp(units, 'normalized')
-            posString = sprintf(['(rel axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
-        else
-            posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
-        end
-
-        xlim = get(m2t.currentHandles.gca, 'XLim');
-        ylim = get(m2t.currentHandles.gca, 'YLim');
-        zlim = get(m2t.currentHandles.gca, 'ZLim');
-        if pos(1) < xlim(1) || pos(1) > xlim(2) ...
-                || pos(2) < ylim(1) || pos(2) > ylim(2) ...
-                || pos(3) < zlim(1) || pos(3) > zlim(2)
-            m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                'clip', 'false');
-        end
-    else
-        error('matlab2tikz:drawText', ...
-            'Illegal text position specification.');
     end
-    str = sprintf('\\node[%s]\nat %s {%s};\n', ...
-        join(m2t, style,', '), posString, String);
 end
 % ==============================================================================
 function out = linearFunction(X, Y)
