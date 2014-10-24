@@ -4264,14 +4264,19 @@ function [width, height, unit] = getNaturalFigureDimension()
     % To stay compatible with getNaturalAxesDimensions, the unit 'in' is
     % also returned.
     
+    % Get current figure size
     figuresize = get(gcf, 'Position');
-    dpi = get(0, 'ScreenPixelsPerInch');
-            
-    width  = figuresize(3) / dpi;
-    height = figuresize(4) / dpi;
-
-    % Keep from Axes - Version
+    figuresize = figuresize([3 4]);
+    figureunit = get(gcf, 'Units');
+    
+    % Convert Figure Size
     unit = 'in';
+    figuresize = convertUnits(figuresize, figureunit, unit);
+    
+    % Split size into width and height
+    width  = figuresize(1);
+    height = figuresize(2);
+    
 end
 % ==============================================================================
 function dimension = getFigureDimensions(widthString, heightString)
@@ -4349,11 +4354,8 @@ function [position] = getRelativeAxesPosition(axesHandles, axesBoundingBox)
 % this case, relative positions are rescaled so that the bounding box is 
 % [0, 0, 1, 1]
 
-    % Get Figure Position
-    figurePosPx = get(gcf, 'Position');
-    % TODO: Check if this can be other than pixels. In this case use screen size to
-    % convert to pixels
-    [figWidthIn, figHeightIn] = getNaturalFigureDimension();
+    % Get Figure Dimension
+    [figWidth, figHeight, figUnits] = getNaturalFigureDimension();
 
     % Initialize position
     position = zeros(numel(axesHandles), 4);
@@ -4362,20 +4364,15 @@ function [position] = getRelativeAxesPosition(axesHandles, axesBoundingBox)
         axesHandle = axesHandles(i);
         axesPos = get(axesHandle, 'Position');
         axesUnits = get(axesHandle, 'Units');
-        switch lower(axesUnits)
-            case 'normalized'
-                % Position is already relative
-                position(i,:) = axesPos;
-            case 'pixels'
-                % Divide axis coordinates by figure size (in pixels)
-                position(i,:) = axesPos ./ figurePosPx([3 4 3 4]);
-            case 'inch'
-                % Divide axis coordinates by figure size
-                position(i,[1 3]) = axesPos([1 3]) / figWidthIn;
-                position(i,[2 4]) = axesPos([2 4]) / figHeightIn;
-            otherwise
-                % TODO: Convert Position
-                error('Unsupported axes size');
+        if isequal(lower(axesUnits), 'normalized')
+            % Position is already relative
+            position(i,:) = axesPos;
+        else
+            % Convert figure size into axes units
+            figureSize = convertUnits([figWidth, figHeight], figUnits, axesUnits);
+            % Figure size into axes units to get the realtive size
+            position(i,:) = axesPos ./ [figureSize, figureSize];
+                
         end
         
         % Change size if DataAspectRatioMode is manual
@@ -4386,8 +4383,8 @@ function [position] = getRelativeAxesPosition(axesHandles, axesBoundingBox)
             % Get Aspect Ratio between width and height
             aspectRatio = get(axesHandle,'DataAspectRatio');
             % And Adjust it to the figure dimensions
-            aspectRatio = aspectRatio(1) * figWidthIn * (yLim(2) - yLim(1)) ...
-                / (aspectRatio(2) * figHeightIn * (xLim(2)-xLim(1)));
+            aspectRatio = aspectRatio(1) * figWidth * (yLim(2) - yLim(1)) ...
+                / (aspectRatio(2) * figHeight * (xLim(2)-xLim(1)));
             % Recompute height
             newHeight = position(i,3) * aspectRatio;
             % shrink width if newHeight is too large
@@ -4437,6 +4434,48 @@ function texUnits = matlab2texUnits(matlabUnits, fallbackValue)
             texUnits = fallbackValue;
     end
 end
+% ==============================================================================
+function dstValue = convertUnits(srcValue, srcUnit, dstUnit)
+% Converts values between different units.
+% srcValue stores a length in srcUnit. It can also be a vector of values.
+% The resulting dstValue is the
+% converted length into dstUnit. 
+% Currently supported units are: 
+%   in, cm, px
+
+    % make it simple: just use tex units, if possible
+    srcUnit = matlab2texUnits(lower(srcUnit),lower(srcUnit));
+    dstUnit = matlab2texUnits(lower(dstUnit),lower(dstUnit));
+
+    % if both units are the same, don't convert anything
+    if isequal(srcUnit, dstUnit)
+        dstValue = srcValue;
+        return
+    end
+
+    % Special treatment:
+    %    no special cases, yet.
+
+    % Use inches as internal unit for default computation
+    % Compute the factor to convert an inch into another unit
+    units   = {srcUnit, dstUnit};
+    factor = ones(1,2);
+    % Small loop because the code is the same for srcUnit and dstUnit
+    for i = 1:2
+        switch units{i}
+            case 'cm'
+               factor(i) = 2.54;
+            case 'px'
+               factor(i) = get(0, 'ScreenPixelsPerInch');
+            case 'in'
+                factor(i) = 1;
+            otherwise
+                warning('Can not convert unit ''%s''. Using conversion factor 1.', units{i});
+        end
+    end
+    % The total conversion factor is factor(2) / factor(1)
+    dstValue = srcValue * factor(2) / factor(1);
+end     
 % ==============================================================================
 function out = extractValueUnit(str)
 % Decompose m2t.cmdOpts.Results.width into value and unit.
