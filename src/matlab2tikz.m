@@ -4434,43 +4434,40 @@ end
 % ==============================================================================
 function dstValue = convertUnits(srcValue, srcUnit, dstUnit)
 % Converts values between different units.
-% srcValue stores a length in srcUnit. It can also be a vector of values.
-% The resulting dstValue is the
-% converted length into dstUnit. 
-% Currently supported units are: 
-%   in, cm, px
+%   srcValue stores a length (or vector of lengths) in srcUnit.
+% The resulting dstValue is the converted length into dstUnit. 
+%
+% Currently supported units are: in, cm, px, pt
 
-    % make it simple: just use tex units, if possible
+    % Use tex units, if possible (to make things simple)
     srcUnit = matlab2texUnits(lower(srcUnit),lower(srcUnit));
     dstUnit = matlab2texUnits(lower(dstUnit),lower(dstUnit));
 
-    % if both units are the same, don't convert anything
     if isequal(srcUnit, dstUnit)
         dstValue = srcValue;
-        return
+        return % conversion to the same unit => factor = 1
     end
-
-    % Special treatment:
-    %    no special cases, yet.
-
-    % Use inches as internal unit for default computation
-    % Compute the factor to convert an inch into another unit
-    units   = {srcUnit, dstUnit};
+    
+    units  = {srcUnit, dstUnit};
     factor = ones(1,2);
-    % Small loop because the code is the same for srcUnit and dstUnit
-    for i = 1:2
-        switch units{i}
+    for ii = 1:numel(factor) % Same code for srcUnit and dstUnit
+        % Use inches as intermediate unit
+        % Compute the factor to convert an inch into another unit
+        switch units{ii}
             case 'cm'
-               factor(i) = 2.54;
+               factor(ii) = 2.54;
             case 'px'
-               factor(i) = get(0, 'ScreenPixelsPerInch');
+               factor(ii) = get(0, 'ScreenPixelsPerInch');
             case 'in'
-                factor(i) = 1;
+                factor(ii) = 1;
+            case 'pt'
+                factor(ii) = 72;
             otherwise
-                warning('Can not convert unit ''%s''. Using conversion factor 1.', units{i});
+                warning('MATLAB2TIKZ:UnknownPhysicalUnit',...
+                'Can not convert unit ''%s''. Using conversion factor 1.', units{ii});
         end
     end
-    % The total conversion factor is factor(2) / factor(1)
+
     dstValue = srcValue * factor(2) / factor(1);
 end     
 % ==============================================================================
