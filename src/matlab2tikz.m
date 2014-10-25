@@ -1888,9 +1888,16 @@ function [m2t, str] = drawImage(m2t, handle)
                     pngFileName, 'png');
             end
         else
-            imwrite(colorData, ...
-                pngFileName, 'png', ...
-                'Alpha', get(handle, 'AlphaData'));
+            alpha = get(handle,'AlphaData');
+            if numel(alpha)==1
+                alpha = alpha(ones(size(colorData(:,:,1))));
+            end
+            if all(alpha==1)
+                alphaOpts = {};
+            else
+                alphaOpts = {'Alpha', alpha'};
+            end
+            imwrite(colorData, pngFileName, 'png', alphaOpts{:});
         end
         % -----------------------------------------------------------------------
         % dimensions of a pixel in axes units
