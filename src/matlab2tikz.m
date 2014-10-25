@@ -445,7 +445,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     % Alternative Positioning of axes.
     % Select relevant Axes and draw them.
-    [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(axesHandles);
+    [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandles);
     
     m2t.axesBoundingBox = axesBoundingBox;
     m2t.axesContainers = {};
@@ -782,7 +782,7 @@ function m2t = drawAxes(m2t, handle)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get the axes position
-    pos = getAxesPosition(handle, ...
+    pos = getAxesPosition(m2t, handle, ...
         m2t.cmdOpts.Results.width, ...
         m2t.cmdOpts.Results.height, ...
         m2t.axesBoundingBox);
@@ -4256,15 +4256,15 @@ function newstr = join(m2t, cellstr, delimiter)
     newstr = [newstr{:}];
 end
 % ==============================================================================
-function [width, height, unit] = getNaturalFigureDimension()
+function [width, height, unit] = getNaturalFigureDimension(m2t)
     % Returns the size of figure (in inch)
     % To stay compatible with getNaturalAxesDimensions, the unit 'in' is
     % also returned.
     
     % Get current figure size
-    figuresize = get(gcf, 'Position');
+    figuresize = get(m2t.currentHandles.gcf, 'Position');
     figuresize = figuresize([3 4]);
-    figureunit = get(gcf, 'Units');
+    figureunit = get(m2t.currentHandles.gcf, 'Units');
     
     % Convert Figure Size
     unit = 'in';
@@ -4276,10 +4276,10 @@ function [width, height, unit] = getNaturalFigureDimension()
     
 end
 % ==============================================================================
-function dimension = getFigureDimensions(widthString, heightString)
+function dimension = getFigureDimensions(m2t, widthString, heightString)
 % Returns the physical dimension of the figure.
     
-    [width, height, unit] = getNaturalFigureDimension();
+    [width, height, unit] = getNaturalFigureDimension(m2t);
 
     % get the natural width-height ration of the plot
     axesWidthHeightRatio = width / height;
@@ -4315,7 +4315,7 @@ function dimension = getFigureDimensions(widthString, heightString)
     end
 end
 % ==============================================================================
-function position = getAxesPosition(handle, widthString, heightString, axesBoundingBox)
+function position = getAxesPosition(m2t, handle, widthString, heightString, axesBoundingBox)
 % Returns the physical position of the axes. This includes - in difference
 % to the Dimension - also an offset to shift the axes inside the figure
 % An optional bounding box can be used to omit empty borders.
@@ -4326,10 +4326,10 @@ function position = getAxesPosition(handle, widthString, heightString, axesBound
     end
     
     % First get the whole figures size
-    figDim = getFigureDimensions(widthString, heightString);
+    figDim = getFigureDimensions(m2t, widthString, heightString);
     
     % Get the relative position of the axis
-    relPos = getRelativeAxesPosition(handle, axesBoundingBox);
+    relPos = getRelativeAxesPosition(m2t, handle, axesBoundingBox);
     
     position.x.value = relPos(1) * figDim.x.value;
     position.x.unit  = figDim.x.unit;
@@ -4341,7 +4341,7 @@ function position = getAxesPosition(handle, widthString, heightString, axesBound
     position.h.unit  = figDim.y.unit;
 end
 % ==============================================================================
-function [position] = getRelativeAxesPosition(axesHandles, axesBoundingBox)
+function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
 % Returns the relative position of axes within the figure.
 % Position is an (n,4) matrix with [minX, minY, width, height] for each
 % handle. All these values are relative to the figure size, which means
@@ -4352,7 +4352,7 @@ function [position] = getRelativeAxesPosition(axesHandles, axesBoundingBox)
 % [0, 0, 1, 1]
 
     % Get Figure Dimension
-    [figWidth, figHeight, figUnits] = getNaturalFigureDimension();
+    [figWidth, figHeight, figUnits] = getNaturalFigureDimension(m2t);
 
     % Initialize position
     position = zeros(numel(axesHandles), 4);
@@ -4403,8 +4403,8 @@ function [position] = getRelativeAxesPosition(axesHandles, axesBoundingBox)
         end
     end
     
-    %% Rescale if second parameter is given
-    if nargin >= 2
+    %% Rescale if axesBoundingBox is given
+    if exist('axesBoundingBox','var')
         % shift position so that [0, 0] is the lower left corner of the
         % bounding box
         position(:,1) = position(:,1) - axesBoundingBox(1);
@@ -4532,7 +4532,7 @@ function out = isVisible(handles)
     % and so forth. For now, don't check 'HandleVisibility'.
 end
 % ==============================================================================
-function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(axesHandles)
+function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
 % Returns relevant axes. These are defines as visible axes that are no
 % colorbars. In addition, a bounding box around all relevant Axes is
 % computed. This can be used to avoid undesired borders.
@@ -4548,7 +4548,7 @@ function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(axesHandles)
     
     % Compute the bounding box
     % TODO: check if relevant Axes or all Axes are better.
-    axesBoundingBox = getRelativeAxesPosition(relevantAxesHandles);
+    axesBoundingBox = getRelativeAxesPosition(m2t, relevantAxesHandles);
     % Compute second corner from width and height for each axes
     axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[1 2]) + axesBoundingBox(:,[3 4]);
     % Combine axes corners to get the bounding box
