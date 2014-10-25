@@ -1873,13 +1873,6 @@ function [m2t, str] = drawPatch(m2t, handle)
                 opts_append(m2t.axesContainers{end}.options, ...
                 matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
             
-            
-            % If it still has 'interp', then the CData for the patch is
-            % just an index into the colormap.
-%             if strcmpi(get(handle,'FaceColor'),'interp')
-%                 [m2t, fvCData] = cdata2colorindex(m2t, fvCData,handle);
-%             end
-            
             if rowsCData == size(Vertices,1)
                 ptType = 'patch table';
                 columnNames{end+1}  = 'c';
