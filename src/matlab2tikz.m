@@ -1784,57 +1784,82 @@ function [m2t, str] = drawPatch(m2t, handle)
     % This is for a quirky workaround for stacked bar plots.
     m2t.axesContainers{end}.nonbarPlotsPresent = true;
 
-    % Each row of the faces matrix represents a distinct graphical object. 
-    % Usually there is only one row, but there may be more (-->hist plots, 
-    % although they are now handled within the barplot framework).
-    Faces    = get(handle,'Faces');
+    % Each row of the faces matrix represents a distinct patch 
+    % NOTE: pgfplot uses zero-based indexing into vertices
+    Faces    = get(handle,'Faces')-1;
     Vertices = get(handle,'Vertices');
     
+    % Process fill, edge colors and shader
+    [m2t,patchOptions, s] = patchOpts(m2t,handle,'patch');
+    
+    % Return empty axes if no face or edge colors
+    if isNone(s.plotType)
+        if size(Vertices,2) == 3
+            m2t.currentAxesContain3dData = true;
+        end
+        return
+    end
+    
+    % 2D vs 3D
     if size(Vertices,2) == 2 
         columnNames = {'x', 'y'};
-        plotType    = 'addplot';
+        plotCmd     = 'addplot';
     else
         columnNames = {'x', 'y', 'z'};
         Vertices    = applyHgTransform(m2t, Vertices);
-        plotType    = 'addplot3';
+        plotCmd     = 'addplot3';
         m2t.currentAxesContain3dData = true;
     end
-    
+
     % see if individual color values are present
     fvCData = get(handle,'FaceVertexCData');
 
-    % If CData is empty we will get FaceColor
-    hasCdata = ~isempty(fvCData);
-    
     % -----------------------------------------------------------------------
     % gather the draw options
     % Make sure that legends are shown in area mode.
-    drawOptions = {'area legend'};
+    drawOptions = {'area legend', 'table/row sep=crcr'};
 
     % Use the '\\' as a row separator to make sure that the generated figures
     % work in subplot environments.
     verticesTableOptions = {'row sep=crcr'};
     
-    % Patch type
-    vertexCount        = size(Faces,2);
-    drawOptions{end+1} = 'patch';
-    if vertexCount == 3 % default, triangle patches
-        drawOptions{end+1} = 'patch type=triangle';
+    % Add plot type
+    drawOptions{end+1} = s.plotType;
+    
+    % Patch type (triangle, rectangle or polygon)
+    vertexCount = size(Faces,2);
+    if vertexCount == 3 % triangle (default), do nothing
     elseif vertexCount == 4
         drawOptions{end+1} = 'patch type=rectangle';
     else
+        % Warn user if not using standalone to load the library
+        if ~m2t.cmdOpts.Results.standalone
+            userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
+        end
+        % Get rid of shader, not supported by polygon type
+        idrop = ~cellfun(@isempty,regexp(patchOptions,'shader','once'));
+        if any(idrop)
+            userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
+            patchOptions(idrop) = [];
+        end
+        % Add draw options
         drawOptions = [drawOptions,...
                        {'patch type=polygon', sprintf('vertex count=%d',vertexCount)}];
     end
+    drawOptions = [drawOptions, patchOptions];
     
     % Marker options
     [m2t, markerOptions] = getMarkerOptions(m2t, handle);
     drawOptions = [drawOptions, markerOptions];
     
+    % Line options
+    lineStyle   = get(handle, 'LineStyle');
+    lineWidth   = get(handle, 'LineWidth');
+    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+    drawOptions = [drawOptions, lineOptions];
+    
     % Color
-%     [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle);
-    if hasCdata
-        % is RGB
+    % is RGB
         isFvcRGB = size(fvCData,2) == 3;
         if ~isFvcRGB
             % Add the color map.
@@ -1853,17 +1878,10 @@ function [m2t, str] = drawPatch(m2t, handle)
             verticesTableOptions{end+1} = 'point meta=\thisrow{c}';
         % ... to faces
         else
-            Faces = [Faces, fvCData];
+            Faces = [Faces, fvCData*100];
         end
-    else
-        
-    end
     
-    % Line options
-    lineStyle = get(handle, 'LineStyle');
-    lineWidth = get(handle, 'LineWidth');
-    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-    drawOptions = [drawOptions, lineOptions];
+
     
     % Faces transparency
     % TODO: experiment with FaceVertexAlphaData but pgfplots seems not to
@@ -1879,8 +1897,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     end
     
     % Add Faces table
-    % NOTE: pgfplot uses zero-based indexing into vertices
-    [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces-1);
+    [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces);
     if ~fvcForVertices 
         if isFvcRGB
             ptType = 'patch table with individual point meta';
@@ -1890,8 +1907,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     else
         ptType = 'patch table';
     end
-    drawOptions = [drawOptions, ...
-                           'table/row sep=crcr', sprintf('%s={%s}', ptType, facesTable)];
+    drawOptions = [drawOptions, sprintf('%s={%s}', ptType, facesTable)];
     drawOpts = join(m2t, drawOptions, ',');
     % -----------------------------------------------------------------------
     if any(~isfinite(Faces(:)))
@@ -1903,7 +1919,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     [m2t, verticesTable] = makeTable(m2t, columnNames, Vertices);
     
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s};\n\n',...
-        str, plotType, drawOpts, join(m2t, verticesTableOptions, ', '), verticesTable);
+        str, plotCmd, drawOpts, join(m2t, verticesTableOptions, ', '), verticesTable);
 end
 
 % ==============================================================================
@@ -2651,6 +2667,100 @@ function [m2t, surfOptions] = surfaceOptsOfMesh(m2t, handle, surfOptions)
             [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
             surfOptions{end+1} = sprintf('color=%s', xEdgeColor);
         end
+    end
+end
+% ==============================================================================
+function [m2t,patchOptions,s] = patchOpts(m2t, handle, selectedType)
+    
+    % Initialize
+    patchOptions      = cell(0);
+    s.hasOneEdgeColor = false;
+    s.hasOneFaceColor = false;
+
+    % Get relevant Face and Edge color properties
+    faceColor = get(handle, 'FaceColor');
+    edgeColor = get(handle, 'EdgeColor');
+
+    % Not filling face color, we just need a mesh then
+    if isNone(faceColor)
+        s.hasOneFaceColor = true; % consider void as true
+        s.plotType = 'mesh';
+    else
+        s.plotType = selectedType;
+    end
+    
+    % SWITCH on selected plot type
+    switch s.plotType
+        case selectedType
+            
+            % Set opacity if FaceAlpha < 1 in MATLAB
+            faceAlpha = get(handle, 'FaceAlpha');
+            if isnumeric(faceAlpha) && faceAlpha ~= 1.0
+                patchOptions{end+1} = sprintf(['opacity=', m2t.ff], faceAlpha);
+            end
+
+            % Edge 'none'
+            if isNone(edgeColor)
+                s.hasOneEdgeColor = true; % consider void as true
+                if strcmpi(faceColor, 'flat')
+                    patchOptions{end+1} = 'shader=flat';
+                elseif strcmpi(faceColor, 'interp');
+                    patchOptions{end+1} = 'shader=interp';
+                else
+                    [m2t,xFaceColor]    = getColor(m2t, handle, faceColor, 'patch');
+                    patchOptions{end+1} = sprintf('fill=%s',xFaceColor);
+                end
+
+            % Edge 'interp'
+            elseif strcmpi(edgeColor, 'interp')
+                if strcmpi(faceColor, 'interp')
+                    patchOptions{end+1} = 'shader=interp';
+                else
+                    s.hasOneFaceColor   = true;
+                    patchOptions{end+1} = 'shader=faceted';
+                    [m2t,xFaceColor]    = getColor(m2t, handle, faceColor, 'patch');
+                    patchOptions{end+1} = sprintf('fill=%s',xFaceColor);
+                end
+
+            % Edge 'flat'
+            elseif strcmpi(edgeColor, 'flat')
+                if strcmpi(faceColor, 'flat')
+                    patchOptions{end+1} = 'shader=flat';
+                elseif strcmpi(faceColor, 'interp')
+                    patchOptions{end+1} = 'shader=faceted interp';
+                end
+
+            % Edge RGB
+            else
+                s.hasOneEdgeColor   = true;
+                [m2t, xEdgeColor]   = getColor(m2t, handle, edgeColor, 'patch');
+                patchOptions{end+1} = sprintf('faceted color=%s', xEdgeColor);
+                if isnumeric(faceColor)
+                    s.hasOneFaceColor   = true;
+                    [m2t, xFaceColor]   = getColor(m2t, handle, faceColor, 'patch');
+                    patchOptions{end+1} = sprintf('fill=%s', xFaceColor);
+                else
+                    patchOptions{end+1} = 'shader=faceted';
+                end
+            end
+
+        % MESH 
+        case 'mesh'
+            if ~isNone(edgeColor)
+
+                % Edge 'interp'
+                if strcmpi(edgeColor, 'interp')
+                    patchOptions{end+1} = 'shader=flat';
+
+                % Edge RGB
+                else
+                    s.hasOneEdgeColor   = true;
+                    [m2t, xEdgeColor]   = getColor(m2t, handle, edgeColor, 'patch');
+                    patchOptions{end+1} = sprintf('color=%s', xEdgeColor);
+                end
+            else
+                s.plotType = 'none';
+            end
     end
 end
 % ==============================================================================
