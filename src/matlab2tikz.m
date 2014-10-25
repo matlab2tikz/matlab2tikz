@@ -173,8 +173,6 @@ m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
 m2t.barplotId    = 0; % identification flag for bar plots
-m2t.quiverId     = 0; % identification flag for quiver plot styles
-m2t.automaticLabelIndex = 0;
 
 % definition of color depth
 m2t.colorDepth     = 48; %[bit] RGB color depth (typical values: 24, 30, 48)
@@ -1772,172 +1770,131 @@ function [m2t, str] = drawPatch(m2t, handle)
         return
     end
 
-    % MATLAB's patch elements are matrices in which each column represents a a
-    % distinct graphical object. Usually there is only one column, but there may
-    % be more (-->hist plots, although they are now handled within the barplot
-    % framework).
-    XData = get(handle, 'XData');
-    YData = get(handle, 'YData');
-    ZData = get(handle, 'ZData');
+    % This is for a quirky workaround for stacked bar plots.
+    m2t.axesContainers{end}.nonbarPlotsPresent = true;
 
+    % Each row of the faces matrix represents a distinct graphical object. 
+    % Usually there is only one row, but there may be more (-->hist plots, 
+    % although they are now handled within the barplot framework).
+    Faces    = get(handle,'Faces');
+    Vertices = get(handle,'Vertices');
+    
+    if size(Vertices,2) == 2 
+        columnNames = {'x', 'y'};
+        plotType    = 'addplot';
+    else
+        columnNames = {'x', 'y', 'z'};
+        Vertices    = applyHgTransform(m2t, Vertices);
+        plotType    = 'addplot3';
+        m2t.currentAxesContain3dData = true;
+    end
+    
     % see if individual color values are present
-    CData = get(handle, 'CData');
+    fvCData = get(handle,'FaceVertexCData');
 
-    % If the data points are given in three vectors, we are dealing with one
-    % single patch. If they are all matrices, then the columns of matrix
-    % represent one patch each.
-    if min(size(XData)) == 1
-        % Make sure vectors are column vectors.
-        XData = XData(:);
-        YData = YData(:);
-        ZData = ZData(:);
-        CData = CData(:);
+    % If CData is empty we will get FaceColor
+    hasCdata = ~isempty(fvCData);
+    
+    % -----------------------------------------------------------------------
+    % gather the draw options
+    % Make sure that legends are shown in area mode.
+    drawOptions = {'area legend'};
+
+    % Use the '\\' as a row separator to make sure that the generated figures
+    % work in subplot environments.
+    verticesTableOptions = {'row sep=crcr'};
+    
+    % Patch type
+    vertexCount        = size(Faces,2);
+    drawOptions{end+1} = 'patch';
+    if vertexCount == 3 % default, triangle patches
+        drawOptions{end+1} = 'patch type=triangle';
+    elseif vertexCount == 4
+        drawOptions{end+1} = 'patch type=rectangle';
+    else
+        drawOptions = [drawOptions,...
+                       {'patch type=polygon', sprintf('vertex count=%d',vertexCount)}];
     end
-
-    numPatches = size(XData, 2);
-
-    % Ensure that if we have multiple patches and only FaceColor is specified,
-    % that it doesn't error when creating each patch with cData = CData(:, k);;
-    if isempty(CData)
-        CData = zeros(1,numPatches);
-    end
-    if length(CData) == 1
-        CData = CData(1,1) * ones(1,numPatches);
-    end
-
-    for k = 1:numPatches
-        xData = XData(:, k);
-        yData = YData(:, k);
-
-        if isempty(ZData)
-            columnNames = {'x', 'y'};
-            data = [xData(:), yData(:)];
-            plotType = 'addplot';
-        else
-            zData = ZData(:, k);
-            columnNames = {'x', 'y', 'z'};
-            data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
-            plotType = 'addplot3';
-            m2t.currentAxesContain3dData = true;
-        end
-
-        cData = CData(:, k);
-        % -----------------------------------------------------------------------
-        % gather the draw options
-        % Make sure that legends are shown in area mode.
-        drawOptions = {'area legend'};
-
-        % Use the '\\' as a row separator to make sure that the generated figures
-        % work in subplot environments.
-        tableOptions = {'row sep=crcr'};
-
-        [m2t, markerOptions] = getMarkerOptions(m2t, handle);
-        drawOptions = [drawOptions, markerOptions];
-
-        % Add the proper color map even if the map data isn't directly used in
-        % the plot to make sure that we get correct color bars.
-        if ~all(cData == cData(1)) && length(cData) == length(xData)
+    
+    % Marker options
+    [m2t, markerOptions] = getMarkerOptions(m2t, handle);
+    drawOptions = [drawOptions, markerOptions];
+    
+    % Color
+%     [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle);
+    if hasCdata
+        % is RGB
+        isFvcRGB = size(fvCData,2) == 3;
+        if ~isFvcRGB
             % Add the color map.
             m2t.axesContainers{end}.options = ...
                 opts_append(m2t.axesContainers{end}.options, ...
                 matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+            
+            % Map the CData properly into the colormap
+            [m2t, fvCData] = cdata2colorindex(m2t,fvCData, handle);
         end
-        % If full color data is provided, we can use point meta color data.
-        % For some reason, this only works for filled contours in Pgfplots, so
-        % fall back to explicit color specifications for line plots.
-        if ~all(cData == cData(1)) && length(cData) == length(xData) ...
-                && ~isNone(get(handle, 'FaceColor'))
-            data = [data, cData(:)];
-            drawOptions{end+1} = 'patch';
-            columnNames{end+1} = 'c';
-            tableOptions{end+1} = 'point meta=\thisrow{c}';
+        % Add color to vertices...
+        fvcForVertices = numel(fvCData) == size(Vertices,1);
+        if fvcForVertices && ~isFvcRGB
+            Vertices = [Vertices, fvCData];
+            columnNames{end+1}  = 'c';
+            verticesTableOptions{end+1} = 'point meta=\thisrow{c}';
+        % ... to faces
         else
-            % Probably one color only, so things we're probably only dealing with
-            % one patch here.
-            % line width
-            lineStyle = get(handle, 'LineStyle');
-            lineWidth = get(handle, 'LineWidth');
-            lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-            drawOptions = [drawOptions, lineOptions];
-
-            % Find out color values.
-            % fill color
-            faceColor = get(handle, 'FaceColor');
-
-            % If it still has 'interp', then the CData for the patch is
-            % just an index into the colormap. Convert to RGB
-            if strcmpi(faceColor,'interp')
-                    [m2t, index] = cdata2colorindex(m2t, cData(1),handle);
-                    faceColor    = m2t.currentHandles.colormap(index,:);
-            end
-
-            if ~isNone(faceColor)
-                [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-                drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
-                xFaceAlpha = get(handle, 'FaceAlpha');
-                if abs(xFaceAlpha - 1.0) > m2t.tol
-                    drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
-                end
-            end
-
-            % draw color
-            edgeColor = get(handle, 'EdgeColor');
-            lineStyle = get(handle, 'LineStyle');
-            if isNone(lineStyle) || isNone(edgeColor)
-                drawOptions{end+1} = 'draw=none';
-            else
-                [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
-                if isempty(xEdgeColor)
-                    % getColor() wasn't able to return a color. This is because
-                    % cdata was an actual vector with different values in it,
-                    % meaning that the color changes along the edge. This is the
-                    % case, for example, with waterfall() plots.
-                    % An actual color maps is needed here.
-                    %
-                    drawOptions{end+1} = 'mesh'; % or surf
-                    m2t.axesContainers{end}.options = ...
-                        opts_append(m2t.axesContainers{end}.options, ...
-                        matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
-                    % Append upper and lower limit of the color mapping.
-%                     clim = caxis;
-%                     m2t.axesContainers{end}.options = ...
-%                         opts_add(m2t.axesContainers{end}.options, ...
-%                         'point meta min', sprintf(m2t.ff, clim(1)));
-%                     m2t.axesContainers{end}.options = ...
-%                         opts_add(m2t.axesContainers{end}.options, ...
-%                         'point meta max', sprintf(m2t.ff, clim(2)));
-                    % Note:
-                    % Pgfplots can't currently use FaceColor and colormapped edge
-                    % color in one go. The option 'surf' makes sure that
-                    % colormapped edge colors are used. Face colors are not
-                    % displayed.
-                else
-                    % getColor() returned a reasonable color value.
-                    drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
-                end
-            end
+            Faces = [Faces, fvCData];
         end
-
-        if ~m2t.currentHandleHasLegend
-            % No legend entry found. Don't include plot in legend.
-            drawOptions{end+1} = 'forget plot';
+    else
+        
+    end
+    
+    % Line options
+    lineStyle = get(handle, 'LineStyle');
+    lineWidth = get(handle, 'LineWidth');
+    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+    drawOptions = [drawOptions, lineOptions];
+    
+    % Faces transparency
+    % TODO: experiment with FaceVertexAlphaData but pgfplots seems not to
+    % support anyways
+    xFaceAlpha = get(handle, 'FaceAlpha');
+    if abs(xFaceAlpha - 1.0) > m2t.tol
+        drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
+    end
+    
+    if ~m2t.currentHandleHasLegend
+        % No legend entry found. Don't include plot in legend.
+        drawOptions{end+1} = 'forget plot';
+    end
+    
+    % Add Faces table
+    % NOTE: pgfplot uses zero-based indexing into vertices
+    [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces-1);
+    if ~fvcForVertices 
+        if isFvcRGB
+            ptType = 'patch table with individual point meta';
+        else
+            ptType = 'patch table with point meta';
         end
-
-        drawOpts = join(m2t, drawOptions, ',');
-        % -----------------------------------------------------------------------
-        if any(~isfinite(data(:)))
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'unbounded coords', 'jump');
-        end
-        % Plot the actual data.
-        [m2t, table] = makeTable(m2t, columnNames, data);
-
-        cycle = conditionallyCyclePath(data);
-        str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n\n',...
-            str, plotType, drawOpts, join(m2t, tableOptions, ', '), table, cycle);
+    else
+        ptType = 'patch table';
+    end
+    drawOptions = [drawOptions, ...
+                           'table/row sep=crcr', sprintf('%s={%s}', ptType, facesTable)];
+    drawOpts = join(m2t, drawOptions, ',');
+    % -----------------------------------------------------------------------
+    if any(~isfinite(Faces(:)))
+        m2t.axesContainers{end}.options = ...
+            addToOptions(m2t.axesContainers{end}.options, ...
+            'unbounded coords', 'jump');
+    end
+    % Plot the actual data.
+    [m2t, verticesTable] = makeTable(m2t, columnNames, Vertices);
+    
+    str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s};\n\n',...
+        str, plotType, drawOpts, join(m2t, verticesTableOptions, ', '), verticesTable);
 end
-end
+
 % ==============================================================================
 function [cycle] = conditionallyCyclePath(data)
 % returns "--cycle" when the path should be cyclic in pgfplots
@@ -2599,23 +2556,28 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
         surfOptions{end+1} = sprintf(['opacity=', m2t.ff], faceAlpha);
     end
 
+
     % Check for surf or mesh plot. Second argument in if-check corresponds to
     % default values for mesh plot in MATLAB.
-    if isNone(faceColor) && isNone(edgeColor)
-        plotType = 'none';
-    elseif isNone(faceColor)
+    if isNone(faceColor)
         plotType = 'mesh';
-        [m2t, surfOptions] = surfaceOptsOfMesh(m2t, handle, surfOptions);
     else
         plotType = 'surf';
-        [m2t, surfOptions] = surfaceOptsOfSurf(m2t, handle, surfOptions);
     end
-end
-% ==============================================================================
-function [m2t, surfOptions] = surfaceOptsOfSurf(m2t, handle, surfOptions)
-% determine options of a `surf` plot
 
-    % TODO Revisit this selection and create a bunch of test plots.
+    surfOptions = cell(0);
+
+    % Set opacity if FaceAlpha < 1 in MATLAB
+    faceAlpha = get(handle, 'FaceAlpha');
+    if isnumeric(faceAlpha) && faceAlpha ~= 1.0
+        surfOptions{end+1} = sprintf(['opacity=', m2t.ff], faceAlpha);
+    end
+
+    
+    switch plotType
+
+        % SURFACE
+        case 'surf'
 
     faceColor = get(handle, 'FaceColor');
     edgeColor = get(handle, 'EdgeColor');
