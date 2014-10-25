@@ -1815,9 +1815,6 @@ function [m2t, str] = drawPatch(m2t, handle)
         m2t.currentAxesContain3dData = true;
     end
 
-    % see if individual color values are present
-    fvCData = get(handle,'FaceVertexCData');
-
     % -----------------------------------------------------------------------
     % gather the draw options
     % Make sure that legends are shown in area mode.
@@ -1863,62 +1860,70 @@ function [m2t, str] = drawPatch(m2t, handle)
     drawOptions = [drawOptions, lineOptions];
     
     % Color
-    % is RGB
-        isFvcRGB = size(fvCData,2) == 3;
-        if ~isFvcRGB
-            % Add the color map.
+    if s.hasOneFaceColor && s.hasOneEdgeColor
+        ptType = 'patch table';
+    % We have CData
+    else
+        fvCData   = get(handle,'FaceVertexCData');
+        rowsCData = size(fvCData,1);
+        
+        if isvector(fvCData)
+            % Add the color map
             m2t.axesContainers{end}.options = ...
                 opts_append(m2t.axesContainers{end}.options, ...
                 matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
             
-            % Map the CData properly into the colormap
-            [m2t, fvCData] = cdata2colorindex(m2t,fvCData, handle);
-        end
-        % Add color to vertices...
-        fvcForVertices = numel(fvCData) == size(Vertices,1);
-        if fvcForVertices && ~isFvcRGB
-            Vertices = [Vertices, fvCData];
-            columnNames{end+1}  = 'c';
-            verticesTableOptions{end+1} = 'point meta=\thisrow{c}';
-        % ... to faces
+            
+            % If it still has 'interp', then the CData for the patch is
+            % just an index into the colormap.
+%             if strcmpi(get(handle,'FaceColor'),'interp')
+%                 [m2t, fvCData] = cdata2colorindex(m2t, fvCData,handle);
+%             end
+            
+            if rowsCData == size(Vertices,1)
+                ptType = 'patch table';
+                columnNames{end+1}  = 'c';
+                verticesTableOptions{end+1} = 'point meta=\thisrow{c}';
+                Vertices = [Vertices, fvCData];
+            else
+                ptType = 'patch table with point meta';
+                Faces  = [Faces fvCData];
+            end
+            
+            % RGB CData
         else
-            Faces = [Faces, fvCData*100];
+            % SKIP for now
+            % If is RGB transform into colormap
+%             if size(fvCData,2) == 3
+%                 % Face colormap...
+%                 if size(fvCData,1) == size(Faces,1)
+%                     faceColormap = makeColormap('faceCmap', rgb);
+%                     % ... edges
+%                 else
+%                     edgeColormap = makeColormap('edgeCmap', rgb);
+%                 end
+%                 
+%             end
         end
-    
-
-    
-    % Faces transparency
-    % TODO: experiment with FaceVertexAlphaData but pgfplots seems not to
-    % support anyways
-    xFaceAlpha = get(handle, 'FaceAlpha');
-    if abs(xFaceAlpha - 1.0) > m2t.tol
-        drawOptions{end+1} = sprintf('opacity=%s', xFaceAlpha);
     end
-    
+
     if ~m2t.currentHandleHasLegend
         % No legend entry found. Don't include plot in legend.
         drawOptions{end+1} = 'forget plot';
     end
-    
-    % Add Faces table
-    [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces);
-    if ~fvcForVertices 
-        if isFvcRGB
-            ptType = 'patch table with individual point meta';
-        else
-            ptType = 'patch table with point meta';
-        end
-    else
-        ptType = 'patch table';
-    end
-    drawOptions = [drawOptions, sprintf('%s={%s}', ptType, facesTable)];
-    drawOpts = join(m2t, drawOptions, ',');
+
     % -----------------------------------------------------------------------
     if any(~isfinite(Faces(:)))
         m2t.axesContainers{end}.options = ...
             addToOptions(m2t.axesContainers{end}.options, ...
             'unbounded coords', 'jump');
     end
+    
+    % Add Faces table
+    [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces);
+    drawOptions = [drawOptions, sprintf('%s={%s}', ptType, facesTable)];
+    drawOpts = join(m2t, drawOptions, ',');
+    
     % Plot the actual data.
     [m2t, verticesTable] = makeTable(m2t, columnNames, Vertices);
     
