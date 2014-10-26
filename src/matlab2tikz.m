@@ -151,8 +151,8 @@ function matlab2tikz(varargin)
 %% Check if we are in MATLAB or Octave.
 [m2t.env, m2t.envVersion] = getEnvironment();
 
-minimalVersion = struct('MATLAB', struct('name','2008b', 'num',[7 7]), ...
-                        'Octave', struct('name','3.4.0', 'num',[3 4 0]));
+minimalVersion = struct('MATLAB', struct('name','2014a', 'num',[8 3]), ...
+                        'Octave', struct('name','3.8', 'num',[3 8]));
 checkDeprecatedEnvironment(m2t, minimalVersion);
 
 m2t.cmdOpts = [];
