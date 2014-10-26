@@ -151,8 +151,8 @@ function matlab2tikz(varargin)
 %% Check if we are in MATLAB or Octave.
 [m2t.env, m2t.envVersion] = getEnvironment();
 
-minimalVersion = struct('MATLAB', struct('name','2008b', 'num',[7 7]), ...
-                        'Octave', struct('name','3.4.0', 'num',[3 4 0]));
+minimalVersion = struct('MATLAB', struct('name','2014a', 'num',[8 3]), ...
+                        'Octave', struct('name','3.8', 'num',[3 8]));
 checkDeprecatedEnvironment(m2t, minimalVersion);
 
 m2t.cmdOpts = [];
@@ -5178,16 +5178,19 @@ end
 function checkDeprecatedEnvironment(m2t, minimalVersions)
     if isfield(minimalVersions, m2t.env)
         minVersion = minimalVersions.(m2t.env);
-        envWithVersion = sprintf('%s %s',m2t.env, minVersion.name);
+        envWithVersion = sprintf('%s %s', m2t.env, minVersion.name);
+
         if isVersionBelow(m2t.env, m2t.envVersion, minVersion.num)
+            ID = 'matlab2tikz:deprecatedEnvironment';
+
             warningMessage = ['\n', repmat('=',1,80), '\n\n', ...
-                '  matlab2tikz is tested and developed on   %s   and\n', ...
-                '  later versions of %s.\n', ...
+                '  matlab2tikz is tested and developed on   %s   and newer.\n', ...
                 '  This script may still be able to handle your plots, but if you\n', ...
                 '  hit a bug, please consider upgrading your environment first.\n', ...
+                '  Type "warning off %s" to suppress this warning.\n', ...
                 '\n', repmat('=',1,80), ];
-            warning('matlab2tikz:deprecatedEnvironment',warningMessage, ...
-                envWithVersion, m2t.env);
+            warning(ID, warningMessage, envWithVersion, ID);
+
         end
     else
         errorUnknownEnvironment();
