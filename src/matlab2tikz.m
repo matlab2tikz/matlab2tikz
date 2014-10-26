@@ -446,7 +446,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % Alternative Positioning of axes.
     % Select relevant Axes and draw them.
     [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandles);
-    
+
     m2t.axesBoundingBox = axesBoundingBox;
     m2t.axesContainers = {};
     for ix = 1:numel(relevantAxesHandles)
@@ -2057,11 +2057,11 @@ function [m2t, str] = drawHggroup(m2t, h)
         case 'scribe.scribeellipse'
             % Annotation: ellipse
             [m2t, str] = drawEllipse(m2t, h);
-                
+
         case {'scribe.arrow', 'scribe.doublearrow'}
             % Annotation: single and double Arrow
             [m2t, str] = handleAllChildren(m2t, h);
-        
+
         case 'scribe.textbox'
             % Annotation: text box
             [m2t, str] = drawTextbox(m2t, h);
@@ -3128,24 +3128,24 @@ end
 function [m2t, str] = drawEllipse(m2t, handle)
 % Takes care of MATLAB's ellipse annotations.
 %
-    
+
 %     c = get(h, 'Children');
-    
+
     p = get(handle,'position');
     radius = p([3 4]) / 2;
     center = p([1 2]) + radius;
 
     str = [];
-    
+
     lineStyle = get(handle, 'LineStyle');
     lineWidth = get(handle, 'LineWidth');
-    
+
     color = get(handle, 'Color');
     [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-    
+
     filling = get(handle, 'FaceColor');
-    
+
     %% Has a filling?
     if isNone(filling)
         drawOptions = [{sprintf('%s', xcolor)}, ... % color
@@ -3159,7 +3159,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
     end
 
     opt = join(m2t, drawOptions, ',');
-    
+
     str = sprintf('%s [%s] (axis cs:%g,%g) ellipse [x radius=%g, y radius=%g];\n', ...
         drawCommand, opt, center, radius);
 end
@@ -4260,25 +4260,25 @@ function [width, height, unit] = getNaturalFigureDimension(m2t)
     % Returns the size of figure (in inch)
     % To stay compatible with getNaturalAxesDimensions, the unit 'in' is
     % also returned.
-    
+
     % Get current figure size
     figuresize = get(m2t.currentHandles.gcf, 'Position');
     figuresize = figuresize([3 4]);
     figureunit = get(m2t.currentHandles.gcf, 'Units');
-    
+
     % Convert Figure Size
     unit = 'in';
     figuresize = convertUnits(figuresize, figureunit, unit);
-    
+
     % Split size into width and height
     width  = figuresize(1);
     height = figuresize(2);
-    
+
 end
 % ==============================================================================
 function dimension = getFigureDimensions(m2t, widthString, heightString)
 % Returns the physical dimension of the figure.
-    
+
     [width, height, unit] = getNaturalFigureDimension(m2t);
 
     % get the natural width-height ration of the plot
@@ -4324,13 +4324,13 @@ function position = getAxesPosition(m2t, handle, widthString, heightString, axes
     if nargin < 4
         axesBoundingBox = [0 0 1 1];
     end
-    
+
     % First get the whole figures size
     figDim = getFigureDimensions(m2t, widthString, heightString);
-    
+
     % Get the relative position of the axis
     relPos = getRelativeAxesPosition(m2t, handle, axesBoundingBox);
-    
+
     position.x.value = relPos(1) * figDim.x.value;
     position.x.unit  = figDim.x.unit;
     position.y.value = relPos(2) * figDim.y.value;
@@ -4348,7 +4348,7 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
 % that [0, 0, 1, 1] covers the whole figure.
 % It is possible to add a second parameter with the relative coordinates of
 % a bounding box around all axes of the figure (see getRelevantAxes()). In
-% this case, relative positions are rescaled so that the bounding box is 
+% this case, relative positions are rescaled so that the bounding box is
 % [0, 0, 1, 1]
 
     % Get Figure Dimension
@@ -4369,9 +4369,9 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             figureSize = convertUnits([figWidth, figHeight], figUnits, axesUnits);
             % Figure size into axes units to get the realtive size
             position(i,:) = axesPos ./ [figureSize, figureSize];
-                
+
         end
-        
+
         % Change size if DataAspectRatioMode is manual
         if isequal(lower(get(axesHandle,'DataAspectRatioMode')),'manual')
             % get limits
@@ -4402,7 +4402,7 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             end
         end
     end
-    
+
     %% Rescale if axesBoundingBox is given
     if exist('axesBoundingBox','var')
         % shift position so that [0, 0] is the lower left corner of the
@@ -4435,7 +4435,7 @@ end
 function dstValue = convertUnits(srcValue, srcUnit, dstUnit)
 % Converts values between different units.
 %   srcValue stores a length (or vector of lengths) in srcUnit.
-% The resulting dstValue is the converted length into dstUnit. 
+% The resulting dstValue is the converted length into dstUnit.
 %
 % Currently supported units are: in, cm, px, pt
 
@@ -4447,7 +4447,7 @@ function dstValue = convertUnits(srcValue, srcUnit, dstUnit)
         dstValue = srcValue;
         return % conversion to the same unit => factor = 1
     end
-    
+
     units  = {srcUnit, dstUnit};
     factor = ones(1,2);
     for ii = 1:numel(factor) % Same code for srcUnit and dstUnit
@@ -4469,7 +4469,7 @@ function dstValue = convertUnits(srcValue, srcUnit, dstUnit)
     end
 
     dstValue = srcValue * factor(2) / factor(1);
-end     
+end
 % ==============================================================================
 function out = extractValueUnit(str)
 % Decompose m2t.cmdOpts.Results.width into value and unit.
@@ -4545,7 +4545,7 @@ function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandl
             relevantAxesHandles(end+1) = axesHandle;
         end
     end
-    
+
     % Compute the bounding box
     % TODO: check if relevant Axes or all Axes are better.
     axesBoundingBox = getRelativeAxesPosition(m2t, relevantAxesHandles);
