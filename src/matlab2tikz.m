@@ -1875,30 +1875,27 @@ function [m2t, str] = drawImage(m2t, handle)
         end
 
         % Write an indexed or a truecolor image
-        % Don't use ismatrix(), cf.
-        % <https://github.com/nschloe/matlab2tikz/issues/143>.
-        if (ndims(colorData) == 2)
-            % According to imwrite's documentation there is support for 1-bit,
-            % 2-bit, 4-bit and 8-bit (i.e., 256 colors) indexed images only.
-            % When having more colors, a truecolor image must be generated and
-            % used instead.
-            if size(m2t.currentHandles.colormap, 1) <= 256
+        alpha = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
+        if numel(alpha)==1
+            alpha = alpha(ones(size(colorData(:,:,1))));
+        end
+        hasAlpha = ~all(alpha(:)==1);
+        if hasAlpha
+            alphaOpts = {'Alpha', alpha};
+        else
+            alphaOpts = {};
+        end
+        if (ndims(colorData) == 2) %#ok don't use ismatrix (cfr. #143)
+            if size(m2t.currentHandles.colormap, 1) <= 256 && ~hasAlpha
+                % imwrite supports maximum 256 values in a colormap (i.e. 8 bit)
+                % and no alpha channel for indexed PNG images.
                 imwrite(colorData, m2t.currentHandles.colormap, ...
                     pngFileName, 'png');
-            else
+            else % use true-color instead
                 imwrite(ind2rgb(colorData, m2t.currentHandles.colormap), ...
-                    pngFileName, 'png');
+                    pngFileName, 'png', alphaOpts{:});
             end
         else
-            alpha = get(handle,'AlphaData');
-            if numel(alpha)==1
-                alpha = alpha(ones(size(colorData(:,:,1))));
-            end
-            if all(alpha==1)
-                alphaOpts = {};
-            else
-                alphaOpts = {'Alpha', alpha'};
-            end
             imwrite(colorData, pngFileName, 'png', alphaOpts{:});
         end
         % -----------------------------------------------------------------------
@@ -1986,6 +1983,27 @@ function [m2t, str] = drawImage(m2t, handle)
     m2t.axesContainers{end}.options = ...
         addToOptions(m2t.axesContainers{end}.options, ...
         'axis on top', []);
+end
+% ==============================================================================
+function alpha = normalizedAlphaValues(m2t, alpha, handle)
+    alphaDataMapping = getOrDefault(handle, 'AlphaDataMapping', 'none');
+    switch lower(alphaDataMapping)
+        case 'none'  % no rescaling needed
+        case 'scaled'
+            ALim = get(m2t.currentHandles.gca, 'ALim');
+            AMax = ALim(2);
+            AMin = ALim(1);
+            if ~isfinite(AMax) 
+                AMax = max(alpha(:)); %NOTE: is this right?
+            end
+            alpha = (alpha - AMin)./(AMax - AMin);
+        case 'direct'
+            alpha = ind2rgb(alpha, get(m2t.currentHandles.gcf, 'Alphamap'));
+        otherwise
+            error('matlab2tikz:UnknownAlphaMapping', ...
+                  'Unknown alpha mapping "%s"', alphaMapping);
+    end
+    alpha = min(1,max(alpha,0)); % clip at range [0, 1]
 end
 % ==============================================================================
 function [m2t, str] = drawContour(m2t, h)
