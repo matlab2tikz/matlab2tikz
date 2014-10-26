@@ -2483,23 +2483,13 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     markOptions = cell(0);
     [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, ...
         markOptions, hasFaceColor);
-
-    if length(sData) == 1
-        constMarkerkSize = true; % constant marker size
-    else % changing marker size; rescale the size data according to the marker
-        constMarkerkSize = false;
-        % MathWorks says
-        % <http://www.mathworks.se/help/matlab/ref/scattergroupproperties.html>:
-        % SizeData
-        % Size of markers in square points. Area of the marker in the scatter
-        % graph in units of points. Since there are 72 points to one inch, to
-        % specify a marker that has an area of one square inch you would use a
-        % value of 72^2.
-        %
-        % Pgfplots on the other hand uses the radius.
-        sData = sqrt(sData / pi);
-    end
-
+    
+    constMarkerkSize = length(sData) == 1; % constant marker size
+    
+    % Rescale marker size (not definitive, follow discussion on:
+    % https://github.com/nschloe/matlab2tikz/pull/316)
+    sData = translateMarkerSize(m2t, matlabMarker, sqrt(sData)/2);
+    
     if length(cData) == 3
         % No special treatment for the colors or markers are needed.
         % All markers have the same color.
@@ -2513,10 +2503,11 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         else
             [m2t, ecolor] = getColor(m2t, h, cData, 'patch');
         end
-        if constMarkerkSize % if constant marker size, do nothing special
+        if constMarkerkSize 
             drawOptions = { 'only marks', ...
                 ['mark=' tikzMarker], ...
-                ['mark options={', join(m2t, markOptions, ','), '}'] };
+                ['mark options={', join(m2t, markOptions, ','), '}'],...
+                sprintf('mark size=%.4fpt', sData)};
             if hasFaceColor && hasEdgeColor
                 drawOptions{end+1} = { ['draw=' ecolor], ...
                     ['fill=' xcolor] };
