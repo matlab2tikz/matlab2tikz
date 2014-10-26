@@ -862,12 +862,14 @@ function m2t = drawAxes(m2t, handle)
     % Get other axis options (ticks, axis color, label,...).
     % This is set here such that the axis orientation indicator in m2t is set
     % before -- if ~isVisible(handle) -- the handle's children are called.
+    [m2t, xopts] = getAxisOptions(m2t, handle, 'x');
+    [m2t, yopts] = getAxisOptions(m2t, handle, 'y');
+    
     m2t.axesContainers{end}.options = merge(m2t.axesContainers{end}.options, ...
-        getAxisOptions(m2t, handle, 'x'), ...
-        getAxisOptions(m2t, handle, 'y'));
+                                            xopts, yopts);
     if m2t.currentAxesContain3dData
-        m2t.axesContainers{end}.options = merge(...
-            m2t.axesContainers{end}.options, getAxisOptions(m2t, handle, 'z'));
+        [m2t, zopts] = getAxisOptions(m2t, handle, 'z');
+        m2t.axesContainers{end}.options = merge(m2t.axesContainers{end}.options, zopts);
     end
     hasXGrid = false;
     hasYGrid = false;
@@ -1115,7 +1117,7 @@ function tag = getTag(handle)
     end
 end
 % ==============================================================================
-function options = getAxisOptions(m2t, handle, axis)
+function [m2t, options] = getAxisOptions(m2t, handle, axis)
     if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
         error('matlab2tikz:illegalAxisSpecifier',...
             'Illegal axis specifier ''%s''.', axis);
@@ -3506,8 +3508,8 @@ function axisOptions = getColorbarOptions(m2t, handle)
     %(and older) and just access the properties directly here. In R2014b and
     %newer this is certainly the clearer way to go. However, this does introduce
     %some duplicate code
-    xo = getAxisOptions(m2t, handle, 'x');
-    yo = getAxisOptions(m2t, handle, 'y');
+    [m2t, xo] = getAxisOptions(m2t, handle, 'x');
+    [m2t, yo] = getAxisOptions(m2t, handle, 'y');
     xyo = merge(xo, yo);
     unsupportedOptions = {'xmin','xmax','xtick','ymin','ymax','ytick'};
     xyo(ismember(xyo(:,1), unsupportedOptions),:) = [];
