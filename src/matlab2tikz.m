@@ -2453,6 +2453,9 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
                     surfOptions{end+1} = 'shader=flat';
                 elseif strcmpi(faceColor, 'interp')
                     surfOptions{end+1} = 'shader=faceted interp';
+                elseif isnumeric(faceColor)
+                    [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'atch');
+                    surfOptions{end+1} = sprintf('fill=%s',xFaceColor);
                 end
 
             % Edge RGB
