@@ -2454,7 +2454,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
                 elseif strcmpi(faceColor, 'interp')
                     surfOptions{end+1} = 'shader=faceted interp';
                 elseif isnumeric(faceColor)
-                    [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'atch');
+                    [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
                     surfOptions{end+1} = sprintf('fill=%s',xFaceColor);
                 end
 
