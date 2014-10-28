@@ -1840,8 +1840,8 @@ function [m2t, str] = drawPatch(m2t, handle)
         if ~m2t.cmdOpts.Results.standalone
             userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
         end
-        % Get rid of shader, not supported by polygon type
-        idrop = ~cellfun(@isempty,regexp(patchOptions,'shader','once'));
+        % Get rid of interpolated shader, not supported by polygon type
+        idrop = ~cellfun(@isempty,regexp(patchOptions,'interp','once'));
         if any(idrop)
             userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
             patchOptions(idrop) = [];
@@ -2755,13 +2755,13 @@ function [m2t,patchOptions,s] = patchOpts(m2t, handle, selectedType)
             else
                 s.hasOneEdgeColor   = true;
                 [m2t, xEdgeColor]   = getColor(m2t, handle, edgeColor, 'patch');
-                patchOptions{end+1} = sprintf('faceted color=%s', xEdgeColor);
+                patchOptions{end+1} = sprintf('draw=%s', xEdgeColor);
                 if isnumeric(faceColor)
                     s.hasOneFaceColor   = true;
                     [m2t, xFaceColor]   = getColor(m2t, handle, faceColor, 'patch');
                     patchOptions{end+1} = sprintf('fill=%s', xFaceColor);
                 else
-                    patchOptions{end+1} = 'shader=faceted';
+                    patchOptions{end+1} = 'shader=flat corner';
                 end
             end
 
