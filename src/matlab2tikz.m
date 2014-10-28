@@ -1885,20 +1885,28 @@ function [m2t, str] = drawPatch(m2t, handle)
                 Faces  = [Faces fvCData];
             end
             
-            % RGB CData
+        % True color CData, i.e. RGB in [0,1]
         else
-            % SKIP for now
-            % If is RGB transform into colormap
-%             if size(fvCData,2) == 3
-%                 % Face colormap...
-%                 if size(fvCData,1) == size(Faces,1)
-%                     faceColormap = makeColormap('faceCmap', rgb);
-%                     % ... edges
-%                 else
-%                     edgeColormap = makeColormap('edgeCmap', rgb);
-%                 end
-%                 
-%             end
+            
+            % Create additional custom colormap
+            m2t.axesContainers{end}.options(end+1,:) = ...
+                {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
+            % Vertices colormap...
+            if rowsCData == size(Vertices,1)
+                ptType = 'patch table';
+                columnNames{end+1}  = 'c';
+                verticesTableOptions{end+1} = 'point meta=\thisrow{c}';
+                drawOptions{end+1} = 'colormap name=patchmap';
+                % Index into the custom colormap directly
+                Vertices = [Vertices, (0:rowsCData-1)'];
+            % ...Faces
+            else
+                ptType = 'patch table with point meta';
+                drawOptions{end+1} = 'colormap name=patchmap';
+                % Index into the custom colormap directly
+                Faces  = [Faces (0:rowsCData-1)'];
+            end
+                
         end
     end
 
