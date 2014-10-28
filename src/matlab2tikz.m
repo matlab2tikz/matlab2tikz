@@ -1824,8 +1824,11 @@ function [m2t, str] = drawPatch(m2t, handle)
     % work in subplot environments.
     verticesTableOptions = {'row sep=crcr'};
     
-    % Add plot type
-    drawOptions{end+1} = s.plotType;
+    % Add plot type (enforce patch or cannot use 'patch table=')
+    if strcmpi(s.plotType,'mesh')
+        drawOptions{end+1} = 'patch';
+    end
+    drawOptions{end+1} = s.plotType; % Eventually add mesh, but after patch!
     
     % Patch type (triangle, rectangle or polygon)
     vertexCount = size(Faces,2);
