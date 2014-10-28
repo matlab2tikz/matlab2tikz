@@ -1872,6 +1872,8 @@ function [m2t, str] = drawPatch(m2t, handle)
             m2t.axesContainers{end}.options = ...
                 opts_append(m2t.axesContainers{end}.options, ...
                 matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+            % Eventually scale within Clims
+            [m2t, fvCData] = cdata2colorindex(m2t,fvCData,handle);
             
             if rowsCData == size(Vertices,1)
                 ptType = 'patch table';
