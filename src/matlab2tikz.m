@@ -3514,8 +3514,10 @@ function matlabColormap = pgfplots2matlabColormap(points, rgb, numColors)
     end
 end
 % ==============================================================================
-function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
+function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap, name)
 % Translates a MATLAB color map into a Pgfplots colormap.
+
+if nargin < 3 || isempty(name), name = 'mymap'; end
 
 % First check if we could use a default Pgfplots color map.
 % Unfortunately, MATLAB and Pgfplots color maps will never exactly coincide
@@ -3638,10 +3640,9 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap)
     colSpecs = {};
     for k = 1:length(steps)
         x = steps(k)-1;
-        sprintf('rgb(%d%s)=(%g, %g, %g)', x, unit, colors(k));
         colSpecs{k} = sprintf('rgb(%d%s)=(%g,%g,%g)', x, unit, colors(k,:));
     end
-    pgfplotsColormap = sprintf('colormap={mymap}{[1%s] %s}', unit, join(m2t, colSpecs, '; '));
+    pgfplotsColormap = sprintf('colormap={%s}{[1%s] %s}',name, unit, join(m2t, colSpecs, '; '));
 end
 % ==============================================================================
 function fontStyle = getFontStyle(m2t, handle)
