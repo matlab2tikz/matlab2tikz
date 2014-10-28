@@ -2719,9 +2719,10 @@ function [m2t,patchOptions,s] = patchOpts(m2t, handle, selectedType)
             elseif strcmpi(edgeColor, 'interp')
                 if strcmpi(faceColor, 'interp')
                     patchOptions{end+1} = 'shader=interp';
+                elseif strcmpi(faceColor, 'flat')
+                    patchOptions{end+1} = 'shader=faceted';
                 else
                     s.hasOneFaceColor   = true;
-                    patchOptions{end+1} = 'shader=faceted';
                     [m2t,xFaceColor]    = getColor(m2t, handle, faceColor, 'patch');
                     patchOptions{end+1} = sprintf('fill=%s',xFaceColor);
                 end
@@ -2729,9 +2730,14 @@ function [m2t,patchOptions,s] = patchOpts(m2t, handle, selectedType)
             % Edge 'flat'
             elseif strcmpi(edgeColor, 'flat')
                 if strcmpi(faceColor, 'flat')
-                    patchOptions{end+1} = 'shader=flat';
+                    patchOptions{end+1} = 'shader=flat corner';
                 elseif strcmpi(faceColor, 'interp')
                     patchOptions{end+1} = 'shader=faceted interp';
+                else
+                    s.hasOneFaceColor   = true;
+                    patchOptions{end+1} = 'shader=flat corner';
+                    [m2t,xFaceColor]    = getColor(m2t, handle, faceColor, 'patch');
+                    patchOptions{end+1} = sprintf('fill=%s',xFaceColor);
                 end
 
             % Edge RGB
