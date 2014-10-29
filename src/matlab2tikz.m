@@ -3883,15 +3883,17 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     else
         % handle colors
         edgeColor = get(handle, 'EdgeColor');
-        if all(edgeColor == [1,1,1])
+        if isNone(edgeColor)
             lStyle = {lStyle{:}, 'draw=none'};
-        else
+        elseif ~all(edgeColor == [0,0,0]) % Not black
             [m2t, col] = getColor(m2t, handle, edgeColor, 'patch');
             lStyle = {lStyle{:}, sprintf('draw=%s', col)};
         end
 
         fillColor = get(handle, 'Color');
-        if ~all(edgeColor == [1,1,1])
+        if isNone(fillColor)
+            lStyle = {lStyle{:}, 'fill=none'};
+        elseif ~all(fillColor == [1,1,1]) % Not white
             [m2t, col] = getColor(m2t, handle, fillColor, 'patch');
             lStyle = {lStyle{:}, sprintf('fill=%s', col)};
         end
