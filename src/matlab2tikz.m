@@ -5079,24 +5079,24 @@ function dims = pos2dims(pos)
     end
 end
 % ==============================================================================
-function opts = addToOptions(opts, key, value)
+function opts = addToOptions(opts, key, value, nodup)
 % Adds a key-value pair to a structure and does some sanity-checking.
-    if ~exist('value','var')
-        value = [];
-    end
+    if nargin < 3 || isempty(value), value = [];   end
+    if nargin < 4 || isempty(nodup), nodup = true; end
     value = char(value);
 
-    % Check if the key already exists.
-    for k = 1:size(opts,1)
-        if strcmp(opts{k,1}, key)
+    if ~isempty(opts)
+        % Check if the key already exists.
+        ikey = strcmp(opts(:,1), key);
+        if any(ikey)
             % The key already exists in struct.
-            if strcmp(opts{k,2}, value)
+            if any(strcmp(opts(ikey,2), value))
                 return; % same value -> do nothing
-            else
+            elseif nodup
                 error('matlab2tikz:addToOptions', ...
                     ['Trying to add (%s, %s) to options, but it already ' ...
                     'contains the conflicting key-value pair (%s, %s).'], ...
-                    key, value, key, opts{k,2});
+                    key, value, key, opts{find(ikey,1,'first'),2});
             end
         end
     end
