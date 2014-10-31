@@ -29,8 +29,10 @@ function [ report ] = codeReport( varargin )
     [complexityAll, mlintMessages] = splitCycloComplexity(data);
 
     %% analyze cyclomatic complexity
+    isAboveThreshold = @(x) x > ipp.Results.complexityThreshold;
+    
     complexityAll = arrayfun(@parseCycloComplexity, complexityAll);
-    complexity = filter(complexityAll, @(x) x.complexity > ipp.Results.complexityThreshold);
+    complexity = filter(complexityAll, @(x) isAboveThreshold(x.complexity) );
     complexity = sortBy(complexity, 'line', 'ascend');
     complexity = sortBy(complexity, 'complexity', 'descend');
 
@@ -52,7 +54,8 @@ function [ report ] = codeReport( varargin )
         disp(report)
         
         figure('name',sprintf('Complexity statistics of %s', ipp.Results.function));
-        h = statisticsPlot(complexityStats, 'Complexity', 'Number of functions');
+        h = statisticsPlot(complexityStats, 'Complexity', 'Number of functions', ...
+                           @(x) binaryCategory(isAboveThreshold(x), 'Bad', 'Good'));
         for hh = h
             plot(hh, [1 1]*ipp.Results.complexityThreshold, ylim(hh), ...
                  'k--','DisplayName','Threshold');
@@ -104,6 +107,14 @@ function [stat] = complexityStatistics(list)
     stat.binCenter  = sort(unique(list));
     stat.histogram  = hist(list, stat.binCenter);
     stat.median     = median(list);
+end
+function category = binaryCategory(bool, trueCategory, falseCategory)
+% turns a logical into named categories
+    if bool
+        category = trueCategory;
+    else
+        category = falseCategory;
+    end
 end
 
 %% FORMATTING ==================================================================
@@ -159,14 +170,38 @@ function str = makeTable(data, fields, header)
 end
 
 %% PLOTTING ====================================================================
-function h= statisticsPlot(stat, xLabel, yLabel)
+function h= statisticsPlot(stat, xLabel, yLabel, categoryFunc)
+    if ~exist('categoryFunc', 'var') || isempty(categoryFunc)
+        categoryFunc = @(varargin) xLabel;
+    end
+    
+    categoryPerElem = arrayfun(categoryFunc, stat.values, 'UniformOutput', false);
+    categories = unique(categoryPerElem);
+    nCategories = numel(categories);
+
+    % build grouped histogram
+    groupedHist = zeros(numel(stat.binCenter), nCategories);
+    for iCat = 1:nCategories
+        category = categories{iCat};
+        idxCat = ismember(categoryPerElem, category);
+        groupedHist(:,iCat) = hist(stat.values(idxCat), stat.binCenter);
+    end
+    
+    % formatting options
     colors = get(0,'DefaultAxesColorOrder');
     color = colors(1,:);
-
+    colors = colors(2:nCategories+1, :); %FIXME: adapt this for many categories
+    
     h(1) = subplot(5,1,1:4);
     hold all;
-    hb = bar(stat.binCenter, stat.histogram);
-    set(hb, 'DisplayName', xLabel,'FaceColor',color, 'LineStyle','none');
+    hb = bar(stat.binCenter, groupedHist, 'stacked');
+    
+    for iCat = 1:nCategories
+        category = categories{iCat};
+        
+        set(hb(iCat), 'DisplayName', category, 'FaceColor',colors(iCat,:), ...
+                   'LineStyle','none');
+    end
     
     %xlabel(xLabel);
     ylabel(yLabel);
