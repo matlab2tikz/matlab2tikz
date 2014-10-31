@@ -2243,7 +2243,7 @@ Y1 = log(X1.^2+1);
 set(gcf,'Position', [100 100 1000 700]);
 
 % Otherwise the axes is plotted wrongly
-pause(0.1);
+drawnow();
 
 % Create axes
 axes1 = axes('Parent',gcf);
@@ -2321,7 +2321,7 @@ set(gcf,'Units', 'inches');
 set(gcf,'Position', [1.03125, 1.03125, 10.416666666666666, 7.291666666666666 ]);
 
 % Otherwise the axes is plotted wrongly
-pause(0.1);
+drawnow();
 
 % Create axes
 axes1 = axes('Parent',gcf,'Units','centimeters',...
