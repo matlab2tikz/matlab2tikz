@@ -17,22 +17,28 @@ function [ report ] = codeReport( varargin )
 % 
 % See also: checkcode, mlint, 
 
+
+    %% input options
     ipp = matlab2tikzInputParser();
     ipp = ipp.addParamValue(ipp, 'function', 'matlab2tikz', @ischar);
     ipp = ipp.addParamValue(ipp, 'complexityThreshold', 10, @isnumeric);
     ipp = ipp.parse(ipp, varargin{:});
 
-    data = checkcode(ipp.Results.function,'-cyc','-struct');
-
     %% generate report data
-    [complexity, mlintMessages] = splitCycloComplexity(data);
+    data = checkcode(ipp.Results.function,'-cyc','-struct');
+    [complexityAll, mlintMessages] = splitCycloComplexity(data);
 
     %% analyze cyclomatic complexity
-    complexity = arrayfun(@parseCycloComplexity, complexity);
-    complexity = filter(complexity, @(x) x.complexity > ipp.Results.complexityThreshold);
+    isAboveThreshold = @(x) x > ipp.Results.complexityThreshold;
+    
+    complexityAll = arrayfun(@parseCycloComplexity, complexityAll);
+    complexity = filter(complexityAll, @(x) isAboveThreshold(x.complexity) );
     complexity = sortBy(complexity, 'line', 'ascend');
     complexity = sortBy(complexity, 'complexity', 'descend');
 
+    [complexityStats] = complexityStatistics(complexityAll, ...
+                      @(x) binaryCategory(isAboveThreshold(x), 'Bad', 'Good'));
+   
     %% analyze other messages
     %TODO: handle all mlint messages and/or other metrics of the code
 
@@ -44,9 +50,17 @@ function [ report ] = codeReport( varargin )
     report = makeTable(dataStr, {'line','function', 'complexity'}, ...
                                 {'Line','Function', 'Complexity'});
 
-    %% 
+    %% command line usage
     if nargout == 0
         disp(report)
+        
+        figure('name',sprintf('Complexity statistics of %s', ipp.Results.function));
+        h = statisticsPlot(complexityStats, 'Complexity', 'Number of functions');
+        for hh = h
+            plot(hh, [1 1]*ipp.Results.complexityThreshold, ylim(hh), ...
+                 'k--','DisplayName','Threshold');
+        end
+        legend(h(1),'show','Location','NorthEast');
     end
                         
 end
@@ -84,6 +98,36 @@ function sorted = sortBy(list, fieldName, mode)
     values = arrayfun(@(m)m.(fieldName), list);
     [dummy, idxSorted] = sort(values(:), 1, mode); %#ok
     sorted = list(idxSorted);
+end
+
+function [stat] = complexityStatistics(list, categoryFunc)
+% calculate some basic statistics of the complexities
+
+    list = arrayfun(@(c)(c.complexity), list);
+    stat.values     = list;
+    stat.binCenter  = sort(unique(list));
+    
+    categoryPerElem = arrayfun(categoryFunc, stat.values, 'UniformOutput', false);
+    stat.categories = unique(categoryPerElem);
+    nCategories = numel(stat.categories);
+    
+    groupedHist = zeros(numel(stat.binCenter), nCategories);
+    for iCat = 1:nCategories
+        category = stat.categories{iCat};
+        idxCat = ismember(categoryPerElem, category);
+        groupedHist(:,iCat) = hist(stat.values(idxCat), stat.binCenter);
+    end
+    
+    stat.histogram  = groupedHist;
+    stat.median     = median(list);
+end
+function category = binaryCategory(bool, trueCategory, falseCategory)
+% turns a logical into named categories
+    if bool
+        category = trueCategory;
+    else
+        category = falseCategory;
+    end
 end
 
 %% FORMATTING ==================================================================
@@ -136,4 +180,45 @@ function str = makeTable(data, fields, header)
     FORMAT = ['%s' repmat('|%s', 1,nFields-1) '\n'];
     str = sprintf(FORMAT, table{:});
     
+end
+
+%% PLOTTING ====================================================================
+function h = statisticsPlot(stat, xLabel, yLabel)
+% plot a histogram and box plot
+    nCategories = numel(stat.categories);
+    colors = get(0,'DefaultAxesColorOrder');
+    color = colors(1,:);
+    colors = colors(2:nCategories+1, :); %FIXME: adapt this for many categories
+    
+    h(1) = subplot(5,1,1:4);
+    hold all;
+    hb = bar(stat.binCenter, stat.histogram, 'stacked');
+    
+    for iCat = 1:nCategories
+        category = stat.categories{iCat};
+        
+        set(hb(iCat), 'DisplayName', category, 'FaceColor',colors(iCat,:), ...
+                   'LineStyle','none');
+    end
+    
+    %xlabel(xLabel);
+    ylabel(yLabel);
+    
+    h(2) = subplot(5,1,5);
+    hold all;
+    
+    boxplot(stat.values,'orientation','horizontal',...
+                        'boxstyle',   'outline', ...
+                        'symbol',     'o', ...
+                        'colors',  color);
+    xlabel(xLabel);
+    
+    xlims = [min(stat.binCenter)-1 max(stat.binCenter)+1];
+    c     = 1;
+    ylims = (ylim(h(2)) - c)/3 + c;
+    
+    set(h,'XTickMode','manual','XTick',stat.binCenter,'XLim',xlims);
+    set(h(1),'XTickLabel','');
+    set(h(2),'YTickLabel','','YLim',ylims);
+    linkaxes(h, 'x');
 end
