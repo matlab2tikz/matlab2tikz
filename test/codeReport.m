@@ -36,7 +36,8 @@ function [ report ] = codeReport( varargin )
     complexity = sortBy(complexity, 'line', 'ascend');
     complexity = sortBy(complexity, 'complexity', 'descend');
 
-    [complexityStats] = complexityStatistics(complexityAll);
+    [complexityStats] = complexityStatistics(complexityAll, ...
+                      @(x) binaryCategory(isAboveThreshold(x), 'Bad', 'Good'));
    
     %% analyze other messages
     %TODO: handle all mlint messages and/or other metrics of the code
@@ -54,8 +55,7 @@ function [ report ] = codeReport( varargin )
         disp(report)
         
         figure('name',sprintf('Complexity statistics of %s', ipp.Results.function));
-        h = statisticsPlot(complexityStats, 'Complexity', 'Number of functions', ...
-                           @(x) binaryCategory(isAboveThreshold(x), 'Bad', 'Good'));
+        h = statisticsPlot(complexityStats, 'Complexity', 'Number of functions');
         for hh = h
             plot(hh, [1 1]*ipp.Results.complexityThreshold, ylim(hh), ...
                  'k--','DisplayName','Threshold');
@@ -100,12 +100,25 @@ function sorted = sortBy(list, fieldName, mode)
     sorted = list(idxSorted);
 end
 
-function [stat] = complexityStatistics(list)
+function [stat] = complexityStatistics(list, categoryFunc)
 % calculate some basic statistics of the complexities
+
     list = arrayfun(@(c)(c.complexity), list);
     stat.values     = list;
     stat.binCenter  = sort(unique(list));
-    stat.histogram  = hist(list, stat.binCenter);
+    
+    categoryPerElem = arrayfun(categoryFunc, stat.values, 'UniformOutput', false);
+    stat.categories = unique(categoryPerElem);
+    nCategories = numel(stat.categories);
+    
+    groupedHist = zeros(numel(stat.binCenter), nCategories);
+    for iCat = 1:nCategories
+        category = stat.categories{iCat};
+        idxCat = ismember(categoryPerElem, category);
+        groupedHist(:,iCat) = hist(stat.values(idxCat), stat.binCenter);
+    end
+    
+    stat.histogram  = groupedHist;
     stat.median     = median(list);
 end
 function category = binaryCategory(bool, trueCategory, falseCategory)
@@ -170,34 +183,19 @@ function str = makeTable(data, fields, header)
 end
 
 %% PLOTTING ====================================================================
-function h= statisticsPlot(stat, xLabel, yLabel, categoryFunc)
-    if ~exist('categoryFunc', 'var') || isempty(categoryFunc)
-        categoryFunc = @(varargin) xLabel;
-    end
-    
-    categoryPerElem = arrayfun(categoryFunc, stat.values, 'UniformOutput', false);
-    categories = unique(categoryPerElem);
-    nCategories = numel(categories);
-
-    % build grouped histogram
-    groupedHist = zeros(numel(stat.binCenter), nCategories);
-    for iCat = 1:nCategories
-        category = categories{iCat};
-        idxCat = ismember(categoryPerElem, category);
-        groupedHist(:,iCat) = hist(stat.values(idxCat), stat.binCenter);
-    end
-    
-    % formatting options
+function h = statisticsPlot(stat, xLabel, yLabel)
+% plot a histogram and box plot
+    nCategories = numel(stat.categories);
     colors = get(0,'DefaultAxesColorOrder');
     color = colors(1,:);
     colors = colors(2:nCategories+1, :); %FIXME: adapt this for many categories
     
     h(1) = subplot(5,1,1:4);
     hold all;
-    hb = bar(stat.binCenter, groupedHist, 'stacked');
+    hb = bar(stat.binCenter, stat.histogram, 'stacked');
     
     for iCat = 1:nCategories
-        category = categories{iCat};
+        category = stat.categories{iCat};
         
         set(hb(iCat), 'DisplayName', category, 'FaceColor',colors(iCat,:), ...
                    'LineStyle','none');
