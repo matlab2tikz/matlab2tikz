@@ -2086,6 +2086,7 @@ function [m2t, str] = drawHggroup(m2t, h)
             [m2t, str] = drawText(m2t, h);
             
         case 'scribe.textarrow'
+            % Annotation: text arrow
             [m2t, str] = drawTextarrow(m2t, h);
             
         case 'unknown'
@@ -2326,45 +2327,69 @@ function [m2t, str] = drawText(m2t, handle)
     % plot the thing
     pos = get(handle, 'Position');
     units = get(handle, 'Units');
-    if length(pos) == 2 || length(pos) == 4
-        % TODO: seperate handling to support bigger text boxes
-        if strcmp(units, 'normalized')
-            posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
-        else
-            % TODO: does this size has to be adjusted if the figure size in
-            % tikz does not match the figure size in matlab?
-            posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
-        end
+    switch length(pos)
+        case 2    % Text within a 2d plot
+            switch units
+                case 'normalized'
+                    posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
+                case 'data'
+                    posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
+                otherwise
+                    pos = convertUnits(pos, units, 'in');
+                    posString = sprintf(['(', m2t.ff, 'in,', m2t.ff, 'in)'], pos);
+            end
 
-        xlim = get(m2t.currentHandles.gca,'XLim');
-        ylim = get(m2t.currentHandles.gca,'YLim');
-        if pos(1) < xlim(1) || pos(1) > xlim(2) ...
-                || pos(2) < ylim(1) || pos(2) > ylim(2)
-            m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                'clip', 'false');
-        end
-    elseif length(pos) == 3
-        pos = applyHgTransform(m2t, pos);
-        if strcmp(units, 'normalized')
-            posString = sprintf(['(rel axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
-        else
-            posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
-        end
+            xlim = get(m2t.currentHandles.gca,'XLim');
+            ylim = get(m2t.currentHandles.gca,'YLim');
+            if pos(1) < xlim(1) || pos(1) > xlim(2) ...
+                    || pos(2) < ylim(1) || pos(2) > ylim(2)
+                m2t.axesContainers{end}.options = ...
+                    addToOptions(m2t.axesContainers{end}.options, ...
+                    'clip', 'false');
+            end
+        case 3    % Text within a 3d plot
+            pos = applyHgTransform(m2t, pos);
+            if strcmp(units, 'normalized')
+                posString = sprintf(['(rel axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
+            else
+                posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
+            end
 
-        xlim = get(m2t.currentHandles.gca, 'XLim');
-        ylim = get(m2t.currentHandles.gca, 'YLim');
-        zlim = get(m2t.currentHandles.gca, 'ZLim');
-        if pos(1) < xlim(1) || pos(1) > xlim(2) ...
-                || pos(2) < ylim(1) || pos(2) > ylim(2) ...
-                || pos(3) < zlim(1) || pos(3) > zlim(2)
-            m2t.axesContainers{end}.options = ...
-                addToOptions(m2t.axesContainers{end}.options, ...
-                'clip', 'false');
-        end
-    else
-        error('matlab2tikz:drawText', ...
-            'Illegal text position specification.');
+            xlim = get(m2t.currentHandles.gca, 'XLim');
+            ylim = get(m2t.currentHandles.gca, 'YLim');
+            zlim = get(m2t.currentHandles.gca, 'ZLim');
+            if pos(1) < xlim(1) || pos(1) > xlim(2) ...
+                    || pos(2) < ylim(1) || pos(2) > ylim(2) ...
+                    || pos(3) < zlim(1) || pos(3) > zlim(2)
+                m2t.axesContainers{end}.options = ...
+                    addToOptions(m2t.axesContainers{end}.options, ...
+                    'clip', 'false');
+            end
+        case 4    % Textbox
+            % TODO: 
+            %   - size of the box (e.g. using node attributes minimum width / height)
+            %   - Alignment of the resized box
+            switch units
+                case 'normalized'
+                    posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos(1:2));
+                case 'data'
+                    posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos(1:2));
+                otherwise
+                    pos = convertUnits(pos, units, 'in');
+                    posString = sprintf(['(', m2t.ff, 'in,', m2t.ff, 'in)'], pos(1:2));
+            end
+
+            xlim = get(m2t.currentHandles.gca,'XLim');
+            ylim = get(m2t.currentHandles.gca,'YLim');
+            if pos(1) < xlim(1) || pos(1) > xlim(2) ...
+                    || pos(2) < ylim(1) || pos(2) > ylim(2)
+                m2t.axesContainers{end}.options = ...
+                    addToOptions(m2t.axesContainers{end}.options, ...
+                    'clip', 'false');
+            end
+        otherwise
+            error('matlab2tikz:drawText', ...
+                'Illegal text position specification.');
     end
     str = sprintf('\\node[%s]\nat %s {%s};\n', ...
         join(m2t, style,', '), posString, String);
