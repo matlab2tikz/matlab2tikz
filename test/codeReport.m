@@ -52,7 +52,7 @@ function [ report ] = codeReport( varargin )
 
     %% command line usage
     if nargout == 0
-        disp(report)
+        disp(codelinks(report, ipp.Results.function));
         
         figure('name',sprintf('Complexity statistics of %s', ipp.Results.function));
         h = statisticsPlot(complexityStats, 'Complexity', 'Number of functions');
@@ -61,6 +61,8 @@ function [ report ] = codeReport( varargin )
                  'k--','DisplayName','Threshold');
         end
         legend(h(1),'show','Location','NorthEast');
+        
+        clear report
     end
                         
 end
@@ -180,6 +182,14 @@ function str = makeTable(data, fields, header)
     FORMAT = ['%s' repmat('|%s', 1,nFields-1) '\n'];
     str = sprintf(FORMAT, table{:});
     
+end
+
+function str = codelinks(str, functionName)
+% replaces inline functions with clickable links in MATLAB
+str = regexprep(str, '`([A-Za-z0-9_]+)`', ...
+                ['`<a href="matlab:edit ' functionName '>$1">$1</a>`']);
+%NOTE: editing function>subfunction will focus on that particular subfunction 
+% in the editor (this also works for the main function)
 end
 
 %% PLOTTING ====================================================================
