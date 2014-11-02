@@ -1,7 +1,7 @@
 % =========================================================================
-% *** FUNCTION testfunctions
+% *** FUNCTION ACID
 % ***
-% *** Standard example plot from MATLAB's help pages.
+% *** MATLAB2TikZ ACID test functions
 % ***
 % =========================================================================
 % ***
@@ -31,7 +31,7 @@
 % *** POSSIBILITY OF SUCH DAMAGE.
 % ***
 % =========================================================================
-function [status, numFunctions] = testfunctions(k)
+function [status] = ACID(k)
 
   % assign the functions to test
   testfunction_handles = {                        ...
@@ -151,7 +151,7 @@ function [status, numFunctions] = testfunctions(k)
   numFunctions = length( testfunction_handles );
 
   if (k<=0)
-      status = struct();
+      status = testfunction_handles;
       return;  % This is used for querying numFunctions.
 
   elseif (k<=numFunctions)
@@ -656,7 +656,8 @@ end
 function [stat] = stackbars()
   stat.description = 'Plot of stacked bars.';
   
-  Y = round(rand(5,3)*10);
+  [data,dummy,summy] = svd(magic(7)); %#ok
+  Y = round(abs(data(2:6,2:4))*10);
   bar(Y,'stack');
   title 'Stack';
 end
