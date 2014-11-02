@@ -1,7 +1,7 @@
 % =========================================================================
-% *** FUNCTION testfunctions
+% *** FUNCTION ACID
 % ***
-% *** Standard example plot from MATLAB's help pages.
+% *** MATLAB2TikZ ACID test functions
 % ***
 % =========================================================================
 % ***
@@ -31,7 +31,7 @@
 % *** POSSIBILITY OF SUCH DAMAGE.
 % ***
 % =========================================================================
-function [status, numFunctions] = testfunctions(k)
+function [status] = ACID(k)
 
   % assign the functions to test
   testfunction_handles = {                        ...
@@ -151,7 +151,7 @@ function [status, numFunctions] = testfunctions(k)
   numFunctions = length( testfunction_handles );
 
   if (k<=0)
-      status = struct();
+      status = testfunction_handles;
       return;  % This is used for querying numFunctions.
 
   elseif (k<=numFunctions)

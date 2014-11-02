@@ -12,9 +12,13 @@ function matlab2tikz_acidtest(varargin)
 %   plots the figure visibly during the test process. Default: false
 %
 % MATLAB2TIKZ_ACIDTEST('testsuite', FUNCTION_HANDLE, ...)
-%   Determines which test suite is to be run. Default: @testfunctions
+%   Determines which test suite is to be run. Default: @ACID
+%   A test suite is a function that takes a single integer argument, which:
+%     when 0: returns a cell array containing the N function handles to the tests
+%     when >=1 and <=N: runs the appropriate test function
+%     when >N: throws an error
 %
-% See also matlab2tikz, testfunctions
+% See also matlab2tikz, ACID
 
 % Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
 % All rights reserved.
@@ -55,12 +59,13 @@ function matlab2tikz_acidtest(varargin)
   ipp = ipp.addOptional(ipp, 'testFunctionIndices', [], @isfloat);
   ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
-  ipp = ipp.addParamValue(ipp, 'testsuite', @testfunctions, @(x)(isa(x,'function_handle')));
+  ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
 
   ipp = ipp.parse(ipp, varargin{:});
   % -----------------------------------------------------------------------
   
   testsuite = ipp.Results.testsuite;
+  testsuiteName = func2str(testsuite);
 
   % first, initialize the tex output
   texfile = 'tex/acid.tex';
@@ -77,7 +82,7 @@ function matlab2tikz_acidtest(varargin)
   end
 
   % query the number of test functions
-  [dummy, n] = testsuite(0); %#ok
+  n = length(testsuite(0));
   
   defaultStatus = emptyStatus();
 
@@ -85,7 +90,7 @@ function matlab2tikz_acidtest(varargin)
       indices = ipp.Results.testFunctionIndices;
       % kick out the illegal stuff
       I = find(indices>=1 & indices<=n);
-      indices = indices(I);
+      indices = indices(I); %#ok
   else
       indices = 1:n;
   end
@@ -95,13 +100,12 @@ function matlab2tikz_acidtest(varargin)
   dataDir = './data/';
   delete(fullfile(dataDir, 'test*'))
 
-  %TODO: these should move into status
   errorHasOccurred = false;
   
   status = cell(length(indices), 1); % cell array to accomodate different structure
   
   for k = 1:length(indices)
-      fprintf(stdout, 'Executing test case no. %d...\n', indices(k));
+      fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
 
       % open a window
       fig_handle = figure('visible',onOffBoolean(ipp.Results.figureVisible));
@@ -124,7 +128,7 @@ function matlab2tikz_acidtest(varargin)
       
       status{k} = fillStruct(status{k}, defaultStatus);
       % Make underscores in function names TeX compatible
-      status{k}.functionTeX = strrep(status{k}.function, '_', '\_');
+      status{k}.functionTeX = name2tex(status{k}.function);
       
       % plot not sucessful
       if status{k}.skip
@@ -176,7 +180,7 @@ function matlab2tikz_acidtest(varargin)
       end
 
       % ...and finally write the bits to the LaTeX file
-      texfile_addtest(fh, fig_file, gen_file, status{k}, indices(k));
+      texfile_addtest(fh, fig_file, gen_file, status{k}, indices(k), testsuiteName);
 
       if ~status{k}.closeall
           close(fig_handle);
@@ -237,7 +241,7 @@ function matlab2tikz_acidtest(varargin)
   end
 
   % now, finish off the file and close file and window
-  texfile_finish(fh);
+  texfile_finish(fh, testsuite);
   fclose(fh);
 
 end
@@ -261,19 +265,21 @@ function texfile_init(texfile_handle)
 
 end
 % =========================================================================
-function texfile_finish(texfile_handle)
+function texfile_finish(texfile_handle, testsuite)
 
-    [env,versionString] = getEnvironment();
+  [env,versionString] = getEnvironment();
 
 
   fprintf(texfile_handle, ...
       [
       '\\newpage\n',...
       '\\begin{tabular}{ll}\n',...
+      '  Suite    & ' name2tex(func2str(testsuite)) ' \\\\ \n', ...
       '  Created  & ' datestr(now) ' \\\\ \n', ...
       '  OS       & ' OSVersion ' \\\\ \n',...
       '  ' env '  & ' versionString ' \\\\ \n', ...
       VersionControlIdentifier, ...
+      '  TikZ     & \\expandafter\\csname ver@tikz.sty\\endcsname \\\\ \n',...
       '  Pgfplots & \\expandafter\\csname ver@pgfplots.sty\\endcsname \\\\ \n',...
       '\\end{tabular}\n',...
       '\\end{document}']);
@@ -289,7 +295,7 @@ function print_verbatim_information(texfile_handle, title, contents)
     end
 end
 % =========================================================================
-function texfile_addtest(texfile_handle, ref_file, gen_file, status, funcId)
+function texfile_addtest(texfile_handle, ref_file, gen_file, status, funcId, testsuiteName)
   % Actually add the piece of LaTeX code that'll later be used to display
   % the given test.
   
@@ -303,12 +309,12 @@ function texfile_addtest(texfile_handle, ref_file, gen_file, status, funcId)
            '    %s & %s \\\\\n'                                         , ...
            '    reference rendering & generated\n'                      , ...
            '  \\end{tabular}\n'                                         , ...
-           '  \\caption{%s \\texttt{%s}, \\texttt{testFunctions(%d)}}\n', ...
+           '  \\caption{%s \\texttt{%s}, \\texttt{%s(%d)}}\n', ...
           '\\end{figure}\n'                                             , ...
           '\\clearpage\n\n'],...
           include_figure(ref_error, 'includegraphics', ref_file), ...
           include_figure(gen_error, 'input', gen_file), ...
-          status.description, status.functionTeX, funcId);
+          status.description, status.functionTeX, name2tex(testsuiteName), funcId);
 
 end
 % =========================================================================
@@ -372,7 +378,7 @@ function [formatted, OSType, OSVersion] = OSVersion()
         OSType = 'Mac OS';
         [dummy, OSVersion] = system('sw_vers -productVersion');
     elseif ispc
-        OSType = 'Windows';
+        OSType = '';% will already contain Windows in the output of `ver`
         [dummy, OSVersion] = system('ver');
     elseif isunix
         OSType = 'Unix';
@@ -455,6 +461,10 @@ function [formatted,treeish] = VersionControlIdentifier()
     if ~isempty(treeish)
         formatted = ['  Commit & ' treeish ' \\\\ \n'];
     end
+end
+% =========================================================================
+function texName = name2tex(matlabIdentifier)
+texName = strrep(matlabIdentifier, '_', '\_');
 end
 % =========================================================================
 function onOff = onOffBoolean(bool)
