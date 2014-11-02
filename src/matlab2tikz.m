@@ -725,7 +725,7 @@ function m2t = drawAxes(m2t, handle)
 %    handle.................The axes environment handle.
 
 % Handle special cases.
-    switch lower(get(handle, switchMatOct(m2t, 'Tag', 'tag')))
+    switch lower(get(handle, 'Tag'))
         case 'colorbar'
             m2t = handleColorbar(m2t, handle);
             return
@@ -760,26 +760,7 @@ function m2t = drawAxes(m2t, handle)
     % TODO: find nicer approach for barplots
     m2t.barplotId = 0;
 
-    % Octave:
-    % Check if this axis environment is referenced by a legend.
-    m2t.gcaAssociatedLegend = [];
-    switch m2t.env
-        case 'Octave'
-            if ~isempty(m2t.legendHandles)
-                % Make sure that m2t.legendHandles is a row vector.
-                for lhandle = m2t.legendHandles(:)'
-                    ud = get(lhandle, 'UserData');
-                    if any(handle == ud.handle)
-                        m2t.gcaAssociatedLegend = lhandle;
-                        break;
-                    end
-                end
-            end
-        case 'MATLAB'
-            % no action needed
-        otherwise
-            errorUnknownEnvironment();
-    end
+    m2t.gcaAssociatedLegend = getAssociatedLegend(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get the axes position
     pos = getAxesPosition(m2t, handle, ...
@@ -1075,6 +1056,28 @@ function m2t = drawAxes(m2t, handle)
             error('matlab2tikz:illegalExtraAxisOptions',...
                 'Illegal extraAxisOptions (need string or cell string).')
         end
+    end
+end
+% ==============================================================================
+function legendhandle = getAssociatedLegend(m2t, handle)
+% Check if the axis is referenced by a legend (only necessary for Octave)
+    legendhandle = [];
+    switch m2t.env
+        case 'Octave'
+            if ~isempty(m2t.legendHandles)
+                % Make sure that m2t.legendHandles is a row vector.
+                for lhandle = m2t.legendHandles(:)'
+                    ud = get(lhandle, 'UserData');
+                    if any(handle == ud.handle)
+                        legendhandle = lhandle;
+                        break;
+                    end
+                end
+            end
+        case 'MATLAB'
+            % no action needed
+        otherwise
+            errorUnknownEnvironment();
     end
 end
 % ==============================================================================
