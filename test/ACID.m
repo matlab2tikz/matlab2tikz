@@ -656,7 +656,8 @@ end
 function [stat] = stackbars()
   stat.description = 'Plot of stacked bars.';
   
-  Y = round(rand(5,3)*10);
+  [data,dummy,summy] = svd(magic(7)); %#ok
+  Y = round(abs(data(2:6,2:4))*10);
   bar(Y,'stack');
   title 'Stack';
 end
