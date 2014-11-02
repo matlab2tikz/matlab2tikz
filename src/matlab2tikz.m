@@ -865,11 +865,11 @@ function m2t = drawAxes(m2t, handle)
     [m2t, xopts] = getAxisOptions(m2t, handle, 'x');
     [m2t, yopts] = getAxisOptions(m2t, handle, 'y');
     
-    m2t.axesContainers{end}.options = merge(m2t.axesContainers{end}.options, ...
+    m2t.axesContainers{end}.options = opts_merge(m2t.axesContainers{end}.options, ...
                                             xopts, yopts);
     if m2t.currentAxesContain3dData
         [m2t, zopts] = getAxisOptions(m2t, handle, 'z');
-        m2t.axesContainers{end}.options = merge(m2t.axesContainers{end}.options, zopts);
+        m2t.axesContainers{end}.options = opts_merge(m2t.axesContainers{end}.options, zopts);
     end
     hasXGrid = false;
     hasYGrid = false;
@@ -3493,11 +3493,11 @@ function axisOptions = getColorbarOptions(m2t, handle)
     %some duplicate code
     [m2t, xo] = getAxisOptions(m2t, handle, 'x');
     [m2t, yo] = getAxisOptions(m2t, handle, 'y');
-    xyo = merge(xo, yo);
+    xyo = opts_merge(xo, yo);
     unsupportedOptions = {'xmin','xmax','xtick','ymin','ymax','ytick'};
     xyo(ismember(xyo(:,1), unsupportedOptions),:) = [];
 
-    cbarStyleOptions = merge(cbarStyleOptions, xyo);
+    cbarStyleOptions = opts_merge(cbarStyleOptions, xyo);
 
     %% Get axis labels.
     %for axis = 'xy'
