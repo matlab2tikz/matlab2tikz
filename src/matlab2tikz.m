@@ -3494,8 +3494,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
     [m2t, xo] = getAxisOptions(m2t, handle, 'x');
     [m2t, yo] = getAxisOptions(m2t, handle, 'y');
     xyo = opts_merge(xo, yo);
-    unsupportedOptions = {'xmin','xmax','xtick','ymin','ymax','ytick'};
-    xyo(ismember(xyo(:,1), unsupportedOptions),:) = [];
+    xyo = opts_remove(xyo, 'xmin','xmax','xtick','ymin','ymax','ytick');
 
     cbarStyleOptions = opts_merge(cbarStyleOptions, xyo);
 
