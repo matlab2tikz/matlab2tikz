@@ -1119,7 +1119,7 @@ function tag = getTag(handle)
 end
 % ==============================================================================
 function [m2t, options] = getAxisOptions(m2t, handle, axis)
-    if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
+    if ~ismember(axis, {'x','y','z'})
         error('matlab2tikz:illegalAxisSpecifier',...
             'Illegal axis specifier ''%s''.', axis);
     end
@@ -1150,22 +1150,18 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     isAxisReversed = strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
     m2t.([axis 'AxisReversed']) = isAxisReversed;
     if isAxisReversed
-        options = opts_add(options, ...
-            [axis, ' dir'], 'reverse');
+        options = opts_add(options, [axis, ' dir'], 'reverse');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     axisScale = getOrDefault(handle, [upper(axis) 'Scale'], 'lin');
     if strcmp(axisScale, 'log');
-        options = opts_add(options, ...
-            [axis,'mode'], 'log');
+        options = opts_add(options, [axis,'mode'], 'log');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis limits
     limits = get(handle, [upper(axis),'Lim']);
-    options = opts_add(options, ...
-        [axis,'min'], sprintf(m2t.ff, limits(1)));
-    options = opts_add(options, ...
-        [axis,'max'], sprintf(m2t.ff, limits(2)));
+    options = opts_add(options, [axis,'min'], sprintf(m2t.ff, limits(1)));
+    options = opts_add(options, [axis,'max'], sprintf(m2t.ff, limits(2)));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get ticks along with the labels
     [ticks, tickLabels, hasMinorTicks, tickDir] = getAxisTicks(m2t, handle, axis);
