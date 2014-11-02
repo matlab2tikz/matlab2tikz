@@ -182,7 +182,7 @@ m2t.colorFormat    = sprintf('%%0.%df',ceil(-log10(m2t.colorPrecision)));
 % the actual contents of the TikZ file go here
 m2t.content = struct('name',     [], ...
                      'comment',  [], ...
-                     'options',  {cell(0,2)}, ...
+                     'options',  {opts_new()}, ...
                      'content',  {cell(0)}, ...
                      'children', {cell(0)});
 m2t.preamble = sprintf(['\\usepackage{pgfplots}\n', ...
@@ -745,7 +745,7 @@ function m2t = drawAxes(m2t, handle)
     m2t.axesContainers{end+1} = struct('handle', handle, ...
         'name', [], ...
         'comment', [], ...
-        'options', {cell(0,2)}, ...
+        'options', {opts_new()}, ...
         'content', {cell(0)}, ...
         'children', {cell(0)}, ...
         'stackedBarsPresent', false, ...
@@ -1913,7 +1913,7 @@ function [m2t, str] = drawImage(m2t, handle)
             yw = (yData(end)-yData(1)) / (m-1);
         end
 
-        opts = cell(0,2);
+        opts = opts_new();
         opts = addToOptions(opts, 'xmin', sprintf(m2t.ff, xData(1  ) - xw/2));
         opts = addToOptions(opts, 'xmax', sprintf(m2t.ff, xData(end) + xw/2));
         opts = addToOptions(opts, 'ymin', sprintf(m2t.ff, yData(1  ) - yw/2));
@@ -2008,7 +2008,7 @@ end
 % ==============================================================================
 function [m2t, str] = drawContour(m2t, h)
 % draw a contour group (MATLAB R2014b and newer only)
-plotoptions = cell(0,2);
+plotoptions = opts_new();
 plotoptions = addToOptions(plotoptions,'contour prepared');
 plotoptions = addToOptions(plotoptions,'contour prepared format','matlab');
 if strcmpi(get(h,'ShowText'),'off')
@@ -3409,18 +3409,18 @@ function fontStyle = getFontStyle(m2t, handle)
     end
 
     if ~isempty(fontStyle)
-        fontStyle = {'font', fontStyle};
+        fontStyle = opts_add(opts_new, 'font', fontStyle);
     else
-        fontStyle = cell(0,2);
+        fontStyle = opts_new();
     end
 end
 % ==============================================================================
 function axisOptions = getColorbarOptions(m2t, handle)
 
     % begin collecting axes options
-    axisOptions = cell(0, 2);
+    axisOptions = opts_new();
     cbarOptions = {};
-    cbarStyleOptions = cell(0,2);
+    cbarStyleOptions = opts_new();
 
     % set position, ticks etc. of the colorbar
     loc = get(handle, 'Location');
