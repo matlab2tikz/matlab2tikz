@@ -2335,8 +2335,8 @@ function [m2t, str] = drawText(m2t, handle)
                 case 'data'
                     posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
                 otherwise
-                    pos = convertUnits(pos, units, 'in');
-                    posString = sprintf(['(', m2t.ff, 'in,', m2t.ff, 'in)'], pos);
+                    pos = convertUnits(pos, units, 'cm');
+                    posString = sprintf(['(', m2t.ff, 'cm,', m2t.ff, 'cm)'], pos);
             end
 
             xlim = get(m2t.currentHandles.gca,'XLim');
@@ -2375,8 +2375,8 @@ function [m2t, str] = drawText(m2t, handle)
                 case 'data'
                     posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos(1:2));
                 otherwise
-                    pos = convertUnits(pos, units, 'in');
-                    posString = sprintf(['(', m2t.ff, 'in,', m2t.ff, 'in)'], pos(1:2));
+                    pos = convertUnits(pos, units, 'cm');
+                    posString = sprintf(['(', m2t.ff, 'cm,', m2t.ff, 'cm)'], pos(1:2));
             end
 
             xlim = get(m2t.currentHandles.gca,'XLim');
@@ -3234,13 +3234,8 @@ function [m2t, str] = drawTextarrow(m2t, handle)
     
     % handleAllChildren ignores the text, unless hidden strings are shown
     if ~m2t.cmdOpts.Results.showHiddenStrings
-        children = get(handle, 'Children');
-        for i = 1:numel(children)
-            child = children(i);
-            if isequal(get(child,'type'), 'text')
-                [m2t, str{end+1}] = drawText(m2t, child);
-            end
-        end
+        child = findobj(handle, 'type', 'text');
+        [m2t, str{end+1}] = drawText(m2t, child);
     end
 end
 % ==============================================================================
