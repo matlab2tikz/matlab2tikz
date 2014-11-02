@@ -794,6 +794,10 @@ function m2t = drawAxes(m2t, handle)
             opts_add(m2t.axesContainers{end}.options, 'at', ...
                 sprintf(['{(', m2t.ff, '%s,', m2t.ff, '%s)}'], pos.x.value, pos.x.unit, ...
                 pos.y.value, pos.y.unit));
+        % the following is general MATLAB behavior:        
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'scale only axis', []);    
     end
     % Add the physical dimension of one unit of length in the coordinate system.
     % This is used later on to translate lenghts to physical units where
@@ -831,14 +835,7 @@ function m2t = drawAxes(m2t, handle)
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], get(handle, 'View')));
-    end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % the following is general MATLAB behavior
-    if ~m2t.cmdOpts.Results.noSize
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'scale only axis', []);
-    end
+    end    
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Get other axis options (ticks, axis color, label,...).
     % This is set here such that the axis orientation indicator in m2t is set
