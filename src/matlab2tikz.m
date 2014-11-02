@@ -772,24 +772,9 @@ function m2t = drawAxes(m2t, handle)
     % set the width
     if (~m2t.cmdOpts.Results.noSize)
         % optionally prevents setting the width and height of the axis
-        if pos.w.unit(1)=='\' && pos.w.value==1.0
-            % only return \figurewidth instead of 1.0\figurewidth
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, 'width', pos.w.unit);
-        else
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, 'width', ...
-                sprintf([m2t.ff, '%s'], pos.w.value, pos.w.unit));
-        end
-        if pos.h.unit(1)=='\' && pos.h.value==1.0
-            % only return \figureheight instead of 1.0\figureheight
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, 'height', pos.h.unit);
-        else
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, 'height', ...
-                sprintf([m2t.ff, '%s'], pos.h.value, pos.h.unit));
-        end
+        m2t = setDimensionOfAxes(m2t, 'width',  pos.w);
+        m2t = setDimensionOfAxes(m2t, 'height', pos.h);
+        
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, 'at', ...
                 sprintf(['{(', m2t.ff, '%s,', m2t.ff, '%s)}'], pos.x.value, pos.x.unit, ...
@@ -958,7 +943,7 @@ function m2t = drawAxes(m2t, handle)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % grid line style
-    if hasXGrid || hasYGrid || (exist('hasZGrid','var') && hasZGrid)
+    if hasXGrid || hasYGrid || hasZGrid
         matlabGridLineStyle = get(handle, 'GridLineStyle');
         % Take over the grid line style in any case when in strict mode.
         % If not, don't add anything in case of default line grid line style
@@ -976,10 +961,7 @@ function m2t = drawAxes(m2t, handle)
         % When specifying 'axis on top', the axes stay above all graphs (which is
         % default MATLAB behavior), but so do the grids (which is not default
         % behavior).
-        % To date (Dec 12, 2009) Pgfplots is not able to handle those things
-        % separately.
-        % See also http://sourceforge.net/tracker/index.php?func=detail&aid=3510455&group_id=224188&atid=1060657
-        % As a prelimary compromise, only pull this option if no grid is in use.
+        %TODO: use proper grid ordering
         if m2t.cmdOpts.Results.strict
             m2t.axesContainers{end}.options = ...
                 opts_add(m2t.axesContainers{end}.options, ...
@@ -1075,6 +1057,20 @@ function legendhandle = getAssociatedLegend(m2t, handle)
             % no action needed
         otherwise
             errorUnknownEnvironment();
+    end
+end
+% ==============================================================================
+function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
+% sets the dimension "name" of the current axes to the struct "dim"
+
+    if dimension.unit(1)=='\' && dimension.value==1.0
+        % only return \figurewidth instead of 1.0\figurewidth
+        m2t.axesContainers{end}.options = opts_add(...
+            m2t.axesContainers{end}.options, widthOrHeight, dimension.unit);
+    else
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, widthOrHeight, ...
+            sprintf([m2t.ff, '%s'], dimension.value, dimension.unit));
     end
 end
 % ==============================================================================
