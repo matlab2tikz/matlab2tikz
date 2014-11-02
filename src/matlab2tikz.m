@@ -925,7 +925,7 @@ function m2t = drawAxes(m2t, handle)
         if ~isempty(titleStyle)
             m2t.axesContainers{end}.options = opts_add(...
                 m2t.axesContainers{end}.options, 'title style', ...
-                sprintf('{%s}', prettyprintOpts(m2t, titleStyle, ',')));
+                sprintf('{%s}', opts_print(m2t, titleStyle, ',')));
         end
         title = join(m2t, title, '\\[1ex]');
         m2t.axesContainers{end}.options = ...
@@ -1920,7 +1920,7 @@ function [m2t, str] = drawImage(m2t, handle)
         opts = opts_add(opts, 'ymax', sprintf(m2t.ff, yData(end) + yw/2));
 
         str = sprintf('\\addplot [forget plot] graphics [%s] {%s};\n', ...
-            prettyprintOpts(m2t, opts, ','), pngReferencePath);
+            opts_print(m2t, opts, ','), pngReferencePath);
 
         userInfo(m2t, ...
             ['\nA PNG file is stored at ''%s'' for which\n', ...
@@ -2025,7 +2025,7 @@ contours = get(h,'ContourMatrix');
 [m2t, table] = makeTable(m2t, {'',''}, contours.');
 
 str = sprintf('\\addplot[%s] table[row sep=crcr] {%%\n%s};\n', ...
-              prettyprintOpts(m2t, plotoptions, ', '), table);
+              opts_print(m2t, plotoptions, ', '), table);
 
 end
 % ==============================================================================
@@ -2315,7 +2315,7 @@ function [m2t, str] = drawText(m2t, handle)
 
     fontStyle = getFontStyle(m2t, handle);
     if ~isempty(fontStyle)
-        style{end+1} = prettyprintOpts(m2t, fontStyle, ', ');
+        style{end+1} = opts_print(m2t, fontStyle, ', ');
     end
 
     style{end+1} = ['text=' tcolor];
@@ -3560,7 +3560,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
     if ~isempty(cbarStyleOptions)
         axisOptions = opts_add(axisOptions, ...
             'colorbar style', ...
-            ['{' prettyprintOpts(m2t, cbarStyleOptions, ',') '}']);
+            ['{' opts_print(m2t, cbarStyleOptions, ',') '}']);
     end
 
     % Append upper and lower limit of the colorbar.
@@ -4583,7 +4583,7 @@ function printAll(m2t, env, fid)
         fprintf(fid, '\\begin{%s}\n', env.name);
     else
         fprintf(fid, '\\begin{%s}[%%\n%s\n]\n', env.name, ...
-                prettyprintOpts(m2t, env.options, sprintf(',\n')));
+                opts_print(m2t, env.options, sprintf(',\n')));
     end
 
     for item = env.content
