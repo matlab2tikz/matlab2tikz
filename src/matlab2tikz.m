@@ -1095,7 +1095,7 @@ function m2t = handleColorbar(m2t, handle)
     end
     if parentFound
         m2t.axesContainers{k0}.options = ...
-            opts_add(m2t.axesContainers{k0}.options, ...
+            opts_append(m2t.axesContainers{k0}.options, ...
             matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
         % Append cell string.
         m2t.axesContainers{k0}.options = cat(1,...
@@ -1729,7 +1729,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         if ~all(cData == cData(1)) && length(cData) == length(xData)
             % Add the color map.
             m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
+                opts_append(m2t.axesContainers{end}.options, ...
                 matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
         end
         % If full color data is provided, we can use point meta color data.
@@ -1786,7 +1786,7 @@ function [m2t, str] = drawPatch(m2t, handle)
                     %
                     drawOptions{end+1} = 'mesh'; % or surf
                     m2t.axesContainers{end}.options = ...
-                        opts_add(m2t.axesContainers{end}.options, ...
+                        opts_append(m2t.axesContainers{end}.options, ...
                         matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
                     % Append upper and lower limit of the color mapping.
                     clim = caxis;
@@ -2624,7 +2624,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             ['scatter/use mapped color={', join(m2t, markerOptions,','), '}'] };
         % Add color map.
         m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
+            opts_append(m2t.axesContainers{end}.options, ...
             matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -5054,27 +5054,41 @@ function opts = opts_add(opts, key, value)
     value = char(value);
 
     % Check if the key already exists.
-    for k = 1:size(opts,1)
-        if strcmp(opts{k,1}, key)
-            % The key already exists in struct.
-            if strcmp(opts{k,2}, value)
-                return; % same value -> do nothing
-            else
-                error('matlab2tikz:opts_add', ...
-                    ['Trying to add (%s, %s) to options, but it already ' ...
-                    'contains the conflicting key-value pair (%s, %s).'], ...
-                    key, value, key, opts{k,2});
-            end
+    if opts_has(opts, key)
+        oldValue = opts_get(opts, key);
+        if isequal(value, oldValue)
+            return; % no action needed: value already present
+        else
+            error('matlab2tikz:opts_add', ...
+                 ['Trying to add (%s, %s) to options, but it already ' ...
+                  'contains the conflicting key-value pair (%s, %s).'], ...
+                  key, value, key, oldValue);
         end
     end
     opts = opts_append(opts, key, value);
+end
+function bool = opts_has(opts, key)
+% returns true if the options array contains the key
+    bool = ~isempty(opts) && ismember(key, opts(:,1));
+end
+function value = opts_get(opts, key)
+% returns the value(s) stored for a key in an options array
+    idx = find(ismember(opts(:,1), key));
+    switch numel(idx)
+        case 1
+            value = opts{idx,2}; % just the value
+        otherwise
+            value = opts(idx,2); % as cell array
+    end 
 end
 function opts = opts_append(opts, key, value)
 % append a key-value pair to an options array (duplicate keys allowed)
     if ~exist('value','var') || isempty(value)
         value = [];
     end
-    opts = cat(1, opts, {key, value});
+    if ~(opts_has(opts, key) && isequal(opts_get(opts, key), value))
+        opts = cat(1, opts, {key, value}); 
+    end
 end
 function opts = opts_remove(opts, varargin)
 % remove some key-value pairs from an options array
@@ -5087,7 +5101,7 @@ function opts = opts_merge(opts, varargin)
     for jArg = 1:numel(varargin)
         opts2 = varargin{jArg};
         for k = 1:size(opts2, 1)
-            opts = opts_add(opts, opts2{k,1}, opts2{k,2});
+            opts = opts_append(opts, opts2{k,1}, opts2{k,2});
         end
     end
 end
