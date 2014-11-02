@@ -877,24 +877,7 @@ function m2t = drawAxes(m2t, handle)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % title
-    title = get(get(handle, 'Title'), 'String');
-    if ~isempty(title)
-        titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
-        title = prettyPrint(m2t, title, titleInterpreter);
-        titleStyle = getFontStyle(m2t, get(handle,'Title'));
-        if length(title) > 1
-            titleStyle = opts_add(titleStyle, 'align', 'center');
-        end
-        if ~isempty(titleStyle)
-            m2t.axesContainers{end}.options = opts_add(...
-                m2t.axesContainers{end}.options, 'title style', ...
-                sprintf('{%s}', opts_print(m2t, titleStyle, ',')));
-        end
-        title = join(m2t, title, '\\[1ex]');
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'title', sprintf('{%s}', title));
-    end
+    m2t = drawTitleOfAxes(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % axes locations
     boxOn = strcmp(get(handle, 'box'), 'on');
@@ -1071,6 +1054,28 @@ function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, widthOrHeight, ...
             sprintf([m2t.ff, '%s'], dimension.value, dimension.unit));
+    end
+end
+% ==============================================================================
+function m2t = drawTitleOfAxes(m2t, handle)
+% processes the title of an axes object
+    title = get(get(handle, 'Title'), 'String');
+    if ~isempty(title)
+        titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
+        title = prettyPrint(m2t, title, titleInterpreter);
+        titleStyle = getFontStyle(m2t, get(handle,'Title'));
+        if length(title) > 1
+            titleStyle = opts_add(titleStyle, 'align', 'center');
+        end
+        if ~isempty(titleStyle)
+            m2t.axesContainers{end}.options = opts_add(...
+                m2t.axesContainers{end}.options, 'title style', ...
+                sprintf('{%s}', opts_print(m2t, titleStyle, ',')));
+        end
+        title = join(m2t, title, '\\[1ex]');
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'title', sprintf('{%s}', title));
     end
 end
 % ==============================================================================
