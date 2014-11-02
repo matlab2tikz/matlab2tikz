@@ -5042,9 +5042,13 @@ function dims = pos2dims(pos)
         dims.top    = dims.bottom + dims.height;
     end
 end
-% ==============================================================================
-function opts = addToOptions(opts, key, value)
-% Adds a key-value pair to a structure and does some sanity-checking.
+% OPTION ARRAYS ================================================================
+function opts = opts_new()
+% create a new options arrawy
+    opts = cell(0,2);
+end
+function opts = opts_add(opts, key, value)
+% add a key-value pair to an options array (with duplication check)
     if ~exist('value','var')
         value = [];
     end
@@ -5057,29 +5061,39 @@ function opts = addToOptions(opts, key, value)
             if strcmp(opts{k,2}, value)
                 return; % same value -> do nothing
             else
-                error('matlab2tikz:addToOptions', ...
+                error('matlab2tikz:opts_add', ...
                     ['Trying to add (%s, %s) to options, but it already ' ...
                     'contains the conflicting key-value pair (%s, %s).'], ...
                     key, value, key, opts{k,2});
             end
         end
     end
-
-    % The key doesn't exist. Just add it.
+    opts = opts_append(opts, key, value);
+end
+function opts = opts_append(opts, key, value)
+% append a key-value pair to an options array (duplicate keys allowed)
+    if ~exist('value','var') || isempty(value)
+        value = [];
+    end
     opts = cat(1, opts, {key, value});
 end
-% ==============================================================================
-function opts = merge(opts, varargin)
-% Merges multiple option lists
+function opts = opts_remove(opts, varargin)
+% remove some key-value pairs from an options array
+    keysToDelete = varargin;
+    idxToDelete = ismember(opts(:,1), keysToDelete);
+    opts(idxToDelete, :) = [];
+end
+function opts = opts_merge(opts, varargin)
+% merge multiple options arrays
     for jArg = 1:numel(varargin)
         opts2 = varargin{jArg};
         for k = 1:size(opts2, 1)
-            opts = addToOptions(opts, opts2{k,1}, opts2{k,2});
+            opts = opts_add(opts, opts2{k,1}, opts2{k,2});
         end
     end
 end
-% ==============================================================================
-function str = prettyprintOpts(m2t, opts, sep)
+function str  = opts_print(m2t, opts, sep)
+% pretty print an options array
     nOpts = size(opts,1);
     c = cell(nOpts,1);
     for k = 1:nOpts
@@ -5090,6 +5104,25 @@ function str = prettyprintOpts(m2t, opts, sep)
         end
     end
     str = join(m2t, c, sep);
+end
+% DEPRECATED OPTION ARRAYS =====================================================
+% TODO: Remove deprecated functions for next release
+function opts = addToOptions(opts, key, value)
+% Adds a key-value pair to a structure and does some sanity-checking.
+    warning('m2t:Deprecated','Use "opts_add" instead!');
+    if ~exist('value','var') || isempty(value)
+        value = [];
+    end
+    opts = opts_add(opts, key, value);
+end
+function opts = merge(opts, varargin)
+% Merges multiple option lists
+    warning('m2t:Deprecated','Use "opts_merge" instead!');
+    opts = opts_merge(opts, varargin{:});
+end
+function str = prettyprintOpts(m2t, opts, sep)
+    warning('m2t:Deprecated','Use "opts_print" instead!');
+    str = opts_print(m2t, opts, sep);
 end
 % ==============================================================================
 function [env,versionString] = getEnvironment()
