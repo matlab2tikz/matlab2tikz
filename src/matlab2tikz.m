@@ -1937,60 +1937,62 @@ function [m2t, str] = drawImage(m2t, handle)
             'locations of the master TeX file and the included TikZ file.\n'], ...
             pngFileName, pngReferencePath);
     else
-        % -----------------------------------------------------------------------
-        % draw the thing
-        userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
-            'Make sure to set ''imagesAsPng'' to true.']);
-
-        % Generate uniformly distributed X, Y, although xData and yData may be
-        % non-uniform.
-        % This is MATLAB(R) behaviour.
-        switch length(xData)
-            case 2 % only the limits given; common for generic image plots
-                hX = 1;
-            case m % specific x-data is given
-                hX = (xData(end)-xData(1)) / (length(xData)-1);
-            otherwise
-                error('drawImage:arrayLengthMismatch', ...
-                    'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', m, length(xData));
-        end
-        X = xData(1):hX:xData(end);
-
-        switch length(yData)
-            case 2 % only the limits given; common for generic image plots
-                hY = 1;
-            case n % specific y-data is given
-                hY = (yData(end)-yData(1)) / (length(yData)-1);
-            otherwise
-                error('drawImage:arrayLengthMismatch', ...
-                    'Array lengths not matching (%d = size(cdata,2) ~= length(yData) = %d).', n, length(yData));
-        end
-        Y = yData(1):hY:yData(end);
-
-        m = length(X);
-        n = length(Y);
-        [m2t, xcolor] = getColor(m2t, handle, cdata, 'image');
-
-        % The following section takes pretty long to execute, although in
-        % principle it is discouraged to use TikZ for those; LaTeX will take
-        % forever to compile.
-        % Still, a bug has been filed on MathWorks to allow for one-line
-        % sprintf'ing with (string+num) cells (Request ID: 1-9WHK4W);
-        % <http://www.mathworks.de/support/service_requests/Service_Request_Detail.do?ID=183481&filter=&sort=&statusorder=0&dateorder=0>.
-        for i = 1:m
-            for j = 1:n
-                str = strcat(str, ...
-                    sprintf(['\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
-                    xcolor{m-i+1,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 ));
-            end
-        end
-        % ------------------------------------------------------------------------
+        [m2t, str] = imageAsTikZ(m2t, xData, yData, cData);
     end
 
     % Make sure that the axes are still visible above the image.
     m2t.axesContainers{end}.options = ...
         opts_add(m2t.axesContainers{end}.options, ...
         'axis on top', []);
+end
+% ==============================================================================
+function [m2t, str] = imageAsTikZ(m2t, xData, yData, cData)
+% writes an image as raw TikZ commands (STRONGLY DISCOURAGED)
+  userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
+        'Make sure to set ''imagesAsPng'' to true.']);
+
+    % Generate uniformly distributed X, Y, although xData and yData may be
+    % non-uniform.
+    % This is MATLAB(R) behaviour.
+    switch length(xData)
+        case 2 % only the limits given; common for generic image plots
+            hX = 1;
+        case m % specific x-data is given
+            hX = (xData(end)-xData(1)) / (length(xData)-1);
+        otherwise
+            error('drawImage:arrayLengthMismatch', ...
+                'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', m, length(xData));
+    end
+    X = xData(1):hX:xData(end);
+
+    switch length(yData)
+        case 2 % only the limits given; common for generic image plots
+            hY = 1;
+        case n % specific y-data is given
+            hY = (yData(end)-yData(1)) / (length(yData)-1);
+        otherwise
+            error('drawImage:arrayLengthMismatch', ...
+                'Array lengths not matching (%d = size(cdata,2) ~= length(yData) = %d).', n, length(yData));
+    end
+    Y = yData(1):hY:yData(end);
+
+    m = length(X);
+    n = length(Y);
+    [m2t, xcolor] = getColor(m2t, handle, cdata, 'image');
+
+    % The following section takes pretty long to execute, although in
+    % principle it is discouraged to use TikZ for those; LaTeX will take
+    % forever to compile.
+    % Still, a bug has been filed on MathWorks to allow for one-line
+    % sprintf'ing with (string+num) cells (Request ID: 1-9WHK4W);
+    % <http://www.mathworks.de/support/service_requests/Service_Request_Detail.do?ID=183481&filter=&sort=&statusorder=0&dateorder=0>.
+    for i = 1:m
+        for j = 1:n
+            str = strcat(str, ...
+                sprintf(['\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
+                xcolor{m-i+1,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 ));
+        end
+    end
 end
 % ==============================================================================
 function alpha = normalizedAlphaValues(m2t, alpha, handle)
