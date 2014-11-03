@@ -45,7 +45,9 @@ function [ report ] = codeReport( varargin )
     %% format report
     dataStr = complexity;
     dataStr = arrayfun(@(d) mapField(d, 'function',  @markdownInlineCode), dataStr);
-    dataStr = addFooterRow(dataStr, 'complexity', @sum, {'line',0, 'function',bold('Total')});
+    if ~isempty(dataStr)
+        dataStr = addFooterRow(dataStr, 'complexity', @sum, {'line',0, 'function',bold('Total')});
+    end
     dataStr = arrayfun(@(d) mapField(d, 'line',         @integerToString), dataStr);
     dataStr = arrayfun(@(d) mapField(d, 'complexity',   @integerToString), dataStr);
     
