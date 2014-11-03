@@ -292,26 +292,7 @@ else
 end
 
 %% handle output file handle/file name
-if ~isempty(m2t.cmdOpts.Results.filehandle)
-    fid     = m2t.cmdOpts.Results.filehandle;
-    fileWasOpen = true;
-    if ~isempty(m2t.cmdOpts.Results.filename)
-        userWarning(m2t, ...
-            'File handle AND file name for output given. File handle used, file name discarded.')
-    end
-else
-    fileWasOpen = false;
-    % set filename
-    if ~isempty(m2t.cmdOpts.Results.filename)
-        filename = m2t.cmdOpts.Results.filename;
-    else
-        [filename, pathname] = uiputfile({'*.tex;*.tikz'; '*.*'}, 'Save File');
-        filename = fullfile(pathname, filename);
-    end
-
-    fid = fileOpenForWrite(m2t, filename);
-end
-m2t.tikzFileName = fopen(fid);
+[m2t, fid, fileWasOpen] = openFileForOutput(m2t);
 
 % By default, reference the PNG (if required) from the TikZ file
 % as the file path of the TikZ file itself. This works if the MATLAB script
@@ -362,6 +343,30 @@ userInfo(m2t, versionInfo, m2t.website, m2t.name);
 
 %% Save the figure as TikZ to file
 saveToFile(m2t, fid, fileWasOpen);
+end
+% ==============================================================================
+function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
+% opens the output file and/or show a dialog to select one
+if ~isempty(m2t.cmdOpts.Results.filehandle)
+    fid     = m2t.cmdOpts.Results.filehandle;
+    fileWasOpen = true;
+    if ~isempty(m2t.cmdOpts.Results.filename)
+        userWarning(m2t, ...
+            'File handle AND file name for output given. File handle used, file name discarded.')
+    end
+else
+    fileWasOpen = false;
+    % set filename
+    if ~isempty(m2t.cmdOpts.Results.filename)
+        filename = m2t.cmdOpts.Results.filename;
+    else
+        [filename, pathname] = uiputfile({'*.tex;*.tikz'; '*.*'}, 'Save File');
+        filename = fullfile(pathname, filename);
+    end
+
+    fid = fileOpenForWrite(m2t, filename);
+end
+m2t.tikzFileName = fopen(fid);
 end
 % ==============================================================================
 function l = filenameValidation(x, p)
