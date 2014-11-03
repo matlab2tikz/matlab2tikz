@@ -94,6 +94,9 @@ function matlab2tikz_acidtest(varargin)
   else
       indices = 1:n;
   end
+  
+  % start overall timing
+  elapsedTimeOverall = tic;
 
   % clean data directory
   fprintf(stdout, 'Cleaning data directory\n\n');
@@ -141,7 +144,8 @@ function matlab2tikz_acidtest(varargin)
       fig_file = sprintf('data/test%d-reference'     , indices(k));
       gen_file = sprintf('data/test%d-converted.tex' , indices(k));
 
-      tic;
+      elapsedTime = tic;
+      
       % Save reference output as PDF
       try
           switch env
@@ -188,7 +192,7 @@ function matlab2tikz_acidtest(varargin)
           close all;
       end
 
-      elapsedTime = toc;
+      elapsedTime = toc(elapsedTime);
       fprintf(stdout, '%s ', status{k}.function);
       fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
   end
@@ -243,6 +247,10 @@ function matlab2tikz_acidtest(varargin)
   % now, finish off the file and close file and window
   texfile_finish(fh, testsuite);
   fclose(fh);
+  
+  % print out overall timing
+  elapsedTimeOverall = toc(elapsedTimeOverall);
+  fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 
 end
 % =========================================================================
