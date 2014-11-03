@@ -45,8 +45,10 @@ function [ report ] = codeReport( varargin )
     %% format report
     dataStr = complexity;
     dataStr = arrayfun(@(d) mapField(d, 'function',  @markdownInlineCode), dataStr);
+    dataStr = addFooterRow(dataStr, 'complexity', @sum, {'line',0, 'function',bold('Total')});
     dataStr = arrayfun(@(d) mapField(d, 'line',         @integerToString), dataStr);
     dataStr = arrayfun(@(d) mapField(d, 'complexity',   @integerToString), dataStr);
+    
     report = makeTable(dataStr, {'line','function', 'complexity'}, ...
                                 {'Line','Function', 'Complexity'});
 
@@ -131,6 +133,17 @@ function category = binaryCategory(bool, trueCategory, falseCategory)
         category = falseCategory;
     end
 end
+function [data] = addFooterRow(data, column, func, otherFields)
+% adds a footer row to data table based on calculations of a single column
+footer = data(end);
+for iField = 1:2:numel(otherFields)
+    field = otherFields{iField};
+    value = otherFields{iField+1};
+    footer.(field) = value;
+end
+footer.(column) = func([data(:).(column)]);
+data(end+1) = footer;
+end
 
 %% FORMATTING ==================================================================
 function str = integerToString(value)
@@ -190,6 +203,9 @@ str = regexprep(str, '`([A-Za-z0-9_]+)`', ...
                 ['`<a href="matlab:edit ' functionName '>$1">$1</a>`']);
 %NOTE: editing function>subfunction will focus on that particular subfunction 
 % in the editor (this also works for the main function)
+end
+function str = bold(str)
+str = ['**' str '**'];
 end
 
 %% PLOTTING ====================================================================
