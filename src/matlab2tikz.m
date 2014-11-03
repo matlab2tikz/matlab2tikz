@@ -173,6 +173,7 @@ m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
 m2t.barplotId    = 0; % identification flag for bar plots
+m2t.automaticLabelIndex = 0;
 
 % definition of color depth
 m2t.colorDepth     = 48; %[bit] RGB color depth (typical values: 24, 30, 48)
@@ -311,10 +312,6 @@ else
     fid = fileOpenForWrite(m2t, filename);
 end
 m2t.tikzFileName = fopen(fid);
-
-if m2t.cmdOpts.Results.automaticLabels
-    m2t.automaticLabelIndex = 0;
-end
 
 % By default, reference the PNG (if required) from the TikZ file
 % as the file path of the TikZ file itself. This works if the MATLAB script
