@@ -4055,26 +4055,13 @@ function [m2t, table] = makeTable(m2t, varargin)
 %   [m2t,table] = makeTable(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
 %
 %  When all the names are empty, no header is printed
+    [variables, data] = parseInputsForTable_(varargin{:});
+
     COLSEP = sprintf('\t');
     if m2t.cmdOpts.Results.externalData
         ROWSEP = sprintf('\n');
     else
         ROWSEP = sprintf('\\\\\n');
-    end
-    if numel(varargin) == 2 % cell syntax
-        variables = varargin{1};
-        data      = varargin{2};
-        if ischar(variables)
-            % one variable, one data vector -> (cell, cell)
-            variables = {variables};
-            data      = {data};
-        elseif iscellstr(variables) && ~iscell(data)
-            % multiple variables, one data matrix -> (cell, cell) by column
-            data = num2cell(data, 1);
-        end
-    else % key-value syntax
-        variables = varargin(1:2:end-1);
-        data      = varargin(2:2:end);
     end
 
     nColumns  = numel(data);
@@ -4124,6 +4111,25 @@ function [m2t, table] = makeTable(m2t, varargin)
         % output data with "%newline" prepended for formatting consistency
         % do NOT prepend another newline in the output: LaTeX will crash.
         table = sprintf('%%\n%s', table);
+    end
+end
+% ==============================================================================
+function [variables, data] = parseInputsForTable_(varargin)
+% parse input arguments for |makeTable|
+    if numel(varargin) == 2 % cell syntax
+        variables = varargin{1};
+        data      = varargin{2};
+        if ischar(variables)
+            % one variable, one data vector -> (cell, cell)
+            variables = {variables};
+            data      = {data};
+        elseif iscellstr(variables) && ~iscell(data)
+            % multiple variables, one data matrix -> (cell, cell) by column
+            data = num2cell(data, 1);
+        end
+    else % key-value syntax
+        variables = varargin(1:2:end-1);
+        data      = varargin(2:2:end);
     end
 end
 % ==============================================================================
