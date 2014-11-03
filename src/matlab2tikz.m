@@ -528,10 +528,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     end
 
     % Finally print it to the file,
-    if ~isempty(m2t.content.comment)
-        fprintf(fid, '%% %s\n', ...
-            strrep(m2t.content.comment, sprintf('\n'), sprintf('\n%% ')));
-    end
+    addComments(fid, m2t.content.comment);
 
     if m2t.cmdOpts.Results.standalone
         fprintf(fid, '\\documentclass[tikz]{standalone}\n%s\n',  m2t.preamble);
@@ -555,6 +552,15 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % close the file if necessary
     if ~fileWasOpen
         fclose(fid);
+    end
+end
+% ==============================================================================
+function addComments(fid, comment)
+% prints TeX comments to file stream |fid|
+    if ~isempty(comment)
+        newline = sprintf('\n');
+        newlineTeX = sprintf('\n%%');
+        fprintf(fid, '%% %s\n', strrep(comment, newline, newlineTeX));
     end
 end
 % ==============================================================================
