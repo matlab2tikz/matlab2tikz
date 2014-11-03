@@ -2279,8 +2279,7 @@ function [m2t, str] = drawText(m2t, handle)
     String = get(handle, 'String');
     Interpreter = get(handle, 'Interpreter');
     String = prettyPrint(m2t, String, Interpreter);
-    % For now, don't handle multiline strings.
-    % Sometimes, the cells are nested; take care of this, too.
+    % Concatenate multiple lines
     String = join(m2t, String, '\\');
     VerticalAlignment = get(handle, 'VerticalAlignment');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
