@@ -630,9 +630,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
                 % The variable m2t.gcaHasLegend is set in drawAxes().
                 m2t.currentHandleHasLegend = ~isempty(m2t.gcaAssociatedLegend);
                 interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
-                if isfield(get(child), 'displayname')
-                    legendString = get(child, 'displayname');
-                end
+                legendString = getOrDefault(child,'displayname','');
             otherwise
                 errorUnknownEnvironment();
         end
