@@ -416,28 +416,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     set(0, 'ShowHiddenHandles', 'on');
 
     % get all axes handles
-    fh = m2t.currentHandles.gcf;
-    axesHandles = findobj(fh, 'type', 'axes');
-
-    tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
-    if ~isempty(axesHandles)
-        % Find all legend handles. This is MATLAB-only.
-        legendHandles = findobj(fh, tagKeyword, 'legend');
-        m2t.legendHandles = legendHandles;
-        % Remove all legend handles as they are treated separately.
-        axesHandles = setdiff(axesHandles, legendHandles);
-    end
-
-    colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
-    if ~isempty(axesHandles)
-        % Find all colorbar handles. This is MATLAB-only.
-        cbarHandles = findobj(fh, tagKeyword, colorbarKeyword);
-        m2t.cbarHandles = cbarHandles;
-        % Remove all legend handles as they are treated separately.
-        axesHandles = setdiff(axesHandles, cbarHandles);
-    else
-        m2t.cbarHandles = [];
-    end
+    [m2t, axesHandles] = findPlotAxes(m2t, m2t.currentHandles.gcf);
 
     % Turn around the handles vector to make sure that plots that appeared
     % first also appear first in the vector. This has effects on the alignment
@@ -552,6 +531,32 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % close the file if necessary
     if ~fileWasOpen
         fclose(fid);
+    end
+end
+% ==============================================================================
+function [m2t, axesHandles] = findPlotAxes(m2t, fh)
+% find axes handles that are not legends/colorbars
+    % NOTE: also do R2014b to avoid code duplication
+    axesHandles = findobj(fh, 'type', 'axes');
+
+    tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
+    if ~isempty(axesHandles)
+        % Find all legend handles. This is MATLAB-only.
+        legendHandles = findobj(fh, tagKeyword, 'legend');
+        m2t.legendHandles = legendHandles;
+        % Remove all legend handles as they are treated separately.
+        axesHandles = setdiff(axesHandles, legendHandles);
+    end
+
+    colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
+    if ~isempty(axesHandles)
+        % Find all colorbar handles. This is MATLAB-only.
+        cbarHandles = findobj(fh, tagKeyword, colorbarKeyword);
+        m2t.cbarHandles = cbarHandles;
+        % Remove all legend handles as they are treated separately.
+        axesHandles = setdiff(axesHandles, cbarHandles);
+    else
+        m2t.cbarHandles = [];
     end
 end
 % ==============================================================================
