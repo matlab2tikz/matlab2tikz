@@ -1847,16 +1847,16 @@ function [m2t, str] = drawImage(m2t, handle)
     % read x-, y-, and color-data
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
-    cdata = get(handle, 'CData');
+    cData = get(handle, 'CData');
 
-    m = size(cdata, 1);
-    n = size(cdata, 2);
+    m = size(cData, 1);
+    n = size(cData, 2);
 
     if ~strcmp(get(m2t.currentHandles.gca,'Visible'), 'off')
         % Flip the image over as the PNG gets written starting at (0,0) that is,
         % the top left corner.
         % MATLAB quirk: In case the axes are invisible, don't do this.
-        cdata = cdata(m:-1:1,:,:);
+        cData = cData(m:-1:1,:,:);
     end
 
     if (m2t.cmdOpts.Results.imagesAsPng)
@@ -1868,10 +1868,10 @@ function [m2t, str] = drawImage(m2t, handle)
         % Get color indices for indexed color images and truecolor values
         % otherwise. Don't use ismatrix(), c.f.
         % <https://github.com/nschloe/matlab2tikz/issues/143>.
-        if ndims(cdata) == 2
-            [m2t, colorData] = cdata2colorindex(m2t, cdata, handle);
+        if ndims(cData) == 2
+            [m2t, colorData] = cdata2colorindex(m2t, cData, handle);
         else
-            colorData = cdata;
+            colorData = cData;
         end
 
         % flip the image if reverse
@@ -1937,7 +1937,7 @@ function [m2t, str] = drawImage(m2t, handle)
             'locations of the master TeX file and the included TikZ file.\n'], ...
             pngFileName, pngReferencePath);
     else
-        [m2t, str] = imageAsTikZ(m2t, xData, yData, cData);
+        [m2t, str] = imageAsTikZ(m2t, xData, yData, cData, handle);
     end
 
     % Make sure that the axes are still visible above the image.
@@ -1946,7 +1946,7 @@ function [m2t, str] = drawImage(m2t, handle)
         'axis on top', []);
 end
 % ==============================================================================
-function [m2t, str] = imageAsTikZ(m2t, xData, yData, cData)
+function [m2t, str] = imageAsTikZ(m2t, xData, yData, cData, handle)
 % writes an image as raw TikZ commands (STRONGLY DISCOURAGED)
   userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
         'Make sure to set ''imagesAsPng'' to true.']);
@@ -1978,7 +1978,7 @@ function [m2t, str] = imageAsTikZ(m2t, xData, yData, cData)
 
     m = length(X);
     n = length(Y);
-    [m2t, xcolor] = getColor(m2t, handle, cdata, 'image');
+    [m2t, xcolor] = getColor(m2t, handle, cData, 'image');
 
     % The following section takes pretty long to execute, although in
     % principle it is discouraged to use TikZ for those; LaTeX will take
@@ -1988,6 +1988,7 @@ function [m2t, str] = imageAsTikZ(m2t, xData, yData, cData)
     % <http://www.mathworks.de/support/service_requests/Service_Request_Detail.do?ID=183481&filter=&sort=&statusorder=0&dateorder=0>.
     for i = 1:m
         for j = 1:n
+            % PeterPablo: something is wrong here!
             str = strcat(str, ...
                 sprintf(['\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
                 xcolor{m-i+1,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 ));
@@ -4869,7 +4870,7 @@ function string = parseTexSubstring(m2t, string)
     expr = '(\\[a-zA-Z]+(\[[^\]]*\])?(\{[^}]*\}){1,2})';
     % |( \cmd  )( [...]?  )( {...}{1,2} )|
     % (              subset $1               )
-    repl = switchMatOct(m2t, '}$1\\text{', '}$1\text{');
+    repl = '}$1\\text{';
     string = regexprep(string, expr, repl);
     % ...\alpha{}... -> ...}\alpha{}\text{...
     string = ['\text{' string '}'];
@@ -4880,16 +4881,16 @@ function string = parseTexSubstring(m2t, string)
     % backslashes in front of the underscore are not themselves escaped and
     % thus printable backslashes. This is the case if there's an even number
     % of backslashes in a row.
-    repl = switchMatOct(m2t, '$1}_\\text{', '$1}_\text{');
+    repl = '$1}_\\text{';
     string = regexprep(string, '(?<!\\)((\\\\)*)_', repl);
 
     % '^' has to be in math mode so long as it's not escaped as '\^' in which
     % case it is expressed as '\textasciicircum{}' for compatibility with
     % regular TeX. Same thing here regarding even/odd number of backslashes
     % as in the case of underscores above.
-    repl = switchMatOct(m2t, '$1\\textasciicircum{}', '$1\textasciicircum{}');
+    repl = '$1\\textasciicircum{}';
     string = regexprep(string, '(?<!\\)((\\\\)*)\\\^', repl);
-    repl = switchMatOct(m2t, '$1}^\\text{', '$1}^\text{');
+    repl = '$1}^\\text{';
     string = regexprep(string, '(?<!\\)((\\\\)*)\^', repl);
 
     % '\\' has to be escaped to '\textbackslash{}'

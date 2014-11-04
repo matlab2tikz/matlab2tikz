@@ -1060,6 +1060,7 @@ end
 % =========================================================================
 function [stat] = mandrillImage()
   stat.description = 'Picture of a mandrill.';
+  stat.extraOptions = {'imagesAsPng', false};
 
   if ~exist('mandrill.mat','file')
       fprintf( 'mandrill data set not found. Abort.\n\n' );
@@ -1069,7 +1070,7 @@ function [stat] = mandrillImage()
 
   data = load( 'mandrill' );
   set( gcf, 'color', 'k' )
-  image( data.X )
+  image( data.X(1:10,1:10) )
   colormap( data.map )
   axis off
   axis image
