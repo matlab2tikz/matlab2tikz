@@ -4891,6 +4891,14 @@ function string = parseTexSubstring(m2t, string)
     string = regexprep(string, '(?<!\\)((\\\\)*)\\\^', repl);
     repl = switchMatOct(m2t, '$1}^\\text{', '$1}^\text{');
     string = regexprep(string, '(?<!\\)((\\\\)*)\^', repl);
+    
+    % '<' and '>' has to be either in math mode or needs to be typeset as
+    % '\textless' and '\textgreater' in textmode
+    % This is handled better, if 'parseStringsAsMath' is activated
+    if m2t.cmdOpts.Results.parseStringsAsMath == 0
+        string = regexprep(string, '<', '\\textless');
+        string = regexprep(string, '>', '\\textgreater');
+    end        
 
     % '\\' has to be escaped to '\textbackslash{}'
     % This cannot be done with strrep(...) as it would replace e.g. 4 backslashes
