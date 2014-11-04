@@ -648,10 +648,10 @@ function [stat] = groupbars()
   stat.description = 'Plot with bars in groups.';
 
   X = [1,2,3,4,5];
-  Y = round(rand(5,2)*20);
-  %    bar(X,Y,'group','BarWidth',1.0);
-  makebars(X,Y,1.0,'grouped');
-  %    set(gca,'XTick',[4,4.2,4.25,4.3,4.4,4.45,4.5]);
+  Y = magic(5);
+  Y = Y(:,1:2);
+  
+  bar(X,Y,'grouped','BarWidth',1.5);
   title 'Group';
 end
 % =========================================================================
