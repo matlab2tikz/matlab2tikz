@@ -4943,6 +4943,7 @@ function string = parseTexSubstring(m2t, string)
         otherwise
             errorUnknownEnvironment();
     end
+    
     % Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
     % escape sequence. An un-escaped "~" produces weird output in Octave, thus
     % give a warning in that case
@@ -5007,6 +5008,10 @@ function string = parseTexSubstring(m2t, string)
         % '<<' probably means 'much smaller than', i.e. '\ll'
         repl = switchMatOct(m2t, '$1\\ll{}$2', '$1\ll{}$2');
         string = regexprep(string, '([^<])<<([^<])', repl);
+
+        % '>>' probably means 'much greater than', i.e. '\gg'
+        repl = switchMatOct(m2t, '$1\\gg{}$2', '$1\gg{}$2');
+        string = regexprep(string, '([^>])>>([^>])', repl);
 
         % Single letters are most likely variables and thus should be in math mode
         string = regexprep(string, '\\text\{([a-zA-Z])\}', '$1');

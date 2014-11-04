@@ -1447,7 +1447,7 @@ function [stat] = decayingharmonic()
   t = 0:901;
   y = A * exp(-alpha*t) .* sin(beta*t);
   plot(t, y)
-  title('{\itAe}^{-\alpha\itt}sin\beta{\itt}, \alpha<<\beta')
+  title('{\itAe}^{-\alpha\itt}sin\beta{\itt}, \alpha<<\beta, \alpha>>\gamma')
   xlabel('Time \musec.')
   ylabel('Amplitude')
 end
