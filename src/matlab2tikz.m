@@ -4892,6 +4892,12 @@ function string = parseTexSubstring(m2t, string)
     repl = switchMatOct(m2t, '$1}^\\text{', '$1}^\text{');
     string = regexprep(string, '(?<!\\)((\\\\)*)\^', repl);
 
+    % Move font styles like \bf into the \text{} command.
+    expr = '(\\bf|\\it|\\rm|\\fontname)({\w*})+(\\text{)';
+    while regexp(string, expr)
+        string = regexprep(string, expr, '$3$1$2');
+    end
+
     % Replace Fontnames
     [~, ~, ~, ~, fonts, ~, subStrings] = regexp(string, '\\fontname{(\w*)}');
     fonts = fonts2tex(fonts);
