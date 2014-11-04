@@ -1847,16 +1847,16 @@ function [m2t, str] = drawImage(m2t, handle)
     % read x-, y-, and color-data
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
-    cdata = get(handle, 'CData');
+    cData = get(handle, 'CData');
 
-    m = size(cdata, 1);
-    n = size(cdata, 2);
+    m = size(cData, 1);
+    n = size(cData, 2);
 
     if ~strcmp(get(m2t.currentHandles.gca,'Visible'), 'off')
         % Flip the image over as the PNG gets written starting at (0,0) that is,
         % the top left corner.
         % MATLAB quirk: In case the axes are invisible, don't do this.
-        cdata = cdata(m:-1:1,:,:);
+        cData = cData(m:-1:1,:,:);
     end
 
     if (m2t.cmdOpts.Results.imagesAsPng)
@@ -1868,10 +1868,10 @@ function [m2t, str] = drawImage(m2t, handle)
         % Get color indices for indexed color images and truecolor values
         % otherwise. Don't use ismatrix(), c.f.
         % <https://github.com/nschloe/matlab2tikz/issues/143>.
-        if ndims(cdata) == 2
-            [m2t, colorData] = cdata2colorindex(m2t, cdata, handle);
+        if ndims(cData) == 2
+            [m2t, colorData] = cdata2colorindex(m2t, cData, handle);
         else
-            colorData = cdata;
+            colorData = cData;
         end
 
         % flip the image if reverse
@@ -1937,7 +1937,7 @@ function [m2t, str] = drawImage(m2t, handle)
             'locations of the master TeX file and the included TikZ file.\n'], ...
             pngFileName, pngReferencePath);
     else
-        [m2t, str] = imageAsTikZ(m2t, xData, yData, cData);
+        [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData);
     end
 
     % Make sure that the axes are still visible above the image.
@@ -1946,10 +1946,11 @@ function [m2t, str] = drawImage(m2t, handle)
         'axis on top', []);
 end
 % ==============================================================================
-function [m2t, str] = imageAsTikZ(m2t, xData, yData, cData)
+function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
 % writes an image as raw TikZ commands (STRONGLY DISCOURAGED)
-  userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
+    userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
         'Make sure to set ''imagesAsPng'' to true.']);
+    str = '';
 
     % Generate uniformly distributed X, Y, although xData and yData may be
     % non-uniform.
@@ -1978,7 +1979,7 @@ function [m2t, str] = imageAsTikZ(m2t, xData, yData, cData)
 
     m = length(X);
     n = length(Y);
-    [m2t, xcolor] = getColor(m2t, handle, cdata, 'image');
+    [m2t, xcolor] = getColor(m2t, handle, cData, 'image');
 
     % The following section takes pretty long to execute, although in
     % principle it is discouraged to use TikZ for those; LaTeX will take
