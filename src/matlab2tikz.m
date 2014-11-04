@@ -1988,7 +1988,7 @@ function [m2t, str] = imageAsTikZ(m2t, xData, yData, cData, handle)
     % <http://www.mathworks.de/support/service_requests/Service_Request_Detail.do?ID=183481&filter=&sort=&statusorder=0&dateorder=0>.
     for i = 1:m
         for j = 1:n
-            % PeterPablo: something is wrong here
+            % PeterPablo: something is wrong here!
             str = strcat(str, ...
                 sprintf(['\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
                 xcolor{m-i+1,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 ));
