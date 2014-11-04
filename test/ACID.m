@@ -647,11 +647,11 @@ end
 function [stat] = groupbars()
   stat.description = 'Plot with bars in groups.';
 
-  rng('default'); % initialize random numbers to default state
-  
   X = [1,2,3,4,5];
-  Y = round(rand(5,2)*20);
-  bar(X,Y,'group','BarWidth',1.0);
+  Y = magic(5);
+  Y = Y(:,1:2);
+  
+  bar(X,Y,'grouped','BarWidth',1.5);
   title 'Group';
 end
 % =========================================================================
