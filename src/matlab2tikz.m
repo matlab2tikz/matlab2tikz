@@ -788,8 +788,8 @@ function m2t = drawAxes(m2t, handle)
         
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, 'at', ...
-                sprintf(['{(', m2t.ff, '%s,', m2t.ff, '%s)}'], pos.x.value, pos.x.unit, ...
-                pos.y.value, pos.y.unit));
+                ['{(' formatDim(pos.x.value, pos.x.unit) ','...
+                      formatDim(pos.y.value, pos.y.unit) ')}']);
         % the following is general MATLAB behavior:        
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
@@ -1056,16 +1056,9 @@ end
 % ==============================================================================
 function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
 % sets the dimension "name" of the current axes to the struct "dim"
-
-    if dimension.unit(1)=='\' && dimension.value==1.0
-        % only return \figurewidth instead of 1.0\figurewidth
-        m2t.axesContainers{end}.options = opts_add(...
-            m2t.axesContainers{end}.options, widthOrHeight, dimension.unit);
-    else
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, widthOrHeight, ...
-            sprintf([m2t.ff, '%s'], dimension.value, dimension.unit));
-    end
+    m2t.axesContainers{end}.options = opts_add(...
+            m2t.axesContainers{end}.options, widthOrHeight, ...
+            formatDim(dimension.value, dimension.unit));
 end
 % ==============================================================================
 function m2t = drawTitleOfAxes(m2t, handle)
@@ -2346,8 +2339,10 @@ function [m2t, str] = drawText(m2t, handle)
                 case 'data'
                     posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
                 otherwise
-                    pos = convertUnits(pos, units, 'cm');
-                    posString = sprintf(['(', m2t.ff, 'cm,', m2t.ff, 'cm)'], pos);
+                    defaultUnit = 'cm';
+                    pos = convertUnits(pos, units, defaultUnit);
+                    posString = ['(' formatDim(pos(1), defaultUnit) ',' ...
+                                     formatDim(pos(2), defaultUnit) ')'];
             end
 
             xlim = get(m2t.currentHandles.gca,'XLim');
@@ -2386,8 +2381,10 @@ function [m2t, str] = drawText(m2t, handle)
                 case 'data'
                     posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos(1:2));
                 otherwise
-                    pos = convertUnits(pos, units, 'cm');
-                    posString = sprintf(['(', m2t.ff, 'cm,', m2t.ff, 'cm)'], pos(1:2));
+                    defaultUnit = 'cm';
+                    pos = convertUnits(pos, units, defaultUnit);
+                    posString = ['(' formatDim(pos(1), defaultUnit) ',' ...
+                                     formatDim(pos(2), defaultUnit) ')'];
             end
 
             xlim = get(m2t.currentHandles.gca,'XLim');
@@ -2842,7 +2839,7 @@ function [m2t, str] = drawBarseries(m2t, h)
                 m2t.axesContainers{end}.options = ...
                     opts_add(m2t.axesContainers{end}.options, ...
                     'bar width', ...
-                    sprintf([m2t.ff,'%s'], m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
+                    formatDim(m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
                 m2t.addedAxisOption = true;
             end
 
@@ -3832,7 +3829,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     % append to legend options
     if ~isempty(anchor)
         lStyle = {lStyle{:}, ...
-            sprintf(['at={(',m2t.ff,',',m2t.ff,')}'], position), ...
+            ['at={(' formatDim(position(1)) ',' formatDim(position(2)) ')}'], ... %TODO: shouldn't this include units?
             sprintf('anchor=%s', anchor)};
     end
     % handle orientation
@@ -5198,6 +5195,23 @@ function isBelow = isVersionBelow(env, versionA, versionB)
         isBelow = false; % equal versions
     else
         isBelow = (deltaAB(difference) < 0);
+    end
+end
+% ==============================================================================
+function str = formatDim(value, unit)
+% format the value for use as a TeX dimension
+    if ~exist('unit','var') || isempty(unit)
+        unit = '';
+    end
+    tolerance = 1e-7;
+    value  = round(value/tolerance)*tolerance;
+    if value == 1 && ~isempty(unit) && unit(1) == '\'
+        str = unit; % just use the unit
+    else
+        str = sprintf('%.6f', value);
+        str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
+        str = regexprep(str, '\.$', ''); % remove trailing period
+        str = [str unit];
     end
 end
 % ==============================================================================
