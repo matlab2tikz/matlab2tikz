@@ -4903,6 +4903,36 @@ function string = parseTexSubstring(m2t, string)
     fonts = fonts2tex(fonts);
     subStrings = [subStrings; fonts, {''}];
     string = cell2mat(subStrings(:)');
+    
+    % Merge adjacent \text fields: 
+    %   1. Link each bracet to the corresponding bracet
+    link = zeros(size(string));
+    pos = [regexp([' ' string], '([^\\]{)'), ...
+        regexp([' ' string], '([^\\]})')];
+    pos = sort(pos);
+    ii = 1;
+    while ii <= numel(pos)
+        if string(pos(ii)) == '}'
+            link(pos(ii-1)) = pos(ii);
+            link(pos(ii)) = pos(ii - 1);
+            pos([ii-1, ii]) = [];
+            ii = ii - 1;
+        else
+            ii = ii + 1;
+        end
+    end
+    %   2. Find dispensable \text commands
+    pos = regexp(string, '}\\text{');
+    delete = zeros(0,1);
+    for p = pos
+        l = link(p);
+        if l > 5 && isequal(string(l-5:l-1), '\text')
+            delete(end+1,1) = p;
+        end
+    end
+    %   3. Remove these commands (starting from the back
+    delete = repmat(delete, 1, 7) + repmat(0:6,numel(delete), 1);
+    string(delete(:)) = [];
 
     % '\\' has to be escaped to '\textbackslash{}'
     % This cannot be done with strrep(...) as it would replace e.g. 4 backslashes
