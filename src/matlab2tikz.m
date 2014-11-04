@@ -4676,6 +4676,9 @@ function c = prettyPrint(m2t, strings, interpreter)
 
                 % Deal with UTF8 characters.
                 string = s;
+                
+                % degree symbol following "^" or "_" needs to be escaped
+                string = regexprep(string, '([\^\_])°', '$1{{}^\\circ}');
                 string = strrep(string, '°', '^\circ');
                 string = strrep(string, '∞', '\infty');
 
