@@ -4660,7 +4660,7 @@ function c = prettyPrint(m2t, strings, interpreter)
 
                 % Deal with UTF8 characters.
                 string = s;
-                string = strrep(string, '°', '\circ');
+                string = strrep(string, '°', '^\circ');
                 string = strrep(string, '∞', '\infty');
 
                 % Parse string piece-wise in a separate function.
