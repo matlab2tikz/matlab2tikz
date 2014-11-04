@@ -4892,6 +4892,12 @@ function string = parseTexSubstring(m2t, string)
     repl = switchMatOct(m2t, '$1}^\\text{', '$1}^\text{');
     string = regexprep(string, '(?<!\\)((\\\\)*)\^', repl);
 
+    % Replace Fontnames
+    [~, ~, ~, ~, fonts, ~, subStrings] = regexp(string, '\\fontname{(\w*)}');
+    fonts = fonts2tex(fonts);
+    subStrings = [subStrings; fonts, {''}];
+    string = cell2mat(subStrings(:)');
+
     % '\\' has to be escaped to '\textbackslash{}'
     % This cannot be done with strrep(...) as it would replace e.g. 4 backslashes
     % with three times the replacement string because it finds overlapping matches
@@ -5045,6 +5051,30 @@ function string = parseTexSubstring(m2t, string)
     % Clean up: remove '{}' at the end of 'string' unless it's prefixed by a
     % backslash
     string = regexprep(string, '(?<!\\)\{\}$', '');
+end
+% ==============================================================================
+function tex = fonts2tex(fonts)
+% Returns a tex command for each fontname in the cell array fonts.
+    if ~iscell(fonts)
+        error('matlab2tikz:fonts2tex', ...
+                 'Expecting a cell array as input.');
+    end
+    tex = cell(size(fonts));
+
+    for ii = 1:numel(fonts)
+        font = fonts{ii}{1};
+
+        % List of known fonts.
+        switch lower(font)
+            case 'courier'
+                tex{ii} = '\tt{}';
+            otherwise
+                warning('matlab2tikz:fonts2tex', ...
+                    'Unknown font ''%s''. Using tex default font.',font);
+                % Unknown font -> Switch to standard font.
+                tex{ii} = '\rm{}';
+        end
+    end
 end
 % ==============================================================================
 function dims = pos2dims(pos)
