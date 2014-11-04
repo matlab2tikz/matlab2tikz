@@ -2290,11 +2290,8 @@ function [m2t, str] = drawText(m2t, handle)
     String = get(handle, 'String');
     Interpreter = get(handle, 'Interpreter');
     String = prettyPrint(m2t, String, Interpreter);
-    % For now, don't handle multiline strings.
-    % Sometimes, the cells are nested; take care of this, too.
-    while iscell(String)
-        String = String{1};
-    end
+    % Concatenate multiple lines
+    String = join(m2t, String, '\\');
     VerticalAlignment = get(handle, 'VerticalAlignment');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % translate them to pgf style
@@ -2315,6 +2312,9 @@ function [m2t, str] = drawText(m2t, handle)
         case 'right'
             style{end+1} = 'left';
     end
+    % Add Horizontal alignment
+    style{end+1} = ['align=', HorizontalAlignment];
+    
     % remove invisible border around \node to make the text align precisely
     style{end+1} = 'inner sep=0mm';
 
