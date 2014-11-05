@@ -47,7 +47,6 @@ function [status] = ACID(k)
                            @peaks_contourf      , ...
                            @many_random_points  , ...
                            @double_colorbar     , ...
-                           @subplot_colorbar    , ...
                            @randomWithLines     , ...
                            @double_axes         , ...
                            @double_axes2        , ...
@@ -69,21 +68,14 @@ function [status] = ACID(k)
                            @compassplot         , ...
                            @stemplot            , ...
                            @stemplot2           , ...
-                           @groupbars           , ...
                            @bars                , ...
-                           @subplotBars         , ...
-                           @hbars               , ...
-                           @stackbars           , ...
                            @xAxisReversed       , ...
                            @errorBars           , ...
                            @errorBars2          , ...
-                           @subplot2x2          , ...
                            @subplot2x2b         , ...
                            @manualAlignment     , ...
-                           @subplot3x1          , ...
                            @subplotCustom       , ...
                            @legendsubplots      , ...
-                           @legendsubplots2     , ...
                            @bodeplots           , ...
                            @rlocusPlot          , ...
                            @mandrillImage       , ...
@@ -98,7 +90,6 @@ function [status] = ACID(k)
                            @scatterPlotRandom   , ...
                            @scatterPlot         , ...
                            @scatter3Plot        , ...
-                           @scatter3Plot2       , ...
                            @spherePlot          , ...
                            @surfPlot            , ...
                            @surfPlot2           , ...
@@ -126,7 +117,6 @@ function [status] = ACID(k)
                            @croppedImage        , ...
                            @pColorPlot          , ...
                            @hgTransformPlot     , ...
-                           @scatter3Plot3       , ...
                            @scatterPlotMarkers  , ...
                            @multiplePatches     , ...
                            @logbaseline         , ...
@@ -368,25 +358,6 @@ function [stat] = double_colorbar()
   ylabel('$v_{2q}$')
 end
 % =========================================================================
-function [stat] = subplot_colorbar()
-%NOTE: do we need this test? Alternative: `double_colorbar`
-  stat.description = 'Subplot colorbar.';
-  
-  x = 1:50;
-  y = 25:75;
-  [xx,yy] = meshgrid(x,y);
-  img = cos(xx.^2).* sin(yy);
-
-  vec = cos((1:100).^2);
-
-  subplot(2,1,1);
-  imagesc(img,[0 1]);
-  colorbar;
-
-  subplot(2,1,2);
-  plot(vec);
-end
-% =========================================================================
 function [stat] = randomWithLines()
   stat.description = 'Lissajous points with lines.';
   
@@ -595,10 +566,10 @@ end
 % =========================================================================
 function [stat] = bars()
 %NOTE: do we need this test when we have `subplotBars`?
-  stat.description = 'Plot with bars.';
+  stat.description = '2x2 Subplot with different bars';
 
-  bins = -0.5:0.1:0.5;
-  bins = 10 * bins;
+  % dataset grouped
+  bins = 10 * (-0.5:0.1:0.5);
   numEntries = length(bins);
   
   alpha = [13 11 7];
@@ -607,61 +578,27 @@ function [stat] = bars()
   for iBar = 1:numBars
       plotData(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
   end
-  b = bar(bins,plotData, 1.5);
-
-  set(b(1),'FaceColor','m','EdgeColor','none')
-end
-% =========================================================================
-function [stat] = subplotBars()
-  stat.description = 'Bars in subplots.';
   
-  subplot(2,1,1);
-  X = magic(5);
-  X = X(2:2:20);
-
-  bar(X);
-
-  subplot(2,1,2);
-  bins = -0.5:0.1:0.5;
-  bins = 10 * bins;
-  numEntries = length(bins);
-  
-  alpha = [13 11 7];
-  numBars = numel(alpha);
-  plotData   = zeros(numEntries, numBars);
-  for iBar = 1:numBars
-      plotData(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
-  end
-
-  bar(bins,plotData, 1.5);
-end
-% =========================================================================
-function [stat] = hbars()
-  stat.description = 'Horizontal bars.';
-  
-  y = [75.995 91.972 105.711 123.203 131.669 ...
-     150.697 179.323 203.212 226.505 249.633 281.422];
-  barh(y);
-end
-% =========================================================================
-function [stat] = groupbars()
-  stat.description = 'Plot with bars in groups.';
-
-  X = [1,2,3,4,5];
-  Y = magic(5);
-  Y = Y(:,1:2);
-  
-  bar(X,Y,'grouped','BarWidth',1.5);
-  title 'Group';
-end
-% =========================================================================
-function [stat] = stackbars()
-  stat.description = 'Plot of stacked bars.';
-  
+  % dataset stacked
   [data,dummy,summy] = svd(magic(7)); %#ok
   Y = round(abs(data(2:6,2:4))*10);
+  
+  subplot(2,2,1);
+  b1 = bar(bins,plotData,'grouped','BarWidth',1.5);
+  set(gca,'XLim',[1.25*min(bins) 1.25*max(bins)]);
+
+  subplot(2,2,2);
+  barh(bins, plotData, 'grouped', 'BarWidth', 1.3);
+  
+  subplot(2,2,3);
   bar(Y,'stack');
-  title 'Stack';
+  
+  subplot(2,2,4);
+  b2= barh(Y,'stack','BarWidth', 0.75);
+  
+  set(b1(1),'FaceColor','m','EdgeColor','none')
+  set(b2(1),'FaceColor','c','EdgeColor','none')
+  
 end
 % =========================================================================
 function [stat] = stemplot()
@@ -807,28 +744,6 @@ function [stat] = xAxisReversed ()
   legend( 'Location', 'SouthWest' );
 end
 % =========================================================================
-function [stat] = subplot2x2 ()
-  stat.description = 'Four aligned subplots on a $2\times 2$ subplot grid.' ;
-
-  x = (1:5);
-
-  subplot(2,2,1);
-  y = sin(x);
-  plot(x,y);
-
-  subplot(2,2,2);
-  y = sin(x.^2);
-  plot(x,y);
-
-  subplot(2,2,3);
-  y = cos(x);
-  plot(x,y);
-
-  subplot(2,2,4);
-  y = cos(x.^2);
-  plot(x,y);
-end
-% =========================================================================
 function [stat] = subplot2x2b ()
   stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
   
@@ -860,24 +775,6 @@ function [stat] = manualAlignment()
   axes('Position', [0.1 0.25 0.85 0.6]);
   plot(xrange);
   set(gca,'XTick',[]);
-end
-% =========================================================================
-function [stat] = subplot3x1 ()
-  stat.description = 'Three aligned subplots on a $3\times 1$ subplot grid.' ;
-
-  x = (1:5);
-
-  subplot(3,1,1);
-  y = sin(3*x);
-  plot(x,y);
-
-  subplot(3,1,2);
-  y = cos(2*x);
-  plot(x,y);
-
-  subplot(3,1,3);
-  y = tan(x/5);
-  plot(x,y);
 end
 % =========================================================================
 function [stat] = subplotCustom ()
@@ -974,8 +871,8 @@ function [stat] = legendsubplots()
   title('Differential time traces');
 end
 % =========================================================================
-function [stat] = legendsubplots2()
-  stat.description = ['Another subplot with legends.'];
+function [stat] = bodeplots()
+  stat.description = 'Bode plots with legends.';
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Abort.\n\n' );
@@ -1012,20 +909,6 @@ function [stat] = legendsubplots2()
   grid on
 
   legend('Perfect LCL',' Real LCL','Location','SW')
-end
-% =========================================================================
-function [stat] = bodeplots()
-  stat.description = 'Bode diagram of frequency response.';
-
-  % check if the control toolbox is installed
-  if length(ver('control')) ~= 1
-      fprintf( 'Control toolbox not found. Abort.\n\n' );
-      stat.skip = true;
-      return
-  end
-
-  g = tf([1 0.1 7.5],[1 0.12 9 0 0]);
-  bode(g)
 end
 % =========================================================================
 function [stat] = rlocusPlot()
@@ -1245,43 +1128,6 @@ function [stat] = scatter3Plot()
   C = repmat([1 2 3],numel(x),1);
   scatter3(X(:),Y(:),Z(:),S(:),C(:),'filled'), view(-60,60)
   view(40,35)
-end
-% =========================================================================
-function [stat] = scatter3Plot2()
-  stat.description = 'Another Scatter3 plot.';
-
-  % Read image (Note: "peppers.png" is available with MATLAB)
-  InpImg_RGB = imread('peppers.png');
-
-  % Subsample image ("scatter3" can't cope with too many points)
-  InpImg_RGB = InpImg_RGB(1:100:end, 1:100:end, 1:100:end );
-
-  InpImg_RGB = reshape(InpImg_RGB, [], 1, 3);
-
-  % Split up into single components
-  r = InpImg_RGB(:,:,1);
-  g = InpImg_RGB(:,:,2);
-  b = InpImg_RGB(:,:,3);
-
-  % Scatter-plot points
-  scatter3(r,g,b,15,[r g b]);
-  xlabel('R');
-  ylabel('G');
-  zlabel('B');
-end
-% =========================================================================
-function [stat] = scatter3Plot3()
-  stat.description = 'Scatter3 plot with 2 colors (Issue 292)';
-  stat.issues = 292;
-  
-  hold on;
-  x = sin(1:5);
-  y = cos(3.4 *(1:5));
-  z = x.*y;
-  scatter3(x,y,z,150,...
-           'MarkerEdgeColor','none','MarkerFaceColor','k');
-  scatter3(-x,y,z,150,...
-           'MarkerEdgeColor','none','MarkerFaceColor','b');
 end
 % =========================================================================
 function [stat] = spherePlot()

@@ -539,13 +539,16 @@ function name = extractFunctionFromError(e, testsuite)
     for kError = 1:numel(e.stack);
         ee = e.stack(kError);
         if isempty(name)
+            name = '';
             if ~isempty(regexp(ee.name, ['^' testsuite '>'],'once'))
                 % extract function name
                 name = regexprep(ee.name, ['^' testsuite '>(.*)'], '$1');
             elseif ~isempty(regexp(ee.name, ['^' testsuite],'once')) && ...
                     kError < numel(e.stack)
                 % new stack trace format (R2014b)
-                name = e.stack(kError-1).name;
+                if kError > 1
+                    name = e.stack(kError-1).name;
+                end
             end
         end
     end
