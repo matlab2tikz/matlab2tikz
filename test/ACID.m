@@ -75,7 +75,6 @@ function [status] = ACID(k)
                            @errorBars2          , ...
                            @subplot2x2b         , ...
                            @manualAlignment     , ...
-                           @subplot3x1          , ...
                            @subplotCustom       , ...
                            @legendsubplots      , ...
                            @legendsubplots2     , ...
@@ -799,24 +798,6 @@ function [stat] = manualAlignment()
   axes('Position', [0.1 0.25 0.85 0.6]);
   plot(xrange);
   set(gca,'XTick',[]);
-end
-% =========================================================================
-function [stat] = subplot3x1 ()
-  stat.description = 'Three aligned subplots on a $3\times 1$ subplot grid.' ;
-
-  x = (1:5);
-
-  subplot(3,1,1);
-  y = sin(3*x);
-  plot(x,y);
-
-  subplot(3,1,2);
-  y = cos(2*x);
-  plot(x,y);
-
-  subplot(3,1,3);
-  y = tan(x/5);
-  plot(x,y);
 end
 % =========================================================================
 function [stat] = subplotCustom ()
