@@ -146,7 +146,9 @@ function [status] = ACID(k)
                            @annotation2         , ...
                            @annotation3         , ...
                            @annotationText      , ...
-                           @annotationTextUnits
+                           @annotationTextUnits, ...
+                           @imageOrientation_PNG, ...
+                           @imageOrientation_inline
                          };
 
 
@@ -2198,6 +2200,7 @@ annotation(gcf,'textbox',...
     'FitBoxToText','off',...
     'LineStyle','none');
 end
+% =========================================================================
 function [stat] = annotation3()
 stat.description = 'Annotated and unaligned subplots';
 
@@ -2237,6 +2240,7 @@ annotation(gcf,'textarrow',[0.6766 0.7229], [0.3108 0.6333],...
            'TextEdgeColor','none', 'HorizontalAlignment','center', ...
            'String',{'invert'});
 end
+% =========================================================================
 function [stat] = annotationText()
 stat.description = 'Variations of textual annotations';
 X1 = -5:0.1:5;
@@ -2314,6 +2318,7 @@ annotation(gcf,'textarrow',[0.238436873747493 0.309619238476953],...
     'HeadStyle','diamond',...
     'Color',[1 0 0]);
 end
+% =========================================================================
 function [stat] = annotationTextUnits()
 stat.description = 'Text with changed Units';
 X1 = -5:0.1:5;
@@ -2397,6 +2402,70 @@ annotation(gcf,'textbox',...
     'FontAngle','italic',...
     'FitBoxToText','off',...
     'BackgroundColor',[0.756862759590149 0.866666674613953 0.776470601558685]);
+end
+% =========================================================================
+function [stat] = imageOrientation_inline()
+% Run test and save pictures as inline TikZ code
+    [stat] = imageOrientation(false);
+end
+function [stat] = imageOrientation_PNG()
+% Run test and save pictures as external PNGs
+    [stat] = imageOrientation(true);
+end
+function [stat] = imageOrientation(imagesAsPng)
+% Parameter 'imagesAsPng' is boolean
+    stat.description = ['Systematic test of different axis', ...
+      ' orientations and visibility (imagesAsPng = ', ...
+      num2str(imagesAsPng), ').'];
+    stat.extraOptions = {'imagesAsPng', imagesAsPng};
+
+    data = magic(3);
+
+    subplot(3,2,1);
+    imagesc(data);
+    set(gca,'XDir','normal');
+    xlabel('XDir normal');
+    set(gca,'YDir','normal');
+    ylabel('YDir normal');
+
+    subplot(3,2,2);
+    imagesc(data);
+    set(gca,'XDir','reverse');
+    xlabel('XDir reverse');
+    set(gca,'YDir','normal');
+    ylabel('YDir normal');
+
+    subplot(3,2,3);
+    imagesc(data);
+    set(gca,'XDir','normal');
+    xlabel('XDir normal');
+    set(gca,'YDir','reverse');
+    ylabel('YDir reverse');
+
+    subplot(3,2,4);
+    imagesc(data);
+    set(gca,'XDir','reverse');
+    xlabel('XDir reverse');
+    set(gca,'YDir','reverse');
+    ylabel('YDir reverse');
+
+    subplot(3,2,5);
+    imagesc(data);
+    set(gca,'XDir','normal');
+    xlabel('XDir normal');
+    set(gca,'YDir','reverse');
+    ylabel('YDir reverse');
+    axis off;
+    title('like above, but axis off');
+
+    subplot(3,2,6);
+    imagesc(data);
+    set(gca,'XDir','reverse');
+    xlabel('XDir reverse');
+    set(gca,'YDir','reverse');
+    ylabel('YDir reverse');
+    axis off;
+    title('like above, but axis off');
 end
 % =========================================================================
 function env = getEnvironment
