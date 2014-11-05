@@ -1068,11 +1068,10 @@ function [stat] = mandrillImage()
   end
 
   data = load( 'mandrill' );
-  set( gcf, 'color', 'k' )
-  image( data.X )
-  colormap( data.map )
-  axis off
-  axis image
+  image( data.X )       % show image
+  colormap( data.map )  % adapt colormap
+  axis image            % pixels should be square
+  axis off              % disable axis
 end
 % =========================================================================
 function [stat] = besselImage()

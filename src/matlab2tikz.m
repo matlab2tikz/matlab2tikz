@@ -1845,12 +1845,9 @@ function [m2t, str] = drawImage(m2t, handle)
     m = size(cData, 1);
     n = size(cData, 2);
 
-    if ~strcmp(get(m2t.currentHandles.gca,'Visible'), 'off')
-        % Flip the image over as the PNG gets written starting at (0,0) that is,
-        % the top left corner.
-        % MATLAB quirk: In case the axes are invisible, don't do this.
-        cData = cData(m:-1:1,:,:);
-    end
+    % Flip the image over as the PNG gets written starting at (0,0),
+    % which is the top left corner.
+    cData = cData(m:-1:1,:,:);
 
     if (m2t.cmdOpts.Results.imagesAsPng)
         m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
