@@ -4629,21 +4629,7 @@ function c = prettyPrint(m2t, strings, interpreter)
 % http://www.mathworks.com/help/techdoc/ref/text_props.html#Interpreter
 % http://www.mathworks.com/help/techdoc/ref/text.html#f68-481120
 
-    % Multiline handling.
-    % Make sure that the input string is really a cellstr that contains only
-    % one-line strings.
-    if ischar(strings)
-        strings = cellstr(strings);
-    elseif iscellstr(strings)
-        cs = {};
-        for s = strings
-            tmp = cellstr(s);
-            cs = {cs{:}, tmp{:}};
-        end
-        strings = cs;
-    else
-        error('matlab2tikz:prettyPrint', 'Data type not understood.');
-    end
+    strings = cellstrOneLinePerCell(strings);
 
     % Now loop over the strings and return them pretty-printed in c.
     c = {};
@@ -4722,6 +4708,22 @@ function c = prettyPrint(m2t, strings, interpreter)
                 error('matlab2tikz:prettyPrint', 'Unknown interpreter');
         end
         c{end+1} = string;
+    end
+end
+% ==============================================================================
+function strings = cellstrOneLinePerCell(strings)
+% convert to cellstr that contains only one-line strings
+    if ischar(strings)
+        strings = cellstr(strings);
+    elseif iscellstr(strings)
+        cs = {};
+        for s = strings
+            tmp = cellstr(s);
+            cs = {cs{:}, tmp{:}};
+        end
+        strings = cs;
+    else
+        error('matlab2tikz:prettyPrint', 'Data type not understood.');
     end
 end
 % ==============================================================================
