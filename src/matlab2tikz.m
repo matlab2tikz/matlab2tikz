@@ -4867,7 +4867,7 @@ function string = parseTexSubstring(m2t, string)
     expr = '(\\[a-zA-Z]+(\[[^\]]*\])?(\{[^}]*\}){1,2})';
     % |( \cmd  )( [...]?  )( {...}{1,2} )|
     % (              subset $1               )
-    repl = switchMatOct(m2t, '}$1\\text{', '}$1\text{');
+    repl = '}$1\\text{';
     string = regexprep(string, expr, repl);
     % ...\alpha{}... -> ...}\alpha{}\text{...
     string = ['\text{' string '}'];
@@ -4878,16 +4878,16 @@ function string = parseTexSubstring(m2t, string)
     % backslashes in front of the underscore are not themselves escaped and
     % thus printable backslashes. This is the case if there's an even number
     % of backslashes in a row.
-    repl = switchMatOct(m2t, '$1}_\\text{', '$1}_\text{');
+    repl = '$1}_\\text{';
     string = regexprep(string, '(?<!\\)((\\\\)*)_', repl);
 
     % '^' has to be in math mode so long as it's not escaped as '\^' in which
     % case it is expressed as '\textasciicircum{}' for compatibility with
     % regular TeX. Same thing here regarding even/odd number of backslashes
     % as in the case of underscores above.
-    repl = switchMatOct(m2t, '$1\\textasciicircum{}', '$1\textasciicircum{}');
+    repl = '$1\\textasciicircum{}';
     string = regexprep(string, '(?<!\\)((\\\\)*)\\\^', repl);
-    repl = switchMatOct(m2t, '$1}^\\text{', '$1}^\text{');
+    repl = '$1}^\\text{';
     string = regexprep(string, '(?<!\\)((\\\\)*)\^', repl);
     
     % '<' and '>' has to be either in math mode or needs to be typeset as
