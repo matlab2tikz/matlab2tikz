@@ -4905,34 +4905,7 @@ function string = parseTexSubstring(m2t, string)
     string = cell2mat(subStrings(:)');
     
     % Merge adjacent \text fields: 
-    %   1. Link each bracet to the corresponding bracet
-    link = zeros(size(string));
-    pos = [regexp([' ' string], '([^\\]{)'), ...
-        regexp([' ' string], '([^\\]})')];
-    pos = sort(pos);
-    ii = 1;
-    while ii <= numel(pos)
-        if string(pos(ii)) == '}'
-            link(pos(ii-1)) = pos(ii);
-            link(pos(ii)) = pos(ii - 1);
-            pos([ii-1, ii]) = [];
-            ii = ii - 1;
-        else
-            ii = ii + 1;
-        end
-    end
-    %   2. Find dispensable \text commands
-    pos = regexp(string, '}\\text{');
-    delete = zeros(0,1);
-    for p = pos
-        l = link(p);
-        if l > 5 && isequal(string(l-5:l-1), '\text')
-            delete(end+1,1) = p;
-        end
-    end
-    %   3. Remove these commands (starting from the back
-    delete = repmat(delete, 1, 7) + repmat(0:6,numel(delete), 1);
-    string(delete(:)) = [];
+    string = mergeAdjacentTexCmds(string, '\text');
 
     % '\\' has to be escaped to '\textbackslash{}'
     % This cannot be done with strrep(...) as it would replace e.g. 4 backslashes
@@ -5117,6 +5090,42 @@ function tex = fonts2tex(fonts)
     end
 end
 % ==============================================================================
+function string = mergeAdjacentTexCmds(string, cmd)
+% Merges adjacent tex commands like \text into one command
+    % If necessary, add a backslash
+    if cmd(1) ~= '\'
+        cmd = ['\' cmd];
+    end
+    % Link each bracet to the corresponding bracet
+    link = zeros(size(string));
+    pos = [regexp([' ' string], '([^\\]{)'), ...
+        regexp([' ' string], '([^\\]})')];
+    pos = sort(pos);
+    ii = 1;
+    while ii <= numel(pos)
+        if string(pos(ii)) == '}'
+            link(pos(ii-1)) = pos(ii);
+            link(pos(ii)) = pos(ii - 1);
+            pos([ii-1, ii]) = [];
+            ii = ii - 1;
+        else
+            ii = ii + 1;
+        end
+    end
+    % Find dispensable commands
+    pos = regexp(string, ['}\' cmd '{']);
+    delete = zeros(0,1);
+    len = numel(cmd);
+    for p = pos
+        l = link(p);
+        if l > len && isequal(string(l-len:l-1), cmd)
+            delete(end+1,1) = p;
+        end
+    end
+    %   3. Remove these commands (starting from the back
+    delete = repmat(delete, 1, len+2) + repmat(0:len+1,numel(delete), 1);
+    string(delete(:)) = [];
+end
 function dims = pos2dims(pos)
 % Position quadruplet [left, bottom, width, height] to dimension structure
     dims = struct('left' , pos(1), 'bottom', pos(2));
