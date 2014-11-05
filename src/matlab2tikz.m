@@ -5103,7 +5103,11 @@ function tex = fonts2tex(fonts)
         % List of known fonts.
         switch lower(font)
             case 'courier'
-                tex{ii} = '\tt{}';
+                tex{ii} = '\ttfamily{}';
+            case 'times'
+                tex{ii} = '\rmfamily{}';
+            case {'arial', 'helvetica'}
+                tex{ii} = '\sffamily{}';
             otherwise
                 warning('matlab2tikz:fonts2tex', ...
                     'Unknown font ''%s''. Using tex default font.',font);
