@@ -124,7 +124,6 @@ function [status] = ACID(k)
                            @customLegend        , ...
                            @pixelLegend         , ...
                            @croppedImage        , ...
-                           @doubleAxes          , ...
                            @pColorPlot          , ...
                            @hgTransformPlot     , ...
                            @scatter3Plot3       , ...
@@ -1989,19 +1988,6 @@ function [stat] = croppedImage()
   % colorbar at top
   colorbar('north');
   set(gca,'Units','normalized');
-end
-% =========================================================================
-function [stat] = doubleAxes()
-  stat.description = 'Double axes.';
-
-  ah = axes;
-  set(ah,'Units','pixels');
-  set(ah,'Position',[18*4 18*3 114*4 114*3]);
-  ah2 = axes;
-  set(ah2,'units','pixels')
-  set(ah2,'position',[18*4 18*3 114*4 114*3])
-  grid(ah2,'on')
-  set(ah2,'GridLineStyle','-')
 end
 % =========================================================================
 function [stat] = pColorPlot()
