@@ -47,7 +47,6 @@ function [status] = ACID(k)
                            @peaks_contourf      , ...
                            @many_random_points  , ...
                            @double_colorbar     , ...
-                           @subplot_colorbar    , ...
                            @randomWithLines     , ...
                            @double_axes         , ...
                            @double_axes2        , ...
@@ -357,25 +356,6 @@ function [stat] = double_colorbar()
   axis square
   xlabel('$v_{2d}$')
   ylabel('$v_{2q}$')
-end
-% =========================================================================
-function [stat] = subplot_colorbar()
-%NOTE: do we need this test? Alternative: `double_colorbar`
-  stat.description = 'Subplot colorbar.';
-  
-  x = 1:50;
-  y = 25:75;
-  [xx,yy] = meshgrid(x,y);
-  img = cos(xx.^2).* sin(yy);
-
-  vec = cos((1:100).^2);
-
-  subplot(2,1,1);
-  imagesc(img,[0 1]);
-  colorbar;
-
-  subplot(2,1,2);
-  plot(vec);
 end
 % =========================================================================
 function [stat] = randomWithLines()
