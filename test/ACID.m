@@ -91,7 +91,6 @@ function [status] = ACID(k)
                            @scatterPlotRandom   , ...
                            @scatterPlot         , ...
                            @scatter3Plot        , ...
-                           @scatter3Plot2       , ...
                            @spherePlot          , ...
                            @surfPlot            , ...
                            @surfPlot2           , ...
@@ -119,7 +118,6 @@ function [status] = ACID(k)
                            @croppedImage        , ...
                            @pColorPlot          , ...
                            @hgTransformPlot     , ...
-                           @scatter3Plot3       , ...
                            @scatterPlotMarkers  , ...
                            @multiplePatches     , ...
                            @logbaseline         , ...
@@ -1150,43 +1148,6 @@ function [stat] = scatter3Plot()
   C = repmat([1 2 3],numel(x),1);
   scatter3(X(:),Y(:),Z(:),S(:),C(:),'filled'), view(-60,60)
   view(40,35)
-end
-% =========================================================================
-function [stat] = scatter3Plot2()
-  stat.description = 'Another Scatter3 plot.';
-
-  % Read image (Note: "peppers.png" is available with MATLAB)
-  InpImg_RGB = imread('peppers.png');
-
-  % Subsample image ("scatter3" can't cope with too many points)
-  InpImg_RGB = InpImg_RGB(1:100:end, 1:100:end, 1:100:end );
-
-  InpImg_RGB = reshape(InpImg_RGB, [], 1, 3);
-
-  % Split up into single components
-  r = InpImg_RGB(:,:,1);
-  g = InpImg_RGB(:,:,2);
-  b = InpImg_RGB(:,:,3);
-
-  % Scatter-plot points
-  scatter3(r,g,b,15,[r g b]);
-  xlabel('R');
-  ylabel('G');
-  zlabel('B');
-end
-% =========================================================================
-function [stat] = scatter3Plot3()
-  stat.description = 'Scatter3 plot with 2 colors (Issue 292)';
-  stat.issues = 292;
-  
-  hold on;
-  x = sin(1:5);
-  y = cos(3.4 *(1:5));
-  z = x.*y;
-  scatter3(x,y,z,150,...
-           'MarkerEdgeColor','none','MarkerFaceColor','k');
-  scatter3(-x,y,z,150,...
-           'MarkerEdgeColor','none','MarkerFaceColor','b');
 end
 % =========================================================================
 function [stat] = spherePlot()
