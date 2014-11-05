@@ -147,7 +147,8 @@ function [status] = ACID(k)
                            @annotation3         , ...
                            @annotationText      , ...
                            @annotationTextUnits, ...
-                           @imageOrientation
+                           @imageOrientation_PNG, ...
+                           @imageOrientation_inline
                          };
 
 
@@ -2403,57 +2404,68 @@ annotation(gcf,'textbox',...
     'BackgroundColor',[0.756862759590149 0.866666674613953 0.776470601558685]);
 end
 % =========================================================================
-function [stat] = imageOrientation()
-  stat.description = strcat('Systematic test of different axis', ...
-      ' orientations and visibility.');
+function [stat] = imageOrientation_inline()
+% Run test and save pictures as inline TikZ code
+    [stat] = imageOrientation(false);
+end
+function [stat] = imageOrientation_PNG()
+% Run test and save pictures as external PNGs
+    [stat] = imageOrientation(true);
+end
+function [stat] = imageOrientation(imagesAsPng)
+% Parameter 'imagesAsPng' is boolean
+    stat.description = ['Systematic test of different axis', ...
+      ' orientations and visibility (imagesAsPng = ', ...
+      num2str(imagesAsPng), ').'];
+    stat.extraOptions = {'imagesAsPng', imagesAsPng};
 
-  data = magic(3);
-  
-  subplot(3,2,1);
-  imagesc(data);
-  set(gca,'XDir','normal');
-  xlabel('XDir normal');
-  set(gca,'YDir','normal');
-  ylabel('YDir normal');
-  
-  subplot(3,2,2);
-  imagesc(data);
-  set(gca,'XDir','reverse');
-  xlabel('XDir reverse');
-  set(gca,'YDir','normal');
-  ylabel('YDir normal');
-  
-  subplot(3,2,3);
-  imagesc(data);
-  set(gca,'XDir','normal');
-  xlabel('XDir normal');
-  set(gca,'YDir','reverse');
-  ylabel('YDir reverse');
-  
-  subplot(3,2,4);
-  imagesc(data);
-  set(gca,'XDir','reverse');
-  xlabel('XDir reverse');
-  set(gca,'YDir','reverse');
-  ylabel('YDir reverse');
-  
-  subplot(3,2,5);
-  imagesc(data);
-  set(gca,'XDir','normal');
-  xlabel('XDir normal');
-  set(gca,'YDir','reverse');
-  ylabel('YDir reverse');
-  axis off;
-  title('like above, but axis off');
-  
-  subplot(3,2,6);
-  imagesc(data);
-  set(gca,'XDir','reverse');
-  xlabel('XDir reverse');
-  set(gca,'YDir','reverse');
-  ylabel('YDir reverse');
-  axis off;
-  title('like above, but axis off');
+    data = magic(3);
+
+    subplot(3,2,1);
+    imagesc(data);
+    set(gca,'XDir','normal');
+    xlabel('XDir normal');
+    set(gca,'YDir','normal');
+    ylabel('YDir normal');
+
+    subplot(3,2,2);
+    imagesc(data);
+    set(gca,'XDir','reverse');
+    xlabel('XDir reverse');
+    set(gca,'YDir','normal');
+    ylabel('YDir normal');
+
+    subplot(3,2,3);
+    imagesc(data);
+    set(gca,'XDir','normal');
+    xlabel('XDir normal');
+    set(gca,'YDir','reverse');
+    ylabel('YDir reverse');
+
+    subplot(3,2,4);
+    imagesc(data);
+    set(gca,'XDir','reverse');
+    xlabel('XDir reverse');
+    set(gca,'YDir','reverse');
+    ylabel('YDir reverse');
+
+    subplot(3,2,5);
+    imagesc(data);
+    set(gca,'XDir','normal');
+    xlabel('XDir normal');
+    set(gca,'YDir','reverse');
+    ylabel('YDir reverse');
+    axis off;
+    title('like above, but axis off');
+
+    subplot(3,2,6);
+    imagesc(data);
+    set(gca,'XDir','reverse');
+    xlabel('XDir reverse');
+    set(gca,'YDir','reverse');
+    ylabel('YDir reverse');
+    axis off;
+    title('like above, but axis off');
 end
 % =========================================================================
 function env = getEnvironment
