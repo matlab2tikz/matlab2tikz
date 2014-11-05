@@ -77,7 +77,6 @@ function [status] = ACID(k)
                            @manualAlignment     , ...
                            @subplotCustom       , ...
                            @legendsubplots      , ...
-                           @legendsubplots2     , ...
                            @bodeplots           , ...
                            @rlocusPlot          , ...
                            @mandrillImage       , ...
@@ -894,8 +893,8 @@ function [stat] = legendsubplots()
   title('Differential time traces');
 end
 % =========================================================================
-function [stat] = legendsubplots2()
-  stat.description = ['Another subplot with legends.'];
+function [stat] = bodeplots()
+  stat.description = 'Bode plots with legends.';
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Abort.\n\n' );
@@ -932,20 +931,6 @@ function [stat] = legendsubplots2()
   grid on
 
   legend('Perfect LCL',' Real LCL','Location','SW')
-end
-% =========================================================================
-function [stat] = bodeplots()
-  stat.description = 'Bode diagram of frequency response.';
-
-  % check if the control toolbox is installed
-  if length(ver('control')) ~= 1
-      fprintf( 'Control toolbox not found. Abort.\n\n' );
-      stat.skip = true;
-      return
-  end
-
-  g = tf([1 0.1 7.5],[1 0.12 9 0 0]);
-  bode(g)
 end
 % =========================================================================
 function [stat] = rlocusPlot()
