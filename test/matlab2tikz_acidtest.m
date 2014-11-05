@@ -55,7 +55,7 @@ function matlab2tikz_acidtest(varargin)
 
   % -----------------------------------------------------------------------
   ipp = matlab2tikzInputParser;
-  
+
   ipp = ipp.addOptional(ipp, 'testFunctionIndices', [], @isfloat);
   ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
@@ -63,7 +63,7 @@ function matlab2tikz_acidtest(varargin)
 
   ipp = ipp.parse(ipp, varargin{:});
   % -----------------------------------------------------------------------
-  
+
   testsuite = ipp.Results.testsuite;
   testsuiteName = func2str(testsuite);
 
@@ -83,7 +83,7 @@ function matlab2tikz_acidtest(varargin)
 
   % query the number of test functions
   n = length(testsuite(0));
-  
+
   defaultStatus = emptyStatus();
 
   if ~isempty(ipp.Results.testFunctionIndices)
@@ -94,7 +94,7 @@ function matlab2tikz_acidtest(varargin)
   else
       indices = 1:n;
   end
-  
+
   % start overall timing
   elapsedTimeOverall = tic;
 
@@ -104,9 +104,9 @@ function matlab2tikz_acidtest(varargin)
   delete(fullfile(dataDir, 'test*'))
 
   errorHasOccurred = false;
-  
+
   status = cell(length(indices), 1); % cell array to accomodate different structure
-  
+
   for k = 1:length(indices)
       fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
 
@@ -116,23 +116,23 @@ function matlab2tikz_acidtest(varargin)
       % plot the figure
       try
           status{k} = testsuite(indices(k));
-          
+
       catch %#ok
           e = lasterror('reset'); %#ok
-          
+
           status{k}.description = '\textcolor{red}{Error during plot generation.}';
           if isempty(status{k}) || ~isfield(status{k}, 'function') ...
                   || isempty(status{k}.function)
               status{k}.function = extractFunctionFromError(e, testsuite);
           end
-          
+
           [status{k}.plotStage, errorHasOccurred] = errorHandler(e, env);
       end
-      
+
       status{k} = fillStruct(status{k}, defaultStatus);
       % Make underscores in function names TeX compatible
       status{k}.functionTeX = name2tex(status{k}.function);
-      
+
       % plot not sucessful
       if status{k}.skip
           close(fig_handle);
@@ -145,7 +145,7 @@ function matlab2tikz_acidtest(varargin)
       gen_file = sprintf('data/test%d-converted.tex' , indices(k));
 
       elapsedTime = tic;
-      
+
       % Save reference output as PDF
       try
           switch env
@@ -154,7 +154,7 @@ function matlab2tikz_acidtest(varargin)
                   % So, we generate EPS files that are converted later on.
                   print(gcf, '-depsc2', eps_file);
                   ensureLineEndings(eps_file);
-                  
+
               case 'Octave'
                   % In Octave, figures are properly cropped when using  print().
                   print(pdf_file, '-dpdf', '-S415,311', '-r150');
@@ -247,7 +247,7 @@ function matlab2tikz_acidtest(varargin)
   % now, finish off the file and close file and window
   texfile_finish(fh, testsuite);
   fclose(fh);
-  
+
   % print out overall timing
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
@@ -306,7 +306,7 @@ end
 function texfile_addtest(texfile_handle, ref_file, gen_file, status, funcId, testsuiteName)
   % Actually add the piece of LaTeX code that'll later be used to display
   % the given test.
-  
+
   ref_error = status.plotStage.error;
   gen_error = status.tikzStage.error;
 
@@ -489,12 +489,12 @@ fid = fopen(filename,'r+');
 testline = fgets(fid);
 if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
     % Rewind, read the whole
-    fseek(fid,0,'bof'); 
-    str = fread(fid,'*char')'; 
+    fseek(fid,0,'bof');
+    str = fread(fid,'*char')';
 
     % Replace, overwrite and close
     str = regexprep(str, '\n|\r','\r\n');
-    fseek(fid,0,'bof'); 
+    fseek(fid,0,'bof');
     fprintf(fid,'%s',str);
     fclose(fid);
 end
