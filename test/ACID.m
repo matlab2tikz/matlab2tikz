@@ -60,7 +60,6 @@ function [status] = ACID(k)
                            @quiveroverlap       , ...
                            @quiverplot          , ...
                            @quiver3plot         , ...
-                           @imageplot           , ...
                            @logicalImage        , ...
                            @imagescplot         , ...
                            @imagescplot2        , ...
@@ -763,23 +762,6 @@ function [stat] = compassplot ()
   
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
-end
-% =========================================================================
-function [stat] = imageplot ()
-  stat.description = 'An image plot of matrix values.' ;
-  %stat.extraOptions = {'imagesAsPng', false};
-  
-  [u,s,v] = svd(magic(10));
-
-  subplot(1,2,1);
-  A = u;
-  imagesc( A );
-
-  subplot(1,2,2);
-  A = v;
-  A(v<s & v>u) = 0;
-  A = sparse(A);
-  imagesc( A );
 end
 % =========================================================================
 function [stat] = logicalImage()
