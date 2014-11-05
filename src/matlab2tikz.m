@@ -3588,7 +3588,7 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
 % check if the color is straight given in rgb
 % -- notice that we need the extra NaN test with respect to the QUIRK
 %    below
-    if isreal(color) && length(color)==3 && ~any(isnan(color))
+    if isreal(color) && numel(color)==3 && ~any(isnan(color))
         % everything alright: rgb color here
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
     else
