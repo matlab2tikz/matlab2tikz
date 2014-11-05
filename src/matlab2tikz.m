@@ -1977,11 +1977,14 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     % Still, a bug has been filed on MathWorks to allow for one-line
     % sprintf'ing with (string+num) cells (Request ID: 1-9WHK4W);
     % <http://www.mathworks.de/support/service_requests/Service_Request_Detail.do?ID=183481&filter=&sort=&statusorder=0&dateorder=0>.
+    % An alternative approach could be to use 'surf' or 'patch' of pgfplots
+    % with inline tables.
+
     for i = 1:m
         for j = 1:n
-            str = strcat(str, ...
-                sprintf(['\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
-                xcolor{m-i+1,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 ));
+            str = [str, ...
+                sprintf(['\t\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
+                xcolor{m-i+1,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 )];
         end
     end
 end
