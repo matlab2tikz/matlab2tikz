@@ -69,15 +69,10 @@ function [status] = ACID(k)
                            @compassplot         , ...
                            @stemplot            , ...
                            @stemplot2           , ...
-                           @groupbars           , ...
                            @bars                , ...
-                           @subplotBars         , ...
-                           @hbars               , ...
-                           @stackbars           , ...
                            @xAxisReversed       , ...
                            @errorBars           , ...
                            @errorBars2          , ...
-                           @subplot2x2          , ...
                            @subplot2x2b         , ...
                            @manualAlignment     , ...
                            @subplot3x1          , ...
@@ -595,10 +590,10 @@ end
 % =========================================================================
 function [stat] = bars()
 %NOTE: do we need this test when we have `subplotBars`?
-  stat.description = 'Plot with bars.';
+  stat.description = '2x2 Subplot with different bars';
 
-  bins = -0.5:0.1:0.5;
-  bins = 10 * bins;
+  % dataset grouped
+  bins = 10 * (-0.5:0.1:0.5);
   numEntries = length(bins);
   
   alpha = [13 11 7];
@@ -607,61 +602,27 @@ function [stat] = bars()
   for iBar = 1:numBars
       plotData(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
   end
-  b = bar(bins,plotData, 1.5);
-
-  set(b(1),'FaceColor','m','EdgeColor','none')
-end
-% =========================================================================
-function [stat] = subplotBars()
-  stat.description = 'Bars in subplots.';
   
-  subplot(2,1,1);
-  X = magic(5);
-  X = X(2:2:20);
-
-  bar(X);
-
-  subplot(2,1,2);
-  bins = -0.5:0.1:0.5;
-  bins = 10 * bins;
-  numEntries = length(bins);
-  
-  alpha = [13 11 7];
-  numBars = numel(alpha);
-  plotData   = zeros(numEntries, numBars);
-  for iBar = 1:numBars
-      plotData(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
-  end
-
-  bar(bins,plotData, 1.5);
-end
-% =========================================================================
-function [stat] = hbars()
-  stat.description = 'Horizontal bars.';
-  
-  y = [75.995 91.972 105.711 123.203 131.669 ...
-     150.697 179.323 203.212 226.505 249.633 281.422];
-  barh(y);
-end
-% =========================================================================
-function [stat] = groupbars()
-  stat.description = 'Plot with bars in groups.';
-
-  X = [1,2,3,4,5];
-  Y = magic(5);
-  Y = Y(:,1:2);
-  
-  bar(X,Y,'grouped','BarWidth',1.5);
-  title 'Group';
-end
-% =========================================================================
-function [stat] = stackbars()
-  stat.description = 'Plot of stacked bars.';
-  
+  % dataset stacked
   [data,dummy,summy] = svd(magic(7)); %#ok
   Y = round(abs(data(2:6,2:4))*10);
+  
+  subplot(2,2,1);
+  b1 = bar(bins,plotData,'grouped','BarWidth',1.5);
+  set(gca,'XLim',[1.25*min(bins) 1.25*max(bins)]);
+
+  subplot(2,2,2);
+  barh(bins, plotData, 'grouped', 'BarWidth', 1.3);
+  
+  subplot(2,2,3);
   bar(Y,'stack');
-  title 'Stack';
+  
+  subplot(2,2,4);
+  b2= barh(Y,'stack','BarWidth', 0.75);
+  
+  set(b1(1),'FaceColor','m','EdgeColor','none')
+  set(b2(1),'FaceColor','c','EdgeColor','none')
+  
 end
 % =========================================================================
 function [stat] = stemplot()
@@ -805,28 +766,6 @@ function [stat] = xAxisReversed ()
   set(gca,'XDir','reverse');
   set(gca,'YDir','reverse');
   legend( 'Location', 'SouthWest' );
-end
-% =========================================================================
-function [stat] = subplot2x2 ()
-  stat.description = 'Four aligned subplots on a $2\times 2$ subplot grid.' ;
-
-  x = (1:5);
-
-  subplot(2,2,1);
-  y = sin(x);
-  plot(x,y);
-
-  subplot(2,2,2);
-  y = sin(x.^2);
-  plot(x,y);
-
-  subplot(2,2,3);
-  y = cos(x);
-  plot(x,y);
-
-  subplot(2,2,4);
-  y = cos(x.^2);
-  plot(x,y);
 end
 % =========================================================================
 function [stat] = subplot2x2b ()
