@@ -4898,6 +4898,21 @@ function string = parseTexSubstring(m2t, string)
         string = regexprep(string, '>', '\\textgreater');
     end        
 
+    % Move font styles like \bf into the \text{} command.
+    expr = '(\\bf|\\it|\\rm|\\fontname)({\w*})+(\\text{)';
+    while regexp(string, expr)
+        string = regexprep(string, expr, '$3$1$2');
+    end
+
+    % Replace Fontnames
+    [~, ~, ~, ~, fonts, ~, subStrings] = regexp(string, '\\fontname{(\w*)}');
+    fonts = fonts2tex(fonts);
+    subStrings = [subStrings; fonts, {''}];
+    string = cell2mat(subStrings(:)');
+    
+    % Merge adjacent \text fields: 
+    string = mergeAdjacentTexCmds(string, '\text');
+
     % '\\' has to be escaped to '\textbackslash{}'
     % This cannot be done with strrep(...) as it would replace e.g. 4 backslashes
     % with three times the replacement string because it finds overlapping matches
@@ -5058,6 +5073,70 @@ function string = parseTexSubstring(m2t, string)
     string = regexprep(string, '(?<!\\)\{\}$', '');
 end
 % ==============================================================================
+function tex = fonts2tex(fonts)
+% Returns a tex command for each fontname in the cell array fonts.
+    if ~iscell(fonts)
+        error('matlab2tikz:fonts2tex', ...
+                 'Expecting a cell array as input.');
+    end
+    tex = cell(size(fonts));
+
+    for ii = 1:numel(fonts)
+        font = fonts{ii}{1};
+
+        % List of known fonts.
+        switch lower(font)
+            case 'courier'
+                tex{ii} = '\ttfamily{}';
+            case 'times'
+                tex{ii} = '\rmfamily{}';
+            case {'arial', 'helvetica'}
+                tex{ii} = '\sffamily{}';
+            otherwise
+                warning('matlab2tikz:fonts2tex', ...
+                    'Unknown font ''%s''. Using tex default font.',font);
+                % Unknown font -> Switch to standard font.
+                tex{ii} = '\rm{}';
+        end
+    end
+end
+% ==============================================================================
+function string = mergeAdjacentTexCmds(string, cmd)
+% Merges adjacent tex commands like \text into one command
+    % If necessary, add a backslash
+    if cmd(1) ~= '\'
+        cmd = ['\' cmd];
+    end
+    % Link each bracet to the corresponding bracet
+    link = zeros(size(string));
+    pos = [regexp([' ' string], '([^\\]{)'), ...
+        regexp([' ' string], '([^\\]})')];
+    pos = sort(pos);
+    ii = 1;
+    while ii <= numel(pos)
+        if string(pos(ii)) == '}'
+            link(pos(ii-1)) = pos(ii);
+            link(pos(ii)) = pos(ii - 1);
+            pos([ii-1, ii]) = [];
+            ii = ii - 1;
+        else
+            ii = ii + 1;
+        end
+    end
+    % Find dispensable commands
+    pos = regexp(string, ['}\' cmd '{']);
+    delete = zeros(0,1);
+    len = numel(cmd);
+    for p = pos
+        l = link(p);
+        if l > len && isequal(string(l-len:l-1), cmd)
+            delete(end+1,1) = p;
+        end
+    end
+    %   3. Remove these commands (starting from the back
+    delete = repmat(delete, 1, len+2) + repmat(0:len+1,numel(delete), 1);
+    string(delete(:)) = [];
+end
 function dims = pos2dims(pos)
 % Position quadruplet [left, bottom, width, height] to dimension structure
     dims = struct('left' , pos(1), 'bottom', pos(2));
