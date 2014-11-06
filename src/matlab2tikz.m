@@ -899,7 +899,7 @@ function m2t = drawAxes(m2t, handle)
         elseif strcmp(xloc, 'top')
             m2t.axesContainers{end}.options = ...
                 opts_add(m2t.axesContainers{end}.options, ...
-                'axis x line*', 'top');
+                'axis x line', 'top');
         else
             error('matlab2tikz:drawAxes', ...
                 'Illegal axis location ''%s''.', xloc);
@@ -916,7 +916,7 @@ function m2t = drawAxes(m2t, handle)
         elseif strcmp(yloc, 'right')
             m2t.axesContainers{end}.options = ...
                 opts_add(m2t.axesContainers{end}.options, ...
-                'axis y line*', 'right');
+                'axis y line', 'right');
         else
             error('matlab2tikz:drawAxes', ...
                 'Illegal axis location ''%s''.', yloc);
@@ -924,7 +924,7 @@ function m2t = drawAxes(m2t, handle)
     else % box off
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
-            'axis y line*', yloc);
+            'axis y line', yloc);
     end
     if m2t.currentAxesContain3dData
         % There's no such attribute as 'ZAxisLocation'.
