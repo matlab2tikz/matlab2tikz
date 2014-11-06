@@ -130,8 +130,6 @@ function matlab2tikz_acidtest(varargin)
       end
 
       status{k} = fillStruct(status{k}, defaultStatus);
-      % Make underscores in function names TeX compatible
-      status{k}.functionTeX = name2tex(status{k}.function);
 
       % plot not sucessful
       if status{k}.skip
@@ -207,7 +205,7 @@ function matlab2tikz_acidtest(varargin)
           texfile_tab_completion_init(fh);
       end
 
-      fprintf(fh, '%d & \\texttt{%s}', indices(k), stat.functionTeX);
+      fprintf(fh, '%d & \\texttt{%s}', indices(k), name2tex(stat.function));
       if stat.skip
           fprintf(fh, ' & --- & skipped & ---');
       else
@@ -236,7 +234,7 @@ function matlab2tikz_acidtest(varargin)
               continue % No error messages for this test case
           end
 
-          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), stat.functionTeX);
+          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), name2tex(stat.function));
           print_verbatim_information(fh, 'Plot generation', stat.plotStage.message);
           print_verbatim_information(fh, 'PDF generation' , stat.saveStage.message);
           print_verbatim_information(fh, 'matlab2tikz'    , stat.tikzStage.message);
@@ -260,6 +258,7 @@ function texfile_init(texfile_handle)
            ['\\documentclass[landscape]{scrartcl}\n'                , ...
             '\\pdfminorversion=6\n\n'                               , ...
             '\\usepackage{amsmath} %% required for $\\text{xyz}$\n\n', ...
+            '\\usepackage{hyperref}\n'                              , ...
             '\\usepackage{graphicx}\n'                              , ...
             '\\usepackage{epstopdf}\n'                              , ...
             '\\usepackage{tikz}\n'                                  , ...
@@ -317,12 +316,14 @@ function texfile_addtest(texfile_handle, ref_file, gen_file, status, funcId, tes
            '    %s & %s \\\\\n'                                         , ...
            '    reference rendering & generated\n'                      , ...
            '  \\end{tabular}\n'                                         , ...
-           '  \\caption{%s \\texttt{%s}, \\texttt{%s(%d)}}\n', ...
+           '  \\caption{%s \\texttt{%s}, \\texttt{%s(%d)}.%s}\n', ...
           '\\end{figure}\n'                                             , ...
           '\\clearpage\n\n'],...
           include_figure(ref_error, 'includegraphics', ref_file), ...
           include_figure(gen_error, 'input', gen_file), ...
-          status.description, status.functionTeX, name2tex(testsuiteName), funcId);
+          status.description, ...
+          name2tex(status.function), name2tex(testsuiteName), funcId, ...
+          formatIssuesForTeX(status.issues));
 
 end
 % =========================================================================
@@ -473,6 +474,21 @@ end
 % =========================================================================
 function texName = name2tex(matlabIdentifier)
 texName = strrep(matlabIdentifier, '_', '\_');
+end
+% =========================================================================
+function str = formatIssuesForTeX(issues)
+% make links to GitHub issues for the LaTeX output
+  issues = issues(:)';
+  if isempty(issues)
+      str = '';
+      return
+  end
+  BASEURL = 'https://github.com/nschloe/matlab2tikz/issues/';
+  SEPARATOR = sprintf(' \n');
+  strs = arrayfun(@(n) sprintf(['\\href{' BASEURL '%d}{\\#%d}'], n,n), issues, ...
+                  'UniformOutput', false);
+  strs = [strs; repmat({SEPARATOR}, 1, numel(strs))];
+  str = sprintf('{\\color{blue} \\texttt{%s}}', [strs{:}]);
 end
 % =========================================================================
 function onOff = onOffBoolean(bool)
