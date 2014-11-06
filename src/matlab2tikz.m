@@ -647,6 +647,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
             otherwise
                 errorUnknownEnvironment();
         end
+        m2t.currentHandleHasLegend = m2t.currentHandleHasLegend && ~isempty(legendString);
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         switch char(get(child, 'Type'))
             % 'axes' environments are treated separately.
@@ -708,8 +709,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
         % Add legend after the plot data.
         % The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
         % the output might not necessarily be a string, but a cellstr.
-        if ischar(str) && ~isempty(str) ...
-                && m2t.currentHandleHasLegend && ~isempty(legendString)
+        if ischar(str) && ~isempty(str) && m2t.currentHandleHasLegend
             c = prettyPrint(m2t, legendString, interpreter);
             % We also need a legend alignment option to make multiline
             % legend entries work. This is added by default in getLegendOpts().
