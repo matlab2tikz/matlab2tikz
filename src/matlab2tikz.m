@@ -2720,7 +2720,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         % barseries plot. This allows for a proper handling of multiple bars.
         m2t.barplotTotalNumber = [];
         m2t.barShifts = [];
-        m2t.addedAxisOption = false;
+        m2t.barAddedAxisOption = false;
     end
 
     % Add 'log origin = infty' if BaseValue differs from zero (log origin=0 is
@@ -2809,7 +2809,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         case 'stacked' % stacked plots
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
-            if ~m2t.addedAxisOption
+            if ~m2t.barAddedAxisOption
                 m2t.axesContainers{end}.stackedBarsPresent = true;
                 bWFactor = get(h, 'BarWidth');
                 % Add 'ybar stacked' to the containing axes environment.
@@ -2820,7 +2820,7 @@ function [m2t, str] = drawBarseries(m2t, h)
                     opts_add(m2t.axesContainers{end}.options, ...
                     'bar width', ...
                     formatDim(m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
-                m2t.addedAxisOption = true;
+                m2t.barAddedAxisOption = true;
             end
 
         otherwise
