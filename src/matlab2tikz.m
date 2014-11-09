@@ -824,13 +824,6 @@ function m2t = drawAxes(m2t, handle)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % The rest of this is handling axes options.
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % Set view for 3D plots.
-    if m2t.currentAxesContain3dData
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], get(handle, 'View')));
-    end    
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Get other axis options (ticks, axis color, label,...).
     % This is set here such that the axis orientation indicator in m2t is set
     % before -- if ~isVisible(handle) -- the handle's children are called.
@@ -842,6 +835,10 @@ function m2t = drawAxes(m2t, handle)
     if m2t.currentAxesContain3dData
         [m2t, zopts] = getAxisOptions(m2t, handle, 'z');
         m2t.axesContainers{end}.options = opts_merge(m2t.axesContainers{end}.options, zopts);
+        
+         m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], get(handle, 'View')));
     end
     hasXGrid = false;
     hasYGrid = false;
