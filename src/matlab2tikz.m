@@ -590,6 +590,7 @@ end
 % ==============================================================================
 function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 % Draw all children of a graphics object (if they need to be drawn).
+% #COMPLEX: mainly a switch-case
     str = '';
     children = get(handle, 'Children');
 
@@ -601,54 +602,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        % First of all, check if 'child' is referenced in a legend.
-        % If yes, some plot types may want to add stuff (e.g. 'forget plot').
-        % Add '\addlegendentry{...}' then after the plot.
-        legendString = [];
-        m2t.currentHandleHasLegend = false;
-
-        % Check if current handle is referenced in a legend.
-        switch m2t.env
-            case 'MATLAB'
-                if ~isempty(m2t.legendHandles)
-                    % Make sure that m2t.legendHandles is a row vector.
-                    for legendHandle = m2t.legendHandles(:)'
-                        ud = get(legendHandle, 'UserData');
-                        if isfield(ud, 'handles')
-                            plotChildren = ud.handles;
-                        else
-                            plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
-                        end
-                        k = find(child == plotChildren);
-                        if isempty(k)
-                            % Lines of error bar plots are not referenced
-                            % directly in legends as an error bars plot contains
-                            % two "lines": the data and the deviations. Here, the
-                            % legends refer to the specgraph.errorbarseries
-                            % handle which is 'Parent' to the line handle.
-                            k = find(get(child,'Parent') == plotChildren);
-                        end
-                        if ~isempty(k)
-                            % Legend entry found. Add it to the plot.
-                            m2t.currentHandleHasLegend = true;
-                            interpreter = get(legendHandle, 'Interpreter');
-                            if ~isempty(ud) && isfield(ud,'strings')
-                                legendString = ud.lstrings(k);
-                            else
-                                legendString = get(child, 'DisplayName');
-                            end
-                        end
-                    end
-                end
-            case 'Octave'
-                % Octave associates legends with axes, not with (line) plot.
-                % The variable m2t.gcaHasLegend is set in drawAxes().
-                m2t.currentHandleHasLegend = ~isempty(m2t.gcaAssociatedLegend);
-                interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
-                legendString = getOrDefault(child,'displayname','');
-            otherwise
-                errorUnknownEnvironment();
-        end
+        [m2t, legendString, interpreter] = findLegendInformation(m2t, child);
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         switch char(get(child, 'Type'))
             % 'axes' environments are treated separately.
@@ -707,20 +661,75 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 
         end
 
-        % Add legend after the plot data.
-        % The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
-        % the output might not necessarily be a string, but a cellstr.
-        if ischar(str) && ~isempty(str) ...
-                && m2t.currentHandleHasLegend && ~isempty(legendString)
-            c = prettyPrint(m2t, legendString, interpreter);
-            % We also need a legend alignment option to make multiline
-            % legend entries work. This is added by default in getLegendOpts().
-            str = [str, ...
-                sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))]; %#ok
-        end
+        [m2t, str] = addLegendInformation(m2t, str, legendString, interpreter);
 
         % append the environment
         pgfEnvironments{end+1} = str;
+    end
+end
+% ==============================================================================
+function [m2t, legendString, interpreter] = findLegendInformation(m2t, child)
+% Check if 'child' is referenced in a legend.
+% If yes, some plot types may want to add stuff (e.g. 'forget plot').
+% Add '\addlegendentry{...}' then after the plot.
+legendString = '';
+interpreter  = '';
+m2t.currentHandleHasLegend = false;
+
+% Check if current handle is referenced in a legend.
+switch m2t.env
+    case 'MATLAB'
+        if ~isempty(m2t.legendHandles)
+            % Make sure that m2t.legendHandles is a row vector.
+            for legendHandle = m2t.legendHandles(:)'
+                ud = get(legendHandle, 'UserData');
+                if isfield(ud, 'handles')
+                    plotChildren = ud.handles;
+                else
+                    plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
+                end
+                k = find(child == plotChildren);
+                if isempty(k)
+                    % Lines of error bar plots are not referenced
+                    % directly in legends as an error bars plot contains
+                    % two "lines": the data and the deviations. Here, the
+                    % legends refer to the specgraph.errorbarseries
+                    % handle which is 'Parent' to the line handle.
+                    k = find(get(child,'Parent') == plotChildren);
+                end
+                if ~isempty(k)
+                    % Legend entry found. Add it to the plot.
+                    m2t.currentHandleHasLegend = true;
+                    interpreter = get(legendHandle, 'Interpreter');
+                    if ~isempty(ud) && isfield(ud,'strings')
+                        legendString = ud.lstrings(k);
+                    else
+                        legendString = get(child, 'DisplayName');
+                    end
+                end
+            end
+        end
+    case 'Octave'
+        % Octave associates legends with axes, not with (line) plot.
+        % The variable m2t.gcaHasLegend is set in drawAxes().
+        m2t.currentHandleHasLegend = ~isempty(m2t.gcaAssociatedLegend);
+        interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
+        legendString = getOrDefault(child,'displayname','');
+    otherwise
+        errorUnknownEnvironment();
+end
+end
+% ==============================================================================
+function [m2t, str] = addLegendInformation(m2t, str, legendString, interpreter)
+% Add legend after the plot data.
+% The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
+% the output might not necessarily be a string, but a cellstr.
+    if ischar(str) && ~isempty(str) ...
+            && m2t.currentHandleHasLegend && ~isempty(legendString)
+        c = prettyPrint(m2t, legendString, interpreter);
+        % We also need a legend alignment option to make multiline
+        % legend entries work. This is added by default in getLegendOpts().
+        str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
     end
 end
 % ==============================================================================
@@ -1598,7 +1607,8 @@ end
 % ==============================================================================
 function [tikzMarker, markOptions] = ...
     translateMarker(m2t, matlabMarker, markOptions, faceColorToggle)
-% This function is used for getMarkerOptions() as well as drawScatterPlot().
+% Translates MATLAB markers to their Tikz equivalents
+% #COMPLEX: inherently large switch-case  
     if ~ischar(matlabMarker)
         error('matlab2tikz:translateMarker:MarkerNotAString',...
             'matlabMarker is not a string.');
@@ -2053,6 +2063,7 @@ function [m2t, str] = drawHggroup(m2t, h)
 % Octave doesn't have the handle() function, so there's no way to determine
 % the nature of the plot anymore at this point.  Set to 'unknown' to force
 % fallback handling. This produces something for bar plots, for example.
+% #COMPLEX: big switch-case
     try
         cl = class(handle(h));
     catch %#ok
@@ -3649,17 +3660,7 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
     else
         switch color
             case 'flat'
-                % look for CData at different places
-                cdata = getOrDefault(patchhandle, 'CData', []);
-                if isempty(cdata) || ~isnumeric(cdata)
-                    c = get(patchhandle, 'Children');
-                    cdata = get(c, 'CData');
-                end
-                if isempty(cdata) || ~isnumeric(cdata)
-                    % R2014b+: CData is implicit
-                    siblings = get(get(patchhandle, 'Parent'), 'Children');
-                    cdata = find(siblings(end:-1:1)==patchhandle);
-                end
+                cdata = getCDataWithFallbacks(patchhandle);
 
                 col1 = cdata(1,1);
                 if all(isnan(cdata) | abs(cdata-col1)<1.0e-10)
@@ -3684,6 +3685,21 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                     error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
                     'Don''t know how to handle the color model ''%s''.',color);
         end
+    end
+end
+% ==============================================================================
+function cdata = getCDataWithFallbacks(patchhandle)
+% Looks for CData at different places
+    cdata = getOrDefault(patchhandle, 'CData', []);
+
+    if isempty(cdata) || ~isnumeric(cdata)
+        child = get(patchhandle, 'Children');
+        cdata = get(child, 'CData');
+    end
+    if isempty(cdata) || ~isnumeric(cdata)
+        % R2014b+: CData is implicit by the ordering of the siblings
+        siblings = get(get(patchhandle, 'Parent'), 'Children');
+        cdata = find(siblings(end:-1:1)==patchhandle);
     end
 end
 % ==============================================================================
@@ -3789,9 +3805,7 @@ end
 % ==============================================================================
 function [lStyle] = legendPosition(m2t, handle, lStyle)
 % handle legend location
-    position = '';
-    anchor = '';
-    
+% #COMPLEX: just a big switch-case
     loc  = get(handle, 'Location');
     dist = 0.03;  % distance to to axes in normalized coordinated
     % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave

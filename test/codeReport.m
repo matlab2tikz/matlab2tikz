@@ -29,15 +29,18 @@ function [ report ] = codeReport( varargin )
     [complexityAll, mlintMessages] = splitCycloComplexity(data);
 
     %% analyze cyclomatic complexity
-    isAboveThreshold = @(x) x > ipp.Results.complexityThreshold;
+    categorizeComplexity = @(x) categoryOfComplexity(x, ...
+                                 ipp.Results.complexityThreshold, ...
+                                 ipp.Results.function);
     
     complexityAll = arrayfun(@parseCycloComplexity, complexityAll);
-    complexity = filter(complexityAll, @(x) isAboveThreshold(x.complexity) );
+    complexityAll = arrayfun(categorizeComplexity, complexityAll);
+    
+    complexity = filter(complexityAll, @(x) strcmpi(x.category, 'Bad'));
     complexity = sortBy(complexity, 'line', 'ascend');
     complexity = sortBy(complexity, 'complexity', 'descend');
 
-    [complexityStats] = complexityStatistics(complexityAll, ...
-                      @(x) binaryCategory(isAboveThreshold(x), 'Bad', 'Good'));
+    [complexityStats] = complexityStatistics(complexityAll);
    
     %% analyze other messages
     %TODO: handle all mlint messages and/or other metrics of the code
@@ -51,8 +54,8 @@ function [ report ] = codeReport( varargin )
     dataStr = arrayfun(@(d) mapField(d, 'line',         @integerToString), dataStr);
     dataStr = arrayfun(@(d) mapField(d, 'complexity',   @integerToString), dataStr);
     
-    report = makeTable(dataStr, {'line','function', 'complexity'}, ...
-                                {'Line','Function', 'Complexity'});
+    report = makeTable(dataStr, {'function', 'complexity'}, ...
+                                {'Function', 'Complexity'});
 
     %% command line usage
     if nargout == 0
@@ -77,6 +80,23 @@ function [complexity, others] = splitCycloComplexity(list)
     idxComplexity = arrayfun(filter, list);
     complexity = list( idxComplexity);
     others     = list(~idxComplexity);
+end
+function [data] = categoryOfComplexity(data, threshold, mainFunc)
+% categorizes the complexity as "Good", "Bad" or "Accepted"
+  TOKEN = '#COMPLEX'; % token to signal allowed complexity
+  
+  try %#ok
+    helpStr = help(sprintf('%s>%s', mainFunc, data.function));
+    if ~isempty(strfind(helpStr, TOKEN))
+        data.category = 'Accepted';
+        return;
+    end
+  end
+  if data.complexity > threshold
+      data.category = 'Bad';
+  else
+      data.category = 'Good';
+  end
 end
 
 %% PARSING =====================================================================
@@ -106,14 +126,13 @@ function sorted = sortBy(list, fieldName, mode)
     sorted = list(idxSorted);
 end
 
-function [stat] = complexityStatistics(list, categoryFunc)
+function [stat] = complexityStatistics(list)
 % calculate some basic statistics of the complexities
 
-    list = arrayfun(@(c)(c.complexity), list);
-    stat.values     = list;
-    stat.binCenter  = sort(unique(list));
+    stat.values     = arrayfun(@(c)(c.complexity), list);
+    stat.binCenter  = sort(unique(stat.values));
     
-    categoryPerElem = arrayfun(categoryFunc, stat.values, 'UniformOutput', false);
+    categoryPerElem = {list.category};
     stat.categories = unique(categoryPerElem);
     nCategories = numel(stat.categories);
     
@@ -125,15 +144,7 @@ function [stat] = complexityStatistics(list, categoryFunc)
     end
     
     stat.histogram  = groupedHist;
-    stat.median     = median(list);
-end
-function category = binaryCategory(bool, trueCategory, falseCategory)
-% turns a logical into named categories
-    if bool
-        category = trueCategory;
-    else
-        category = falseCategory;
-    end
+    stat.median     = median(stat.values);
 end
 function [data] = addFooterRow(data, column, func, otherFields)
 % adds a footer row to data table based on calculations of a single column
@@ -214,9 +225,7 @@ end
 function h = statisticsPlot(stat, xLabel, yLabel)
 % plot a histogram and box plot
     nCategories = numel(stat.categories);
-    colors = get(0,'DefaultAxesColorOrder');
-    color = colors(1,:);
-    colors = colors(2:nCategories+1, :); %FIXME: adapt this for many categories
+    colors = colorscheme;
     
     h(1) = subplot(5,1,1:4);
     hold all;
@@ -225,7 +234,7 @@ function h = statisticsPlot(stat, xLabel, yLabel)
     for iCat = 1:nCategories
         category = stat.categories{iCat};
         
-        set(hb(iCat), 'DisplayName', category, 'FaceColor',colors(iCat,:), ...
+        set(hb(iCat), 'DisplayName', category, 'FaceColor', colors.(category), ...
                    'LineStyle','none');
     end
     
@@ -238,7 +247,7 @@ function h = statisticsPlot(stat, xLabel, yLabel)
     boxplot(stat.values,'orientation','horizontal',...
                         'boxstyle',   'outline', ...
                         'symbol',     'o', ...
-                        'colors',  color);
+                        'colors',  colors.All);
     xlabel(xLabel);
     
     xlims = [min(stat.binCenter)-1 max(stat.binCenter)+1];
@@ -249,4 +258,11 @@ function h = statisticsPlot(stat, xLabel, yLabel)
     set(h(1),'XTickLabel','');
     set(h(2),'YTickLabel','','YLim',ylims);
     linkaxes(h, 'x');
+end
+function colors = colorscheme()
+% recognizable color scheme for the categories
+ colors.All      = [  0 113 188]/255;
+ colors.Good     = [118 171  47]/255;
+ colors.Bad      = [161  19  46]/255;
+ colors.Accepted = [236 176  31]/255;
 end
