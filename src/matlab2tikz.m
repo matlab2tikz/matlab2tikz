@@ -590,6 +590,7 @@ end
 % ==============================================================================
 function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 % Draw all children of a graphics object (if they need to be drawn).
+% #COMPLEX: mainly a switch-case
     str = '';
     children = get(handle, 'Children');
 
