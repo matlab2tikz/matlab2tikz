@@ -2874,19 +2874,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
     end
 
-    % define face color;
-    if ~isempty(get(h,'Children'))
-        % quite oddly, before MATLAB R2014b this value is stored in a child
-        % patch and not in the object itself
-        obj = get(h, 'Children');
-    else % R2014b and newer
-        obj = h;
-    end
-    faceColor = get(obj, 'FaceColor');
-    if ~isNone(faceColor)
-        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-        drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
-    end
+    [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions);
 
     % Add 'area legend' to the options as otherwise the legend indicators
     % will just highlight the edges.
@@ -2903,6 +2891,22 @@ function [m2t, str] = drawBarseries(m2t, h)
     drawOpts = join(m2t, drawOptions, ',');
     [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
     str = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
+end
+% ==============================================================================
+function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
+% retrieve the FaceColor of a barseries object
+    if ~isempty(get(h,'Children'))
+        % quite oddly, before MATLAB R2014b this value is stored in a child
+        % patch and not in the object itself
+        obj = get(h, 'Children');
+    else % R2014b and newer
+        obj = h;
+    end
+    faceColor = get(obj, 'FaceColor');
+    if ~isNone(faceColor)
+        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
+        drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
+    end
 end
 % ==============================================================================
 function [m2t, str] = drawStemSeries(m2t, h)
