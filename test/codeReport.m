@@ -29,15 +29,18 @@ function [ report ] = codeReport( varargin )
     [complexityAll, mlintMessages] = splitCycloComplexity(data);
 
     %% analyze cyclomatic complexity
-    isAboveThreshold = @(x) x > ipp.Results.complexityThreshold;
+    categorizeComplexity = @(x) categoryOfComplexity(x, ...
+                                 ipp.Results.complexityThreshold, ...
+                                 ipp.Results.function);
     
     complexityAll = arrayfun(@parseCycloComplexity, complexityAll);
-    complexity = filter(complexityAll, @(x) isAboveThreshold(x.complexity) );
+    complexityAll = arrayfun(categorizeComplexity, complexityAll);
+    
+    complexity = filter(complexityAll, @(x) strcmpi(x.category, 'Bad'));
     complexity = sortBy(complexity, 'line', 'ascend');
     complexity = sortBy(complexity, 'complexity', 'descend');
 
-    [complexityStats] = complexityStatistics(complexityAll, ...
-                      @(x) binaryCategory(isAboveThreshold(x), 'Bad', 'Good'));
+    [complexityStats] = complexityStatistics(complexityAll);
    
     %% analyze other messages
     %TODO: handle all mlint messages and/or other metrics of the code
@@ -78,6 +81,23 @@ function [complexity, others] = splitCycloComplexity(list)
     complexity = list( idxComplexity);
     others     = list(~idxComplexity);
 end
+function [data] = categoryOfComplexity(data, threshold, mainFunc)
+% categorizes the complexity as "Good", "Bad" or "Accepted"
+  TOKEN = '#COMPLEX'; % token to signal allowed complexity
+  
+  try %#ok
+    helpStr = help(sprintf('%s>%s', mainFunc, data.function));
+    if ~isempty(strfind(helpStr, TOKEN))
+        data.category = 'Accepted';
+        return;
+    end
+  end
+  if data.complexity > threshold
+      data.category = 'Bad';
+  else
+      data.category = 'Good';
+  end
+end
 
 %% PARSING =====================================================================
 function [out] = parseCycloComplexity(in)
@@ -106,14 +126,13 @@ function sorted = sortBy(list, fieldName, mode)
     sorted = list(idxSorted);
 end
 
-function [stat] = complexityStatistics(list, categoryFunc)
+function [stat] = complexityStatistics(list)
 % calculate some basic statistics of the complexities
 
-    list = arrayfun(@(c)(c.complexity), list);
-    stat.values     = list;
-    stat.binCenter  = sort(unique(list));
+    stat.values     = arrayfun(@(c)(c.complexity), list);
+    stat.binCenter  = sort(unique(stat.values));
     
-    categoryPerElem = arrayfun(categoryFunc, stat.values, 'UniformOutput', false);
+    categoryPerElem = {list.category};
     stat.categories = unique(categoryPerElem);
     nCategories = numel(stat.categories);
     
@@ -125,15 +144,7 @@ function [stat] = complexityStatistics(list, categoryFunc)
     end
     
     stat.histogram  = groupedHist;
-    stat.median     = median(list);
-end
-function category = binaryCategory(bool, trueCategory, falseCategory)
-% turns a logical into named categories
-    if bool
-        category = trueCategory;
-    else
-        category = falseCategory;
-    end
+    stat.median     = median(stat.values);
 end
 function [data] = addFooterRow(data, column, func, otherFields)
 % adds a footer row to data table based on calculations of a single column
