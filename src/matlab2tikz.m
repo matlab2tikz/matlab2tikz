@@ -1186,8 +1186,12 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis limits
     limits = get(handle, [upper(axis),'Lim']);
-    options = opts_add(options, [axis,'min'], sprintf(m2t.ff, limits(1)));
-    options = opts_add(options, [axis,'max'], sprintf(m2t.ff, limits(2)));
+    if isfinite(limits(1))
+        options = opts_add(options, [axis,'min'], sprintf(m2t.ff, limits(1)));
+    end
+    if isfinite(limits(2))
+        options = opts_add(options, [axis,'max'], sprintf(m2t.ff, limits(2)));
+    end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get ticks along with the labels
     [ticks, tickLabels, hasMinorTicks, tickDir] = getAxisTicks(m2t, handle, axis);
