@@ -3005,40 +3005,39 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     str = [];
 
-    % MATLAB uses a scaling algorithm to determine the size of the arrows.
-    % Before R2014b, the processed coordinates were available. This is no longer
-    % the case, so we have to re-implement it. In MATLAB it is implemented in
-    % the |quiver3|  (and |quiver|) function.
-    xData = get(h, 'XData');
-    yData = get(h, 'YData');
-    zData = getOrDefault(h, 'ZData', []);
+    x = get(h, 'XData');
+    y = get(h, 'YData');
+    z = getOrDefault(h, 'ZData', []);
 
-    uData = get(h, 'UData');
-    vData = get(h, 'VData');
-    wData = getOrDefault(h, 'WData', []);
+    u = get(h, 'UData');
+    v = get(h, 'VData');
+    w = getOrDefault(h, 'WData', []);
 
-    if isempty(zData)
-        zData = 0;
-        wData = 0;
+    if isempty(z)
+        z = 0;
+        w = 0;
         is3D  = false;
     else
         is3D = true;
     end
 
-    % MATLAB scaling algorithm
-    if any(size(xData)==1)
-        nX = sqrt(numel(xData)); nY = nX;
+    % MATLAB uses a scaling algorithm to determine the size of the arrows.
+    % Before R2014b, the processed coordinates were available. This is no longer
+    % the case, so we have to re-implement it. In MATLAB it is implemented in
+    % the |quiver3|  (and |quiver|) function.
+    if any(size(x)==1)
+        nX = sqrt(numel(x)); nY = nX;
     else
-        [nY, nX] = size(xData);
+        [nY, nX] = size(x);
     end
     range  = @(xyzData)(max(xyzData(:)) - min(xyzData(:)));
     euclid = @(x,y,z)(sqrt(x.^2 + y.^2 + z.^2));
-    dx = range(xData)/nX;
-    dy = range(yData)/nY;
-    dz = range(zData)/max(nX,nY);
+    dx = range(x)/nX;
+    dy = range(y)/nY;
+    dz = range(z)/max(nX,nY);
     dd = euclid(dx, dy, dz);
     if dd > 0
-        vectorLength = euclid(uData/dd,vData/dd,wData/dd);
+        vectorLength = euclid(u/dd,v/dd,w/dd);
         maxLength = max(vectorLength(:));
     else
         maxLength = 1;
@@ -3048,9 +3047,9 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     else
         scaleFactor = 1;
     end
-    xData = xData(:).'; uData = uData(:).'*scaleFactor;
-    yData = yData(:).'; vData = vData(:).'*scaleFactor;
-    zData = zData(:).'; wData = wData(:).'*scaleFactor;
+    x = x(:).'; u = u(:).'*scaleFactor;
+    y = y(:).'; v = v(:).'*scaleFactor;
+    z = z(:).'; w = w(:).'*scaleFactor;
 
     % prepare output
     if is3D
@@ -3061,13 +3060,13 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         format = [m2t.ff,',',m2t.ff];
     end
 
-    data = NaN(6,numel(xData));
-    data(1,:) = xData;
-    data(2,:) = yData;
-    data(3,:) = zData;
-    data(4,:) = xData + uData;
-    data(5,:) = yData + vData;
-    data(6,:) = zData + wData;
+    data = NaN(6,numel(x));
+    data(1,:) = x;
+    data(2,:) = y;
+    data(3,:) = z;
+    data(4,:) = x + u;
+    data(5,:) = y + v;
+    data(6,:) = z + w;
 
     if ~is3D
         data([3 6],:) = []; % remove Z-direction
