@@ -3004,52 +3004,8 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     m2t.quiverId = m2t.quiverId + 1;
 
     str = [];
-
-    x = get(h, 'XData');
-    y = get(h, 'YData');
-    z = getOrDefault(h, 'ZData', []);
-
-    u = get(h, 'UData');
-    v = get(h, 'VData');
-    w = getOrDefault(h, 'WData', []);
-
-    if isempty(z)
-        z = 0;
-        w = 0;
-        is3D  = false;
-    else
-        is3D = true;
-    end
-
-    % MATLAB uses a scaling algorithm to determine the size of the arrows.
-    % Before R2014b, the processed coordinates were available. This is no longer
-    % the case, so we have to re-implement it. In MATLAB it is implemented in
-    % the |quiver3|  (and |quiver|) function.
-    if any(size(x)==1)
-        nX = sqrt(numel(x)); nY = nX;
-    else
-        [nY, nX] = size(x);
-    end
-    range  = @(xyzData)(max(xyzData(:)) - min(xyzData(:)));
-    euclid = @(x,y,z)(sqrt(x.^2 + y.^2 + z.^2));
-    dx = range(x)/nX;
-    dy = range(y)/nY;
-    dz = range(z)/max(nX,nY);
-    dd = euclid(dx, dy, dz);
-    if dd > 0
-        vectorLength = euclid(u/dd,v/dd,w/dd);
-        maxLength = max(vectorLength(:));
-    else
-        maxLength = 1;
-    end
-    if getOrDefault(h, 'AutoScale', true)
-        scaleFactor = getOrDefault(h,'AutoScaleFactor', 0.9) / maxLength;
-    else
-        scaleFactor = 1;
-    end
-    x = x(:).'; u = u(:).'*scaleFactor;
-    y = y(:).'; v = v(:).'*scaleFactor;
-    z = z(:).'; w = w(:).'*scaleFactor;
+    
+    [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h);
 
     % prepare output
     if is3D
@@ -3112,6 +3068,55 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         'coordinates{(',format,') (',format,')};\n'],...
         data)];
     %FIXME: external
+end
+% ==============================================================================
+function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h)
+% get and rescale the arrows from a quivergroup object
+    x = get(h, 'XData');
+    y = get(h, 'YData');
+    z = getOrDefault(h, 'ZData', []);
+
+    u = get(h, 'UData');
+    v = get(h, 'VData');
+    w = getOrDefault(h, 'WData', []);
+
+    if isempty(z)
+        z = 0;
+        w = 0;
+        is3D  = false;
+    else
+        is3D = true;
+    end
+
+    % MATLAB uses a scaling algorithm to determine the size of the arrows.
+    % Before R2014b, the processed coordinates were available. This is no longer
+    % the case, so we have to re-implement it. In MATLAB it is implemented in
+    % the |quiver3|  (and |quiver|) function.
+    if any(size(x)==1)
+        nX = sqrt(numel(x)); nY = nX;
+    else
+        [nY, nX] = size(x);
+    end
+    range  = @(xyzData)(max(xyzData(:)) - min(xyzData(:)));
+    euclid = @(x,y,z)(sqrt(x.^2 + y.^2 + z.^2));
+    dx = range(x)/nX;
+    dy = range(y)/nY;
+    dz = range(z)/max(nX,nY);
+    dd = euclid(dx, dy, dz);
+    if dd > 0
+        vectorLength = euclid(u/dd,v/dd,w/dd);
+        maxLength = max(vectorLength(:));
+    else
+        maxLength = 1;
+    end
+    if getOrDefault(h, 'AutoScale', true)
+        scaleFactor = getOrDefault(h,'AutoScaleFactor', 0.9) / maxLength;
+    else
+        scaleFactor = 1;
+    end
+    x = x(:).'; u = u(:).'*scaleFactor;
+    y = y(:).'; v = v(:).'*scaleFactor;
+    z = z(:).'; w = w(:).'*scaleFactor;
 end
 % ==============================================================================
 function [m2t, str] = drawErrorBars(m2t, h)
