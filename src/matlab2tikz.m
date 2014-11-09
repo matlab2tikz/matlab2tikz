@@ -2809,7 +2809,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         case 'stacked' % stacked plots
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
-            if isempty(m2t.addedAxisOption) || ~m2t.addedAxisOption
+            if ~m2t.addedAxisOption
                 m2t.axesContainers{end}.stackedBarsPresent = true;
                 bWFactor = get(h, 'BarWidth');
                 % Add 'ybar stacked' to the containing axes environment.
