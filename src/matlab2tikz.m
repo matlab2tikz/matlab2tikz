@@ -1880,6 +1880,9 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
         colorData = cData;
     end
     
+    m = size(cData, 1);
+    n = size(cData, 2);
+    
     colorData = flipImageIfAxesReversed(m2t, colorData);
     
     % Write an indexed or a truecolor image
@@ -1908,13 +1911,13 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     end
     % -----------------------------------------------------------------------
     % dimensions of a pixel in axes units
-    if size(cData,2)==1
+    if n == 1
         xLim = get(m2t.currentHandles.gca, 'XLim');
         xw = xLim(2) - xLim(1);
     else
         xw = (xData(end)-xData(1)) / (n-1);
     end
-    if size(cData,1)==1
+    if m == 1
         yLim = get(m2t.currentHandles.gca, 'YLim');
         yw = yLim(2) - yLim(1);
     else
@@ -1949,7 +1952,7 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     switch length(xData)
         case 2 % only the limits given; common for generic image plots
             hX = 1;
-        case m % specific x-data is given
+        case size(cData,1) % specific x-data is given
             hX = (xData(end)-xData(1)) / (length(xData)-1);
         otherwise
             error('drawImage:arrayLengthMismatch', ...
@@ -1960,7 +1963,7 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     switch length(yData)
         case 2 % only the limits given; common for generic image plots
             hY = 1;
-        case n % specific y-data is given
+        case size(cData,2) % specific y-data is given
             hY = (yData(end)-yData(1)) / (length(yData)-1);
         otherwise
             error('drawImage:arrayLengthMismatch', ...
