@@ -2732,42 +2732,7 @@ function [m2t, str] = drawBarseries(m2t, h)
             'log origin', 'infty');
     end
 
-    % -----------------------------------------------------------------------
-    % The bar plot implementation in Pgfplots lacks certain functionalities;
-    % for example, it can't plot bar plots and non-bar plots in the same
-    % axis (while MATLAB can).
-    % The following checks if this is the case and cowardly bails out if so.
-    % On top of that, the number of bar plots is counted.
-    % FIXME: bar plots together with different kinds (seems possible in 1.10)
-    if isempty(m2t.barplotTotalNumber)
-        m2t.barplotTotalNumber = 0;
-        siblings = get(get(h, 'Parent'), 'Children');
-        for s = siblings(:)'
-
-            if ~isVisible(s)
-                continue;  % skip invisible objects
-            end
-
-            if any(strcmpi(get(s, 'Type'), {'hggroup','Bar'}))
-                cl = class(handle(s));
-                switch cl
-                    case {'specgraph.barseries', 'matlab.graphics.chart.primitive.Bar'}
-                        m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
-                    case 'specgraph.errorbarseries'
-                        % TODO
-                        % Unfortunately, MATLAB(R) treats error bars and
-                        % corresponding bar plots as siblings of a common axes
-                        % object. For error bars to work with bar plots -- which
-                        % is trivially possible in Pgfplots -- one has to match
-                        % errorbar and bar objects (probably by their values).
-                        userWarning(m2t, 'Error bars discarded (to be implemented).');
-                    otherwise
-                        error('matlab2tikz:drawBarseries',          ...
-                            'Unknown class''%s''.', cl);
-                end
-            end
-        end
-    end
+    [m2t, numBars] = countBarplotSiblings(m2t, h);
 
     xData = get(h, 'XData');
     yData = get(h, 'YData');
@@ -2782,7 +2747,6 @@ function [m2t, str] = drawBarseries(m2t, h)
     else
         barType = 'ybar';
     end
-    numBars = m2t.barplotTotalNumber;
     switch barlayout
         case 'grouped'  % grouped bar plots
             m2t.barplotId = m2t.barplotId + 1;
@@ -2891,6 +2855,45 @@ function [m2t, str] = drawBarseries(m2t, h)
     drawOpts = join(m2t, drawOptions, ',');
     [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
     str = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
+end
+% ==============================================================================
+function [m2t, numBars] = countBarplotSiblings(m2t, h)
+% Count the number of sibling bar plots
+ % The bar plot implementation in Pgfplots lacked certain functionalities;
+ % for example, it can't plot bar plots and non-bar plots in the same
+ % axis (while MATLAB can).
+ % The following checks if this is the case and cowardly bails out if so.
+ % FIXME: bar plots together with different kinds (seems possible in 1.10)
+    if isempty(m2t.barplotTotalNumber)
+        m2t.barplotTotalNumber = 0;
+        siblings = get(get(h, 'Parent'), 'Children');
+        for s = siblings(:)'
+
+            if ~isVisible(s)
+                continue;  % skip invisible objects
+            end
+
+            if any(strcmpi(get(s, 'Type'), {'hggroup','Bar'}))
+                cl = class(handle(s));
+                switch cl
+                    case {'specgraph.barseries', 'matlab.graphics.chart.primitive.Bar'}
+                        m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
+                    case 'specgraph.errorbarseries'
+                        % TODO
+                        % Unfortunately, MATLAB(R) treats error bars and
+                        % corresponding bar plots as siblings of a common axes
+                        % object. For error bars to work with bar plots -- which
+                        % is trivially possible in Pgfplots -- one has to match
+                        % errorbar and bar objects (probably by their values).
+                        userWarning(m2t, 'Error bars discarded (to be implemented).');
+                    otherwise
+                        error('matlab2tikz:drawBarseries',          ...
+                            'Unknown class''%s''.', cl);
+                end
+            end
+        end
+    end
+    numBars = m2t.barplotTotalNumber;
 end
 % ==============================================================================
 function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
