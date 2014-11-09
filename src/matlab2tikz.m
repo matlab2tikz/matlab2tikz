@@ -173,6 +173,7 @@ m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
 m2t.barplotId    = 0; % identification flag for bar plots
+m2t.quiverId     = 0; % identification flag for quiver plot styles
 m2t.automaticLabelIndex = 0;
 
 % definition of color depth
@@ -2998,12 +2999,9 @@ end
 % ==============================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
 % Takes care of MATLAB's quiver plots.
-    if ~isfield(m2t, 'quiverId')
-        % used for arrow styles, in case there are more than one quiver fields
-        m2t.quiverId = 0;
-    else
-        m2t.quiverId = m2t.quiverId + 1;
-    end
+    
+    % used for arrow styles, in case there are more than one quiver fields
+    m2t.quiverId = m2t.quiverId + 1;
 
     str = [];
 
@@ -3105,7 +3103,6 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     % Append the arrow style to the TikZ options themselves.
     % TODO: Look into replacing this by something more 'local',
     % (see \pgfplotset{}).
-    arrowStyle  = ['arrow',num2str(m2t.quiverId), '/.style={',arrowOptions,'}'];
     m2t.content.options = opts_add(m2t.content.options,...
         sprintf('arrow%d/.style', m2t.quiverId), ...
         ['{', arrowOptions, '}']);
