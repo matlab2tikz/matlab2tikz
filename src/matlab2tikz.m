@@ -2287,7 +2287,7 @@ function [m2t, str] = drawText(m2t, handle)
 % Different from the default MATLAB behavior. To fix this, one could use
 % /pgfplots/after end axis/.code.
 
-    str = [];
+    str = '';
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get required properties
@@ -2304,44 +2304,42 @@ function [m2t, str] = drawText(m2t, handle)
     VerticalAlignment = get(handle, 'VerticalAlignment');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % translate them to pgf style
-    style = cell(0);
+    style = opts_new();
     if ~isNone(bgColor)
         [m2t, bcolor] = getColor(m2t, handle, bgColor, 'patch');
-        style{end+1} = ['fill=' bcolor];
+        style = opts_add(style, 'fill', bcolor);
     end
     switch VerticalAlignment
         case {'top', 'cap'}
-            style{end+1} = 'below';
+            style = opts_add(style, 'below');
         case {'baseline', 'bottom'}
-            style{end+1} = 'above';
+            style = opts_add(style, 'above');
     end
     switch HorizontalAlignment
         case 'left'
-            style{end+1} = 'right';
+            style = opts_add(style, 'right');
         case 'right'
-            style{end+1} = 'left';
+            style = opts_add(style, 'left');
     end
     % Add Horizontal alignment
-    style{end+1} = ['align=', HorizontalAlignment];
+    style = opts_add(style, 'align', HorizontalAlignment);
     
     % remove invisible border around \node to make the text align precisely
-    style{end+1} = 'inner sep=0mm';
+    style = opts_add(style, 'inner sep', '0mm');
 
     % Add rotation, if existing
-    rot = getOrDefault(handle, 'Rotation', 0.0);
-    if rot ~= 0.0
-        style{end+1} = sprintf(['rotate=', m2t.ff], rot);
+    defaultRotation = 0.0;
+    rot = getOrDefault(handle, 'Rotation', defaultRotation);
+    if rot ~= defaultRotation
+        style = opts_add(style, 'rotate', sprintf(m2t.ff, rot));
     end
 
-    fontStyle = getFontStyle(m2t, handle);
-    if ~isempty(fontStyle)
-        style{end+1} = opts_print(m2t, fontStyle, ', ');
-    end
-
-    style{end+1} = ['text=' tcolor];
+    style = opts_merge(style, getFontStyle(m2t, handle));
+    
+    style = opts_add(style, 'text', tcolor);
     if ~isNone(EdgeColor)
         [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
-        style{end+1} = ['draw=', ecolor];
+        style = opts_add(style, 'draw', ecolor);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % plot the thing
@@ -2416,7 +2414,7 @@ function [m2t, str] = drawText(m2t, handle)
                 'Illegal text position specification.');
     end
     str = sprintf('\\node[%s]\nat %s {%s};\n', ...
-        join(m2t, style,', '), posString, String);
+        opts_print(m2t, style, ', '), posString, String);
 end
 % ==============================================================================
 function [m2t, str] = drawRectangle(m2t, handle)
