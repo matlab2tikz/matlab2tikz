@@ -907,55 +907,7 @@ function m2t = drawAxes(m2t, handle)
         end
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % See if there are any legends that need to be plotted.
-    % Since the legends are at the same level as axes in the hierarchy,
-    % we can't work out which relates to which using the tree
-    % so we have to do it by looking for a plot inside which the legend sits.
-    % This could be done better with a heuristic of finding
-    % the nearest legend to a plot, which would cope with legends outside
-    % plot boundaries.
-    switch m2t.env
-        case 'MATLAB'
-            legendHandle = legend(handle);
-            if ~isempty(legendHandle)
-                [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    key, ...
-                    ['{', legendOpts, '}']);
-            end
-        case 'Octave'
-            % TODO: How to uniquely connect a legend with a pair of axes in Octave?
-            axisDims = pos2dims(get(handle,'Position')); %#ok
-            % siblings of this handle:
-            siblings = get(get(handle,'Parent'), 'Children');
-            % "siblings" always(?) is a column vector. Iterating over the column
-            % with the for statement below wouldn't return the individual vector
-            % elements but the same column vector, resulting in no legends exported.
-            % So let's make sure "siblings" is a row vector by reshaping it:
-            siblings = reshape(siblings, 1, []);
-            for sibling = siblings
-                if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
-                    legDims = pos2dims(get(sibling, 'Position')); %#ok
-
-                    % TODO The following logic does not work for 3D plots.
-                    %      => Commented out.
-                    %      This creates problems though for stacked plots with legends.
-                    %                if (   legDims.left   > axisDims.left ...
-                    %                     && legDims.bottom > axisDims.bottom ...
-                    %                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
-                    %                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height)
-                    [m2t, key, legendOpts] = getLegendOpts(m2t, sibling);
-                    m2t.axesContainers{end}.options = ...
-                        opts_add(m2t.axesContainers{end}.options, ...
-                        key, ...
-                        ['{', legendOpts, '}']);
-                    %                end
-                end
-            end
-        otherwise
-            errorUnknownEnvironment();
-    end
+    m2t = drawLegendOptionsOfAxes(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % add manually given extra axis options
     if ~isempty(m2t.cmdOpts.Results.extraAxisOptions)
@@ -1085,6 +1037,58 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, handle)
                 opts_add(m2t.axesContainers{end}.options, ...
                 'axis z line*', 'left');
         end
+    end
+end
+% ==============================================================================
+function m2t = drawLegendOptionsOfAxes(m2t, handle)
+    % See if there are any legends that need to be plotted.
+    % Since the legends are at the same level as axes in the hierarchy,
+    % we can't work out which relates to which using the tree
+    % so we have to do it by looking for a plot inside which the legend sits.
+    % This could be done better with a heuristic of finding
+    % the nearest legend to a plot, which would cope with legends outside
+    % plot boundaries.
+    switch m2t.env
+        case 'MATLAB'
+            legendHandle = legend(handle);
+            if ~isempty(legendHandle)
+                [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
+                m2t.axesContainers{end}.options = ...
+                    opts_add(m2t.axesContainers{end}.options, ...
+                    key, ...
+                    ['{', legendOpts, '}']);
+            end
+        case 'Octave'
+            % TODO: How to uniquely connect a legend with a pair of axes in Octave?
+            axisDims = pos2dims(get(handle,'Position')); %#ok
+            % siblings of this handle:
+            siblings = get(get(handle,'Parent'), 'Children');
+            % "siblings" always(?) is a column vector. Iterating over the column
+            % with the for statement below wouldn't return the individual vector
+            % elements but the same column vector, resulting in no legends exported.
+            % So let's make sure "siblings" is a row vector by reshaping it:
+            siblings = reshape(siblings, 1, []);
+            for sibling = siblings
+                if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
+                    legDims = pos2dims(get(sibling, 'Position')); %#ok
+
+                    % TODO The following logic does not work for 3D plots.
+                    %      => Commented out.
+                    %      This creates problems though for stacked plots with legends.
+                    %                if (   legDims.left   > axisDims.left ...
+                    %                     && legDims.bottom > axisDims.bottom ...
+                    %                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
+                    %                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height)
+                    [m2t, key, legendOpts] = getLegendOpts(m2t, sibling);
+                    m2t.axesContainers{end}.options = ...
+                        opts_add(m2t.axesContainers{end}.options, ...
+                        key, ...
+                        ['{', legendOpts, '}']);
+                    %                end
+                end
+            end
+        otherwise
+            errorUnknownEnvironment();
     end
 end
 % ==============================================================================
