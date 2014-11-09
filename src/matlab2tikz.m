@@ -3800,9 +3800,7 @@ end
 % ==============================================================================
 function [lStyle] = legendPosition(m2t, handle, lStyle)
 % handle legend location
-    position = '';
-    anchor = '';
-    
+% #COMPLEX: just a big switch-case
     loc  = get(handle, 'Location');
     dist = 0.03;  % distance to to axes in normalized coordinated
     % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
