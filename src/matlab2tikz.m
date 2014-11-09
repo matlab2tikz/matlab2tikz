@@ -3728,21 +3728,12 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     if ~isVisible(handle) && ~any(isVisible(children))
         return
     end
-
-    [position, anchor] = legendPosition(m2t, handle);
-    [textalign, pictalign] = legendEntryAlignment(m2t, handle);
-
+    
     lStyle = opts_new();
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % append to legend options
-    if ~isempty(anchor)
-        %TODO: shouldn't this include units?
-        lStyle = opts_add(lStyle, 'at', ...
-            sprintf('{(%s,%s)}', formatDim(position(1)), formatDim(position(2))));
-        lStyle = opts_add(lStyle, 'anchor', anchor);
-    end
-    % handle orientation
+
+    lStyle = legendPosition(m2t, handle, lStyle);
     lStyle = legendOrientation(m2t, handle, lStyle);
+    lStyle = legendEntryAlignment(m2t, handle, lStyle);
 
     % If the plot has 'legend boxoff', we have the 'not visible'
     % property, so turn off line and background fill.
@@ -3770,25 +3761,9 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
         end
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    % alignment of legend text and pictograms, if available
-    if ~isempty(textalign) && ~isempty(pictalign)
-        lStyle = opts_add(lStyle, 'nodes', textalign);
-        lStyle = opts_add(lStyle, 'legend plot post', pictalign);
-        
-    else
-        % Make sure the entries are flush left (default MATLAB behavior).
-        % This is also import for multiline legend entries: Without alignment
-        % specification, the TeX document won't compile.
-        %lStyle{end+1} = 'nodes=right';
-        lStyle = opts_add(lStyle, 'legend cell align', 'left');
-
-    end
-
-    if ~isempty(lStyle)
-        key = 'legend style';
-        lOpts = opts_print(m2t, lStyle, ',');
-    end
+    
+    key = 'legend style';
+    lOpts = opts_print(m2t, lStyle, ',');
 end
 % ==============================================================================
 function [lStyle] = legendOrientation(m2t, handle, lStyle)
@@ -3807,7 +3782,7 @@ function [lStyle] = legendOrientation(m2t, handle, lStyle)
     end
 end
 % ==============================================================================
-function [position, anchor] = legendPosition(m2t, handle)
+function [lStyle] = legendPosition(m2t, handle, lStyle)
 % handle legend location
     position = '';
     anchor = '';
@@ -3818,7 +3793,7 @@ function [position, anchor] = legendPosition(m2t, handle)
     % small cased ('northoutside'). Hence, use lower() for uniformity.
     switch lower(loc)
         case 'northeast'
-            % don't anything in this (default) case
+            return % don't do anything in this (default) case
         case 'northwest'
             position = [dist, 1-dist];
             anchor   = 'north west';
@@ -3887,13 +3862,23 @@ function [position, anchor] = legendPosition(m2t, handle)
             % a general principle for all legend placements.
             userWarning(m2t, [sprintf(' Option ''%s'' not yet implemented.',loc),         ...
                 ' Choosing default.']);
+            return % use defaults
+            
         otherwise
             userWarning(m2t, [' Unknown legend location ''',loc,''''           ...
                 '. Choosing default.']);
+            return % use defaults
     end
+    
+    % set legend position
+    %TODO: shouldn't this include units?
+    lStyle = opts_add(lStyle, 'at',  sprintf('{(%s,%s)}', ...
+                        formatDim(position(1)), formatDim(position(2))));
+    lStyle = opts_add(lStyle, 'anchor', anchor);
+    
 end
 % ==============================================================================
-function [textalign, pictalign] = legendEntryAlignment(m2t, handle)
+function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
 % determines the text and picture alignment inside a legend
     textalign = '';
     pictalign = '';
@@ -3919,6 +3904,20 @@ function [textalign, pictalign] = legendEntryAlignment(m2t, handle)
             % does not specify text/pictogram alignment in legends
         otherwise
             errorUnknownEnvironment();
+    end
+    
+    % set alignment of legend text and pictograms, if available
+    if ~isempty(textalign) && ~isempty(pictalign)
+        lStyle = opts_add(lStyle, 'nodes', textalign);
+        lStyle = opts_add(lStyle, 'legend plot post', pictalign);
+        
+    else
+        % Make sure the entries are flush left (default MATLAB behavior).
+        % This is also import for multiline legend entries: Without alignment
+        % specification, the TeX document won't compile.
+        %lStyle{end+1} = 'nodes=right';
+        lStyle = opts_add(lStyle, 'legend cell align', 'left');
+
     end
 end
 % ==============================================================================
