@@ -268,6 +268,9 @@ warnAboutParameter(m2t, 'parseStringsAsMath', @(opt)(opt==true), ...
      'strings please set the parameter "parseStrings" to false.']);
 warnAboutParameter(m2t, 'noSize', @(opt)(opt==true), ...
      'This may impede both axes sizing and placement!');
+warnAboutParameter(m2t, 'imagesAsPng', @(opt)(opt==false), ...
+     ['It is highly recommended to use PNG data to store images.\n', ...
+      'Make sure to set "imagesAsPng" to true.']);
 
 % The following color RGB-values which will need to be defined.
 % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
@@ -1942,8 +1945,6 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
 end
 function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
 % writes an image as raw TikZ commands (STRONGLY DISCOURAGED)
-    userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
-        'Make sure to set ''imagesAsPng'' to true.']);
     str = '';
 
     % Generate uniformly distributed X, Y, although xData and yData may be
