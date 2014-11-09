@@ -2800,10 +2800,10 @@ function [m2t, str] = drawBarseries(m2t, h)
             end
             drawOptions = {drawOptions{:}, ...
                 barType, ...
-                sprintf(['bar width=',m2t.ff,'%s'], physicalBarWidth, phyicalBarUnit)};
+                sprintf('bar width=%s', formatDim(physicalBarWidth, phyicalBarUnit))};
             if physicalBarShift ~= 0.0
                 drawOptions{end+1} = ...
-                    sprintf(['bar shift=',m2t.ff,'%s'], physicalBarShift, phyicalBarUnit);
+                    sprintf('bar shift=%s', formatDim(physicalBarShift, phyicalBarUnit));
             end
 
         case 'stacked' % stacked plots
