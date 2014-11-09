@@ -54,8 +54,8 @@ function [ report ] = codeReport( varargin )
     dataStr = arrayfun(@(d) mapField(d, 'line',         @integerToString), dataStr);
     dataStr = arrayfun(@(d) mapField(d, 'complexity',   @integerToString), dataStr);
     
-    report = makeTable(dataStr, {'line','function', 'complexity'}, ...
-                                {'Line','Function', 'Complexity'});
+    report = makeTable(dataStr, {'function', 'complexity'}, ...
+                                {'Function', 'Complexity'});
 
     %% command line usage
     if nargout == 0
