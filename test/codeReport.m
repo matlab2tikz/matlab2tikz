@@ -225,9 +225,7 @@ end
 function h = statisticsPlot(stat, xLabel, yLabel)
 % plot a histogram and box plot
     nCategories = numel(stat.categories);
-    colors = get(0,'DefaultAxesColorOrder');
-    color = colors(1,:);
-    colors = colors(2:nCategories+1, :); %FIXME: adapt this for many categories
+    colors = colorscheme;
     
     h(1) = subplot(5,1,1:4);
     hold all;
@@ -236,7 +234,7 @@ function h = statisticsPlot(stat, xLabel, yLabel)
     for iCat = 1:nCategories
         category = stat.categories{iCat};
         
-        set(hb(iCat), 'DisplayName', category, 'FaceColor',colors(iCat,:), ...
+        set(hb(iCat), 'DisplayName', category, 'FaceColor', colors.(category), ...
                    'LineStyle','none');
     end
     
@@ -249,7 +247,7 @@ function h = statisticsPlot(stat, xLabel, yLabel)
     boxplot(stat.values,'orientation','horizontal',...
                         'boxstyle',   'outline', ...
                         'symbol',     'o', ...
-                        'colors',  color);
+                        'colors',  colors.All);
     xlabel(xLabel);
     
     xlims = [min(stat.binCenter)-1 max(stat.binCenter)+1];
@@ -260,4 +258,11 @@ function h = statisticsPlot(stat, xLabel, yLabel)
     set(h(1),'XTickLabel','');
     set(h(2),'YTickLabel','','YLim',ylims);
     linkaxes(h, 'x');
+end
+function colors = colorscheme()
+% recognizable color scheme for the categories
+ colors.All      = [  0 113 188]/255;
+ colors.Good     = [118 171  47]/255;
+ colors.Bad      = [161  19  46]/255;
+ colors.Accepted = [236 176  31]/255;
 end
