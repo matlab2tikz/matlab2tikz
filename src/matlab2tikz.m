@@ -878,50 +878,7 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawTitleOfAxes(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % axes locations
-    boxOn = strcmp(get(handle, 'box'), 'on');
-    xloc = get(handle, 'XAxisLocation');
-    if boxOn
-        if strcmp(xloc, 'bottom')
-            % default; nothing added
-        elseif strcmp(xloc, 'top')
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis x line*', 'top');
-        else
-            error('matlab2tikz:drawAxes', ...
-                'Illegal axis location ''%s''.', xloc);
-        end
-    else % box off
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'axis x line*', xloc);
-    end
-    yloc = get(handle, 'YAxisLocation');
-    if boxOn
-        if strcmp(yloc, 'left')
-            % default; nothing added
-        elseif strcmp(yloc, 'right')
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis y line*', 'right');
-        else
-            error('matlab2tikz:drawAxes', ...
-                'Illegal axis location ''%s''.', yloc);
-        end
-    else % box off
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'axis y line*', yloc);
-    end
-    if m2t.currentAxesContain3dData
-        % There's no such attribute as 'ZAxisLocation'.
-        % Instead, the default seems to be 'left'.
-        if ~boxOn
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis z line*', 'left');
-        end
-    end
+    m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % grid line style
     if hasXGrid || hasYGrid || hasZGrid
@@ -1080,6 +1037,54 @@ function m2t = drawTitleOfAxes(m2t, handle)
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'title', sprintf('{%s}', title));
+    end
+end
+% ==============================================================================
+function m2t = drawBoxAndLineLocationsOfAxes(m2t, handle)
+% draw the box and axis line location of an axes object
+    isboxOn = strcmp(get(handle, 'box'), 'on');
+    xloc = get(handle, 'XAxisLocation');
+    if isboxOn
+        if strcmp(xloc, 'bottom')
+            % default; nothing added
+        elseif strcmp(xloc, 'top')
+            m2t.axesContainers{end}.options = ...
+                opts_add(m2t.axesContainers{end}.options, ...
+                'axis x line*', 'top');
+        else
+            error('matlab2tikz:drawAxes', ...
+                'Illegal axis location ''%s''.', xloc);
+        end
+    else % box off
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'axis x line*', xloc);
+    end
+    yloc = get(handle, 'YAxisLocation');
+    if isboxOn
+        if strcmp(yloc, 'left')
+            % default; nothing added
+        elseif strcmp(yloc, 'right')
+            m2t.axesContainers{end}.options = ...
+                opts_add(m2t.axesContainers{end}.options, ...
+                'axis y line*', 'right');
+        else
+            error('matlab2tikz:drawAxes', ...
+                'Illegal axis location ''%s''.', yloc);
+        end
+    else % box off
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'axis y line*', yloc);
+    end
+    if m2t.currentAxesContain3dData
+        % There's no such attribute as 'ZAxisLocation'.
+        % Instead, the default seems to be 'left'.
+        if ~isboxOn
+            m2t.axesContainers{end}.options = ...
+                opts_add(m2t.axesContainers{end}.options, ...
+                'axis z line*', 'left');
+        end
     end
 end
 % ==============================================================================
