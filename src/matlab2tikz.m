@@ -3730,87 +3730,8 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     end
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % handle legend location
-    loc  = get(handle, 'Location');
-    dist = 0.03;  % distance to to axes in normalized coordinated
-    anchor = [];
-    % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
-    % small cased ('northoutside'). Hence, use lower() for uniformity.
-    switch lower(loc)
-        case 'northeast'
-            % don't anything in this (default) case
-        case 'northwest'
-            position = [dist, 1-dist];
-            anchor   = 'north west';
-        case 'southwest'
-            position = [dist, dist];
-            anchor   = 'south west';
-        case 'southeast'
-            position = [1-dist, dist];
-            anchor   = 'south east';
-        case 'north'
-            position = [0.5, 1-dist];
-            anchor   = 'north';
-        case 'east'
-            position = [1-dist, 0.5];
-            anchor   = 'east';
-        case 'south'
-            position = [0.5, dist];
-            anchor   = 'south';
-        case 'west'
-            position = [dist, 0.5];
-            anchor   = 'west';
-        case 'northoutside'
-            position = [0.5, 1+dist];
-            anchor = 'south';
-        case 'southoutside'
-            position = [0.5, -dist];
-            anchor = 'north';
-        case 'eastoutside'
-            position = [1+dist, 0.5];
-            anchor = 'west';
-        case 'westoutside'
-            position = [-dist, 0.5];
-            anchor = 'east';
-        case 'northeastoutside'
-            position = [1+dist, 1];
-            anchor = 'north west';
-        case 'northwestoutside'
-            position = [-dist, 1];
-            anchor = 'north east';
-        case 'southeastoutside'
-            position = [1+dist, 0];
-            anchor = 'south west';
-        case 'southwestoutside'
-            position = [-dist, 0];
-            anchor = 'south east';
-        case 'none'
-            legendPos = get(handle, 'Position');
-            unit = get(handle, 'Units');
-            if isequal(unit, 'normalized')
-                position = legendPos(1:2);
-            else
-                % Calculate where the legend is located w.r.t. the axes.
-                axesPos = get(m2t.currentHandles.gca, 'Position');
-                axesUnit = get(m2t.currentHandles.gca, 'Units');
-                % Convert to legend unit
-                axesPos = convertUnits(axesPos, axesUnit, unit);
-                % By default, the axes position is given w.r.t. to the figure,
-                % and so is the legend.
-                position = (legendPos(1:2)-axesPos(1:2)) ./ axesPos(3:4);
-            end
-            anchor = 'south west';
-        case {'best','bestoutside'}
-            % TODO: Implement these.
-            % The position could be determined by means of 'Position' and/or
-            % 'OuterPosition' of the legend handle; in fact, this could be made
-            % a general principle for all legend placements.
-            userWarning(m2t, [sprintf(' Option ''%s'' not yet implemented.',loc),         ...
-                ' Choosing default.']);
-        otherwise
-            userWarning(m2t, [' Unknown legend location ''',loc,''''           ...
-                '. Choosing default.']);
-    end
+    [position, anchor] = legendPosition(m2t, handle);
+    
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % handle alignment of legend text and pictograms
     textalign = [];
@@ -3901,6 +3822,90 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     if ~isempty(lStyle)
         key = 'legend style';
         lOpts = join(m2t, lStyle,',');
+    end
+end
+% ==============================================================================
+function [position, anchor] = legendPosition(m2t, handle)
+% handle legend location
+    loc  = get(handle, 'Location');
+    dist = 0.03;  % distance to to axes in normalized coordinated
+    anchor = [];
+    % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
+    % small cased ('northoutside'). Hence, use lower() for uniformity.
+    switch lower(loc)
+        case 'northeast'
+            % don't anything in this (default) case
+        case 'northwest'
+            position = [dist, 1-dist];
+            anchor   = 'north west';
+        case 'southwest'
+            position = [dist, dist];
+            anchor   = 'south west';
+        case 'southeast'
+            position = [1-dist, dist];
+            anchor   = 'south east';
+        case 'north'
+            position = [0.5, 1-dist];
+            anchor   = 'north';
+        case 'east'
+            position = [1-dist, 0.5];
+            anchor   = 'east';
+        case 'south'
+            position = [0.5, dist];
+            anchor   = 'south';
+        case 'west'
+            position = [dist, 0.5];
+            anchor   = 'west';
+        case 'northoutside'
+            position = [0.5, 1+dist];
+            anchor = 'south';
+        case 'southoutside'
+            position = [0.5, -dist];
+            anchor = 'north';
+        case 'eastoutside'
+            position = [1+dist, 0.5];
+            anchor = 'west';
+        case 'westoutside'
+            position = [-dist, 0.5];
+            anchor = 'east';
+        case 'northeastoutside'
+            position = [1+dist, 1];
+            anchor = 'north west';
+        case 'northwestoutside'
+            position = [-dist, 1];
+            anchor = 'north east';
+        case 'southeastoutside'
+            position = [1+dist, 0];
+            anchor = 'south west';
+        case 'southwestoutside'
+            position = [-dist, 0];
+            anchor = 'south east';
+        case 'none'
+            legendPos = get(handle, 'Position');
+            unit = get(handle, 'Units');
+            if isequal(unit, 'normalized')
+                position = legendPos(1:2);
+            else
+                % Calculate where the legend is located w.r.t. the axes.
+                axesPos = get(m2t.currentHandles.gca, 'Position');
+                axesUnit = get(m2t.currentHandles.gca, 'Units');
+                % Convert to legend unit
+                axesPos = convertUnits(axesPos, axesUnit, unit);
+                % By default, the axes position is given w.r.t. to the figure,
+                % and so is the legend.
+                position = (legendPos(1:2)-axesPos(1:2)) ./ axesPos(3:4);
+            end
+            anchor = 'south west';
+        case {'best','bestoutside'}
+            % TODO: Implement these.
+            % The position could be determined by means of 'Position' and/or
+            % 'OuterPosition' of the legend handle; in fact, this could be made
+            % a general principle for all legend placements.
+            userWarning(m2t, [sprintf(' Option ''%s'' not yet implemented.',loc),         ...
+                ' Choosing default.']);
+        otherwise
+            userWarning(m2t, [' Unknown legend location ''',loc,''''           ...
+                '. Choosing default.']);
     end
 end
 % ==============================================================================
