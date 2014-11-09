@@ -3729,37 +3729,8 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
         return
     end
 
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     [position, anchor] = legendPosition(m2t, handle);
-    
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % handle alignment of legend text and pictograms
-    textalign = [];
-    pictalign = [];
-    switch m2t.env
-        case 'Octave'
-            % Octave allows to change the alignment of legend text and
-            % pictograms using legend('left') and legend('right')
-            textpos = get(handle, 'textposition');
-            switch lower(textpos)
-                case 'left'
-                    % pictogram right of flush right text
-                    textalign = 'left';
-                    pictalign = 'right';
-                case 'right'
-                    % pictogram left of flush left text (default)
-                    textalign = 'right';
-                    pictalign = 'left';
-                otherwise
-                    userWarning(m2t, [' Unknown legend text position ''',textpos,'''' ...
-                        '. Choosing default.']);
-            end
-        case 'MATLAB'
-            % does not specify text/pictogram alignment in legends
-        otherwise
-            errorUnknownEnvironment();
-    end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    [textalign, pictalign] = legendEntryAlignment(m2t, handle);
 
     lStyle = cell(0);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3770,17 +3741,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
             sprintf('anchor=%s', anchor)};
     end
     % handle orientation
-    ori = get(handle, 'Orientation');
-    switch lower(ori)
-        case 'horizontal'
-            numLegendEntries = length(get(handle, 'String'));
-            lStyle{end+1} = sprintf('legend columns=%d', numLegendEntries);
-        case 'vertical'
-            % Use default.
-        otherwise
-            userWarning(m2t, [' Unknown legend orientation ''',ori,'''' ...
-                '. Choosing default (vertical).']);
-    end
+    lStyle = legendOrientation(m2t, handle, lStyle);
 
     % If the plot has 'legend boxoff', we have the 'not visible'
     % property, so turn off line and background fill.
@@ -3822,6 +3783,21 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     if ~isempty(lStyle)
         key = 'legend style';
         lOpts = join(m2t, lStyle,',');
+    end
+end
+% ==============================================================================
+function [lStyle] = legendOrientation(m2t, handle, lStyle)
+% handle legend orientation
+ori = get(handle, 'Orientation');
+    switch lower(ori)
+        case 'horizontal'
+            numLegendEntries = length(get(handle, 'String'));
+            lStyle{end+1} = sprintf('legend columns=%d', numLegendEntries);
+        case 'vertical'
+            % Use default.
+        otherwise
+            userWarning(m2t, [' Unknown legend orientation ''',ori,'''' ...
+                '. Choosing default (vertical).']);
     end
 end
 % ==============================================================================
@@ -3906,6 +3882,35 @@ function [position, anchor] = legendPosition(m2t, handle)
         otherwise
             userWarning(m2t, [' Unknown legend location ''',loc,''''           ...
                 '. Choosing default.']);
+    end
+end
+% ==============================================================================
+function [textalign, pictalign] = legendEntryAlignment(m2t, handle)
+% determines the text and picture alignment inside a legend
+    textalign = '';
+    pictalign = '';
+    switch m2t.env
+        case 'Octave'
+            % Octave allows to change the alignment of legend text and
+            % pictograms using legend('left') and legend('right')
+            textpos = get(handle, 'textposition');
+            switch lower(textpos)
+                case 'left'
+                    % pictogram right of flush right text
+                    textalign = 'left';
+                    pictalign = 'right';
+                case 'right'
+                    % pictogram left of flush left text (default)
+                    textalign = 'right';
+                    pictalign = 'left';
+                otherwise
+                    userWarning(m2t, [' Unknown legend text position ''',textpos,'''' ...
+                        '. Choosing default.']);
+            end
+        case 'MATLAB'
+            % does not specify text/pictogram alignment in legends
+        otherwise
+            errorUnknownEnvironment();
     end
 end
 % ==============================================================================
