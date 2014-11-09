@@ -3732,13 +3732,14 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     [position, anchor] = legendPosition(m2t, handle);
     [textalign, pictalign] = legendEntryAlignment(m2t, handle);
 
-    lStyle = cell(0);
+    lStyle = opts_new();
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % append to legend options
     if ~isempty(anchor)
-        lStyle = {lStyle{:}, ...
-            ['at={(' formatDim(position(1)) ',' formatDim(position(2)) ')}'], ... %TODO: shouldn't this include units?
-            sprintf('anchor=%s', anchor)};
+        %TODO: shouldn't this include units?
+        lStyle = opts_add(lStyle, 'at', ...
+            sprintf('{(%s,%s)}', formatDim(position(1)), formatDim(position(2))));
+        lStyle = opts_add(lStyle, 'anchor', anchor);
     end
     % handle orientation
     lStyle = legendOrientation(m2t, handle, lStyle);
@@ -3746,53 +3747,58 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     % If the plot has 'legend boxoff', we have the 'not visible'
     % property, so turn off line and background fill.
     if (~isVisible(handle))
-        lStyle = {lStyle{:}, 'fill=none', 'draw=none'};
+        lStyle = opts_add(lStyle, 'fill', 'none');
+        lStyle = opts_add(lStyle, 'draw', 'none');
     else
         % handle colors
         edgeColor = get(handle, 'EdgeColor');
         if isNone(edgeColor)
-            lStyle = {lStyle{:}, 'draw=none'};
-        elseif ~all(edgeColor == [0,0,0]) % Not black
+            lStyle = opts_add(lStyle, 'draw', 'none');
+            
+        elseif ~all(edgeColor == [0,0,0]) % Not black %TODO: get default
             [m2t, col] = getColor(m2t, handle, edgeColor, 'patch');
-            lStyle = {lStyle{:}, sprintf('draw=%s', col)};
+            lStyle = opts_add(lStyle, 'draw', col);
         end
 
         fillColor = get(handle, 'Color');
         if isNone(fillColor)
-            lStyle = {lStyle{:}, 'fill=none'};
-        elseif ~all(fillColor == [1,1,1]) % Not white
+            lStyle = opts_add(lStyle, 'fill', 'none');
+            
+        elseif ~all(fillColor == [1,1,1]) % Not white %TODO: get default
             [m2t, col] = getColor(m2t, handle, fillColor, 'patch');
-            lStyle = {lStyle{:}, sprintf('fill=%s', col)};
+            lStyle = opts_add(lStyle, 'fill', col);
         end
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     % alignment of legend text and pictograms, if available
     if ~isempty(textalign) && ~isempty(pictalign)
-        lStyle = {lStyle{:}, ...
-            sprintf('nodes=%s', textalign), ...
-            sprintf('legend plot pos=%s', pictalign)};
+        lStyle = opts_add(lStyle, 'nodes', textalign);
+        lStyle = opts_add(lStyle, 'legend plot post', pictalign);
+        
     else
         % Make sure the entries are flush left (default MATLAB behavior).
         % This is also import for multiline legend entries: Without alignment
         % specification, the TeX document won't compile.
         %lStyle{end+1} = 'nodes=right';
-        lStyle{end+1} = 'legend cell align=left';
+        lStyle = opts_add(lStyle, 'legend cell align', 'left');
+
     end
 
     if ~isempty(lStyle)
         key = 'legend style';
-        lOpts = join(m2t, lStyle,',');
+        lOpts = opts_print(m2t, lStyle, ',');
     end
 end
 % ==============================================================================
 function [lStyle] = legendOrientation(m2t, handle, lStyle)
 % handle legend orientation
-ori = get(handle, 'Orientation');
+    ori = get(handle, 'Orientation');
     switch lower(ori)
         case 'horizontal'
-            numLegendEntries = length(get(handle, 'String'));
-            lStyle{end+1} = sprintf('legend columns=%d', numLegendEntries);
+            numLegendEntries = sprintf('%d',length(get(handle, 'String')));
+            lStyle = opts_add(lStyle, 'legend columns', numLegendEntries);
+            
         case 'vertical'
             % Use default.
         otherwise
@@ -3803,9 +3809,11 @@ end
 % ==============================================================================
 function [position, anchor] = legendPosition(m2t, handle)
 % handle legend location
+    position = '';
+    anchor = '';
+    
     loc  = get(handle, 'Location');
     dist = 0.03;  % distance to to axes in normalized coordinated
-    anchor = [];
     % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
     % small cased ('northoutside'). Hence, use lower() for uniformity.
     switch lower(loc)
