@@ -601,54 +601,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        % First of all, check if 'child' is referenced in a legend.
-        % If yes, some plot types may want to add stuff (e.g. 'forget plot').
-        % Add '\addlegendentry{...}' then after the plot.
-        legendString = [];
-        m2t.currentHandleHasLegend = false;
-
-        % Check if current handle is referenced in a legend.
-        switch m2t.env
-            case 'MATLAB'
-                if ~isempty(m2t.legendHandles)
-                    % Make sure that m2t.legendHandles is a row vector.
-                    for legendHandle = m2t.legendHandles(:)'
-                        ud = get(legendHandle, 'UserData');
-                        if isfield(ud, 'handles')
-                            plotChildren = ud.handles;
-                        else
-                            plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
-                        end
-                        k = find(child == plotChildren);
-                        if isempty(k)
-                            % Lines of error bar plots are not referenced
-                            % directly in legends as an error bars plot contains
-                            % two "lines": the data and the deviations. Here, the
-                            % legends refer to the specgraph.errorbarseries
-                            % handle which is 'Parent' to the line handle.
-                            k = find(get(child,'Parent') == plotChildren);
-                        end
-                        if ~isempty(k)
-                            % Legend entry found. Add it to the plot.
-                            m2t.currentHandleHasLegend = true;
-                            interpreter = get(legendHandle, 'Interpreter');
-                            if ~isempty(ud) && isfield(ud,'strings')
-                                legendString = ud.lstrings(k);
-                            else
-                                legendString = get(child, 'DisplayName');
-                            end
-                        end
-                    end
-                end
-            case 'Octave'
-                % Octave associates legends with axes, not with (line) plot.
-                % The variable m2t.gcaHasLegend is set in drawAxes().
-                m2t.currentHandleHasLegend = ~isempty(m2t.gcaAssociatedLegend);
-                interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
-                legendString = getOrDefault(child,'displayname','');
-            otherwise
-                errorUnknownEnvironment();
-        end
+        [m2t, legendString, interpreter] = findLegendInformation(m2t, child);
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         switch char(get(child, 'Type'))
             % 'axes' environments are treated separately.
@@ -722,6 +675,58 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
         % append the environment
         pgfEnvironments{end+1} = str;
     end
+end
+% ==============================================================================
+function [m2t, legendString, interpreter] = findLegendInformation(m2t, child)
+% Check if 'child' is referenced in a legend.
+% If yes, some plot types may want to add stuff (e.g. 'forget plot').
+% Add '\addlegendentry{...}' then after the plot.
+legendString = '';
+interpreter  = '';
+m2t.currentHandleHasLegend = false;
+
+% Check if current handle is referenced in a legend.
+switch m2t.env
+    case 'MATLAB'
+        if ~isempty(m2t.legendHandles)
+            % Make sure that m2t.legendHandles is a row vector.
+            for legendHandle = m2t.legendHandles(:)'
+                ud = get(legendHandle, 'UserData');
+                if isfield(ud, 'handles')
+                    plotChildren = ud.handles;
+                else
+                    plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
+                end
+                k = find(child == plotChildren);
+                if isempty(k)
+                    % Lines of error bar plots are not referenced
+                    % directly in legends as an error bars plot contains
+                    % two "lines": the data and the deviations. Here, the
+                    % legends refer to the specgraph.errorbarseries
+                    % handle which is 'Parent' to the line handle.
+                    k = find(get(child,'Parent') == plotChildren);
+                end
+                if ~isempty(k)
+                    % Legend entry found. Add it to the plot.
+                    m2t.currentHandleHasLegend = true;
+                    interpreter = get(legendHandle, 'Interpreter');
+                    if ~isempty(ud) && isfield(ud,'strings')
+                        legendString = ud.lstrings(k);
+                    else
+                        legendString = get(child, 'DisplayName');
+                    end
+                end
+            end
+        end
+    case 'Octave'
+        % Octave associates legends with axes, not with (line) plot.
+        % The variable m2t.gcaHasLegend is set in drawAxes().
+        m2t.currentHandleHasLegend = ~isempty(m2t.gcaAssociatedLegend);
+        interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
+        legendString = getOrDefault(child,'displayname','');
+    otherwise
+        errorUnknownEnvironment();
+end
 end
 % ==============================================================================
 function data = applyHgTransform(m2t, data)
