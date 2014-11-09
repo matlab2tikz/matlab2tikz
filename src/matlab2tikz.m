@@ -1607,7 +1607,8 @@ end
 % ==============================================================================
 function [tikzMarker, markOptions] = ...
     translateMarker(m2t, matlabMarker, markOptions, faceColorToggle)
-% This function is used for getMarkerOptions() as well as drawScatterPlot().
+% Translates MATLAB markers to their Tikz equivalents
+% #COMPLEX: inherently large switch-case  
     if ~ischar(matlabMarker)
         error('matlab2tikz:translateMarker:MarkerNotAString',...
             'matlabMarker is not a string.');
