@@ -674,7 +674,7 @@ function [m2t, legendString, interpreter] = findLegendInformation(m2t, child)
 % Add '\addlegendentry{...}' then after the plot.
 legendString = '';
 interpreter  = '';
-m2t.currentHandleHasLegend = false;
+hasLegend = false;
 
 % Check if current handle is referenced in a legend.
 switch m2t.env
@@ -699,7 +699,7 @@ switch m2t.env
                 end
                 if ~isempty(k)
                     % Legend entry found. Add it to the plot.
-                    m2t.currentHandleHasLegend = true;
+                    hasLegend = true;
                     interpreter = get(legendHandle, 'Interpreter');
                     if ~isempty(ud) && isfield(ud,'strings')
                         legendString = ud.lstrings(k);
@@ -712,20 +712,20 @@ switch m2t.env
     case 'Octave'
         % Octave associates legends with axes, not with (line) plot.
         % The variable m2t.gcaHasLegend is set in drawAxes().
-        m2t.currentHandleHasLegend = ~isempty(m2t.gcaAssociatedLegend);
+        hasLegend = ~isempty(m2t.gcaAssociatedLegend);
         interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
         legendString = getOrDefault(child,'displayname','');
     otherwise
         errorUnknownEnvironment();
 end
+m2t.currentHandleHasLegend = hasLegend && ~isempty(legendString);
 end
 % ==============================================================================
 function [m2t, str] = addLegendInformation(m2t, str, legendString, interpreter)
 % Add legend after the plot data.
 % The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
 % the output might not necessarily be a string, but a cellstr.
-    if ischar(str) && ~isempty(str) ...
-            && m2t.currentHandleHasLegend && ~isempty(legendString)
+    if ischar(str) && ~isempty(str) && m2t.currentHandleHasLegend
         c = prettyPrint(m2t, legendString, interpreter);
         % We also need a legend alignment option to make multiline
         % legend entries work. This is added by default in getLegendOpts().
