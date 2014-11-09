@@ -3660,17 +3660,7 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
     else
         switch color
             case 'flat'
-                % look for CData at different places
-                cdata = getOrDefault(patchhandle, 'CData', []);
-                if isempty(cdata) || ~isnumeric(cdata)
-                    c = get(patchhandle, 'Children');
-                    cdata = get(c, 'CData');
-                end
-                if isempty(cdata) || ~isnumeric(cdata)
-                    % R2014b+: CData is implicit
-                    siblings = get(get(patchhandle, 'Parent'), 'Children');
-                    cdata = find(siblings(end:-1:1)==patchhandle);
-                end
+                cdata = getCDataWithFallbacks(patchhandle);
 
                 col1 = cdata(1,1);
                 if all(isnan(cdata) | abs(cdata-col1)<1.0e-10)
@@ -3695,6 +3685,21 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                     error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
                     'Don''t know how to handle the color model ''%s''.',color);
         end
+    end
+end
+% ==============================================================================
+function cdata = getCDataWithFallbacks(patchhandle)
+% Looks for CData at different places
+    cdata = getOrDefault(patchhandle, 'CData', []);
+
+    if isempty(cdata) || ~isnumeric(cdata)
+        child = get(patchhandle, 'Children');
+        cdata = get(child, 'CData');
+    end
+    if isempty(cdata) || ~isnumeric(cdata)
+        % R2014b+: CData is implicit by the ordering of the siblings
+        siblings = get(get(patchhandle, 'Parent'), 'Children');
+        cdata = find(siblings(end:-1:1)==patchhandle);
     end
 end
 % ==============================================================================
