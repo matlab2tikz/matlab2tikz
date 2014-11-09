@@ -1851,90 +1851,12 @@ function [m2t, str] = drawImage(m2t, handle)
     yData = get(handle, 'YData');
     cData = get(handle, 'CData');
 
-    m = size(cData, 1);
-    n = size(cData, 2);
-
     % Flip the image over as the PNG gets written starting at (0,0),
     % which is the top left corner.
-    cData = cData(m:-1:1,:,:);
+    cData = cData(end:-1:1,:,:);
 
     if (m2t.cmdOpts.Results.imagesAsPng)
-        m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
-        % ------------------------------------------------------------------------
-        % draw a png image
-        [pngFileName, pngReferencePath] = externalFilename(m2t, m2t.imageAsPngNo, '.png');
-
-        % Get color indices for indexed color images and truecolor values
-        % otherwise. Don't use ismatrix(), c.f.
-        % <https://github.com/nschloe/matlab2tikz/issues/143>.
-        if ndims(cData) == 2
-            [m2t, colorData] = cdata2colorindex(m2t, cData, handle);
-        else
-            colorData = cData;
-        end
-
-        % flip the image if reverse
-        if m2t.xAxisReversed
-            colorData = colorData(:, n:-1:1, :);
-        end
-        if m2t.yAxisReversed
-            colorData = colorData(m:-1:1, :, :);
-        end
-
-        % Write an indexed or a truecolor image
-        alpha = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
-        if numel(alpha)==1
-            alpha = alpha(ones(size(colorData(:,:,1))));
-        end
-        hasAlpha = ~all(alpha(:)==1);
-        if hasAlpha
-            alphaOpts = {'Alpha', alpha};
-        else
-            alphaOpts = {};
-        end
-        if (ndims(colorData) == 2) %#ok don't use ismatrix (cfr. #143)
-            if size(m2t.currentHandles.colormap, 1) <= 256 && ~hasAlpha
-                % imwrite supports maximum 256 values in a colormap (i.e. 8 bit)
-                % and no alpha channel for indexed PNG images.
-                imwrite(colorData, m2t.currentHandles.colormap, ...
-                    pngFileName, 'png');
-            else % use true-color instead
-                imwrite(ind2rgb(colorData, m2t.currentHandles.colormap), ...
-                    pngFileName, 'png', alphaOpts{:});
-            end
-        else
-            imwrite(colorData, pngFileName, 'png', alphaOpts{:});
-        end
-        % -----------------------------------------------------------------------
-        % dimensions of a pixel in axes units
-        if n==1
-            xLim = get(m2t.currentHandles.gca, 'XLim');
-            xw = xLim(2) - xLim(1);
-        else
-            xw = (xData(end)-xData(1)) / (n-1);
-        end
-        if m==1
-            yLim = get(m2t.currentHandles.gca, 'YLim');
-            yw = yLim(2) - yLim(1);
-        else
-            yw = (yData(end)-yData(1)) / (m-1);
-        end
-
-        opts = opts_new();
-        opts = opts_add(opts, 'xmin', sprintf(m2t.ff, xData(1  ) - xw/2));
-        opts = opts_add(opts, 'xmax', sprintf(m2t.ff, xData(end) + xw/2));
-        opts = opts_add(opts, 'ymin', sprintf(m2t.ff, yData(1  ) - yw/2));
-        opts = opts_add(opts, 'ymax', sprintf(m2t.ff, yData(end) + yw/2));
-
-        str = sprintf('\\addplot [forget plot] graphics [%s] {%s};\n', ...
-            opts_print(m2t, opts, ','), pngReferencePath);
-
-        userInfo(m2t, ...
-            ['\nA PNG file is stored at ''%s'' for which\n', ...
-            'the TikZ file contains a reference to ''%s''.\n', ...
-            'You may need to adapt this, depending on the relative\n', ...
-            'locations of the master TeX file and the included TikZ file.\n'], ...
-            pngFileName, pngReferencePath);
+        [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData);
     else
         [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData);
     end
@@ -1945,6 +1867,76 @@ function [m2t, str] = drawImage(m2t, handle)
         'axis on top', []);
 end
 % ==============================================================================
+function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
+    m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
+    % ------------------------------------------------------------------------
+    % draw a png image
+    [pngFileName, pngReferencePath] = externalFilename(m2t, m2t.imageAsPngNo, '.png');
+    
+    % Get color indices for indexed images and truecolor values otherwise
+    if ndims(cData) == 2 %#ok don't use ismatrix (cfr. #143)
+        [m2t, colorData] = cdata2colorindex(m2t, cData, handle);
+    else
+        colorData = cData;
+    end
+    
+    colorData = flipImageIfAxesReversed(m2t, colorData);
+    
+    % Write an indexed or a truecolor image
+    alpha = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
+    if numel(alpha)==1
+        alpha = alpha(ones(size(colorData(:,:,1))));
+    end
+    hasAlpha = ~all(alpha(:)==1);
+    if hasAlpha
+        alphaOpts = {'Alpha', alpha};
+    else
+        alphaOpts = {};
+    end
+    if (ndims(colorData) == 2) %#ok don't use ismatrix (cfr. #143)
+        if size(m2t.currentHandles.colormap, 1) <= 256 && ~hasAlpha
+            % imwrite supports maximum 256 values in a colormap (i.e. 8 bit)
+            % and no alpha channel for indexed PNG images.
+            imwrite(colorData, m2t.currentHandles.colormap, ...
+                pngFileName, 'png');
+        else % use true-color instead
+            imwrite(ind2rgb(colorData, m2t.currentHandles.colormap), ...
+                pngFileName, 'png', alphaOpts{:});
+        end
+    else
+        imwrite(colorData, pngFileName, 'png', alphaOpts{:});
+    end
+    % -----------------------------------------------------------------------
+    % dimensions of a pixel in axes units
+    if size(cData,2)==1
+        xLim = get(m2t.currentHandles.gca, 'XLim');
+        xw = xLim(2) - xLim(1);
+    else
+        xw = (xData(end)-xData(1)) / (n-1);
+    end
+    if size(cData,1)==1
+        yLim = get(m2t.currentHandles.gca, 'YLim');
+        yw = yLim(2) - yLim(1);
+    else
+        yw = (yData(end)-yData(1)) / (m-1);
+    end
+    
+    opts = opts_new();
+    opts = opts_add(opts, 'xmin', sprintf(m2t.ff, xData(1  ) - xw/2));
+    opts = opts_add(opts, 'xmax', sprintf(m2t.ff, xData(end) + xw/2));
+    opts = opts_add(opts, 'ymin', sprintf(m2t.ff, yData(1  ) - yw/2));
+    opts = opts_add(opts, 'ymax', sprintf(m2t.ff, yData(end) + yw/2));
+    
+    str = sprintf('\\addplot [forget plot] graphics [%s] {%s};\n', ...
+        opts_print(m2t, opts, ','), pngReferencePath);
+    
+    userInfo(m2t, ...
+        ['\nA PNG file is stored at ''%s'' for which\n', ...
+        'the TikZ file contains a reference to ''%s''.\n', ...
+        'You may need to adapt this, depending on the relative\n', ...
+        'locations of the master TeX file and the included TikZ file.\n'], ...
+        pngFileName, pngReferencePath);
+end
 function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
 % writes an image as raw TikZ commands (STRONGLY DISCOURAGED)
     userWarning(m2t, ['It is highly recommended to use PNG data to store images.\n', ...
@@ -1995,6 +1987,16 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
                 sprintf(['\t\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
                 xcolor{m-i+1,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 )];
         end
+    end
+end
+% ==============================================================================
+function [colorData] = flipImageIfAxesReversed(m2t, colorData)
+% flip the image if reversed
+    if m2t.xAxisReversed
+        colorData = colorData(:, end:-1:1, :);
+    end
+    if m2t.yAxisReversed
+        colorData = colorData(end:-1:1, :, :);
     end
 end
 % ==============================================================================
