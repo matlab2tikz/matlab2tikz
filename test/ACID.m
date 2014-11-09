@@ -1938,6 +1938,11 @@ end
 % =========================================================================
 function [stat] = surfShader4()
 stat.description = 'shader=faceted | Fc: RGB | Ec: interp';
+env = getEnvironment();
+if strcmpi(env, 'MATLAB') && isVersionBelow(env, 8, 4) %R2014a and older
+    warning('m2t:ACID:surfShader4',...
+        'The MATLAB EPS export may behave strangely for this case');
+end
 
 [X,Y,Z]  = peaks(20);
 surf(X,Y,Z,'FaceColor','blue','EdgeColor','interp')
