@@ -875,15 +875,7 @@ function m2t = drawAxes(m2t, handle)
     m2t.axesContainers{end}.name = 'axis';
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % background color
-    backgroundColor = get(handle, 'Color');
-    if ~isNone(backgroundColor)
-        [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
-        if ~strcmp(col, 'white')
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis background/.style', sprintf('{fill=%s}', col));
-        end
-    end
+    m2t = drawBackgroundOfAxes(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % title
     m2t = drawTitleOfAxes(m2t, handle);
@@ -1057,6 +1049,19 @@ function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
     m2t.axesContainers{end}.options = opts_add(...
             m2t.axesContainers{end}.options, widthOrHeight, ...
             formatDim(dimension.value, dimension.unit));
+end
+% ==============================================================================
+function m2t = drawBackgroundOfAxes(m2t, handle)
+% draw the background color of the current axes
+    backgroundColor = get(handle, 'Color');
+    if ~isNone(backgroundColor)
+        [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
+        if ~strcmp(col, 'white')
+            m2t.axesContainers{end}.options = ...
+                opts_add(m2t.axesContainers{end}.options, ...
+                'axis background/.style', sprintf('{fill=%s}', col));
+        end
+    end
 end
 % ==============================================================================
 function m2t = drawTitleOfAxes(m2t, handle)
