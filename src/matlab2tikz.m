@@ -2063,6 +2063,7 @@ function [m2t, str] = drawHggroup(m2t, h)
 % Octave doesn't have the handle() function, so there's no way to determine
 % the nature of the plot anymore at this point.  Set to 'unknown' to force
 % fallback handling. This produces something for bar plots, for example.
+% #COMPLEX: big switch-case
     try
         cl = class(handle(h));
     catch %#ok
