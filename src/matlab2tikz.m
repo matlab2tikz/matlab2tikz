@@ -263,13 +263,9 @@ ipp = ipp.parse(ipp, varargin{:});
 m2t.cmdOpts = ipp; % store the input parser back into the m2t data struct
 
 %% inform users of potentially dangerous options
-if m2t.cmdOpts.Results.parseStringsAsMath
-    userInfo(m2t, ['\n' repmat('=',1,80) '\n', ...
-        'You are using the parameter ''parseStringsAsMath''.\n', ...
-        'This may produce undesirable string output. For full control over output\n', ...
-        'strings please set the parameter ''parseStrings'' to false.\n', ...
-        repmat('=',1,80)]);
-end
+warnAboutParameter(m2t, 'parseStringsAsMath', @(opt)(opt==true), ...
+    ['This may produce undesirable string output. For full control over output\n', ...
+     'strings please set the parameter "parseStrings" to false.']);
 
 % The following color RGB-values which will need to be defined.
 % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
@@ -4569,6 +4565,15 @@ function userWarning(m2t, message, varargin)
 % Drop-in replacement for warning().
     if m2t.cmdOpts.Results.showWarnings
         warning('matlab2tikz:userWarning', message, varargin{:});
+    end
+end
+% ==============================================================================
+function warnAboutParameter(m2t, parameter, isActive, message)
+% warn the user about the use of a dangeours parameter
+    line = ['\n' repmat('=',1,80) '\n'];
+    if isActive(m2t.cmdOpts.Results.(parameter))
+        userWarning(m2t, [line, 'You are using the "%s" parameter.\n', ...
+                          message line], parameter);
     end
 end
 % ==============================================================================
