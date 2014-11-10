@@ -4576,22 +4576,23 @@ function val = getOrDefault(handle, key, default)
     end
 end
 % ==============================================================================
+function val = getFactoryOrDefault(type, key, fallback)
+% get factory default value for a certain type of HG object
+% this CANNOT be done using |getOrDefault| as |isprop| doesn't work for
+% factory/default settings. Hence, we use a more expensive try-catch instead.
+    try
+        groot = 0;
+        val = get(groot, ['Factory' type key]);
+    catch
+        val = fallback;
+    end
+end
+% ==============================================================================
 function [val, isDefault] = getAndCheckDefault(type, handle, key, default)
 % gets the value from a handle of certain type and check the default values
-    fKey =  ['Factory' type key];
-    groot = 0; % HG root object
-    if all(isprop(handle, key))
-        val = get(handle, key);
-        isDefault = (isprop(groot, fKey) && isequal(get(groot, fKey), val)) ...
-                || (~isprop(groot, fKey) && isequal(default         , val));
-    else
-        isDefault = true;
-        if isprop(groot, fKey)
-            val = get(groot, fKey);
-        else
-            val = default;
-        end
-    end
+    default   = getFactoryOrDefault(type, key, default);
+    val       = getOrDefault(handle, key, default);
+    isDefault = isequal(val, default);
 end
 % ==============================================================================
 function out = isVisible(handles)
