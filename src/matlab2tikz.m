@@ -4595,6 +4595,15 @@ function [val, isDefault] = getAndCheckDefault(type, handle, key, default)
     isDefault = isequal(val, default);
 end
 % ==============================================================================
+function [m2t, opts] = addIfNotDefault(m2t, type, handle, key, default, pgfKey, opts)
+% sets an option in the options array named `pgfKey` if the MATLAB option is
+% not a default value
+    [value, isDefault] = getAndCheckDefault(type, handle, key, default);
+    if ~isDefault || m2t.cmdOpts.Results.strict
+        opts = opts_add(opts, pgfKey, value);
+    end
+end
+% ==============================================================================
 function out = isVisible(handles)
 % Determines whether an object is actually visible or not.
     out = strcmp(get(handles,'Visible'), 'on');
