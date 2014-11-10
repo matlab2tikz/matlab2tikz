@@ -1149,11 +1149,12 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
         error('matlab2tikz:illegalAxisSpecifier',...
             'Illegal axis specifier ''%s''.', axis);
     end
-    options = {};
+    options = opts_new();
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % axis colors    
-    color = get(handle, [upper(axis),'Color']);
-    if (any(color)) % color not black [0,0,0]
+    [color, isDfltColor] = getAndCheckDefault('Axes', handle, ...
+                                              [upper(axis),'Color'], [ 0 0 0 ]);
+    if ~isDfltColor || m2t.cmdOpts.Results.strict
         [m2t, col] = getColor(m2t, handle, color, 'patch');
         if strcmp(get(handle, 'box'), 'on')
             % If the axes are arranged as a box, make sure that the individual
