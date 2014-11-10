@@ -3768,20 +3768,22 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
         lStyle = opts_add(lStyle, 'draw', 'none');
     else
         % handle colors
-        edgeColor = get(handle, 'EdgeColor');
+        [edgeColor, isDfltEdge] = getAndCheckDefault('Legend', handle, ...
+                                                     'EdgeColor', [1 1 1]);
         if isNone(edgeColor)
             lStyle = opts_add(lStyle, 'draw', 'none');
             
-        elseif ~all(edgeColor == [0,0,0]) % Not black %TODO: get default
+        elseif ~isDfltEdge
             [m2t, col] = getColor(m2t, handle, edgeColor, 'patch');
             lStyle = opts_add(lStyle, 'draw', col);
         end
 
-        fillColor = get(handle, 'Color');
+        [fillColor, isDfltFill] = getAndCheckDefault('Legend', handle, ...
+                                                     'Color', [1 1 1]);
         if isNone(fillColor)
             lStyle = opts_add(lStyle, 'fill', 'none');
             
-        elseif ~all(fillColor == [1,1,1]) % Not white %TODO: get default
+        elseif ~isDfltFill
             [m2t, col] = getColor(m2t, handle, fillColor, 'patch');
             lStyle = opts_add(lStyle, 'fill', col);
         end
