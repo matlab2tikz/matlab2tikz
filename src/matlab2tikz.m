@@ -1149,11 +1149,12 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
         error('matlab2tikz:illegalAxisSpecifier',...
             'Illegal axis specifier ''%s''.', axis);
     end
-    options = {};
+    options = opts_new();
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % axis colors
-    color = get(handle, [upper(axis),'Color']);
-    if (any(color)) % color not black [0,0,0]
+    % axis colors    
+    [color, isDfltColor] = getAndCheckDefault('Axes', handle, ...
+                                              [upper(axis),'Color'], [ 0 0 0 ]);
+    if ~isDfltColor || m2t.cmdOpts.Results.strict
         [m2t, col] = getColor(m2t, handle, color, 'patch');
         if strcmp(get(handle, 'box'), 'on')
             % If the axes are arranged as a box, make sure that the individual
@@ -3767,20 +3768,22 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
         lStyle = opts_add(lStyle, 'draw', 'none');
     else
         % handle colors
-        edgeColor = get(handle, 'EdgeColor');
+        [edgeColor, isDfltEdge] = getAndCheckDefault('Legend', handle, ...
+                                                     'EdgeColor', [1 1 1]);
         if isNone(edgeColor)
             lStyle = opts_add(lStyle, 'draw', 'none');
             
-        elseif ~all(edgeColor == [0,0,0]) % Not black %TODO: get default
+        elseif ~isDfltEdge
             [m2t, col] = getColor(m2t, handle, edgeColor, 'patch');
             lStyle = opts_add(lStyle, 'draw', col);
         end
 
-        fillColor = get(handle, 'Color');
+        [fillColor, isDfltFill] = getAndCheckDefault('Legend', handle, ...
+                                                     'Color', [1 1 1]);
         if isNone(fillColor)
             lStyle = opts_add(lStyle, 'fill', 'none');
             
-        elseif ~all(fillColor == [1,1,1]) % Not white %TODO: get default
+        elseif ~isDfltFill
             [m2t, col] = getColor(m2t, handle, fillColor, 'patch');
             lStyle = opts_add(lStyle, 'fill', col);
         end
@@ -4573,6 +4576,34 @@ function val = getOrDefault(handle, key, default)
         val = get(handle, key);
     else
         val = default;
+    end
+end
+% ==============================================================================
+function val = getFactoryOrDefault(type, key, fallback)
+% get factory default value for a certain type of HG object
+% this CANNOT be done using |getOrDefault| as |isprop| doesn't work for
+% factory/default settings. Hence, we use a more expensive try-catch instead.
+    try
+        groot = 0;
+        val = get(groot, ['Factory' type key]);
+    catch
+        val = fallback;
+    end
+end
+% ==============================================================================
+function [val, isDefault] = getAndCheckDefault(type, handle, key, default)
+% gets the value from a handle of certain type and check the default values
+    default   = getFactoryOrDefault(type, key, default);
+    val       = getOrDefault(handle, key, default);
+    isDefault = isequal(val, default);
+end
+% ==============================================================================
+function [m2t, opts] = addIfNotDefault(m2t, type, handle, key, default, pgfKey, opts)
+% sets an option in the options array named `pgfKey` if the MATLAB option is
+% not a default value
+    [value, isDefault] = getAndCheckDefault(type, handle, key, default);
+    if ~isDefault || m2t.cmdOpts.Results.strict
+        opts = opts_add(opts, pgfKey, value);
     end
 end
 % ==============================================================================
