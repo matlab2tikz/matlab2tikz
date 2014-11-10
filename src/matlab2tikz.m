@@ -1151,7 +1151,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     end
     options = {};
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % axis colors
+    % axis colors    
     color = get(handle, [upper(axis),'Color']);
     if (any(color)) % color not black [0,0,0]
         [m2t, col] = getColor(m2t, handle, color, 'patch');
@@ -4573,6 +4573,24 @@ function val = getOrDefault(handle, key, default)
         val = get(handle, key);
     else
         val = default;
+    end
+end
+% ==============================================================================
+function [val, isDefault] = getAndCheckDefault(type, handle, key, default)
+% gets the value from a handle of certain type and check the default values
+    fKey =  ['Factory' type key];
+    groot = 0; % HG root object
+    if all(isprop(handle, key))
+        val = get(handle, key);
+        isDefault = (isprop(groot, fKey) && isequal(get(groot, fKey), val)) ...
+                || (~isprop(groot, fKey) && isequal(default         , val));
+    else
+        isDefault = true;
+        if isprop(groot, fKey)
+            val = get(groot, fKey);
+        else
+            val = default;
+        end
     end
 end
 % ==============================================================================
