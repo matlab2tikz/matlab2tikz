@@ -726,10 +726,13 @@ function [m2t, str] = addLegendInformation(m2t, str, legendString, interpreter)
 % The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
 % the output might not necessarily be a string, but a cellstr.
     if ischar(str) && ~isempty(str) && m2t.currentHandleHasLegend
-        c = prettyPrint(m2t, legendString, interpreter);
+        % split string to cell, if newline character (ASCII 10) is present
+        legendString_split = strsplit(legendString,char(10));
+        c = prettyPrint(m2t, legendString_split, interpreter);
         % We also need a legend alignment option to make multiline
         % legend entries work. This is added by default in getLegendOpts().
-        str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
+        str = [str, ...
+            sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
     end
 end
 % ==============================================================================
