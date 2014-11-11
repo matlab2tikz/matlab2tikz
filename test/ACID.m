@@ -165,7 +165,7 @@ function [stat] = multiline_labels()
   plot(flip(m)-0.5,'x--');
 
   title({'multline','title'});
-  legend({char('multi-line legend','does work 2^2=4'),...
+  legend({sprintf('multi-line legends\ndo work 2^2=4'), ...
         sprintf('second\nplot')});
   xlabel(sprintf('one\ntwo\nthree'));
   ylabel({'one','° ∞', 'three'});
