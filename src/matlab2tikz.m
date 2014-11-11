@@ -2747,7 +2747,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     yData = get(h, 'YData');
 
     % init drawOptions
-    drawOptions = cell(0);
+    drawOptions = opts_new();
 
     barlayout = get(h, 'BarLayout');
     isHoriz = strcmp(get(h, 'Horizontal'), 'on');
@@ -2807,12 +2807,12 @@ function [m2t, str] = drawBarseries(m2t, h)
                 physicalBarShift = dx * m2t.barShifts(m2t.barplotId) * m2t.unitlength.x.value;
                 phyicalBarUnit = m2t.unitlength.x.unit;
             end
-            drawOptions = {drawOptions{:}, ...
-                barType, ...
-                sprintf('bar width=%s', formatDim(physicalBarWidth, phyicalBarUnit))};
+            drawOptions = opts_add(drawOptions, barType);
+            drawOptions = opts_add(drawOptions, 'bar width', ...
+                                 formatDim(physicalBarWidth, phyicalBarUnit));
             if physicalBarShift ~= 0.0
-                drawOptions{end+1} = ...
-                    sprintf('bar shift=%s', formatDim(physicalBarShift, phyicalBarUnit));
+                drawOptions = opts_add(drawOptions, 'bar shift', ...
+                                 formatDim(physicalBarShift, phyicalBarUnit));
             end
 
         case 'stacked' % stacked plots
@@ -2841,10 +2841,10 @@ function [m2t, str] = drawBarseries(m2t, h)
     edgeColor = get(h, 'EdgeColor');
     lineStyle = get(h, 'LineStyle');
     if isNone(lineStyle) || isNone(edgeColor)
-        drawOptions{end+1} = 'draw=none';
+        drawOptions = opts_add(drawOptions, 'draw', 'none');
     else
         [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-        drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+        drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
     end
 
     [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions);
@@ -2861,7 +2861,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         [xDataPlot, yDataPlot] = deal(xData, yData);
     end
 
-    drawOpts = join(m2t, drawOptions, ',');
+    drawOpts = opts_print(m2t, drawOptions, ',');
     [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
     str = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
 end
@@ -2917,7 +2917,7 @@ function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
     faceColor = get(obj, 'FaceColor');
     if ~isNone(faceColor)
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-        drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
+        drawOptions = opts_add(drawOptions, 'fill', xFaceColor);
     end
 end
 % ==============================================================================
