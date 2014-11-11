@@ -733,8 +733,7 @@ function [m2t, str] = addLegendInformation(m2t, str, legendString, interpreter)
         c = prettyPrint(m2t, legendString, interpreter);
         % We also need a legend alignment option to make multiline
         % legend entries work. This is added by default in getLegendOpts().
-        str = [str, ...
-            sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
+        str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
     end
 end
 % ==============================================================================
