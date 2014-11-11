@@ -3938,16 +3938,16 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
     
     % set alignment of legend text and pictograms, if available
     if ~isempty(textalign) && ~isempty(pictalign)
-        lStyle = opts_add(lStyle, 'nodes', textalign);
-        lStyle = opts_add(lStyle, 'legend plot post', pictalign);
-        
+        lStyle = opts_add(lStyle, 'legend cell align', textalign);
+        lStyle = opts_add(lStyle, 'align', textalign);
+        lStyle = opts_add(lStyle, 'legend plot pos', pictalign);
     else
         % Make sure the entries are flush left (default MATLAB behavior).
         % This is also import for multiline legend entries: Without alignment
         % specification, the TeX document won't compile.
-        %lStyle{end+1} = 'nodes=right';
+        % 'legend plot pos' is not set explicitly, since 'left' is default.
         lStyle = opts_add(lStyle, 'legend cell align', 'left');
-
+        lStyle = opts_add(lStyle, 'align', 'left');
     end
 end
 % ==============================================================================
