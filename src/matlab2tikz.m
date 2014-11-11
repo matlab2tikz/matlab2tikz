@@ -4823,7 +4823,8 @@ function strings = cellstrOneLinePerCell(strings)
         end
         strings = cs;
     else
-        error('matlab2tikz:prettyPrint', 'Data type not understood.');
+        error('matlab2tikz:cellstrOneLinePerCell', ...
+            'Data type not understood.');
     end
 end
 % ==============================================================================
