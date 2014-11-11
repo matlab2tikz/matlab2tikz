@@ -768,8 +768,8 @@ function m2t = drawAxes(m2t, handle)
         'options', {opts_new()}, ...
         'content', {cell(0)}, ...
         'children', {cell(0)}, ...
-        'stackedBarsPresent', false, ...
-        'nonbarPlotsPresent', false ...
+        'stackedBarsPresent', false, ... %FIXME: remove when verified
+        'nonbarPlotsPresent', false ...  %FIXME: remove when verified
         );
 
     % update gca
@@ -831,6 +831,7 @@ function m2t = drawAxes(m2t, handle)
         userWarning(m2t, ['Pgfplots can''t deal with stacked bar plots', ...
             ' and non-bar plots in one axis environment.', ...
             ' The LaTeX file will probably not compile.']);
+        %FIXME: remove when verified
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % The rest of this is handling axes options.
@@ -1277,16 +1278,8 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
         return
     end
 
-    % Don't allow lines is there's already stacked bars.
-    % This could be somewhat controversial: Why not remove the stacked bars then?
-    % Anyways, with stacked bar plots, lines are typically base lines and such,
-    % so nothing of great interest. Throw those out for now.
-    if m2t.axesContainers{end}.stackedBarsPresent
-        return
-    end
-
     % This is for a quirky workaround for stacked bar plots.
-    m2t.axesContainers{end}.nonbarPlotsPresent = true;
+    m2t.axesContainers{end}.nonbarPlotsPresent = true; %FIXME: remove when verified
 
     lineStyle = get(handle, 'LineStyle');
     lineWidth = get(handle, 'LineWidth');
@@ -1676,7 +1669,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     end
 
     % This is for a quirky workaround for stacked bar plots.
-    m2t.axesContainers{end}.nonbarPlotsPresent = true;
+    m2t.axesContainers{end}.nonbarPlotsPresent = true; %FIXME: remove when verified
 
     % MATLAB's patch elements are matrices in which each column represents a a
     % distinct graphical object. Usually there is only one column, but there may
@@ -2819,18 +2812,15 @@ function [m2t, str] = drawBarseries(m2t, h)
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
             if ~m2t.barAddedAxisOption
-                m2t.axesContainers{end}.stackedBarsPresent = true;
+                m2t.axesContainers{end}.stackedBarsPresent = true; %FIXME: remove when verified
                 bWFactor = get(h, 'BarWidth');
-                % Add 'ybar stacked' to the containing axes environment.
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    [barType,' stacked']);
                 m2t.axesContainers{end}.options = ...
                     opts_add(m2t.axesContainers{end}.options, ...
                     'bar width', ...
                     formatDim(m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
                 m2t.barAddedAxisOption = true;
             end
+            drawOptions = opts_add(drawOptions, [barType ' stacked']);
 
         otherwise
             error('matlab2tikz:drawBarseries', ...
