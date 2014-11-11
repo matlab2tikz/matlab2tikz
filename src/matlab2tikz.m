@@ -484,16 +484,8 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     m2t.content.name = 'tikzpicture';
 
     % Add custom TikZ options if any given.
-    if ~isempty(m2t.cmdOpts.Results.extraTikzpictureOptions)
-        extraTikzOpts = m2t.cmdOpts.Results.extraTikzpictureOptions;
-        if ischar(extraTikzOpts)
-            extraTikzOpts = {extraTikzOpts};
-        end
-        for k = 1:length(extraTikzOpts)
-            m2t.content.options = ...
-                opts_add(m2t.content.options, extraTikzOpts{k});
-        end
-    end
+    m2t.content.options = opts_append_userdefined(m2t.content.options, ...
+                                   m2t.cmdOpts.Results.extraTikzpictureOptions);
 
     % Don't forget to define the colors.
     if ~isempty(m2t.extraRgbColorNames)
@@ -923,22 +915,8 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawLegendOptionsOfAxes(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % add manually given extra axis options
-    if ~isempty(m2t.cmdOpts.Results.extraAxisOptions)
-        if ischar(m2t.cmdOpts.Results.extraAxisOptions)
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                m2t.cmdOpts.Results.extraAxisOptions, []);
-        elseif iscellstr(m2t.cmdOpts.Results.extraAxisOptions)
-            for k = 1:length(m2t.cmdOpts.Results.extraAxisOptions)
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    m2t.cmdOpts.Results.extraAxisOptions{k}, []);
-            end
-        else
-            error('matlab2tikz:illegalExtraAxisOptions',...
-                'Illegal extraAxisOptions (need string or cell string).')
-        end
-    end
+    m2t.axesContainers{end}.options = opts_append_userdefined(...
+        m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
 end
 % ==============================================================================
 function legendhandle = getAssociatedLegend(m2t, handle)
@@ -5306,6 +5284,19 @@ function opts = opts_append(opts, key, value)
     end
     if ~(opts_has(opts, key) && isequal(opts_get(opts, key), value))
         opts = cat(1, opts, {key, value}); 
+    end
+end
+function opts = opts_append_userdefined(opts, userDefined)
+% appends user-defined options to an options array
+% the sserDefined options can come either as a single string or a cellstr that
+% is already TikZ-formatted. The internal 2D cell format is NOT supported.
+    if ~isempty(userDefined)
+        if ischar(userDefined)
+            userDefined = {userDefined};
+        end
+        for k = 1:length(userDefined)
+            opts = opts_append(opts, userDefined{k});
+        end
     end
 end
 function opts = opts_remove(opts, varargin)
