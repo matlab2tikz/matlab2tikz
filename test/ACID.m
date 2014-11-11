@@ -306,6 +306,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
+  stat.issues = [49 404];
   
   if ~exist('penny.mat','file')
       fprintf( 'penny data set not found. Abort.\n\n' );
@@ -1013,6 +1014,7 @@ end
 function [stat] = freqResponsePlot()
   stat.description = 'Frequency response plot.';
   stat.closeall = true;
+  stat.issues = [409];
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
