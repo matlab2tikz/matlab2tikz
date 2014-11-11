@@ -137,7 +137,8 @@ function [status] = ACID(k)
                            @annotationTextUnits , ...
                            @imageOrientation_PNG, ...
                            @imageOrientation_inline, ...
-                           @texInterpreter ...
+                           @texInterpreter      , ...
+                           @stackedBarsWithOther
                          };
 
 
@@ -567,7 +568,6 @@ function [stat] = zoom()
 end
 % =========================================================================
 function [stat] = bars()
-%NOTE: do we need this test when we have `subplotBars`?
   stat.description = '2x2 Subplot with different bars';
 
   % dataset grouped
@@ -2299,6 +2299,29 @@ function [stat] = texInterpreter()
     text(0.1,0.45, {'But what happens to the output if there is', '{\bfuse an \alpha inside} the limitted style.'});
     text(0.1,0.3, 'Or if the\fontsize{14} size\color{red} and color are \fontsize{10}changed at different\color{blue} points.');
     text(0.1,0.15, {'Also_{some \bf subscripts} and^{superscripts} are possible.', 'Without brackets, it l^o_oks like t_his.' });
+end
+% =========================================================================
+function [stat] = stackedBarsWithOther()
+  stat.description = 'stacked bar plots and other plots';
+  stat.issues = 442;
+  
+  % dataset stacked
+  [data,dummy,summy] = svd(magic(7)); %#ok
+  Y = round(abs(data(2:6,2:4))*10);
+  n = size(Y,1);
+  xVals = (1:n).';
+  yVals = min((xVals).^2, sum(Y,2));
+  
+  subplot(2,1,1); hold on;
+  bar(Y,'stack');
+  plot(xVals, yVals, 'Color', 'r', 'LineWidth', 2);
+  legend('show');
+  
+  subplot(2,1,2); hold on;
+  b2 = barh(Y,'stack','BarWidth', 0.75);
+  plot(yVals, xVals, 'Color', 'b', 'LineWidth', 2);
+  
+  set(b2(1),'FaceColor','c','EdgeColor','none')
 end
 % =========================================================================
 function env = getEnvironment

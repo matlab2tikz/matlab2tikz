@@ -767,10 +767,7 @@ function m2t = drawAxes(m2t, handle)
         'comment', [], ...
         'options', {opts_new()}, ...
         'content', {cell(0)}, ...
-        'children', {cell(0)}, ...
-        'stackedBarsPresent', false, ...
-        'nonbarPlotsPresent', false ...
-        );
+        'children', {cell(0)});
 
     % update gca
     m2t.currentHandles.gca = handle;
@@ -825,13 +822,6 @@ function m2t = drawAxes(m2t, handle)
     m2t.currentAxesContain3dData = false;
     [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
     m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    if m2t.axesContainers{end}.stackedBarsPresent ...
-            && m2t.axesContainers{end}.nonbarPlotsPresent
-        userWarning(m2t, ['Pgfplots can''t deal with stacked bar plots', ...
-            ' and non-bar plots in one axis environment.', ...
-            ' The LaTeX file will probably not compile.']);
-    end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % The rest of this is handling axes options.
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1277,17 +1267,6 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
         return
     end
 
-    % Don't allow lines is there's already stacked bars.
-    % This could be somewhat controversial: Why not remove the stacked bars then?
-    % Anyways, with stacked bar plots, lines are typically base lines and such,
-    % so nothing of great interest. Throw those out for now.
-    if m2t.axesContainers{end}.stackedBarsPresent
-        return
-    end
-
-    % This is for a quirky workaround for stacked bar plots.
-    m2t.axesContainers{end}.nonbarPlotsPresent = true;
-
     lineStyle = get(handle, 'LineStyle');
     lineWidth = get(handle, 'LineWidth');
     marker = get(handle, 'Marker');
@@ -1674,9 +1653,6 @@ function [m2t, str] = drawPatch(m2t, handle)
     if ~isVisible(handle)
         return
     end
-
-    % This is for a quirky workaround for stacked bar plots.
-    m2t.axesContainers{end}.nonbarPlotsPresent = true;
 
     % MATLAB's patch elements are matrices in which each column represents a a
     % distinct graphical object. Usually there is only one column, but there may
@@ -2747,7 +2723,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     yData = get(h, 'YData');
 
     % init drawOptions
-    drawOptions = cell(0);
+    drawOptions = opts_new();
 
     barlayout = get(h, 'BarLayout');
     isHoriz = strcmp(get(h, 'Horizontal'), 'on');
@@ -2807,30 +2783,26 @@ function [m2t, str] = drawBarseries(m2t, h)
                 physicalBarShift = dx * m2t.barShifts(m2t.barplotId) * m2t.unitlength.x.value;
                 phyicalBarUnit = m2t.unitlength.x.unit;
             end
-            drawOptions = {drawOptions{:}, ...
-                barType, ...
-                sprintf('bar width=%s', formatDim(physicalBarWidth, phyicalBarUnit))};
+            drawOptions = opts_add(drawOptions, barType);
+            drawOptions = opts_add(drawOptions, 'bar width', ...
+                                 formatDim(physicalBarWidth, phyicalBarUnit));
             if physicalBarShift ~= 0.0
-                drawOptions{end+1} = ...
-                    sprintf('bar shift=%s', formatDim(physicalBarShift, phyicalBarUnit));
+                drawOptions = opts_add(drawOptions, 'bar shift', ...
+                                 formatDim(physicalBarShift, phyicalBarUnit));
             end
 
         case 'stacked' % stacked plots
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
             if ~m2t.barAddedAxisOption
-                m2t.axesContainers{end}.stackedBarsPresent = true;
                 bWFactor = get(h, 'BarWidth');
-                % Add 'ybar stacked' to the containing axes environment.
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    [barType,' stacked']);
                 m2t.axesContainers{end}.options = ...
                     opts_add(m2t.axesContainers{end}.options, ...
                     'bar width', ...
                     formatDim(m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
                 m2t.barAddedAxisOption = true;
             end
+            drawOptions = opts_add(drawOptions, [barType ' stacked']);
 
         otherwise
             error('matlab2tikz:drawBarseries', ...
@@ -2841,10 +2813,10 @@ function [m2t, str] = drawBarseries(m2t, h)
     edgeColor = get(h, 'EdgeColor');
     lineStyle = get(h, 'LineStyle');
     if isNone(lineStyle) || isNone(edgeColor)
-        drawOptions{end+1} = 'draw=none';
+        drawOptions = opts_add(drawOptions, 'draw', 'none');
     else
         [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-        drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+        drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
     end
 
     [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions);
@@ -2861,18 +2833,13 @@ function [m2t, str] = drawBarseries(m2t, h)
         [xDataPlot, yDataPlot] = deal(xData, yData);
     end
 
-    drawOpts = join(m2t, drawOptions, ',');
+    drawOpts = opts_print(m2t, drawOptions, ',');
     [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
     str = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
 end
 % ==============================================================================
 function [m2t, numBars] = countBarplotSiblings(m2t, h)
 % Count the number of sibling bar plots
- % The bar plot implementation in Pgfplots lacked certain functionalities;
- % for example, it can't plot bar plots and non-bar plots in the same
- % axis (while MATLAB can).
- % The following checks if this is the case and cowardly bails out if so.
- % FIXME: bar plots together with different kinds (seems possible in 1.10)
     if isempty(m2t.barplotTotalNumber)
         m2t.barplotTotalNumber = 0;
         siblings = get(get(h, 'Parent'), 'Children');
@@ -2917,7 +2884,7 @@ function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
     faceColor = get(obj, 'FaceColor');
     if ~isNone(faceColor)
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-        drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
+        drawOptions = opts_add(drawOptions, 'fill', xFaceColor);
     end
 end
 % ==============================================================================
