@@ -158,15 +158,16 @@ function [status] = ACID(k)
 end
 % =========================================================================
 function [stat] = multiline_labels()
-  stat.description = 'Plot some points and test multiline labels.';
+  stat.description = 'Test multiline labels and plot some points.';
   
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
   plot(flip(m)-0.5,'x--');
 
-  title({'multline','title'})
-  legend({char('multi-line legend','does work 2^2=4'),'second plot'})
-  xlabel({'one','two','three'});
+  title({'multline','title'});
+  legend({char('multi-line legend','does work 2^2=4'),...
+        sprintf('second\nplot')});
+  xlabel(sprintf('one\ntwo\nthree'));
   ylabel({'one','° ∞', 'three'});
 
   set(gca,'YTick', []);
