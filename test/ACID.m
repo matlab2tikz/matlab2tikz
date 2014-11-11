@@ -134,9 +134,10 @@ function [status] = ACID(k)
                            @annotation2         , ...
                            @annotation3         , ...
                            @annotationText      , ...
-                           @annotationTextUnits, ...
+                           @annotationTextUnits , ...
                            @imageOrientation_PNG, ...
-                           @imageOrientation_inline
+                           @imageOrientation_inline, ...
+                           @texInterpreter ...
                          };
 
 
@@ -2287,6 +2288,17 @@ function [stat] = imageOrientation(imagesAsPng)
     ylabel('YDir reverse');
     axis off;
     title('like above, but axis off');
+end
+% =========================================================================
+function [stat] = texInterpreter()
+    stat.description = 'Combinations of tex commands';
+    axes
+    text(0.1,0.9, {'\bfBold text before \alpha and also afterwards.', 'Even the next line is bold \itand a bit italic.'});
+    text(0.1,0.75, {'Changing \bfthe\fontname{Courier} font or \color[rgb]{0,0.75,0}color doesn''t', 'change the style. Resetting \rmthe style', 'doesn''t change the font or color.'});
+    text(0.1,0.6, 'Styles can be {\bflimited} using \{ and \}.');
+    text(0.1,0.45, {'But what happens to the output if there is', '{\bfuse an \alpha inside} the limitted style.'});
+    text(0.1,0.3, 'Or if the\fontsize{14} size\color{red} and color are \fontsize{10}changed at different\color{blue} points.');
+    text(0.1,0.15, {'Also_{some \bf subscripts} and^{superscripts} are possible.', 'Without brackets, it l^o_oks like t_his.' });
 end
 % =========================================================================
 function env = getEnvironment
