@@ -182,7 +182,7 @@ m2t.colorPrecision = 2^(-m2t.colorDepth/3);
 m2t.colorFormat    = sprintf('%%0.%df',ceil(-log10(m2t.colorPrecision)));
 
 % the actual contents of the TikZ file go here
-m2t.content = struct('name',     [], ...
+m2t.content = struct('name',     '', ...
                      'comment',  [], ...
                      'options',  {opts_new()}, ...
                      'content',  {cell(0)}, ...
@@ -196,7 +196,7 @@ m2t.preamble = sprintf(['\\usepackage{pgfplots}\n', ...
 %% scan the options
 ipp = matlab2tikzInputParser;
 
-ipp = ipp.addOptional(ipp, 'filename',   [], @(x) filenameValidation(x,ipp));
+ipp = ipp.addOptional(ipp, 'filename',   '', @(x) filenameValidation(x,ipp));
 ipp = ipp.addOptional(ipp, 'filehandle', [], @filehandleValidation);
 
 ipp = ipp.addParamValue(ipp, 'figurehandle', get(0,'CurrentFigure'), @ishandle);
@@ -218,12 +218,12 @@ ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
 ipp = ipp.addParamValue(ipp, 'automaticLabels', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
-ipp = ipp.addParamValue(ipp, 'height', [], @ischar);
-ipp = ipp.addParamValue(ipp, 'width' , [], @ischar);
+ipp = ipp.addParamValue(ipp, 'height', '', @ischar);
+ipp = ipp.addParamValue(ipp, 'width' , '', @ischar);
 ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
-ipp = ipp.addParamValue(ipp, 'dataPath', [], @ischar);
-ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
+ipp = ipp.addParamValue(ipp, 'dataPath', '', @ischar);
+ipp = ipp.addParamValue(ipp, 'relativeDataPath', '', @ischar);
 ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
 
 % Maximum chunk length.
@@ -256,7 +256,7 @@ ipp = ipp.addParamValue(ipp, 'parseStringsAsMath', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'interpretTickLabelsAsTex', false, @islogical);
 
 %% deprecated parameters (will auto-generate warnings upon parse)
-ipp = ipp.addParamValue(ipp, 'relativePngPath', [], @ischar);
+ipp = ipp.addParamValue(ipp, 'relativePngPath', '', @ischar);
 ipp = ipp.deprecateParam(ipp, 'relativePngPath', 'relativeDataPath');
 
 %% Finally parse all the arguments
@@ -484,16 +484,8 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     m2t.content.name = 'tikzpicture';
 
     % Add custom TikZ options if any given.
-    if ~isempty(m2t.cmdOpts.Results.extraTikzpictureOptions)
-        extraTikzOpts = m2t.cmdOpts.Results.extraTikzpictureOptions;
-        if ischar(extraTikzOpts)
-            extraTikzOpts = {extraTikzOpts};
-        end
-        for k = 1:length(extraTikzOpts)
-            m2t.content.options = ...
-                opts_add(m2t.content.options, extraTikzOpts{k});
-        end
-    end
+    m2t.content.options = opts_append_userdefined(m2t.content.options, ...
+                                   m2t.cmdOpts.Results.extraTikzpictureOptions);
 
     % Don't forget to define the colors.
     if ~isempty(m2t.extraRgbColorNames)
@@ -647,7 +639,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
             case {'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                     'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
                 % don't to anything for these handles and its children
-                str = [];
+                str = '';
 
             case ''
                 warning('matlab2tikz:NoChildren',...
@@ -765,7 +757,7 @@ function m2t = drawAxes(m2t, handle)
     % facilitate writing clean code) as structs are more portable (old MATLAB(R)
     % versions, GNU Octave).
     m2t.axesContainers{end+1} = struct('handle', handle, ...
-        'name', [], ...
+        'name', '', ...
         'comment', [], ...
         'options', {opts_new()}, ...
         'content', {cell(0)}, ...
@@ -923,22 +915,8 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawLegendOptionsOfAxes(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % add manually given extra axis options
-    if ~isempty(m2t.cmdOpts.Results.extraAxisOptions)
-        if ischar(m2t.cmdOpts.Results.extraAxisOptions)
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                m2t.cmdOpts.Results.extraAxisOptions, []);
-        elseif iscellstr(m2t.cmdOpts.Results.extraAxisOptions)
-            for k = 1:length(m2t.cmdOpts.Results.extraAxisOptions)
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    m2t.cmdOpts.Results.extraAxisOptions{k}, []);
-            end
-        else
-            error('matlab2tikz:illegalExtraAxisOptions',...
-                'Illegal extraAxisOptions (need string or cell string).')
-        end
-    end
+    m2t.axesContainers{end}.options = opts_append_userdefined(...
+        m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
 end
 % ==============================================================================
 function legendhandle = getAssociatedLegend(m2t, handle)
@@ -1287,7 +1265,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
 % Returns the code for drawing a regular line and error bars.
 % This is an extremely common operation and takes place in most of the
 % not too fancy plots.
-    str = [];
+    str = '';
 
     if ~isVisible(handle)
         return
@@ -1613,7 +1591,7 @@ end
 function [tikzMarker, markOptions] = ...
     translateMarker(m2t, matlabMarker, markOptions, faceColorToggle)
 % Translates MATLAB markers to their Tikz equivalents
-% #COMPLEX: inherently large switch-case  
+% #COMPLEX: inherently large switch-case
     if ~ischar(matlabMarker)
         error('matlab2tikz:translateMarker:MarkerNotAString',...
             'matlabMarker is not a string.');
@@ -1685,7 +1663,7 @@ end
 function [m2t, str] = drawPatch(m2t, handle)
 % Draws a 'patch' graphics object (as found in contourf plots, for example).
 %
-    str = [];
+    str = '';
 
     if ~isVisible(handle)
         return
@@ -1851,7 +1829,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         end
         % Plot the actual data.
         [m2t, table] = makeTable(m2t, columnNames, data);
-                
+
         cycle = conditionallyCyclePath(data);
         str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n\n',...
             str, plotType, drawOpts, join(m2t, tableOptions, ', '), table, cycle);
@@ -1870,7 +1848,7 @@ function [cycle] = conditionallyCyclePath(data)
 end
 % ==============================================================================
 function [m2t, str] = drawImage(m2t, handle)
-    str = [];
+    str = '';
 
     if ~isVisible(handle)
         return
@@ -2153,7 +2131,7 @@ function [m2t, str] = drawHggroup(m2t, h)
 end
 % ==============================================================================
 function [m2t,env] = drawSurface(m2t, handle)
-    str = [];
+    str = '';
     [m2t, opts, plotType] = surfaceOpts(m2t, handle);
 
     % Allow for empty surf
@@ -2300,7 +2278,7 @@ function [m2t, str] = drawVisibleText(m2t, handle)
             || (strcmp(get(handle, 'HandleVisibility'), 'off') && ...
                 ~m2t.cmdOpts.Results.showHiddenStrings)
             
-        str = [];
+        str = '';
         return;
     end
     
@@ -2445,7 +2423,7 @@ function [m2t, str] = drawText(m2t, handle)
 end
 % ==============================================================================
 function [m2t, str] = drawRectangle(m2t, handle)
-    str = [];
+    str = '';
 
     % there may be some text objects floating around a Matlab figure which
     % are handled by other subfunctions (labels etc.) or don't need to be
@@ -2580,7 +2558,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
 end
 % ==============================================================================
 function [m2t, str] = drawScatterPlot(m2t, h)
-    str = [];
+    str = '';
 
     xData = get(h, 'XData');
     yData = get(h, 'YData');
@@ -2944,7 +2922,7 @@ function [m2t, str] = drawStairSeries(m2t, h)
     [m2t, str] = drawStemOrStairSeries_(m2t, h, 'const plot');
 end
 function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
-    str = [];
+    str = '';
 
     lineStyle = get(h, 'LineStyle');
     lineWidth = get(h, 'LineWidth');
@@ -2983,7 +2961,7 @@ function [m2t, str] = drawAreaSeries(m2t, h)
 %
 % TODO Get rid of code duplication with 'drawAxes'.
 
-    str = [];
+    str = '';
 
     if ~isfield(m2t, 'addedAreaOption') || isempty(m2t.addedAreaOption) || ~m2t.addedAreaOption
         % Add 'area style' to axes options.
@@ -3035,7 +3013,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     % used for arrow styles, in case there are more than one quiver fields
     m2t.quiverId = m2t.quiverId + 1;
 
-    str = [];
+    str = '';
     
     [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h);
 
@@ -3253,7 +3231,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
     radius = p([3 4]) / 2;
     center = p([1 2]) + radius;
 
-    str = [];
+    str = '';
 
     lineStyle = get(handle, 'LineStyle');
     lineWidth = get(handle, 'LineWidth');
@@ -3825,7 +3803,7 @@ function [lStyle] = legendPosition(m2t, handle, lStyle)
 % handle legend location
 % #COMPLEX: just a big switch-case
     loc  = get(handle, 'Location');
-    dist = 0.03;  % distance to to axes in normalized coordinated
+    dist = 0.03;  % distance to to axes in normalized coordinates
     % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
     % small cased ('northoutside'). Hence, use lower() for uniformity.
     switch lower(loc)
@@ -4299,7 +4277,7 @@ function newstr = join(m2t, cellstr, delimiter)
 % Example of usage:
 %              join(m2t, cellstr, ',')
     if isempty(cellstr)
-        newstr = [];
+        newstr = '';
         return
     end
 
@@ -5308,6 +5286,19 @@ function opts = opts_append(opts, key, value)
         opts = cat(1, opts, {key, value}); 
     end
 end
+function opts = opts_append_userdefined(opts, userDefined)
+% appends user-defined options to an options array
+% the sserDefined options can come either as a single string or a cellstr that
+% is already TikZ-formatted. The internal 2D cell format is NOT supported.
+    if ~isempty(userDefined)
+        if ischar(userDefined)
+            userDefined = {userDefined};
+        end
+        for k = 1:length(userDefined)
+            opts = opts_append(opts, userDefined{k});
+        end
+    end
+end
 function opts = opts_remove(opts, varargin)
 % remove some key-value pairs from an options array
     keysToDelete = varargin;
@@ -5368,8 +5359,8 @@ function [env,versionString] = getEnvironment()
         end
     end
     % otherwise:
-    env = [];
-    versionString = [];
+    env = '';
+    versionString = '';
 end
 % ==============================================================================
 function isBelow = isVersionBelow(env, versionA, versionB)
