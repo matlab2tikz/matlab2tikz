@@ -1851,11 +1851,22 @@ function [m2t, str] = drawPatch(m2t, handle)
         end
         % Plot the actual data.
         [m2t, table] = makeTable(m2t, columnNames, data);
-
-        cycle = '--cycle';
+                
+        cycle = conditionallyCyclePath(data);
         str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n\n',...
             str, plotType, drawOpts, join(m2t, tableOptions, ', '), table, cycle);
 end
+end
+% ==============================================================================
+function [cycle] = conditionallyCyclePath(data)
+% returns "--cycle" when the path should be cyclic in pgfplots
+% Mostly, this is the case UNLESS the data record starts or ends with a NaN
+% record (i.e. a break in the path)
+    if any(~isfinite(data([1 end],:)))
+        cycle = '';
+    else
+        cycle = '--cycle';
+    end
 end
 % ==============================================================================
 function [m2t, str] = drawImage(m2t, handle)
