@@ -3027,6 +3027,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     if is3D
         name = 'addplot3';
         format = [m2t.ff,',',m2t.ff,',',m2t.ff];
+        m2t.currentAxesContain3dData = true;
     else % 2D plotting
         name   = 'addplot';
         format = [m2t.ff,',',m2t.ff];
