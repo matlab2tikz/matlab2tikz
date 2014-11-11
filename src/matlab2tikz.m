@@ -767,10 +767,7 @@ function m2t = drawAxes(m2t, handle)
         'comment', [], ...
         'options', {opts_new()}, ...
         'content', {cell(0)}, ...
-        'children', {cell(0)}, ...
-        'stackedBarsPresent', false, ... %FIXME: remove when verified
-        'nonbarPlotsPresent', false ...  %FIXME: remove when verified
-        );
+        'children', {cell(0)});
 
     % update gca
     m2t.currentHandles.gca = handle;
@@ -825,14 +822,6 @@ function m2t = drawAxes(m2t, handle)
     m2t.currentAxesContain3dData = false;
     [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
     m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    if m2t.axesContainers{end}.stackedBarsPresent ...
-            && m2t.axesContainers{end}.nonbarPlotsPresent
-        userWarning(m2t, ['Pgfplots can''t deal with stacked bar plots', ...
-            ' and non-bar plots in one axis environment.', ...
-            ' The LaTeX file will probably not compile.']);
-        %FIXME: remove when verified
-    end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % The rest of this is handling axes options.
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1278,9 +1267,6 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
         return
     end
 
-    % This is for a quirky workaround for stacked bar plots.
-    m2t.axesContainers{end}.nonbarPlotsPresent = true; %FIXME: remove when verified
-
     lineStyle = get(handle, 'LineStyle');
     lineWidth = get(handle, 'LineWidth');
     marker = get(handle, 'Marker');
@@ -1667,9 +1653,6 @@ function [m2t, str] = drawPatch(m2t, handle)
     if ~isVisible(handle)
         return
     end
-
-    % This is for a quirky workaround for stacked bar plots.
-    m2t.axesContainers{end}.nonbarPlotsPresent = true; %FIXME: remove when verified
 
     % MATLAB's patch elements are matrices in which each column represents a a
     % distinct graphical object. Usually there is only one column, but there may
@@ -2812,7 +2795,6 @@ function [m2t, str] = drawBarseries(m2t, h)
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
             if ~m2t.barAddedAxisOption
-                m2t.axesContainers{end}.stackedBarsPresent = true; %FIXME: remove when verified
                 bWFactor = get(h, 'BarWidth');
                 m2t.axesContainers{end}.options = ...
                     opts_add(m2t.axesContainers{end}.options, ...
@@ -2858,11 +2840,6 @@ end
 % ==============================================================================
 function [m2t, numBars] = countBarplotSiblings(m2t, h)
 % Count the number of sibling bar plots
- % The bar plot implementation in Pgfplots lacked certain functionalities;
- % for example, it can't plot bar plots and non-bar plots in the same
- % axis (while MATLAB can).
- % The following checks if this is the case and cowardly bails out if so.
- % FIXME: bar plots together with different kinds (seems possible in 1.10)
     if isempty(m2t.barplotTotalNumber)
         m2t.barplotTotalNumber = 0;
         siblings = get(get(h, 'Parent'), 'Children');
