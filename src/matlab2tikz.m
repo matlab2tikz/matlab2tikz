@@ -487,18 +487,8 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     m2t.content.options = opts_append_userdefined(m2t.content.options, ...
                                    m2t.cmdOpts.Results.extraTikzpictureOptions);
 
-    % Don't forget to define the colors.
-    if ~isempty(m2t.extraRgbColorNames)
-        m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
-        for k = 1:length(m2t.extraRgbColorNames)
-            % make sure to append with '%' to avoid spacing woes
-            ff = m2t.colorFormat;
-            m2t.content.colors = [m2t.content.colors, ...
-                sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
-                m2t.extraRgbColorNames{k}', m2t.extraRgbColorSpecs{k})];
-        end
-        m2t.content.colors = [m2t.content.colors sprintf('%%\n')];
-    end
+    m2t.content.colors = generateColorDefinitions(m2t.extraRgbColorNames, ...
+                            m2t.extraRgbColorSpecs, m2t.colorFormat);
 
     % Finally print it to the file,
     addComments(fid, m2t.content.comment);
@@ -528,6 +518,22 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     end
 end
 % ==============================================================================
+function str = generateColorDefinitions(names, specs, colorFormat)
+% output the color definitions to LaTeX
+    str = '';
+    ff  = colorFormat;
+    if ~isempty(names)
+        m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
+        for k = 1:length(names)
+            % make sure to append with '%' to avoid spacing woes
+            str = [str, ...
+                sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
+                names{k}', specs{k})];
+        end
+        str = [str sprintf('%%\n')];
+    end
+end
+% ===
 function [m2t, axesHandles] = findPlotAxes(m2t, fh)
 % find axes handles that are not legends/colorbars
     % NOTE: also do R2014b to avoid code duplication
@@ -3021,6 +3027,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     if is3D
         name = 'addplot3';
         format = [m2t.ff,',',m2t.ff,',',m2t.ff];
+        m2t.currentAxesContain3dData = true;
     else % 2D plotting
         name   = 'addplot';
         format = [m2t.ff,',',m2t.ff];
