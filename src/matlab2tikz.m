@@ -3926,8 +3926,9 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
                     textalign = 'right';
                     pictalign = 'left';
                 otherwise
-                    userWarning(m2t, [' Unknown legend text position ''',textpos,'''' ...
-                        '. Choosing default.']);
+                    userWarning(m2t, ...
+                        ['Unknown legend text position ''',...
+                        textpos, '''. Choosing default.']);
             end
         case 'MATLAB'
             % does not specify text/pictogram alignment in legends
