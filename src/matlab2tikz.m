@@ -1613,7 +1613,7 @@ end
 function [tikzMarker, markOptions] = ...
     translateMarker(m2t, matlabMarker, markOptions, faceColorToggle)
 % Translates MATLAB markers to their Tikz equivalents
-% #COMPLEX: inherently large switch-case  
+% #COMPLEX: inherently large switch-case
     if ~ischar(matlabMarker)
         error('matlab2tikz:translateMarker:MarkerNotAString',...
             'matlabMarker is not a string.');
@@ -1851,7 +1851,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         end
         % Plot the actual data.
         [m2t, table] = makeTable(m2t, columnNames, data);
-                
+
         cycle = conditionallyCyclePath(data);
         str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n\n',...
             str, plotType, drawOpts, join(m2t, tableOptions, ', '), table, cycle);
@@ -3825,7 +3825,7 @@ function [lStyle] = legendPosition(m2t, handle, lStyle)
 % handle legend location
 % #COMPLEX: just a big switch-case
     loc  = get(handle, 'Location');
-    dist = 0.03;  % distance to to axes in normalized coordinated
+    dist = 0.03;  % distance to to axes in normalized coordinates
     % MATLAB(R)'s keywords are camel cased (e.g., 'NorthOutside'), in Octave
     % small cased ('northoutside'). Hence, use lower() for uniformity.
     switch lower(loc)
