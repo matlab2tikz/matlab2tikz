@@ -182,7 +182,7 @@ m2t.colorPrecision = 2^(-m2t.colorDepth/3);
 m2t.colorFormat    = sprintf('%%0.%df',ceil(-log10(m2t.colorPrecision)));
 
 % the actual contents of the TikZ file go here
-m2t.content = struct('name',     [], ...
+m2t.content = struct('name',     '', ...
                      'comment',  [], ...
                      'options',  {opts_new()}, ...
                      'content',  {cell(0)}, ...
@@ -196,7 +196,7 @@ m2t.preamble = sprintf(['\\usepackage{pgfplots}\n', ...
 %% scan the options
 ipp = matlab2tikzInputParser;
 
-ipp = ipp.addOptional(ipp, 'filename',   [], @(x) filenameValidation(x,ipp));
+ipp = ipp.addOptional(ipp, 'filename',   '', @(x) filenameValidation(x,ipp));
 ipp = ipp.addOptional(ipp, 'filehandle', [], @filehandleValidation);
 
 ipp = ipp.addParamValue(ipp, 'figurehandle', get(0,'CurrentFigure'), @ishandle);
@@ -218,12 +218,12 @@ ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
 ipp = ipp.addParamValue(ipp, 'automaticLabels', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
-ipp = ipp.addParamValue(ipp, 'height', [], @ischar);
-ipp = ipp.addParamValue(ipp, 'width' , [], @ischar);
+ipp = ipp.addParamValue(ipp, 'height', '', @ischar);
+ipp = ipp.addParamValue(ipp, 'width' , '', @ischar);
 ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
-ipp = ipp.addParamValue(ipp, 'dataPath', [], @ischar);
-ipp = ipp.addParamValue(ipp, 'relativeDataPath', [], @ischar);
+ipp = ipp.addParamValue(ipp, 'dataPath', '', @ischar);
+ipp = ipp.addParamValue(ipp, 'relativeDataPath', '', @ischar);
 ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
 
 % Maximum chunk length.
@@ -256,7 +256,7 @@ ipp = ipp.addParamValue(ipp, 'parseStringsAsMath', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'interpretTickLabelsAsTex', false, @islogical);
 
 %% deprecated parameters (will auto-generate warnings upon parse)
-ipp = ipp.addParamValue(ipp, 'relativePngPath', [], @ischar);
+ipp = ipp.addParamValue(ipp, 'relativePngPath', '', @ischar);
 ipp = ipp.deprecateParam(ipp, 'relativePngPath', 'relativeDataPath');
 
 %% Finally parse all the arguments
@@ -647,7 +647,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
             case {'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                     'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
                 % don't to anything for these handles and its children
-                str = [];
+                str = '';
 
             case ''
                 warning('matlab2tikz:NoChildren',...
@@ -765,7 +765,7 @@ function m2t = drawAxes(m2t, handle)
     % facilitate writing clean code) as structs are more portable (old MATLAB(R)
     % versions, GNU Octave).
     m2t.axesContainers{end+1} = struct('handle', handle, ...
-        'name', [], ...
+        'name', '', ...
         'comment', [], ...
         'options', {opts_new()}, ...
         'content', {cell(0)}, ...
@@ -1287,7 +1287,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
 % Returns the code for drawing a regular line and error bars.
 % This is an extremely common operation and takes place in most of the
 % not too fancy plots.
-    str = [];
+    str = '';
 
     if ~isVisible(handle)
         return
@@ -1685,7 +1685,7 @@ end
 function [m2t, str] = drawPatch(m2t, handle)
 % Draws a 'patch' graphics object (as found in contourf plots, for example).
 %
-    str = [];
+    str = '';
 
     if ~isVisible(handle)
         return
@@ -1870,7 +1870,7 @@ function [cycle] = conditionallyCyclePath(data)
 end
 % ==============================================================================
 function [m2t, str] = drawImage(m2t, handle)
-    str = [];
+    str = '';
 
     if ~isVisible(handle)
         return
@@ -2153,7 +2153,7 @@ function [m2t, str] = drawHggroup(m2t, h)
 end
 % ==============================================================================
 function [m2t,env] = drawSurface(m2t, handle)
-    str = [];
+    str = '';
     [m2t, opts, plotType] = surfaceOpts(m2t, handle);
 
     % Allow for empty surf
@@ -2300,7 +2300,7 @@ function [m2t, str] = drawVisibleText(m2t, handle)
             || (strcmp(get(handle, 'HandleVisibility'), 'off') && ...
                 ~m2t.cmdOpts.Results.showHiddenStrings)
             
-        str = [];
+        str = '';
         return;
     end
     
@@ -2445,7 +2445,7 @@ function [m2t, str] = drawText(m2t, handle)
 end
 % ==============================================================================
 function [m2t, str] = drawRectangle(m2t, handle)
-    str = [];
+    str = '';
 
     % there may be some text objects floating around a Matlab figure which
     % are handled by other subfunctions (labels etc.) or don't need to be
@@ -2580,7 +2580,7 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
 end
 % ==============================================================================
 function [m2t, str] = drawScatterPlot(m2t, h)
-    str = [];
+    str = '';
 
     xData = get(h, 'XData');
     yData = get(h, 'YData');
@@ -2944,7 +2944,7 @@ function [m2t, str] = drawStairSeries(m2t, h)
     [m2t, str] = drawStemOrStairSeries_(m2t, h, 'const plot');
 end
 function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
-    str = [];
+    str = '';
 
     lineStyle = get(h, 'LineStyle');
     lineWidth = get(h, 'LineWidth');
@@ -2983,7 +2983,7 @@ function [m2t, str] = drawAreaSeries(m2t, h)
 %
 % TODO Get rid of code duplication with 'drawAxes'.
 
-    str = [];
+    str = '';
 
     if ~isfield(m2t, 'addedAreaOption') || isempty(m2t.addedAreaOption) || ~m2t.addedAreaOption
         % Add 'area style' to axes options.
@@ -3035,7 +3035,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     % used for arrow styles, in case there are more than one quiver fields
     m2t.quiverId = m2t.quiverId + 1;
 
-    str = [];
+    str = '';
     
     [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h);
 
@@ -3253,7 +3253,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
     radius = p([3 4]) / 2;
     center = p([1 2]) + radius;
 
-    str = [];
+    str = '';
 
     lineStyle = get(handle, 'LineStyle');
     lineWidth = get(handle, 'LineWidth');
@@ -4299,7 +4299,7 @@ function newstr = join(m2t, cellstr, delimiter)
 % Example of usage:
 %              join(m2t, cellstr, ',')
     if isempty(cellstr)
-        newstr = [];
+        newstr = '';
         return
     end
 
@@ -5368,8 +5368,8 @@ function [env,versionString] = getEnvironment()
         end
     end
     % otherwise:
-    env = [];
-    versionString = [];
+    env = '';
+    versionString = '';
 end
 % ==============================================================================
 function isBelow = isVersionBelow(env, versionA, versionB)
