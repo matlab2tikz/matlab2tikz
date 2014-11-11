@@ -4814,7 +4814,7 @@ end
 function strings = cellstrOneLinePerCell(strings)
 % convert to cellstr that contains only one-line strings
     if ischar(strings)
-        strings = cellstr(strings);
+        strings = cellstr(strings)';
     elseif iscellstr(strings)
         cs = {};
         for s = strings
