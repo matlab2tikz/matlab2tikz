@@ -306,7 +306,7 @@ if isempty(m2t.cmdOpts.Results.relativeDataPath)
         userWarning(m2t, ['Using "relativePngPath" for "relativeDataPath".', ...
             ' This will stop working in a future release.']);
     else
-        m2t.relativeDataPath = fileparts(m2t.tikzFileName);
+        m2t.relativeDataPath = m2t.cmdOpts.Results.relativeDataPath;
     end
 else
     m2t.relativeDataPath = m2t.cmdOpts.Results.relativeDataPath;
