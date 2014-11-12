@@ -719,8 +719,9 @@ switch m2t.env
         errorUnknownEnvironment();
 end
 
-% split string to cell, if newline character (ASCII 10) is present
-legendString = strsplit(legendString,char(10));
+% split string to cell, if newline character '\n' (ASCII 10) is present
+delimeter = sprintf('\n');
+legendString = regexp(legendString,delimeter,'split');
 
 m2t.currentHandleHasLegend = hasLegend && ~isempty(legendString);
 end
@@ -4734,7 +4735,9 @@ function c = prettyPrint(m2t, strings, interpreter)
 
     % Now loop over the strings and return them pretty-printed in c.
     c = {};
-    for s = strings
+    for k = 1:length(strings)
+        % linear indexing for independence of cell array dimensions
+        s = strings{k};
 
         % If the user set the matlab2tikz parameter 'parseStrings' to false, no
         % parsing of strings takes place, thus making the user 100% responsible.
@@ -4815,7 +4818,7 @@ end
 function strings = cellstrOneLinePerCell(strings)
 % convert to cellstr that contains only one-line strings
     if ischar(strings)
-        strings = cellstr(strings)';
+        strings = cellstr(strings);
     elseif iscellstr(strings)
         cs = {};
         for s = strings
