@@ -2799,6 +2799,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         case 'stacked' % stacked plots
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
+            
             if ~m2t.barAddedAxisOption
                 bWFactor = get(h, 'BarWidth');
                 m2t.axesContainers{end}.options = ...
@@ -2807,8 +2808,15 @@ function [m2t, str] = drawBarseries(m2t, h)
                     formatDim(m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
                 m2t.barAddedAxisOption = true;
             end
+            
+            % Somewhere between pgfplots 1.5 and 1.8 and starting 
+            % again from 1.11, the option {x|y}bar stacked can be applied to 
+            % \addplot instead of the figure and thus allows to combine stacked
+            % bar plots and other kinds of plots in the same axis.
+            % Thus, it is advisable to use pgfplots 1.11. In older versions, the
+            % plot will only contain a single bar series, but should compile fine.
+            m2t = needsPgfplotsVersion(m2t, [1,11]); 
             drawOptions = opts_add(drawOptions, [barType ' stacked']);
-
         otherwise
             error('matlab2tikz:drawBarseries', ...
                 'Don''t know how to handle BarLayout ''%s''.', barlayout);
