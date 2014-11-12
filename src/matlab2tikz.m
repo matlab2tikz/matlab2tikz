@@ -533,7 +533,7 @@ function str = generateColorDefinitions(names, specs, colorFormat)
         str = [str sprintf('%%\n')];
     end
 end
-% ===
+% ==============================================================================
 function [m2t, axesHandles] = findPlotAxes(m2t, fh)
 % find axes handles that are not legends/colorbars
     % NOTE: also do R2014b to avoid code duplication
@@ -2777,18 +2777,18 @@ function [m2t, str] = drawBarseries(m2t, h)
             if (isHoriz)
                 physicalBarWidth = dx * barWidth * m2t.unitlength.y.value;
                 physicalBarShift = dx * m2t.barShifts(m2t.barplotId) * m2t.unitlength.y.value;
-                phyicalBarUnit = m2t.unitlength.y.unit;
+                physicalBarUnit = m2t.unitlength.y.unit;
             else
                 physicalBarWidth = dx * barWidth * m2t.unitlength.x.value;
                 physicalBarShift = dx * m2t.barShifts(m2t.barplotId) * m2t.unitlength.x.value;
-                phyicalBarUnit = m2t.unitlength.x.unit;
+                physicalBarUnit = m2t.unitlength.x.unit;
             end
             drawOptions = opts_add(drawOptions, barType);
             drawOptions = opts_add(drawOptions, 'bar width', ...
-                                 formatDim(physicalBarWidth, phyicalBarUnit));
+                                 formatDim(physicalBarWidth, physicalBarUnit));
             if physicalBarShift ~= 0.0
                 drawOptions = opts_add(drawOptions, 'bar shift', ...
-                                 formatDim(physicalBarShift, phyicalBarUnit));
+                                 formatDim(physicalBarShift, physicalBarUnit));
             end
 
         case 'stacked' % stacked plots

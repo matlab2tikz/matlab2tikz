@@ -582,7 +582,7 @@ function [stat] = bars()
   end
   
   % dataset stacked
-  [data,dummy,summy] = svd(magic(7)); %#ok
+  [data,dummy,dummy] = svd(magic(7)); %#ok
   Y = round(abs(data(2:6,2:4))*10);
   
   subplot(2,2,1);
