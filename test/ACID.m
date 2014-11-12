@@ -35,7 +35,7 @@ function [status] = ACID(k)
 
   % assign the functions to test
   testfunction_handles = {                        ...
-                           @one_point           , ...
+                           @multiline_labels    , ...
                            @plain_cos           , ...
                            @sine_with_markers   , ...
                            @markerSizes         , ...
@@ -159,25 +159,21 @@ function [status] = ACID(k)
 
 end
 % =========================================================================
-function [stat] = one_point()
-
+function [stat] = multiline_labels()
+  stat.description = 'Test multiline labels and plot some points.';
+  
   m = [0 1 1.5 1 -1];
-  k = 1:1:length(m);
-  plot(k,m,'*-');
+  plot(m,'*-'); hold on;
+  plot(flip(m)-0.5,'x--');
 
-  title({'title', 'multline'})
-  %legend(char('Multi-Line Legend Entry','Wont Work 2^2=4'))
-  legend('Multi-Line Legend Entry Wont Work 2^2=4')
-  xlabel({'one','two','three'});
+  title({'multline','title'});
+  legend({sprintf('multi-line legends\ndo work 2^2=4'), ...
+        sprintf('second\nplot')});
+  xlabel(sprintf('one\ntwo\nthree'));
   ylabel({'one','° ∞', 'three'});
 
-  set(gca, 'YTick', []);
-  set(gca,'XTick',0:1:length(m)-1);
-
+  set(gca,'YTick', []);
   set(gca,'XTickLabel',{});
-
-  stat.description = 'Plot only one single point.';
-
 end
 % =========================================================================
 function [stat] = plain_cos()

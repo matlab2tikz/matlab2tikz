@@ -716,6 +716,11 @@ switch m2t.env
     otherwise
         errorUnknownEnvironment();
 end
+
+% split string to cell, if newline character '\n' (ASCII 10) is present
+delimeter = sprintf('\n');
+legendString = regexp(legendString,delimeter,'split');
+
 m2t.currentHandleHasLegend = hasLegend && ~isempty(legendString);
 end
 % ==============================================================================
@@ -3886,8 +3891,9 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
                     textalign = 'right';
                     pictalign = 'left';
                 otherwise
-                    userWarning(m2t, [' Unknown legend text position ''',textpos,'''' ...
-                        '. Choosing default.']);
+                    userWarning(m2t, ...
+                        ['Unknown legend text position ''',...
+                        textpos, '''. Choosing default.']);
             end
         case 'MATLAB'
             % does not specify text/pictogram alignment in legends
@@ -3897,16 +3903,16 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
     
     % set alignment of legend text and pictograms, if available
     if ~isempty(textalign) && ~isempty(pictalign)
-        lStyle = opts_add(lStyle, 'nodes', textalign);
-        lStyle = opts_add(lStyle, 'legend plot post', pictalign);
-        
+        lStyle = opts_add(lStyle, 'legend cell align', textalign);
+        lStyle = opts_add(lStyle, 'align', textalign);
+        lStyle = opts_add(lStyle, 'legend plot pos', pictalign);
     else
         % Make sure the entries are flush left (default MATLAB behavior).
         % This is also import for multiline legend entries: Without alignment
         % specification, the TeX document won't compile.
-        %lStyle{end+1} = 'nodes=right';
+        % 'legend plot pos' is not set explicitly, since 'left' is default.
         lStyle = opts_add(lStyle, 'legend cell align', 'left');
-
+        lStyle = opts_add(lStyle, 'align', 'left');
     end
 end
 % ==============================================================================
@@ -4692,7 +4698,9 @@ function c = prettyPrint(m2t, strings, interpreter)
 
     % Now loop over the strings and return them pretty-printed in c.
     c = {};
-    for s = strings
+    for k = 1:length(strings)
+        % linear indexing for independence of cell array dimensions
+        s = strings{k};
 
         % If the user set the matlab2tikz parameter 'parseStrings' to false, no
         % parsing of strings takes place, thus making the user 100% responsible.
@@ -4782,7 +4790,8 @@ function strings = cellstrOneLinePerCell(strings)
         end
         strings = cs;
     else
-        error('matlab2tikz:prettyPrint', 'Data type not understood.');
+        error('matlab2tikz:cellstrOneLinePerCell', ...
+            'Data type not understood.');
     end
 end
 % ==============================================================================
