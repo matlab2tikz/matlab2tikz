@@ -173,7 +173,7 @@ m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
 m2t.barplotId    = 0; % identification flag for bar plots
-m2t.quiverId = 0; % identification flag for quiver plot styles
+m2t.quiverId     = 0; % identification flag for quiver plot styles
 m2t.automaticLabelIndex = 0;
 
 % definition of color depth
@@ -349,6 +349,7 @@ versionInfo = ['The latest updates can be retrieved from\n'         ,...
 userInfo(m2t, versionInfo, m2t.website, m2t.name);
 =======
                regexprep(expr,'%s','https://github.com/nschloe/matlab2tikz'),... 
+               regexprep(expr,'%s','https://github.com/nschloe/matlab2tikz/wiki'),... 
                regexprep(expr,'%s','https://github.com/nschloe/matlab2tikz/issues')];
 <<<<<<< b1b7a3c079cd3d583ce968a904f17350c50de6a0
 userInfo(m2t, versionInfo, regexprep(expr,'%s',m2t.website), m2t.name);
@@ -1730,9 +1731,7 @@ function [tikzMarker, markOptions] = ...
             tikzMarker = 'x';
         otherwise  % the following markers are only available with PGF's
             % plotmarks library
-            if ~m2t.cmdOpts.Results.standalone
-                userInfo(m2t, '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n');
-            end
+            userInfo(m2t, '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n');
             hasFilledVariant = true;
             switch (matlabMarker)
 
