@@ -173,6 +173,8 @@ m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
 m2t.barplotId    = 0; % identification flag for bar plots
+m2t.quiverId = 0; % identification flag for quiver plot styles
+m2t.automaticLabelIndex = 0;
 
 % definition of color depth
 m2t.colorDepth     = 48; %[bit] RGB color depth (typical values: 24, 30, 48)
@@ -1793,9 +1795,6 @@ function [m2t, str] = drawPatch(m2t, handle)
     Faces    = get(handle,'Faces')-1;
     Vertices = get(handle,'Vertices');
     
-    % Check if it is one patch
-    isOnePatch = size(Faces,1) == 1;
-    
     % 3D vs 2D
     if size(Vertices,2) == 3
         m2t.currentAxesContain3dData = true;
@@ -1819,58 +1818,14 @@ function [m2t, str] = drawPatch(m2t, handle)
     % gather the draw options
     % Make sure that legends are shown in area mode.
     drawOptions = {'area legend'};
-    if ~isOnePatch
-        drawOptions{end+1} = 'table/row sep=crcr';
-    end
     
     % Use the '\\' as a row separator to make sure that the generated figures
     % work in subplot environments.
     verticesTableOptions = {'row sep=crcr'};
     
-    % Enforce 'patch' or cannot use 'patch table='
-    if strcmpi(s.plotType,'mesh') && ~isOnePatch
-        drawOptions{end+1} = 'patch';
-    end
-    drawOptions{end+1} = s.plotType; % Eventually add mesh, but after patch!
-    
-    % Patch type
-    % -----------------------------------------------------------------------
-    vertexCount = size(Faces,2);
-    
-    % single patch do nothing
-    if isOnePatch           
-    
-    % triangle (default), do nothing
-    elseif vertexCount == 3 
-    
-    % rectangle
-    elseif vertexCount == 4 
-        drawOptions{end+1} = 'patch type=rectangle';
-    
-    % polygon
-    else 
-        
-        % Warn user if not using standalone to load the library
-        if ~m2t.cmdOpts.Results.standalone
-            userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
-        end
-        
-        % Get rid of interpolated shader, not supported by polygon type
-        idrop = ~cellfun(@isempty,regexp(patchOptions,'interp','once'));
-        if any(idrop)
-            userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
-            patchOptions(idrop) = [];
-        end
-        
-        % Add draw options
-        drawOptions = [drawOptions,...
-                       {'patch type=polygon', sprintf('vertex count=%d',vertexCount)}];
-    end
-    drawOptions = [drawOptions, patchOptions];
-    
     % Marker options
     [m2t, markerOptions] = getMarkerOptions(m2t, handle);
-    drawOptions = [drawOptions, markerOptions];
+    drawOptions          = [drawOptions, markerOptions];
     
     % Line options
     lineStyle   = get(handle, 'LineStyle');
@@ -1878,16 +1833,62 @@ function [m2t, str] = drawPatch(m2t, handle)
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
     drawOptions = [drawOptions, lineOptions];
     
-    % Color
-    % -----------------------------------------------------------------------
-    
-    % Single face and edge colors
-    if s.hasOneFaceColor && s.hasOneEdgeColor && ~isOnePatch
-        ptType = 'patch table';
-    
-    % We have CData
+    % No patch: if one patch and single face/edge color
+    if size(Faces,1) == 1 && s.hasOneEdgeColor && s.hasOneFaceColor
+        ptType = '';
+        cycle  = conditionallyCyclePath(Vertices);
+        if ~isNone(s.edgeColor)
+            [m2t, xEdgeColor]  = getColor(m2t, handle, s.edgeColor, 'patch');
+            drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+        end
+        if ~isNone(s.faceColor)
+            [m2t,xFaceColor]   = getColor(m2t, handle, s.faceColor, 'patch');
+            drawOptions{end+1} = sprintf('fill=%s',xFaceColor);
+        end
     else
-        fvCData   = get(handle,'FaceVertexCData');
+        cycle = '';
+        drawOptions{end+1} = 'table/row sep=crcr';
+        
+        % Enforce 'patch' or cannot use 'patch table='
+        if strcmpi(s.plotType,'mesh')
+            drawOptions{end+1} = 'patch';
+        end
+        drawOptions{end+1} = s.plotType; % Eventually add mesh, but after patch!
+        
+        % Patch type
+        % -----------------------------------------------------------------------
+        vertexCount = size(Faces,2);
+        
+        % triangle (default), do nothing
+        if vertexCount == 3
+            
+        % rectangle
+        elseif vertexCount == 4
+            drawOptions{end+1} = 'patch type=rectangle';
+            
+        % polygon
+        else
+            
+            % Warn to load the library
+            userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
+            
+            % Get rid of interpolated shader, not supported by polygon type
+            idrop = ~cellfun(@isempty,regexp(patchOptions,'interp','once'));
+            if any(idrop)
+                userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
+                patchOptions(idrop) = [];
+            end
+            
+            % Add draw options
+            drawOptions = [drawOptions,...
+                {'patch type=polygon', sprintf('vertex count=%d',vertexCount)}];
+        end
+        drawOptions = [drawOptions, patchOptions];
+        
+        % Color
+        % -----------------------------------------------------------------------
+        % We have CData
+        fvCData = get(handle,'FaceVertexCData');
         rowsCData = size(fvCData,1);
         
         % Add the color map
@@ -1895,23 +1896,26 @@ function [m2t, str] = drawPatch(m2t, handle)
             addToOptions(m2t.axesContainers{end}.options, ...
             matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
         
+        % Patch table type
+        if rowsCData == size(Vertices,1)
+            ptType = 'patch table';
+            columnNames{end+1}  = 'c';
+            verticesTableOptions{end+1} = 'point meta=\thisrow{c}';
+        else
+            ptType = 'patch table with point meta';
+        end
+        
         % Point meta
         if isvector(fvCData)
             
             % Eventually scale within Clims
             [m2t, fvCData] = cdata2colorindex(m2t,fvCData,handle);
             
-            % Vertices
+            % Add pointmeta data to vertices or faces
             if rowsCData == size(Vertices,1)
-                ptType = 'patch table';
-                columnNames{end+1}  = 'c';
-                verticesTableOptions{end+1} = 'point meta=\thisrow{c}';
                 Vertices = [Vertices, fvCData];
-            
-            % Faces
             else
-                ptType = 'patch table with point meta';
-                Faces  = [Faces fvCData];
+                Faces = [Faces fvCData];
             end
             
         % True color CData, i.e. RGB in [0,1]
@@ -1920,27 +1924,18 @@ function [m2t, str] = drawPatch(m2t, handle)
             % Create additional custom colormap
             m2t.axesContainers{end}.options(end+1,:) = ...
                 {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
+            drawOptions{end+1} = 'colormap name=patchmap';
             
-            % Vertices colormap...
+            % Index vertices or faces into custom colormap
             if rowsCData == size(Vertices,1)
-                ptType = 'patch table';
-                columnNames{end+1}  = 'c';
-                verticesTableOptions{end+1} = 'point meta=\thisrow{c}';
-                drawOptions{end+1} = 'colormap name=patchmap';
-                % Index into the custom colormap directly
                 Vertices = [Vertices, (0:rowsCData-1)'];
-            
-            % ...Faces
             else
-                ptType = 'patch table with point meta';
-                drawOptions{end+1} = 'colormap name=patchmap';
-                % Index into the custom colormap directly
-                Faces  = [Faces (0:rowsCData-1)'];
+                Faces = [Faces (0:rowsCData-1)'];
             end
-                
         end
     end
-
+    
+    
     if ~m2t.currentHandleHasLegend
         % No legend entry found. Don't include plot in legend.
         drawOptions{end+1} = 'forget plot';
@@ -1954,15 +1949,17 @@ function [m2t, str] = drawPatch(m2t, handle)
     end
     
     % Add Faces table
-    [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces);
-    drawOptions = [drawOptions, sprintf('%s={%s}', ptType, facesTable)];
+    if ~isempty(ptType)
+        [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces);
+        drawOptions = [drawOptions, sprintf('%s={%s}', ptType, facesTable)];
+    end
     drawOpts = join(m2t, drawOptions, ',');
     
     % Plot the actual data.
     [m2t, verticesTable] = makeTable(m2t, columnNames, Vertices);
     
-    str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s};\n\n',...
-        str, plotCmd, drawOpts, join(m2t, verticesTableOptions, ', '), verticesTable);
+    str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
+        str, plotCmd, drawOpts, join(m2t, verticesTableOptions, ', '), verticesTable, cycle);
 end
 
 % ==============================================================================
