@@ -1790,8 +1790,9 @@ function [m2t, str] = drawPatch(m2t, handle)
     m2t.axesContainers{end}.nonbarPlotsPresent = true;
 
     % Each row of the faces matrix represents a distinct patch 
-    % NOTE: pgfplot uses zero-based indexing into vertices
-    Faces    = get(handle,'Faces')-1;
+    % NOTE: pgfplot uses zero-based indexing into vertices and interpolates
+    % counter-clockwise
+    Faces    = fliplr(get(handle,'Faces')-1);
     Vertices = get(handle,'Vertices');
     
     % 3D vs 2D
@@ -2686,6 +2687,9 @@ function [m2t,patchOptions,s] = shaderOpts(m2t, handle, selectedType)
                     [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
                     patchOptions      = opts_add(patchOptions,'fill',xFaceColor);
                     patchOptions      = opts_add(patchOptions,'faceted color',xEdgeColor);
+                elseif strcmpi(faceColor,'interp')
+                    patchOptions = opts_add(patchOptions,'shader','faceted interp');
+                    patchOptions = opts_add(patchOptions,'faceted color',xEdgeColor);
                 else
                     patchOptions = opts_add(patchOptions,'shader','flat corner');
                     patchOptions = opts_add(patchOptions,'draw',xEdgeColor);
