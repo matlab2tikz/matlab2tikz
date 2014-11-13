@@ -1874,11 +1874,11 @@ function [m2t, str] = drawPatch(m2t, handle)
             % Warn to load the library
             userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
             
-            % Get rid of interpolated shader, not supported by polygon type
-            idrop = ~cellfun(@isempty,regexp(patchOptions(:,2),'interp','once'));
-            if any(idrop)
+            % Default interpolated shader,not supported by polygon, to faceted
+            if ismember(opts_get(patchOptions, 'shader'),{'interp','faceted interp'})
                 userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
-                patchOptions(idrop,:) = [];
+                patchOptions = opts_remove(patchOptions, 'shader');
+                patchOptions = opts_add(patchOptions, 'shader','faceted');
             end
             
             % Add draw options
