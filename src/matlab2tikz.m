@@ -1807,7 +1807,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     end
         
     % Process fill, edge colors and shader
-    [m2t,patchOptions, s] = patchOpts(m2t,handle,'patch');
+    [m2t,patchOptions, s] = shaderOpts(m2t,handle,'patch');
     
     % Return empty axes if no face or edge colors
     if isNone(s.plotType)
@@ -2265,10 +2265,10 @@ end
 % ==============================================================================
 function [m2t,env] = drawSurface(m2t, handle)
     str = '';
-    [m2t, opts, plotType] = surfaceOpts(m2t, handle);
+    [m2t, opts, s] = shaderOpts(m2t, handle,'surf');
 
     % Allow for empty surf
-    if isNone(plotType)
+    if isNone(s.plotType)
         m2t.currentAxesContain3dData = true;
         env = str;
         return
@@ -2303,7 +2303,7 @@ function [m2t,env] = drawSurface(m2t, handle)
     % rank-1-matrices.
     if any(~isnan(dx(1,:)) & dx(1,:) ~= dx(2,:)) ...
             || any(~isnan(dy(:,1)) & dy(:,1) ~= dy(:,2))
-        opts{end+1} = 'z buffer=sort';
+        opts = opts_add(opts, 'z buffer','sort');
     end
 
     % There are several possibilities of how colors are specified for surface
@@ -2314,15 +2314,15 @@ function [m2t,env] = drawSurface(m2t, handle)
     %
 
     % Check if we need extra CData.
-    colors = get(handle, 'CData');
-    if length(size(colors)) == 3 && size(colors, 3) == 3
+    CData = get(handle, 'CData');
+    if length(size(CData)) == 3 && size(CData, 3) == 3
         % Explicit RGB-coded colors.
-        opts{end+1} = 'mesh/color input=explicit';
+        opts = opts_add(opts,'mesh/color input','explicit');
 
         formatType = 'table[row sep=crcr,header=false,meta index=3]';
-        r = colors(:, :, 1);
-        g = colors(:, :, 2);
-        b = colors(:, :, 3);
+        r = CData(:, :, 1);
+        g = CData(:, :, 2);
+        b = CData(:, :, 3);
         colorFormat = join(m2t, repmat({m2t.ff},[3 1]),',');
         color = arrayfun(@(r,g,b)(sprintf(colorFormat,r,g,b)), ...
             r(:),g(:),b(:),'UniformOutput',false);
@@ -2334,8 +2334,7 @@ function [m2t,env] = drawSurface(m2t, handle)
         %elseif length(size(colors)) > 2 || any(isnan(colors(:)))
         %    needsPointmeta = false;
     else
-        opts{end+1} = matlab2pgfplotsColormap(m2t, ...
-            m2t.currentHandles.colormap);
+        opts = opts_add(opts,matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap),'');
         % If NaNs are present in the color specifications, don't use them for
         % Pgfplots; they may be interpreted as strings there. The option
         % 'header=false' will be explicitly added.
@@ -2344,15 +2343,14 @@ function [m2t,env] = drawSurface(m2t, handle)
         % colors to use for the patches. The circular test case on
         % http://www.mathworks.de/de/help/matlab/ref/pcolor.html, for example
         % yields a symmetric setup in Pgfplots (and doesn't in MATLAB).
-        needsPointmeta = any(xor(isnan(dz), isnan(colors)) ...
-            | (abs(colors - dz) > 1.0e-10));
+        needsPointmeta = any(xor(isnan(dz(:)), isnan(CData(:)))) ...
+            || any(abs(CData(:) - dz(:)) > 1.0e-10);
         if needsPointmeta
             % Get color map.
-            formatType = 'table[row sep=crcr,header=false,meta index=3]';
-            opts{end+1} = 'point meta=explicit';
-            color = colors(:);
+            formatType = 'table[row sep=crcr,header=false,point meta=\thisrowno{3}]';
+            color      = CData(:);
         else
-            formatType = 'table[row sep=crcr,header=false]';
+            formatType = 'table[row sep=crcr,header=false,point meta=\thisrowno{2}]';
             color = '';
         end
     end
@@ -2361,10 +2359,10 @@ function [m2t,env] = drawSurface(m2t, handle)
     % Add mesh/rows=<num rows> for specifying the row data instead of empty
     % lines in the data list below. This makes it possible to reduce the
     % data writing to one single sprintf() call.
-    opts{end+1} = sprintf('mesh/rows=%d', numrows);
+    opts = opts_add(opts,'mesh/rows',sprintf('%d', numrows));
 
-    opts = join(m2t, opts, ',\n');
-    str = [str, sprintf(['\n\\addplot3[%%\n%s,\n', opts ,']'], plotType)];
+    opts = opts_print(m2t, opts, ',\n');
+    str = [str, sprintf(['\n\\addplot3[%%\n%s,\n', opts ,']'], s.plotType)];
 
     % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
@@ -2613,106 +2611,7 @@ function [m2t, str] = drawRectangle(m2t, handle)
          join(m2t, drawOptions,', '), pos.left, pos.bottom, pos.right, pos.top);
 end
 % ==============================================================================
-function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
-    faceColor = get(handle, 'FaceColor');
-    edgeColor = get(handle, 'EdgeColor');
-    
-    surfOptions = cell(0);
-
-    % Set opacity if FaceAlpha < 1 in MATLAB
-    faceAlpha = get(handle, 'FaceAlpha');
-    if isnumeric(faceAlpha) && faceAlpha ~= 1.0
-        surfOptions{end+1} = sprintf(['opacity=', m2t.ff], faceAlpha);
-    end
-
-
-    % Check for surf or mesh plot. Second argument in if-check corresponds to
-    % default values for mesh plot in MATLAB.
-    if isNone(faceColor)
-        plotType = 'mesh';
-    else
-        plotType = 'surf';
-    end
-
-    surfOptions = cell(0);
-
-    % Set opacity if FaceAlpha < 1 in MATLAB
-    faceAlpha = get(handle, 'FaceAlpha');
-    if isnumeric(faceAlpha) && faceAlpha ~= 1.0
-        surfOptions{end+1} = sprintf(['opacity=', m2t.ff], faceAlpha);
-    end
-
-    
-    switch plotType
-
-        % SURFACE
-        case 'surf'
-
-    faceColor = get(handle, 'FaceColor');
-    edgeColor = get(handle, 'EdgeColor');
-    % Edge 'none'
-    if isNone(edgeColor)
-        if strcmpi(faceColor, 'flat')
-            surfOptions{end+1} = 'shader=flat';
-        elseif strcmpi(faceColor, 'interp');
-            surfOptions{end+1} = 'shader=interp';
-        end
-
-        % Edge 'interp'
-    elseif strcmpi(edgeColor, 'interp')
-        if strcmpi(faceColor, 'interp')
-            surfOptions{end+1} = 'shader=interp';
-        else
-            surfOptions{end+1} = 'shader=faceted';
-            [m2t,xFaceColor]   = getColor(m2t, handle, faceColor, 'patch');
-            surfOptions{end+1} = sprintf('color=%s',xFaceColor);
-        end
-
-        % Edge 'flat'
-    elseif strcmpi(edgeColor, 'flat')
-        if strcmpi(faceColor, 'flat')
-            surfOptions{end+1} = 'shader=flat';
-        elseif strcmpi(faceColor, 'interp')
-            surfOptions{end+1} = 'shader=faceted interp';
-        elseif isnumeric(faceColor)
-            [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-            surfOptions{end+1} = sprintf('fill=%s',xFaceColor);
-        end
-
-        % Edge RGB
-    else
-        [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
-        surfOptions{end+1} = sprintf('faceted color=%s', xEdgeColor);
-        if isnumeric(faceColor)
-            [m2t, xFaceColor]  = getColor(m2t, handle, faceColor, 'patch');
-            surfOptions{end+1} = sprintf('color=%s', xFaceColor);
-        else
-            surfOptions{end+1} = 'shader=faceted';
-        end
-    end
-end
-% ==============================================================================
-function [m2t, surfOptions] = surfaceOptsOfMesh(m2t, handle, surfOptions)
-% determine options of a `mesh` plot
-
-    % TODO Revisit this selection and create a bunch of test plots.
-
-    edgeColor = get(handle, 'EdgeColor');
-    if ~isNone(edgeColor)
-
-        % Edge 'interp'
-        if strcmpi(edgeColor, 'interp')
-            surfOptions{end+1} = 'shader=flat';
-
-            % Edge RGB
-        else
-            [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
-            surfOptions{end+1} = sprintf('color=%s', xEdgeColor);
-        end
-    end
-end
-% ==============================================================================
-function [m2t,patchOptions,s] = patchOpts(m2t, handle, selectedType)
+function [m2t,patchOptions,s] = shaderOpts(m2t, handle, selectedType)
     
     % Initialize
     patchOptions    = opts_new;
