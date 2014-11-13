@@ -2783,13 +2783,14 @@ function [m2t,patchOptions,s] = patchOpts(m2t, handle, selectedType)
             else
                 hasOneEdgeColor   = true;
                 [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
-                patchOptions      = opts_add(patchOptions,'draw',xEdgeColor);
                 if isnumeric(faceColor)
                     hasOneFaceColor   = true;
                     [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
                     patchOptions      = opts_add(patchOptions,'fill',xFaceColor);
+                    patchOptions      = opts_add(patchOptions,'faceted color',xEdgeColor);
                 else
                     patchOptions = opts_add(patchOptions,'shader','flat corner');
+                    patchOptions = opts_add(patchOptions,'draw',xEdgeColor);
                 end
             end
 
