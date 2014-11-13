@@ -1817,21 +1817,24 @@ function [m2t, str] = drawPatch(m2t, handle)
     % -----------------------------------------------------------------------
     % gather the draw options
     % Make sure that legends are shown in area mode.
-    drawOptions = {'area legend'};
+    drawOptions = opts_add(opts_new,'area legend','');
     
     % Use the '\\' as a row separator to make sure that the generated figures
     % work in subplot environments.
-    verticesTableOptions = {'row sep=crcr'};
+    verticesTableOptions = opts_add(opts_new,'row sep','crcr');
     
     % Marker options
     [m2t, markerOptions] = getMarkerOptions(m2t, handle);
-    drawOptions          = [drawOptions, markerOptions];
+%     drawOptions          = opts_merge(drawOptions, markerOptions); % TODO: use opts_* API in getMarkerOptions
+    drawOptions = [drawOptions; [markerOptions(:), repmat({[]},numel(markerOptions),1)]];
     
     % Line options
     lineStyle   = get(handle, 'LineStyle');
     lineWidth   = get(handle, 'LineWidth');
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-    drawOptions = [drawOptions, lineOptions];
+%     drawOptions = opts_merge(drawOptions, lineOptions); % TODO: use opts_* API in getLineOptions
+    drawOptions = [drawOptions; [lineOptions(:), repmat({[]},numel(lineOptions),1)]];
+
     
     % No patch: if one patch and single face/edge color
     if size(Faces,1) == 1 && s.hasOneEdgeColor && s.hasOneFaceColor
@@ -1839,21 +1842,21 @@ function [m2t, str] = drawPatch(m2t, handle)
         cycle  = conditionallyCyclePath(Vertices);
         if ~isNone(s.edgeColor)
             [m2t, xEdgeColor]  = getColor(m2t, handle, s.edgeColor, 'patch');
-            drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+            drawOptions        = opts_add(drawOptions, 'draw', xEdgeColor);
         end
         if ~isNone(s.faceColor)
             [m2t,xFaceColor]   = getColor(m2t, handle, s.faceColor, 'patch');
-            drawOptions{end+1} = sprintf('fill=%s',xFaceColor);
+            drawOptions        = opts_add(drawOptions,'fill',xFaceColor);
         end
     else
         cycle = '';
-        drawOptions{end+1} = 'table/row sep=crcr';
+        drawOptions = opts_add(drawOptions,'table/row sep','crcr');
         
         % Enforce 'patch' or cannot use 'patch table='
         if strcmpi(s.plotType,'mesh')
-            drawOptions{end+1} = 'patch';
+            drawOptions = opts_add(drawOptions,'patch','');
         end
-        drawOptions{end+1} = s.plotType; % Eventually add mesh, but after patch!
+        drawOptions = opts_add(drawOptions,s.plotType,''); % Eventually add mesh, but after patch!
         
         % Patch type
         % -----------------------------------------------------------------------
@@ -1864,7 +1867,7 @@ function [m2t, str] = drawPatch(m2t, handle)
             
         % rectangle
         elseif vertexCount == 4
-            drawOptions{end+1} = 'patch type=rectangle';
+            drawOptions = opts_add(drawOptions,'patch type','rectangle');
             
         % polygon
         else
@@ -1873,17 +1876,17 @@ function [m2t, str] = drawPatch(m2t, handle)
             userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
             
             % Get rid of interpolated shader, not supported by polygon type
-            idrop = ~cellfun(@isempty,regexp(patchOptions,'interp','once'));
+            idrop = ~cellfun(@isempty,regexp(patchOptions(:,2),'interp','once'));
             if any(idrop)
                 userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
-                patchOptions(idrop) = [];
+                patchOptions(idrop,:) = [];
             end
             
             % Add draw options
-            drawOptions = [drawOptions,...
-                {'patch type=polygon', sprintf('vertex count=%d',vertexCount)}];
+            drawOptions = opts_add(drawOptions,'patch type','polygon');
+            drawOptions = opts_add(drawOptions,'vertex count',sprintf('%d',vertexCount));
         end
-        drawOptions = [drawOptions, patchOptions];
+        drawOptions = opts_merge(drawOptions, patchOptions);
         
         % Color
         % -----------------------------------------------------------------------
@@ -1893,14 +1896,14 @@ function [m2t, str] = drawPatch(m2t, handle)
         
         % Add the color map
         m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
+            opts_add(m2t.axesContainers{end}.options, ...
             matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
         
         % Patch table type
         if rowsCData == size(Vertices,1)
             ptType = 'patch table';
             columnNames{end+1}  = 'c';
-            verticesTableOptions{end+1} = 'point meta=\thisrow{c}';
+            verticesTableOptions = opts_add(verticesTableOptions, 'point meta','\thisrow{c}');
         else
             ptType = 'patch table with point meta';
         end
@@ -1924,7 +1927,7 @@ function [m2t, str] = drawPatch(m2t, handle)
             % Create additional custom colormap
             m2t.axesContainers{end}.options(end+1,:) = ...
                 {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
-            drawOptions{end+1} = 'colormap name=patchmap';
+            drawOptions = opts_append(drawOptions, 'colormap name','patchmap');
             
             % Index vertices or faces into custom colormap
             if rowsCData == size(Vertices,1)
@@ -1938,28 +1941,27 @@ function [m2t, str] = drawPatch(m2t, handle)
     
     if ~m2t.currentHandleHasLegend
         % No legend entry found. Don't include plot in legend.
-        drawOptions{end+1} = 'forget plot';
+        drawOptions = opts_add(drawOptions,'forget plot','');
     end
 
     % -----------------------------------------------------------------------
     if any(~isfinite(Faces(:)))
         m2t.axesContainers{end}.options = ...
-            addToOptions(m2t.axesContainers{end}.options, ...
-            'unbounded coords', 'jump');
+            opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
     end
     
     % Add Faces table
     if ~isempty(ptType)
         [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces);
-        drawOptions = [drawOptions, sprintf('%s={%s}', ptType, facesTable)];
+        drawOptions = opts_add(drawOptions, ptType, sprintf('{%s}', facesTable));
     end
-    drawOpts = join(m2t, drawOptions, ',');
+    drawOpts = opts_print(m2t, drawOptions,',');
     
     % Plot the actual data.
     [m2t, verticesTable] = makeTable(m2t, columnNames, Vertices);
     
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
-        str, plotCmd, drawOpts, join(m2t, verticesTableOptions, ', '), verticesTable, cycle);
+        str, plotCmd, drawOpts, opts_print(m2t, verticesTableOptions, ', '), verticesTable, cycle);
 end
 
 % ==============================================================================
@@ -2713,7 +2715,7 @@ end
 function [m2t,patchOptions,s] = patchOpts(m2t, handle, selectedType)
     
     % Initialize
-    patchOptions    = cell(0);
+    patchOptions    = opts_new;
     hasOneEdgeColor = false;
     hasOneFaceColor = false;
 
@@ -2736,57 +2738,58 @@ function [m2t,patchOptions,s] = patchOpts(m2t, handle, selectedType)
             % Set opacity if FaceAlpha < 1 in MATLAB
             faceAlpha = get(handle, 'FaceAlpha');
             if isnumeric(faceAlpha) && faceAlpha ~= 1.0
-                patchOptions{end+1} = sprintf(['opacity=', m2t.ff], faceAlpha);
+                patchOptions = opts_add(patchOptions,'opacity',sprintf(m2t.ff,faceAlpha));
             end
 
             % Edge 'none'
             if isNone(edgeColor)
                 hasOneEdgeColor = true; % consider void as true
                 if strcmpi(faceColor, 'flat')
-                    patchOptions{end+1} = 'shader=flat';
+                    patchOptions = opts_add(patchOptions,'shader','flat');
                 elseif strcmpi(faceColor, 'interp');
-                    patchOptions{end+1} = 'shader=interp';
+                    patchOptions = opts_add(patchOptions,'shader','interp');
                 else
-                    [m2t,xFaceColor]    = getColor(m2t, handle, faceColor, 'patch');
-                    patchOptions{end+1} = sprintf('fill=%s',xFaceColor);
+                    [m2t,xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+                    patchOptions     = opts_add(patchOptions,'fill',xFaceColor);
                 end
 
             % Edge 'interp'
             elseif strcmpi(edgeColor, 'interp')
                 if strcmpi(faceColor, 'interp')
-                    patchOptions{end+1} = 'shader=interp';
+                    patchOptions = opts_add(patchOptions,'shader','interp');
                 elseif strcmpi(faceColor, 'flat')
-                    patchOptions{end+1} = 'shader=faceted';
+                    patchOptions = opts_add(patchOptions,'shader','faceted');
                 else
-                    hasOneFaceColor   = true;
-                    [m2t,xFaceColor]    = getColor(m2t, handle, faceColor, 'patch');
-                    patchOptions{end+1} = sprintf('fill=%s',xFaceColor);
+                    hasOneFaceColor  = true;
+                    [m2t,xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+                    patchOptions     = opts_add(patchOptions,'fill',xFaceColor);
+
                 end
 
             % Edge 'flat'
             elseif strcmpi(edgeColor, 'flat')
                 if strcmpi(faceColor, 'flat')
-                    patchOptions{end+1} = 'shader=flat corner';
+                    patchOptions = opts_add(patchOptions,'shader','flat corner');
                 elseif strcmpi(faceColor, 'interp')
-                    patchOptions{end+1} = 'shader=faceted interp';
+                    patchOptions = opts_add(patchOptions,'shader','faceted interp');
                 else
-                    hasOneFaceColor   = true;
-                    patchOptions{end+1} = 'shader=flat corner';
-                    [m2t,xFaceColor]    = getColor(m2t, handle, faceColor, 'patch');
-                    patchOptions{end+1} = sprintf('fill=%s',xFaceColor);
+                    hasOneFaceColor  = true;
+                    patchOptions     = opts_add(patchOptions,'shader','flat corner');
+                    [m2t,xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+                    patchOptions     = opts_add(patchOptions,'fill',xFaceColor);
                 end
 
             % Edge RGB
             else
                 hasOneEdgeColor   = true;
-                [m2t, xEdgeColor]   = getColor(m2t, handle, edgeColor, 'patch');
-                patchOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+                [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
+                patchOptions      = opts_add(patchOptions,'draw',xEdgeColor);
                 if isnumeric(faceColor)
                     hasOneFaceColor   = true;
-                    [m2t, xFaceColor]   = getColor(m2t, handle, faceColor, 'patch');
-                    patchOptions{end+1} = sprintf('fill=%s', xFaceColor);
+                    [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+                    patchOptions      = opts_add(patchOptions,'fill',xFaceColor);
                 else
-                    patchOptions{end+1} = 'shader=flat corner';
+                    patchOptions = opts_add(patchOptions,'shader','flat corner');
                 end
             end
 
@@ -2798,13 +2801,13 @@ function [m2t,patchOptions,s] = patchOpts(m2t, handle, selectedType)
             
             % Edge 'interp'
             elseif strcmpi(edgeColor, 'interp')
-                patchOptions{end+1} = 'shader=flat';
+                patchOptions = opts_add(patchOptions,'shader','flat');
 
             % Edge RGB
             else
                 hasOneEdgeColor   = true;
-                [m2t, xEdgeColor]   = getColor(m2t, handle, edgeColor, 'patch');
-                patchOptions{end+1} = sprintf('color=%s', xEdgeColor);
+                [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
+                patchOptions      = opts_add(patchOptions,'color',xEdgeColor);
             end
     end
     s = struct('plotType',plotType, 'faceColor',faceColor, 'edgeColor', edgeColor,...
