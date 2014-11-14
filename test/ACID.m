@@ -138,6 +138,7 @@ function [status] = ACID(k)
                            @imageOrientation_PNG, ...
                            @imageOrientation_inline, ...
                            @texInterpreter      , ...
+                           @latexInterpreter    , ...
                            @stackedBarsWithOther
                          };
 
@@ -2295,6 +2296,15 @@ function [stat] = texInterpreter()
     text(0.1,0.45, {'But what happens to the output if there is', '{\bfuse an \alpha inside} the limitted style.'});
     text(0.1,0.3, 'Or if the\fontsize{14} size\color{red} and color are \fontsize{10}changed at different\color{blue} points.');
     text(0.1,0.15, {'Also_{some \bf subscripts} and^{superscripts} are possible.', 'Without brackets, it l^o_oks like t_his.' });
+end
+% =========================================================================
+function [stat] = latexInterpreter()
+    stat.description = '\LaTeX{} interpreter test (display math not working)';
+    stat.issues = 448;
+
+    plot(magic(3),'-x');
+    title(['display math old: $$\alpha$$ and $$\sum_\alpha^\Omega$$; ', ...
+    'inline math: $\alpha$ and $\sum_\alpha^\Omega$'],'Interpreter','latex');
 end
 % =========================================================================
 function [stat] = stackedBarsWithOther()
