@@ -235,7 +235,7 @@ ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
 % TeX parser buffer is buf_size=200 000 char on Mac TeXLive, let's say
 % 100 000 to be on the safe side.
 % 1 point is represented by 25 characters (estimation): 2 coordinates (10
-% char), 2 brackets, commma and white space, + 1 extra char.
+% char), 2 brackets, comma and white space, + 1 extra char.
 % That gives a magic arbitrary number of 4000 data points per array.
 ipp = ipp.addParamValue(ipp, 'maxChunkLength', 4000, @isnumeric);
 
@@ -763,7 +763,7 @@ function m2t = drawAxes(m2t, handle)
             % continue as usual
     end
 
-    % Initialize empty enviroment.
+    % Initialize empty environment.
     % Use a struct instead of a custom subclass of hgsetget (which would
     % facilitate writing clean code) as structs are more portable (old MATLAB(R)
     % versions, GNU Octave).
@@ -807,7 +807,7 @@ function m2t = drawAxes(m2t, handle)
             'scale only axis', []);    
     end
     % Add the physical dimension of one unit of length in the coordinate system.
-    % This is used later on to translate lenghts to physical units where
+    % This is used later on to translate lengths to physical units where
     % necessary (e.g., in bar plots).
     m2t.unitlength.x.unit = pos.w.unit;
     xLim = get(m2t.currentHandles.gca, 'XLim');
@@ -1345,7 +1345,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
         % plot them
         for k = 1:length(dataCell)
             % If the line has a legend string, make sure to only include a legend
-            % entry for the *last* occurence of the plot series.
+            % entry for the *last* occurrence of the plot series.
             % Hence the condition k<length(xDataCell).
             %if ~isempty(m2t.legendHandles) && (~m2t.currentHandleHasLegend || k < length(dataCell))
             if ~m2t.currentHandleHasLegend || k < length(dataCell)
@@ -1537,7 +1537,7 @@ function [tikzMarkerSize, isDefault] = ...
     isDefault = abs(matlabMarkerSize(1)-defaultMatlabMarkerSize)<m2t.tol;
     % matlabMarkerSize can be vector data, use first index to check the default
     % marker size. When the script also handles different markers together with
-    % changing size and colour, the test should be extended to a vector norm, e.g.
+    % changing size and color, the test should be extended to a vector norm, e.g.
     % sqrt(e^T*e) < tol, where e=matlabMarkerSize-defaultMatlabMarkerSize
 
     switch (matlabMarker)
@@ -1941,7 +1941,7 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
 
     % Generate uniformly distributed X, Y, although xData and yData may be
     % non-uniform.
-    % This is MATLAB(R) behaviour.
+    % This is MATLAB(R) behavior.
     switch length(xData)
         case 2 % only the limits given; common for generic image plots
             hX = 1;
@@ -2151,7 +2151,7 @@ function [m2t,env] = drawSurface(m2t, handle)
 
     % Add 'z buffer=sort' to the options to make sphere plot and the like not
     % overlap. There are different options here some of which may be more
-    % advantagous in other situations; check out Pgfplots' manual here.
+    % advantageous in other situations; check out Pgfplots' manual here.
     % Since 'z buffer=sort' is computationally more expensive for LaTeX, try
     % to avoid it for the most default situations, e.g., when dx and dy are
     % rank-1-matrices.
@@ -2274,7 +2274,7 @@ function [m2t, str] = drawVisibleText(m2t, handle)
 end
 % ==============================================================================
 function [m2t, str] = drawText(m2t, handle)
-% Adding text node anywhere in the axex environment.
+% Adding text node anywhere in the axes environment.
 % Not that, in Pgfplots, long texts get cut off at the axes. This is
 % Different from the default MATLAB behavior. To fix this, one could use
 % /pgfplots/after end axis/.code.
@@ -2741,7 +2741,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         case 'grouped'  % grouped bar plots
             m2t.barplotId = m2t.barplotId + 1;
 
-            % Maximum group width relative to the minumum distance between two
+            % Maximum group width relative to the minimum distance between two
             % x-values. See <MATLAB>/toolbox/matlab/specgraph/makebars.m
             maxGroupWidth = 0.8;
             if numBars == 1
@@ -3446,7 +3446,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
     % set position, ticks etc. of the colorbar
     loc = get(handle, 'Location');
 
-    switch lower(loc) % case insentitive (MATLAB: CamelCase, Octave: lower case)
+    switch lower(loc) % case insensitive (MATLAB: CamelCase, Octave: lower case)
         case 'north'
             cbarOptions{end+1} = 'horizontal';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
@@ -3648,8 +3648,8 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                     [m2t, colorindex] = cdata2colorindex(m2t, col1, patchhandle);
                     [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
                 else
-                    % Don't return anything meaningful and count on the caller to
-                    % make soemthing of it.
+                    % Don't return anything meaningful and count on the caller
+                    % to make something of it.
                     xcolor = [];
                 end
 
@@ -4260,7 +4260,7 @@ end
 % ==============================================================================
 function newstr = join(m2t, cellstr, delimiter)
 % This function joins a cell of strings to a single string (with a
-% given delimiter inbetween two strings, if desired).
+% given delimiter in between two strings, if desired).
 %
 % Example of usage:
 %              join(m2t, cellstr, ',')
@@ -4401,7 +4401,7 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
         else
             % Convert figure size into axes units
             figureSize = convertUnits([figWidth, figHeight], figUnits, axesUnits);
-            % Figure size into axes units to get the realtive size
+            % Figure size into axes units to get the relative size
             position(i,:) = axesPos ./ [figureSize, figureSize];
 
         end
@@ -4637,7 +4637,7 @@ function userWarning(m2t, message, varargin)
 end
 % ==============================================================================
 function warnAboutParameter(m2t, parameter, isActive, message)
-% warn the user about the use of a dangeours parameter
+% warn the user about the use of a dangerous parameter
     line = ['\n' repmat('=',1,80) '\n'];
     if isActive(m2t.cmdOpts.Results.(parameter))
         userWarning(m2t, [line, 'You are using the "%s" parameter.\n', ...
@@ -5188,7 +5188,7 @@ function string = mergeAdjacentTexCmds(string, cmd)
     if cmd(1) ~= '\'
         cmd = ['\' cmd];
     end
-    % Link each bracet to the corresponding bracet
+    % Link each bracket to the corresponding bracket
     link = zeros(size(string));
     pos = [regexp([' ' string], '([^\\]{)'), ...
         regexp([' ' string], '([^\\]})')];
@@ -5230,7 +5230,7 @@ function dims = pos2dims(pos)
 end
 % OPTION ARRAYS ================================================================
 function opts = opts_new()
-% create a new options arrawy
+% create a new options array
     opts = cell(0,2);
 end
 function opts = opts_add(opts, key, value)
