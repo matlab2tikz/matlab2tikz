@@ -4729,7 +4729,7 @@ function c = prettyPrint(m2t, strings, interpreter)
             case 'latex' % Basic subset of the LaTeX markup language
 
                 % Replace $$...$$ with $...$ but otherwise leave untouched
-                string = regexprep(s, '^\$\$(.*)\$\$$', '$$1$');
+                string = regexprep(s, '\$\$(.*?)\$\$', '\$$1\$');
 
             case 'tex' % Subset of plain TeX markup language
 
