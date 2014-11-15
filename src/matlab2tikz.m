@@ -1792,7 +1792,8 @@ function [m2t, str] = drawPatch(m2t, handle)
     % Each row of the faces matrix represents a distinct patch 
     % NOTE: pgfplot uses zero-based indexing into vertices and interpolates
     % counter-clockwise
-    Faces    = fliplr(get(handle,'Faces')-1);
+%     Faces    = fliplr(get(handle,'Faces')-1);
+    Faces    = get(handle,'Faces')-1;
     Vertices = get(handle,'Vertices');
     
     % 3D vs 2D
@@ -1848,8 +1849,13 @@ function [m2t, str] = drawPatch(m2t, handle)
             [m2t,xFaceColor]   = getColor(m2t, handle, s.faceColor, 'patch');
             drawOptions        = opts_add(drawOptions,'fill',xFaceColor);
         end
+        
+    % Multiple patches    
     else
-        cycle = '';
+        
+        % Patch table type
+        ptType      = 'patch table';
+        cycle       = '';
         drawOptions = opts_add(drawOptions,'table/row sep','crcr');
         
         % Enforce 'patch' or cannot use 'patch table='
@@ -1890,54 +1896,43 @@ function [m2t, str] = drawPatch(m2t, handle)
         
         % Color
         % -----------------------------------------------------------------------
-        % We have CData
-        fvCData = get(handle,'FaceVertexCData');
+        fvCData   = get(handle,'FaceVertexCData');
         rowsCData = size(fvCData,1);
         
-        % Add the color map
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
-        
-        % Patch table type
-        if rowsCData == size(Vertices,1)
-            ptType = 'patch table';
-            columnNames{end+1}  = 'c';
-            verticesTableOptions = opts_add(verticesTableOptions, 'point meta','\thisrow{c}');
-        else
-            ptType = 'patch table with point meta';
-        end
-        
-        % Point meta
-        if isvector(fvCData)
+        % We have CData
+        if rowsCData ~= 0
+            % Add the color map
+            m2t.axesContainers{end}.options = ...
+                opts_add(m2t.axesContainers{end}.options, ...
+                matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
             
-            % Eventually scale within Clims
-            [m2t, fvCData] = cdata2colorindex(m2t,fvCData,handle);
+            % Point meta
+            if isvector(fvCData)
+                % Eventually scale within Clims
+                [m2t, fvCData] = cdata2colorindex(m2t,fvCData,handle);
+                
+            % True color CData, i.e. RGB in [0,1]
+            else
+                % Create additional custom colormap
+                m2t.axesContainers{end}.options(end+1,:) = ...
+                    {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
+                drawOptions = opts_append(drawOptions, 'colormap name','patchmap');
+                
+                % Index into custom colormap
+                fvCData = (0:rowsCData-1)';
+            end
             
             % Add pointmeta data to vertices or faces
             if rowsCData == size(Vertices,1)
-                Vertices = [Vertices, fvCData];
+                columnNames{end+1}   = 'c';
+                verticesTableOptions = opts_add(verticesTableOptions, 'point meta','\thisrow{c}');
+                Vertices             = [Vertices, fvCData];
             else
-                Faces = [Faces fvCData];
-            end
-            
-        % True color CData, i.e. RGB in [0,1]
-        else
-            
-            % Create additional custom colormap
-            m2t.axesContainers{end}.options(end+1,:) = ...
-                {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
-            drawOptions = opts_append(drawOptions, 'colormap name','patchmap');
-            
-            % Index vertices or faces into custom colormap
-            if rowsCData == size(Vertices,1)
-                Vertices = [Vertices, (0:rowsCData-1)'];
-            else
-                Faces = [Faces (0:rowsCData-1)'];
+                ptType = 'patch table with point meta';
+                Faces  = [Faces fvCData];
             end
         end
     end
-    
     
     if ~m2t.currentHandleHasLegend
         % No legend entry found. Don't include plot in legend.
