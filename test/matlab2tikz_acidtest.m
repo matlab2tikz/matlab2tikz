@@ -151,6 +151,9 @@ function matlab2tikz_acidtest(varargin)
                   % MATLAB does not generate properly cropped PDF files.
                   % So, we generate EPS files that are converted later on.
                   print(gcf, '-depsc2', eps_file);
+                  
+                  % On R2014b Win, line endings in .eps are Unix style
+                  % https://github.com/nschloe/matlab2tikz/issues/370
                   ensureLineEndings(eps_file);
 
               case 'Octave'
@@ -509,7 +512,7 @@ if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
     str = fread(fid,'*char')';
 
     % Replace, overwrite and close
-    str = regexprep(str, '\n|\r','\r\n');
+    str = strrep(str, testline(end), sprintf('\r\n'));
     fseek(fid,0,'bof');
     fprintf(fid,'%s',str);
     fclose(fid);
