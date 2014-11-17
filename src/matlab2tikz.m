@@ -4654,8 +4654,8 @@ function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandl
         % Compute width and height of the bounding box
         axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[3 4]) - axesBoundingBox(:,[1 2]);
     else
-        % Otherwise take the whole figure as bounding box => lengths are nor
-        % changed in tikz
+        % Otherwise take the whole figure as bounding box => lengths are
+        % not changed in tikz
         axesBoundingBox = [0, 0, 1, 1];
     end
 end
