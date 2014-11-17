@@ -104,12 +104,6 @@ function matlab2tikz_acidtest(varargin)
   for k = 1:length(indices)
       fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
 
-      % first, initialize the tex output
-      texfile = sprintf('tex/testcase%03d.tex', k);;
-      fh = fopen(texfile, 'w');
-      assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
-      texfile_init(fh);
-
       % open a window
       fig_handle = figure('visible',onOffBoolean(ipp.Results.figureVisible));
 
@@ -136,6 +130,12 @@ function matlab2tikz_acidtest(varargin)
           close(fig_handle);
           continue
       end
+
+      % initialize the tex output
+      texfile = sprintf('tex/testcase%03d.tex', indices(k));;
+      fh = fopen(texfile, 'w');
+      assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
+      texfile_init(fh);
 
       pdf_file = sprintf('data/test%d-reference.pdf' , indices(k));
       eps_file = sprintf('data/test%d-reference.eps' , indices(k));
@@ -240,7 +240,7 @@ function createMakefile()
       '\t  *.toc \\\n', ...
       '\t  *.pdf\n', ...
       '\n', ...
-      'distclean:\n', ...
+      'distclean: clean\n', ...
       '\t@rm -f ../data/*\n', ...
       '\t@rm -f *.tex\n', ...
      ] ...
