@@ -4608,15 +4608,22 @@ function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandl
         end
     end
 
-    % Compute the bounding box
-    % TODO: check if relevant Axes or all Axes are better.
-    axesBoundingBox = getRelativeAxesPosition(m2t, relevantAxesHandles);
-    % Compute second corner from width and height for each axes
-    axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[1 2]) + axesBoundingBox(:,[3 4]);
-    % Combine axes corners to get the bounding box
-    axesBoundingBox = [min(axesBoundingBox(:,[1 2]),[],1), max(axesBoundingBox(:,[3 4]), [], 1)];
-    % Compute width and height of the bounding box
-    axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[3 4]) - axesBoundingBox(:,[1 2]);
+    % Compute the bounding box if width or height of the figure are set by
+    % parameter
+    if ~isempty(m2t.cmdOpts.Results.width) || ~isempty(m2t.cmdOpts.Results.height)
+        % TODO: check if relevant Axes or all Axes are better.
+        axesBoundingBox = getRelativeAxesPosition(m2t, relevantAxesHandles);
+        % Compute second corner from width and height for each axes
+        axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[1 2]) + axesBoundingBox(:,[3 4]);
+        % Combine axes corners to get the bounding box
+        axesBoundingBox = [min(axesBoundingBox(:,[1 2]),[],1), max(axesBoundingBox(:,[3 4]), [], 1)];
+        % Compute width and height of the bounding box
+        axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[3 4]) - axesBoundingBox(:,[1 2]);
+    else
+        % Otherwise take the whole figure as bounding box => lengths are
+        % not changed in tikz
+        axesBoundingBox = [0, 0, 1, 1];
+    end
 end
 % ==============================================================================
 function userInfo(m2t, message, varargin)
