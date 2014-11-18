@@ -161,7 +161,7 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  
+
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
   plot(flip(m)-0.5,'x--');
@@ -199,7 +199,7 @@ function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
   stat.description = [ 'Twisted plot of the sine function. '                   ,...
          'Pay particular attention to how markers and Infs/NaNs are treated.' ];
-                   
+
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
   y(3) = NaN;
@@ -258,7 +258,7 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-              
+
   x = -pi:.1:pi;
   y = sin(x);
   h = plot(x,y);
@@ -305,9 +305,9 @@ end
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
   stat.issues = [49 404];
-  
+
   if ~exist('penny.mat','file')
-      fprintf( 'penny data set not found. Abort.\n\n' );
+      fprintf( 'penny data set not found. Skipping.\n\n' );
       stat.skip = true;
       return;
   end
@@ -359,7 +359,7 @@ end
 % =========================================================================
 function [stat] = randomWithLines()
   stat.description = 'Lissajous points with lines.';
-  
+
   beta = 42.42;
   t = 1:150;
   X = [sin(t); cos(beta * t)].';
@@ -475,7 +475,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  
+
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
   grid on;
@@ -483,7 +483,7 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
-  
+
   imagesc([1 10 100]);
   try
     set(colorbar(), 'YScale', 'log');
@@ -516,7 +516,7 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
-  
+
   x = -pi:pi/20:pi;
   plot( x, cos(x),'-ro',...
         x, sin(x),'-.b' ...
@@ -538,7 +538,7 @@ end
 % =========================================================================
 function [stat] = zoom()
   stat.description = 'Plain cosine function, zoomed in.';
-  
+
   fplot( @sin, [0,2*pi], '-*' );
   hold on;
   delta = pi/10;
@@ -569,34 +569,34 @@ function [stat] = bars()
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
   numEntries = length(bins);
-  
+
   alpha = [13 11 7];
   numBars = numel(alpha);
   plotData   = zeros(numEntries, numBars);
   for iBar = 1:numBars
       plotData(:,iBar) = abs(round(100*sin(alpha(iBar)*(1:numEntries))));
   end
-  
+
   % dataset stacked
   [data,dummy,dummy] = svd(magic(7)); %#ok
   Y = round(abs(data(2:6,2:4))*10);
-  
+
   subplot(2,2,1);
   b1 = bar(bins,plotData,'grouped','BarWidth',1.5);
   set(gca,'XLim',[1.25*min(bins) 1.25*max(bins)]);
 
   subplot(2,2,2);
   barh(bins, plotData, 'grouped', 'BarWidth', 1.3);
-  
+
   subplot(2,2,3);
   bar(Y,'stack');
-  
+
   subplot(2,2,4);
   b2= barh(Y,'stack','BarWidth', 0.75);
-  
+
   set(b1(1),'FaceColor','m','EdgeColor','none')
   set(b2(1),'FaceColor','c','EdgeColor','none')
-  
+
 end
 % =========================================================================
 function [stat] = stemplot()
@@ -613,7 +613,7 @@ end
 % =========================================================================
 function [stat] = stemplot2()
   stat.description = 'Another simple stem plot.';
-  
+
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
        exp(.05*x).*cos(x)]';
@@ -623,7 +623,7 @@ end
 % =========================================================================
 function [stat] = stairsplot()
   stat.description = 'A simple stairs plot.' ;
-  
+
   x = linspace(-2*pi,2*pi,40);
   stairs(x,sin(x))
 end
@@ -643,7 +643,7 @@ end
 % =========================================================================
 function [stat] = quiver3plot()
   stat.description = 'Three-dimensional quiver plot.' ;
-  
+
   vz = 10;            % Velocity
   a = -32;            % Acceleration
 
@@ -665,7 +665,7 @@ end
 % =========================================================================
 function [stat] = quiveroverlap ()
   stat.description = 'Quiver plot with avoided overlap.';
-  
+
   x = [0 1];
   y = [0 0];
   u = [1 -1];
@@ -677,7 +677,7 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  
+
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
 end
@@ -693,14 +693,14 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  
+
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
 end
 % =========================================================================
 function [stat] = logicalImage()
   stat.description = 'An image plot of logical matrix values.' ;
-  
+
   [plotData,dummy,dummy] = svd(magic(10)); %#ok
   imagesc(plotData > mean(plotData(:)));
 end
@@ -744,7 +744,7 @@ end
 % =========================================================================
 function [stat] = subplot2x2b ()
   stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
-  
+
   x = (1:5);
 
   subplot(2,2,1);
@@ -798,10 +798,10 @@ function [stat] = errorBars ()
 
   plotData = 1:10;
   [u,s,v] = svd(magic(11));
-  
+
   eH = abs(u(1:10,5));
   eL = abs(v(1:10,9));
-  
+
   errorbar(1:10, plotData, eL, eH, '.')
 end
 % =========================================================================
@@ -873,7 +873,7 @@ function [stat] = bodeplots()
   stat.description = 'Bode plots with legends.';
 
   if isempty(which('tf'))
-      fprintf( 'function "tf" not found. Abort.\n\n' );
+      fprintf( 'function "tf" not found. Skipping.\n\n' );
       stat.skip = true;
       return
   end
@@ -913,7 +913,7 @@ function [stat] = rlocusPlot()
   stat.description = 'rlocus plot.';
 
   if isempty(which('tf'))
-      fprintf( 'function "tf" not found. Abort.\n\n' );
+      fprintf( 'function "tf" not found. Skipping.\n\n' );
       stat.skip = true;
       return
   end
@@ -926,7 +926,7 @@ function [stat] = mandrillImage()
   stat.description = 'Picture of a mandrill.';
 
   if ~exist('mandrill.mat','file')
-      fprintf( 'mandrill data set not found. Abort.\n\n' );
+      fprintf( 'mandrill data set not found. Skipping.\n\n' );
       stat.skip = true;
       return
   end
@@ -966,7 +966,7 @@ function [stat] = clownImage()
   stat.description = 'Picture of a clown.';
 
   if ~exist('clown.mat','file')
-      fprintf( 'clown data set not found. Abort.\n\n' );
+      fprintf( 'clown data set not found. Skipping.\n\n' );
       stat.skip = true;
       return
   end
@@ -983,7 +983,7 @@ function [stat] = zplanePlot1()
   if length(ver('signal')) ~= 1
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
       stat.skip = true;
-      
+
       return
   end
 
@@ -1083,7 +1083,7 @@ end
 function [stat] = scatterPlot()
   stat.description = 'Scatter plot with MATLAB(R) stat.';
   if ~exist('seamount.mat','file')
-      fprintf( 'seamount data set not found. Abort.\n\n' );
+      fprintf( 'seamount data set not found. Skipping.\n\n' );
       stat.skip = true;
       return
   end
@@ -1142,7 +1142,7 @@ end
 % =========================================================================
 function [stat] = surfPlot()
   stat.description = 'Surface plot.';
-  
+
   [X,Y,Z] = peaks(30);
   surf(X,Y,Z)
   colormap hsv
@@ -1172,7 +1172,7 @@ end
 function [stat] = surfPlot2()
   stat.description = 'Another surface plot.';
 
-  z = [ ones(15, 5) zeros(15,5); 
+  z = [ ones(15, 5) zeros(15,5);
         zeros(5, 5) zeros( 5,5)];
 
   surf(abs(fftshift(fft2(z))) + 1);
@@ -1182,6 +1182,13 @@ function [stat] = surfPlot2()
 end
 % =========================================================================
 function [stat] = superkohle()
+
+  if ~exist('initmesh')
+      fprintf( 'initmesh() not found. Skipping.\n\n' );
+      stat.skip = true;
+      return;
+  end
+
   stat.description = 'Superkohle plot.';
 
   x1=0;
@@ -1244,9 +1251,9 @@ function [stat] = spectro()
   % In the original test case, this is 0:0.001:2, but that takes forever
   % for LaTeX to process.
   if isempty(which('chirp'))
-      fprintf( 'chirp() not found. Abort.\n\n' );
+      fprintf( 'chirp() not found. Skipping.\n\n' );
       stat.description = [];
-      
+      stat.skip = true;
       return
   end
 
@@ -1270,7 +1277,7 @@ end
 % =========================================================================
 function [stat] = decayingharmonic()
   stat.description = 'Decaying harmonic oscillation with \TeX{} title.';
-    
+
   % Based on an example from
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
   A = 0.25;
@@ -1316,7 +1323,7 @@ function [stat] = texrandom()
   catch
       warning('testfuncs:texrandom','Cannot fix seed for random generator!');
   end
-  
+
   num = 20; % number of symbols per line
   symbols = {'\it', '\bf', '\rm', '\sl',                                ...
              '\alpha', '\angle', '\ast', '\beta', '\gamma', '\delta',   ...
@@ -1570,7 +1577,7 @@ function [stat] = texrandom()
       fprintf( 'Original string: %s\n', string )
   end
 
-  title('Random TeX symbols \\\{\}\_\^$%#&')  
+  title('Random TeX symbols \\\{\}\_\^$%#&')
 end
 % =========================================================================
 function [stat] = latexmath1()
@@ -1582,7 +1589,7 @@ function [stat] = latexmath1()
   title( '\omega\subseteq\Omega' );
   text( 0.5, 0.5, '$$\int_0^x\!\int_{\Omega} dF(u,v) d\omega$$', ...
         'Interpreter', 'latex',                   ...
-        'FontSize', 16                            ) 
+        'FontSize', 16                            )
 end
 % =========================================================================
 function [stat] = latexmath2()
@@ -1629,7 +1636,7 @@ function [stat] = latexmath2()
   % TODO: On processing the matlab2tikz_acidtest output, LaTeX complains
   %       about the use of \over:
   %         Package amsmath Warning: Foreign command \over;
-  %         (amsmath)                \frac or \genfrac should be used instead 
+  %         (amsmath)                \frac or \genfrac should be used instead
 end
 % =========================================================================
 function [stat] = parameterCurve3d()
@@ -1643,20 +1650,20 @@ function [stat] = parameterSurf()
   stat.description = 'Parameter and surface plot.';
 
   if ~exist('TriScatteredInterp')
-      fprintf( 'TriScatteredInterp() not found. Abort.\n\n' );
+      fprintf( 'TriScatteredInterp() not found. Skipping.\n\n' );
       stat.skip = true;
       return;
   end
-  
+
   t = (1:100).';
   t1 = cos(5.75352*t).^2;
   t2 = abs(sin(t));
-  
+
   x = t1*4 - 2;
   y = t2*4 - 2;
   z = x.*exp(-x.^2 - y.^2);
-  
-  %TODO: do we really need this TriScatteredInterp? 
+
+  %TODO: do we really need this TriScatteredInterp?
   % It will be removed from MATLAB
 
   % Construct the interpolant
@@ -1679,7 +1686,7 @@ function [stat] = fill3plot()
   stat.description = 'fill3 plot.';
 
   if ~exist('fill3','builtin')
-      fprintf( 'fill3() not found. Abort.\n\n' );
+      fprintf( 'fill3() not found. Skipping.\n\n' );
       stat.skip = true;
       return
   end
@@ -1704,7 +1711,7 @@ function [stat] = rectanglePlot()
             'LineWidth', 2, ...
             'LineStyle', '--' ...
            );
-  daspect([1,1,1]);  
+  daspect([1,1,1]);
 end
 % =========================================================================
 function [stat] = herrorbarPlot()
@@ -1731,7 +1738,7 @@ function [stat] = hist3d()
   stat.description = '3D histogram plot.';
 
   if ~exist('hist3','builtin') && isempty(which('hist3'))
-      fprintf( 'Statistics toolbox not found. Abort.\n\n' );
+      fprintf( 'Statistics toolbox not found. Skipping.\n\n' );
       stat.skip = true;
       return
   end
@@ -1762,7 +1769,7 @@ function [stat] = myBoxplot()
   stat.description = 'Boxplot.';
 
   if ~exist('boxplot','builtin') && isempty(which('boxplot'))
-      fprintf( 'Statistics toolbox not found. Abort.\n\n' );
+      fprintf( 'Statistics toolbox not found. Skipping.\n\n' );
       stat.skip = true;
       return
   end
@@ -1818,7 +1825,7 @@ function [stat] = croppedImage()
   stat.description = 'Custom legend.';
 
   if ~exist('flujet.mat','file')
-      fprintf( 'flujet data set not found. Abort.\n\n' );
+      fprintf( 'flujet data set not found. Skipping.\n\n' );
       stat.skip = true;
       return;
   end
@@ -2300,23 +2307,23 @@ end
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
   stat.issues = 442;
-  
+
   % dataset stacked
   [data,dummy,summy] = svd(magic(7)); %#ok
   Y = round(abs(data(2:6,2:4))*10);
   n = size(Y,1);
   xVals = (1:n).';
   yVals = min((xVals).^2, sum(Y,2));
-  
+
   subplot(2,1,1); hold on;
   bar(Y,'stack');
   plot(xVals, yVals, 'Color', 'r', 'LineWidth', 2);
   legend('show');
-  
+
   subplot(2,1,2); hold on;
   b2 = barh(Y,'stack','BarWidth', 0.75);
   plot(yVals, xVals, 'Color', 'b', 'LineWidth', 2);
-  
+
   set(b2(1),'FaceColor','c','EdgeColor','none')
 end
 % =========================================================================

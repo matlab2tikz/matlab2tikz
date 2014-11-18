@@ -1,22 +1,14 @@
 # ./Makefile
 
-# ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
-
 ECHOCMD:=/bin/echo -e
-PDFLATEX:=lualatex --shell-escape
-
-# ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
+LATEX:=lualatex --shell-escape
 
 TARGET:=acid
 
-# ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
-# 
-
-default: main
-
-#main:
 main:
-	@$(PDFLATEX) $(TARGET)
+	cd ../data/reference/; make
+	cd ../data/converted/; make
+	@$(LATEX) $(TARGET)
 
 .PHONY: clean
 
@@ -33,7 +25,10 @@ clean:
 	$(TARGET).ps \
 	missfont.log
 	@rm -f *~
+	cd ../data/reference/; make clean
+	cd ../data/converted/; make clean
 
 distclean: clean
-	@rm -f ../data/*
 	@rm -f $(TARGET).tex
+	cd ../data/reference/; make distclean
+	cd ../data/converted/; make distclean

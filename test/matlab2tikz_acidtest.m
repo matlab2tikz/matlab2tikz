@@ -98,14 +98,10 @@ function matlab2tikz_acidtest(varargin)
   % start overall timing
   elapsedTimeOverall = tic;
 
-  % clean data directory
-  fprintf(stdout, 'Cleaning data directory\n\n');
-  dataDir = './data/';
-  delete(fullfile(dataDir, 'test*'))
-
   errorHasOccurred = false;
 
-  status = cell(length(indices), 1); % cell array to accomodate different structure
+  % cell array to accomodate different structure
+  status = cell(length(indices), 1);
 
   for k = 1:length(indices)
       fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
@@ -131,16 +127,17 @@ function matlab2tikz_acidtest(varargin)
 
       status{k} = fillStruct(status{k}, defaultStatus);
 
-      % plot not sucessful
+      % plot not successful
       if status{k}.skip
           close(fig_handle);
           continue
       end
 
-      pdf_file = sprintf('data/test%d-reference.pdf' , indices(k));
-      eps_file = sprintf('data/test%d-reference.eps' , indices(k));
-      fig_file = sprintf('data/test%d-reference'     , indices(k));
-      gen_file = sprintf('data/test%d-converted.tex' , indices(k));
+      reference_eps = sprintf('data/reference/test%d-reference.eps', indices(k));
+      reference_pdf = sprintf('data/reference/test%d-reference.pdf', indices(k));
+      reference_fig = sprintf('data/reference/test%d-reference', indices(k));
+      gen_tex = sprintf('data/converted/test%d-converted.tex', indices(k));
+      gen_pdf  = sprintf('data/converted/test%d-converted.pdf', indices(k));
 
       elapsedTime = tic;
 
@@ -150,15 +147,15 @@ function matlab2tikz_acidtest(varargin)
               case 'MATLAB'
                   % MATLAB does not generate properly cropped PDF files.
                   % So, we generate EPS files that are converted later on.
-                  print(gcf, '-depsc2', eps_file);
-                  
+                  print(gcf, '-depsc2', reference_eps);
+
                   % On R2014b Win, line endings in .eps are Unix style
                   % https://github.com/nschloe/matlab2tikz/issues/370
-                  ensureLineEndings(eps_file);
+                  ensureLineEndings(reference_eps);
 
               case 'Octave'
                   % In Octave, figures are properly cropped when using  print().
-                  print(pdf_file, '-dpdf', '-S415,311', '-r150');
+                  print(reference_pdf, '-dpdf', '-S415,311', '-r150');
                   pause(1.0)
               otherwise
                   error('Unknown environment. Need MATLAB(R) or GNU Octave.')
@@ -170,12 +167,11 @@ function matlab2tikz_acidtest(varargin)
       % now, test matlab2tikz
       try
           cleanfigure(status{k}.extraCleanfigureOptions{:});
-          matlab2tikz('filename', gen_file, ...
+          matlab2tikz('filename', gen_tex, ...
                       'showInfo', false, ...
                       'checkForUpdates', false, ...
-                      'relativeDataPath', '../data/', ...
-                      'dataPath', dataDir, ...
-                      'width', '\figurewidth', ...
+                      'dataPath', 'data/converted/', ...
+                      'standalone', true, ...
                       ipp.Results.extraOptions{:}, ...
                       status{k}.extraOptions{:} ...
                      );
@@ -185,7 +181,7 @@ function matlab2tikz_acidtest(varargin)
       end
 
       % ...and finally write the bits to the LaTeX file
-      texfile_addtest(fh, fig_file, gen_file, status{k}, indices(k), testsuiteName);
+      texfile_addtest(fh, reference_fig, gen_pdf, status{k}, indices(k), testsuiteName);
 
       if ~status{k}.closeall
           close(fig_handle);
@@ -305,7 +301,7 @@ function print_verbatim_information(texfile_handle, title, contents)
     end
 end
 % =========================================================================
-function texfile_addtest(texfile_handle, ref_file, gen_file, status, funcId, testsuiteName)
+function texfile_addtest(texfile_handle, ref_file, gen_tex, status, funcId, testsuiteName)
   % Actually add the piece of LaTeX code that'll later be used to display
   % the given test.
 
@@ -323,7 +319,7 @@ function texfile_addtest(texfile_handle, ref_file, gen_file, status, funcId, tes
           '\\end{figure}\n'                                             , ...
           '\\clearpage\n\n'],...
           include_figure(ref_error, 'includegraphics', ref_file), ...
-          include_figure(gen_error, 'input', gen_file), ...
+          include_figure(gen_error, 'includegraphics', gen_tex), ...
           status.description, ...
           name2tex(status.function), name2tex(testsuiteName), funcId, ...
           formatIssuesForTeX(status.issues));
