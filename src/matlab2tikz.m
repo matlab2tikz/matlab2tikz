@@ -3514,6 +3514,9 @@ function axisOptions = getColorbarOptions(m2t, handle)
         % The colorbar's position determines, if it should be a x- or y-label.
 
         % label
+        % TODO: Move redundant interpreter and multiline code to a separate
+        % function. It is duplicated below in 'title' and in functions
+        % 'getAxisOptions' and 'drawTitleOfAxes'.
         labelString = handle.Label.String;
         if ~isempty(labelString) % add only, if not empty
             labelInterpreter = handle.Label.Interpreter;
@@ -3544,6 +3547,8 @@ function axisOptions = getColorbarOptions(m2t, handle)
             end
             cbarStyleOptions = opts_add(cbarStyleOptions, dirOption, dirString);
         end
+
+        % TODO HG2: colorbar ticks and colorbar tick labels
 
     else
         % VERSION: Up to MATLAB R2014a and OCTAVE
