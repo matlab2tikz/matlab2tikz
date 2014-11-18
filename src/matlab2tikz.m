@@ -3512,12 +3512,11 @@ function axisOptions = getColorbarOptions(m2t, handle)
     %(and older) and just access the properties directly here. In R2014b and
     %newer this is certainly the clearer way to go. However, this does introduce
     %some duplicate code
-    [m2t, xo] = getAxisOptions(m2t, handle, 'x');
+    %HINT: do not retrieve axis options for 'x', since the colorbar does not
+    %      contain own 'x' information. Axis 'y' options would be duplicated.
     [m2t, yo] = getAxisOptions(m2t, handle, 'y');
-    xyo = opts_merge(xo, yo);
-    xyo = opts_remove(xyo, 'xmin','xmax','xtick','ymin','ymax','ytick');
-
-    cbarStyleOptions = opts_merge(cbarStyleOptions, xyo);
+    yo = opts_remove(yo, 'ymin','ymax','ytick');
+    cbarStyleOptions = opts_merge(cbarStyleOptions, yo);
 
     %% Get axis labels.
     %for axis = 'xy'
