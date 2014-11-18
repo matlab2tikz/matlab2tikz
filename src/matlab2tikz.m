@@ -5330,6 +5330,17 @@ function [env,versionString] = getEnvironment()
     versionString = '';
 end
 % ==============================================================================
+function isHG2 = isHG2(m2t)
+% Checks if graphics system is HG2 (true) or HG1 (false).
+% HG1 : MATLAB up to R2014a and currently all OCTAVE versions
+% HG2 : MATLAB starting from R2014b (version 8.4)
+    isHG2 = false;
+    if strcmpi(m2t.env,'MATLAB') && ...
+        ~isVersionBelow(m2t.env, m2t.envVersion, [8,4])
+        isHG2 = true;
+    end
+end
+% ==============================================================================
 function isBelow = isVersionBelow(env, versionA, versionB)
 % Checks if versionA is smaller than versionB
     vA         = versionArray(env, versionA);
