@@ -3517,9 +3517,9 @@ function axisOptions = getColorbarOptions(m2t, handle)
         % TODO: Move redundant interpreter and multiline code to a separate
         % function. It is duplicated below in 'title' and in functions
         % 'getAxisOptions' and 'drawTitleOfAxes'.
-        labelString = handle.Label.String;
+        labelString = get(get(handle, 'Label'), 'String');
         if ~isempty(labelString) % add only, if not empty
-            labelInterpreter = handle.Label.Interpreter;
+            labelInterpreter = get(get(handle, 'Label'), 'Interpreter');
             labelString = prettyPrint(m2t, labelString, labelInterpreter);
             if length(labelString) > 1 % multiline
                 cbarStyleOptions = opts_add(cbarStyleOptions, 'label style', ...
@@ -3538,7 +3538,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
         end
 
         % direction
-        dirString = handle.Direction;
+        dirString = get(handle, 'Direction');
         if ~strcmpi(dirString, 'normal') % only if not 'normal'
             if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
                 dirOption = 'x dir';
