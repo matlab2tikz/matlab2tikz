@@ -3508,16 +3508,52 @@ function axisOptions = getColorbarOptions(m2t, handle)
                 'getColorbarOptions: Unknown ''Location'' %s.', loc)
     end
 
-    %TODO: maybe we should NOT rely on colorbars being axes in MATLAB R2014a
-    %(and older) and just access the properties directly here. In R2014b and
-    %newer this is certainly the clearer way to go. However, this does introduce
-    %some duplicate code
-    [m2t, xo] = getAxisOptions(m2t, handle, 'x');
-    [m2t, yo] = getAxisOptions(m2t, handle, 'y');
-    xyo = opts_merge(xo, yo);
-    xyo = opts_remove(xyo, 'xmin','xmax','xtick','ymin','ymax','ytick');
+    % axis label and direction
+    if isHG2(m2t)
+        % VERSION: Starting from R2014b there is only one field `label`.
+        % The colorbar's position determines, if it should be a x- or y-label.
 
-    cbarStyleOptions = opts_merge(cbarStyleOptions, xyo);
+        % label
+        labelString = handle.Label.String;
+        if ~isempty(labelString) % add only, if not empty
+            labelInterpreter = handle.Label.Interpreter;
+            labelString = prettyPrint(m2t, labelString, labelInterpreter);
+            if length(labelString) > 1 % multiline
+                cbarStyleOptions = opts_add(cbarStyleOptions, 'label style', ...
+                    '{align=center}');
+            end
+            labelString = join(m2t, labelString, '\\[1ex]');
+
+            if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
+                labelOption = 'xlabel';
+            else
+                labelOption = 'ylabel';
+            end
+
+            cbarStyleOptions = opts_add(cbarStyleOptions, labelOption, ...
+                sprintf('{%s}', labelString));
+        end
+
+        % direction
+        dirString = handle.Direction;
+        if ~strcmpi(dirString, 'normal') % only if not 'normal'
+            if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
+                dirOption = 'x dir';
+            else
+                dirOption = 'y dir';
+            end
+            cbarStyleOptions = opts_add(cbarStyleOptions, dirOption, dirString);
+        end
+
+    else
+        % VERSION: Up to MATLAB R2014a and OCTAVE
+        [m2t, xo] = getAxisOptions(m2t, handle, 'x');
+        [m2t, yo] = getAxisOptions(m2t, handle, 'y');
+        xyo = opts_merge(xo, yo);
+        xyo = opts_remove(xyo, 'xmin','xmax','xtick','ymin','ymax','ytick');
+
+        cbarStyleOptions = opts_merge(cbarStyleOptions, xyo);
+    end
 
     % title
     title = get(get(handle, 'Title'), 'String');
