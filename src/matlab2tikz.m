@@ -3518,30 +3518,6 @@ function axisOptions = getColorbarOptions(m2t, handle)
     yo = opts_remove(yo, 'ymin','ymax','ytick');
     cbarStyleOptions = opts_merge(cbarStyleOptions, yo);
 
-    %% Get axis labels.
-    %for axis = 'xy'
-    %  axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
-    %  if ~isempty(axisLabel)
-    %      axisLabelInterpreter = ...
-    %          get(get(handle, [upper(axis),'Label']), 'Interpreter');
-    %      label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
-    %      if length(label) > 1
-    %          % If there's more than one cell item, the list
-    %          % is displayed multi-row in MATLAB(R).
-    %          % To replicate the same in Pgfplots, one can
-    %          % use xlabel={first\\second\\third} only if the
-    %          % alignment or the width of the "label box"
-    %          % is defined. This is a restriction that comes with
-    %          % TikZ nodes.
-    %          m2t.axesContainers{end}.options = ...
-    %            opts_add(m2t.axesContainers{end}.options, ...
-    %                        [axis, 'label style'], '{align=center}');
-    %      end
-    %      label = join(m2t, label,'\\[1ex]');
-    %      cbarStyleOptions{end+1} = sprintf([axis,'label={%s}'], label);
-    %  end
-    %end
-
     % title
     title = get(get(handle, 'Title'), 'String');
     if ~isempty(title)
