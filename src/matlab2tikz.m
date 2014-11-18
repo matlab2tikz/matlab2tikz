@@ -3524,10 +3524,9 @@ function axisOptions = getColorbarOptions(m2t, handle)
     if ~isempty(title)
         titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
         title = prettyPrint(m2t, title, titleInterpreter);
-        if length(title) > 1
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'title style', '{align=center}');
+        if length(title) > 1 % multiline
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'title style', ...
+                    '{align=center}');
         end
         title = join(m2t, title, '\\[1ex]');
         cbarStyleOptions = opts_add(cbarStyleOptions, 'title', ...
