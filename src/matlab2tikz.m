@@ -161,7 +161,7 @@ m2t.currentHandles = [];
 m2t.transform = []; % For hgtransform groups
 m2t.pgfplotsVersion = [1,3];
 m2t.name = 'matlab2tikz';
-m2t.version = '0.5.0';
+m2t.version = '0.6.0';
 m2t.author = 'Nico Schlömer';
 m2t.authorEmail = 'nico.schloemer@gmail.com';
 m2t.years = '2008--2014';
@@ -796,15 +796,15 @@ function m2t = drawAxes(m2t, handle)
         % optionally prevents setting the width and height of the axis
         m2t = setDimensionOfAxes(m2t, 'width',  pos.w);
         m2t = setDimensionOfAxes(m2t, 'height', pos.h);
-        
+
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, 'at', ...
                 ['{(' formatDim(pos.x.value, pos.x.unit) ','...
                       formatDim(pos.y.value, pos.y.unit) ')}']);
-        % the following is general MATLAB behavior:        
+        % the following is general MATLAB behavior:
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
-            'scale only axis', []);    
+            'scale only axis', []);
     end
     % Add the physical dimension of one unit of length in the coordinate system.
     % This is used later on to translate lengths to physical units where
@@ -835,13 +835,13 @@ function m2t = drawAxes(m2t, handle)
     % before -- if ~isVisible(handle) -- the handle's children are called.
     [m2t, xopts] = getAxisOptions(m2t, handle, 'x');
     [m2t, yopts] = getAxisOptions(m2t, handle, 'y');
-    
+
     m2t.axesContainers{end}.options = opts_merge(m2t.axesContainers{end}.options, ...
                                             xopts, yopts);
     if m2t.currentAxesContain3dData
         [m2t, zopts] = getAxisOptions(m2t, handle, 'z');
         m2t.axesContainers{end}.options = opts_merge(m2t.axesContainers{end}.options, zopts);
-        
+
          m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], get(handle, 'View')));
@@ -1130,7 +1130,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     end
     options = opts_new();
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % axis colors    
+    % axis colors
     [color, isDfltColor] = getAndCheckDefault('Axes', handle, ...
                                               [upper(axis),'Color'], [ 0 0 0 ]);
     if ~isDfltColor || m2t.cmdOpts.Results.strict
@@ -1867,19 +1867,19 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     % ------------------------------------------------------------------------
     % draw a png image
     [pngFileName, pngReferencePath] = externalFilename(m2t, m2t.imageAsPngNo, '.png');
-    
+
     % Get color indices for indexed images and truecolor values otherwise
     if ndims(cData) == 2 %#ok don't use ismatrix (cfr. #143)
         [m2t, colorData] = cdata2colorindex(m2t, cData, handle);
     else
         colorData = cData;
     end
-    
+
     m = size(cData, 1);
     n = size(cData, 2);
-    
+
     colorData = flipImageIfAxesReversed(m2t, colorData);
-    
+
     % Write an indexed or a truecolor image
     alpha = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
     if numel(alpha)==1
@@ -1918,16 +1918,16 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     else
         yw = (yData(end)-yData(1)) / (m-1);
     end
-    
+
     opts = opts_new();
     opts = opts_add(opts, 'xmin', sprintf(m2t.ff, xData(1  ) - xw/2));
     opts = opts_add(opts, 'xmax', sprintf(m2t.ff, xData(end) + xw/2));
     opts = opts_add(opts, 'ymin', sprintf(m2t.ff, yData(1  ) - yw/2));
     opts = opts_add(opts, 'ymax', sprintf(m2t.ff, yData(end) + yw/2));
-    
+
     str = sprintf('\\addplot [forget plot] graphics [%s] {%s};\n', ...
         opts_print(m2t, opts, ','), pngReferencePath);
-    
+
     userInfo(m2t, ...
         ['\nA PNG file is stored at ''%s'' for which\n', ...
         'the TikZ file contains a reference to ''%s''.\n', ...
@@ -2004,7 +2004,7 @@ function alpha = normalizedAlphaValues(m2t, alpha, handle)
             ALim = get(m2t.currentHandles.gca, 'ALim');
             AMax = ALim(2);
             AMin = ALim(1);
-            if ~isfinite(AMax) 
+            if ~isfinite(AMax)
                 AMax = max(alpha(:)); %NOTE: is this right?
             end
             alpha = (alpha - AMin)./(AMax - AMin);
@@ -2096,11 +2096,11 @@ function [m2t, str] = drawHggroup(m2t, h)
         case 'scribe.textbox'
             % Annotation: text box
             [m2t, str] = drawText(m2t, h);
-            
+
         case 'scribe.textarrow'
             % Annotation: text arrow
             [m2t, str] = drawTextarrow(m2t, h);
-            
+
         case 'unknown'
             % Weird spurious class from Octave.
             [m2t, str] = handleAllChildren(m2t, h);
@@ -2249,7 +2249,7 @@ end
 % ==============================================================================
 function [m2t, str] = drawVisibleText(m2t, handle)
 % Wrapper for drawText() that only draws visible text
-    
+
     % There may be some text objects floating around a MATLAB figure which are
     % handled by other subfunctions (labels etc.) or don't need to be handled at
     % all.
@@ -2264,13 +2264,13 @@ function [m2t, str] = drawVisibleText(m2t, handle)
             || strcmp(get(handle, 'Visible'), 'off') ...
             || (strcmp(get(handle, 'HandleVisibility'), 'off') && ...
                 ~m2t.cmdOpts.Results.showHiddenStrings)
-            
+
         str = '';
         return;
     end
-    
+
     [m2t, str] = drawText(m2t, handle);
-    
+
 end
 % ==============================================================================
 function [m2t, str] = drawText(m2t, handle)
@@ -2315,7 +2315,7 @@ function [m2t, str] = drawText(m2t, handle)
     end
     % Add Horizontal alignment
     style = opts_add(style, 'align', HorizontalAlignment);
-    
+
     % remove invisible border around \node to make the text align precisely
     style = opts_add(style, 'inner sep', '0mm');
 
@@ -2327,7 +2327,7 @@ function [m2t, str] = drawText(m2t, handle)
     end
 
     style = opts_merge(style, getFontStyle(m2t, handle));
-    
+
     style = opts_add(style, 'text', tcolor);
     if ~isNone(EdgeColor)
         [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
@@ -2378,7 +2378,7 @@ function [m2t, str] = drawText(m2t, handle)
                     'clip', 'false');
             end
         case 4    % Textbox
-            % TODO: 
+            % TODO:
             %   - size of the box (e.g. using node attributes minimum width / height)
             %   - Alignment of the resized box
             switch units
@@ -2561,13 +2561,13 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     markOptions = cell(0);
     [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, ...
         markOptions, hasFaceColor);
-    
+
     constMarkerkSize = length(sData) == 1; % constant marker size
-    
+
     % Rescale marker size (not definitive, follow discussion on:
     % https://github.com/nschloe/matlab2tikz/pull/316)
     sData = translateMarkerSize(m2t, matlabMarker, sqrt(sData)/2);
-    
+
     if length(cData) == 3
         % No special treatment for the colors or markers are needed.
         % All markers have the same color.
@@ -2581,7 +2581,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         else
             [m2t, ecolor] = getColor(m2t, h, cData, 'patch');
         end
-        if constMarkerkSize 
+        if constMarkerkSize
             drawOptions = { 'only marks', ...
                 ['mark=' tikzMarker], ...
                 ['mark options={', join(m2t, markOptions, ','), '}'],...
@@ -2799,7 +2799,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         case 'stacked' % stacked plots
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
-            
+
             if ~m2t.barAddedAxisOption
                 bWFactor = get(h, 'BarWidth');
                 m2t.axesContainers{end}.options = ...
@@ -2808,14 +2808,14 @@ function [m2t, str] = drawBarseries(m2t, h)
                     formatDim(m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
                 m2t.barAddedAxisOption = true;
             end
-            
-            % Somewhere between pgfplots 1.5 and 1.8 and starting 
-            % again from 1.11, the option {x|y}bar stacked can be applied to 
+
+            % Somewhere between pgfplots 1.5 and 1.8 and starting
+            % again from 1.11, the option {x|y}bar stacked can be applied to
             % \addplot instead of the figure and thus allows to combine stacked
             % bar plots and other kinds of plots in the same axis.
             % Thus, it is advisable to use pgfplots 1.11. In older versions, the
             % plot will only contain a single bar series, but should compile fine.
-            m2t = needsPgfplotsVersion(m2t, [1,11]); 
+            m2t = needsPgfplotsVersion(m2t, [1,11]);
             drawOptions = opts_add(drawOptions, [barType ' stacked']);
         otherwise
             error('matlab2tikz:drawBarseries', ...
@@ -2995,12 +2995,12 @@ end
 % ==============================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
 % Takes care of MATLAB's quiver plots.
-    
+
     % used for arrow styles, in case there are more than one quiver fields
     m2t.quiverId = m2t.quiverId + 1;
 
     str = '';
-    
+
     [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h);
 
     % prepare output
@@ -3249,10 +3249,10 @@ end
 % ==============================================================================
 function [m2t, str] = drawTextarrow(m2t, handle)
 % Takes care of MATLAB's textarrow annotations.
-    
+
     % handleAllChildren to draw the arrow
     [m2t, str] = handleAllChildren(m2t, handle);
-    
+
     % handleAllChildren ignores the text, unless hidden strings are shown
     if ~m2t.cmdOpts.Results.showHiddenStrings
         child = findobj(handle, 'type', 'text');
@@ -3730,7 +3730,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     if ~isVisible(handle) && ~any(isVisible(children))
         return
     end
-    
+
     lStyle = opts_new();
 
     lStyle = legendPosition(m2t, handle, lStyle);
@@ -3748,7 +3748,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
                                                      'EdgeColor', [1 1 1]);
         if isNone(edgeColor)
             lStyle = opts_add(lStyle, 'draw', 'none');
-            
+
         elseif ~isDfltEdge
             [m2t, col] = getColor(m2t, handle, edgeColor, 'patch');
             lStyle = opts_add(lStyle, 'draw', col);
@@ -3758,14 +3758,14 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
                                                      'Color', [1 1 1]);
         if isNone(fillColor)
             lStyle = opts_add(lStyle, 'fill', 'none');
-            
+
         elseif ~isDfltFill
             [m2t, col] = getColor(m2t, handle, fillColor, 'patch');
             lStyle = opts_add(lStyle, 'fill', col);
         end
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    
+
     key = 'legend style';
     lOpts = opts_print(m2t, lStyle, ',');
 end
@@ -3777,7 +3777,7 @@ function [lStyle] = legendOrientation(m2t, handle, lStyle)
         case 'horizontal'
             numLegendEntries = sprintf('%d',length(get(handle, 'String')));
             lStyle = opts_add(lStyle, 'legend columns', numLegendEntries);
-            
+
         case 'vertical'
             % Use default.
         otherwise
@@ -3865,19 +3865,19 @@ function [lStyle] = legendPosition(m2t, handle, lStyle)
             userWarning(m2t, [sprintf(' Option ''%s'' not yet implemented.',loc),         ...
                 ' Choosing default.']);
             return % use defaults
-            
+
         otherwise
             userWarning(m2t, [' Unknown legend location ''',loc,''''           ...
                 '. Choosing default.']);
             return % use defaults
     end
-    
+
     % set legend position
     %TODO: shouldn't this include units?
     lStyle = opts_add(lStyle, 'at',  sprintf('{(%s,%s)}', ...
                         formatDim(position(1)), formatDim(position(2))));
     lStyle = opts_add(lStyle, 'anchor', anchor);
-    
+
 end
 % ==============================================================================
 function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
@@ -3908,7 +3908,7 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
         otherwise
             errorUnknownEnvironment();
     end
-    
+
     % set alignment of legend text and pictograms, if available
     if ~isempty(textalign) && ~isempty(pictalign)
         lStyle = opts_add(lStyle, 'legend cell align', textalign);
@@ -4742,7 +4742,7 @@ function c = prettyPrint(m2t, strings, interpreter)
 
                 % Deal with UTF8 characters.
                 string = s;
-                
+
                 % degree symbol following "^" or "_" needs to be escaped
                 string = regexprep(string, '([\^\_])°', '$1{{}^\\circ}');
                 string = strrep(string, '°', '^\circ');
@@ -4977,14 +4977,14 @@ function string = parseTexSubstring(m2t, string)
     string = regexprep(string, '(?<!\\)((\\\\)*)\\\^', repl);
     repl = '$1}^\\text{';
     string = regexprep(string, '(?<!\\)((\\\\)*)\^', repl);
-    
+
     % '<' and '>' has to be either in math mode or needs to be typeset as
     % '\textless' and '\textgreater' in textmode
     % This is handled better, if 'parseStringsAsMath' is activated
     if m2t.cmdOpts.Results.parseStringsAsMath == 0
         string = regexprep(string, '<', '\\textless');
         string = regexprep(string, '>', '\\textgreater');
-    end        
+    end
 
     % Move font styles like \bf into the \text{} command.
     expr = '(\\bf|\\it|\\rm|\\fontname)({\w*})+(\\text{)';
@@ -4997,8 +4997,8 @@ function string = parseTexSubstring(m2t, string)
     fonts = fonts2tex(fonts);
     subStrings = [subStrings; fonts, {''}];
     string = cell2mat(subStrings(:)');
-    
-    % Merge adjacent \text fields: 
+
+    % Merge adjacent \text fields:
     string = mergeAdjacentTexCmds(string, '\text');
 
     % '\\' has to be escaped to '\textbackslash{}'
@@ -5068,7 +5068,7 @@ function string = parseTexSubstring(m2t, string)
         otherwise
             errorUnknownEnvironment();
     end
-    
+
     % Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
     % escape sequence. An un-escaped "~" produces weird output in Octave, thus
     % give a warning in that case
@@ -5273,7 +5273,7 @@ function value = opts_get(opts, key)
             value = opts{idx,2}; % just the value
         otherwise
             value = opts(idx,2); % as cell array
-    end 
+    end
 end
 function opts = opts_append(opts, key, value)
 % append a key-value pair to an options array (duplicate keys allowed)
@@ -5281,7 +5281,7 @@ function opts = opts_append(opts, key, value)
         value = [];
     end
     if ~(opts_has(opts, key) && isequal(opts_get(opts, key), value))
-        opts = cat(1, opts, {key, value}); 
+        opts = cat(1, opts, {key, value});
     end
 end
 function opts = opts_append_userdefined(opts, userDefined)
