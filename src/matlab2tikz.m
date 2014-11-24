@@ -2319,12 +2319,7 @@ function [m2t, str] = drawText(m2t, handle)
     % remove invisible border around \node to make the text align precisely
     style = opts_add(style, 'inner sep', '0mm');
 
-    % Add rotation, if existing
-    defaultRotation = 0.0;
-    rot = getOrDefault(handle, 'Rotation', defaultRotation);
-    if rot ~= defaultRotation
-        style = opts_add(style, 'rotate', sprintf(m2t.ff, rot));
-    end
+    style = getRotationOfText(m2t, handle, style);
 
     style = opts_merge(style, getFontStyle(m2t, handle));
 
@@ -2428,6 +2423,15 @@ function [style] = getXYAlignmentOfText(handle, style)
     end
     % Add Horizontal alignment
     style = opts_add(style, 'align', HorizontalAlignment);
+end
+% ==============================================================================
+function [style] = getRotationOfText(m2t, handle, style)
+% Add rotation, if existing
+    defaultRotation = 0.0;
+    rot = getOrDefault(handle, 'Rotation', defaultRotation);
+    if rot ~= defaultRotation
+        style = opts_add(style, 'rotate', sprintf(m2t.ff, rot));
+    end
 end
 % ==============================================================================
 function [m2t, str] = drawRectangle(m2t, handle)
