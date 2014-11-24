@@ -2301,13 +2301,11 @@ function [m2t, str] = drawText(m2t, handle)
     [m2t, tcolor] = getColor(m2t, handle, color, 'patch');
     bgColor = get(handle,'BackgroundColor');
     EdgeColor = get(handle, 'EdgeColor');
-    HorizontalAlignment = get(handle, 'HorizontalAlignment');
     String = get(handle, 'String');
     Interpreter = get(handle, 'Interpreter');
     String = prettyPrint(m2t, String, Interpreter);
     % Concatenate multiple lines
     String = join(m2t, String, '\\');
-    VerticalAlignment = get(handle, 'VerticalAlignment');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % translate them to pgf style
     style = opts_new();
@@ -2315,20 +2313,8 @@ function [m2t, str] = drawText(m2t, handle)
         [m2t, bcolor] = getColor(m2t, handle, bgColor, 'patch');
         style = opts_add(style, 'fill', bcolor);
     end
-    switch VerticalAlignment
-        case {'top', 'cap'}
-            style = opts_add(style, 'below');
-        case {'baseline', 'bottom'}
-            style = opts_add(style, 'above');
-    end
-    switch HorizontalAlignment
-        case 'left'
-            style = opts_add(style, 'right');
-        case 'right'
-            style = opts_add(style, 'left');
-    end
-    % Add Horizontal alignment
-    style = opts_add(style, 'align', HorizontalAlignment);
+
+    style = getXYAlignmentOfText(handle, style);
 
     % remove invisible border around \node to make the text align precisely
     style = opts_add(style, 'inner sep', '0mm');
@@ -2421,6 +2407,27 @@ function [m2t, str] = drawText(m2t, handle)
     end
     str = sprintf('\\node[%s]\nat %s {%s};\n', ...
         opts_print(m2t, style, ', '), posString, String);
+end
+% ==============================================================================
+function [style] = getXYAlignmentOfText(handle, style)
+% sets the horizontal & vertical alginment options of a text object
+    VerticalAlignment = get(handle, 'VerticalAlignment');
+    HorizontalAlignment = get(handle, 'HorizontalAlignment');
+
+    switch VerticalAlignment
+        case {'top', 'cap'}
+            style = opts_add(style, 'below');
+        case {'baseline', 'bottom'}
+            style = opts_add(style, 'above');
+    end
+    switch HorizontalAlignment
+        case 'left'
+            style = opts_add(style, 'right');
+        case 'right'
+            style = opts_add(style, 'left');
+    end
+    % Add Horizontal alignment
+    style = opts_add(style, 'align', HorizontalAlignment);
 end
 % ==============================================================================
 function [m2t, str] = drawRectangle(m2t, handle)
