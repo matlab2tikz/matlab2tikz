@@ -434,8 +434,8 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     m2t.axesBoundingBox = axesBoundingBox;
     m2t.axesContainers = {};
-    for ix = 1:numel(relevantAxesHandles)
-        m2t = drawAxes(m2t, relevantAxesHandles(ix));
+    for relevantAxesHandle = relevantAxesHandles
+        m2t = drawAxes(m2t, relevantAxesHandle);
     end
 
     % Handle color bars.
@@ -541,25 +541,34 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     % NOTE: also do R2014b to avoid code duplication
     axesHandles = findobj(fh, 'type', 'axes');
 
-    tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
+    % Remove all legend handles as they are treated separately.
     if ~isempty(axesHandles)
+        % TODO fix for octave
+        tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
         % Find all legend handles. This is MATLAB-only.
-        legendHandles = findobj(fh, tagKeyword, 'legend');
-        m2t.legendHandles = legendHandles;
-        % Remove all legend handles as they are treated separately.
-        axesHandles = setdiff(axesHandles, legendHandles);
+        m2t.legendHandles = findobj(fh, tagKeyword, 'legend');
+        m2t.legendHandles = m2t.legendHandles(:)';
+        axesHandles = setdiff(axesHandles, m2t.legendHandles);
     end
 
-    colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
+    % Remove all legend handles as they are treated separately.
     if ~isempty(axesHandles)
+        colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
         % Find all colorbar handles. This is MATLAB-only.
         cbarHandles = findobj(fh, tagKeyword, colorbarKeyword);
-        m2t.cbarHandles = cbarHandles;
-        % Remove all legend handles as they are treated separately.
-        axesHandles = setdiff(axesHandles, cbarHandles);
+        % Octave also finds text handles here; no idea why. Filter.
+        m2t.cbarHandles = [];
+        for h = cbarHandles(:)'
+          if get(h, 'Type') == 'axes'
+            m2t.cbarHandles = [m2t.cbarHandles, h];
+          end
+        end
+        m2t.cbarHandles = m2t.cbarHandles(:)';
+        axesHandles = setdiff(axesHandles, m2t.cbarHandles);
     else
         m2t.cbarHandles = [];
     end
+
 end
 % ==============================================================================
 function addComments(fid, comment)
