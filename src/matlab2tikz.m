@@ -2330,6 +2330,44 @@ function [m2t, str] = drawText(m2t, handle)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % plot the thing
+    [m2t, posString] = getPositionOfText(m2t, handle);
+
+    str = sprintf('\\node[%s]\nat %s {%s};\n', ...
+        opts_print(m2t, style, ', '), posString, String);
+end
+% ==============================================================================
+function [style] = getXYAlignmentOfText(handle, style)
+% sets the horizontal & vertical alginment options of a text object
+    VerticalAlignment = get(handle, 'VerticalAlignment');
+    HorizontalAlignment = get(handle, 'HorizontalAlignment');
+
+    switch VerticalAlignment
+        case {'top', 'cap'}
+            style = opts_add(style, 'below');
+        case {'baseline', 'bottom'}
+            style = opts_add(style, 'above');
+    end
+    switch HorizontalAlignment
+        case 'left'
+            style = opts_add(style, 'right');
+        case 'right'
+            style = opts_add(style, 'left');
+    end
+    % Add Horizontal alignment
+    style = opts_add(style, 'align', HorizontalAlignment);
+end
+% ==============================================================================
+function [style] = getRotationOfText(m2t, handle, style)
+% Add rotation, if existing
+    defaultRotation = 0.0;
+    rot = getOrDefault(handle, 'Rotation', defaultRotation);
+    if rot ~= defaultRotation
+        style = opts_add(style, 'rotate', sprintf(m2t.ff, rot));
+    end
+end
+% ==============================================================================
+function [m2t,posString] = getPositionOfText(m2t, handle)
+% makes the tikz position string of a text object
     pos = get(handle, 'Position');
     units = get(handle, 'Units');
     switch length(pos)
@@ -2399,38 +2437,6 @@ function [m2t, str] = drawText(m2t, handle)
         otherwise
             error('matlab2tikz:drawText', ...
                 'Illegal text position specification.');
-    end
-    str = sprintf('\\node[%s]\nat %s {%s};\n', ...
-        opts_print(m2t, style, ', '), posString, String);
-end
-% ==============================================================================
-function [style] = getXYAlignmentOfText(handle, style)
-% sets the horizontal & vertical alginment options of a text object
-    VerticalAlignment = get(handle, 'VerticalAlignment');
-    HorizontalAlignment = get(handle, 'HorizontalAlignment');
-
-    switch VerticalAlignment
-        case {'top', 'cap'}
-            style = opts_add(style, 'below');
-        case {'baseline', 'bottom'}
-            style = opts_add(style, 'above');
-    end
-    switch HorizontalAlignment
-        case 'left'
-            style = opts_add(style, 'right');
-        case 'right'
-            style = opts_add(style, 'left');
-    end
-    % Add Horizontal alignment
-    style = opts_add(style, 'align', HorizontalAlignment);
-end
-% ==============================================================================
-function [style] = getRotationOfText(m2t, handle, style)
-% Add rotation, if existing
-    defaultRotation = 0.0;
-    rot = getOrDefault(handle, 'Rotation', defaultRotation);
-    if rot ~= defaultRotation
-        style = opts_add(style, 'rotate', sprintf(m2t.ff, rot));
     end
 end
 % ==============================================================================
