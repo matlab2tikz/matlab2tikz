@@ -488,30 +488,39 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     % Finally print it to the file,
     addComments(fid, m2t.content.comment);
-
-    if m2t.cmdOpts.Results.standalone
-        fprintf(fid, '\\documentclass[tikz]{standalone}\n%s\n',  m2t.preamble);
-    end
-
+    addStandalone(m2t, fid, 'preamble');
     addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
-
-    if m2t.cmdOpts.Results.standalone
-        fprintf(fid, '\\begin{document}\n');
-    end
+    addStandalone(m2t, fid, 'begin');
+    
     % printAll() handles the actual figure plotting.
     printAll(m2t, m2t.content, fid);
 
     addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
 
-    if m2t.cmdOpts.Results.standalone
-        fprintf(fid, '\n\\end{document}');
-    end
+    addStandalone(m2t, fid, 'end');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     % close the file if necessary
     if ~fileWasOpen
         fclose(fid);
     end
+end
+% ==============================================================================
+function addStandalone(m2t, fid, part)
+% writes a part of a standalone LaTeX file definition
+if m2t.cmdOpts.Results.standalone
+    switch part
+        case 'preamble'
+            fprintf(fid, '\\documentclass[tikz]{standalone}\n%s\n',  m2t.preamble);
+        case 'begin'
+            fprintf(fid, '\\begin{document}\n');
+        case 'end'
+            fprintf(fid, '\n\\end{document}');
+        otherwise
+            error('m2t:unknownStandalonePart', ...
+                  'Unknown standalone part "%s"', part);
+    end
+end
 end
 % ==============================================================================
 function str = generateColorDefinitions(names, specs, colorFormat)
