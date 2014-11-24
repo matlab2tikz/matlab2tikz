@@ -757,6 +757,7 @@ function m2t = drawAxes(m2t, handle)
 %    handle.................The axes environment handle.
 
 % Handle special cases.
+    %TODO: make sure these two options are NEVER needed
     switch lower(get(handle, 'Tag'))
         case 'colorbar'
             m2t = handleColorbar(m2t, handle);
@@ -845,14 +846,9 @@ function m2t = drawAxes(m2t, handle)
 
     m2t.axesContainers{end}.options = opts_merge(m2t.axesContainers{end}.options, ...
                                             xopts, yopts);
-    if m2t.currentAxesContain3dData
-        [m2t, zopts] = getAxisOptions(m2t, handle, 'z');
-        m2t.axesContainers{end}.options = opts_merge(m2t.axesContainers{end}.options, zopts);
-
-         m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], get(handle, 'View')));
-    end
+    
+    m2t = add3DOptionsOfAxes(m2t, handle);
+    
     hasXGrid = false;
     hasYGrid = false;
     hasZGrid = false;
@@ -925,6 +921,19 @@ function m2t = drawAxes(m2t, handle)
     % add manually given extra axis options
     m2t.axesContainers{end}.options = opts_append_userdefined(...
         m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
+end
+% ==============================================================================
+function m2t = add3DOptionsOfAxes(m2t, handle)
+% adds 3D specific options of an axes object
+    if m2t.currentAxesContain3dData
+        [m2t, zopts] = getAxisOptions(m2t, handle, 'z');
+        m2t.axesContainers{end}.options = opts_merge(...
+            m2t.axesContainers{end}.options, zopts);
+
+         m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], get(handle, 'View')));
+    end
 end
 % ==============================================================================
 function legendhandle = getAssociatedLegend(m2t, handle)
