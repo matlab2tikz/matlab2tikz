@@ -2370,6 +2370,12 @@ function [m2t,posString] = getPositionOfText(m2t, handle)
 % makes the tikz position string of a text object
     pos = get(handle, 'Position');
     units = get(handle, 'Units');
+    xlim = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
+    ylim = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
+    zlim = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
+    
+    is3D = false;
+    
     switch length(pos)
         case 2    % Text within a 2d plot
             switch units
@@ -2384,32 +2390,17 @@ function [m2t,posString] = getPositionOfText(m2t, handle)
                                      formatDim(pos(2), defaultUnit) ')'];
             end
 
-            xlim = get(m2t.currentHandles.gca,'XLim');
-            ylim = get(m2t.currentHandles.gca,'YLim');
-            if pos(1) < xlim(1) || pos(1) > xlim(2) ...
-                    || pos(2) < ylim(1) || pos(2) > ylim(2)
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    'clip', 'false');
-            end
         case 3    % Text within a 3d plot
+            is3D = true;
             pos = applyHgTransform(m2t, pos);
             if strcmp(units, 'normalized')
+                %FIXME: does this ever happen? not documented in MATLAB
                 posString = sprintf(['(rel axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
             else
                 posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
             end
 
-            xlim = get(m2t.currentHandles.gca, 'XLim');
-            ylim = get(m2t.currentHandles.gca, 'YLim');
-            zlim = get(m2t.currentHandles.gca, 'ZLim');
-            if pos(1) < xlim(1) || pos(1) > xlim(2) ...
-                    || pos(2) < ylim(1) || pos(2) > ylim(2) ...
-                    || pos(3) < zlim(1) || pos(3) > zlim(2)
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    'clip', 'false');
-            end
+
         case 4    % Textbox
             % TODO:
             %   - size of the box (e.g. using node attributes minimum width / height)
@@ -2426,17 +2417,18 @@ function [m2t,posString] = getPositionOfText(m2t, handle)
                                      formatDim(pos(2), defaultUnit) ')'];
             end
 
-            xlim = get(m2t.currentHandles.gca,'XLim');
-            ylim = get(m2t.currentHandles.gca,'YLim');
-            if pos(1) < xlim(1) || pos(1) > xlim(2) ...
-                    || pos(2) < ylim(1) || pos(2) > ylim(2)
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    'clip', 'false');
-            end
         otherwise
             error('matlab2tikz:drawText', ...
                 'Illegal text position specification.');
+    end
+    
+    xOutOfRange =          pos(1) < xlim(1) || pos(1) > xlim(2);
+    yOutOfRange =          pos(2) < ylim(1) || pos(2) > ylim(2);
+    zOutOfRange = is3D && (pos(3) < zlim(1) || pos(3) > zlim(2));
+    if xOutOfRange || yOutOfRange || zOutOfRange
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'clip', 'false');
     end
 end
 % ==============================================================================
