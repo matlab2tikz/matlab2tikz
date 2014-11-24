@@ -2493,15 +2493,7 @@ end
 function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
     faceColor = get(handle, 'FaceColor');
     edgeColor = get(handle, 'EdgeColor');
-
-    % Check for surf or mesh plot. Second argument in if-check corresponds to
-    % default values for mesh plot in MATLAB.
-    if isNone(faceColor)
-        plotType = 'mesh';
-    else
-        plotType = 'surf';
-    end
-
+    
     surfOptions = cell(0);
 
     % Set opacity if FaceAlpha < 1 in MATLAB
@@ -2510,69 +2502,85 @@ function [m2t,surfOptions,plotType] = surfaceOpts(m2t, handle)
         surfOptions{end+1} = sprintf(['opacity=', m2t.ff], faceAlpha);
     end
 
+    % Check for surf or mesh plot. Second argument in if-check corresponds to
+    % default values for mesh plot in MATLAB.
+    if isNone(faceColor) && isNone(edgeColor)
+        plotType = 'none';
+    elseif isNone(faceColor)
+        plotType = 'mesh';
+        [m2t, surfOptions] = surfaceOptsOfMesh(m2t, handle, surfOptions);
+    else
+        plotType = 'surf';
+        [m2t, surfOptions] = surfaceOptsOfSurf(m2t, handle, surfOptions);
+    end
+end
+% ==============================================================================
+function [m2t, surfOptions] = surfaceOptsOfSurf(m2t, handle, surfOptions)
+% determine options of a `surf` plot
+
     % TODO Revisit this selection and create a bunch of test plots.
-    switch plotType
 
-        % SURFACE
-        case 'surf'
+    faceColor = get(handle, 'FaceColor');
+    edgeColor = get(handle, 'EdgeColor');
+    % Edge 'none'
+    if isNone(edgeColor)
+        if strcmpi(faceColor, 'flat')
+            surfOptions{end+1} = 'shader=flat';
+        elseif strcmpi(faceColor, 'interp');
+            surfOptions{end+1} = 'shader=interp';
+        end
 
-            % Edge 'none'
-            if isNone(edgeColor)
-                if strcmpi(faceColor, 'flat')
-                    surfOptions{end+1} = 'shader=flat';
-                elseif strcmpi(faceColor, 'interp');
-                    surfOptions{end+1} = 'shader=interp';
-                end
+        % Edge 'interp'
+    elseif strcmpi(edgeColor, 'interp')
+        if strcmpi(faceColor, 'interp')
+            surfOptions{end+1} = 'shader=interp';
+        else
+            surfOptions{end+1} = 'shader=faceted';
+            [m2t,xFaceColor]   = getColor(m2t, handle, faceColor, 'patch');
+            surfOptions{end+1} = sprintf('color=%s',xFaceColor);
+        end
 
-            % Edge 'interp'
-            elseif strcmpi(edgeColor, 'interp')
-                if strcmpi(faceColor, 'interp')
-                    surfOptions{end+1} = 'shader=interp';
-                else
-                    surfOptions{end+1} = 'shader=faceted';
-                    [m2t,xFaceColor]   = getColor(m2t, handle, faceColor, 'patch');
-                    surfOptions{end+1} = sprintf('color=%s',xFaceColor);
-                end
+        % Edge 'flat'
+    elseif strcmpi(edgeColor, 'flat')
+        if strcmpi(faceColor, 'flat')
+            surfOptions{end+1} = 'shader=flat';
+        elseif strcmpi(faceColor, 'interp')
+            surfOptions{end+1} = 'shader=faceted interp';
+        elseif isnumeric(faceColor)
+            [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+            surfOptions{end+1} = sprintf('fill=%s',xFaceColor);
+        end
 
-            % Edge 'flat'
-            elseif strcmpi(edgeColor, 'flat')
-                if strcmpi(faceColor, 'flat')
-                    surfOptions{end+1} = 'shader=flat';
-                elseif strcmpi(faceColor, 'interp')
-                    surfOptions{end+1} = 'shader=faceted interp';
-                elseif isnumeric(faceColor)
-                    [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-                    surfOptions{end+1} = sprintf('fill=%s',xFaceColor);
-                end
+        % Edge RGB
+    else
+        [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
+        surfOptions{end+1} = sprintf('faceted color=%s', xEdgeColor);
+        if isnumeric(faceColor)
+            [m2t, xFaceColor]  = getColor(m2t, handle, faceColor, 'patch');
+            surfOptions{end+1} = sprintf('color=%s', xFaceColor);
+        else
+            surfOptions{end+1} = 'shader=faceted';
+        end
+    end
+end
+% ==============================================================================
+function [m2t, surfOptions] = surfaceOptsOfMesh(m2t, handle, surfOptions)
+% determine options of a `mesh` plot
+
+    % TODO Revisit this selection and create a bunch of test plots.
+
+    edgeColor = get(handle, 'EdgeColor');
+    if ~isNone(edgeColor)
+
+        % Edge 'interp'
+        if strcmpi(edgeColor, 'interp')
+            surfOptions{end+1} = 'shader=flat';
 
             % Edge RGB
-            else
-                [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
-                surfOptions{end+1} = sprintf('faceted color=%s', xEdgeColor);
-                if isnumeric(faceColor)
-                    [m2t, xFaceColor]  = getColor(m2t, handle, faceColor, 'patch');
-                    surfOptions{end+1} = sprintf('color=%s', xFaceColor);
-                else
-                    surfOptions{end+1} = 'shader=faceted';
-                end
-            end
-
-        % MESH
-        case 'mesh'
-            if ~isNone(edgeColor)
-
-                % Edge 'interp'
-                if strcmpi(edgeColor, 'interp')
-                    surfOptions{end+1} = 'shader=flat';
-
-                % Edge RGB
-                else
-                    [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
-                    surfOptions{end+1} = sprintf('color=%s', xEdgeColor);
-                end
-            else
-                plotType = 'none';
-            end
+        else
+            [m2t, xEdgeColor]  = getColor(m2t, handle, edgeColor, 'patch');
+            surfOptions{end+1} = sprintf('color=%s', xEdgeColor);
+        end
     end
 end
 % ==============================================================================
