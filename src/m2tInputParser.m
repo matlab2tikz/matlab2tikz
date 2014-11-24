@@ -1,4 +1,4 @@
-function parser = matlab2tikzInputParser()
+function parser = m2tInputParser()
 %MATLAB2TIKZINPUTPARSER   Input parsing for matlab2tikz..
 %   This implementation exists because Octave is lacking one.
 
@@ -93,7 +93,7 @@ function p = deprecateParam (p, name, alternatives)
   elseif ischar(alternatives)
       alternatives = {alternatives}; % make cellstr
   elseif ~iscellstr(alternatives)
-      error('matlab2tikzInputParser:BadAlternatives',...
+      error('m2tInputParser:BadAlternatives',...
             'Alternatives for a deprecated parameter must be a char or cellstr');
   end
   p.DeprecatedParameters.(name) = alternatives;

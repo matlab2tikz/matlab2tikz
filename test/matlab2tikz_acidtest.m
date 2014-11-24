@@ -54,7 +54,7 @@ function matlab2tikz_acidtest(varargin)
 
 
   % -----------------------------------------------------------------------
-  ipp = matlab2tikzInputParser;
+  ipp = m2tInputParser;
 
   ipp = ipp.addOptional(ipp, 'testFunctionIndices', [], @isfloat);
   ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
