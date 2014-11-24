@@ -2594,16 +2594,9 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     if length(cData) == 3
         % No special treatment for the colors or markers are needed.
         % All markers have the same color.
-        if hasFaceColor && ~strcmp(markerFaceColor,'flat');
-            [m2t, xcolor] = getColor(m2t, h, markerFaceColor,'patch');
-        else
-            [m2t, xcolor] = getColor(m2t, h, cData, 'patch');
-        end
-        if hasEdgeColor && ~strcmp(markerEdgeColor,'flat');
-            [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
-        else
-            [m2t, ecolor] = getColor(m2t, h, cData, 'patch');
-        end
+        [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', cData);
+        [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', cData);
+
         if constMarkerkSize
             drawOptions = { 'only marks', ...
                 ['mark=' tikzMarker], ...
@@ -2713,6 +2706,16 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     [m2t, table] = makeTable(m2t, repmat({''},1,nColumns), data);
     str = sprintf('%s\\%s[%s] plot table[row sep=crcr,%s]{%s};\n', str, env, ...
         drawOpts, metaPart, table);
+end
+% ==============================================================================
+function [m2t, xcolor, hasColor] = getColorOfMarkers(m2t, h, name, cData)
+    color = get(h, name);
+    hasColor = ~isNone(color);
+    if hasColor && ~strcmp(color,'flat');
+        [m2t, xcolor] = getColor(m2t, h, color, 'patch');
+    else
+        [m2t, xcolor] = getColor(m2t, h, cData, 'patch');
+    end
 end
 % ==============================================================================
 function [m2t, str] = drawBarseries(m2t, h)
