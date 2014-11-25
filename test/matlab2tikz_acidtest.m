@@ -177,6 +177,9 @@ function matlab2tikz_acidtest(varargin)
                      );
       catch %#ok
           e = lasterror('reset'); %#ok
+          % Remove (corrupted) output file. This is necessary to avoid that the
+          % Makefile tries to compile it and fails.
+          delete(gen_tex)
           [status{k}.tikzStage, errorHasOccurred] = errorHandler(e, env);
       end
 
