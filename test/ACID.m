@@ -160,18 +160,11 @@ function [status] = ACID(k)
 end
 % =========================================================================
 function [stat] = multiline_labels()
-
-  if ~exist('flip')
-      fprintf( 'flip() not found. Skipping.\n\n' );
-      stat.skip = true;
-      return;
-  end
-
   stat.description = 'Test multiline labels and plot some points.';
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
-  plot(flip(m)-0.5,'x--');
+  plot(m(end:-1:1)-0.5,'x--');
 
   title({'multline','title'});
   legend({sprintf('multi-line legends\ndo work 2^2=4'), ...
