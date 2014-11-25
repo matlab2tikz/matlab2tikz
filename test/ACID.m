@@ -589,10 +589,10 @@ function [stat] = bars()
   barh(bins, plotData, 'grouped', 'BarWidth', 1.3);
 
   subplot(2,2,3);
-  bar(Y,'stack');
+  bar(Y, 'stacked');
 
   subplot(2,2,4);
-  b2= barh(Y,'stack','BarWidth', 0.75);
+  b2= barh(Y,'stacked','BarWidth', 0.75);
 
   set(b1(1),'FaceColor','m','EdgeColor','none')
   set(b2(1),'FaceColor','c','EdgeColor','none')
