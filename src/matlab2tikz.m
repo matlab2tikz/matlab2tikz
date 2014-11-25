@@ -1691,9 +1691,9 @@ function [m2t, str] = drawPatch(m2t, handle)
 
     numPatches = size(XData, 2);
 
-    % Ensure that if we have multiple patches and only FaceColor is
-    % specified, that it doesn't error when creating each patch with cData = CData(:, k);;
-    if isempty(CData)
+    % Ensure that if we have multiple patches and only FaceColor is specified,
+    % that it doesn't error when creating each patch with cData = CData(:, k);;
+    if isempty(CData) || length(CData) == 1
         CData = zeros(1,numPatches);
     end
 
