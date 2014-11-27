@@ -161,7 +161,7 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  stat.md5 = '8ea663cd896cf5c9b85627f20b574a5d';
+  stat.md5 = '2f08dbb3f961daa409c91ce0f5be65e4';
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
@@ -180,7 +180,7 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
   stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
-  stat.md5 = 'af77369255a26c0e9e17db0957b9eba3';
+  stat.md5 = '888ccfb8de61fe94ef1a4b21b515bbb2';
 
   fplot( @cos, [0,2*pi] );
 
