@@ -694,23 +694,25 @@ switch m2t.env
                 else
                     plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
                 end
-                k = find(child == plotChildren);
-                if isempty(k)
-                    % Lines of error bar plots are not referenced
-                    % directly in legends as an error bars plot contains
-                    % two "lines": the data and the deviations. Here, the
-                    % legends refer to the specgraph.errorbarseries
-                    % handle which is 'Parent' to the line handle.
-                    k = find(get(child,'Parent') == plotChildren);
-                end
-                if ~isempty(k)
-                    % Legend entry found. Add it to the plot.
-                    hasLegend = true;
-                    interpreter = get(legendHandle, 'Interpreter');
-                    if ~isempty(ud) && isfield(ud,'strings')
-                        legendString = ud.lstrings(k);
-                    else
-                        legendString = get(child, 'DisplayName');
+                if ~isempty(child)
+                    k = find(child == plotChildren);
+                    if isempty(k)
+                        % Lines of error bar plots are not referenced
+                        % directly in legends as an error bars plot contains
+                        % two "lines": the data and the deviations. Here, the
+                        % legends refer to the specgraph.errorbarseries
+                        % handle which is 'Parent' to the line handle.
+                        k = find(get(child,'Parent') == plotChildren);
+                    end
+                    if ~isempty(k)
+                        % Legend entry found. Add it to the plot.
+                        hasLegend = true;
+                        interpreter = get(legendHandle, 'Interpreter');
+                        if ~isempty(ud) && isfield(ud,'strings')
+                            legendString = ud.lstrings(k);
+                        else
+                            legendString = get(child, 'DisplayName');
+                        end
                     end
                 end
             end
