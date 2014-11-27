@@ -1,3 +1,5 @@
+![matlab2tikz](https://raw.githubusercontent.com/wiki/nschloe/matlab2tikz/matlab2tikz.png)
+
 This is matlab2tikz, a MATLAB(R) script for converting MATLAB(R) figures into
 native TikZ/Pgfplots figures.
 
