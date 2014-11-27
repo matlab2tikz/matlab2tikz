@@ -201,7 +201,7 @@ function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
   stat.description = [ 'Twisted plot of the sine function. '                   ,...
          'Pay particular attention to how markers and Infs/NaNs are treated.' ];
-  stat.md5 = '2d5c90baf2b8e06a8bee8d0497e2728e';
+  stat.md5 = '96317b8317f3eddee9ca01ca338f6c73';
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -225,7 +225,7 @@ end
 % =========================================================================
 function [stat] = markerSizes()
   stat.description = 'Marker sizes.';
-  stat.md5 = 'b920220bb0934ac2dcf66f3ac7d9acd2';
+  stat.md5 = '466116e445acacf20b4d712600a43a63';
 
   hold on;
 
@@ -238,7 +238,7 @@ end
 % =========================================================================
 function [stat] = markerSizes2()
   stat.description = 'Line plot with with different marker sizes.';
-  stat.md5 = 'd44350a3d1a9efc8683df0f3cce303d5';
+  stat.md5 = '0392b76c0de39655f33710fbd6bd5ac8';
 
   hold on;
   grid on;
@@ -263,7 +263,7 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.md5 = '33a9c99faf8f4bcc72a8469ef36b8353';
+  stat.md5 = 'a59a2a2295b5db533cc733feceda974b';
 
   x = -pi:.1:pi;
   y = sin(x);
@@ -287,7 +287,7 @@ end
 % =========================================================================
 function [stat] = linesWithOutliers()
     stat.description = 'Lines with outliers.';
-    stat.md5 = '99d694e1f47e85e7dfc998a03a37c1b7';
+    stat.md5 = 'ea2084452c49d1a6e0379739371b2e0a';
 
     far = 200;
     x = [ -far, -1,   -1,  -far, -10, -0.5, 0.5, 10,  far, 1,   1,    far, 10,   0.5, -0.5, -10,  -far ];
@@ -298,7 +298,7 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
-  stat.md5 = '2bcbbf33b2b4a3de6fe3c282acdbf6ae';
+  stat.md5 = 'fd564136304fa8e0dac8365abee077b5';
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -330,7 +330,7 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
-  stat.md5 = '16b59343f5aa60038b7bbb186e49b73d';
+  stat.md5 = '515a8b6209314b8a6ef0051b49b69508';
 
   contourf(peaks(20), 10);
   colorbar();
@@ -393,7 +393,7 @@ end
 % =========================================================================
 function [stat] = many_random_points ()
   stat.description = 'Test the performance when drawing many points.';
-  stat.md5 = 'c3d83c4e723825c96d49a7b155c9201e';
+  stat.md5 = '759011e36b98a371a628a67cc29ca81d';
 
   n = 1e3;
   alpha = 1024;
