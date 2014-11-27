@@ -346,7 +346,7 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
-  stat.md5 = 'c3d83c4e723825c96d49a7b155c9201e';
+  stat.md5 = '';
 
   vspace = linspace(-40,40,20);
   speed_map = magic(20).';
@@ -371,7 +371,7 @@ end
 % =========================================================================
 function [stat] = randomWithLines()
   stat.description = 'Lissajous points with lines.';
-  stat.md5 = '29177f5f2c4f09d34e305c5d895f6ae6';
+  stat.md5 = '9ddd96d692c4262ec581bbddea5dc5c0';
 
   beta = 42.42;
   t = 1:150;
@@ -409,7 +409,7 @@ end
 % =========================================================================
 function [stat] = double_axes()
   stat.description = 'Double axes';
-  stat.md5 = '9eeb4e321e84c0e5fd6cdb8acf93fdfc';
+  stat.md5 = '';
 
   dyb = 0.1;   % normalized units, bottom offset
   dyt = 0.1;   % separation between subsequent axes bottoms
