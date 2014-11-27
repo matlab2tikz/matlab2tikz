@@ -1,0 +1,6 @@
+language: c++
+# command to install dependencies
+before_install:
+  - sudo apt-get install octave
+script:
+  - cd test && ./runtests
