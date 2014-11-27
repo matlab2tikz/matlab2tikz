@@ -263,13 +263,14 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
+  stat.md5 = '33a9c99faf8f4bcc72a8469ef36b8353';
 
   x = -pi:.1:pi;
   y = sin(x);
   h = plot(x,y);
   set(gca,'XTick',-pi:pi/2:pi);
-  set(gca,'XTickLabel',{'-pi','-pi/2','0','pi/2','pi'});
 
+  set(gca,'XTickLabel',{'-pi','-pi/2','0','pi/2','pi'});
 
   xlabel('-\pi \leq \Theta \leq \pi');
   ylabel('sin(\Theta)');
@@ -277,14 +278,16 @@ function [stat] = sine_with_annotation ()
   text(-pi/4,sin(-pi/4),'\leftarrow sin(-\pi\div4)',...
       'HorizontalAlignment','left');
 
-  set(findobj(gca,'Type','line','Color',[0 0 1]),...
-      'Color','red',...
-      'LineWidth',10);
+  % Doesn't work in Octave
+  %set(findobj(gca,'Type','line','Color',[0 0 1]),...
+  %    'Color','red',...
+  %    'LineWidth',10);
 
 end
 % =========================================================================
 function [stat] = linesWithOutliers()
     stat.description = 'Lines with outliers.';
+    stat.md5 = '99d694e1f47e85e7dfc998a03a37c1b7';
 
     far = 200;
     x = [ -far, -1,   -1,  -far, -10, -0.5, 0.5, 10,  far, 1,   1,    far, 10,   0.5, -0.5, -10,  -far ];
@@ -295,6 +298,7 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
+  stat.md5 = '2bcbbf33b2b4a3de6fe3c282acdbf6ae';
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -309,6 +313,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
+  stat.md5 = '2bcbbf33b2b4a3de6fe3c282acdbf6ae';
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -325,6 +330,7 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
+  stat.md5 = '16b59343f5aa60038b7bbb186e49b73d';
 
   contourf(peaks(20), 10);
   colorbar();
@@ -340,6 +346,7 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
+  stat.md5 = 'c3d83c4e723825c96d49a7b155c9201e';
 
   vspace = linspace(-40,40,20);
   speed_map = magic(20).';
@@ -364,6 +371,7 @@ end
 % =========================================================================
 function [stat] = randomWithLines()
   stat.description = 'Lissajous points with lines.';
+  stat.md5 = '29177f5f2c4f09d34e305c5d895f6ae6';
 
   beta = 42.42;
   t = 1:150;
@@ -385,6 +393,7 @@ end
 % =========================================================================
 function [stat] = many_random_points ()
   stat.description = 'Test the performance when drawing many points.';
+  stat.md5 = 'c3d83c4e723825c96d49a7b155c9201e';
 
   n = 1e3;
   alpha = 1024;
@@ -400,6 +409,7 @@ end
 % =========================================================================
 function [stat] = double_axes()
   stat.description = 'Double axes';
+  stat.md5 = '9eeb4e321e84c0e5fd6cdb8acf93fdfc';
 
   dyb = 0.1;   % normalized units, bottom offset
   dyt = 0.1;   % separation between subsequent axes bottoms
@@ -461,6 +471,7 @@ end
 % =========================================================================
 function [stat] = double_axes2()
   stat.description = 'Double overlayed axes with a flip.' ;
+  stat.md5 = '245182a1593794038e5a601a5b7f6a42';
 
   ah1=axes;
   ph=plot([0 1],[0 1]);
@@ -480,6 +491,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
+  stat.md5 = '25d66c6fdd92aeb32ddaff72d310e6f5';
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -488,6 +500,7 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
+  stat.md5 = '8c99ef632b10a219daa1f09083d18bf5';
 
   imagesc([1 10 100]);
   try
@@ -501,6 +514,8 @@ end
 % =========================================================================
 function [stat] = legendplot()
   stat.description = 'Test inserting of legends.';
+  stat.md5 = 'a9e097172b3d79183b8ecbebeb4d8bed';
+
 %    x = -pi:pi/20:pi;
 %    plot(x,cos(x),'-ro',x,sin(x),'-.b');
 %    h = legend('one pretty long legend cos_x','sin_x',2);
@@ -521,6 +536,7 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
+  stat.md5 = '7b378300e46c789401e388cf7501ccd8';
 
   x = -pi:pi/20:pi;
   plot( x, cos(x),'-ro',...
