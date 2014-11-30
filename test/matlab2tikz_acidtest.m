@@ -268,7 +268,7 @@ function cleanFiles(cleanBefore)
         cwd = pwd;
         try
             cd('tex');
-            [exitCode, output] = system('make clean');
+            [exitCode, output] = system('make distclean');
             fprintf(1,'%s\n', output);
             assert(exitCode==0, 'Exit code 0 means correct execution');
         catch
