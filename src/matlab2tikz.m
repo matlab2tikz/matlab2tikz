@@ -3521,50 +3521,66 @@ function axisOptions = getColorbarOptions(m2t, handle)
                 'getColorbarOptions: Unknown ''Location'' %s.', loc)
     end
 
-    %TODO: maybe we should NOT rely on colorbars being axes in MATLAB R2014a
-    %(and older) and just access the properties directly here. In R2014b and
-    %newer this is certainly the clearer way to go. However, this does introduce
-    %some duplicate code
-    [m2t, xo] = getAxisOptions(m2t, handle, 'x');
-    [m2t, yo] = getAxisOptions(m2t, handle, 'y');
-    xyo = opts_merge(xo, yo);
-    xyo = opts_remove(xyo, 'xmin','xmax','xtick','ymin','ymax','ytick');
+    % axis label and direction
+    if isHG2(m2t)
+        % VERSION: Starting from R2014b there is only one field `label`.
+        % The colorbar's position determines, if it should be a x- or y-label.
 
-    cbarStyleOptions = opts_merge(cbarStyleOptions, xyo);
+        % label
+        % TODO: Move redundant interpreter and multiline code to a separate
+        % function. It is duplicated below in 'title' and in functions
+        % 'getAxisOptions' and 'drawTitleOfAxes'.
+        labelString = get(get(handle, 'Label'), 'String');
+        if ~isempty(labelString) % add only, if not empty
+            labelInterpreter = get(get(handle, 'Label'), 'Interpreter');
+            labelString = prettyPrint(m2t, labelString, labelInterpreter);
+            if length(labelString) > 1 % multiline
+                cbarStyleOptions = opts_add(cbarStyleOptions, 'label style', ...
+                    '{align=center}');
+            end
+            labelString = join(m2t, labelString, '\\[1ex]');
 
-    %% Get axis labels.
-    %for axis = 'xy'
-    %  axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
-    %  if ~isempty(axisLabel)
-    %      axisLabelInterpreter = ...
-    %          get(get(handle, [upper(axis),'Label']), 'Interpreter');
-    %      label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
-    %      if length(label) > 1
-    %          % If there's more than one cell item, the list
-    %          % is displayed multi-row in MATLAB(R).
-    %          % To replicate the same in Pgfplots, one can
-    %          % use xlabel={first\\second\\third} only if the
-    %          % alignment or the width of the "label box"
-    %          % is defined. This is a restriction that comes with
-    %          % TikZ nodes.
-    %          m2t.axesContainers{end}.options = ...
-    %            opts_add(m2t.axesContainers{end}.options, ...
-    %                        [axis, 'label style'], '{align=center}');
-    %      end
-    %      label = join(m2t, label,'\\[1ex]');
-    %      cbarStyleOptions{end+1} = sprintf([axis,'label={%s}'], label);
-    %  end
-    %end
+            if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
+                labelOption = 'xlabel';
+            else
+                labelOption = 'ylabel';
+            end
+
+            cbarStyleOptions = opts_add(cbarStyleOptions, labelOption, ...
+                sprintf('{%s}', labelString));
+        end
+
+        % direction
+        dirString = get(handle, 'Direction');
+        if ~strcmpi(dirString, 'normal') % only if not 'normal'
+            if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
+                dirOption = 'x dir';
+            else
+                dirOption = 'y dir';
+            end
+            cbarStyleOptions = opts_add(cbarStyleOptions, dirOption, dirString);
+        end
+
+        % TODO HG2: colorbar ticks and colorbar tick labels
+
+    else
+        % VERSION: Up to MATLAB R2014a and OCTAVE
+        [m2t, xo] = getAxisOptions(m2t, handle, 'x');
+        [m2t, yo] = getAxisOptions(m2t, handle, 'y');
+        xyo = opts_merge(xo, yo);
+        xyo = opts_remove(xyo, 'xmin','xmax','xtick','ymin','ymax','ytick');
+
+        cbarStyleOptions = opts_merge(cbarStyleOptions, xyo);
+    end
 
     % title
     title = get(get(handle, 'Title'), 'String');
     if ~isempty(title)
         titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
         title = prettyPrint(m2t, title, titleInterpreter);
-        if length(title) > 1
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'title style', '{align=center}');
+        if length(title) > 1 % multiline
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'title style', ...
+                    '{align=center}');
         end
         title = join(m2t, title, '\\[1ex]');
         cbarStyleOptions = opts_add(cbarStyleOptions, 'title', ...
@@ -5372,6 +5388,17 @@ function [env,versionString] = getEnvironment()
     % otherwise:
     env = '';
     versionString = '';
+end
+% ==============================================================================
+function isHG2 = isHG2(m2t)
+% Checks if graphics system is HG2 (true) or HG1 (false).
+% HG1 : MATLAB up to R2014a and currently all OCTAVE versions
+% HG2 : MATLAB starting from R2014b (version 8.4)
+    isHG2 = false;
+    if strcmpi(m2t.env,'MATLAB') && ...
+        ~isVersionBelow(m2t.env, m2t.envVersion, [8,4])
+        isHG2 = true;
+    end
 end
 % ==============================================================================
 function isBelow = isVersionBelow(env, versionA, versionB)

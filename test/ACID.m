@@ -129,7 +129,8 @@ function [status] = ACID(k)
                            @imageOrientation_PNG, ...
                            @imageOrientation_inline, ...
                            @texInterpreter      , ...
-                           @stackedBarsWithOther
+                           @stackedBarsWithOther, ...
+                           @colorbarLabelTitle
                          };
 
 
@@ -2302,6 +2303,35 @@ function [stat] = stackedBarsWithOther()
   plot(yVals, xVals, 'Color', 'b', 'LineWidth', 2);
 
   set(b2(1),'FaceColor','c','EdgeColor','none')
+end
+% =========================================================================
+function [stat] = colorbarLabelTitle()
+    stat.description = 'colorbar with label and title';
+    stat.issues = 429;
+
+    % R2014b handles colorbars smart:  `XLabel` and `YLabel` merged into `Label`
+    % Use colormap 'jet' to create comparable output with MATLAB R2014b
+    % * Check horizontal/vertical colorbar (subplots)
+    % * Check if 'direction' is respected
+    % * Check if multiline label and title works
+    % * Check if latex interpreter works in label and title
+
+    subplot(1,2,1)
+    imagesc(magic(3));
+    hc = colorbar;
+    colormap('jet');
+    title(hc,'title $\beta$','Interpreter','latex');
+    ylabel(hc,'label $a^2$','Interpreter','latex');
+    set(hc,'YDir','reverse');
+
+    subplot(1,2,2)
+    label_multiline = {'first','second','third'};
+    title_multiline = {'title 1','title 2'};
+    imagesc(magic(3));
+    hc = colorbar('southoutside');
+    colormap('jet');
+    title(hc,title_multiline);
+    xlabel(hc,label_multiline);
 end
 % =========================================================================
 function env = getEnvironment
