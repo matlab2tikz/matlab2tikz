@@ -2114,6 +2114,10 @@ function [m2t, str] = drawHggroup(m2t, h)
             % Annotation: text arrow
             [m2t, str] = drawTextarrow(m2t, h);
 
+        case 'scribe.scriberect'
+            % Annotation: rectangle
+            [m2t, str] = drawRectangle(m2t, h);
+            
         case 'unknown'
             % Weird spurious class from Octave.
             [m2t, str] = handleAllChildren(m2t, h);
