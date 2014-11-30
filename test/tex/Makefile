@@ -2,12 +2,12 @@
 
 ECHOCMD:=/bin/echo -e
 LATEX:=lualatex --shell-escape
-
+THREADS:=8
 TARGET:=acid
 
 main:
-	cd ../data/reference/; make
-	cd ../data/converted/; make
+	cd ../data/reference/; make -j $(THREADS)
+	cd ../data/converted/; make -j $(THREADS)
 	@$(LATEX) $(TARGET)
 
 .PHONY: clean
