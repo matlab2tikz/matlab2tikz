@@ -556,7 +556,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
         % Octave also finds text handles here; no idea why. Filter.
         m2t.cbarHandles = [];
         for h = cbarHandles(:)'
-          if get(h, 'Type') == 'axes'
+          if strcmpi(get(h, 'Type'),'axes')
             m2t.cbarHandles = [m2t.cbarHandles, h];
           end
         end
