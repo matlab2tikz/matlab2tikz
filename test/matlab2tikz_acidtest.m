@@ -63,7 +63,7 @@ function matlab2tikz_acidtest(varargin)
   ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
-  ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogogical);
+  ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
 
   ipp = ipp.parse(ipp, varargin{:});
   % -----------------------------------------------------------------------
