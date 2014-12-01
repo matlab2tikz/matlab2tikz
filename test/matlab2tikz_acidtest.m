@@ -70,7 +70,7 @@ function matlab2tikz_acidtest(varargin)
 
   testsuite = ipp.Results.testsuite;
   testsuiteName = func2str(testsuite);
-  
+
   % try to clean the output
   cleanFiles(ipp.Results.cleanBefore);
 
@@ -157,7 +157,7 @@ function matlab2tikz_acidtest(varargin)
                   print(gcf, '-depsc2', reference_eps);
 
                   % On R2014b Win, line endings in .eps are Unix style
-                  % https://github.com/nschloe/matlab2tikz/issues/370
+                  % https://github.com/matlab2tikz/matlab2tikz/issues/370
                   ensureLineEndings(reference_eps);
 
               case 'Octave'
@@ -510,7 +510,7 @@ function str = formatIssuesForTeX(issues)
       str = '';
       return
   end
-  BASEURL = 'https://github.com/nschloe/matlab2tikz/issues/';
+  BASEURL = 'https://github.com/matlab2tikz/matlab2tikz/issues/';
   SEPARATOR = sprintf(' \n');
   strs = arrayfun(@(n) sprintf(['\\href{' BASEURL '%d}{\\#%d}'], n,n), issues, ...
                   'UniformOutput', false);

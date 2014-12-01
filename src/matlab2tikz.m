@@ -340,9 +340,9 @@ versionInfo = ['The latest updates can be retrieved from\n'         ,...
                'where you can also make suggestions and rate %s.\n' ,...
                'For usage instructions, bug reports, the latest '   ,...
                'development versions and more, see\n'               ,...
-               '   https://github.com/nschloe/matlab2tikz,\n'       ,...
-               '   https://github.com/nschloe/matlab2tikz/wiki,\n'  ,...
-               '   https://github.com/nschloe/matlab2tikz/issues.\n'];
+               '   https://github.com/matlab2tikz/matlab2tikz,\n'       ,...
+               '   https://github.com/matlab2tikz/matlab2tikz/wiki,\n'  ,...
+               '   https://github.com/matlab2tikz/matlab2tikz/issues.\n'];
 userInfo(m2t, versionInfo, m2t.website, m2t.name);
 
 %% Save the figure as TikZ to file
@@ -2117,7 +2117,7 @@ function [m2t, str] = drawHggroup(m2t, h)
         case 'scribe.scriberect'
             % Annotation: rectangle
             [m2t, str] = drawRectangle(m2t, h);
-            
+
         case 'unknown'
             % Weird spurious class from Octave.
             [m2t, str] = handleAllChildren(m2t, h);
@@ -2582,7 +2582,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     constMarkerkSize = length(sData) == 1; % constant marker size
 
     % Rescale marker size (not definitive, follow discussion on:
-    % https://github.com/nschloe/matlab2tikz/pull/316)
+    % https://github.com/matlab2tikz/matlab2tikz/pull/316)
     sData = translateMarkerSize(m2t, matlabMarker, sqrt(sData)/2);
 
     if length(cData) == 3
@@ -4031,7 +4031,7 @@ function [pTicks, pTickLabels] = ...
 
     % What MATLAB does when there the number of ticks and tick labels do not
     % coincide is somewhat unclear. To fix bug
-    %     https://github.com/nschloe/matlab2tikz/issues/161,
+    %     https://github.com/matlab2tikz/matlab2tikz/issues/161,
     % cut off the first entries in `ticks`.
     m = length(ticks);
     n = length(tickLabels);

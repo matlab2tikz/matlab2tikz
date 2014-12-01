@@ -1,6 +1,6 @@
-![matlab2tikz](https://raw.githubusercontent.com/wiki/nschloe/matlab2tikz/matlab2tikz.png)
+![matlab2tikz](https://raw.githubusercontent.com/wiki/matlab2tikz/matlab2tikz/matlab2tikz.png)
 
-[![Build Status](https://travis-ci.org/nschloe/matlab2tikz.svg?branch=master)](https://travis-ci.org/nschloe/matlab2tikz)
+[![Build Status](https://travis-ci.org/matlab2tikz/matlab2tikz.svg?branch=master)](https://travis-ci.org/matlab2tikz/matlab2tikz)
 
 This is matlab2tikz, a MATLAB(R) script for converting MATLAB(R) figures into
 native TikZ/Pgfplots figures.
@@ -66,4 +66,4 @@ There are reported incompatibilities with the following LaTeX packages:
 
 If you experience bugs, have nice examples of what matlab2tikz can do, or if
 you are just looking for more information, please visit the web page of
-matlab2tikz <https://github.com/nschloe/matlab2tikz>.
+matlab2tikz <https://github.com/matlab2tikz/matlab2tikz>.
