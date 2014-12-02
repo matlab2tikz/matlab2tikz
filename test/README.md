@@ -1,10 +1,17 @@
 This test module is part of matlab2tikz.
 
-It provides the means for easily comparing the results of a native PDF print of
-a figure in MATLAB as opposed to having it exported by matlab2tikz.
+It provides the
 
-USAGE
-=====
+Manual Tests
+============
+
+The manual tests allow easy comparison of a native PDF `print` output and the
+output produced by `matlab2tikz`. For the large amount of cases, however,
+this comparison has become somewhat unwieldly.
+For a good impression of the results, this test suite should be run in as 
+many different environments as possible: Octave, MATLAB 2014a or older, and,
+MATLAB 2014b or newer.
+
   1. Open MATLAB or Octave
   2. Make sure `matlab2tikz`, `testMatlab2tikz` are on your path, e.g. with
        
@@ -25,3 +32,17 @@ USAGE
 If all goes well, the result will be the file `tex/acid.pdf` which contains a
 list of the test figures, exported as PDF and right next to it the matlab2tikz
 generated plot.
+
+Dependencies
+------------
+
+ - all requirements of `matlab2tikz`
+ - a recent LaTeX distribution with `LuaLaTeX`
+ - `make`
+ - [`pdftk` (Server)](https://www.pdflabs.com/tools/pdftk-server/)
+ - all those executables available on your `PATH` (as in most Unices)
+
+Automated Tests
+===============
+
+The automated tests run using [Travis-CI](https://travis-ci.org)
