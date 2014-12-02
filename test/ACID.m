@@ -196,7 +196,7 @@ function [stat] = sine_with_markers ()
   stat.md5 = '553a69731e506f045024ebe5a01a4b56';
 
   x = -pi:pi/10:pi;
-  y = tan(sin(x)) - sin(tan(x));
+  y = sin(x);
   y(3) = NaN;
   y(7) = Inf;
   y(11) = -Inf;
