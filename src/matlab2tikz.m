@@ -454,10 +454,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     minimalPgfplotsVersion = formatPgfplotsVersion(m2t, m2t.pgfplotsVersion);
 
     environment = sprintf('%s %s',m2t.env, m2t.envVersion);
-    m2t.content.comment = sprintf(['This file was created by %s.\n', ...
-        ' Minimal pgfplots version: %s\n'], ...
-        m2t.name, ...
-        minimalPgfplotsVersion);
+    m2t.content.comment = sprintf('This file was created by %s.\n', m2t.name);
 
     if m2t.cmdOpts.Results.showInfo
         % disable this info if showInfo=false
@@ -2117,7 +2114,7 @@ function [m2t, str] = drawHggroup(m2t, h)
         case 'scribe.scriberect'
             % Annotation: rectangle
             [m2t, str] = drawRectangle(m2t, h);
-            
+
         case 'unknown'
             % Weird spurious class from Octave.
             [m2t, str] = handleAllChildren(m2t, h);
