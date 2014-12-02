@@ -47,6 +47,7 @@ fclose(fh);
 # <https://www.gnu.org/software/octave/doc/interpreter/Test-Functions.html>
 # since they don't account for exceptions in tests.
 addpath('../src/');
+addpath('./suites');
 success = test(testfile);
 
 if success
