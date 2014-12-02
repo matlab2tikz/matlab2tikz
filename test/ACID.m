@@ -340,6 +340,12 @@ function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
   stat.md5 = '';
 
+  if getEnvironment() == 'Octave'
+      fprintf( 'Octave can''t handle tight axes.\n\n' );
+      stat.skip = true;
+      return
+  end
+
   vspace = linspace(-40,40,20);
   speed_map = magic(20).';
   Q1_map = magic(20);
@@ -363,7 +369,7 @@ end
 % =========================================================================
 function [stat] = randomWithLines()
   stat.description = 'Lissajous points with lines.';
-  stat.md5 = '9ddd96d692c4262ec581bbddea5dc5c0';
+  stat.md5 = '8974f87e7849393b8535c0c9daa95ef6';
 
   beta = 42.42;
   t = 1:150;
