@@ -193,7 +193,7 @@ function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
   stat.description = [ 'Twisted plot of the sine function. '                   ,...
          'Pay particular attention to how markers and Infs/NaNs are treated.' ];
-  stat.md5 = '553a69731e506f045024ebe5a01a4b56';
+  stat.md5 = '10c124e00426e8ae7e7d7ccdffafcbd5';
 
   x = -pi:pi/10:pi;
   y = sin(x);
@@ -217,7 +217,7 @@ end
 % =========================================================================
 function [stat] = markerSizes()
   stat.description = 'Marker sizes.';
-  stat.md5 = '3c8448eba289a0143da956e3386ba0fc';
+  stat.md5 = '087e09b95a72130816a83d7bf15eb598';
 
   hold on;
 
@@ -230,7 +230,7 @@ end
 % =========================================================================
 function [stat] = markerSizes2()
   stat.description = 'Line plot with with different marker sizes.';
-  stat.md5 = 'a500472eccd06611d2aa6063387ce2fd';
+  stat.md5 = '726b8ec1a5067c9a868ca93b874e046b';
 
   hold on;
   grid on;
@@ -255,7 +255,7 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.md5 = 'a59a2a2295b5db533cc733feceda974b';
+  stat.md5 = '3befb2b182b0f3c2c19ba9f7fa22dc0e';
 
   x = -pi:.1:pi;
   y = sin(x);
