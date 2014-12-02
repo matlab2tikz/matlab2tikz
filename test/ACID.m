@@ -153,7 +153,7 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  stat.md5 = '2f08dbb3f961daa409c91ce0f5be65e4';
+  stat.md5 = 'cf67b60b0c4efe9cc1f270b7fa72f2ad';
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
@@ -172,7 +172,7 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
   stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
-  stat.md5 = '888ccfb8de61fe94ef1a4b21b515bbb2';
+  stat.md5 = '4edf67301092b2332595e840b4835268';
 
   fplot( @cos, [0,2*pi] );
 
@@ -193,10 +193,10 @@ function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
   stat.description = [ 'Twisted plot of the sine function. '                   ,...
          'Pay particular attention to how markers and Infs/NaNs are treated.' ];
-  stat.md5 = '96317b8317f3eddee9ca01ca338f6c73';
+  stat.md5 = '10c124e00426e8ae7e7d7ccdffafcbd5';
 
   x = -pi:pi/10:pi;
-  y = tan(sin(x)) - sin(tan(x));
+  y = sin(x);
   y(3) = NaN;
   y(7) = Inf;
   y(11) = -Inf;
@@ -217,7 +217,7 @@ end
 % =========================================================================
 function [stat] = markerSizes()
   stat.description = 'Marker sizes.';
-  stat.md5 = '466116e445acacf20b4d712600a43a63';
+  stat.md5 = '087e09b95a72130816a83d7bf15eb598';
 
   hold on;
 
@@ -230,7 +230,7 @@ end
 % =========================================================================
 function [stat] = markerSizes2()
   stat.description = 'Line plot with with different marker sizes.';
-  stat.md5 = '0392b76c0de39655f33710fbd6bd5ac8';
+  stat.md5 = '726b8ec1a5067c9a868ca93b874e046b';
 
   hold on;
   grid on;
@@ -255,7 +255,7 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.md5 = 'a59a2a2295b5db533cc733feceda974b';
+  stat.md5 = '3befb2b182b0f3c2c19ba9f7fa22dc0e';
 
   x = -pi:.1:pi;
   y = sin(x);
@@ -340,6 +340,12 @@ function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
   stat.md5 = '';
 
+  if getEnvironment() == 'Octave'
+      fprintf( 'Octave can''t handle tight axes.\n\n' );
+      stat.skip = true;
+      return
+  end
+
   vspace = linspace(-40,40,20);
   speed_map = magic(20).';
   Q1_map = magic(20);
@@ -363,7 +369,7 @@ end
 % =========================================================================
 function [stat] = randomWithLines()
   stat.description = 'Lissajous points with lines.';
-  stat.md5 = '9ddd96d692c4262ec581bbddea5dc5c0';
+  stat.md5 = '8974f87e7849393b8535c0c9daa95ef6';
 
   beta = 42.42;
   t = 1:150;
