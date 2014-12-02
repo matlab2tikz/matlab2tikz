@@ -153,7 +153,7 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  stat.md5 = '2f08dbb3f961daa409c91ce0f5be65e4';
+  stat.md5 = 'cf67b60b0c4efe9cc1f270b7fa72f2ad';
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
@@ -172,7 +172,7 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
   stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
-  stat.md5 = '888ccfb8de61fe94ef1a4b21b515bbb2';
+  stat.md5 = '4edf67301092b2332595e840b4835268';
 
   fplot( @cos, [0,2*pi] );
 
@@ -193,7 +193,7 @@ function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
   stat.description = [ 'Twisted plot of the sine function. '                   ,...
          'Pay particular attention to how markers and Infs/NaNs are treated.' ];
-  stat.md5 = '96317b8317f3eddee9ca01ca338f6c73';
+  stat.md5 = '553a69731e506f045024ebe5a01a4b56';
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -217,7 +217,7 @@ end
 % =========================================================================
 function [stat] = markerSizes()
   stat.description = 'Marker sizes.';
-  stat.md5 = '466116e445acacf20b4d712600a43a63';
+  stat.md5 = '3c8448eba289a0143da956e3386ba0fc';
 
   hold on;
 
@@ -230,7 +230,7 @@ end
 % =========================================================================
 function [stat] = markerSizes2()
   stat.description = 'Line plot with with different marker sizes.';
-  stat.md5 = '0392b76c0de39655f33710fbd6bd5ac8';
+  stat.md5 = 'a500472eccd06611d2aa6063387ce2fd';
 
   hold on;
   grid on;
