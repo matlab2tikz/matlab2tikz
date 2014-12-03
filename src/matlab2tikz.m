@@ -454,10 +454,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     minimalPgfplotsVersion = formatPgfplotsVersion(m2t, m2t.pgfplotsVersion);
 
     environment = sprintf('%s %s',m2t.env, m2t.envVersion);
-    m2t.content.comment = sprintf(['This file was created by %s.\n', ...
-        ' Minimal pgfplots version: %s\n'], ...
-        m2t.name, ...
-        minimalPgfplotsVersion);
+    m2t.content.comment = sprintf('This file was created by %s.\n', m2t.name);
 
     if m2t.cmdOpts.Results.showInfo
         % disable this info if showInfo=false
@@ -4768,8 +4765,11 @@ function c = prettyPrint(m2t, strings, interpreter)
         switch lower(interpreter)
             case 'latex' % Basic subset of the LaTeX markup language
 
-                % Replace $$...$$ with $...$ but otherwise leave untouched
-                string = regexprep(s, '^\$\$(.*)\$\$$', '$$1$');
+                % Replace $$...$$ with $...$ for groups, but otherwise leave
+                % untouched.
+                % Displaymath \[...\] seems to be unsupported by TikZ/PGF.
+                % If this changes, use '\\[$2\\]' as replacement below.
+                string = regexprep(s, '(\$\$)(.*?)(\$\$)', '\$$2\$');
 
             case 'tex' % Subset of plain TeX markup language
 
