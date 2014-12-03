@@ -1193,8 +1193,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     options = setAxisLimits(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get ticks along with the labels
-    [ticks, tickLabels, hasMinorTicks, tickDir] = getAxisTicks(m2t, handle, axis);
-    options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir);
+    [options] = getAxisTicks(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis label
     [m2t, options] = setAxisLabel(m2t, handle, axis, options);
@@ -1208,7 +1207,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     end
 end
 % ==============================================================================
-function [pgfTicks, pgfTickLabels, hasMinorTicks, tickDirection] = getAxisTicks(m2t, handle, axis)
+function [options] = getAxisTicks(m2t, handle, axis, options)
 % Return axis tick marks Pgfplots style. Nice: Tick lengths and such
 % details are taken care of by Pgfplots.
     if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
@@ -1250,6 +1249,9 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks, tickDirection] = getAxisTicks(
     keywordMinorTick = [upper(axis), 'MinorTick'];
     hasMinorTicks = strcmp(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
     tickDirection = getOrDefault(handle, 'TickDir', 'in');
+    
+    options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
+        hasMinorTicks, tickDirection);
 end
 % ==============================================================================
 function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir)
