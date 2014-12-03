@@ -1149,10 +1149,8 @@ function tag = getTag(handle)
 end
 % ==============================================================================
 function [m2t, options] = getAxisOptions(m2t, handle, axis)
-    if ~ismember(axis, {'x','y','z'})
-        error('matlab2tikz:illegalAxisSpecifier',...
-            'Illegal axis specifier ''%s''.', axis);
-    end
+    assertValidAxisSpecifier(axis);
+    
     options = opts_new();
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % axis colors
@@ -1210,10 +1208,7 @@ end
 function [options] = getAxisTicks(m2t, handle, axis, options)
 % Return axis tick marks Pgfplots style. Nice: Tick lengths and such
 % details are taken care of by Pgfplots.
-    if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
-        error('matlab2tikz:illegalAxisSpecifier',...
-            'Illegal axis specifier ''%s''.', axis);
-    end
+    assertValidAxisSpecifier(axis);
 
     keywordTickMode = [upper(axis), 'TickMode'];
     tickMode = get(handle, keywordTickMode);
@@ -1286,6 +1281,14 @@ function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTi
     elseif strcmpi(tickDir,'both')
         options = opts_add(options, ...
         'tick align','center');
+    end
+end
+% ==============================================================================
+function assertValidAxisSpecifier(axis)
+% assert that axis is a valid axis specifier
+    if ~ismember(axis, {'x','y','z'})
+        error('matlab2tikz:illegalAxisSpecifier', ...
+              'Illegal axis specifier "%s".', axis);
     end
 end
 % ==============================================================================
