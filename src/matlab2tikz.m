@@ -4765,8 +4765,11 @@ function c = prettyPrint(m2t, strings, interpreter)
         switch lower(interpreter)
             case 'latex' % Basic subset of the LaTeX markup language
 
-                % Replace $$...$$ with $...$ but otherwise leave untouched
-                string = regexprep(s, '^\$\$(.*)\$\$$', '$$1$');
+                % Replace $$...$$ with $...$ for groups, but otherwise leave
+                % untouched.
+                % Displaymath \[...\] seems to be unsupported by TikZ/PGF.
+                % If this changes, use '\\[$2\\]' as replacement below.
+                string = regexprep(s, '(\$\$)(.*?)(\$\$)', '\$$2\$');
 
             case 'tex' % Subset of plain TeX markup language
 
