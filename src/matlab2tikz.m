@@ -1203,33 +1203,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis label
-    axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
-    if ~isempty(axisLabel)
-        axisLabelInterpreter = ...
-            get(get(handle, [upper(axis),'Label']), 'Interpreter');
-        label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
-        if length(label) > 1
-            % If there's more than one cell item, the list
-            % is displayed multi-row in MATLAB(R).
-            % To replicate the same in Pgfplots, one can
-            % use xlabel={first\\second\\third} only if the
-            % alignment or the width of the "label box"
-            % is defined. This is a restriction that comes with
-            % TikZ nodes.
-            options = opts_add(options, ...
-                [axis, 'label style'], '{align=center}');
-        end
-        label = join(m2t, label,'\\[1ex]');
-        %if isVisible(handle)
-        options = opts_add(options, ...
-            [axis, 'label'], sprintf('{%s}', label));
-        %else
-        %    m2t.axesContainers{end}.options{end+1} = ...
-        %        sprintf(['extra description/.code={\n', ...
-        %                 '\\node[/pgfplots/every axis label,/pgfplots/every axis %s label]{%s};\n', ...
-        %                 '}'], axis, label);
-        %end
-    end
+    [m2t, options] = setAxisLabel(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get grids
     if strcmp(getOrDefault(handle, [upper(axis),'Grid'], 'off'), 'on');
@@ -1318,6 +1292,37 @@ function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTi
         'tick align','center');
     end
 end
+% ==============================================================================
+function [m2t, options] = setAxisLabel(m2t, handle, axis, options)
+% convert an {x,y,z} axis label to TikZ
+    axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
+    if ~isempty(axisLabel)
+        axisLabelInterpreter = ...
+            get(get(handle, [upper(axis),'Label']), 'Interpreter');
+        label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
+        if length(label) > 1
+            % If there's more than one cell item, the list
+            % is displayed multi-row in MATLAB(R).
+            % To replicate the same in Pgfplots, one can
+            % use xlabel={first\\second\\third} only if the
+            % alignment or the width of the "label box"
+            % is defined. This is a restriction that comes with
+            % TikZ nodes.
+            options = opts_add(options, ...
+                [axis, 'label style'], '{align=center}');
+        end
+        label = join(m2t, label,'\\[1ex]');
+        %if isVisible(handle)
+        options = opts_add(options, ...
+            [axis, 'label'], sprintf('{%s}', label));
+        %else
+        %    m2t.axesContainers{end}.options{end+1} = ...
+        %        sprintf(['extra description/.code={\n', ...
+        %                 '\\node[/pgfplots/every axis label,/pgfplots/every axis %s label]{%s};\n', ...
+        %                 '}'], axis, label);
+        %end
+    end
+    end
 % ==============================================================================
 function bool = axisIsVisible(axisHandle)
     if ~isVisible(axisHandle)
