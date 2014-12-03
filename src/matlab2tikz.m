@@ -1200,37 +1200,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get ticks along with the labels
     [ticks, tickLabels, hasMinorTicks, tickDir] = getAxisTicks(m2t, handle, axis);
-
-    % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
-    % the number of minor ticks is automatically determined by MATLAB(R) to
-    % fit the size of the axis. Until we know how to extract this number, use
-    % a reasonable default.
-    matlabDefaultNumMinorTicks = 3;
-    if ~isempty(ticks)
-        options = opts_add(options, ...
-            [axis,'tick'], sprintf('{%s}', ticks));
-    end
-    if ~isempty(tickLabels)
-        options = opts_add(options, ...
-            [axis,'ticklabels'], sprintf('{%s}', tickLabels));
-    end
-    if hasMinorTicks
-        options = opts_add(options, ...
-            [axis,'minorticks'], 'true');
-        if m2t.cmdOpts.Results.strict
-            options = ...
-                opts_add(options, ...
-                sprintf('minor %s tick num', axis), ...
-                sprintf('{%d}', matlabDefaultNumMinorTicks));
-        end
-    end
-    if strcmpi(tickDir,'out')
-        options = opts_add(options, ...
-            'tick align','outside');
-    elseif strcmpi(tickDir,'both')
-        options = opts_add(options, ...
-        'tick align','center');
-    end
+    options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis label
     axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
@@ -4034,6 +4004,41 @@ function [pgfTicks, pgfTickLabels, hasMinorTicks, tickDirection] = getAxisTicks(
     keywordMinorTick = [upper(axis), 'MinorTick'];
     hasMinorTicks = strcmp(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
     tickDirection = getOrDefault(handle, 'TickDir', 'in');
+end
+% ==============================================================================
+function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir)
+% set ticks options
+
+    % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
+    % the number of minor ticks is automatically determined by MATLAB(R) to
+    % fit the size of the axis. Until we know how to extract this number, use
+    % a reasonable default.
+    matlabDefaultNumMinorTicks = 3;
+    if ~isempty(ticks)
+        options = opts_add(options, ...
+            [axis,'tick'], sprintf('{%s}', ticks));
+    end
+    if ~isempty(tickLabels)
+        options = opts_add(options, ...
+            [axis,'ticklabels'], sprintf('{%s}', tickLabels));
+    end
+    if hasMinorTicks
+        options = opts_add(options, ...
+            [axis,'minorticks'], 'true');
+        if m2t.cmdOpts.Results.strict
+            options = ...
+                opts_add(options, ...
+                sprintf('minor %s tick num', axis), ...
+                sprintf('{%d}', matlabDefaultNumMinorTicks));
+        end
+    end
+    if strcmpi(tickDir,'out')
+        options = opts_add(options, ...
+            'tick align','outside');
+    elseif strcmpi(tickDir,'both')
+        options = opts_add(options, ...
+        'tick align','center');
+    end
 end
 % ==============================================================================
 function [pTicks, pTickLabels] = ...
