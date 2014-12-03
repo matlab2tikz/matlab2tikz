@@ -1240,6 +1240,85 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     end
 end
 % ==============================================================================
+function [pgfTicks, pgfTickLabels, hasMinorTicks, tickDirection] = getAxisTicks(m2t, handle, axis)
+% Return axis tick marks Pgfplots style. Nice: Tick lengths and such
+% details are taken care of by Pgfplots.
+    if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
+        error('matlab2tikz:illegalAxisSpecifier',...
+            'Illegal axis specifier ''%s''.', axis);
+    end
+
+    keywordTickMode = [upper(axis), 'TickMode'];
+    tickMode = get(handle, keywordTickMode);
+    keywordTick = [upper(axis), 'Tick'];
+    ticks = get(handle, keywordTick);
+    if isempty(ticks)
+        % If no ticks are present, we need to enforce this in any case.
+        pgfTicks = '\empty';
+    else
+        if strcmp(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict
+            % If the ticks are set automatically, and strict conversion is
+            % not required, then let Pgfplots take care of the ticks.
+            % In most cases, this looks a lot better anyway.
+            pgfTicks = [];
+        else % strcmp(tickMode,'manual') || m2t.cmdOpts.Results.strict
+            pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
+        end
+    end
+
+    keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
+    tickLabelMode = get(handle, keywordTickLabelMode);
+    keywordTickLabel = [upper(axis), 'TickLabel'];
+    tickLabels = cellstr(get(handle, keywordTickLabel));
+    if strcmp(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict
+        pgfTickLabels = [];
+    else % strcmp(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
+        keywordScale = [upper(axis), 'Scale'];
+        isAxisLog = strcmp(getOrDefault(handle,keywordScale, 'lin'), 'log');
+        [pgfTicks, pgfTickLabels] = ...
+            matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isAxisLog, tickLabelMode);
+    end
+
+    keywordMinorTick = [upper(axis), 'MinorTick'];
+    hasMinorTicks = strcmp(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
+    tickDirection = getOrDefault(handle, 'TickDir', 'in');
+end
+% ==============================================================================
+function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir)
+% set ticks options
+
+    % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
+    % the number of minor ticks is automatically determined by MATLAB(R) to
+    % fit the size of the axis. Until we know how to extract this number, use
+    % a reasonable default.
+    matlabDefaultNumMinorTicks = 3;
+    if ~isempty(ticks)
+        options = opts_add(options, ...
+            [axis,'tick'], sprintf('{%s}', ticks));
+    end
+    if ~isempty(tickLabels)
+        options = opts_add(options, ...
+            [axis,'ticklabels'], sprintf('{%s}', tickLabels));
+    end
+    if hasMinorTicks
+        options = opts_add(options, ...
+            [axis,'minorticks'], 'true');
+        if m2t.cmdOpts.Results.strict
+            options = ...
+                opts_add(options, ...
+                sprintf('minor %s tick num', axis), ...
+                sprintf('{%d}', matlabDefaultNumMinorTicks));
+        end
+    end
+    if strcmpi(tickDir,'out')
+        options = opts_add(options, ...
+            'tick align','outside');
+    elseif strcmpi(tickDir,'both')
+        options = opts_add(options, ...
+        'tick align','center');
+    end
+end
+% ==============================================================================
 function bool = axisIsVisible(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
@@ -3959,85 +4038,6 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
         % 'legend plot pos' is not set explicitly, since 'left' is default.
         lStyle = opts_add(lStyle, 'legend cell align', 'left');
         lStyle = opts_add(lStyle, 'align', 'left');
-    end
-end
-% ==============================================================================
-function [pgfTicks, pgfTickLabels, hasMinorTicks, tickDirection] = getAxisTicks(m2t, handle, axis)
-% Return axis tick marks Pgfplots style. Nice: Tick lengths and such
-% details are taken care of by Pgfplots.
-    if ~strcmpi(axis,'x') && ~strcmpi(axis,'y') && ~strcmpi(axis,'z')
-        error('matlab2tikz:illegalAxisSpecifier',...
-            'Illegal axis specifier ''%s''.', axis);
-    end
-
-    keywordTickMode = [upper(axis), 'TickMode'];
-    tickMode = get(handle, keywordTickMode);
-    keywordTick = [upper(axis), 'Tick'];
-    ticks = get(handle, keywordTick);
-    if isempty(ticks)
-        % If no ticks are present, we need to enforce this in any case.
-        pgfTicks = '\empty';
-    else
-        if strcmp(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict
-            % If the ticks are set automatically, and strict conversion is
-            % not required, then let Pgfplots take care of the ticks.
-            % In most cases, this looks a lot better anyway.
-            pgfTicks = [];
-        else % strcmp(tickMode,'manual') || m2t.cmdOpts.Results.strict
-            pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
-        end
-    end
-
-    keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
-    tickLabelMode = get(handle, keywordTickLabelMode);
-    keywordTickLabel = [upper(axis), 'TickLabel'];
-    tickLabels = cellstr(get(handle, keywordTickLabel));
-    if strcmp(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict
-        pgfTickLabels = [];
-    else % strcmp(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
-        keywordScale = [upper(axis), 'Scale'];
-        isAxisLog = strcmp(getOrDefault(handle,keywordScale, 'lin'), 'log');
-        [pgfTicks, pgfTickLabels] = ...
-            matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isAxisLog, tickLabelMode);
-    end
-
-    keywordMinorTick = [upper(axis), 'MinorTick'];
-    hasMinorTicks = strcmp(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
-    tickDirection = getOrDefault(handle, 'TickDir', 'in');
-end
-% ==============================================================================
-function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir)
-% set ticks options
-
-    % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
-    % the number of minor ticks is automatically determined by MATLAB(R) to
-    % fit the size of the axis. Until we know how to extract this number, use
-    % a reasonable default.
-    matlabDefaultNumMinorTicks = 3;
-    if ~isempty(ticks)
-        options = opts_add(options, ...
-            [axis,'tick'], sprintf('{%s}', ticks));
-    end
-    if ~isempty(tickLabels)
-        options = opts_add(options, ...
-            [axis,'ticklabels'], sprintf('{%s}', tickLabels));
-    end
-    if hasMinorTicks
-        options = opts_add(options, ...
-            [axis,'minorticks'], 'true');
-        if m2t.cmdOpts.Results.strict
-            options = ...
-                opts_add(options, ...
-                sprintf('minor %s tick num', axis), ...
-                sprintf('{%d}', matlabDefaultNumMinorTicks));
-        end
-    end
-    if strcmpi(tickDir,'out')
-        options = opts_add(options, ...
-            'tick align','outside');
-    elseif strcmpi(tickDir,'both')
-        options = opts_add(options, ...
-        'tick align','center');
     end
 end
 % ==============================================================================
