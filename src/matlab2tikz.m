@@ -765,20 +765,7 @@ function m2t = drawAxes(m2t, handle)
 % Input arguments:
 %    handle.................The axes environment handle.
 
-% Handle special cases.
-    %TODO: make sure these two options are NEVER needed
-    switch lower(get(handle, 'Tag'))
-        case 'colorbar'
-            m2t = handleColorbar(m2t, handle);
-            return
-        case 'legend'
-            % In MATLAB, an axis and its legend are siblings, while in Pgfplots,
-            % the \legend (or \addlegendentry) command must appear within the axis
-            % environment, so handle it there.
-            return
-        otherwise
-            % continue as usual
-    end
+    assertRegularAxes(handle);
 
     % Initialize empty environment.
     % Use a struct instead of a custom subclass of hgsetget (which would
@@ -1289,6 +1276,17 @@ function assertValidAxisSpecifier(axis)
     if ~ismember(axis, {'x','y','z'})
         error('matlab2tikz:illegalAxisSpecifier', ...
               'Illegal axis specifier "%s".', axis);
+    end
+end
+% ==============================================================================
+function assertRegularAxes(handle)
+% assert that the (axes) object specified by handle is a regular axes and not a
+% colorbar or a legend
+    tag = lower(get(handle,'Tag'));
+    if ismember(tag,{'colorbar','legend'})
+        error('matlab2tikz:notARegularAxes', ...
+              ['The object "%s" is not a regular axes object. ' ...
+               'It cannot be handled with drawAxes!'], handle);
     end
 end
 % ==============================================================================
