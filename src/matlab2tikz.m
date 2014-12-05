@@ -673,7 +673,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 
         end
 
-        [m2t, str] = addLegendInformation(m2t, str, legendString, interpreter);
+        str = addLegendInformation(m2t, str, legendString, interpreter);
 
         % append the environment
         pgfEnvironments{end+1} = str;
@@ -740,7 +740,7 @@ legendString = regexp(legendString,delimeter,'split');
 m2t.currentHandleHasLegend = hasLegend && ~isempty(legendString);
 end
 % ==============================================================================
-function [m2t, str] = addLegendInformation(m2t, str, legendString, interpreter)
+function str = addLegendInformation(m2t, str, legendString, interpreter)
 % Add legend after the plot data.
 % The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
 % the output might not necessarily be a string, but a cellstr.
@@ -4666,9 +4666,10 @@ function [val, isDefault] = getAndCheckDefault(type, handle, key, default)
     isDefault = isequal(val, default);
 end
 % ==============================================================================
-function [m2t, opts] = addIfNotDefault(m2t, type, handle, key, default, pgfKey, opts)
+function opts = addIfNotDefault(m2t, type, handle, key, default, pgfKey, opts)
 % sets an option in the options array named `pgfKey` if the MATLAB option is
 % not a default value
+% FIXME: this function is currently unused -- remove it in the future?
     [value, isDefault] = getAndCheckDefault(type, handle, key, default);
     if ~isDefault || m2t.cmdOpts.Results.strict
         opts = opts_add(opts, pgfKey, value);
