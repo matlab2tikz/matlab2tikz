@@ -279,7 +279,7 @@ end
 % =========================================================================
 function [stat] = linesWithOutliers()
     stat.description = 'Lines with outliers.';
-    stat.md5 = 'ea2084452c49d1a6e0379739371b2e0a';
+    stat.md5 = '64ed9bfaa4deb7bb221b7cf5ea8d1af1';
 
     far = 200;
     x = [ -far, -1,   -1,  -far, -10, -0.5, 0.5, 10,  far, 1,   1,    far, 10,   0.5, -0.5, -10,  -far ];
@@ -290,7 +290,7 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
-  stat.md5 = 'fd564136304fa8e0dac8365abee077b5';
+  stat.md5 = 'c4822b6a211e5fb8d2f3b3de225466d6';
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -322,7 +322,7 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
-  stat.md5 = '515a8b6209314b8a6ef0051b49b69508';
+  stat.md5 = '1e185d0ad8f2406b9db87da61d254ddb';
 
   contourf(peaks(20), 10);
   colorbar();
