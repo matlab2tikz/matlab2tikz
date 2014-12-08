@@ -7,6 +7,7 @@ before_install:
 script:
   - cd test && ./runtests
 notifications:
+  hipchat: f4c2c5f87adc85025545e5b59b3fbe@Matlab2tikz
   webhooks:
     urls:
       - https://webhooks.gitter.im/e/eb74a6e982908d4ce209
