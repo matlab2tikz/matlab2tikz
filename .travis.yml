@@ -7,6 +7,7 @@ before_install:
 script:
   - cd test && ./runtests
 notifications:
+  slack: matlab2tikz:wYUo2SR1k94tb0166bVXAqX0
   hipchat: f4c2c5f87adc85025545e5b59b3fbe@Matlab2tikz
   webhooks:
     urls:
