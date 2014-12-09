@@ -15,7 +15,7 @@ MATLAB 2014b or newer.
 
   1. Open MATLAB or Octave
   2. Make sure `matlab2tikz`, `testMatlab2tikz` are on your path, e.g. with
-       
+
         addpath(pwd);                       % for the test harness
         addpath(fullfile(pwd,'..','src'));  % for matlab2tikz
         addpath(fullfile(pwd,'suites'));    % for the test suites
