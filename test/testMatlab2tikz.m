@@ -11,8 +11,11 @@ function testMatlab2tikz(varargin)
 % TESTMATLAB2TIKZ('figureVisible', LOGICAL, ...)
 %   plots the figure visibly during the test process. Default: false
 %
-% TESTMATLAB2TIKZ('cleanBefore', LOGICAL, ...)
-%   tries to run "make clean" in the ./tex folder. Default: true
+% TESTMATLAB2TIKZ('callMake', LOGICAL, ...)
+%   uses "make" to further automate running the test suite, i.e.
+%    - runs "make distclean" in the ./test/tex folder before
+%   Your path must contain "make", this usually isn't the case on Windows!
+%   Default: false
 %
 % TESTMATLAB2TIKZ('testsuite', FUNCTION_HANDLE, ...)
 %   Determines which test suite is to be run. Default: @ACID
@@ -55,7 +58,6 @@ function testMatlab2tikz(varargin)
       error('Unknown environment. Need MATLAB(R) or GNU Octave.')
   end
 
-
   % -----------------------------------------------------------------------
   ipp = m2tInputParser;
 
@@ -64,12 +66,16 @@ function testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
   ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
+  ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
+  
+  ipp = ipp.deprecateParam(ipp,'cleanBefore', {'callMake'});
 
   ipp = ipp.parse(ipp, varargin{:});
+  
   % -----------------------------------------------------------------------
 
   % try to clean the output
-  cleanFiles(ipp.Results.cleanBefore);
+  cleanFiles(ipp.Results.callMake);
 
   % output streams
   stdout = 1;
