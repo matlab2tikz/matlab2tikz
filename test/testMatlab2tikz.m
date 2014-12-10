@@ -100,9 +100,7 @@ function testMatlab2tikz(varargin)
   % start overall timing
   elapsedTimeOverall = tic;
   
-  startFold(ipp,'all-tests');
   status = runIndicatedTests(ipp, env);
-  endFold(ipp,'all-tests');
   
   makeReport(ipp, status);
 
@@ -388,22 +386,6 @@ end
     nErrors = countNumberOfErrors(status);
     if nErrors > 0
         fprintf(stdout,'\n%3d of %3d tests failed\n', nErrors, numel(status));
-    end
-end
-% =========================================================================
-function startFold(ipp, name)
-% starts a folding region in Travis
-    if strcmpi(ipp.Results.report,'travis')
-        stdout = 1;
-        fprintf(stdout, 'travis_fold:start:#{%s}\r\n', name);
-    end
-end
-% =========================================================================
-function endFold(ipp, name)
-% ends a folding region in Travis
-    if strcmpi(ipp.Results.report,'travis')
-        stdout = 1;
-        fprintf(stdout, 'travis_fold:end:#{%s}\r\n', name);
     end
 end
 % =========================================================================
