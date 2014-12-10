@@ -64,9 +64,6 @@ function testMatlab2tikz(varargin)
 
   % In which environment are we?
   env = getEnvironment();
-  if ~strcmp(env, 'MATLAB') && ~strcmp(env, 'Octave')
-      error('Unknown environment. Need MATLAB(R) or GNU Octave.')
-  end
 
   % -----------------------------------------------------------------------
   ipp = m2tInputParser;
@@ -541,18 +538,20 @@ end
 function [env,versionString] = getEnvironment()
   % Check if we are in MATLAB or Octave.
   % Calling ver with an argument: iterating over all entries is very slow
-  alternatives = {'MATLAB','Octave'};
-  for iCase = 1:numel(alternatives)
-      env   = alternatives{iCase};
+  supportedEnvironments = {'MATLAB', 'Octave'};
+  for iCase = 1:numel(supportedEnvironments)
+      env   = supportedEnvironments{iCase};
       vData = ver(env);
       if ~isempty(vData)
           versionString = vData.Version;
           return; % found the right environment
       end
   end
-  % otherwise:
-  env = [];
-  versionString = [];
+  % no suitable environment found
+  if ~ismember(env, supportedEnvironments)
+      error('testMatlab2tikz:UnknownEnvironment',...
+            'Unknown environment. Only MATLAB and Octave are supported.')
+  end
 end
 % =========================================================================
 function [formatted, OSType, OSVersion] = OSVersion()
