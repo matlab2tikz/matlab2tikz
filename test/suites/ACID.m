@@ -883,6 +883,12 @@ function [stat] = errorBars ()
   stat.description = 'Generic error bar plot.';
   stat.md5 = '64d1857153d00a61a038013a75db2eb4';
 
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf( 'errorbar() false opens window. Can''t use for testing on server .\n\n' );
+      stat.skip = true;
+      return;
+  end
+
   plotData = 1:10;
   [u,s,v] = svd(magic(11));
 
@@ -899,6 +905,12 @@ function [stat] = errorBars2 ()
       fprintf( 'Data set not found. Skipping.\n\n' );
       stat.skip = true;
       return
+  end
+
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf( 'errorbar() false opens window. Can''t use for testing on server .\n\n' );
+      stat.skip = true;
+      return;
   end
 
   data = load( 'myCount.dat' );
