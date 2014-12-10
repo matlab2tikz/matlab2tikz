@@ -823,6 +823,12 @@ function [stat] = subplot2x2b ()
   stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.';
   stat.md5 = '4ab5bf2b7b10082f59beedea2d4abf5c';
 
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf('Output seems to depend on Octave version. Skipping.\n\n');
+      stat.skip = true;
+      return;
+  end
+
   x = (1:5);
 
   subplot(2,2,1);
