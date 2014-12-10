@@ -16,6 +16,10 @@ function testMatlab2tikz(varargin)
 %    - runs "make distclean" in the ./test/tex folder before
 %   Your path must contain "make", this usually isn't the case on Windows!
 %   Default: false
+% 
+% TESTMATLAB2TIKZ('exitAfterTests', LOGICAL, ...)
+%   Shuts down MATLAB/Octave after running the test suite. The exit code is the
+%   number of errors caught. Default: false.
 %
 % TESTMATLAB2TIKZ('testsuite', FUNCTION_HANDLE, ...)
 %   Determines which test suite is to be run. Default: @ACID
@@ -67,6 +71,7 @@ function testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
   ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'exitAfterTests', false, @islogical);
   
   ipp = ipp.deprecateParam(ipp,'cleanBefore', {'callMake'});
 
@@ -98,6 +103,7 @@ function testMatlab2tikz(varargin)
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 
+  exitAfterRunningTests(ipp, status);
 end
 % =========================================================================
 function indices = sanitizeFunctionIndices(ipp)
@@ -298,6 +304,15 @@ function cleanFiles(cleanBefore)
             fprintf(2, '\tNot completed succesfully\n\n');
         end
         cd(cwd);
+    end
+end
+% =========================================================================
+function exitAfterRunningTests(ipp, status)
+% (conditionally) closes MATLAB/Octave after running the test suite. The 
+% error code used, indicates how many errors were found.
+    if ipp.Results.exitAfterTests
+        nErrors = countNumberOfErrors(status);
+        exit(nErrors);
     end
 end
 % =========================================================================
@@ -641,6 +656,23 @@ if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
     fprintf(fid,'%s',str);
     fclose(fid);
 end
+end
+% =========================================================================
+function nErrors = countNumberOfErrors(status)
+% counts the number of errors in a status cell array
+    nErrors = 0;
+    % probably this can be done more compactly using cellfun, etc.
+    for iTest = 1:numel(status)
+        S = status{iTest};
+        stages = getStagesFromStatus(S);
+        errorInThisTest = false;
+        for jStage = 1:numel(stages)
+            errorInThisTest = errorInThisTest || S.(stages{jStage}).error;
+        end
+        if errorInThisTest
+            nErrors = nErrors + 1;
+        end
+    end
 end
 % =========================================================================
 function errorOccurred = errorHasOccurred(status)
