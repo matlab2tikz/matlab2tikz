@@ -583,121 +583,6 @@ function texfile_tab_completion_finish(texfile_handle)
 
 end
 % =========================================================================
-function [env,versionString] = getEnvironment()
-  % Check if we are in MATLAB or Octave.
-  % Calling ver with an argument: iterating over all entries is very slow
-  supportedEnvironments = {'MATLAB', 'Octave'};
-  for iCase = 1:numel(supportedEnvironments)
-      env   = supportedEnvironments{iCase};
-      vData = ver(env);
-      if ~isempty(vData)
-          versionString = vData.Version;
-          return; % found the right environment
-      end
-  end
-  % no suitable environment found
-  if ~ismember(env, supportedEnvironments)
-      error('testMatlab2tikz:UnknownEnvironment',...
-            'Unknown environment. Only MATLAB and Octave are supported.')
-  end
-end
-% =========================================================================
-function [formatted, OSType, OSVersion] = OSVersion()
-    if ismac
-        OSType = 'Mac OS';
-        [dummy, OSVersion] = system('sw_vers -productVersion');
-    elseif ispc
-        OSType = '';% will already contain Windows in the output of `ver`
-        [dummy, OSVersion] = system('ver');
-    elseif isunix
-        OSType = 'Unix';
-        [dummy, OSVersion] = system('uname -r');
-    else
-        OSType = '';
-        OSVersion = '';
-    end
-    formatted = strtrim([OSType ' ' OSVersion]);
-end
-% =========================================================================
-function msg = format_error_message(e)
-    msg = '';
-    if ~isempty(e.message)
-        msg = sprintf('%serror: %s\n', msg, e.message);
-    end
-    if ~isempty(e.identifier)
-        if strfind(lower(e.identifier),'testmatlab2tikz:')
-            % When "errors" occur in the test framework, i.e. a hash mismatch
-            % or no hash provided, there is no need to be very verbose.
-            % So we don't return the msgid and the stack trace in those cases!
-            return % only return the message
-        end
-        msg = sprintf('%serror: %s\n', msg, e.identifier);
-    end
-    if ~isempty(e.stack)
-        msg = sprintf('%serror: called from:\n', msg);
-        for ee = e.stack(:)'
-            msg = sprintf('%serror:   %s at line %d, in function %s\n', ...
-                          msg, ee.file, ee.line, ee.name);
-        end
-    end
-end
-% =========================================================================
-function disp_error_message(env, msg)
-    stderr = 2;
-    % When displaying the error message in MATLAB, all backslashes
-    % have to be replaced by two backslashes. This must not, however,
-    % be applied constantly as the string that's saved to the LaTeX
-    % output must have only one backslash.
-    if strcmp(env, 'MATLAB')
-        fprintf(stderr, strrep(msg, '\', '\\'));
-    else
-        fprintf(stderr, msg);
-    end
-end
-% =========================================================================
-function [formatted,treeish] = VersionControlIdentifier()
-% This function gives the (git) commit ID of matlab2tikz
-%
-% This assumes the standard directory structure as used by Nico's master branch:
-%     SOMEPATH/src/matlab2tikz.m with a .git directory in SOMEPATH.
-%
-% The HEAD of that repository is determined from file system information only
-% by following dynamic references (e.g. ref:refs/heds/master) in branch files
-% until an absolute commit hash (e.g. 1a3c9d1...) is found.
-% NOTE: Packed branch references are NOT supported by this approach
-    MAXITER     = 10; % stop following dynamic references after a while
-    formatted   = '';
-    REFPREFIX   = 'ref:';
-    isReference = @(treeish)(any(strfind(treeish, REFPREFIX)));
-    treeish     = [REFPREFIX 'HEAD'];
-    try
-        % get the matlab2tikz directory
-        m2tDir = fileparts(mfilename('fullpath'));
-        gitDir = fullfile(m2tDir,'..','.git');
-
-        nIter = 1;
-        while isReference(treeish)
-            refName    = treeish(numel(REFPREFIX)+1:end);
-            branchFile = fullfile(gitDir, refName);
-
-            if exist(branchFile, 'file') && nIter < MAXITER
-                fid     = fopen(branchFile,'r');
-                treeish = fscanf(fid,'%s');
-                fclose(fid);
-                nIter   = nIter + 1;
-            else % no branch file or iteration limit reached
-                treeish = '';
-                return;
-            end
-        end
-    catch %#ok
-        treeish = '';
-    end
-    if ~isempty(treeish)
-        formatted = ['  Commit & ' treeish ' \\\\ \n'];
-    end
-end
-% =========================================================================
 function texName = name2tex(matlabIdentifier)
 texName = strrep(matlabIdentifier, '_', '\_');
 end
@@ -815,3 +700,117 @@ function [stage, errorHasOccurred] = errorHandler(e,env)
     disp_error_message(env, stage.message);
 end
 % =========================================================================
+function [env,versionString] = getEnvironment()
+  % Check if we are in MATLAB or Octave.
+  % Calling ver with an argument: iterating over all entries is very slow
+  supportedEnvironments = {'MATLAB', 'Octave'};
+  for iCase = 1:numel(supportedEnvironments)
+      env   = supportedEnvironments{iCase};
+      vData = ver(env);
+      if ~isempty(vData)
+          versionString = vData.Version;
+          return; % found the right environment
+      end
+  end
+  % no suitable environment found
+  if ~ismember(env, supportedEnvironments)
+      error('testMatlab2tikz:UnknownEnvironment',...
+            'Unknown environment. Only MATLAB and Octave are supported.')
+  end
+end
+% =========================================================================
+function [formatted, OSType, OSVersion] = OSVersion()
+    if ismac
+        OSType = 'Mac OS';
+        [dummy, OSVersion] = system('sw_vers -productVersion');
+    elseif ispc
+        OSType = '';% will already contain Windows in the output of `ver`
+        [dummy, OSVersion] = system('ver');
+    elseif isunix
+        OSType = 'Unix';
+        [dummy, OSVersion] = system('uname -r');
+    else
+        OSType = '';
+        OSVersion = '';
+    end
+    formatted = strtrim([OSType ' ' OSVersion]);
+end
+% =========================================================================
+function msg = format_error_message(e)
+    msg = '';
+    if ~isempty(e.message)
+        msg = sprintf('%serror: %s\n', msg, e.message);
+    end
+    if ~isempty(e.identifier)
+        if strfind(lower(e.identifier),'testmatlab2tikz:')
+            % When "errors" occur in the test framework, i.e. a hash mismatch
+            % or no hash provided, there is no need to be very verbose.
+            % So we don't return the msgid and the stack trace in those cases!
+            return % only return the message
+        end
+        msg = sprintf('%serror: %s\n', msg, e.identifier);
+    end
+    if ~isempty(e.stack)
+        msg = sprintf('%serror: called from:\n', msg);
+        for ee = e.stack(:)'
+            msg = sprintf('%serror:   %s at line %d, in function %s\n', ...
+                          msg, ee.file, ee.line, ee.name);
+        end
+    end
+end
+% =========================================================================
+function disp_error_message(env, msg)
+    stderr = 2;
+    % When displaying the error message in MATLAB, all backslashes
+    % have to be replaced by two backslashes. This must not, however,
+    % be applied constantly as the string that's saved to the LaTeX
+    % output must have only one backslash.
+    if strcmp(env, 'MATLAB')
+        fprintf(stderr, strrep(msg, '\', '\\'));
+    else
+        fprintf(stderr, msg);
+    end
+end
+% =========================================================================
+function [formatted,treeish] = VersionControlIdentifier()
+% This function gives the (git) commit ID of matlab2tikz
+%
+% This assumes the standard directory structure as used by Nico's master branch:
+%     SOMEPATH/src/matlab2tikz.m with a .git directory in SOMEPATH.
+%
+% The HEAD of that repository is determined from file system information only
+% by following dynamic references (e.g. ref:refs/heds/master) in branch files
+% until an absolute commit hash (e.g. 1a3c9d1...) is found.
+% NOTE: Packed branch references are NOT supported by this approach
+    MAXITER     = 10; % stop following dynamic references after a while
+    formatted   = '';
+    REFPREFIX   = 'ref:';
+    isReference = @(treeish)(any(strfind(treeish, REFPREFIX)));
+    treeish     = [REFPREFIX 'HEAD'];
+    try
+        % get the matlab2tikz directory
+        m2tDir = fileparts(mfilename('fullpath'));
+        gitDir = fullfile(m2tDir,'..','.git');
+
+        nIter = 1;
+        while isReference(treeish)
+            refName    = treeish(numel(REFPREFIX)+1:end);
+            branchFile = fullfile(gitDir, refName);
+
+            if exist(branchFile, 'file') && nIter < MAXITER
+                fid     = fopen(branchFile,'r');
+                treeish = fscanf(fid,'%s');
+                fclose(fid);
+                nIter   = nIter + 1;
+            else % no branch file or iteration limit reached
+                treeish = '';
+                return;
+            end
+        end
+    catch %#ok
+        treeish = '';
+    end
+    if ~isempty(treeish)
+        formatted = ['  Commit & ' treeish ' \\\\ \n'];
+    end
+end
