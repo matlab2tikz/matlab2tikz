@@ -126,12 +126,8 @@ function testMatlab2tikz(varargin)
       
       status{k} = execute_save_stage(status{k}, ipp, env, testNumber);
       status{k} = execute_tikz_stage(status{k}, ipp, env, testNumber);
-
-      % ...and finally write the bits to the LaTeX file
-      reference_fig = status{k}.saveStage.texReference;
-      gen_pdf = status{k}.tikzStage.pdfFile;
-      texfile_addtest(fh, reference_fig, gen_pdf, status{k}, testNumber, testsuiteName);
-
+      status{k} = execute_hash_stage(status{k}, ipp, env, testNumber);
+      
       if ~status{k}.closeall
           close(status{k}.plotStage.fig_handle);
       else
@@ -139,8 +135,16 @@ function testMatlab2tikz(varargin)
       end
 
       elapsedTime = toc(elapsedTime);
+      status{k}.elapsedTime = elapsedTime;
       fprintf(stdout, '%s ', status{k}.function);
       fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
+  end
+  %% generate report
+  for k = 1:length(indices)
+      % ...and finally write the bits to the LaTeX file
+      reference_fig = status{k}.saveStage.texReference;
+      gen_pdf = status{k}.tikzStage.pdfFile;
+      texfile_addtest(fh, reference_fig, gen_pdf, status{k}, testNumber, testsuiteName);
   end
 
   % Write the summary table to the LaTeX file
@@ -289,6 +293,20 @@ function [status] = execute_tikz_stage(status, ipp, env, testNumber)
     end
     status.tikzStage.texFile = gen_tex;
     status.tikzStage.pdfFile = gen_pdf;
+end
+% =========================================================================
+function [status] = execute_hash_stage(status, ipp, env, testNumber)
+    %TODO: check hash values
+    %TODO: retrieve reference hash
+    %TODO: calculate file hash
+    
+    expected = '';
+    calculated = '';
+    status.hashStage = emptyStage();
+    
+    status.hashStage.pass     = strcmpi(expected, calculated);
+    status.hashStage.expected = expected;
+    status.hashStage.found    = calculated;
 end
 % =========================================================================
 function cleanFiles(cleanBefore)
@@ -584,7 +602,8 @@ defaultStatus = struct('function',               '', ...
                        'extraCleanfigureOptions',{cell(0)}, ...
                        'plotStage',              emptyStage(), ...
                        'saveStage',              emptyStage(), ...
-                       'tikzStage',              emptyStage());
+                       'tikzStage',              emptyStage(), ...
+                       'hashStage',              emptyStage());
 end
 % =========================================================================
 function stage = emptyStage()
