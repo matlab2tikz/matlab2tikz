@@ -111,10 +111,9 @@ function testMatlab2tikz(varargin)
   status = cell(length(indices), 1);
 
   for k = 1:length(indices)
-      
+      testNumber = indices(k);
       fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
 
-      testNumber = indices(k);
       status{k} = execute_plot_stage(ipp, testsuite, testNumber, defaultStatus);
 
       % plot not successful
@@ -122,37 +121,13 @@ function testMatlab2tikz(varargin)
           continue
       end
 
-      reference_eps = sprintf('data/reference/test%d-reference.eps', indices(k));
-      reference_pdf = sprintf('data/reference/test%d-reference.pdf', indices(k));
-      reference_fig = sprintf('data/reference/test%d-reference', indices(k));
-      gen_tex = sprintf('data/converted/test%d-converted.tex', indices(k));
-      gen_pdf  = sprintf('data/converted/test%d-converted.pdf', indices(k));
+      gen_tex = sprintf('data/converted/test%d-converted.tex', testNumber);
+      gen_pdf  = sprintf('data/converted/test%d-converted.pdf', testNumber);
 
       elapsedTime = tic;
-
-      % Save reference output as PDF
-      try
-          switch env
-              case 'MATLAB'
-                  % MATLAB does not generate properly cropped PDF files.
-                  % So, we generate EPS files that are converted later on.
-                  print(gcf, '-depsc2', reference_eps);
-
-                  % On R2014b Win, line endings in .eps are Unix style
-                  % https://github.com/matlab2tikz/matlab2tikz/issues/370
-                  ensureLineEndings(reference_eps);
-
-              case 'Octave'
-                  % In Octave, figures are properly cropped when using  print().
-                  print(reference_pdf, '-dpdf', '-S415,311', '-r150');
-                  pause(1.0)
-              otherwise
-                  error('Unknown environment. Need MATLAB(R) or GNU Octave.')
-          end
-      catch %#ok
-          e = lasterror('reset'); %#ok
-          [status{k}.saveStage, errorHasOccurred] = errorHandler(e, env);
-      end
+      
+      status{k} = execute_save_stage(status{k}, env, testNumber);
+    
       % now, test matlab2tikz
       try
           cleanfigure(status{k}.extraCleanfigureOptions{:});
@@ -173,6 +148,7 @@ function testMatlab2tikz(varargin)
       end
 
       % ...and finally write the bits to the LaTeX file
+      reference_fig = status{k}.saveStage.texReference;
       texfile_addtest(fh, reference_fig, gen_pdf, status{k}, indices(k), testsuiteName);
 
       if ~status{k}.closeall
@@ -271,6 +247,40 @@ function [status] = execute_plot_stage(ipp, testsuite, index, defaultStatus)
     if status.skip || errorHasOccurred
         close(fig_handle);
     end
+end
+% =========================================================================
+function [status] = execute_save_stage(status, env, testNumber)
+% save stage: saves the figure to EPS/PDF depending on env
+    reference_eps = sprintf('data/reference/test%d-reference.eps', testNumber);
+    reference_pdf = sprintf('data/reference/test%d-reference.pdf', testNumber);
+    reference_fig = sprintf('data/reference/test%d-reference', testNumber);
+    
+    % Save reference output as PDF
+    try
+        switch env
+            case 'MATLAB'
+                % MATLAB does not generate properly cropped PDF files.
+                % So, we generate EPS files that are converted later on.
+                print(gcf, '-depsc2', reference_eps);
+                
+                % On R2014b Win, line endings in .eps are Unix style
+                % https://github.com/matlab2tikz/matlab2tikz/issues/370
+                ensureLineEndings(reference_eps);
+                
+            case 'Octave'
+                % In Octave, figures are properly cropped when using  print().
+                print(reference_pdf, '-dpdf', '-S415,311', '-r150');
+                pause(1.0)
+            otherwise
+                error('Unknown environment. Need MATLAB(R) or GNU Octave.')
+        end
+    catch %#ok
+        e = lasterror('reset'); %#ok
+        [status.saveStage, errorHasOccurred] = errorHandler(e, env);
+    end
+    status.saveStage.epsFile = reference_eps;
+    status.saveStage.pdfFile = reference_pdf;
+    status.saveStage.texReference = reference_fig;
 end
 % =========================================================================
 function cleanFiles(cleanBefore)
