@@ -186,7 +186,7 @@ function status = runIndicatedTests(ipp, env)
         status{k} = execute_tikz_stage(status{k}, ipp, env, testNumber);
         status{k} = execute_hash_stage(status{k}, ipp, env, testNumber);
         
-        if ~status{k}.closeall
+        if ~status{k}.closeall && ~isempty(status{k}.plotStage.fig_handle)
             close(status{k}.plotStage.fig_handle);
         else
             close all;
