@@ -112,7 +112,7 @@ function testMatlab2tikz(varargin)
 
   exitAfterRunningTests(ipp, status);
 end
-% =========================================================================
+% INPUT VALIDATION =============================================================
 function bool = isValidReportMode(str)
 % validation of the report mode (i.e. LaTeX or Travis)
     bool = ischar(str) && ismember(lower(str), {'latex','travis'});
@@ -139,7 +139,7 @@ function ipp = sanitizeReportMode(ipp)
     % sanitizes the report mode
     ipp.Results.report = lower(ipp.Results.report);
 end
-% =========================================================================
+% TEST RUNNER ==================================================================
 function status = runIndicatedTests(ipp, env)
 % run all indicated tests in the test suite
     % cell array to accomodate different structure
@@ -306,7 +306,7 @@ function [status] = execute_hash_stage(status, ipp, env, testNumber)
     status.hashStage.expected = expected;
     status.hashStage.found    = calculated;
 end
-% =========================================================================
+% PREPARATION AND SHUTDOWN =====================================================
 function cleanFiles(cleanBefore)
 % clean output files in ./tex using make
     if cleanBefore && exist(fullfile('tex','Makefile'),'file')
@@ -333,6 +333,19 @@ function exitAfterRunningTests(ipp, status)
         exit(nErrors);
     end
 end
+% REPORT GENERATION ============================================================
+function makeReport(ipp, status)
+    switch ipp.Results.report
+        case 'latex'
+            makeLatexReport(ipp, status);
+        case 'travis'
+            makeTravisReport(ipp, status);
+    end 
+end
+% =========================================================================
+function makeTravisReport(ipp, status)
+    
+end
 % =========================================================================
 function startFold(ipp, name)
 % starts a folding region in Travis
@@ -348,19 +361,6 @@ function endFold(ipp, name)
         stdout = 1;
         fprintf(stdout, 'travis_fold:end:#{%s}\n', name);
     end
-end
-% =========================================================================
-function makeReport(ipp, status)
-    switch ipp.Results.report
-        case 'latex'
-            makeLatexReport(ipp, status);
-        case 'travis'
-            makeTravisReport(ipp, status);
-    end 
-end
-% =========================================================================
-function makeTravisReport(ipp, status)
-    
 end
 % =========================================================================
 function makeLatexReport(ipp, status)
