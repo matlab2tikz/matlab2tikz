@@ -96,8 +96,6 @@ function testMatlab2tikz(varargin)
 
   % start overall timing
   elapsedTimeOverall = tic;
-
-  errorHasOccurred = false;
   
   status = runIndicatedTests(ipp, env, indices);
 
@@ -145,7 +143,7 @@ function testMatlab2tikz(varargin)
   texfile_tab_completion_finish(fh);
 
   % Write the error messages to the LaTeX file if there are any
-  if errorHasOccurred
+  if errorHasOccurred(status)
       fprintf(fh, '\\section*{Error messages}\n\\scriptsize\n');
       for k = 1:length(indices)
           stat = status{k};
@@ -625,6 +623,22 @@ if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
     fprintf(fid,'%s',str);
     fclose(fid);
 end
+end
+% =========================================================================
+function bool = errorHasOccurred(status)
+    bool = false;
+    if iscell(status)
+        for iStatus = 1:numel(status)
+            bool = bool || errorHasOccurred(status{iStatus});
+        end
+    else
+        fields = fieldnames(status);
+        stages = fields(cellfun(@(f) ~isempty(strfind(f,'Stage')), fields));
+        for iStage = 1:numel(stages)
+            thisStage = status.(stages{iStage});
+            bool = bool || thisStage.error;
+        end
+    end
 end
 % =========================================================================
 function defaultStatus = emptyStatus()
