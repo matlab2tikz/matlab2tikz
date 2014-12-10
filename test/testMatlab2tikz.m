@@ -296,15 +296,33 @@ function [status] = execute_tikz_stage(status, ipp, env, testNumber)
 end
 % =========================================================================
 function [status] = execute_hash_stage(status, ipp, env, testNumber)
-    %TODO: check hash values
-    %TODO: retrieve reference hash
-    %TODO: calculate file hash
-    
     expected = '';
     calculated = '';
-    status.hashStage = emptyStage();
-    
-    status.hashStage.pass     = strcmpi(expected, calculated);
+    try
+        if isfield(status,'md5')
+            %TODO: we should use a more robust mechanisme than passing the hash
+            % from the test 
+            expected = status.md5;
+        else
+            error('testMatlab2tikz:NoHashProvided', 'No reference hash provided');
+        end
+        
+        switch env
+            case 'Octave'
+                calculated = md5sum(status.tikzStage.texFile);
+            case 'MATLAB'
+                %TODO: implement MD5 for MATLAB (this exists somewhere online)
+                error('testMatlab2tikz:NoHashAlgorithm', ...
+                      'MD5 algorithm is not implemented in MATLAB');
+        end
+        
+        assert(strcmpi(expected, calculated), 'testMatlab2tikz:HashMismatch', ...
+               'The hash "%s" does not match the reference hash "%s"', ...
+               calculated, expected);
+    catch %#ok
+        e = lasterror('reset'); %#ok
+        [status.hashStage] = errorHandler(e, env);
+    end
     status.hashStage.expected = expected;
     status.hashStage.found    = calculated;
 end
