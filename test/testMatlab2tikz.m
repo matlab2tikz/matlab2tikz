@@ -98,72 +98,8 @@ function testMatlab2tikz(varargin)
   elapsedTimeOverall = tic;
   
   status = runIndicatedTests(ipp, env, indices);
-
-  %% generate report
-  % first, initialize the tex output
-  texfile = 'tex/acid.tex';
-  fh = fopen(texfile, 'w');
-  assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
-  texfile_init(fh);
   
-  for k = 1:length(indices)
-      testNumber = indices(k);
-      % ...and finally write the bits to the LaTeX file
-      reference_fig = status{k}.saveStage.texReference;
-      gen_pdf = status{k}.tikzStage.pdfFile;
-      texfile_addtest(fh, reference_fig, gen_pdf, status{k}, testNumber, testsuiteName);
-  end
-
-  % Write the summary table to the LaTeX file
-  texfile_tab_completion_init(fh)
-  for k = 1:length(indices)
-      stat = status{k};
-      % Break table up into pieces if it gets too long for one page
-      if ~mod(k,35)
-          texfile_tab_completion_finish(fh);
-          texfile_tab_completion_init(fh);
-      end
-
-      fprintf(fh, '%d & \\texttt{%s}', indices(k), name2tex(stat.function));
-      if stat.skip
-          fprintf(fh, ' & --- & skipped & ---');
-      else
-          for err = [stat.plotStage.error, ...
-                     stat.saveStage.error, ...
-                     stat.tikzStage.error]
-              if err
-                  fprintf(fh, ' & \\textcolor{red}{failed}');
-              else
-                  fprintf(fh, ' & \\textcolor{green!50!black}{passed}');
-              end
-          end
-      end
-      fprintf(fh, ' \\\\\n');
-  end
-  texfile_tab_completion_finish(fh);
-
-  % Write the error messages to the LaTeX file if there are any
-  if errorHasOccurred(status)
-      fprintf(fh, '\\section*{Error messages}\n\\scriptsize\n');
-      for k = 1:length(indices)
-          stat = status{k};
-          if isempty(stat.plotStage.message) && ...
-             isempty(stat.saveStage.message) && ...
-             isempty(stat.tikzStage.message)
-              continue % No error messages for this test case
-          end
-
-          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), name2tex(stat.function));
-          print_verbatim_information(fh, 'Plot generation', stat.plotStage.message);
-          print_verbatim_information(fh, 'PDF generation' , stat.saveStage.message);
-          print_verbatim_information(fh, 'matlab2tikz'    , stat.tikzStage.message);
-      end
-      fprintf(fh, '\n\\normalsize\n\n');
-  end
-
-  % now, finish off the file and close file and window
-  texfile_finish(fh, testsuite);
-  fclose(fh);
+  makeLatexReport(ipp, status, indices);
 
   % print out overall timing
   elapsedTimeOverall = toc(elapsedTimeOverall);
@@ -353,6 +289,77 @@ function cleanFiles(cleanBefore)
         end
         cd(cwd);
     end
+end
+% =========================================================================
+function makeLatexReport(ipp, status, indices)
+% generate a LaTeX report
+  testsuite = ipp.Results.testsuite;
+  testsuiteName = func2str(testsuite);
+
+  % first, initialize the tex output
+  texfile = 'tex/acid.tex';
+  fh = fopen(texfile, 'w');
+  assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
+  texfile_init(fh);
+  
+  for k = 1:length(indices)
+      testNumber = indices(k);
+      % ...and finally write the bits to the LaTeX file
+      reference_fig = status{k}.saveStage.texReference;
+      gen_pdf = status{k}.tikzStage.pdfFile;
+      texfile_addtest(fh, reference_fig, gen_pdf, status{k}, testNumber, testsuiteName);
+  end
+
+  % Write the summary table to the LaTeX file
+  texfile_tab_completion_init(fh)
+  for k = 1:length(indices)
+      stat = status{k};
+      % Break table up into pieces if it gets too long for one page
+      if ~mod(k,35)
+          texfile_tab_completion_finish(fh);
+          texfile_tab_completion_init(fh);
+      end
+
+      fprintf(fh, '%d & \\texttt{%s}', indices(k), name2tex(stat.function));
+      if stat.skip
+          fprintf(fh, ' & --- & skipped & ---');
+      else
+          for err = [stat.plotStage.error, ...
+                     stat.saveStage.error, ...
+                     stat.tikzStage.error]
+              if err
+                  fprintf(fh, ' & \\textcolor{red}{failed}');
+              else
+                  fprintf(fh, ' & \\textcolor{green!50!black}{passed}');
+              end
+          end
+      end
+      fprintf(fh, ' \\\\\n');
+  end
+  texfile_tab_completion_finish(fh);
+
+  % Write the error messages to the LaTeX file if there are any
+  if errorHasOccurred(status)
+      fprintf(fh, '\\section*{Error messages}\n\\scriptsize\n');
+      for k = 1:length(indices)
+          stat = status{k};
+          if isempty(stat.plotStage.message) && ...
+             isempty(stat.saveStage.message) && ...
+             isempty(stat.tikzStage.message)
+              continue % No error messages for this test case
+          end
+
+          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), name2tex(stat.function));
+          print_verbatim_information(fh, 'Plot generation', stat.plotStage.message);
+          print_verbatim_information(fh, 'PDF generation' , stat.saveStage.message);
+          print_verbatim_information(fh, 'matlab2tikz'    , stat.tikzStage.message);
+      end
+      fprintf(fh, '\n\\normalsize\n\n');
+  end
+
+  % now, finish off the file and close file and window
+  texfile_finish(fh, testsuite);
+  fclose(fh);
 end
 % =========================================================================
 function texfile_init(texfile_handle)
