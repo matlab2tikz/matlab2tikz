@@ -112,9 +112,10 @@ function testMatlab2tikz(varargin)
 
   for k = 1:length(indices)
       testNumber = indices(k);
+      
       fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
-
-      status{k} = execute_plot_stage(ipp, testsuite, testNumber, defaultStatus);
+      status{k} = defaultStatus;
+      status{k} = execute_plot_stage(status{k}, ipp, env, testNumber);
 
       % plot not successful
       if status{k}.skip
@@ -123,7 +124,7 @@ function testMatlab2tikz(varargin)
 
       elapsedTime = tic;
       
-      status{k} = execute_save_stage(status{k}, env, testNumber);
+      status{k} = execute_save_stage(status{k}, ipp, env, testNumber);
       status{k} = execute_tikz_stage(status{k}, ipp, env, testNumber);
 
       % ...and finally write the bits to the LaTeX file
@@ -199,15 +200,16 @@ function testMatlab2tikz(varargin)
 
 end
 % =========================================================================
-function [status] = execute_plot_stage(ipp, testsuite, index, defaultStatus)
+function [status] = execute_plot_stage(defaultStatus, ipp, env, testNumber)
 % plot a test figure
+    testsuite = ipp.Results.testsuite;
     % open a window
     fig_handle = figure('visible',onOffBoolean(ipp.Results.figureVisible));
     errorHasOccurred = false;
 
     % plot the figure
     try
-        status = testsuite(index);
+        status = testsuite(testNumber);
         
     catch %#ok
         e = lasterror('reset'); %#ok
@@ -229,7 +231,7 @@ function [status] = execute_plot_stage(ipp, testsuite, index, defaultStatus)
     end
 end
 % =========================================================================
-function [status] = execute_save_stage(status, env, testNumber)
+function [status] = execute_save_stage(status, ipp, env, testNumber)
 % save stage: saves the figure to EPS/PDF depending on env
     reference_eps = sprintf('data/reference/test%d-reference.eps', testNumber);
     reference_pdf = sprintf('data/reference/test%d-reference.pdf', testNumber);
