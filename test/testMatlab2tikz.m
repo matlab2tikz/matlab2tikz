@@ -84,6 +84,9 @@ function testMatlab2tikz(varargin)
 
   ipp = ipp.parse(ipp, varargin{:});
   
+  ipp = sanitizeReportMode(ipp);
+  ipp = sanitizeFunctionIndices(ipp);
+  
   % -----------------------------------------------------------------------
 
   % try to clean the output
@@ -96,8 +99,6 @@ function testMatlab2tikz(varargin)
       % <http://savannah.gnu.org/bugs/?43429>.
       graphics_toolkit gnuplot
   end
-
-  ipp.Results.testFunctionIndices = sanitizeFunctionIndices(ipp);
 
   % start overall timing
   elapsedTimeOverall = tic;
@@ -120,7 +121,7 @@ function bool = isValidReportMode(str)
     bool = ischar(str) && ismember(lower(str), {'latex','travis'});
 end
 % =========================================================================
-function indices = sanitizeFunctionIndices(ipp)
+function ipp = sanitizeFunctionIndices(ipp)
 % sanitize the passed function indices to the range of the test suite
   % query the number of test functions
   testsuite = ipp.Results.testsuite;
@@ -134,6 +135,12 @@ function indices = sanitizeFunctionIndices(ipp)
   else
       indices = 1:n;
   end
+  ipp.Results.testFunctionIndices = indices;
+end
+% =========================================================================
+function ipp = sanitizeReportMode(ipp)
+    % sanitizes the report mode
+    ipp.Results.report = lower(ipp.Results.report);
 end
 % =========================================================================
 function status = runIndicatedTests(ipp, env)
