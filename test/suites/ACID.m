@@ -172,7 +172,7 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
   stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
-  stat.md5 = '4edf67301092b2332595e840b4835268';
+  stat.md5 = '98ef01a38e669fee18d130b15c20f91d';
 
   fplot( @cos, [0,2*pi] );
 
@@ -193,7 +193,7 @@ function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
   stat.description = [ 'Twisted plot of the sine function. '                   ,...
          'Pay particular attention to how markers and Infs/NaNs are treated.' ];
-  stat.md5 = '10c124e00426e8ae7e7d7ccdffafcbd5';
+  stat.md5 = '3d70f2686b393eef590cb42fd55297a2';
 
   x = -pi:pi/10:pi;
   y = sin(x);
@@ -217,7 +217,7 @@ end
 % =========================================================================
 function [stat] = markerSizes()
   stat.description = 'Marker sizes.';
-  stat.md5 = '087e09b95a72130816a83d7bf15eb598';
+  stat.md5 = '79577558ceba3d71bca3457e33840d09';
 
   hold on;
 
@@ -230,7 +230,7 @@ end
 % =========================================================================
 function [stat] = markerSizes2()
   stat.description = 'Line plot with with different marker sizes.';
-  stat.md5 = '726b8ec1a5067c9a868ca93b874e046b';
+  stat.md5 = 'abfa8b32d6d0190f3a8171051cc3da23';
 
   hold on;
   grid on;
@@ -255,7 +255,7 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.md5 = '3befb2b182b0f3c2c19ba9f7fa22dc0e';
+  stat.md5 = '8aafc97d650cbcf7d577c9c0e1e6d85a';
 
   x = -pi:.1:pi;
   y = sin(x);
@@ -279,7 +279,7 @@ end
 % =========================================================================
 function [stat] = linesWithOutliers()
     stat.description = 'Lines with outliers.';
-    stat.md5 = '64ed9bfaa4deb7bb221b7cf5ea8d1af1';
+    stat.md5 = '86a7b9b34c3eb007fe1eaa0d692720ba';
 
     far = 200;
     x = [ -far, -1,   -1,  -far, -10, -0.5, 0.5, 10,  far, 1,   1,    far, 10,   0.5, -0.5, -10,  -far ];
@@ -291,11 +291,6 @@ end
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
   stat.md5 = 'c4822b6a211e5fb8d2f3b3de225466d6';
-
-  % For some reason, this test isn't deterministic (order of the colors?)
-  % TODO fix
-  stat.skip = true;
-  return
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -327,7 +322,7 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
-  stat.md5 = '2e564f194fe30bd94cfeeb4d0b6da369';
+  stat.md5 = 'd520d39149ec3c46bc4a697068cdec2b';
 
   contourf(peaks(20), 10);
   colorbar();
@@ -403,7 +398,7 @@ end
 % =========================================================================
 function [stat] = many_random_points ()
   stat.description = 'Test the performance when drawing many points.';
-  stat.md5 = '71b8bc41165da5d9fc273a865e201026';
+  stat.md5 = '7b0337f2ef31385854e3daf4db8bfcc7';
 
   n = 1e3;
   alpha = 1024;
@@ -515,7 +510,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.md5 = 'a998546888e91fc480fefc56b167e03b';
+  stat.md5 = '53fe5ce5b3c3033feee8be38c1f13aa8';
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -524,7 +519,7 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
-  stat.md5 = 'c58b72e42c77c7680972af9a45dfcb37';
+  stat.md5 = '9b705c42be4f593249d94699bb8360ec';
 
   imagesc([1 10 100]);
   try
@@ -538,7 +533,7 @@ end
 % =========================================================================
 function [stat] = legendplot()
   stat.description = 'Test inserting of legends.';
-  stat.md5 = 'b375022026fab2d34272af557642ddf3';
+  stat.md5 = '586c38937521b1449682036f89a55eb2';
 
 %    x = -pi:pi/20:pi;
 %    plot(x,cos(x),'-ro',x,sin(x),'-.b');
@@ -560,7 +555,7 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
-  stat.md5 = 'c49234daff12529b0bce95830b35fb00';
+  stat.md5 = '45d7bd57fe7272ab1c2aede0806b7d74';
 
   x = -pi:pi/20:pi;
   plot( x, cos(x),'-ro',...
@@ -573,6 +568,7 @@ end
 % =========================================================================
 function [stat] = moreLegends()
   stat.description = 'More legends.';
+  stat.md5 = '152482f697745e43b45f635caabff049';
 
   x = 0:.1:7;
   y1 = sin(x);
@@ -583,6 +579,7 @@ end
 % =========================================================================
 function [stat] = zoom()
   stat.description = 'Plain cosine function, zoomed in.';
+  stat.md5 = '79127e0508fbad92658ec011e316b9e5';
 
   fplot( @sin, [0,2*pi], '-*' );
   hold on;
@@ -646,6 +643,7 @@ end
 % =========================================================================
 function [stat] = stemplot()
   stat.description = 'A simple stem plot.' ;
+  stat.md5 = '4d5cd48a8bd6fee01b3bd7acbac00bcd';
 
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
@@ -675,6 +673,7 @@ end
 % =========================================================================
 function [stat] = quiverplot()
   stat.description = 'A combined quiver/contour plot of $x\exp(-x^2-y^2)$.' ;
+  stat.md5 = '606eee01c9b3e592fa8bcbd93ba376da';
 
   [X,Y] = meshgrid(-2:.2:2);
   Z = X.*exp(-X.^2 - Y.^2);
@@ -688,6 +687,7 @@ end
 % =========================================================================
 function [stat] = quiver3plot()
   stat.description = 'Three-dimensional quiver plot.' ;
+  stat.md5 = '87cf638d9f33e460497caabfc6cadf35';
 
   vz = 10;            % Velocity
   a = -32;            % Acceleration
@@ -710,6 +710,7 @@ end
 % =========================================================================
 function [stat] = quiveroverlap ()
   stat.description = 'Quiver plot with avoided overlap.';
+  stat.md5 = '9cd09f711e0c6851be7fdd0af6a124c1';
 
   x = [0 1];
   y = [0 0];
@@ -723,6 +724,12 @@ function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
 
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf('Octave can''t handle axis location ''zero''.\n\n');
+      stat.skip = true;
+      return;
+  end
+
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
 end
@@ -730,6 +737,12 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf('Octave can''t handle axis location ''zero''.\n\n');
+      stat.skip = true;
+      return;
+  end
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -739,12 +752,19 @@ function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
 
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf('Octave can''t handle axis location ''zero''.\n\n');
+      stat.skip = true;
+      return;
+  end
+
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
 end
 % =========================================================================
 function [stat] = logicalImage()
-  stat.description = 'An image plot of logical matrix values.' ;
+  stat.description = 'An image plot of logical matrix values.';
+  stat.md5 = 'b85fa481d18cc00d01f4f00d8486d234';
 
   [plotData,dummy,dummy] = svd(magic(10)); %#ok
   imagesc(plotData > mean(plotData(:)));
@@ -752,6 +772,7 @@ end
 % =========================================================================
 function [stat] = imagescplot()
   stat.description = 'An imagesc plot of $\sin(x)\cos(y)$.';
+  stat.md5 = 'f5a45b0d6a92a798d63e1a944ed81764';
 
   pointsX = 10;
   pointsY = 20;
@@ -763,6 +784,7 @@ end
 % =========================================================================
 function [stat] = imagescplot2()
   stat.description = 'A trimmed imagesc plot.';
+  stat.md5 = '9b795340c372d18884278cb540d22bdf';
 
   a=magic(10);
   x=-5:1:4;
@@ -852,6 +874,12 @@ end
 % =========================================================================
 function [stat] = errorBars2 ()
   stat.description = 'Another error bar example.';
+
+  if ~exist('myCount.dat','file')
+      fprintf( 'Data set not found. Skipping.\n\n' );
+      stat.skip = true;
+      return
+  end
 
   data = load( 'myCount.dat' );
   y = mean( data, 2 );
@@ -1228,13 +1256,13 @@ end
 % =========================================================================
 function [stat] = superkohle()
 
+  stat.description = 'Superkohle plot.';
+
   if ~exist('initmesh')
       fprintf( 'initmesh() not found. Skipping.\n\n' );
       stat.skip = true;
       return;
   end
-
-  stat.description = 'Superkohle plot.';
 
   x1=0;
   x2=pi;
@@ -1766,6 +1794,13 @@ end
 % =========================================================================
 function [stat] = herrorbarPlot()
   stat.description = 'herrorbar plot.';
+
+  if strcmp(getEnvironment(), 'Octave')
+      % TODO fix herrorbar. should be easy.
+      fprintf( 'Octave can''t handle herrorbar.\n\n' );
+      stat.skip = true;
+      return;
+  end
 
   hold on;
   X = 1:10;

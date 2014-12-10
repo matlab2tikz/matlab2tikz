@@ -8,5 +8,9 @@ test: createtests
 createtests:
 	./create_tests
 
-clean:
+.PHONY: clean
+
+distclean:
 	rm -f testlist.m
+	cd ./data/reference/ && $(MAKE) distclean
+	cd ./data/converted/ && $(MAKE) distclean
