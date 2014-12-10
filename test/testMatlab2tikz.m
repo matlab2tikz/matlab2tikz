@@ -367,14 +367,14 @@ for iTest = 1:numel(status)
             stageName = strrep(stages{jStage},'Stage','');
             switch stageName
                 case 'plot'
-                    summary = sprintf('plot failed %s', summary);
+                    summary = sprintf('%s plot failed', summary);
                 case 'tikz'
                     summary = sprintf('%s m2t failed', summary);
                 case 'hash'
-                    summary = sprintf('%s hash %32s != (%32s)', summary, ...
-                        thisStage.found, thisStage.expected);
+                    summary = sprintf('hash %32s != (%32s) %s', ...
+                        thisStage.found, thisStage.expected, summary);
                 otherwise
-                    summary = sprintf('%s FAILED %s', thisStage, summary);
+                    summary = sprintf('%s %s FAILED', summary, thisStage);
             end
         end
         if isempty(summary)
