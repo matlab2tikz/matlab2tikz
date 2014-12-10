@@ -193,15 +193,14 @@ function [status] = execute_plot_stage(defaultStatus, ipp, env, testNumber)
         e = lasterror('reset'); %#ok
         
         status.description = '\textcolor{red}{Error during plot generation.}';
-        if isempty(status) || ~isfield(status, 'function') ...
-                || isempty(status.function)
-            status.function = extractFunctionFromError(e, testsuite);
-        end
-        
         [status.plotStage, errorHasOccurred] = errorHandler(e, env);
     end
     
     status = fillStruct(status, defaultStatus);
+    if isempty(status.function)
+        allFuncs = testsuite(0);
+        status.function = func2str(allFuncs{testNumber});
+    end
     status.plotStage.fig_handle = fig_handle;
     
     if status.skip || errorHasOccurred
@@ -802,30 +801,6 @@ function [status] = fillStruct(status, defaultStatus)
           status.(field) = defaultStatus.(field);
       end
   end
-end
-% =========================================================================
-function name = extractFunctionFromError(e, testsuite)
-% extract function name from an error (using the stack)
-    name = '';
-    if isa(testsuite, 'function_handle')
-        testsuite = func2str(testsuite);
-    end
-    for kError = 1:numel(e.stack);
-        ee = e.stack(kError);
-        if isempty(name)
-            name = '';
-            if ~isempty(regexp(ee.name, ['^' testsuite '>'],'once'))
-                % extract function name
-                name = regexprep(ee.name, ['^' testsuite '>(.*)'], '$1');
-            elseif ~isempty(regexp(ee.name, ['^' testsuite],'once')) && ...
-                    kError < numel(e.stack)
-                % new stack trace format (R2014b)
-                if kError > 1
-                    name = e.stack(kError-1).name;
-                end
-            end
-        end
-    end
 end
 % =========================================================================
 function [stage, errorHasOccurred] = errorHandler(e,env)
