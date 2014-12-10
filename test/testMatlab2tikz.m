@@ -121,35 +121,15 @@ function testMatlab2tikz(varargin)
           continue
       end
 
-      gen_tex = sprintf('data/converted/test%d-converted.tex', testNumber);
-      gen_pdf  = sprintf('data/converted/test%d-converted.pdf', testNumber);
-
       elapsedTime = tic;
       
       status{k} = execute_save_stage(status{k}, env, testNumber);
-    
-      % now, test matlab2tikz
-      try
-          cleanfigure(status{k}.extraCleanfigureOptions{:});
-          matlab2tikz('filename', gen_tex, ...
-                      'showInfo', false, ...
-                      'checkForUpdates', false, ...
-                      'dataPath', 'data/converted/', ...
-                      'standalone', true, ...
-                      ipp.Results.extraOptions{:}, ...
-                      status{k}.extraOptions{:} ...
-                     );
-      catch %#ok
-          e = lasterror('reset'); %#ok
-          % Remove (corrupted) output file. This is necessary to avoid that the
-          % Makefile tries to compile it and fails.
-          delete(gen_tex)
-          [status{k}.tikzStage, errorHasOccurred] = errorHandler(e, env);
-      end
+      status{k} = execute_tikz_stage(status{k}, ipp, env, testNumber);
 
       % ...and finally write the bits to the LaTeX file
       reference_fig = status{k}.saveStage.texReference;
-      texfile_addtest(fh, reference_fig, gen_pdf, status{k}, indices(k), testsuiteName);
+      gen_pdf = status{k}.tikzStage.pdfFile;
+      texfile_addtest(fh, reference_fig, gen_pdf, status{k}, testNumber, testsuiteName);
 
       if ~status{k}.closeall
           close(status{k}.plotStage.fig_handle);
@@ -281,6 +261,32 @@ function [status] = execute_save_stage(status, env, testNumber)
     status.saveStage.epsFile = reference_eps;
     status.saveStage.pdfFile = reference_pdf;
     status.saveStage.texReference = reference_fig;
+end
+% =========================================================================
+function [status] = execute_tikz_stage(status, ipp, env, testNumber)
+% test stage: TikZ file generation
+    gen_tex = sprintf('data/converted/test%d-converted.tex', testNumber);
+    gen_pdf  = sprintf('data/converted/test%d-converted.pdf', testNumber);
+    % now, test matlab2tikz
+    try
+        cleanfigure(status.extraCleanfigureOptions{:});
+        matlab2tikz('filename', gen_tex, ...
+            'showInfo', false, ...
+            'checkForUpdates', false, ...
+            'dataPath', 'data/converted/', ...
+            'standalone', true, ...
+            ipp.Results.extraOptions{:}, ...
+            status.extraOptions{:} ...
+            );
+    catch %#ok
+        e = lasterror('reset'); %#ok
+        % Remove (corrupted) output file. This is necessary to avoid that the
+        % Makefile tries to compile it and fails.
+        delete(gen_tex)
+        [status.tikzStage, errorHasOccurred] = errorHandler(e, env);
+    end
+    status.tikzStage.texFile = gen_tex;
+    status.tikzStage.pdfFile = gen_pdf;
 end
 % =========================================================================
 function cleanFiles(cleanBefore)
