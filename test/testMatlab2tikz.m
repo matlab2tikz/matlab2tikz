@@ -83,6 +83,7 @@ function testMatlab2tikz(varargin)
   
   ipp = sanitizeReportMode(ipp);
   ipp = sanitizeFunctionIndices(ipp);
+  ipp = sanitizeFigureVisible(ipp);
   
   % -----------------------------------------------------------------------
 
@@ -137,6 +138,15 @@ function ipp = sanitizeReportMode(ipp)
     % sanitizes the report mode
     ipp.Results.report = lower(ipp.Results.report);
 end
+% =========================================================================
+function ipp = sanitizeFigureVisible(ipp)
+    % sanitizes the figure visible option from boolean to ON/OFF
+    if ipp.Results.figureVisible
+        ipp.Results.figureVisible = 'on';
+    else
+        ipp.Results.figureVisible = 'off';
+    end
+end
 % TEST RUNNER ==================================================================
 function status = runIndicatedTests(ipp, env)
 % run all indicated tests in the test suite
@@ -182,7 +192,7 @@ function [status] = execute_plot_stage(defaultStatus, ipp, env, testNumber)
 % plot a test figure
     testsuite = ipp.Results.testsuite;
     % open a window
-    fig_handle = figure('visible',onOffBoolean(ipp.Results.figureVisible));
+    fig_handle = figure('visible',ipp.Results.figureVisible);
     errorHasOccurred = false;
 
     % plot the figure
@@ -705,14 +715,6 @@ function str = formatIssuesForTeX(issues)
                   'UniformOutput', false);
   strs = [strs; repmat({SEPARATOR}, 1, numel(strs))];
   str = sprintf('{\\color{blue} \\texttt{%s}}', [strs{:}]);
-end
-% =========================================================================
-function onOff = onOffBoolean(bool)
-if bool
-    onOff = 'on';
-else
-    onOff = 'off';
-end
 end
 % =========================================================================
 function ensureLineEndings(filename)
