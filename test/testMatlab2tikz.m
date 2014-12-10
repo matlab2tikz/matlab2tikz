@@ -394,7 +394,7 @@ function startFold(ipp, name)
 % starts a folding region in Travis
     if strcmpi(ipp.Results.report,'travis')
         stdout = 1;
-        fprintf(stdout, 'travis_fold:start:#{%s}\n', name);
+        fprintf(stdout, 'travis_fold:start:#{%s}\r\n', name);
     end
 end
 % =========================================================================
@@ -402,7 +402,7 @@ function endFold(ipp, name)
 % ends a folding region in Travis
     if strcmpi(ipp.Results.report,'travis')
         stdout = 1;
-        fprintf(stdout, 'travis_fold:end:#{%s}\n', name);
+        fprintf(stdout, 'travis_fold:end:#{%s}\r\n', name);
     end
 end
 % =========================================================================
