@@ -79,14 +79,14 @@ function testMatlab2tikz(varargin)
       graphics_toolkit gnuplot
   end
 
-  indices = sanitizeFunctionIndices(ipp);
+  ipp.Results.testFunctionIndices = sanitizeFunctionIndices(ipp);
 
   % start overall timing
   elapsedTimeOverall = tic;
   
-  status = runIndicatedTests(ipp, env, indices);
+  status = runIndicatedTests(ipp, env);
   
-  makeLatexReport(ipp, status, indices);
+  makeLatexReport(ipp, status);
 
   % print out overall timing
   elapsedTimeOverall = toc(elapsedTimeOverall);
@@ -110,9 +110,10 @@ function indices = sanitizeFunctionIndices(ipp)
   end
 end
 % =========================================================================
-function status = runIndicatedTests(ipp, env, indices)
+function status = runIndicatedTests(ipp, env)
 % run all indicated tests in the test suite
     % cell array to accomodate different structure
+    indices = ipp.Results.testFunctionIndices;
     testsuite = ipp.Results.testsuite;
     testsuiteName = func2str(testsuite);
     stdout = 1;
@@ -294,8 +295,9 @@ function cleanFiles(cleanBefore)
     end
 end
 % =========================================================================
-function makeLatexReport(ipp, status, indices)
+function makeLatexReport(ipp, status)
 % generate a LaTeX report
+  indices = ipp.Results.testFunctionIndices;
   testsuite = ipp.Results.testsuite;
   testsuiteName = func2str(testsuite);
 
