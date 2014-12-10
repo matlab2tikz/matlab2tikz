@@ -5,5 +5,13 @@ addpath(fullfile(pwd,'..','src'));
 addpath(fullfile(pwd,'suites'));
 addpath(fullfile(pwd,'suites','private')); % octave does not find private data files
 
+# Select functions to run
+suite = @ACID;
+ignoredTests = [];
+testsToRun = setdiff(1:numel(suite(0)), ignoredTests);
+
 # Run tests
-testMatlab2tikz('report','travis','exitAfterTests',true);
+testMatlab2tikz('testFunctionIndices', testsToRun,...
+                'testsuite',           suite, ...
+                'report',              'travis', ...
+                'exitAfterTests',      true);
