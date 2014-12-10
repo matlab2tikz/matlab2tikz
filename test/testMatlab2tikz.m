@@ -316,9 +316,13 @@ function [status] = execute_hash_stage(status, ipp, env, testNumber)
                       'MD5 algorithm is not implemented in MATLAB');
         end
         
-        assert(strcmpi(expected, calculated), 'testMatlab2tikz:HashMismatch', ...
-               'The hash "%s" does not match the reference hash "%s"', ...
-               calculated, expected);
+        % do the actual check
+        if ~strcmpi(expected, calculated)
+            % throw an error to signal the testing framework
+            error('testMatlab2tikz:HashMismatch', ...
+                  'The hash "%s" does not match the reference hash "%s"', ...
+                   calculated, expected);
+        end
     catch %#ok
         e = lasterror('reset'); %#ok
         [status.hashStage] = errorHandler(e, env);
