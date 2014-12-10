@@ -11,6 +11,12 @@ function testMatlab2tikz(varargin)
 % TESTMATLAB2TIKZ('figureVisible', LOGICAL, ...)
 %   plots the figure visibly during the test process. Default: false
 %
+% TESTMATLAB2TIKZ('report', CHAR, ...)
+%   sets what kind of report should be generated. Possible choices are:
+%    - 'latex': creates a LaTeX report
+%    - 'travis': for Travis CI
+%   Default: 'latex'
+%
 % TESTMATLAB2TIKZ('callMake', LOGICAL, ...)
 %   uses "make" to further automate running the test suite, i.e.
 %    - runs "make distclean" in the ./test/tex folder before
@@ -71,6 +77,7 @@ function testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
   ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'report', 'travis', @isValidReportMode);
   ipp = ipp.addParamValue(ipp, 'exitAfterTests', false, @islogical);
   
   ipp = ipp.deprecateParam(ipp,'cleanBefore', {'callMake'});
@@ -95,7 +102,9 @@ function testMatlab2tikz(varargin)
   % start overall timing
   elapsedTimeOverall = tic;
   
+  startFold(ipp,'all-tests');
   status = runIndicatedTests(ipp, env);
+  endFold(ipp,'all-tests');
   
   makeLatexReport(ipp, status);
 
@@ -104,6 +113,11 @@ function testMatlab2tikz(varargin)
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 
   exitAfterRunningTests(ipp, status);
+end
+% =========================================================================
+function bool = isValidReportMode(str)
+% validation of the report mode (i.e. LaTeX or Travis)
+    bool = ischar(str) && ismember(lower(str), {'latex','travis'});
 end
 % =========================================================================
 function indices = sanitizeFunctionIndices(ipp)
@@ -313,6 +327,22 @@ function exitAfterRunningTests(ipp, status)
     if ipp.Results.exitAfterTests
         nErrors = countNumberOfErrors(status);
         exit(nErrors);
+    end
+end
+% =========================================================================
+function startFold(ipp, name)
+% starts a folding region in Travis
+    if strcmpi(ipp.Results.report,'travis')
+        stdout = 1;
+        fprintf(stdout, 'travis_fold:start:#{%s}\n', name);
+    end
+end
+% =========================================================================
+function endFold(ipp, name)
+% ends a folding region in Travis
+    if strcmpi(ipp.Results.report,'travis')
+        stdout = 1;
+        fprintf(stdout, 'travis_fold:end:#{%s}\n', name);
     end
 end
 % =========================================================================
