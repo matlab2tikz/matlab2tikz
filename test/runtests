@@ -7,7 +7,7 @@ addpath(fullfile(pwd,'suites','private')); % octave does not find private data f
 
 # Select functions to run
 suite = @ACID;
-ignoredTests = [];
+ignoredTests = [74 81:83 95];
 testsToRun = setdiff(1:numel(suite(0)), ignoredTests);
 
 # Run tests
