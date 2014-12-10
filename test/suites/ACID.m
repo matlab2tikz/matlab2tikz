@@ -292,6 +292,12 @@ function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
   stat.md5 = '5df025ecfc3d146f8590b64a9fb75967';
 
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf('Output seems to depend on Octave version. Skipping.\n\n');
+      stat.skip = true;
+      return;
+  end
+
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
 
