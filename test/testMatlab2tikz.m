@@ -347,7 +347,47 @@ function makeReport(ipp, status)
 end
 % =========================================================================
 function makeTravisReport(ipp, status)
-    
+% make a readable Travis report    
+indices = ipp.Results.testFunctionIndices;
+stdout = 1;
+fprintf(stdout,'\n\n');
+for iTest = 1:numel(status)
+    testNumber = indices(iTest);
+    S = status{iTest};
+    summary = '';
+    if S.skip
+        summary = ' SKIPPED ';
+    else
+        stages = getStagesFromStatus(S);
+        for jStage = 1:numel(stages)
+            thisStage = S.(stages{jStage});
+            if ~thisStage.error
+                continue;
+            end
+            stageName = strrep(stages{jStage},'Stage','');
+            switch stageName
+                case 'plot'
+                    summary = sprintf('plot failed %s', summary);
+                case 'tikz'
+                    summary = sprintf('%s m2t failed', summary);
+                case 'hash'
+                    summary = sprintf('%s hash %32s != (%32s)', summary, ...
+                        thisStage.found, thisStage.expected);
+                otherwise
+                    summary = sprintf('%s FAILED %s', thisStage, summary);
+            end
+        end
+        if isempty(summary)
+            summary = 'OK';
+        end
+    end
+    functionName = strjust(sprintf('%25s', S.function), 'left');
+    fprintf(stdout, 'Test %3d %s: %s\n', testNumber, functionName, summary);
+end
+    nErrors = countNumberOfErrors(status);
+    if nErrors > 0
+        fprintf(stdout,'\n%3d of %3d tests failed\n', nErrors, numel(status));
+    end
 end
 % =========================================================================
 function startFold(ipp, name)
