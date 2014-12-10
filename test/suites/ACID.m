@@ -290,7 +290,7 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
-  stat.md5 = 'c4822b6a211e5fb8d2f3b3de225466d6';
+  stat.md5 = '5df025ecfc3d146f8590b64a9fb75967';
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -607,6 +607,7 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
+  stat.md5 = '210ce0f8dedbe56ebb139f2e6a9918f0';
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -643,7 +644,7 @@ end
 % =========================================================================
 function [stat] = stemplot()
   stat.description = 'A simple stem plot.' ;
-  stat.md5 = '4d5cd48a8bd6fee01b3bd7acbac00bcd';
+  stat.md5 = '652e26c334da7f67b0070b81bd6eb69c';
 
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
@@ -656,6 +657,7 @@ end
 % =========================================================================
 function [stat] = stemplot2()
   stat.description = 'Another simple stem plot.';
+  stat.md5 = '9b7ac896393f5dfc8c3b748017f631e3';
 
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
@@ -665,7 +667,8 @@ function [stat] = stemplot2()
 end
 % =========================================================================
 function [stat] = stairsplot()
-  stat.description = 'A simple stairs plot.' ;
+  stat.description = 'A simple stairs plot.';
+  stat.md5 = '4d5cd48a8bd6fee01b3bd7acbac00bcd';
 
   x = linspace(-2*pi,2*pi,40);
   stairs(x,sin(x))
@@ -798,7 +801,8 @@ function [stat] = imagescplot2()
 end
 % =========================================================================
 function [stat] = xAxisReversed ()
-  stat.description = 'Reversed axes with legend.' ;
+  stat.description = 'Reversed axes with legend.';
+  stat.md5 = '60284485120e300e96e13408d7a3e74c';
 
   n = 100;
   x = (0:1/n:1);
@@ -810,7 +814,8 @@ function [stat] = xAxisReversed ()
 end
 % =========================================================================
 function [stat] = subplot2x2b ()
-  stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
+  stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.';
+  stat.md5 = '4ab5bf2b7b10082f59beedea2d4abf5c';
 
   x = (1:5);
 
@@ -829,6 +834,7 @@ end
 % =========================================================================
 function [stat] = manualAlignment()
   stat.description = 'Manually aligned figures.';
+  stat.md5 = '4aa0f77c38a609347f665494038052a0';
 
   xrange = linspace(-3,4,2*1024);
 
@@ -843,7 +849,8 @@ function [stat] = manualAlignment()
 end
 % =========================================================================
 function [stat] = subplotCustom ()
-  stat.description = 'Three customized aligned subplots.' ;
+  stat.description = 'Three customized aligned subplots.';
+  stat.md5 = '0a1d6aad3ff3393db16ef07d1e700449';
 
   x = (1:5);
 
@@ -862,6 +869,7 @@ end
 % =========================================================================
 function [stat] = errorBars ()
   stat.description = 'Generic error bar plot.';
+  stat.md5 = '64d1857153d00a61a038013a75db2eb4';
 
   plotData = 1:10;
   [u,s,v] = svd(magic(11));
@@ -890,6 +898,7 @@ end
 function [stat] = legendsubplots()
   stat.description = [ 'Subplots with legends. ' , ...
     'Increase value of "length" in the code to stress-test your TeX installation.' ];
+  stat.md5 = '061015b6ea0e7ffd413db70bff3a2398';
 
   % size of upper subplot
   rows = 4;
@@ -1013,6 +1022,7 @@ end
 % =========================================================================
 function [stat] = besselImage()
   stat.description = 'Bessel function.';
+  stat.md5 = '7a1195d9d58a0bd891a89596756d261b';
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1100,6 +1110,7 @@ end
 % =========================================================================
 function [stat] = axesLocation()
   stat.description = 'Swapped axis locations.';
+  stat.md5 = 'ad305800b11c5c0e34b329ea6f04e2c6';
 
   plot(cos(1:10));
   set(gca,'XAxisLocation','top');
@@ -1108,6 +1119,7 @@ end
 % =========================================================================
 function [stat] = axesColors()
   stat.description = 'Custom axes colors.';
+  stat.md5 = '2ee6deaec9cb73912acfa14cb7d97cf7';
 
   plot(sin(1:15));
   set(gca,'XColor','g','YColor','b');
@@ -1117,6 +1129,7 @@ end
 % =========================================================================
 function [stat] = multipleAxes()
   stat.description = 'Multiple axes.';
+  stat.md5 = 'd2509cf2122691ed3e07330bb5e03049';
 
   x1 = 0:.1:40;
   y1 = 4.*cos(x1)./(x1+2);
@@ -1147,6 +1160,7 @@ end
 % =========================================================================
 function [stat] = scatterPlotRandom()
   stat.description = 'Generic scatter plot.';
+  stat.md5 = 'd8c3555f8a36ae3543c0be690e891c63';
 
   n = 1:100;
   scatter(n, n, 1000*(1+cos(n.^1.5)), n.^8);
@@ -1167,6 +1181,12 @@ end
 % =========================================================================
 function [stat] = scatterPlotMarkers()
   stat.description = 'Scatter plot with with different marker sizes and legend.';
+
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf( 'Octave: invalid color specification: bx.\n\n' );
+      stat.skip = true;
+      return;
+  end
 
   n = 1:10;
   d = 10;
@@ -1191,6 +1211,7 @@ end
 % =========================================================================
 function [stat] = scatter3Plot()
   stat.description = 'Scatter3 plot with MATLAB(R) stat.';
+  stat.md5 = '43b559ec283661ee4a1c92243a8b59e6';
 
   [x,y,z] = sphere(16);
   X = [x(:)*.5 x(:)*.75 x(:)];
@@ -1204,6 +1225,7 @@ end
 % =========================================================================
 function [stat] = spherePlot()
   stat.description = 'Plot a sphere.';
+  stat.md5 = '7d046296021c68df96146910a9ba65fa';
 
   sphere(30);
   title('a sphere: x^2+y^2+z^2');
@@ -1215,6 +1237,7 @@ end
 % =========================================================================
 function [stat] = surfPlot()
   stat.description = 'Surface plot.';
+  stat.md5 = 'ed05b7415d46e4bec85af3bea84380dd';
 
   [X,Y,Z] = peaks(30);
   surf(X,Y,Z)
@@ -1244,6 +1267,7 @@ end
 % =========================================================================
 function [stat] = surfPlot2()
   stat.description = 'Another surface plot.';
+  stat.md5 = '021585d5ea9c179dbeaed8aee7a1219c';
 
   z = [ ones(15, 5) zeros(15,5);
         zeros(5, 5) zeros( 5,5)];
@@ -1295,6 +1319,7 @@ end
 % =========================================================================
 function [stat] = meshPlot()
   stat.description = 'Mesh plot.';
+  stat.md5 = '9045538b2905b0ef98d9763bb572809d';
 
   [X,Y,Z] = peaks(30);
   mesh(X,Y,Z)
@@ -1308,6 +1333,7 @@ end
 % =========================================================================
 function [stat] = ylabels()
   stat.description = 'Separate y-labels.';
+  stat.md5 = '553f77fe48528c832c4d9e6acbcfd30e';
 
   x = 0:.01:2*pi;
   H = plotyy(x,sin(x),x,3*cos(x));
@@ -1338,6 +1364,7 @@ end
 % =========================================================================
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
+  stat.md5 = 'adb61048187be7290d4e93975c3439bb';
 
   [x,s,v] = svd(magic(33));
   x = x(end:-1:end-1000);
@@ -1350,6 +1377,7 @@ end
 % =========================================================================
 function [stat] = decayingharmonic()
   stat.description = 'Decaying harmonic oscillation with \TeX{} title.';
+  stat.md5 = '94f2ce1cc21d98358cc04be456f2eff5';
 
   % Based on an example from
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
@@ -1366,6 +1394,7 @@ end
 % =========================================================================
 function [stat] = texcolor()
   stat.description = 'Multi-colored text using \TeX{} commands.';
+  stat.md5 = 'b4ef5ee1c1c5a4488acd3e295852ac65';
 
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
@@ -1375,6 +1404,7 @@ end
 % =========================================================================
 function [stat] = textext()
   stat.description = 'Formatted text and special characters using \TeX{}.';
+  stat.md5 = '2127962738a9bb54a259653b9b95b381';
 
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
@@ -1389,6 +1419,12 @@ end
 % =========================================================================
 function [stat] = texrandom()
   stat.description = 'Random TeX symbols';
+
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf( 'Can''t test if randomness is involved.\n\n' );
+      stat.skip = true;
+      return;
+  end
 
   try
       rng(42); %fix seed
@@ -1655,6 +1691,7 @@ end
 % =========================================================================
 function [stat] = latexInterpreter()
     stat.description = '\LaTeX{} interpreter test (display math not working)';
+    stat.md5 = '02877b86c3342ed6e2c0413f25c93f78';
     stat.issues = 448;
 
     plot(magic(3),'-x');
@@ -1672,6 +1709,7 @@ end
 % =========================================================================
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
+  stat.md5 = 'ab23f959c46a4e3883102e833cecafb9';
 
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
@@ -1719,6 +1757,7 @@ end
 % =========================================================================
 function [stat] = parameterCurve3d()
   stat.description = 'Parameter curve in 3D.';
+  stat.md5 = '51b459504b6df314476d1a7596c56ca8';
 
   ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
   text(0.5, 0.5, 10, 'abs');
@@ -1783,6 +1822,7 @@ end
 % =========================================================================
 function [stat] = rectanglePlot()
   stat.description = 'Rectangle handle.';
+  stat.md5 = 'b4af57837a0bcaff51d72c4e6e31614b';
 
   rectangle('Position', [0.59,0.35,3.75,1.37],...
             'Curvature', [0.8,0.4],...
@@ -1876,6 +1916,7 @@ end
 % =========================================================================
 function [stat] = areaPlot()
   stat.description = 'Area plot.';
+  stat.md5 = 'c8c8ba5e2929abf49f7ff557f0e36f90';
 
   M = magic(5);
   M = M(1:3,2:4);
@@ -1885,6 +1926,7 @@ end
 % =========================================================================
 function [stat] = customLegend()
   stat.description = 'Custom legend.';
+  stat.md5 = '0a4a9cf7baff8d8e3c415c7b8ff09f55';
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -1898,6 +1940,7 @@ end
 % =========================================================================
 function [stat] = pixelLegend()
   stat.description = 'Legend with pixel position.';
+  stat.md5 = '018cda569bad1c832e7283fcf657e872';
 
   x = linspace(0,1);
   plot(x, [x;x.^2]);
@@ -1907,7 +1950,7 @@ function [stat] = pixelLegend()
 end
 % =========================================================================
 function [stat] = croppedImage()
-  stat.description = 'Custom legend.';
+  stat.description = 'Cropped image.';
 
   if ~exist('flujet.mat','file')
       fprintf( 'flujet data set not found. Skipping.\n\n' );
@@ -1930,6 +1973,12 @@ end
 function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
 
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf( 'Octave: ''ylim: axis limits must be increasing'' (?).\n\n' );
+      stat.skip = true;
+      return;
+  end
+
   n = 6;
   r = (0:n)'/n;
   theta = pi*(-n:n)/n;
@@ -1942,6 +1991,7 @@ end
 % =========================================================================
 function [stat] = multiplePatches()
   stat.description = 'Multiple patches.';
+  stat.md5 = 'a1bc43dc98f096cd1b889e7537507046';
 
   xdata = [2     2     0     2     5;
            2     8     2     4     5;
@@ -1959,6 +2009,12 @@ end
 % =========================================================================
 function [stat] = hgTransformPlot()
   stat.description = 'hgtransform() plot.';
+
+  if ~exist('hgtransform','function')
+      fprintf( 'Function hgtransform() not found. Skipping.\n\n' );
+      stat.skip = true;
+      return
+  end
 
   % Check out
   % http://www.mathworks.de/de/help/matlab/ref/hgtransform.html.
@@ -1989,6 +2045,7 @@ end
 % =========================================================================
 function [stat] = logbaseline()
   stat.description = 'Logplot with modified baseline.';
+  stat.md5 = '12a2b276ba604d7631b2f97a60558ebe';
 
   bar([0 1 2], [1 1e-2 1e-5],'basevalue', 1e-6);
   set(gca,'YScale','log');
@@ -1996,6 +2053,7 @@ end
 % =========================================================================
 function [stat] = alphaImage()
   stat.description = 'Image with alpha channel.';
+  stat.md5 = '08339315a1ec94aab7ff2d8799c402ce';
 
   N = 20;
   h_imsc = imagesc(repmat(1:N, N, 1));
@@ -2282,10 +2340,12 @@ end
 function [stat] = imageOrientation_inline()
 % Run test and save pictures as inline TikZ code
     [stat] = imageOrientation(false);
+    stat.md5 = 'b3e37647f7247986c2804047fa55d849';
 end
 function [stat] = imageOrientation_PNG()
 % Run test and save pictures as external PNGs
     [stat] = imageOrientation(true);
+    stat.md5 = '3b259335b43235cb0129f08dccbc53b9';
 end
 function [stat] = imageOrientation(imagesAsPng)
 % Parameter 'imagesAsPng' is boolean
@@ -2345,6 +2405,8 @@ end
 % =========================================================================
 function [stat] = texInterpreter()
     stat.description = 'Combinations of tex commands';
+    stat.md5 = '748ea22e260545ac2c7f4ca0c64a4d56';
+
     axes
     text(0.1,0.9, {'\bfBold text before \alpha and also afterwards.', 'Even the next line is bold \itand a bit italic.'});
     text(0.1,0.75, {'Changing \bfthe\fontname{Courier} font or \color[rgb]{0,0.75,0}color doesn''t', 'change the style. Resetting \rmthe style', 'doesn''t change the font or color.'});
@@ -2357,6 +2419,12 @@ end
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
   stat.issues = 442;
+
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf( 'Octave: set: invalid number of arguments.\n\n' );
+      stat.skip = true;
+      return;
+  end
 
   % dataset stacked
   [data,dummy,summy] = svd(magic(7)); %#ok
@@ -2380,6 +2448,7 @@ end
 function [stat] = colorbarLabelTitle()
     stat.description = 'colorbar with label and title';
     stat.issues = 429;
+    stat.md5 = '937047b6bdb03eade36bceb26fd5e939';
 
     % R2014b handles colorbars smart:  `XLabel` and `YLabel` merged into `Label`
     % Use colormap 'jet' to create comparable output with MATLAB R2014b

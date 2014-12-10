@@ -1,6 +1,6 @@
 
 
-main: test
+main:
 
 test: createtests
 	./runtests
