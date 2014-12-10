@@ -356,7 +356,7 @@ for iTest = 1:numel(status)
     S = status{iTest};
     summary = '';
     if S.skip
-        summary = ' SKIPPED ';
+        summary = 'SKIPPED';
     else
         stages = getStagesFromStatus(S);
         for jStage = 1:numel(stages)
@@ -380,6 +380,7 @@ for iTest = 1:numel(status)
         if isempty(summary)
             summary = 'OK';
         end
+        summary = strtrim(summary);
     end
     functionName = strjust(sprintf('%25s', S.function), 'left');
     fprintf(stdout, 'Test %3d %s: %s\n', testNumber, functionName, summary);
