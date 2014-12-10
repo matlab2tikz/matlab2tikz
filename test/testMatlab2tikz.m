@@ -111,32 +111,14 @@ function testMatlab2tikz(varargin)
   status = cell(length(indices), 1);
 
   for k = 1:length(indices)
+      
       fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
 
-      % open a window
-      fig_handle = figure('visible',onOffBoolean(ipp.Results.figureVisible));
-
-      % plot the figure
-      try
-          status{k} = testsuite(indices(k));
-
-      catch %#ok
-          e = lasterror('reset'); %#ok
-
-          status{k}.description = '\textcolor{red}{Error during plot generation.}';
-          if isempty(status{k}) || ~isfield(status{k}, 'function') ...
-                  || isempty(status{k}.function)
-              status{k}.function = extractFunctionFromError(e, testsuite);
-          end
-
-          [status{k}.plotStage, errorHasOccurred] = errorHandler(e, env);
-      end
-
-      status{k} = fillStruct(status{k}, defaultStatus);
+      testNumber = indices(k);
+      status{k} = execute_plot_stage(ipp, testsuite, testNumber, defaultStatus);
 
       % plot not successful
       if status{k}.skip
-          close(fig_handle);
           continue
       end
 
@@ -194,7 +176,7 @@ function testMatlab2tikz(varargin)
       texfile_addtest(fh, reference_fig, gen_pdf, status{k}, indices(k), testsuiteName);
 
       if ~status{k}.closeall
-          close(fig_handle);
+          close(status{k}.plotStage.fig_handle);
       else
           close all;
       end
@@ -259,6 +241,36 @@ function testMatlab2tikz(varargin)
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 
+end
+% =========================================================================
+function [status] = execute_plot_stage(ipp, testsuite, index, defaultStatus)
+% plot a test figure
+    % open a window
+    fig_handle = figure('visible',onOffBoolean(ipp.Results.figureVisible));
+    errorHasOccurred = false;
+
+    % plot the figure
+    try
+        status = testsuite(index);
+        
+    catch %#ok
+        e = lasterror('reset'); %#ok
+        
+        status.description = '\textcolor{red}{Error during plot generation.}';
+        if isempty(status) || ~isfield(status, 'function') ...
+                || isempty(status.function)
+            status.function = extractFunctionFromError(e, testsuite);
+        end
+        
+        [status.plotStage, errorHasOccurred] = errorHandler(e, env);
+    end
+    
+    status = fillStruct(status, defaultStatus);
+    status.plotStage.fig_handle = fig_handle;
+    
+    if status.skip || errorHasOccurred
+        close(fig_handle);
+    end
 end
 % =========================================================================
 function cleanFiles(cleanBefore)
