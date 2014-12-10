@@ -79,7 +79,7 @@ function testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
   ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
-  ipp = ipp.addParamValue(ipp, 'report', 'travis', @isValidReportMode);
+  ipp = ipp.addParamValue(ipp, 'report', 'latex', @isValidReportMode);
   ipp = ipp.addParamValue(ipp, 'exitAfterTests', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'saveHashTable', false, @islogical);
   
