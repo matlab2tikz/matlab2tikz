@@ -104,7 +104,7 @@ function testMatlab2tikz(varargin)
   status = runIndicatedTests(ipp, env);
   endFold(ipp,'all-tests');
   
-  makeLatexReport(ipp, status);
+  makeReport(ipp, status);
 
   % print out overall timing
   elapsedTimeOverall = toc(elapsedTimeOverall);
@@ -348,6 +348,19 @@ function endFold(ipp, name)
         stdout = 1;
         fprintf(stdout, 'travis_fold:end:#{%s}\n', name);
     end
+end
+% =========================================================================
+function makeReport(ipp, status)
+    switch ipp.Results.report
+        case 'latex'
+            makeLatexReport(ipp, status);
+        case 'travis'
+            makeTravisReport(ipp, status);
+    end 
+end
+% =========================================================================
+function makeTravisReport(ipp, status)
+    
 end
 % =========================================================================
 function makeLatexReport(ipp, status)
