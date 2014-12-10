@@ -22,6 +22,11 @@ function testMatlab2tikz(varargin)
 %    - runs "make distclean" in the ./test/tex folder before
 %   Your path must contain "make", this usually isn't the case on Windows!
 %   Default: false
+%
+% TESTMATLAB2TIKZ('saveHashTable', LOGICAL, ...)
+%   saves ALL hashes that were found to disk. Hence, the output file should
+%   be checked carefully (e.g. with diff) against the previous version.
+%   Default: false
 % 
 % TESTMATLAB2TIKZ('exitAfterTests', LOGICAL, ...)
 %   Shuts down MATLAB/Octave after running the test suite. The exit code is the
@@ -76,6 +81,7 @@ function testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'report', 'travis', @isValidReportMode);
   ipp = ipp.addParamValue(ipp, 'exitAfterTests', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'saveHashTable', false, @islogical);
   
   ipp = ipp.deprecateParam(ipp,'cleanBefore', {'callMake'});
 
@@ -109,6 +115,11 @@ function testMatlab2tikz(varargin)
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 
+  if ipp.Results.saveHashTable
+      fprintf(stdout, 'Saving reference hash table...\n');
+      saveHashTable(status, ipp, env);
+  end
+  
   exitAfterRunningTests(ipp, status);
 end
 % INPUT VALIDATION =============================================================
@@ -282,16 +293,10 @@ function [status] = execute_tikz_stage(status, ipp, env, testNumber)
 end
 % =========================================================================
 function [status] = execute_hash_stage(status, ipp, env, testNumber)
-    expected = '';
     calculated = '';
+    expected = '';
     try
-        if isfield(status,'md5')
-            %TODO: we should use a more robust mechanisme than passing the hash
-            % from the test 
-            expected = status.md5;
-        else
-            error('testMatlab2tikz:NoHashProvided', 'No reference hash provided');
-        end
+        expected = getReferenceHash(status, ipp, env);
         
         switch env
             case 'Octave'
@@ -315,6 +320,68 @@ function [status] = execute_hash_stage(status, ipp, env, testNumber)
     end
     status.hashStage.expected = expected;
     status.hashStage.found    = calculated;
+end
+% MD5 HASHING SUPPORT =====================================================
+function hash = getReferenceHash(status, ipp, env)
+    % retrieves a reference hash from a persistent hash table
+    persistent hashTable
+    if isempty(hashTable) || ~strcmp(hashTable.suite, ipp.Results.testsuite)
+        hashTable = loadHashTable(ipp, env);
+    end
+    if isfield(hashTable.contents, status.function)
+        hash = hashTable.contents.(status.function);
+    else
+        hash = '';
+    end
+end
+function filename = hashTableName(ipp, env)
+    % determines the file name of a hash table
+    [pathstr,name,ext] = fileparts(which(func2str(ipp.Results.testsuite)));
+    ext = '.md5'; %TODO: make hash table env/version dependent
+    filename = fullfile(pathstr, [name ext]);
+end
+function hashTable = loadHashTable(ipp, env)
+    % loads a reference hash table from disk
+    hashTable.suite = ipp.Results.testsuite;
+    hashTable.contents = struct();
+    filename = hashTableName(ipp, env);
+    if exist(filename, 'file') 
+        fid = fopen(filename, 'r');
+        data = textscan(fid, '%s : %s');
+        fclose(fid);
+        if ~isempty(data) && ~all(cellfun(@isempty, data))
+            functions = cellfun(@strtrim, data{1},'UniformOutput', false);
+            hashes    = cellfun(@strtrim, data{2},'UniformOutput', false);
+            for iFunc = 1:numel(functions)
+                hashTable.contents.(functions{iFunc}) = hashes{iFunc};
+            end
+        end
+    end
+end
+function saveHashTable(status, ipp, env)
+    % saves a reference hash table to disk
+    filename = hashTableName(ipp, env);
+    
+    % sort by file names to allow humans better traversal of such files
+    funcNames = cellfun(@(s) s.function, status, 'UniformOutput', false);
+    [dummy, iSorted] = sort(funcNames);
+    status = status(iSorted);
+    
+    % write to file
+    fid = fopen(filename,'w+');
+    for iFunc = 1:numel(status)
+        S = status{iFunc};
+        thisFunc = S.function;
+        if isfield(S.hashStage,'found')
+            thisHash = S.hashStage.found;
+        else
+            thisHash = ''; % FIXME: when does this happen??
+        end
+        if ~isempty(thisHash)
+            fprintf(fid, '%s : %s\n', thisFunc, thisHash);
+        end
+    end
+    fclose(fid);
 end
 % PREPARATION AND SHUTDOWN =====================================================
 function cleanFiles(cleanBefore)
