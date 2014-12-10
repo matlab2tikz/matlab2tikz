@@ -213,6 +213,9 @@ end
 % =========================================================================
 function [status] = execute_save_stage(status, ipp, env, testNumber)
 % save stage: saves the figure to EPS/PDF depending on env
+    if strcmpi(ipp.Results.report,'travis')
+        return; % do not save reference image in Travis
+    end
     reference_eps = sprintf('data/reference/test%d-reference.eps', testNumber);
     reference_pdf = sprintf('data/reference/test%d-reference.pdf', testNumber);
     reference_fig = sprintf('data/reference/test%d-reference', testNumber);
