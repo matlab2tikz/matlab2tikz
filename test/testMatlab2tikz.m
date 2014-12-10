@@ -625,20 +625,27 @@ if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
 end
 end
 % =========================================================================
-function bool = errorHasOccurred(status)
-    bool = false;
+function errorOccurred = errorHasOccurred(status)
+% determines whether an error has occurred from a status struct OR cell array
+% of status structs
+    errorOccurred = false;
     if iscell(status)
         for iStatus = 1:numel(status)
-            bool = bool || errorHasOccurred(status{iStatus});
+            errorOccurred = errorOccurred || errorHasOccurred(status{iStatus});
         end
     else
-        fields = fieldnames(status);
-        stages = fields(cellfun(@(f) ~isempty(strfind(f,'Stage')), fields));
+        stages = getStagesFromStatus(status);
         for iStage = 1:numel(stages)
             thisStage = status.(stages{iStage});
-            bool = bool || thisStage.error;
+            errorOccurred = errorOccurred || thisStage.error;
         end
     end
+end
+% =========================================================================
+function stages = getStagesFromStatus(status)
+% retrieves the different (names of) stages of a status struct 
+    fields = fieldnames(status);
+    stages = fields(cellfun(@(f) ~isempty(strfind(f,'Stage')), fields));
 end
 % =========================================================================
 function defaultStatus = emptyStatus()
