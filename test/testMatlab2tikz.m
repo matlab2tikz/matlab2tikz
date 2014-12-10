@@ -68,9 +68,6 @@ function testMatlab2tikz(varargin)
   ipp = ipp.parse(ipp, varargin{:});
   % -----------------------------------------------------------------------
 
-  testsuite = ipp.Results.testsuite;
-  testsuiteName = func2str(testsuite);
-
   % try to clean the output
   cleanFiles(ipp.Results.cleanBefore);
 
@@ -82,17 +79,7 @@ function testMatlab2tikz(varargin)
       graphics_toolkit gnuplot
   end
 
-  % query the number of test functions
-  n = length(testsuite(0));
-
-  if ~isempty(ipp.Results.testFunctionIndices)
-      indices = ipp.Results.testFunctionIndices;
-      % kick out the illegal stuff
-      I = find(indices>=1 & indices<=n);
-      indices = indices(I); %#ok
-  else
-      indices = 1:n;
-  end
+  indices = sanitizeFunctionIndices(ipp);
 
   % start overall timing
   elapsedTimeOverall = tic;
@@ -105,6 +92,22 @@ function testMatlab2tikz(varargin)
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 
+end
+% =========================================================================
+function indices = sanitizeFunctionIndices(ipp)
+% sanitize the passed function indices to the range of the test suite
+  % query the number of test functions
+  testsuite = ipp.Results.testsuite;
+  n = length(testsuite(0));
+
+  if ~isempty(ipp.Results.testFunctionIndices)
+      indices = ipp.Results.testFunctionIndices;
+      % kick out the illegal stuff
+      I = find(indices>=1 & indices<=n);
+      indices = indices(I); %#ok
+  else
+      indices = 1:n;
+  end
 end
 % =========================================================================
 function status = runIndicatedTests(ipp, env, indices)
