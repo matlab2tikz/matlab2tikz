@@ -615,6 +615,12 @@ function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
   stat.md5 = '210ce0f8dedbe56ebb139f2e6a9918f0';
 
+  if strcmp(getEnvironment(), 'Octave')
+      fprintf('Output seems to depend on Octave version. Skipping.\n\n');
+      stat.skip = true;
+      return;
+  end
+
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
   numEntries = length(bins);
@@ -822,12 +828,6 @@ end
 function [stat] = subplot2x2b ()
   stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.';
   stat.md5 = '4ab5bf2b7b10082f59beedea2d4abf5c';
-
-  if strcmp(getEnvironment(), 'Octave')
-      fprintf('Output seems to depend on Octave version. Skipping.\n\n');
-      stat.skip = true;
-      return;
-  end
 
   x = (1:5);
 
