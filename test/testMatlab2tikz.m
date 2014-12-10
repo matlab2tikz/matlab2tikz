@@ -74,12 +74,6 @@ function testMatlab2tikz(varargin)
   % try to clean the output
   cleanFiles(ipp.Results.cleanBefore);
 
-  % first, initialize the tex output
-  texfile = 'tex/acid.tex';
-  fh = fopen(texfile, 'w');
-  assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
-  texfile_init(fh);
-
   % output streams
   stdout = 1;
   if strcmp(env, 'Octave') && ~ipp.Results.figureVisible
@@ -90,8 +84,6 @@ function testMatlab2tikz(varargin)
 
   % query the number of test functions
   n = length(testsuite(0));
-
-  defaultStatus = emptyStatus();
 
   if ~isempty(ipp.Results.testFunctionIndices)
       indices = ipp.Results.testFunctionIndices;
@@ -106,41 +98,18 @@ function testMatlab2tikz(varargin)
   elapsedTimeOverall = tic;
 
   errorHasOccurred = false;
+  
+  status = runIndicatedTests(ipp, env, indices);
 
-  % cell array to accomodate different structure
-  status = cell(length(indices), 1);
-
+  %% generate report
+  % first, initialize the tex output
+  texfile = 'tex/acid.tex';
+  fh = fopen(texfile, 'w');
+  assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
+  texfile_init(fh);
+  
   for k = 1:length(indices)
       testNumber = indices(k);
-      
-      fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
-      status{k} = defaultStatus;
-      status{k} = execute_plot_stage(status{k}, ipp, env, testNumber);
-
-      % plot not successful
-      if status{k}.skip
-          continue
-      end
-
-      elapsedTime = tic;
-      
-      status{k} = execute_save_stage(status{k}, ipp, env, testNumber);
-      status{k} = execute_tikz_stage(status{k}, ipp, env, testNumber);
-      status{k} = execute_hash_stage(status{k}, ipp, env, testNumber);
-      
-      if ~status{k}.closeall
-          close(status{k}.plotStage.fig_handle);
-      else
-          close all;
-      end
-
-      elapsedTime = toc(elapsedTime);
-      status{k}.elapsedTime = elapsedTime;
-      fprintf(stdout, '%s ', status{k}.function);
-      fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
-  end
-  %% generate report
-  for k = 1:length(indices)
       % ...and finally write the bits to the LaTeX file
       reference_fig = status{k}.saveStage.texReference;
       gen_pdf = status{k}.tikzStage.pdfFile;
@@ -202,6 +171,45 @@ function testMatlab2tikz(varargin)
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 
+end
+% =========================================================================
+function status = runIndicatedTests(ipp, env, indices)
+% run all indicated tests in the test suite
+    % cell array to accomodate different structure
+    testsuite = ipp.Results.testsuite;
+    testsuiteName = func2str(testsuite);
+    stdout = 1;
+    status = cell(length(indices), 1);
+    
+    for k = 1:length(indices)
+        testNumber = indices(k);
+        
+        fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
+        status{k} = emptyStatus();
+        status{k} = execute_plot_stage(status{k}, ipp, env, testNumber);
+        
+        % plot not successful
+        if status{k}.skip
+            continue
+        end
+        
+        elapsedTime = tic;
+        
+        status{k} = execute_save_stage(status{k}, ipp, env, testNumber);
+        status{k} = execute_tikz_stage(status{k}, ipp, env, testNumber);
+        status{k} = execute_hash_stage(status{k}, ipp, env, testNumber);
+        
+        if ~status{k}.closeall
+            close(status{k}.plotStage.fig_handle);
+        else
+            close all;
+        end
+        
+        elapsedTime = toc(elapsedTime);
+        status{k}.elapsedTime = elapsedTime;
+        fprintf(stdout, '%s ', status{k}.function);
+        fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
+    end
 end
 % =========================================================================
 function [status] = execute_plot_stage(defaultStatus, ipp, env, testNumber)
