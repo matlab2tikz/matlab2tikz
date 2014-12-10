@@ -502,6 +502,12 @@ function msg = format_error_message(e)
         msg = sprintf('%serror: %s\n', msg, e.message);
     end
     if ~isempty(e.identifier)
+        if strfind(lower(e.identifier),'testmatlab2tikz:')
+            % When "errors" occur in the test framework, i.e. a hash mismatch
+            % or no hash provided, there is no need to be very verbose.
+            % So we don't return the msgid and the stack trace in those cases!
+            return % only return the message
+        end
         msg = sprintf('%serror: %s\n', msg, e.identifier);
     end
     if ~isempty(e.stack)
@@ -674,7 +680,7 @@ function [stage, errorHasOccurred] = errorHandler(e,env)
     stage = emptyStage();
     stage.message = format_error_message(e);
     stage.error   = errorHasOccurred;
-
+    
     disp_error_message(env, stage.message);
 end
 % =========================================================================
