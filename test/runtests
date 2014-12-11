@@ -9,12 +9,15 @@ addpath(fullfile(pwd,'suites','private')); % octave does not find private data f
 suite = @ACID;
 allTests = 1:numel(suite(0));
 
-m2tFailing   = [29:31]; % FIXME: these are actual M2T problems 
-nondeterministic = []; %FIXME: these should be made deterministic 
-plotFailing  = [74 81:83 95]; % these plots fails anyway
-skippedTests = [9 12 42:44 46:49 54 59 62 71 72 75 76 80 87:91]; % these are skipped anyway.
+m2tFailing   = [29:31];       %FIXME: these are actual M2T problems 
+nondeterministic = [32 67];   %FIXME: these should be made deterministic 
+plotFailing  = [74 81:83 95]; %FIXME: these plots fail
 
-testsToRun = setdiff(allTests, [plotFailing skippedTests m2tFailing]);
+skippedTests = [9 12 42:44 46:49 54 59 62 71 72 75 76 80 87:91]; % these are skipped anyway.
+% hence they can be ignored safely (as long as they are ignored)
+
+testsToRun = setdiff(allTests, [plotFailing skippedTests ...
+                                m2tFailing nondeterministic]);
 
 # Run tests
 testMatlab2tikz('testFunctionIndices', testsToRun,...
