@@ -826,13 +826,14 @@ function m2t = drawAxes(m2t, handle)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Add color scaling
     % Append upper and lower limit of the colorbar.
-    % TODO Use caxis not only for color bars.
-    clim = caxis(handle);
-    m2t.axesContainers{end}.options = ...
-        opts_add(m2t.axesContainers{end}.options, 'point meta min', sprintf(m2t.ff, clim(1)));
-    m2t.axesContainers{end}.options = ...
-        opts_add(m2t.axesContainers{end}.options, 'point meta max', sprintf(m2t.ff, clim(2)));
-    
+    CLimMode = get(handle,'CLimMode');
+    if strcmpi(CLimMode,'manual')
+        clim = caxis(handle);
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, 'point meta min', sprintf(m2t.ff, clim(1)));
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, 'point meta max', sprintf(m2t.ff, clim(2)));
+    end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % In MATLAB, all plots are treated as 3D plots; it's just the view that
     % makes 2D plots appear like 2D.
