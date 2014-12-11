@@ -153,7 +153,6 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  stat.md5 = 'cf67b60b0c4efe9cc1f270b7fa72f2ad';
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
@@ -172,7 +171,6 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
   stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
-  stat.md5 = '4edf67301092b2332595e840b4835268';
 
   fplot( @cos, [0,2*pi] );
 
@@ -193,7 +191,6 @@ function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
   stat.description = [ 'Twisted plot of the sine function. '                   ,...
          'Pay particular attention to how markers and Infs/NaNs are treated.' ];
-  stat.md5 = '10c124e00426e8ae7e7d7ccdffafcbd5';
 
   x = -pi:pi/10:pi;
   y = sin(x);
@@ -217,7 +214,6 @@ end
 % =========================================================================
 function [stat] = markerSizes()
   stat.description = 'Marker sizes.';
-  stat.md5 = '087e09b95a72130816a83d7bf15eb598';
 
   hold on;
 
@@ -230,7 +226,6 @@ end
 % =========================================================================
 function [stat] = markerSizes2()
   stat.description = 'Line plot with with different marker sizes.';
-  stat.md5 = '726b8ec1a5067c9a868ca93b874e046b';
 
   hold on;
   grid on;
@@ -255,7 +250,6 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.md5 = '3befb2b182b0f3c2c19ba9f7fa22dc0e';
 
   x = -pi:.1:pi;
   y = sin(x);
@@ -279,7 +273,6 @@ end
 % =========================================================================
 function [stat] = linesWithOutliers()
     stat.description = 'Lines with outliers.';
-    stat.md5 = 'ea2084452c49d1a6e0379739371b2e0a';
 
     far = 200;
     x = [ -far, -1,   -1,  -far, -10, -0.5, 0.5, 10,  far, 1,   1,    far, 10,   0.5, -0.5, -10,  -far ];
@@ -290,7 +283,6 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
-  stat.md5 = 'fd564136304fa8e0dac8365abee077b5';
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -305,7 +297,6 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.md5 = '2bcbbf33b2b4a3de6fe3c282acdbf6ae';
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -322,7 +313,6 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
-  stat.md5 = '515a8b6209314b8a6ef0051b49b69508';
 
   contourf(peaks(20), 10);
   colorbar();
@@ -338,7 +328,6 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
-  stat.md5 = '';
 
   if getEnvironment() == 'Octave'
       fprintf( 'Octave can''t handle tight axes.\n\n' );
@@ -369,7 +358,6 @@ end
 % =========================================================================
 function [stat] = randomWithLines()
   stat.description = 'Lissajous points with lines.';
-  stat.md5 = '8974f87e7849393b8535c0c9daa95ef6';
 
   beta = 42.42;
   t = 1:150;
@@ -391,7 +379,6 @@ end
 % =========================================================================
 function [stat] = many_random_points ()
   stat.description = 'Test the performance when drawing many points.';
-  stat.md5 = '759011e36b98a371a628a67cc29ca81d';
 
   n = 1e3;
   alpha = 1024;
@@ -407,7 +394,6 @@ end
 % =========================================================================
 function [stat] = double_axes()
   stat.description = 'Double axes';
-  stat.md5 = '';
 
   dyb = 0.1;   % normalized units, bottom offset
   dyt = 0.1;   % separation between subsequent axes bottoms
@@ -469,7 +455,6 @@ end
 % =========================================================================
 function [stat] = double_axes2()
   stat.description = 'Double overlayed axes with a flip.' ;
-  stat.md5 = '245182a1593794038e5a601a5b7f6a42';
 
   ah1=axes;
   ph=plot([0 1],[0 1]);
@@ -489,7 +474,6 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.md5 = '25d66c6fdd92aeb32ddaff72d310e6f5';
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -498,7 +482,6 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
-  stat.md5 = '8c99ef632b10a219daa1f09083d18bf5';
 
   imagesc([1 10 100]);
   try
@@ -512,7 +495,6 @@ end
 % =========================================================================
 function [stat] = legendplot()
   stat.description = 'Test inserting of legends.';
-  stat.md5 = 'a9e097172b3d79183b8ecbebeb4d8bed';
 
 %    x = -pi:pi/20:pi;
 %    plot(x,cos(x),'-ro',x,sin(x),'-.b');
@@ -534,7 +516,6 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
-  stat.md5 = '7b378300e46c789401e388cf7501ccd8';
 
   x = -pi:pi/20:pi;
   plot( x, cos(x),'-ro',...
