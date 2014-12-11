@@ -825,7 +825,6 @@ function m2t = drawAxes(m2t, handle)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Add color scaling
-    % Append upper and lower limit of the colorbar.
     CLimMode = get(handle,'CLimMode');
     if strcmpi(CLimMode,'manual')
         clim = caxis(handle);
