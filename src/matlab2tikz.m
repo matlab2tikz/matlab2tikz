@@ -824,6 +824,16 @@ function m2t = drawAxes(m2t, handle)
             strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % Add color scaling
+    % Append upper and lower limit of the colorbar.
+    % TODO Use caxis not only for color bars.
+    clim = caxis(handle);
+    m2t.axesContainers{end}.options = ...
+        opts_add(m2t.axesContainers{end}.options, 'point meta min', sprintf(m2t.ff, clim(1)));
+    m2t.axesContainers{end}.options = ...
+        opts_add(m2t.axesContainers{end}.options, 'point meta max', sprintf(m2t.ff, clim(2)));
+    
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % In MATLAB, all plots are treated as 3D plots; it's just the view that
     % makes 2D plots appear like 2D.
     % Recurse into the children of this environment. Do this here to give the
@@ -1873,13 +1883,13 @@ function [m2t, str] = drawPatch(m2t, handle)
                         opts_append(m2t.axesContainers{end}.options, ...
                         matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
                     % Append upper and lower limit of the color mapping.
-                    clim = caxis;
-                    m2t.axesContainers{end}.options = ...
-                        opts_add(m2t.axesContainers{end}.options, ...
-                        'point meta min', sprintf(m2t.ff, clim(1)));
-                    m2t.axesContainers{end}.options = ...
-                        opts_add(m2t.axesContainers{end}.options, ...
-                        'point meta max', sprintf(m2t.ff, clim(2)));
+%                     clim = caxis;
+%                     m2t.axesContainers{end}.options = ...
+%                         opts_add(m2t.axesContainers{end}.options, ...
+%                         'point meta min', sprintf(m2t.ff, clim(1)));
+%                     m2t.axesContainers{end}.options = ...
+%                         opts_add(m2t.axesContainers{end}.options, ...
+%                         'point meta max', sprintf(m2t.ff, clim(2)));
                     % Note:
                     % Pgfplots can't currently use FaceColor and colormapped edge
                     % color in one go. The option 'surf' makes sure that
@@ -3651,12 +3661,6 @@ function axisOptions = getColorbarOptions(m2t, handle)
             'colorbar style', ...
             ['{' opts_print(m2t, cbarStyleOptions, ',') '}']);
     end
-
-    % Append upper and lower limit of the colorbar.
-    % TODO Use caxis not only for color bars.
-    clim = caxis(get(handle, 'axes'));
-    axisOptions = opts_add(axisOptions, 'point meta min', sprintf(m2t.ff, clim(1)));
-    axisOptions = opts_add(axisOptions, 'point meta max', sprintf(m2t.ff, clim(2)));
 
     % do _not_ handle colorbar's children
 end
