@@ -4180,7 +4180,7 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
         case ':'
             tikzLineStyle = 'dotted';
         case '-.'
-            tikzLineStyle = 'dash pattern=on 1pt off 3pt on 3pt off 3pt';
+            tikzLineStyle = 'dashdotted';
         otherwise
             error('matlab2tikz:translateLineStyle:UnknownLineStyle',...
                 'Unknown matlabLineStyle ''%s''.', matlabLineStyle);
