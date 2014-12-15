@@ -256,7 +256,7 @@ function [status] = execute_save_stage(status, ipp, env, testNumber)
         end
     catch %#ok
         e = lasterror('reset'); %#ok
-        [status.saveStage, errorHasOccurred] = errorHandler(e, env);
+        [status.saveStage] = errorHandler(e, env);
     end
     status.saveStage.epsFile = reference_eps;
     status.saveStage.pdfFile = reference_pdf;
@@ -283,7 +283,7 @@ function [status] = execute_tikz_stage(status, ipp, env, testNumber)
         % Remove (corrupted) output file. This is necessary to avoid that the
         % Makefile tries to compile it and fails.
         delete(gen_tex)
-        [status.tikzStage, errorHasOccurred] = errorHandler(e, env);
+        [status.tikzStage] = errorHandler(e, env);
     end
     status.tikzStage.texFile = gen_tex;
     status.tikzStage.pdfFile = gen_pdf;
