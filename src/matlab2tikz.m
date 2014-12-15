@@ -541,10 +541,11 @@ end
 % ==============================================================================
 function [m2t, axesHandles] = findPlotAxes(m2t, fh)
 % find axes handles that are not legends/colorbars
-    % NOTE: also do R2014b to avoid code duplication
+% store detected legends and colorbars in 'm2t'
+% fh            figure handle
     axesHandles = findobj(fh, 'type', 'axes');
 
-    % Remove all legend handles as they are treated separately.
+    % Remove all legend handles, as they are treated separately.
     if ~isempty(axesHandles)
         % TODO fix for octave
         tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
@@ -554,7 +555,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
         axesHandles = setdiff(axesHandles, m2t.legendHandles);
     end
 
-    % Remove all legend handles as they are treated separately.
+    % Remove all colorbar handles, as they are treated separately.
     if ~isempty(axesHandles)
         colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
         % Find all colorbar handles. This is MATLAB-only.
@@ -562,7 +563,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
         % Octave also finds text handles here; no idea why. Filter.
         m2t.cbarHandles = [];
         for h = cbarHandles(:)'
-          if strcmpi(get(h, 'Type'),'axes')
+          if any(strcmpi(get(h, 'Type'),{'axes','colorbar'}))
             m2t.cbarHandles = [m2t.cbarHandles, h];
           end
         end
@@ -571,7 +572,6 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     else
         m2t.cbarHandles = [];
     end
-
 end
 % ==============================================================================
 function addComments(fid, comment)
