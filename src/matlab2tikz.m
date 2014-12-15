@@ -4687,14 +4687,15 @@ end
 % ==============================================================================
 function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
 % Returns relevant axes. These are defines as visible axes that are no
-% colorbars. In addition, a bounding box around all relevant Axes is
+% colorbars. Function 'findPlotAxes()' ensures that 'axesHandles' does not
+% contain colorbars. In addition, a bounding box around all relevant Axes is
 % computed. This can be used to avoid undesired borders.
 % This function is the remaining code of alignSubPlots() in the alternative
 % positioning system.
     relevantAxesHandles = [];
     for axesHandle = axesHandles(:)'
-        % Only handle visible non-colorbar handles.
-        if axisIsVisible(axesHandle) && ~strcmp(get(axesHandle,'Tag'), 'Colorbar')
+        % Only handle visible handles.
+        if axisIsVisible(axesHandle)
             relevantAxesHandles(end+1) = axesHandle;
         end
     end
