@@ -2417,23 +2417,28 @@ function [m2t, str] = drawText(m2t, handle)
 end
 % ==============================================================================
 function [style] = getXYAlignmentOfText(handle, style)
-% sets the horizontal & vertical alginment options of a text object
+% sets the horizontal and vertical alignment options of a text object
     VerticalAlignment = get(handle, 'VerticalAlignment');
     HorizontalAlignment = get(handle, 'HorizontalAlignment');
 
+    alignment = '';
     switch VerticalAlignment
         case {'top', 'cap'}
-            style = opts_add(style, 'below');
+            alignment = [alignment, 'below', ' '];
         case {'baseline', 'bottom'}
-            style = opts_add(style, 'above');
+            alignment = [alignment, 'above', ' '];
     end
     switch HorizontalAlignment
         case 'left'
-            style = opts_add(style, 'right');
+            alignment = [alignment, 'right', ' '];
         case 'right'
-            style = opts_add(style, 'left');
+            alignment = [alignment, 'left', ' '];
+    end    
+    if ~isempty(strtrim(alignment))
+        style = opts_add(style, strtrim(alignment));
     end
-    % Add Horizontal alignment
+    
+    % Set 'align' option that is needed for multiline text
     style = opts_add(style, 'align', HorizontalAlignment);
 end
 % ==============================================================================
