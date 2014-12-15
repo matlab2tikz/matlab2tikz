@@ -826,7 +826,7 @@ function m2t = drawAxes(m2t, handle)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Add color scaling
     CLimMode = get(handle,'CLimMode');
-    if strcmpi(CLimMode,'manual')
+    if strcmpi(CLimMode,'manual') || ~isempty(m2t.cbarHandles)
         clim = caxis(handle);
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, 'point meta min', sprintf(m2t.ff, clim(1)));
