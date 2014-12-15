@@ -1,4 +1,4 @@
-function testMatlab2tikz(varargin)
+function nErrors = testMatlab2tikz(varargin)
 %TESTMATLAB2TIKZ    unit test driver for matlab2tikz
 %
 % TESTMATLAB2TIKZ('testFunctionIndices', INDICES, ...) or
@@ -28,10 +28,6 @@ function testMatlab2tikz(varargin)
 %   be checked carefully (e.g. with diff) against the previous version.
 %   Default: false
 % 
-% TESTMATLAB2TIKZ('exitAfterTests', LOGICAL, ...)
-%   Shuts down MATLAB/Octave after running the test suite. The exit code is the
-%   number of errors caught. Default: false.
-%
 % TESTMATLAB2TIKZ('testsuite', FUNCTION_HANDLE, ...)
 %   Determines which test suite is to be run. Default: @ACID
 %   A test suite is a function that takes a single integer argument, which:
@@ -80,7 +76,6 @@ function testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'report', 'latex', @isValidReportMode);
-  ipp = ipp.addParamValue(ipp, 'exitAfterTests', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'saveHashTable', false, @islogical);
   
   ipp = ipp.deprecateParam(ipp,'cleanBefore', {'callMake'});
@@ -120,7 +115,9 @@ function testMatlab2tikz(varargin)
       saveHashTable(status, ipp, env);
   end
   
-  exitAfterRunningTests(ipp, status);
+  if nargout > 0
+      nErrors = countNumberOfErrors(status);
+  end
 end
 % INPUT VALIDATION =============================================================
 function bool = isValidReportMode(str)
@@ -399,15 +396,6 @@ function cleanFiles(cleanBefore)
             fprintf(2, '\tNot completed succesfully\n\n');
         end
         cd(cwd);
-    end
-end
-% =========================================================================
-function exitAfterRunningTests(ipp, status)
-% (conditionally) closes MATLAB/Octave after running the test suite. The 
-% error code used, indicates how many errors were found.
-    if ipp.Results.exitAfterTests
-        nErrors = countNumberOfErrors(status);
-        exit(nErrors);
     end
 end
 % REPORT GENERATION ============================================================
