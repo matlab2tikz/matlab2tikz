@@ -3,7 +3,6 @@
 # Set path
 addpath(fullfile(pwd,'..','src'));
 addpath(fullfile(pwd,'suites'));
-addpath(fullfile(pwd,'suites','private')); % octave does not find private data files
 
 # Select functions to run
 suite = @ACID;
