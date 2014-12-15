@@ -98,6 +98,12 @@ function matlab2tikz(varargin)
 %   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
 %   (default: false)
 %
+%   MATLAB2TIKZ('yLabelFixed',BOOL,...) determines whether to manually set 
+%   the position of the y label relative to the axis. (default: false)
+%
+%   MATLAB2TIKZ('yLabelPosition',DOUBLE,...) determines the position of the 
+%   y axis label relative to the axis. (default: -0.1)
+%
 %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
 %   of the output file. (default: '')
 %
@@ -225,6 +231,8 @@ ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'dataPath', '', @ischar);
 ipp = ipp.addParamValue(ipp, 'relativeDataPath', '', @ischar);
 ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
+ipp = ipp.addParamValue(ipp, 'yLabelFixed', false, @islogical);
+ipp = ipp.addParamValue(ipp, 'yLabelPosition', -0.1, @isnumeric);
 
 % Maximum chunk length.
 % TeX parses files line by line with a buffer of size buf_size. If the
@@ -1151,6 +1159,11 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
             % at the box corners somewhat less nice, but allows for different
             % axis styles (e.g., colors).
             options = opts_add(options, 'separate axis lines', []);
+        end
+        if m2t.cmdOpts.Results.yLabelFixed            
+            options = ...
+                opts_add(options, ...
+                ['y label style={at={(axis description cs:',num2str(m2t.cmdOpts.Results.yLabelPosition),',.5)}},']);
         end
         options = ...
             opts_add(options, ...
