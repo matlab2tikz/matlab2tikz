@@ -348,7 +348,8 @@ userInfo(m2t, versionInfo, m2t.website, m2t.name);
 %% Save the figure as TikZ to file
 try
     saveToFile(m2t, fid, fileWasOpen);
-catch ME
+catch 
+    ME = lasterror; %#ok<LERR> Octave compatibility
     fclose(fid);
     rethrow(ME)
 end
