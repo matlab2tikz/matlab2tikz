@@ -486,23 +486,33 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     m2t.content.colors = generateColorDefinitions(m2t.extraRgbColorNames, ...
                             m2t.extraRgbColorSpecs, m2t.colorFormat);
 
-    % Finally print it to the file,
-    addComments(fid, m2t.content.comment);
-    addStandalone(m2t, fid, 'preamble');
-    addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
-    addStandalone(m2t, fid, 'begin');
+    % Finally print it to the file
+    try 
+        addComments(fid, m2t.content.comment);
+        addStandalone(m2t, fid, 'preamble');
+        addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
+        addStandalone(m2t, fid, 'begin');
     
-    % printAll() handles the actual figure plotting.
-    printAll(m2t, m2t.content, fid);
+        % printAll() handles the actual figure plotting.
+        printAll(m2t, m2t.content, fid);
 
-    addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
+        addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
 
-    addStandalone(m2t, fid, 'end');
+        addStandalone(m2t, fid, 'end');
+        ME = [];
+    catch
+        ME = lasterror; %#ok<LERR> Octave compatibility
+    end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     % close the file if necessary
     if ~fileWasOpen
         fclose(fid);
+    end
+    
+    % Rethrow error if any
+    if ~isempty(ME)
+        rethrow(ME)
     end
 end
 % ==============================================================================
