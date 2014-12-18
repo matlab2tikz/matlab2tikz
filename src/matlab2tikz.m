@@ -352,13 +352,15 @@ end
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
 % opens the output file and/or show a dialog to select one
 if ~isempty(m2t.cmdOpts.Results.filehandle)
-    fid     = m2t.cmdOpts.Results.filehandle;
+    fid         = m2t.cmdOpts.Results.filehandle;
     fileWasOpen = true;
     if ~isempty(m2t.cmdOpts.Results.filename)
         userWarning(m2t, ...
             'File handle AND file name for output given. File handle used, file name discarded.')
     end
+    m2t.tikzFileName = fopen(fid);
 else
+    fid         = [];
     fileWasOpen = false;
     % set filename
     if ~isempty(m2t.cmdOpts.Results.filename)
@@ -367,10 +369,9 @@ else
         [filename, pathname] = uiputfile({'*.tex;*.tikz'; '*.*'}, 'Save File');
         filename = fullfile(pathname, filename);
     end
-
-    fid = fileOpenForWrite(m2t, filename);
+    m2t.tikzFileName = filename;
 end
-m2t.tikzFileName = fopen(fid);
+
 end
 % ==============================================================================
 function l = filenameValidation(x, p)
@@ -485,9 +486,15 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     m2t.content.colors = generateColorDefinitions(m2t.extraRgbColorNames, ...
                             m2t.extraRgbColorSpecs, m2t.colorFormat);
-
+    
+    % Open file if was not open
+    if ~fileWasOpen
+        fid = fileOpenForWrite(m2t, m2t.tikzFileName);
+    end
+                        
     % Finally print it to the file
     try 
+        ME = [];
         addComments(fid, m2t.content.comment);
         addStandalone(m2t, fid, 'preamble');
         addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
@@ -499,7 +506,6 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
         addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
 
         addStandalone(m2t, fid, 'end');
-        ME = [];
     catch
         ME = lasterror; %#ok<LERR> Octave compatibility
     end
@@ -4250,8 +4256,16 @@ function [m2t, table] = makeTable(m2t, varargin)
 
         % write the data table to an external file
         fid = fileOpenForWrite(m2t, filename);
-        fprintf(fid, '%s', table);
+        try
+            ME = [];
+            fprintf(fid, '%s', table);
+        catch
+            ME = lasterror; %#ok<LERR> Octave compatibility
+        end
         fclose(fid);
+        if ~isempty(ME)
+            rethrow(ME)
+        end
 
         % put the filename in the TikZ output
         table = latexFilename;
