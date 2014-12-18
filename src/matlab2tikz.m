@@ -352,13 +352,15 @@ end
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
 % opens the output file and/or show a dialog to select one
 if ~isempty(m2t.cmdOpts.Results.filehandle)
-    fid     = m2t.cmdOpts.Results.filehandle;
+    fid         = m2t.cmdOpts.Results.filehandle;
     fileWasOpen = true;
     if ~isempty(m2t.cmdOpts.Results.filename)
         userWarning(m2t, ...
             'File handle AND file name for output given. File handle used, file name discarded.')
     end
+    m2t.tikzFileName = fopen(fid);
 else
+    fid         = [];
     fileWasOpen = false;
     % set filename
     if ~isempty(m2t.cmdOpts.Results.filename)
@@ -367,10 +369,9 @@ else
         [filename, pathname] = uiputfile({'*.tex;*.tikz'; '*.*'}, 'Save File');
         filename = fullfile(pathname, filename);
     end
-
-    fid = fileOpenForWrite(m2t, filename);
+    m2t.tikzFileName = filename;
 end
-m2t.tikzFileName = fopen(fid);
+
 end
 % ==============================================================================
 function l = filenameValidation(x, p)
@@ -485,24 +486,39 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     m2t.content.colors = generateColorDefinitions(m2t.extraRgbColorNames, ...
                             m2t.extraRgbColorSpecs, m2t.colorFormat);
-
-    % Finally print it to the file,
-    addComments(fid, m2t.content.comment);
-    addStandalone(m2t, fid, 'preamble');
-    addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
-    addStandalone(m2t, fid, 'begin');
     
-    % printAll() handles the actual figure plotting.
-    printAll(m2t, m2t.content, fid);
+    % Open file if was not open
+    if ~fileWasOpen
+        fid = fileOpenForWrite(m2t, m2t.tikzFileName);
+    end
+                        
+    % Finally print it to the file
+    try 
+        ME = [];
+        addComments(fid, m2t.content.comment);
+        addStandalone(m2t, fid, 'preamble');
+        addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
+        addStandalone(m2t, fid, 'begin');
+    
+        % printAll() handles the actual figure plotting.
+        printAll(m2t, m2t.content, fid);
 
-    addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
+        addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
 
-    addStandalone(m2t, fid, 'end');
+        addStandalone(m2t, fid, 'end');
+    catch
+        ME = lasterror; %#ok<LERR> Octave compatibility
+    end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     % close the file if necessary
     if ~fileWasOpen
         fclose(fid);
+    end
+    
+    % Rethrow error if any
+    if ~isempty(ME)
+        rethrow(ME)
     end
 end
 % ==============================================================================
@@ -541,10 +557,11 @@ end
 % ==============================================================================
 function [m2t, axesHandles] = findPlotAxes(m2t, fh)
 % find axes handles that are not legends/colorbars
-    % NOTE: also do R2014b to avoid code duplication
+% store detected legends and colorbars in 'm2t'
+% fh            figure handle
     axesHandles = findobj(fh, 'type', 'axes');
 
-    % Remove all legend handles as they are treated separately.
+    % Remove all legend handles, as they are treated separately.
     if ~isempty(axesHandles)
         % TODO fix for octave
         tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
@@ -554,7 +571,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
         axesHandles = setdiff(axesHandles, m2t.legendHandles);
     end
 
-    % Remove all legend handles as they are treated separately.
+    % Remove all colorbar handles, as they are treated separately.
     if ~isempty(axesHandles)
         colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
         % Find all colorbar handles. This is MATLAB-only.
@@ -562,7 +579,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
         % Octave also finds text handles here; no idea why. Filter.
         m2t.cbarHandles = [];
         for h = cbarHandles(:)'
-          if strcmpi(get(h, 'Type'),'axes')
+          if any(strcmpi(get(h, 'Type'),{'axes','colorbar'}))
             m2t.cbarHandles = [m2t.cbarHandles, h];
           end
         end
@@ -571,7 +588,6 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     else
         m2t.cbarHandles = [];
     end
-
 end
 % ==============================================================================
 function addComments(fid, comment)
@@ -4240,8 +4256,16 @@ function [m2t, table] = makeTable(m2t, varargin)
 
         % write the data table to an external file
         fid = fileOpenForWrite(m2t, filename);
-        fprintf(fid, '%s', table);
+        try
+            ME = [];
+            fprintf(fid, '%s', table);
+        catch
+            ME = lasterror; %#ok<LERR> Octave compatibility
+        end
         fclose(fid);
+        if ~isempty(ME)
+            rethrow(ME)
+        end
 
         % put the filename in the TikZ output
         table = latexFilename;
@@ -4687,14 +4711,15 @@ end
 % ==============================================================================
 function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
 % Returns relevant axes. These are defines as visible axes that are no
-% colorbars. In addition, a bounding box around all relevant Axes is
+% colorbars. Function 'findPlotAxes()' ensures that 'axesHandles' does not
+% contain colorbars. In addition, a bounding box around all relevant Axes is
 % computed. This can be used to avoid undesired borders.
 % This function is the remaining code of alignSubPlots() in the alternative
 % positioning system.
     relevantAxesHandles = [];
     for axesHandle = axesHandles(:)'
-        % Only handle visible non-colorbar handles.
-        if axisIsVisible(axesHandle) && ~strcmp(get(axesHandle,'Tag'), 'Colorbar')
+        % Only handle visible handles.
+        if axisIsVisible(axesHandle)
             relevantAxesHandles(end+1) = axesHandle;
         end
     end
