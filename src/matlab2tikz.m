@@ -346,12 +346,7 @@ versionInfo = ['The latest updates can be retrieved from\n'         ,...
 userInfo(m2t, versionInfo, m2t.website, m2t.name);
 
 %% Save the figure as TikZ to file
-try
-    saveToFile(m2t, fid, fileWasOpen);
-catch ME
-    fclose(fid);
-    rethrow(ME)
-end
+saveToFile(m2t, fid, fileWasOpen);
 end
 % ==============================================================================
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
