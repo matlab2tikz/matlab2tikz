@@ -1906,10 +1906,16 @@ function [m2t, str] = drawPatch(m2t, handle)
                 opts_add(m2t.axesContainers{end}.options, ...
                 matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
             
+            % Determine if mapping is direct or scaled
+            CDataMapping = get(handle,'CDataMapping');
+            if strcmp(CDataMapping, 'direct')
+                drawOptions = opts_add(drawOptions, 'colormap access','direct');
+            end
+            
             % Point meta
             if isvector(fvCData)
                 % Eventually scale within Clims
-                [m2t, fvCData] = cdata2colorindex(m2t,fvCData,handle);
+%                 [m2t, fvCData] = cdata2colorindex(m2t,fvCData,handle);
                 
             % True color CData, i.e. RGB in [0,1]
             else
