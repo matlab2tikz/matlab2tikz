@@ -336,9 +336,8 @@ if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
 end
 
 %% print some version info to the screen
-expr = '<a href="   %s">%s</a>\n';
-versionInfo = ['The latest updates can be retrieved from\n'         ,...
-               regexprep(expr,'%s',m2t.website)                     ,...
+versionInfo = ['The latest updates can be retrieved from\n' ,...
+               ' %s\n' ,...
                'where you can also make suggestions and rate %s.\n' ,...
                'For usage instructions, bug reports, the latest '   ,...
                'development versions and more, see\n'               ,...
@@ -1792,7 +1791,6 @@ function [m2t, str] = drawPatch(m2t, handle)
     % Each row of the faces matrix represents a distinct patch 
     % NOTE: pgfplot uses zero-based indexing into vertices and interpolates
     % counter-clockwise
-%     Faces    = fliplr(get(handle,'Faces')-1);
     Faces    = get(handle,'Faces')-1;
     Vertices = get(handle,'Vertices');
     
@@ -1912,13 +1910,19 @@ function [m2t, str] = drawPatch(m2t, handle)
                 drawOptions = opts_add(drawOptions, 'colormap access','direct');
             end
             
-            % Point meta
-            if isvector(fvCData)
-                % Eventually scale within Clims
-%                 [m2t, fvCData] = cdata2colorindex(m2t,fvCData,handle);
+            % Switch to face CData if not using interpolated shader
+            isFaceColorFlat = isempty(strfind(opts_get(drawOptions,'shader'), 'interp'));
+            isVerticesCData = rowsCData == size(Vertices,1);
+            if isFaceColorFlat && isVerticesCData
                 
-            % True color CData, i.e. RGB in [0,1]
-            else
+                % Take first vertex color (see FaceColor in Patch Properties)
+                fvCData         = fvCData(Faces(:,1)+ 1,:);
+                rowsCData       = size(fvCData,1);
+                isVerticesCData = false;
+            end
+            
+            % Point meta as true color CData, i.e. RGB in [0,1]
+            if ~isvector(fvCData)
                 % Create additional custom colormap
                 m2t.axesContainers{end}.options(end+1,:) = ...
                     {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
@@ -1929,7 +1933,7 @@ function [m2t, str] = drawPatch(m2t, handle)
             end
             
             % Add pointmeta data to vertices or faces
-            if rowsCData == size(Vertices,1)
+            if isVerticesCData
                 columnNames{end+1}   = 'c';
                 verticesTableOptions = opts_add(verticesTableOptions, 'point meta','\thisrow{c}');
                 Vertices             = [Vertices, fvCData];
