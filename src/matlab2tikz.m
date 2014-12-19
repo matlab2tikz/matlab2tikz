@@ -1880,7 +1880,8 @@ function [m2t, str] = drawPatch(m2t, handle)
             userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
             
             % Default interpolated shader,not supported by polygon, to faceted
-            if ismember(opts_get(patchOptions, 'shader'),{'interp','faceted interp'})
+            isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
+            if ~isFaceColorFlat
                 userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
                 patchOptions = opts_remove(patchOptions, 'shader');
                 patchOptions = opts_add(patchOptions, 'shader','faceted');
@@ -1911,10 +1912,9 @@ function [m2t, str] = drawPatch(m2t, handle)
             end
             
             % Switch to face CData if not using interpolated shader
-            isFaceColorFlat = isempty(strfind(opts_get(drawOptions,'shader'), 'interp'));
+            isFaceColorFlat = isempty(strfind(opts_get(drawOptions, 'shader'),'interp'));
             isVerticesCData = rowsCData == size(Vertices,1);
             if isFaceColorFlat && isVerticesCData
-                
                 % Take first vertex color (see FaceColor in Patch Properties)
                 fvCData         = fvCData(Faces(:,1)+ 1,:);
                 rowsCData       = size(fvCData,1);
@@ -2306,8 +2306,10 @@ function [m2t,env] = drawSurface(m2t, handle)
     % Since 'z buffer=sort' is computationally more expensive for LaTeX, try
     % to avoid it for the most default situations, e.g., when dx and dy are
     % rank-1-matrices.
-    if any(~isnan(dx(1,:)) & dx(1,:) ~= dx(2,:)) ...
-            || any(~isnan(dy(:,1)) & dy(:,1) ~= dy(:,2))
+    % Enforce 'z buffer=sort' if shader is flat
+    if isempty(strfind(opts_get(opts, 'shader'),'interp')) ||...
+        any(~isnan(dx(1,:)) & dx(1,:) ~= dx(2,:)) ||...
+        any(~isnan(dy(:,1)) & dy(:,1) ~= dy(:,2))
         opts = opts_add(opts, 'z buffer','sort');
     end
 
