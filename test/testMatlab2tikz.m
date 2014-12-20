@@ -1,20 +1,20 @@
-function matlab2tikz_acidtest(varargin)
-%MATLAB2TIKZ_ACIDTEST    unit test driver for matlab2tikz
+function testMatlab2tikz(varargin)
+%TESTMATLAB2TIKZ    unit test driver for matlab2tikz
 %
-% MATLAB2TIKZ_ACIDTEST('testFunctionIndices', INDICES, ...) or
-%   MATLAB2TIKZ_ACIDTEST(INDICES, ...) runs the test only for the specified
+% TESTMATLAB2TIKZ('testFunctionIndices', INDICES, ...) or
+%   TESTMATLAB2TIKZ(INDICES, ...) runs the test only for the specified
 %   indices. When empty, all tests are run. (Default: []).
 %
-% MATLAB2TIKZ_ACIDTEST('extraOptions', {'name',value, ...}, ...)
+% TESTMATLAB2TIKZ('extraOptions', {'name',value, ...}, ...)
 %   passes the cell array of options to MATLAB2TIKZ. Default: {}
 %
-% MATLAB2TIKZ_ACIDTEST('figureVisible', LOGICAL, ...)
+% TESTMATLAB2TIKZ('figureVisible', LOGICAL, ...)
 %   plots the figure visibly during the test process. Default: false
 %
-% MATLAB2TIKZ_ACIDTEST('cleanBefore', LOGICAL, ...)
+% TESTMATLAB2TIKZ('cleanBefore', LOGICAL, ...)
 %   tries to run "make clean" in the ./tex folder. Default: true
 %
-% MATLAB2TIKZ_ACIDTEST('testsuite', FUNCTION_HANDLE, ...)
+% TESTMATLAB2TIKZ('testsuite', FUNCTION_HANDLE, ...)
 %   Determines which test suite is to be run. Default: @ACID
 %   A test suite is a function that takes a single integer argument, which:
 %     when 0: returns a cell array containing the N function handles to the tests
@@ -292,6 +292,7 @@ function texfile_init(texfile_handle)
             '\\usetikzlibrary{plotmarks}\n\n'                       , ...
             '\\usepackage{pgfplots}\n'                              , ...
             '\\pgfplotsset{compat=newest}\n\n'                      , ...
+            '\\usepgfplotslibrary{patchplots}\n\n'                  , ...
             '\\usepackage[margin=0.5in]{geometry}\n'                , ...
             '\\newlength\\figurewidth\n'                            , ...
             '\\setlength\\figurewidth{0.4\\textwidth}\n\n'          , ...
@@ -599,11 +600,11 @@ end
 % =========================================================================
 function [stage, errorHasOccurred] = errorHandler(e,env)
 % common error handler code: save and print to console
-errorHasOccurred = true;
-stage = emptyStage();
-stage.message = format_error_message(e);
-stage.error   = errorHasOccurred;
+    errorHasOccurred = true;
+    stage = emptyStage();
+    stage.message = format_error_message(e);
+    stage.error   = errorHasOccurred;
 
-disp_error_message(env, stage.message);
+    disp_error_message(env, stage.message);
 end
 % =========================================================================
