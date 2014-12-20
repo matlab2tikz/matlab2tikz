@@ -2619,107 +2619,104 @@ function [m2t,opts,s] = shaderOpts(m2t, handle, selectedType)
 %       caller
 
     % Initialize
-    opts            = opts_new;
-    hasOneEdgeColor = false;
-    hasOneFaceColor = false;
+    opts              = opts_new;
+    s.hasOneEdgeColor = false;
+    s.hasOneFaceColor = false;
 
     % Get relevant Face and Edge color properties
-    faceColor = get(handle, 'FaceColor');
-    edgeColor = get(handle, 'EdgeColor');
-
-    % Not filling face color, we just need a mesh then
-    if isNone(faceColor)
-        hasOneFaceColor = true; % consider void as true
-        plotType = 'mesh';
+    s.faceColor = get(handle, 'FaceColor');
+    s.edgeColor = get(handle, 'EdgeColor');
+    
+    if isNone(s.faceColor) && isNone(s.edgeColor)
+        s.plotType        = 'none';
+        s.hasOneEdgeColor = true;
+    elseif isNone(s.faceColor)
+        s.plotType        = 'mesh';
+        s.hasOneFaceColor = true;
+        [m2t, opts, s]    = shaderOptsMesh(m2t, handle, opts, s);
     else
-        plotType = selectedType;
+        s.plotType     = selectedType; 	
+        [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s);
+    end
+end
+% ==============================================================================
+function [m2t, opts, s] = shaderOptsMesh(m2t, handle, opts, s)
+
+    % Edge 'interp'
+    if strcmpi(s.edgeColor, 'interp')
+        opts = opts_add(opts,'shader','flat');
+    
+    % Edge RGB
+    else
+        s.hasOneEdgeColor = true;
+        [m2t, xEdgeColor] = getColor(m2t, handle, s.edgeColor, 'patch');
+        opts              = opts_add(opts,'color',xEdgeColor);
+    end
+end
+% ==============================================================================
+function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
+
+            
+    % Set opacity if FaceAlpha < 1 in MATLAB
+    s.faceAlpha = get(handle, 'FaceAlpha');
+    if isnumeric(s.faceAlpha) && s.faceAlpha ~= 1.0
+        opts = opts_add(opts,'opacity',sprintf(m2t.ff,s.faceAlpha));
     end
     
-    % SWITCH on selected plot type
-    switch plotType
-        case {'patch','surf'}
-            
-            % Set opacity if FaceAlpha < 1 in MATLAB
-            faceAlpha = get(handle, 'FaceAlpha');
-            if isnumeric(faceAlpha) && faceAlpha ~= 1.0
-                opts = opts_add(opts,'opacity',sprintf(m2t.ff,faceAlpha));
-            end
-
-            % Edge 'none'
-            if isNone(edgeColor)
-                hasOneEdgeColor = true; % consider void as true
-                if strcmpi(faceColor, 'flat')
-                    opts = opts_add(opts,'shader','flat');
-                elseif strcmpi(faceColor, 'interp');
-                    opts = opts_add(opts,'shader','interp');
-                else
-                    [m2t,xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-                    opts             = opts_add(opts,'fill',xFaceColor);
-                end
-
-            % Edge 'interp'
-            elseif strcmpi(edgeColor, 'interp')
-                if strcmpi(faceColor, 'interp')
-                    opts = opts_add(opts,'shader','interp');
-                elseif strcmpi(faceColor, 'flat')
-                    opts = opts_add(opts,'shader','faceted');
-                else
-                    hasOneFaceColor  = true;
-                    [m2t,xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-                    opts             = opts_add(opts,'fill',xFaceColor);
-
-                end
-
-            % Edge 'flat'
-            elseif strcmpi(edgeColor, 'flat')
-                if strcmpi(faceColor, 'flat')
-                    opts = opts_add(opts,'shader','flat corner');
-                elseif strcmpi(faceColor, 'interp')
-                    opts = opts_add(opts,'shader','faceted interp');
-                else
-                    hasOneFaceColor  = true;
-                    opts             = opts_add(opts,'shader','flat corner');
-                    [m2t,xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-                    opts             = opts_add(opts,'fill',xFaceColor);
-                end
-
-            % Edge RGB
-            else
-                hasOneEdgeColor   = true;
-                [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
-                if isnumeric(faceColor)
-                    hasOneFaceColor   = true;
-                    [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
-                    opts              = opts_add(opts,'fill',xFaceColor);
-                    opts              = opts_add(opts,'faceted color',xEdgeColor);
-                elseif strcmpi(faceColor,'interp')
-                    opts = opts_add(opts,'shader','faceted interp');
-                    opts = opts_add(opts,'faceted color',xEdgeColor);
-                else
-                    opts = opts_add(opts,'shader','flat corner');
-                    opts = opts_add(opts,'draw',xEdgeColor);
-                end
-            end
-
-        % MESH 
-        case 'mesh'
-            if isNone(edgeColor)
-                plotType        = 'none';
-                hasOneEdgeColor = true;
-            
-            % Edge 'interp'
-            elseif strcmpi(edgeColor, 'interp')
-                opts = opts_add(opts,'shader','flat');
-
-            % Edge RGB
-            else
-                hasOneEdgeColor   = true;
-                [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
-                opts              = opts_add(opts,'color',xEdgeColor);
-            end
+    % Edge 'none'
+    if isNone(s.edgeColor)
+        s.hasOneEdgeColor = true; % consider void as true
+        if strcmpi(s.faceColor, 'flat')
+            opts = opts_add(opts,'shader','flat');
+        elseif strcmpi(s.faceColor, 'interp');
+            opts = opts_add(opts,'shader','interp');
+        else
+            [m2t,xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
+            opts             = opts_add(opts,'fill',xFaceColor);
+        end
+        
+    % Edge 'interp'
+    elseif strcmpi(s.edgeColor, 'interp')
+        if strcmpi(s.faceColor, 'interp')
+            opts = opts_add(opts,'shader','interp');
+        elseif strcmpi(s.faceColor, 'flat')
+            opts = opts_add(opts,'shader','faceted');
+        else
+            s.hasOneFaceColor = true;
+            [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
+            opts              = opts_add(opts,'fill',xFaceColor);
+         end
+        
+    % Edge 'flat'
+    elseif strcmpi(s.edgeColor, 'flat')
+        if strcmpi(s.faceColor, 'flat')
+            opts = opts_add(opts,'shader','flat corner');
+        elseif strcmpi(s.faceColor, 'interp')
+            opts = opts_add(opts,'shader','faceted interp');
+        else
+            s.hasOneFaceColor = true;
+            opts              = opts_add(opts,'shader','flat corner');
+            [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
+            opts              = opts_add(opts,'fill',xFaceColor);
+        end
+        
+    % Edge RGB
+    else
+        s.hasOneEdgeColor = true;
+        [m2t, xEdgeColor] = getColor(m2t, handle, s.edgeColor, 'patch');
+        if isnumeric(s.faceColor)
+            s.hasOneFaceColor = true;
+            [m2t, xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
+            opts              = opts_add(opts,'fill',xFaceColor);
+            opts              = opts_add(opts,'faceted color',xEdgeColor);
+        elseif strcmpi(s.faceColor,'interp')
+            opts = opts_add(opts,'shader','faceted interp');
+            opts = opts_add(opts,'faceted color',xEdgeColor);
+        else
+            opts = opts_add(opts,'shader','flat corner');
+            opts = opts_add(opts,'draw',xEdgeColor);
+        end
     end
-    s = struct('plotType',plotType, 'faceColor',faceColor, 'edgeColor', edgeColor,...
-               'hasOneEdgeColor',hasOneEdgeColor, 'hasOneFaceColor', hasOneFaceColor);
 end
 % ==============================================================================
 function [m2t, str] = drawScatterPlot(m2t, h)
