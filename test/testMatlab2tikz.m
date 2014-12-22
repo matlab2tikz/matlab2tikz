@@ -402,13 +402,13 @@ end
 function makeReport(ipp, status)
     switch ipp.Results.report
         case 'latex'
-            makeLatexReport(ipp, status);
+            makeLatexReport(status);
         case 'travis'
-            makeTravisReport(ipp, status);
+            makeTravisReport(status);
     end 
 end
 % =========================================================================
-function makeTravisReport(ipp, status)
+function makeTravisReport(status)
 % make a readable Travis report    
 stdout = 1;
 fprintf(stdout,'\n\n');
@@ -452,9 +452,9 @@ end
     end
 end
 % =========================================================================
-function makeLatexReport(ipp, status)
+function makeLatexReport(status)
 % generate a LaTeX report
-  testsuite = ipp.Results.testsuite;
+  testsuite = status{1}.testsuite;
   testsuiteName = func2str(testsuite);
 
   % first, initialize the tex output
