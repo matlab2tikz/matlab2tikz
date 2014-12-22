@@ -4,6 +4,10 @@
 addpath(fullfile(pwd,'..','src'));
 addpath(fullfile(pwd,'suites'));
 
+if isempty(which('countNumberOfErrors'))
+    addpath(fullfile(pwd,'private')); % work-around
+end
+
 # Select functions to run
 suite = @ACID;
 allTests = 1:numel(suite(0));
