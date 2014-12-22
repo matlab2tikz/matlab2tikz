@@ -262,6 +262,22 @@ function [status] = execute_save_stage(status, ipp, env, testNumber)
     status.saveStage.pdfFile = reference_pdf;
     status.saveStage.texReference = reference_fig;
 end
+function ensureLineEndings(filename)
+% Read in one line and test the ending
+fid = fopen(filename,'r+');
+testline = fgets(fid);
+if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
+    % Rewind, read the whole
+    fseek(fid,0,'bof');
+    str = fread(fid,'*char')';
+
+    % Replace, overwrite and close
+    str = strrep(str, testline(end), sprintf('\r\n'));
+    fseek(fid,0,'bof');
+    fprintf(fid,'%s',str);
+    fclose(fid);
+end
+end
 % =========================================================================
 function [status] = execute_tikz_stage(status, ipp, env, testNumber)
 % test stage: TikZ file generation
@@ -655,23 +671,6 @@ function str = formatIssuesForTeX(issues)
                   'UniformOutput', false);
   strs = [strs; repmat({SEPARATOR}, 1, numel(strs))];
   str = sprintf('{\\color{blue} \\texttt{%s}}', [strs{:}]);
-end
-% =========================================================================
-function ensureLineEndings(filename)
-% Read in one line and test the ending
-fid = fopen(filename,'r+');
-testline = fgets(fid);
-if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
-    % Rewind, read the whole
-    fseek(fid,0,'bof');
-    str = fread(fid,'*char')';
-
-    % Replace, overwrite and close
-    str = strrep(str, testline(end), sprintf('\r\n'));
-    fseek(fid,0,'bof');
-    fprintf(fid,'%s',str);
-    fclose(fid);
-end
 end
 % =========================================================================
 function nErrors = countNumberOfErrors(status)
