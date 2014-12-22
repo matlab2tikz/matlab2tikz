@@ -164,7 +164,7 @@ function status = runIndicatedTests(ipp, env)
         
         fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
         status{k} = emptyStatus(testsuite, testNumber);
-        status{k} = execute_plot_stage(status{k}, ipp, env, testNumber);
+        status{k} = execute_plot_stage(status{k}, ipp, env);
         
         % plot not successful
         if status{k}.skip
@@ -173,9 +173,9 @@ function status = runIndicatedTests(ipp, env)
         
         elapsedTime = tic;
         
-        status{k} = execute_save_stage(status{k}, ipp, env, testNumber);
-        status{k} = execute_tikz_stage(status{k}, ipp, env, testNumber);
-        status{k} = execute_hash_stage(status{k}, ipp, env, testNumber);
+        status{k} = execute_save_stage(status{k}, ipp, env);
+        status{k} = execute_tikz_stage(status{k}, ipp, env);
+        status{k} = execute_hash_stage(status{k}, ipp, env);
         
         if ~status{k}.closeall && ~isempty(status{k}.plotStage.fig_handle)
             close(status{k}.plotStage.fig_handle);
@@ -190,9 +190,11 @@ function status = runIndicatedTests(ipp, env)
     end
 end
 % =========================================================================
-function [status] = execute_plot_stage(defaultStatus, ipp, env, testNumber)
+function [status] = execute_plot_stage(defaultStatus, ipp, env)
 % plot a test figure
     testsuite = ipp.Results.testsuite;
+    testNumber = defaultStatus.index;
+    
     % open a window
     fig_handle = figure('visible',ipp.Results.figureVisible);
     errorHasOccurred = false;
@@ -220,11 +222,13 @@ function [status] = execute_plot_stage(defaultStatus, ipp, env, testNumber)
     end
 end
 % =========================================================================
-function [status] = execute_save_stage(status, ipp, env, testNumber)
+function [status] = execute_save_stage(status, ipp, env)
 % save stage: saves the figure to EPS/PDF depending on env
     if strcmpi(ipp.Results.report,'travis')
         return; % do not save reference image in Travis
     end
+    testNumber = status.index;
+    
     reference_eps = sprintf('data/reference/test%d-reference.eps', testNumber);
     reference_pdf = sprintf('data/reference/test%d-reference.pdf', testNumber);
     reference_fig = sprintf('data/reference/test%d-reference', testNumber);
@@ -273,8 +277,9 @@ if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
 end
 end
 % =========================================================================
-function [status] = execute_tikz_stage(status, ipp, env, testNumber)
+function [status] = execute_tikz_stage(status, ipp, env)
 % test stage: TikZ file generation
+    testNumber = status.index;
     gen_tex = sprintf('data/converted/test%d-converted.tex', testNumber);
     gen_pdf  = sprintf('data/converted/test%d-converted.pdf', testNumber);
     % now, test matlab2tikz
@@ -299,7 +304,7 @@ function [status] = execute_tikz_stage(status, ipp, env, testNumber)
     status.tikzStage.pdfFile = gen_pdf;
 end
 % =========================================================================
-function [status] = execute_hash_stage(status, ipp, env, testNumber)
+function [status] = execute_hash_stage(status, ipp, env)
     calculated = '';
     expected = '';
     try
@@ -409,7 +414,6 @@ function cleanFiles(cleanBefore)
     end
 end
 % HELPER FUNCTIONS =============================================================
-% =========================================================================
 function defaultStatus = emptyStatus(testsuite, testNumber)
 % constructs an empty status struct
 defaultStatus = struct('function',               '', ...
