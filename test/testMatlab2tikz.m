@@ -410,12 +410,11 @@ end
 % =========================================================================
 function makeTravisReport(ipp, status)
 % make a readable Travis report    
-indices = ipp.Results.testFunctionIndices;
 stdout = 1;
 fprintf(stdout,'\n\n');
 for iTest = 1:numel(status)
-    testNumber = indices(iTest);
     S = status{iTest};
+    testNumber = S.index;
     summary = '';
     if S.skip
         summary = 'SKIPPED';
@@ -455,7 +454,6 @@ end
 % =========================================================================
 function makeLatexReport(ipp, status)
 % generate a LaTeX report
-  indices = ipp.Results.testFunctionIndices;
   testsuite = ipp.Results.testsuite;
   testsuiteName = func2str(testsuite);
 
@@ -465,8 +463,8 @@ function makeLatexReport(ipp, status)
   assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
   texfile_init(fh);
   
-  for k = 1:length(indices)
-      testNumber = indices(k);
+  for k = 1:length(status)
+      testNumber = status{k}.index;
       % ...and finally write the bits to the LaTeX file
       reference_fig = status{k}.saveStage.texReference;
       gen_pdf = status{k}.tikzStage.pdfFile;
@@ -475,15 +473,16 @@ function makeLatexReport(ipp, status)
 
   % Write the summary table to the LaTeX file
   texfile_tab_completion_init(fh)
-  for k = 1:length(indices)
+  for k = 1:length(status)
       stat = status{k};
+      testNumber = stat.index;
       % Break table up into pieces if it gets too long for one page
       if ~mod(k,35)
           texfile_tab_completion_finish(fh);
           texfile_tab_completion_init(fh);
       end
 
-      fprintf(fh, '%d & \\texttt{%s}', indices(k), name2tex(stat.function));
+      fprintf(fh, '%d & \\texttt{%s}', testNumber, name2tex(stat.function));
       if stat.skip
           fprintf(fh, ' & --- & skipped & ---');
       else
@@ -504,15 +503,16 @@ function makeLatexReport(ipp, status)
   % Write the error messages to the LaTeX file if there are any
   if errorHasOccurred(status)
       fprintf(fh, '\\section*{Error messages}\n\\scriptsize\n');
-      for k = 1:length(indices)
+      for k = 1:length(status)
           stat = status{k};
+          testNumber = stat.index;
           if isempty(stat.plotStage.message) && ...
              isempty(stat.saveStage.message) && ...
              isempty(stat.tikzStage.message)
               continue % No error messages for this test case
           end
 
-          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', indices(k), name2tex(stat.function));
+          fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', testNumber, name2tex(stat.function));
           print_verbatim_information(fh, 'Plot generation', stat.plotStage.message);
           print_verbatim_information(fh, 'PDF generation' , stat.saveStage.message);
           print_verbatim_information(fh, 'matlab2tikz'    , stat.tikzStage.message);
