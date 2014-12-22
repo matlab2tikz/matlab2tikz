@@ -1,4 +1,4 @@
-function nErrors = testMatlab2tikz(varargin)
+function status = testMatlab2tikz(varargin)
 %TESTMATLAB2TIKZ    unit test driver for matlab2tikz
 %
 % TESTMATLAB2TIKZ('testFunctionIndices', INDICES, ...) or
@@ -104,8 +104,6 @@ function nErrors = testMatlab2tikz(varargin)
   
   status = runIndicatedTests(ipp, env);
   
-  makeReport(ipp, status);
-
   % print out overall timing
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
@@ -113,10 +111,6 @@ function nErrors = testMatlab2tikz(varargin)
   if ipp.Results.saveHashTable
       fprintf(stdout, 'Saving reference hash table...\n');
       saveHashTable(status, ipp, env);
-  end
-  
-  if nargout > 0
-      nErrors = countNumberOfErrors(status);
   end
 end
 % INPUT VALIDATION =============================================================
@@ -414,15 +408,7 @@ function cleanFiles(cleanBefore)
         cd(cwd);
     end
 end
-% REPORT GENERATION ============================================================
-function makeReport(ipp, status)
-    switch ipp.Results.report
-        case 'latex'
-            makeLatexReport(status);
-        case 'travis'
-            makeTravisReport(status);
-    end 
-end
+% HELPER FUNCTIONS =============================================================
 % =========================================================================
 function defaultStatus = emptyStatus(testsuite, testNumber)
 % constructs an empty status struct
