@@ -11,11 +11,12 @@ function status = testMatlab2tikz(varargin)
 % TESTMATLAB2TIKZ('figureVisible', LOGICAL, ...)
 %   plots the figure visibly during the test process. Default: false
 %
-% TESTMATLAB2TIKZ('report', CHAR, ...)
-%   sets what kind of report should be generated. Possible choices are:
-%    - 'latex': creates a LaTeX report
-%    - 'travis': for Travis CI
-%   Default: 'latex'
+% TESTMATLAB2TIKZ('stages', CELLSTR, ...)
+%   where the elements of the cellstr should be either
+%    - 'tikz': to run matlab2tikz
+%    - 'save': to export the MATLAB figure as EPS/PDF
+%    - 'hash': to check the hash of the output
+%  Default: {'tikz','save','hash'}
 %
 % TESTMATLAB2TIKZ('callMake', LOGICAL, ...)
 %   uses "make" to further automate running the test suite, i.e.
@@ -75,16 +76,14 @@ function status = testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
   ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
-  ipp = ipp.addParamValue(ipp, 'report', 'latex', @isValidReportMode);
+  ipp = ipp.addParamValue(ipp, 'stages', {'tikz','save','hash'}, @isValidStageDef);
   ipp = ipp.addParamValue(ipp, 'saveHashTable', false, @islogical);
   
   ipp = ipp.deprecateParam(ipp,'cleanBefore', {'callMake'});
 
   ipp = ipp.parse(ipp, varargin{:});
   
-  ipp = sanitizeReportMode(ipp);
-  ipp = sanitizeFunctionIndices(ipp);
-  ipp = sanitizeFigureVisible(ipp);
+  ipp = sanitizeInputs(ipp);
   
   % -----------------------------------------------------------------------
 
@@ -114,11 +113,23 @@ function status = testMatlab2tikz(varargin)
   end
 end
 % INPUT VALIDATION =============================================================
-function bool = isValidReportMode(str)
-% validation of the report mode (i.e. LaTeX or Travis)
-    bool = ischar(str) && ismember(lower(str), {'latex','travis'});
+function bool = isValidStageDef(val)
+    % determine whether a cell str contains only valid stages
+    validStages = {'tikz','save','hash'};
+    bool = iscellstr(val) && ...
+           all(cellfun(@(c)ismember(lower(c), validStages), val));
 end
-% =========================================================================
+% ==============================================================================
+function ipp = sanitizeInputs(ipp)
+    % sanitize all input arguments
+    ipp = sanitizeStagesDefinition(ipp);
+    ipp = sanitizeFunctionIndices(ipp);
+    ipp = sanitizeFigureVisible(ipp);
+end
+function ipp = sanitizeStagesDefinition(ipp)
+   % sanitize the passed stages definition field
+   ipp.Results.stages = lower(ipp.Results.stages);
+end
 function ipp = sanitizeFunctionIndices(ipp)
 % sanitize the passed function indices to the range of the test suite
   % query the number of test functions
@@ -135,12 +146,6 @@ function ipp = sanitizeFunctionIndices(ipp)
   end
   ipp.Results.testFunctionIndices = indices;
 end
-% =========================================================================
-function ipp = sanitizeReportMode(ipp)
-    % sanitizes the report mode
-    ipp.Results.report = lower(ipp.Results.report);
-end
-% =========================================================================
 function ipp = sanitizeFigureVisible(ipp)
     % sanitizes the figure visible option from boolean to ON/OFF
     if ipp.Results.figureVisible
@@ -192,6 +197,7 @@ end
 % =========================================================================
 function [status] = execute_plot_stage(defaultStatus, ipp, env)
 % plot a test figure
+    if ismember('plot', ipp.Results.stages)
     testsuite = ipp.Results.testsuite;
     testNumber = defaultStatus.index;
     
@@ -220,45 +226,45 @@ function [status] = execute_plot_stage(defaultStatus, ipp, env)
     if status.skip || errorHasOccurred
         close(fig_handle);
     end
+    end
 end
 % =========================================================================
 function [status] = execute_save_stage(status, ipp, env)
 % save stage: saves the figure to EPS/PDF depending on env
-    if strcmpi(ipp.Results.report,'travis')
-        return; % do not save reference image in Travis
-    end
-    testNumber = status.index;
-    
-    reference_eps = sprintf('data/reference/test%d-reference.eps', testNumber);
-    reference_pdf = sprintf('data/reference/test%d-reference.pdf', testNumber);
-    reference_fig = sprintf('data/reference/test%d-reference', testNumber);
-    
-    % Save reference output as PDF
-    try
-        switch env
-            case 'MATLAB'
-                % MATLAB does not generate properly cropped PDF files.
-                % So, we generate EPS files that are converted later on.
-                print(gcf, '-depsc2', reference_eps);
-                
-                % On R2014b Win, line endings in .eps are Unix style
-                % https://github.com/matlab2tikz/matlab2tikz/issues/370
-                ensureLineEndings(reference_eps);
-                
-            case 'Octave'
-                % In Octave, figures are properly cropped when using  print().
-                print(reference_pdf, '-dpdf', '-S415,311', '-r150');
-                pause(1.0)
-            otherwise
-                error('Unknown environment. Need MATLAB(R) or GNU Octave.')
+    if ismember('save', ipp.Results.stages)
+        testNumber = status.index;
+
+        reference_eps = sprintf('data/reference/test%d-reference.eps', testNumber);
+        reference_pdf = sprintf('data/reference/test%d-reference.pdf', testNumber);
+        reference_fig = sprintf('data/reference/test%d-reference', testNumber);
+
+        % Save reference output as PDF
+        try
+            switch env
+                case 'MATLAB'
+                    % MATLAB does not generate properly cropped PDF files.
+                    % So, we generate EPS files that are converted later on.
+                    print(gcf, '-depsc2', reference_eps);
+
+                    % On R2014b Win, line endings in .eps are Unix style
+                    % https://github.com/matlab2tikz/matlab2tikz/issues/370
+                    ensureLineEndings(reference_eps);
+
+                case 'Octave'
+                    % In Octave, figures are properly cropped when using  print().
+                    print(reference_pdf, '-dpdf', '-S415,311', '-r150');
+                    pause(1.0)
+                otherwise
+                    error('Unknown environment. Need MATLAB(R) or GNU Octave.')
+            end
+        catch %#ok
+            e = lasterror('reset'); %#ok
+            [status.saveStage] = errorHandler(e, env);
         end
-    catch %#ok
-        e = lasterror('reset'); %#ok
-        [status.saveStage] = errorHandler(e, env);
+        status.saveStage.epsFile = reference_eps;
+        status.saveStage.pdfFile = reference_pdf;
+        status.saveStage.texReference = reference_fig;
     end
-    status.saveStage.epsFile = reference_eps;
-    status.saveStage.pdfFile = reference_pdf;
-    status.saveStage.texReference = reference_fig;
 end
 function ensureLineEndings(filename)
 % Read in one line and test the ending
@@ -279,59 +285,64 @@ end
 % =========================================================================
 function [status] = execute_tikz_stage(status, ipp, env)
 % test stage: TikZ file generation
-    testNumber = status.index;
-    gen_tex = sprintf('data/converted/test%d-converted.tex', testNumber);
-    gen_pdf  = sprintf('data/converted/test%d-converted.pdf', testNumber);
-    % now, test matlab2tikz
-    try
-        cleanfigure(status.extraCleanfigureOptions{:});
-        matlab2tikz('filename', gen_tex, ...
-            'showInfo', false, ...
-            'checkForUpdates', false, ...
-            'dataPath', 'data/converted/', ...
-            'standalone', true, ...
-            ipp.Results.extraOptions{:}, ...
-            status.extraOptions{:} ...
-            );
-    catch %#ok
-        e = lasterror('reset'); %#ok
-        % Remove (corrupted) output file. This is necessary to avoid that the
-        % Makefile tries to compile it and fails.
-        delete(gen_tex)
-        [status.tikzStage] = errorHandler(e, env);
+    if ismember('tikz', ipp.Results.stages)
+        testNumber = status.index;
+        gen_tex = sprintf('data/converted/test%d-converted.tex', testNumber);
+        gen_pdf  = sprintf('data/converted/test%d-converted.pdf', testNumber);
+        % now, test matlab2tikz
+        try
+            cleanfigure(status.extraCleanfigureOptions{:});
+            matlab2tikz('filename', gen_tex, ...
+                'showInfo', false, ...
+                'checkForUpdates', false, ...
+                'dataPath', 'data/converted/', ...
+                'standalone', true, ...
+                ipp.Results.extraOptions{:}, ...
+                status.extraOptions{:} ...
+                );
+        catch %#ok
+            e = lasterror('reset'); %#ok
+            % Remove (corrupted) output file. This is necessary to avoid that the
+            % Makefile tries to compile it and fails.
+            delete(gen_tex)
+            [status.tikzStage] = errorHandler(e, env);
+        end
+        status.tikzStage.texFile = gen_tex;
+        status.tikzStage.pdfFile = gen_pdf;
     end
-    status.tikzStage.texFile = gen_tex;
-    status.tikzStage.pdfFile = gen_pdf;
 end
 % =========================================================================
 function [status] = execute_hash_stage(status, ipp, env)
-    calculated = '';
-    expected = '';
-    try
-        expected = getReferenceHash(status, ipp, env);
-        
-        switch env
-            case 'Octave'
-                calculated = md5sum(status.tikzStage.texFile);
-            case 'MATLAB'
-                %TODO: implement MD5 for MATLAB (this exists somewhere online)
-                error('testMatlab2tikz:NoHashAlgorithm', ...
-                      'MD5 algorithm is not implemented in MATLAB');
+    % test stage: check recorded hash checksum
+    if ismember('hash', ipp.Results.stages)
+        calculated = '';
+        expected = '';
+        try
+            expected = getReferenceHash(status, ipp, env);
+
+            switch env
+                case 'Octave'
+                    calculated = md5sum(status.tikzStage.texFile);
+                case 'MATLAB'
+                    %TODO: implement MD5 for MATLAB (this exists somewhere online)
+                    error('testMatlab2tikz:NoHashAlgorithm', ...
+                          'MD5 algorithm is not implemented in MATLAB');
+            end
+
+            % do the actual check
+            if ~strcmpi(expected, calculated)
+                % throw an error to signal the testing framework
+                error('testMatlab2tikz:HashMismatch', ...
+                      'The hash "%s" does not match the reference hash "%s"', ...
+                       calculated, expected);
+            end
+        catch %#ok
+            e = lasterror('reset'); %#ok
+            [status.hashStage] = errorHandler(e, env);
         end
-        
-        % do the actual check
-        if ~strcmpi(expected, calculated)
-            % throw an error to signal the testing framework
-            error('testMatlab2tikz:HashMismatch', ...
-                  'The hash "%s" does not match the reference hash "%s"', ...
-                   calculated, expected);
-        end
-    catch %#ok
-        e = lasterror('reset'); %#ok
-        [status.hashStage] = errorHandler(e, env);
+        status.hashStage.expected = expected;
+        status.hashStage.found    = calculated;
     end
-    status.hashStage.expected = expected;
-    status.hashStage.found    = calculated;
 end
 % MD5 HASHING SUPPORT =====================================================
 function hash = getReferenceHash(status, ipp, env)

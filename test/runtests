@@ -22,11 +22,19 @@ skippedTests = [9 12 42:44 46:49 54 59 62 71 72 75 76 80 87:91]; % these are ski
 testsToRun = setdiff(allTests, [plotFailing skippedTests ...
                                 m2tFailing nondeterministic]);
 
+if strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true')
+    stagesArg = {'stages', {'plot','tikz','hash'}};
+else
+    stagesArg = {}; % use default
+end
+
 # Run tests
 status = testMatlab2tikz('testFunctionIndices', testsToRun,...
                           'testsuite',           suite, ...
-                          'report',              'travis');
+                          stagesArg{:});
 
 makeTravisReport(status)
+
+# Calculate exit code
 nErrors = countNumberOfErrors(status);
 exit(nErrors);
