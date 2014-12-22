@@ -2,16 +2,38 @@ function makeTravisReport(status)
 % make a readable Travis report    
 stdout = 1;
 fprintf(stdout,'\n\n');
-for iTest = 1:numel(status)
-    S = status{iTest};
-    testNumber = S.index;
+
+    displayDetailsOnFailure(stdout, status);
+    displaySummaryTable(stdout, status);
+end
+% ==============================================================================
+function displayDetailsOnFailure(stream, status)
+    %FIXME: echo a file when an error has occurred
+end
+% ==============================================================================
+function displaySummaryTable(stream, status)
+    % display a summary table
+    for iTest = 1:numel(status)
+        fprintf(stream, '%s\n', formatSummaryRow(status{iTest}));
+    end
+    
+    nErrors = countNumberOfErrors(status);
+    if nErrors > 0
+        fprintf(stream,'\n%3d of %3d tests failed\n', nErrors, numel(status));
+    end
+end
+% ==============================================================================
+function str = formatSummaryRow(oneStatus)
+    % format the status of a single test for the summary table
+    testNumber = oneStatus.index;
+    testSuite  = func2str(oneStatus.testsuite);
     summary = '';
-    if S.skip
+    if oneStatus.skip
         summary = 'SKIPPED';
     else
-        stages = getStagesFromStatus(S);
+        stages = getStagesFromStatus(oneStatus);
         for jStage = 1:numel(stages)
-            thisStage = S.(stages{jStage});
+            thisStage = oneStatus.(stages{jStage});
             if ~thisStage.error
                 continue;
             end
@@ -33,11 +55,9 @@ for iTest = 1:numel(status)
         end
         summary = strtrim(summary);
     end
-    functionName = strjust(sprintf('%25s', S.function), 'left');
-    fprintf(stdout, 'Test %3d %s: %s\n', testNumber, functionName, summary);
+    functionName = strjust(sprintf('%25s', oneStatus.function), 'left');
+    
+    str = sprintf('%15s(%3d) %s: %s', ...
+          testSuite, testNumber, functionName, summary);
 end
-    nErrors = countNumberOfErrors(status);
-    if nErrors > 0
-        fprintf(stdout,'\n%3d of %3d tests failed\n', nErrors, numel(status));
-    end
-end
+% ==============================================================================
