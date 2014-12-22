@@ -169,7 +169,7 @@ function status = runIndicatedTests(ipp, env)
         testNumber = indices(k);
         
         fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
-        status{k} = emptyStatus();
+        status{k} = emptyStatus(testsuite, testNumber);
         status{k} = execute_plot_stage(status{k}, ipp, env, testNumber);
         
         % plot not successful
@@ -714,10 +714,12 @@ function stages = getStagesFromStatus(status)
     stages = fields(cellfun(@(f) ~isempty(strfind(f,'Stage')), fields));
 end
 % =========================================================================
-function defaultStatus = emptyStatus()
+function defaultStatus = emptyStatus(testsuite, testNumber)
 % constructs an empty status struct
 defaultStatus = struct('function',               '', ...
                        'description',            '',...
+                       'testsuite',              testsuite ,...
+                       'index',                  testNumber, ...
                        'issues',                 [],...
                        'skip',                   false, ... % skipped this test?
                        'closeall',               false, ... % call close all after?
