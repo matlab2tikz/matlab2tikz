@@ -655,7 +655,11 @@ function texfile_tab_completion_finish(texfile_handle)
 end
 % =========================================================================
 function texName = name2tex(matlabIdentifier)
-texName = strrep(matlabIdentifier, '_', '\_');
+    % convert a MATLAB identifier/function handle to a TeX string
+    if isa(matlabIdentifier, 'function_handle')
+        matlabIdentifier = func2str(matlabIdentifier);
+    end
+    texName = strrep(matlabIdentifier, '_', '\_');
 end
 % =========================================================================
 function str = formatIssuesForTeX(issues)
