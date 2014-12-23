@@ -102,12 +102,13 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
               tmp           = regexp(tmp, filesep,'split','once');
               tmp           = cat(1,tmp{:});
               topZipFolder  = unique(tmp(:,1));
+              
               if numel(topZipFolder) == 1
                   unzippedFilesTarget = fullfile(targetPath, tmp(:,2));
                   for ii = 1:numel(unzippedFiles)
                       movefile(unzippedFiles{ii}, unzippedFilesTarget{ii})
                   end
-                  delete(fullfile(targetPath, topZipFolder{1}));
+                  rmdir(fullfile(targetPath, topZipFolder{1}),'s');
               end
               
               versionFile = fullfile(targetPath,['version-', version]);
