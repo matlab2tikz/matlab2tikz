@@ -1,3 +1,4 @@
+function status = runtests
 %% This file runs the complete MATLAB2TIKZ test suite.
 % It is mainly used for testing on a continuous integration server, but it can
 % also be used on a development machine.
@@ -6,9 +7,7 @@
 addpath(fullfile(pwd,'..','src'));
 addpath(fullfile(pwd,'suites'));
 
-if isempty(which('countNumberOfErrors'))
-    addpath(fullfile(pwd,'private')); % work-around
-end
+CI_MODE = strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true');
 
 %% Select functions to run
 suite = @ACID;
@@ -20,8 +19,8 @@ plotFailing  = [74 81:83 95]; %FIXME: these plots fail
 
 testsToRun = setdiff(allTests, [plotFailing m2tFailing nondeterministic]);
 
-if strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true')
-    stagesArg = {'stages', {'plot', 'tikz', 'hash'}};
+if CI_MODE
+    stagesArg = {'stages', {'plot', 'tikz', 'hash', 'type'}};
 else
     stagesArg = {}; % use default
 end
@@ -35,4 +34,6 @@ makeTravisReport(status)
 
 %% Calculate exit code
 nErrors = countNumberOfErrors(status);
-exit(nErrors);
+if CI_MODE 
+    exit(nErrors);
+end
