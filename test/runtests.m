@@ -1,4 +1,4 @@
-function status = runtests
+function statusAll = runtests
 %% This file runs the complete MATLAB2TIKZ test suite.
 % It is mainly used for testing on a continuous integration server, but it can
 % also be used on a development machine.
@@ -47,8 +47,10 @@ statusNormalTests = statusAll(~ismember(allTests, testsKnownToFail));
 
 %% Generate a report                        
 if ~isempty(statusKnownToFail)
-    disp('The following tests are known to fail. They do not block the build!');
+    fprintf(1, ['\nThe following tests are known to fail.' ...
+                'They do not cause the build to fail, however.\n\n']);
     makeTravisReport(statusKnownToFail);
+    fprintf('\n\nOnly the following tests determine the build outcome:\n');
 end
 makeTravisReport(statusNormalTests)
 
