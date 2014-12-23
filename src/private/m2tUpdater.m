@@ -1,4 +1,4 @@
-function updater(name, fileExchangeUrl, version, verbose, env)
+function m2tUpdater(name, fileExchangeUrl, version, verbose, env)
 %UPDATER   Auto-update matlab2tikz.
 %   Only for internal usage.
 
@@ -27,64 +27,101 @@ function updater(name, fileExchangeUrl, version, verbose, env)
 %   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %   POSSIBILITY OF SUCH DAMAGE.
 % =========================================================================
+  url = 'https://github.com/matlab2tikz/matlab2tikz/releases/';
   try
-      html = urlread([fileExchangeUrl, '/all_files']);
+      html = urlread(url);
   catch %#ok
       % Couldn't load the URL -- never mind.
       html = '';
   end
+  
+  expression = '(?<=matlab2tikz\/matlab2tikz\/releases\/tag\/)\d+\.\d+\.\d+';
+  tags       = regexp(html, expression, 'match');
+  ntags      = numel(tags);
+  inew       = false(ntags,1);
+  for ii = 1:ntags
+      inew(ii) = isVersionBelow(env, version, tags{ii});
+  end
+  nnew = nnz(inew);
+  
+  if nnew == 1
+      mostRecentVersion = tags{inew};
+  elseif nnew > 1
+      tags   = tags(inew);
+      tagnum = zeros(nnew,1);
+      for ii = 1:nnew
+          tagnum(ii) = [10000,100,1] * versionArray(env, tags{ii});
+      end
+      [~, imax] = max(tagnum);
+      mostRecentVersion = tags{imax};
+  else
+      mostRecentVersion = '';
+  end
+  
   % Search for a string "/version-1.6.3" in the HTML. This assumes
   % that the package author has added a file by that name to
   % to package. This is a rather dirty hack around FileExchange's
   % lack of native versioning information.
-  mostRecentVersion = regexp(html, '/version-(\d+\.\d+\.\d+)', 'tokens');
   if ~isempty(mostRecentVersion)
-      if isVersionBelow(env, version, mostRecentVersion{1}{1})
-          userInfo(verbose, '**********************************************\n');
-          userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion{1}{1});
-          userInfo(verbose, '**********************************************\n');
-
-          reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
-          if strcmp(reply, 'y')
-              % Download the files and unzip its contents into the folder
-              % above the folder that contains the current script.
-              % This assumes that the file structure is something like
-              %
-              %   src/matlab2tikz.m
-              %   src/[...]
-              %   AUTHORS
-              %   ChangeLog
-              %   [...]
-              %
-              % on the hard drive and the zip file. In particular, this assumes
-              % that the folder on the hard drive is writable by the user
-              % and that matlab2tikz.m is not symlinked from some other place.
-              pathstr = fileparts(mfilename('fullpath'));
-              targetPath = [pathstr, filesep, '..', filesep];
-              userInfo(verbose, ['Downloading and unzipping to ', targetPath, '...']);
-              upgradeSuccess = false;
-              try
-                  unzippedFiles = unzip([fileExchangeUrl, '?download=true'], targetPath);
-                  upgradeSuccess = true; %~isempty(unzippedFiles);
-                  userInfo(verbose, 'done.');
-              catch
-                  userInfo(verbose, 'FAILED.');
-              end
-              if upgradeSuccess
-                  % TODO explicitly delete all of the old content
-                  % Delete old version number file.
-                  versionFile = [pathstr, filesep, 'version-', version];
-                  if exist(versionFile, 'file') == 2
-                      delete(versionFile);
-                  end
-                  % TODO anything better than error()?
-                  error('Upgrade successful. Please re-execute.');
-              else
-                  error('Upgrade failed.');
-              end
+      userInfo(verbose, '**********************************************\n');
+      userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion);
+      userInfo(verbose, '**********************************************\n');
+      
+      reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
+      if strcmp(reply, 'y')
+          % Download the files and unzip its contents into the folder
+          % above the folder that contains the current script.
+          % This assumes that the file structure is something like
+          %
+          %   src/matlab2tikz.m
+          %   src/[...]
+          %   AUTHORS
+          %   ChangeLog
+          %   [...]
+          %
+          % on the hard drive and the zip file. In particular, this assumes
+          % that the folder on the hard drive is writable by the user
+          % and that matlab2tikz.m is not symlinked from some other place.
+          pathstr    = fileparts(mfilename('fullpath'));
+          targetPath = fullfile(pathstr, '..', '..');
+          if ispc
+              printPath = strrep(targetPath,'\','\\');
+          else
+              printPath = targetPath;
           end
-          userInfo(verbose, '');
+          userInfo(verbose, ['Downloading and unzipping to ', printPath, '...']);
+          upgradeSuccess = false;
+          
+          try
+              html          = urlread([fileExchangeUrl, '?download=true']);
+              expression    = '(?<=\<a href=")[\w\-\/:\.]+(?=">redirected)';
+              url           = regexp(html, expression,'match','once');
+              unzippedFiles = unzip(url, targetPath);
+                
+              tmp           = strrep(unzippedFiles,[targetPath, filesep],'');
+              tmp           = regexp(tmp, filesep,'split','once');
+              tmp           = cat(1,tmp{:});
+              topZipFolder  = unique(tmp(:,1));
+              if numel(topZipFolder) == 1
+                  unzippedFilesTarget = fullfile(targetPath, tmp(:,2));
+                  for ii = 1:numel(unzippedFiles)
+                      movefile(unzippedFiles{ii}, unzippedFilesTarget{ii})
+                  end
+                  delete(topZipFolder{1});
+              end
+              
+              versionFile = [pathstr, filesep, 'version-', version];
+              if exist(versionFile, 'file') == 2
+                  delete(versionFile);
+              end
+              
+              upgradeSuccess = true; %~isempty(unzippedFiles);
+              userInfo(verbose, 'DONE: ');
+          catch
+              userInfo(verbose, 'FAILED:');
+          end
       end
+      userInfo(verbose, '');
   end
 end
 % =========================================================================
