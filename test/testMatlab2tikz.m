@@ -324,15 +324,7 @@ function [status] = execute_hash_stage(status, ipp, env)
         expected = '';
         try
             expected = getReferenceHash(status, ipp, env);
-
-            switch env
-                case 'Octave'
-                    calculated = md5sum(status.tikzStage.texFile);
-                case 'MATLAB'
-                    %TODO: implement MD5 for MATLAB (this exists somewhere online)
-                    error('testMatlab2tikz:NoHashAlgorithm', ...
-                          'MD5 algorithm is not implemented in MATLAB');
-            end
+            calculated = calculateMD5Hash(status.tikzStage.texFile, env);
 
             % do the actual check
             if ~strcmpi(expected, calculated)
