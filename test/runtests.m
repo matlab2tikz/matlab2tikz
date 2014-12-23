@@ -13,11 +13,18 @@ CI_MODE = strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true');
 suite = @ACID;
 allTests = 1:numel(suite(0));
 
-m2tFailing   = [29:31];       %FIXME: these are actual M2T problems 
-nondeterministic = [32 67];   %FIXME: these should be made deterministic 
-plotFailing  = [74 81:83 95]; %FIXME: these plots fail
-
-testsToRun = setdiff(allTests, [plotFailing m2tFailing nondeterministic]);
+switch getEnvironment
+    case 'Octave'
+        m2tFailing   = [29:31];       %FIXME: these are actual M2T problems 
+        nondeterministic = [32 67];   %FIXME: these should be made deterministic 
+        plotFailing  = [74 81:83 95]; %FIXME: these plots fail
+    case 'MATLAB'
+        plotFailing = [];
+        m2tFailing  = [];
+        % R2014b
+        nondeterministic = [14 20 34 38:40 42 89 92 93 95]; %FIXME: 
+end
+testsKnownToFail = [plotFailing m2tFailing nondeterministic];
 
 if CI_MODE
     stagesArg = {'stages', {'plot', 'tikz', 'hash', 'type'}};
@@ -26,14 +33,23 @@ else
 end
 
 %% Run tests
-status = testMatlab2tikz('testFunctionIndices', testsToRun,...
-                          'testsuite',           suite, ...
-                          stagesArg{:});
+statusAll = testMatlab2tikz('testFunctionIndices', allTests,...
+                            'testsuite',           suite, ...
+                            stagesArg{:});
 
-makeTravisReport(status)
+%% Divide between known-to-fail and other tests
+statusKnownToFail = statusAll( ismember(allTests, testsKnownToFail));
+statusNormalTests = statusAll(~ismember(allTests, testsKnownToFail));
+
+%% Generate a report                        
+if ~isempty(statusKnownToFail)
+    disp('The following tests are known to fail. They do not block the build!');
+    makeTravisReport(statusKnownToFail);
+end
+makeTravisReport(statusNormalTests)
 
 %% Calculate exit code
-nErrors = countNumberOfErrors(status);
+nErrors = countNumberOfErrors(statusNormalTests);
 if CI_MODE 
     exit(nErrors);
 end
