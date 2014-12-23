@@ -2,36 +2,7 @@ function makeTravisReport(status)
 % make a readable Travis report
     stdout = 1;
 
-    displayDetailsOnFailure(stdout, status);
     displaySummaryTable(stdout, status);
-end
-% ==============================================================================
-function displayDetailsOnFailure(stream, status)
-    % for each test case, it output the generated output when failures are
-    % detected
-    didOutput = false;
-    for iTest = 1:numel(status)
-        stat = status{iTest};
-        if errorHasOccurred(stat)
-            didOutput = true;
-            fprintf(stream, '\n%s(%d): %s failed\n', ...
-                    func2str(stat.testsuite), stat.index, stat.function);
-            displayOutputFile(stream, stat);
-        end
-    end
-    if didOutput
-        fprintf(stream, '\n\n');
-    end
-end
-% ==============================================================================
-function displayOutputFile(stream, stat)
-    % display a (generated TikZ) file if it exists
-    filename = stat.tikzStage.texFile;
-    if exist(filename, 'file')
-        fprintf(stream, '\n%%%%%%%% BEGIN FILE "%s" %%%%%%%%\n', filename);
-        type(filename); %NOTE: better read and output to the stream
-        fprintf(stream, '\n%%%%%%%% END   FILE "%s" %%%%%%%%\n', filename);
-    end
 end
 % ==============================================================================
 function displaySummaryTable(stream, status)
