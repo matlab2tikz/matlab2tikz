@@ -17,7 +17,8 @@ function status = testMatlab2tikz(varargin)
 %    - 'tikz': to run matlab2tikz
 %    - 'save': to export the MATLAB figure as EPS/PDF
 %    - 'hash': to check the hash of the output
-%  Default: {'plot', 'tikz','save','hash'}
+%    - 'type': type-out the generatex file on failures
+%  Default: {'plot', 'tikz', 'save', 'hash', 'type'}
 %
 % TESTMATLAB2TIKZ('callMake', LOGICAL, ...)
 %   uses "make" to further automate running the test suite, i.e.
@@ -71,13 +72,15 @@ function status = testMatlab2tikz(varargin)
   % -----------------------------------------------------------------------
   ipp = m2tInputParser;
 
+  defaultStages = {'plot','tikz','save','hash','type'};
+  
   ipp = ipp.addOptional(ipp, 'testFunctionIndices', [], @isfloat);
   ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
   ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
-  ipp = ipp.addParamValue(ipp, 'stages', {'plot','tikz','save','hash'}, @isValidStageDef);
+  ipp = ipp.addParamValue(ipp, 'stages', defaultStages, @isValidStageDef);
   ipp = ipp.addParamValue(ipp, 'saveHashTable', false, @islogical);
   
   ipp = ipp.deprecateParam(ipp,'cleanBefore', {'callMake'});
@@ -116,7 +119,7 @@ end
 % INPUT VALIDATION =============================================================
 function bool = isValidStageDef(val)
     % determine whether a cell str contains only valid stages
-    validStages = {'plot','tikz','save','hash'};
+    validStages = {'plot','tikz','save','hash','type'};
     bool = iscellstr(val) && ...
            all(cellfun(@(c)ismember(lower(c), validStages), val));
 end
@@ -182,6 +185,7 @@ function status = runIndicatedTests(ipp, env)
         status{k} = execute_save_stage(status{k}, ipp, env);
         status{k} = execute_tikz_stage(status{k}, ipp, env);
         status{k} = execute_hash_stage(status{k}, ipp, env);
+        status{k} = execute_type_stage(status{k}, ipp, env);
         
         if ~status{k}.closeall && ~isempty(status{k}.plotStage.fig_handle)
             close(status{k}.plotStage.fig_handle);
@@ -343,6 +347,23 @@ function [status] = execute_hash_stage(status, ipp, env)
         end
         status.hashStage.expected = expected;
         status.hashStage.found    = calculated;
+    end
+end
+% =========================================================================
+function [status] = execute_type_stage(status, ipp, env)
+    if ismember('type', ipp.Results.stages)
+        try 
+            filename = status.tikzStage.texFile;
+            stream = 1; % stdout
+            if errorHasOccurred(status) && exist(filename, 'file')
+                fprintf(stream, '\n%%%%%%%% BEGIN FILE "%s" %%%%%%%%\n', filename);
+                type(filename);
+                fprintf(stream, '\n%%%%%%%% END   FILE "%s" %%%%%%%%\n', filename);
+            end
+        catch
+            e = lasterror('reset');
+            [status.typeStage] = errorHandler(e, env);
+        end
     end
 end
 % MD5 HASHING SUPPORT =====================================================
