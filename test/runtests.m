@@ -1,4 +1,4 @@
-function statusAll = runtests
+function statusAll = runtests(varargin)
 %% This file runs the complete MATLAB2TIKZ test suite.
 % It is mainly used for testing on a continuous integration server, but it can
 % also be used on a development machine.
@@ -45,7 +45,7 @@ extraOptions = {'width' ,'\figurewidth' ,...
 statusAll = testMatlab2tikz('testFunctionIndices', allTests,...
                             'testsuite',           suite, ...
                             'extraOptions',        extraOptions, ...
-                            stagesArg{:});
+                            stagesArg{:}, varargin{:});
 
 %% Divide between known-to-fail and other tests
 statusKnownToFail = statusAll( ismember(allTests, testsKnownToFail));
