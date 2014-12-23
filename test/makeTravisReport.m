@@ -13,7 +13,9 @@ function displaySummaryTable(stream, status)
     
     nErrors = countNumberOfErrors(status);
     if nErrors > 0
-        fprintf(stream,'\n%3d of %3d tests failed\n', nErrors, numel(status));
+        fprintf(stream,'\n%3d of %3d tests failed. :-( \n', nErrors, numel(status));
+    else
+        fprintf(stream,'\nAll tests were successful. :-) \n');
     end
 end
 % ==============================================================================
