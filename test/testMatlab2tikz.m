@@ -13,10 +13,11 @@ function status = testMatlab2tikz(varargin)
 %
 % TESTMATLAB2TIKZ('stages', CELLSTR, ...)
 %   where the elements of the cellstr should be either
+%    - 'plot': to make the plot
 %    - 'tikz': to run matlab2tikz
 %    - 'save': to export the MATLAB figure as EPS/PDF
 %    - 'hash': to check the hash of the output
-%  Default: {'tikz','save','hash'}
+%  Default: {'plot', 'tikz','save','hash'}
 %
 % TESTMATLAB2TIKZ('callMake', LOGICAL, ...)
 %   uses "make" to further automate running the test suite, i.e.
@@ -76,7 +77,7 @@ function status = testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
   ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
   ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
-  ipp = ipp.addParamValue(ipp, 'stages', {'tikz','save','hash'}, @isValidStageDef);
+  ipp = ipp.addParamValue(ipp, 'stages', {'plot','tikz','save','hash'}, @isValidStageDef);
   ipp = ipp.addParamValue(ipp, 'saveHashTable', false, @islogical);
   
   ipp = ipp.deprecateParam(ipp,'cleanBefore', {'callMake'});
@@ -115,7 +116,7 @@ end
 % INPUT VALIDATION =============================================================
 function bool = isValidStageDef(val)
     % determine whether a cell str contains only valid stages
-    validStages = {'tikz','save','hash'};
+    validStages = {'plot','tikz','save','hash'};
     bool = iscellstr(val) && ...
            all(cellfun(@(c)ismember(lower(c), validStages), val));
 end
@@ -198,34 +199,34 @@ end
 function [status] = execute_plot_stage(defaultStatus, ipp, env)
 % plot a test figure
     if ismember('plot', ipp.Results.stages)
-    testsuite = ipp.Results.testsuite;
-    testNumber = defaultStatus.index;
-    
-    % open a window
-    fig_handle = figure('visible',ipp.Results.figureVisible);
-    errorHasOccurred = false;
+        testsuite = ipp.Results.testsuite;
+        testNumber = defaultStatus.index;
 
-    % plot the figure
-    try
-        status = testsuite(testNumber);
-        
-    catch %#ok
-        e = lasterror('reset'); %#ok
-        
-        status.description = '\textcolor{red}{Error during plot generation.}';
-        [status.plotStage, errorHasOccurred] = errorHandler(e, env);
-    end
-    
-    status = fillStruct(status, defaultStatus);
-    if isempty(status.function)
-        allFuncs = testsuite(0);
-        status.function = func2str(allFuncs{testNumber});
-    end
-    status.plotStage.fig_handle = fig_handle;
-    
-    if status.skip || errorHasOccurred
-        close(fig_handle);
-    end
+        % open a window
+        fig_handle = figure('visible',ipp.Results.figureVisible);
+        errorHasOccurred = false;
+
+        % plot the figure
+        try
+            status = testsuite(testNumber);
+
+        catch %#ok
+            e = lasterror('reset'); %#ok
+
+            status.description = '\textcolor{red}{Error during plot generation.}';
+            [status.plotStage, errorHasOccurred] = errorHandler(e, env);
+        end
+
+        status = fillStruct(status, defaultStatus);
+        if isempty(status.function)
+            allFuncs = testsuite(0);
+            status.function = func2str(allFuncs{testNumber});
+        end
+        status.plotStage.fig_handle = fig_handle;
+
+        if status.skip || errorHasOccurred
+            close(fig_handle);
+        end
     end
 end
 % =========================================================================

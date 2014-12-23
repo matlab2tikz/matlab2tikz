@@ -23,7 +23,7 @@ testsToRun = setdiff(allTests, [plotFailing skippedTests ...
                                 m2tFailing nondeterministic]);
 
 if strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true')
-    stagesArg = {'stages', {'plot','tikz','hash'}};
+    stagesArg = {'stages', {'plot', 'tikz', 'hash'}};
 else
     stagesArg = {}; % use default
 end
