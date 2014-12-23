@@ -113,7 +113,7 @@ function status = testMatlab2tikz(varargin)
 
   if ipp.Results.saveHashTable
       fprintf(stdout, 'Saving reference hash table...\n');
-      saveHashTable(status, ipp, env);
+      saveHashTable(status, ipp);
   end
 end
 % INPUT VALIDATION =============================================================
@@ -323,7 +323,7 @@ function [status] = execute_hash_stage(status, ipp, env)
         calculated = '';
         expected = '';
         try
-            expected = getReferenceHash(status, ipp, env);
+            expected = getReferenceHash(status, ipp);
             calculated = calculateMD5Hash(status.tikzStage.texFile, env);
 
             % do the actual check
@@ -359,11 +359,11 @@ function [status] = execute_type_stage(status, ipp, env)
     end
 end
 % MD5 HASHING SUPPORT =====================================================
-function hash = getReferenceHash(status, ipp, env)
+function hash = getReferenceHash(status, ipp)
     % retrieves a reference hash from a persistent hash table
     persistent hashTable
-    if isempty(hashTable) || ~strcmp(hashTable.suite, ipp.Results.testsuite)
-        hashTable = loadHashTable(ipp, env);
+    if isempty(hashTable) || ~isequal(hashTable.suite, ipp.Results.testsuite)
+        hashTable = loadHashTable(ipp.Results.testsuite);
     end
     if isfield(hashTable.contents, status.function)
         hash = hashTable.contents.(status.function);
@@ -371,18 +371,21 @@ function hash = getReferenceHash(status, ipp, env)
         hash = '';
     end
 end
-function filename = hashTableName(ipp, env)
+function filename = hashTableName(suite)
     % determines the file name of a hash table
-    [pathstr,name,ext] = fileparts(which(func2str(ipp.Results.testsuite)));
-    ext = '.md5'; %TODO: make hash table env/version dependent
+    [pathstr,name, ext] = fileparts(which(func2str(suite)));
+    [env, version] = getEnvironment();
+    ext = sprintf('.%s.md5', env);
+    %TODO: fallback mechanism for different versions
+    % e.g. MATLAB R2015a should fall back to R2014b, R2013b to R2014a
     filename = fullfile(pathstr, [name ext]);
 end
-function hashTable = loadHashTable(ipp, env)
+function hashTable = loadHashTable(suite)
     % loads a reference hash table from disk
-    hashTable.suite = ipp.Results.testsuite;
+    hashTable.suite = suite;
     hashTable.contents = struct();
-    filename = hashTableName(ipp, env);
-    if exist(filename, 'file') 
+    filename = hashTableName(suite);
+    if exist(filename, 'file')
         fid = fopen(filename, 'r');
         data = textscan(fid, '%s : %s');
         fclose(fid);
@@ -395,9 +398,10 @@ function hashTable = loadHashTable(ipp, env)
         end
     end
 end
-function saveHashTable(status, ipp, env)
+function saveHashTable(status, ipp)
     % saves a reference hash table to disk
-    filename = hashTableName(ipp, env);
+    suite = ipp.Results.testsuite;
+    filename = hashTableName(suite);
     
     % sort by file names to allow humans better traversal of such files
     funcNames = cellfun(@(s) s.function, status, 'UniformOutput', false);
