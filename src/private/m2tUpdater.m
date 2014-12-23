@@ -1,4 +1,4 @@
-function m2tUpdater(name, fileExchangeUrl, version, verbose, env)
+function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, env)
 %UPDATER   Auto-update matlab2tikz.
 %   Only for internal usage.
 
@@ -68,7 +68,7 @@ function m2tUpdater(name, fileExchangeUrl, version, verbose, env)
       userInfo(verbose, '**********************************************\n');
       
       reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
-      if strcmp(reply, 'y')
+      if strcmpi(reply, 'y')
           % Download the files and unzip its contents into the folder
           % above the folder that contains the current script.
           % This assumes that the file structure is something like
@@ -89,7 +89,7 @@ function m2tUpdater(name, fileExchangeUrl, version, verbose, env)
           else
               printPath = targetPath;
           end
-          userInfo(verbose, ['Downloading and unzipping to ', printPath, '...']);
+          userInfo(verbose, ['Downloading and unzipping to ''', printPath, ''' ...']);
           upgradeSuccess = false;
           
           try
@@ -107,18 +107,18 @@ function m2tUpdater(name, fileExchangeUrl, version, verbose, env)
                   for ii = 1:numel(unzippedFiles)
                       movefile(unzippedFiles{ii}, unzippedFilesTarget{ii})
                   end
-                  delete(topZipFolder{1});
+                  delete(fullfile(targetPath, topZipFolder{1}));
               end
               
-              versionFile = [pathstr, filesep, 'version-', version];
+              versionFile = fullfile(targetPath,['version-', version]);
               if exist(versionFile, 'file') == 2
                   delete(versionFile);
               end
               
               upgradeSuccess = true; %~isempty(unzippedFiles);
-              userInfo(verbose, 'DONE: ');
+              userInfo(verbose, 'UPDATED: the current conversion will be terminated. Please, re-run it.');
           catch
-              userInfo(verbose, 'FAILED:');
+              userInfo(verbose, ['FAILED: continuing with the' name ' conversion.']);
           end
       end
       userInfo(verbose, '');
