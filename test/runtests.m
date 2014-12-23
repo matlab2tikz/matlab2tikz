@@ -24,7 +24,7 @@ switch getEnvironment
         % R2014a
         nondeterministicHG1 = [8];
         % R2014b
-        nondeterministicHG2 = [14 20 34 38:40 42 89 92 93 95];
+        nondeterministicHG2 = [12 20 34 38:40 49 52 61 89 92 93 95 96];
         
         nondeterministic = unique([nondeterministicHG1 nondeterministicHG2]);
 end
@@ -37,6 +37,9 @@ else
 end
 
 %% Run tests
+% The width and height are specified to circumvent different DPIs in developer
+% machines. The float format reduces the probability that numerical differences
+% in the order of numerical precision disrupt the output.
 extraOptions = {'width' ,'\figurewidth' ,...
                 'height','\figureheight',...
                 'floatFormat', '%8.6g'  ,...
