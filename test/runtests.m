@@ -21,8 +21,12 @@ switch getEnvironment
     case 'MATLAB'
         plotFailing = [];
         m2tFailing  = [];
+        % R2014a
+        nondeterministicHG1 = [8];
         % R2014b
-        nondeterministic = [14 20 34 38:40 42 89 92 93 95]; %FIXME: 
+        nondeterministicHG2 = [14 20 34 38:40 42 89 92 93 95];
+        
+        nondeterministic = unique([nondeterministicHG1 nondeterministicHG2]);
 end
 testsKnownToFail = [plotFailing m2tFailing nondeterministic];
 
