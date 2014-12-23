@@ -18,11 +18,7 @@ m2tFailing   = [29:31];       %FIXME: these are actual M2T problems
 nondeterministic = [32 67];   %FIXME: these should be made deterministic 
 plotFailing  = [74 81:83 95]; %FIXME: these plots fail
 
-skippedTests = [9 12 42:44 46:49 54 59 62 71 72 75 76 80 87:91]; % these are skipped anyway.
-% hence they can be ignored safely (as long as they are ignored)
-
-testsToRun = setdiff(allTests, [plotFailing skippedTests ...
-                                m2tFailing nondeterministic]);
+testsToRun = setdiff(allTests, [plotFailing m2tFailing nondeterministic]);
 
 if strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true')
     stagesArg = {'stages', {'plot', 'tikz', 'hash'}};
