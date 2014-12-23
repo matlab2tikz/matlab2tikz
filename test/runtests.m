@@ -1,6 +1,8 @@
-#!/usr/bin/octave -q
+%% This file runs the complete MATLAB2TIKZ test suite.
+% It is mainly used for testing on a continuous integration server, but it can
+% also be used on a development machine.
 
-# Set path
+%% Set path
 addpath(fullfile(pwd,'..','src'));
 addpath(fullfile(pwd,'suites'));
 
@@ -8,7 +10,7 @@ if isempty(which('countNumberOfErrors'))
     addpath(fullfile(pwd,'private')); % work-around
 end
 
-# Select functions to run
+%% Select functions to run
 suite = @ACID;
 allTests = 1:numel(suite(0));
 
@@ -28,13 +30,13 @@ else
     stagesArg = {}; % use default
 end
 
-# Run tests
+%% Run tests
 status = testMatlab2tikz('testFunctionIndices', testsToRun,...
                           'testsuite',           suite, ...
                           stagesArg{:});
 
 makeTravisReport(status)
 
-# Calculate exit code
+%% Calculate exit code
 nErrors = countNumberOfErrors(status);
 exit(nErrors);
