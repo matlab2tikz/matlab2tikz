@@ -67,6 +67,7 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
       mostRecentVersion = '';
   end
   
+  upgradeSuccess = false;
   if ~isempty(mostRecentVersion)
       userInfo(verbose, '**********************************************\n');
       userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion);
@@ -101,7 +102,6 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
           userInfo(verbose, ['Downloading and unzipping to ''', printPath, ''' ...']);
           
           % Try upgrading
-          upgradeSuccess = false;
           try
               % The FEX now forwards the download request to Github.
               % Go through the forwarding to update the download count and
