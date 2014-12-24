@@ -2163,6 +2163,23 @@ function [m2t, str] = drawContour(m2t, h)
     
     contours = get(h,'ContourMatrix')';
     
+    % Index beginning of contour data (see contourc.m for details)
+    nrows  = size(contours,1);
+    istart = false(nrows,1);
+    pos    = 1;
+    while pos < nrows
+        istart(pos) = true;
+        pos         = pos + contours(pos, 2) + 1;
+    end
+    istart = find(istart);
+    
+    % Scale negative contours one level down (for proper coloring)
+    LevelList = get(h,'LevelList');
+    Levels    = contours(istart,1);
+    [idx,pos] = ismember(Levels, LevelList);
+    idx       = idx & Levels < 0;
+    contours(istart(idx)) = LevelList(pos(idx)-1);
+    
     % Draw a contour group (MATLAB R2014b and newer only)
     isFilled = strcmpi(get(h,'Fill'),'on');
     if isFilled
@@ -2177,19 +2194,10 @@ function [m2t, str] = drawContour(m2t, h)
         % outer contour. The outer contours of two groups cannot include
         % each other.
         
-        columnNames = {'x','y'};
-        
-        % Count the number of contours
-        ncont = 0;
-        pos   = 1;
-        nrows = size(contours,1);
-        while pos < nrows
-            ncont = ncont+1;
-            pos   = pos + contours(pos, 2) + 1;
-        end
-        
+       
         % Split contours in cell array (could use mat2cell but Octave
         % syntax is unclear)
+        ncont    = numel(istart);
         cellcont = cell(ncont,1);
         pos      = 1;
         for ii = 1:ncont
@@ -2199,12 +2207,12 @@ function [m2t, str] = drawContour(m2t, h)
             pos          = to + 1;
         end
         
-
-        % Determine contour groups and draw direction. 
-        % Take advatange that  the contours are listed in ascending order 
-        % of level. Hence, if the lowest contour contains any others, then
-        % it will be one raising group. Otherwise, it will be a descending
-        % group, and thus will have to be plotted in reversed order. 
+        % Determine contour groups and the plotting order.
+        % Take advatange of the order of contours in the ContourMatrix, 
+        % which are sorted by level. Hence, if the lowest contour contains 
+        % any others, then it will be one raising group, e.g. a mountain. 
+        % Otherwise, it will be a descending group, and thus will have to 
+        % be plotted in reversed order. 
         order = NaN(ncont,1);
         ifree = true(ncont,1);
         from  = 1;
@@ -2217,17 +2225,17 @@ function [m2t, str] = drawContour(m2t, h)
             
             % Loop through all contours
             for ii = 1:numel(cellcont)
-                if ifree(ii)
-                    curr = cellcont{ii};
-                    % Current contour contained in the peer
-                    if inpolygon(curr(2,1),curr(2,2), peer(2:end,1),peer(2:end,2))
-                        igroup(ii) = true;
-                        isinverse  = false; 
-                    % Peer contained in the current    
-                    elseif inpolygon(peer(2,1),peer(2,2),curr(2:end,1),curr(2:end,2))
-                        igroup(ii) = true;
-                        isinverse  = true;
-                    end
+                if ~ifree(ii), continue, end
+                
+                curr = cellcont{ii};
+                % Current contour contained in the peer
+                if inpolygon(curr(2,1),curr(2,2), peer(2:end,1),peer(2:end,2))
+                    igroup(ii) = true;
+                    isinverse  = false;
+                    % Peer contained in the current
+                elseif inpolygon(peer(2,1),peer(2,2),curr(2:end,1),curr(2:end,2))
+                    igroup(ii) = true;
+                    isinverse  = true;
                 end
             end
             % Order members of group according to the inclusion principle
@@ -2247,6 +2255,7 @@ function [m2t, str] = drawContour(m2t, h)
         cellcont(order,1) = cellcont;
         
         % Plot
+        columnNames = {'x','y'};
         for ii = 1:ncont
                 % Get color
                 zval          = cellcont{ii}(1,1);
