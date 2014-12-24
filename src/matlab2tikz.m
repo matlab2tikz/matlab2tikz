@@ -333,6 +333,8 @@ if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
     m2t.cmdOpts.Results.showInfo, ...
     m2t.env...
     );
+    % Terminate conversion if update was successful (the user is notified
+    % by the updater)
     if status, return, end
 end
 

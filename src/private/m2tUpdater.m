@@ -111,8 +111,9 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
               url           = regexp(html, expression,'match','once');
               unzippedFiles = unzip(url, targetPath);
               
-              % Github packs the folder structure into an additional folder.
-              % Retrieve the top folder name
+              % The folder structure is additionally packed into the 
+              % 'MATLAB Search Path' folder deifned in FEX. Retrieve the 
+              % top folder name
               tmp          = strrep(unzippedFiles,[targetPath, filesep],'');
               tmp          = regexp(tmp, filesep,'split','once');
               tmp          = cat(1,tmp{:});
