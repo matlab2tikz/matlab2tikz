@@ -2174,11 +2174,14 @@ function [m2t, str] = drawContour(m2t, h)
     istart = find(istart);
     
     % Scale negative contours one level down (for proper coloring)
-    LevelList = get(h,'LevelList');
     Levels    = contours(istart,1);
-    [idx,pos] = ismember(Levels, LevelList);
-    idx       = idx & Levels < 0;
-    contours(istart(idx)) = LevelList(pos(idx)-1);
+    LevelList = get(h,'LevelList');
+    ineg      = Levels < 0;
+    if any(ineg) && min(LevelList) < min(Levels)
+        [idx,pos] = ismember(Levels, LevelList);
+        idx       = idx & ineg;
+        contours(istart(idx)) = LevelList(pos(idx)-1);
+    end
     
     % Draw a contour group (MATLAB R2014b and newer only)
     isFilled = strcmpi(get(h,'Fill'),'on');
