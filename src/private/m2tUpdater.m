@@ -27,6 +27,8 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
 %   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %   POSSIBILITY OF SUCH DAMAGE.
 % =========================================================================
+  
+  % Read in the Github releases page
   url = 'https://github.com/matlab2tikz/matlab2tikz/releases/';
   try
       html = urlread(url);
@@ -35,33 +37,36 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
       html = '';
   end
   
+  % Parse tag names which are the version number in the format ##.##.##
+  % It assumes that releases will always be tagged with the version number
   expression = '(?<=matlab2tikz\/matlab2tikz\/releases\/tag\/)\d+\.\d+\.\d+';
   tags       = regexp(html, expression, 'match');
   ntags      = numel(tags);
-  inew       = false(ntags,1);
+  
+  % Keep only new releases
+  inew = false(ntags,1);
   for ii = 1:ntags
       inew(ii) = isVersionBelow(env, version, tags{ii});
   end
   nnew = nnz(inew);
   
+  % One new release
   if nnew == 1
       mostRecentVersion = tags{inew};
+  % Several new release, pick latest
   elseif nnew > 1
       tags   = tags(inew);
       tagnum = zeros(nnew,1);
       for ii = 1:nnew
           tagnum(ii) = [10000,100,1] * versionArray(env, tags{ii});
       end
-      [~, imax] = max(tagnum);
+      [~, imax]         = max(tagnum);
       mostRecentVersion = tags{imax};
+  % No new 
   else
       mostRecentVersion = '';
   end
   
-  % Search for a string "/version-1.6.3" in the HTML. This assumes
-  % that the package author has added a file by that name to
-  % to package. This is a rather dirty hack around FileExchange's
-  % lack of native versioning information.
   if ~isempty(mostRecentVersion)
       userInfo(verbose, '**********************************************\n');
       userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion);
@@ -69,12 +74,14 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
       
       reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
       if strcmpi(reply, 'y')
-          % Download the files and unzip its contents into the folder
+          % Download the files and unzip its contents into two folders
           % above the folder that contains the current script.
           % This assumes that the file structure is something like
           %
           %   src/matlab2tikz.m
           %   src/[...]
+          %   src/private/m2tUpdater
+          %   src/private/[...]
           %   AUTHORS
           %   ChangeLog
           %   [...]
@@ -84,33 +91,50 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
           % and that matlab2tikz.m is not symlinked from some other place.
           pathstr    = fileparts(mfilename('fullpath'));
           targetPath = fullfile(pathstr, '..', '..');
+          
+          % Let the user know where the .zip is downloaded to
           if ispc
               printPath = strrep(targetPath,'\','\\');
           else
               printPath = targetPath;
           end
           userInfo(verbose, ['Downloading and unzipping to ''', printPath, ''' ...']);
-          upgradeSuccess = false;
           
+          % Try upgrading
+          upgradeSuccess = false;
           try
+              % The FEX now forwards the download request to Github.
+              % Go through the forwarding to update the download count and
+              % unzip
               html          = urlread([fileExchangeUrl, '?download=true']);
               expression    = '(?<=\<a href=")[\w\-\/:\.]+(?=">redirected)';
               url           = regexp(html, expression,'match','once');
               unzippedFiles = unzip(url, targetPath);
-                
-              tmp           = strrep(unzippedFiles,[targetPath, filesep],'');
-              tmp           = regexp(tmp, filesep,'split','once');
-              tmp           = cat(1,tmp{:});
-              topZipFolder  = unique(tmp(:,1));
               
+              % Github packs the folder structure into an additional folder.
+              % Retrieve the top folder name
+              tmp          = strrep(unzippedFiles,[targetPath, filesep],'');
+              tmp          = regexp(tmp, filesep,'split','once');
+              tmp          = cat(1,tmp{:});
+              topZipFolder = unique(tmp(:,1));
+              
+              % If packed into the top folder, overwrite files into m2t
+              % main directory
               if numel(topZipFolder) == 1
                   unzippedFilesTarget = fullfile(targetPath, tmp(:,2));
                   for ii = 1:numel(unzippedFiles)
                       movefile(unzippedFiles{ii}, unzippedFilesTarget{ii})
                   end
+                  % Cleanup
+                  % (TODO?) remove files that do not belong to m2t? If user
+                  % added some tweaks maybe we should not touch. If we
+                  % decide to remove, then we need to warn that the update
+                  % will reset the content of the m2t main folder
+                  % completely.
                   rmdir(fullfile(targetPath, topZipFolder{1}),'s');
               end
               
+              % Remove old version file
               versionFile = fullfile(targetPath,['version-', version]);
               if exist(versionFile, 'file') == 2
                   delete(versionFile);
