@@ -326,7 +326,7 @@ userInfo(m2t, '\nThis is %s %s.\n', m2t.name, m2t.versionFull)
 
 %% Check for a new matlab2tikz version outside version control
 if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
-  status = m2tUpdater(...
+  isUpdateInstalled = m2tUpdater(...
     m2t.name, ...
     m2t.website, ...
     m2t.version, ...
@@ -335,7 +335,7 @@ if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
     );
     % Terminate conversion if update was successful (the user is notified
     % by the updater)
-    if status, return, end
+    if isUpdateInstalled, return, end
 end
 
 %% print some version info to the screen
