@@ -2254,9 +2254,19 @@ function [m2t, str] = drawContour(m2t, h)
         % Reorder the contours
         cellcont(order,1) = cellcont;
         
+        % Add zero level fill
+        xdata = get(h,'XData');
+        ydata = get(h,'YData');
+        zerolevel = [0 4;
+                     min(xdata), min(ydata);
+                     min(xdata), max(ydata);
+                     max(xdata), max(ydata);
+                     max(xdata), min(ydata)];
+        cellcont = [zerolevel; cellcont];
+                    
         % Plot
         columnNames = {'x','y'};
-        for ii = 1:ncont
+        for ii = 1:ncont + 1
                 % Get color
                 zval          = cellcont{ii}(1,1);
                 [m2t, xcolor] = getColor(m2t,h,zval,'image');
@@ -2266,8 +2276,8 @@ function [m2t, str] = drawContour(m2t, h)
                 str = sprintf('%s\\addplot[fill=%s] table[row sep=crcr] {%%\n%s};\n', ...
                     str, xcolor{1},table);
         end
+        
     else
-            
         % Contour table in Matlab format
         plotoptions = opts_new();
         plotoptions = opts_add(plotoptions,'contour prepared');
