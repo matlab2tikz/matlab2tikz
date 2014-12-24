@@ -2153,27 +2153,65 @@ function alpha = normalizedAlphaValues(m2t, alpha, handle)
 end
 % ==============================================================================
 function [m2t, str] = drawContour(m2t, h)
-% draw a contour group (MATLAB R2014b and newer only)
-plotoptions = opts_new();
-plotoptions = opts_add(plotoptions,'contour prepared');
-plotoptions = opts_add(plotoptions,'contour prepared format','matlab');
-if strcmpi(get(h,'ShowText'),'off')
-    plotoptions = opts_add(plotoptions,'contour/labels','false');
+    str = '';
+
+    % Add colormap
+    cmap = m2t.currentHandles.colormap;
+    
+    
+    contours = get(h,'ContourMatrix')';
+    
+    % Draw a contour group (MATLAB R2014b and newer only)
+    isFilled = strcmpi(get(h,'Fill'),'on');
+    if isFilled
+        columnNames = {'x','y'};
+        % Create patch table from countorc table
+        nrows = size(contours,1);
+        count = 0;
+        for ii = 2:nrows
+            if ii > count
+                count = ii + contours(ii-1,2);
+                
+                % Get data
+                data = contours(ii:count-1,:);
+                
+                % Get color
+                zval          = contours(ii-1,1);
+                [m2t, xcolor] = getColor(m2t,h,zval,'image');
+                
+                % Print table
+                [m2t, table] = makeTable(m2t, columnNames, data);
+                
+                % Fillplot
+                str = sprintf('%s\\addplot[fill=%s] table[row sep=crcr] {%%\n%s};\n', ...
+                    str, xcolor{1},table);
+            end
+        end
+
+    else
+        
+        m2t.axesContainers{end}.options = ...
+        opts_add(m2t.axesContainers{end}.options, ...
+                 matlab2pgfplotsColormap(m2t, cmap));
+        
+        % Contour table in Matlab format
+        plotoptions = opts_new();
+        plotoptions = opts_add(plotoptions,'contour prepared');
+        plotoptions = opts_add(plotoptions,'contour prepared format','matlab');
+        
+        % Labels
+        if strcmpi(get(h,'ShowText'),'off')
+            plotoptions = opts_add(plotoptions,'contour/labels','false');
+        end
+        
+        % Make contour table
+        [m2t, table] = makeTable(m2t, {'',''}, contours);
+        str = sprintf('\\addplot[%s] table[row sep=crcr] {%%\n%s};\n', ...
+    opts_print(m2t, plotoptions, ', '), table);
+    end
+
 end
-if strcmpi(get(h,'Fill'),'on')
-    userWarning(m2t, 'Filled contour replaced by unfilled contour plot.');
-    %FIXME: implement colored contour plots
-end
-%TODO: explicit color handling for contour plots
 
-contours = get(h,'ContourMatrix');
-
-[m2t, table] = makeTable(m2t, {'',''}, contours.');
-
-str = sprintf('\\addplot[%s] table[row sep=crcr] {%%\n%s};\n', ...
-              opts_print(m2t, plotoptions, ', '), table);
-
-end
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
 % Octave doesn't have the handle() function, so there's no way to determine
@@ -3892,7 +3930,12 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
     % -----------------------------------------------------------------------
     % For the following, see, for example, the MATLAB help page for 'image',
     % section 'Image CDataMapping'.
-    switch get(imagehandle, 'CDataMapping')
+    try
+        mapping = get(imagehandle, 'CDataMapping');
+    catch
+        mapping = 'scaled';
+    end
+    switch mapping
         case 'scaled'
             % need to scale within clim
             % see MATLAB's manual page for caxis for details
