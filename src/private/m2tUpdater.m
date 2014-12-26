@@ -105,7 +105,7 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
           % Try upgrading
           try
               % List current folder structure. Will use last for cleanup
-              currentFolderFiles = rdir(targetPath);
+              currentFolderFiles = rdirfiles(targetPath);
               
               % The FEX now forwards the download request to Github.
               % Go through the forwarding to update the download count and
@@ -130,18 +130,16 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
                   for ii = 1:numel(unzippedFiles)
                       movefile(unzippedFiles{ii}, unzippedFilesTarget{ii})
                   end
-                  % Add topZipFolder to current folder structure
-                  currentFolderFiles = [currentFolderFiles; fullfile(targetPath, topZipFolder{1})];
+                  % Remove topZipFolder
+                  rmdir(fullfile(targetPath, topZipFolder{1}),'s');
               end
               
               % Cleanup
-              deleteFolderFiles = setdiff(currentFolderFiles, unzippedFilesTarget);
-              for ii = 1:numel(deleteFolderFiles)
-                  x = deleteFolderFiles{ii};
+              filesToDelete = setdiff(currentFolderFiles, unzippedFilesTarget);
+              for ii = 1:numel(filesToDelete)
+                  x = filesToDelete{ii};
                   if exist(x, 'file') == 2
                       delete(x);
-                  elseif exist(x, 'dir') == 7
-                      rmdir(x,'s')
                   end
               end
               
@@ -207,8 +205,8 @@ function userInfo(verbose, message, varargin)
 
 end
 % =========================================================================
-function list = rdir(rootdir)
-  % Recursive directory listing
+function list = rdirfiles(rootdir)
+  % Recursive files listing
   s    = dir(rootdir);
   list = {s.name}';
   
@@ -221,8 +219,10 @@ function list = rdir(rootdir)
   % Loop for sub-directories
   pdir = find([s(idx).isdir]);
   for ii = pdir
-      list = [list; rdir(list{ii})]; %#ok<AGROW>
+      list = [list; rdirfiles(list{ii})]; %#ok<AGROW>
   end
   
+  % Drop directories
+  list(pdir) = [];
 end
 % =========================================================================
