@@ -73,6 +73,7 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
       userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion);
       userInfo(verbose, '**********************************************\n');
       
+      userInfo(verbose, 'By upgrading you may lose any custom changes.\n');
       reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
       if strcmpi(reply, 'y')
           % Download the files and unzip its contents into two folders
@@ -103,6 +104,9 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
           
           % Try upgrading
           try
+              % List current folder structure. Will use last for cleanup
+              currentFolderFiles = rdir(targetPath);
+              
               % The FEX now forwards the download request to Github.
               % Go through the forwarding to update the download count and
               % unzip
@@ -112,7 +116,7 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
               unzippedFiles = unzip(url, targetPath);
               
               % The folder structure is additionally packed into the 
-              % 'MATLAB Search Path' folder deifned in FEX. Retrieve the 
+              % 'MATLAB Search Path' folder defined in FEX. Retrieve the 
               % top folder name
               tmp          = strrep(unzippedFiles,[targetPath, filesep],'');
               tmp          = regexp(tmp, filesep,'split','once');
@@ -126,19 +130,19 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
                   for ii = 1:numel(unzippedFiles)
                       movefile(unzippedFiles{ii}, unzippedFilesTarget{ii})
                   end
-                  % Cleanup
-                  % (TODO?) remove files that do not belong to m2t? If user
-                  % added some tweaks maybe we should not touch. If we
-                  % decide to remove, then we need to warn that the update
-                  % will reset the content of the m2t main folder
-                  % completely.
-                  rmdir(fullfile(targetPath, topZipFolder{1}),'s');
+                  % Add topZipFolder to current folder structure
+                  currentFolderFiles = [currentFolderFiles; fullfile(targetPath, topZipFolder{1})];
               end
               
-              % Remove old version file
-              versionFile = fullfile(targetPath,['version-', version]);
-              if exist(versionFile, 'file') == 2
-                  delete(versionFile);
+              % Cleanup
+              deleteFolderFiles = setdiff(currentFolderFiles, unzippedFilesTarget);
+              for ii = 1:numel(deleteFolderFiles)
+                  x = deleteFolderFiles{ii};
+                  if exist(x, 'file') == 2
+                      delete(x);
+                  elseif exist(x, 'dir') == 7
+                      rmdir(x,'s')
+                  end
               end
               
               upgradeSuccess = true; %~isempty(unzippedFiles);
@@ -201,5 +205,24 @@ function userInfo(verbose, message, varargin)
   mess = strrep( mess, sprintf('\n'), sprintf('\n *** ') );
   fprintf( ' *** %s\n', mess );
 
+end
+% =========================================================================
+function list = rdir(rootdir)
+  % Recursive directory listing
+  s    = dir(rootdir);
+  list = {s.name}';
+  
+  % Exclude .git, .svn, . and ..
+  [list, idx] = setdiff(list, {'.git','.svn','.','..'});
+  
+  % Add root
+  list = fullfile(rootdir, list);
+  
+  % Loop for sub-directories
+  pdir = find([s(idx).isdir]);
+  for ii = pdir
+      list = [list; rdir(list{ii})]; %#ok<AGROW>
+  end
+  
 end
 % =========================================================================
