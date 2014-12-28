@@ -2396,9 +2396,6 @@ function [m2t, str] = drawText(m2t, handle)
 
     style = getXYAlignmentOfText(handle, style);
 
-    % remove invisible border around \node to make the text align precisely
-    style = opts_add(style, 'inner sep', '0mm');
-
     style = getRotationOfText(m2t, handle, style);
 
     style = opts_merge(style, getFontStyle(m2t, handle));
@@ -2421,23 +2418,25 @@ function [style] = getXYAlignmentOfText(handle, style)
     VerticalAlignment = get(handle, 'VerticalAlignment');
     HorizontalAlignment = get(handle, 'HorizontalAlignment');
 
-    alignment = '';
+    horizontal = '';
+    vertical   = '';
     switch VerticalAlignment
         case {'top', 'cap'}
-            alignment = [alignment, 'below', ' '];
+            vertical = 'below';
         case {'baseline', 'bottom'}
-            alignment = [alignment, 'above', ' '];
+            vertical = 'above';
     end
     switch HorizontalAlignment
         case 'left'
-            alignment = [alignment, 'right', ' '];
+            horizontal = 'right';
         case 'right'
-            alignment = [alignment, 'left', ' '];
-    end    
-    if ~isempty(strtrim(alignment))
-        style = opts_add(style, strtrim(alignment));
+            horizontal = 'left';
     end
-    
+    alignment = strtrim(sprintf('%s %s', vertical, horizontal));
+    if ~isempty(alignment)
+         style = opts_add(style, alignment);
+    end
+
     % Set 'align' option that is needed for multiline text
     style = opts_add(style, 'align', HorizontalAlignment);
 end
