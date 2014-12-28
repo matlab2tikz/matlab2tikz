@@ -130,16 +130,19 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
                   for ii = 1:numel(unzippedFiles)
                       movefile(unzippedFiles{ii}, unzippedFilesTarget{ii})
                   end
-                  % Remove topZipFolder
-                  rmdir(fullfile(targetPath, topZipFolder{1}),'s');
+                  % Add topZipFolder to current folder structure
+                  currentFolderFiles = [currentFolderFiles; fullfile(targetPath, topZipFolder{1})];
               end
               
               % Cleanup
-              filesToDelete = setdiff(currentFolderFiles, unzippedFilesTarget);
-              for ii = 1:numel(filesToDelete)
-                  x = filesToDelete{ii};
+              newFolderStructure = [getFolders(unzippedFilesTarget);  unzippedFilesTarget];
+              deleteFolderFiles  = setdiff(currentFolderFiles, newFolderStructure);
+              for ii = 1:numel(deleteFolderFiles)
+                  x = deleteFolderFiles{ii};
                   if exist(x, 'file') == 2
                       delete(x);
+                  elseif exist(x, 'dir') == 7
+                      rmdir(x,'s')
                   end
               end
               
@@ -224,5 +227,16 @@ function list = rdirfiles(rootdir)
   
   % Drop directories
   list(pdir) = [];
+end
+% =========================================================================
+function list = getFolders(list) 
+  % Extract the folder structure from a list of files and folders
+  
+  for ii = 1:numel(list)
+      if exist(list{ii},'file') == 2
+          list{ii} = fileparts(list{ii});
+      end
+  end
+  list = unique(list);
 end
 % =========================================================================
