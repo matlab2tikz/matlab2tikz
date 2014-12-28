@@ -405,7 +405,7 @@ function filename = hashTableName(suite)
         
         % Add the expected version to the results, and sort the names by
         % version (this is the same as alphabetically).
-        filenames = sort([filenames {relFilename}]); 
+        filenames = sort([filenames; {relFilename}]);
         nFiles       = numel(filenames);
         iCurrent     = find(ismember(filenames, relFilename));
         % determine the fall-back candidates:
