@@ -130,7 +130,8 @@ function [status] = ACID(k)
                            @imageOrientation_inline, ...
                            @texInterpreter      , ...
                            @stackedBarsWithOther, ...
-                           @colorbarLabelTitle
+                           @colorbarLabelTitle  , ...
+                           @textAlignment
                          };
 
 
@@ -2343,6 +2344,39 @@ function [stat] = colorbarLabelTitle()
     colormap('jet');
     title(hc,title_multiline);
     xlabel(hc,label_multiline);
+end
+% =========================================================================
+function [stat] = textAlignment()
+    stat.description = 'vertical and horizontal alignment of text boxes';
+
+    plot([0.0 2.0], [1.0 1.0],'k'); hold on;
+    plot([0.0 2.0], [0.5 0.5],'k');
+    plot([0.0 2.0], [1.5 1.5],'k');
+    plot([1.0 1.0], [0.0 2.0],'k');
+    plot([1.5 1.5], [0.0 2.0],'k');
+    plot([0.5 0.5], [0.0 2.0],'k');
+
+    text(1.0,1.0,'h=c, v=m', ...
+        'HorizontalAlignment','center','VerticalAlignment','middle');
+    text(1.5,1.0,'h=l, v=m', ...
+        'HorizontalAlignment','left','VerticalAlignment','middle');
+    text(0.5,1.0,'h=r, v=m', ...
+        'HorizontalAlignment','right','VerticalAlignment','middle');
+
+    text(0.5,1.5,'h=r, v=b', ...
+        'HorizontalAlignment','right','VerticalAlignment','bottom');
+    text(1.0,1.5,'h=c, v=b', ...
+        'HorizontalAlignment','center','VerticalAlignment','bottom');
+    text(1.5,1.5,'h=l, v=b', ...
+        'HorizontalAlignment','left','VerticalAlignment','bottom');
+
+    text(0.5,0.5,'h=r, v=t', ...
+        'HorizontalAlignment','right','VerticalAlignment','top');
+    text(1.0,0.5,'h=c, v=t', ...
+        'HorizontalAlignment','center','VerticalAlignment','top');
+    h_t = text(1.5,0.5,{'h=l, v=t','multiline'}, ...
+        'HorizontalAlignment','left','VerticalAlignment','top');
+    set(h_t,'BackgroundColor','g');
 end
 % =========================================================================
 function env = getEnvironment
