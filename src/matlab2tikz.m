@@ -2192,25 +2192,15 @@ function [m2t, str] = drawContour(m2t, h)
       % outer contour. The outer contours of two groups cannot include
       % each other.
       
-      
-      % Split contours in cell array (could use mat2cell but Octave
-      % syntax is unclear)
-      ncont    = numel(istart);
-      cellcont = cell(ncont,1);
-      pos      = 1;
-      for ii = 1:ncont
-          from         = pos;
-          to           = pos + contours(pos, 2);
-          cellcont{ii} = contours(from:to,:);
-          pos          = to + 1;
-      end
+      % Split contours in cell array
+      cellcont = mat2cell(contours, diff([istart; nrows+1]));
+      ncont    = numel(cellcont);
       
       % Determine contour groups and the plotting order.
-      % Take advatange of the order of contours in the ContourMatrix,
-      % which are sorted by level. Hence, if the lowest contour contains
-      % any others, then it will be one raising group, e.g. a mountain.
-      % Otherwise, it will be a descending group, and thus will have to
-      % be plotted in reversed order.
+      % The ContourMatrix lists the contours in ascending order by level. 
+      % Hence, if the lowest (first) contour contains any others, then the 
+      % group  it will be a peak. Otherwise, it will be a valley, and the 
+      % group will have to be plotted in reversed order.
       order = NaN(ncont,1);
       ifree = true(ncont,1);
       from  = 1;
