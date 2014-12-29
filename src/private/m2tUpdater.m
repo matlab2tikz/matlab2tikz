@@ -139,10 +139,10 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
               deleteFolderFiles  = setdiff(currentFolderFiles, newFolderStructure);
               for ii = 1:numel(deleteFolderFiles)
                   x = deleteFolderFiles{ii};
-                  if exist(x, 'file') == 2
+                  if exist(x, 'file')
                       delete(x);
-                  elseif exist(x, 'dir') == 7
-                      rmdir(x,'s')
+                  elseif exist(x, 'dir')
+                      rmdir(x,'s');
                   end
               end
               
