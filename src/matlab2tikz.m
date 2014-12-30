@@ -2199,8 +2199,9 @@ function [m2t, str] = drawContour(m2t, h)
       % Determine contour groups and the plotting order.
       % The ContourMatrix lists the contours in ascending order by level. 
       % Hence, if the lowest (first) contour contains any others, then the 
-      % group  it will be a peak. Otherwise, it will be a valley, and the 
-      % group will have to be plotted in reversed order.
+      % group will be a peak. Otherwise, the group will be a valley, and 
+      % the contours will have to be plotted in reverse order, i.e. from
+      % highest (largest) to lowest (narrowest).
       order = NaN(ncont,1);
       ifree = true(ncont,1);
       from  = 1;
