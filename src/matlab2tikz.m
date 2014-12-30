@@ -3050,7 +3050,7 @@ function [m2t, str] = drawBarseries(m2t, h)
             prop               = switchMatOct(m2t, 'BarPeers', 'bargroup');
             bargroup           = get(h, prop);
             numBars            = numel(bargroup);
-            [~, m2t.barplotId] = ismember(h, bargroup);
+            [~, m2t.barplotId] = ismember(handle(h), bargroup);
 
             % Maximum group width relative to the minimum distance between two
             % x-values. See <MATLAB>/toolbox/matlab/specgraph/makebars.m
