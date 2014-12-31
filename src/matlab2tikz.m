@@ -2153,27 +2153,145 @@ function alpha = normalizedAlphaValues(m2t, alpha, handle)
 end
 % ==============================================================================
 function [m2t, str] = drawContour(m2t, h)
-% draw a contour group (MATLAB R2014b and newer only)
-plotoptions = opts_new();
-plotoptions = opts_add(plotoptions,'contour prepared');
-plotoptions = opts_add(plotoptions,'contour prepared format','matlab');
-if strcmpi(get(h,'ShowText'),'off')
-    plotoptions = opts_add(plotoptions,'contour/labels','false');
+  str = '';
+
+  % Retrieve ContourMatrix
+  contours = get(h,'ContourMatrix')';
+
+  % Index beginning of contour data (see contourc.m for details)
+  nrows  = size(contours,1);
+  istart = false(nrows,1);
+  pos    = 1;
+  while pos < nrows
+      istart(pos) = true;
+      pos         = pos + contours(pos, 2) + 1;
+  end
+  istart = find(istart);
+    
+  % Scale negative contours one level down (for proper coloring)
+  Levels    = contours(istart,1);
+  LevelList = get(h,'LevelList');
+  ineg      = Levels < 0;
+  if any(ineg) && min(LevelList) < min(Levels)
+      [idx,pos] = ismember(Levels, LevelList);
+      idx       = idx & ineg;
+      contours(istart(idx)) = LevelList(pos(idx)-1);
+  end
+    
+  % Draw a contour group (MATLAB R2014b and newer only)
+  isFilled = strcmpi(get(h,'Fill'),'on');
+  if isFilled
+      % Loop each contour and plot a filled region
+      %
+      % NOTE:
+      % - we cannot plot from inner to outer contour since the last
+      % filled area will cover the inner regions. Therefore, we need to
+      % invert the plotting order in those cases.
+      % - we need to distinguish between contour groups. A group is
+      % defined by inclusion, i.e. its members are contained within one
+      % outer contour. The outer contours of two groups cannot include
+      % each other.
+      
+      % Split contours in cell array
+      cellcont = mat2cell(contours, diff([istart; nrows+1]));
+      ncont    = numel(cellcont);
+      
+      % Determine contour groups and the plotting order.
+      % The ContourMatrix lists the contours in ascending order by level. 
+      % Hence, if the lowest (first) contour contains any others, then the 
+      % group will be a peak. Otherwise, the group will be a valley, and 
+      % the contours will have to be plotted in reverse order, i.e. from
+      % highest (largest) to lowest (narrowest).
+      order = NaN(ncont,1);
+      ifree = true(ncont,1);
+      from  = 1;
+      while any(ifree)
+          % Select peer with lowest level among the free contours, i.e.
+          % those which do not belong to any group yet
+          pospeer = find(ifree,1,'first');
+          peer    = cellcont{pospeer};
+          igroup  = false(ncont,1);
+          
+          % Loop through all contours
+          for ii = 1:numel(cellcont)
+              if ~ifree(ii), continue, end
+              
+              curr = cellcont{ii};
+              % Current contour contained in the peer
+              if inpolygon(curr(2,1),curr(2,2), peer(2:end,1),peer(2:end,2))
+                  igroup(ii) = true;
+                  isinverse  = false;
+                  % Peer contained in the current
+              elseif inpolygon(peer(2,1),peer(2,2),curr(2:end,1),curr(2:end,2))
+                  igroup(ii) = true;
+                  isinverse  = true;
+              end
+          end
+          % Order members of group according to the inclusion principle
+          nmembers = nnz(igroup ~= 0);
+          if isinverse
+              order(igroup) = nmembers+from-1:-1:from;
+          else
+              order(igroup) = from:nmembers+from-1;
+          end
+          
+          % Continue numbering
+          from  = from + nmembers;
+          ifree = ifree & ~igroup;
+      end
+      
+      % Reorder the contours
+      cellcont(order,1) = cellcont;
+      
+      % Add zero level fill
+      xdata = get(h,'XData');
+      ydata = get(h,'YData');
+      zerolevel = [0 4;
+          min(xdata), min(ydata);
+          min(xdata), max(ydata);
+          max(xdata), max(ydata);
+          max(xdata), min(ydata)];
+      cellcont = [zerolevel; cellcont];
+      
+      % Plot
+      columnNames = {'x','y'};
+      for ii = 1:ncont + 1
+          % Get color
+          zval          = cellcont{ii}(1,1);
+          [m2t, xcolor] = getColor(m2t,h,zval,'image');
+          % Print table
+          [m2t, table] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
+          % Fillplot
+          str = sprintf('%s\\addplot[fill=%s] table[row sep=crcr] {%%\n%s};\n', ...
+              str, xcolor{1},table);
+      end
+      
+  else
+      % Add colormap
+      cmap = m2t.currentHandles.colormap;
+      m2t.axesContainers{end}.options = ...
+          opts_add(m2t.axesContainers{end}.options, ...
+          matlab2pgfplotsColormap(m2t, cmap));
+      
+      % Contour table in Matlab format
+      plotoptions = opts_new();
+      plotoptions = opts_add(plotoptions,'contour prepared');
+      plotoptions = opts_add(plotoptions,'contour prepared format','matlab');
+      
+      % Labels
+      if strcmpi(get(h,'ShowText'),'off')
+          plotoptions = opts_add(plotoptions,'contour/labels','false');
+      end
+      
+      % Make contour table
+      [m2t, table] = makeTable(m2t, {'',''}, contours);
+      
+      str = sprintf('\\addplot[%s] table[row sep=crcr] {%%\n%s};\n', ...
+          opts_print(m2t, plotoptions, ', '), table);
+      
+  end
 end
-if strcmpi(get(h,'Fill'),'on')
-    userWarning(m2t, 'Filled contour replaced by unfilled contour plot.');
-    %FIXME: implement colored contour plots
-end
-%TODO: explicit color handling for contour plots
 
-contours = get(h,'ContourMatrix');
-
-[m2t, table] = makeTable(m2t, {'',''}, contours.');
-
-str = sprintf('\\addplot[%s] table[row sep=crcr] {%%\n%s};\n', ...
-              opts_print(m2t, plotoptions, ', '), table);
-
-end
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
 % Octave doesn't have the handle() function, so there's no way to determine
@@ -3896,7 +4014,12 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
     % -----------------------------------------------------------------------
     % For the following, see, for example, the MATLAB help page for 'image',
     % section 'Image CDataMapping'.
-    switch get(imagehandle, 'CDataMapping')
+    try
+        mapping = get(imagehandle, 'CDataMapping');
+    catch
+        mapping = 'scaled';
+    end
+    switch mapping
         case 'scaled'
             % need to scale within clim
             % see MATLAB's manual page for caxis for details
