@@ -165,7 +165,7 @@ m2t.version = '0.6.0';
 m2t.author = 'Nico Schlömer';
 m2t.authorEmail = 'nico.schloemer@gmail.com';
 m2t.years = '2008--2014';
-m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz';
+m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
 VCID = VersionControlIdentifier();
 m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
 
@@ -326,13 +326,16 @@ userInfo(m2t, '\nThis is %s %s.\n', m2t.name, m2t.versionFull)
 
 %% Check for a new matlab2tikz version outside version control
 if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
-  m2tUpdater(...
+  isUpdateInstalled = m2tUpdater(...
     m2t.name, ...
     m2t.website, ...
     m2t.version, ...
     m2t.cmdOpts.Results.showInfo, ...
     m2t.env...
     );
+    % Terminate conversion if update was successful (the user is notified
+    % by the updater)
+    if isUpdateInstalled, return, end
 end
 
 %% print some version info to the screen
