@@ -2803,8 +2803,9 @@ function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
         elseif strcmpi(s.faceColor, 'interp');
             opts = opts_add(opts,'shader','interp');
         else
-            [m2t,xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
-            opts             = opts_add(opts,'fill',xFaceColor);
+            s.hasOneFaceColor = true;
+            [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
+            opts              = opts_add(opts,'fill',xFaceColor);
         end
         
     % Edge 'interp'
@@ -3096,10 +3097,10 @@ function [m2t, str] = drawBarseries(m2t, h)
             % Make sure this happens exactly *once*.
 
             if ~m2t.barAddedAxisOption
-                BarWidth = get(h, 'BarWidth');
+                barWidth = get(h, 'BarWidth');
                 m2t.axesContainers{end}.options = ...
                     opts_add(m2t.axesContainers{end}.options, ...
-                    'bar width', formatDim(BarWidth,''));
+                    'bar width', formatDim(barWidth,''));
                 m2t.barAddedAxisOption = true;
             end
 
