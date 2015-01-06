@@ -333,9 +333,12 @@ if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
     m2t.cmdOpts.Results.showInfo, ...
     m2t.env...
     );
-    % Terminate conversion if update was successful (the user is notified
-    % by the updater)
-    if isUpdateInstalled, return, end
+    % Reload updated version and execute m2t conversion with that
+    if isUpdateInstalled
+        rehash
+        matlab2tikz(varargin{:})
+        return
+    end
 end
 
 %% print some version info to the screen
