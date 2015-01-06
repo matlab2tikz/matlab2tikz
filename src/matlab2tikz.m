@@ -435,11 +435,11 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     % Alternative Positioning of axes.
     % Select relevant Axes and draw them.
-    [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandles);
+    [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles);
 
     m2t.axesBoundingBox = axesBoundingBox;
     m2t.axesContainers = {};
-    for relevantAxesHandle = relevantAxesHandles
+    for relevantAxesHandle = m2t.relevantAxesHandles(:)'
         m2t = drawAxes(m2t, relevantAxesHandle);
     end
 
@@ -998,7 +998,7 @@ function m2t = drawBackgroundOfAxes(m2t, handle)
     backgroundColor = get(handle, 'Color');
     if ~isNone(backgroundColor)
         [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
-        if ~strcmp(col, 'white')
+        if ~strcmp(col, 'white') || numel(m2t.relevantAxesHandles) > 1
             m2t.axesContainers{end}.options = ...
                 opts_add(m2t.axesContainers{end}.options, ...
                 'axis background/.style', sprintf('{fill=%s}', col));
@@ -4885,26 +4885,27 @@ function out = isVisible(handles)
     % and so forth. For now, don't check 'HandleVisibility'.
 end
 % ==============================================================================
-function [relevantAxesHandles, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
+function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
 % Returns relevant axes. These are defines as visible axes that are no
 % colorbars. Function 'findPlotAxes()' ensures that 'axesHandles' does not
 % contain colorbars. In addition, a bounding box around all relevant Axes is
 % computed. This can be used to avoid undesired borders.
 % This function is the remaining code of alignSubPlots() in the alternative
 % positioning system.
-    relevantAxesHandles = [];
-    for axesHandle = axesHandles(:)'
-        % Only handle visible handles.
-        if axisIsVisible(axesHandle)
-            relevantAxesHandles(end+1) = axesHandle;
-        end
+    
+    % Only handle visible handles.
+    N   = numel(axesHandles);
+    idx = false(N,1);
+    for ii = 1:N
+       idx(ii) = axisIsVisible(axesHandles(ii));
     end
+    m2t.relevantAxesHandles = double(axesHandles(idx));
 
     % Compute the bounding box if width or height of the figure are set by
     % parameter
     if ~isempty(m2t.cmdOpts.Results.width) || ~isempty(m2t.cmdOpts.Results.height)
         % TODO: check if relevant Axes or all Axes are better.
-        axesBoundingBox = getRelativeAxesPosition(m2t, relevantAxesHandles);
+        axesBoundingBox = getRelativeAxesPosition(m2t, m2t.relevantAxesHandles);
         % Compute second corner from width and height for each axes
         axesBoundingBox(:,[3 4]) = axesBoundingBox(:,[1 2]) + axesBoundingBox(:,[3 4]);
         % Combine axes corners to get the bounding box
