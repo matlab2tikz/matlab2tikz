@@ -147,9 +147,9 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
               end
               
               upgradeSuccess = true; %~isempty(unzippedFiles);
-              userInfo(verbose, 'UPDATED: the current conversion will be terminated. Please, re-run it.');
+              userInfo(verbose, 'UPDATED.');
           catch
-              userInfo(verbose, ['FAILED: continuing with the' name ' conversion.']);
+              userInfo(verbose, ['FAILED: continuing with the old ' name]);
           end
       end
       userInfo(verbose, '');
