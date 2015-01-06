@@ -998,7 +998,9 @@ function m2t = drawBackgroundOfAxes(m2t, handle)
     backgroundColor = get(handle, 'Color');
     if ~isNone(backgroundColor)
         [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
-        if ~strcmp(col, 'white') || numel(m2t.relevantAxesHandles) > 1
+        % Fill background if not just white or if multiple axes and current
+        % is visible
+        if ~strcmp(col, 'white') || (numel(m2t.relevantAxesHandles) > 1 && isVisible(handle))
             m2t.axesContainers{end}.options = ...
                 opts_add(m2t.axesContainers{end}.options, ...
                 'axis background/.style', sprintf('{fill=%s}', col));
@@ -1364,7 +1366,7 @@ function options = setAxisLimits(m2t, handle, axis, options)
     end
 end
 % ==============================================================================
-function bool = axisIsVisible(axisHandle)
+function bool = isAxisVisible(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
         % immediately bail out here.
@@ -4897,7 +4899,7 @@ function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
     N   = numel(axesHandles);
     idx = false(N,1);
     for ii = 1:N
-       idx(ii) = axisIsVisible(axesHandles(ii));
+       idx(ii) = isAxisVisible(axesHandles(ii));
     end
     m2t.relevantAxesHandles = double(axesHandles(idx));
 
