@@ -572,7 +572,8 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
         % Find all legend handles. This is MATLAB-only.
         m2t.legendHandles = findobj(fh, tagKeyword, 'legend');
         m2t.legendHandles = m2t.legendHandles(:)';
-        axesHandles = setdiff(axesHandles, m2t.legendHandles);
+        idx               = ~ismember(axesHandles, m2t.legendHandles);
+        axesHandles       = axesHandles(idx);
     end
 
     % Remove all colorbar handles, as they are treated separately.
@@ -588,7 +589,8 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
           end
         end
         m2t.cbarHandles = m2t.cbarHandles(:)';
-        axesHandles = setdiff(axesHandles, m2t.cbarHandles);
+        idx             = ~ismember(axesHandles, m2t.cbarHandles);
+        axesHandles     = axesHandles(idx);
     else
         m2t.cbarHandles = [];
     end
