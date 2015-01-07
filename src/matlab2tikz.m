@@ -996,15 +996,11 @@ end
 function m2t = drawBackgroundOfAxes(m2t, handle)
 % draw the background color of the current axes
     backgroundColor = get(handle, 'Color');
-    if ~isNone(backgroundColor)
+    if ~isNone(backgroundColor) && isVisible(handle)
         [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
-        % Fill background if not just white or if multiple axes and current
-        % is visible
-        if ~strcmp(col, 'white') || (numel(m2t.relevantAxesHandles) > 1 && isVisible(handle))
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis background/.style', sprintf('{fill=%s}', col));
-        end
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'axis background/.style', sprintf('{fill=%s}', col));
     end
 end
 % ==============================================================================
