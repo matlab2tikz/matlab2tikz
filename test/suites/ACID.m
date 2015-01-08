@@ -131,7 +131,8 @@ function [status] = ACID(k)
                            @texInterpreter      , ...
                            @stackedBarsWithOther, ...
                            @colorbarLabelTitle  , ...
-                           @textAlignment
+                           @textAlignment       , ...
+                           @overlappingPlots
                          };
 
 
@@ -2377,6 +2378,40 @@ function [stat] = textAlignment()
     h_t = text(1.5,0.5,{'h=l, v=t','multiline'}, ...
         'HorizontalAlignment','left','VerticalAlignment','top');
     set(h_t,'BackgroundColor','g');
+end
+% =========================================================================
+function [stat] = overlappingPlots()
+    stat.description = 'Overlapping plots with zoomed data and varying background.';
+    stat.issues = 6;
+
+    % create pseudo random data and convert it from matrix to vector
+    l = 16^2;
+    l_zoom = 64;
+    wave = magic(sqrt(l));
+    wave = wave(:);
+    wave = wave - max(wave)/2;
+
+    % plot data
+    h = figure(); clf;
+    ax1 = axes('Parent', h);
+    plot(ax1, wave);
+
+    % overlapping plots with zoomed data
+    ax2 = axes('Parent', h, 'Position', [0.25, 0.3, 0.3, 0.4]);
+    ax3 = axes('Parent', h, 'Position', [0.2, 0.6, 0.3, 0.4]);
+    ax4 = axes('Parent', h, 'Position', [0.7, 0.2, 0.2, 0.4]);
+
+    plot(ax2, 1:l_zoom, wave(1:l_zoom), 'r');
+    plot(ax3, 1:l_zoom, wave(1:l_zoom), 'k');
+    plot(ax4, 1:l_zoom, wave(1:l_zoom), 'k');
+
+    % set x-axis limits of main plot and first subplot
+    xlim(ax1, [1,l]);
+    xlim(ax3, [1,l_zoom]);
+
+    % axis background color: ax2 = default, ax3 = green, ax4 = transparent
+    set(ax3, 'Color', 'green');
+    set(ax4, 'Color', 'none');
 end
 % =========================================================================
 function env = getEnvironment
