@@ -2385,11 +2385,9 @@ function [stat] = overlappingPlots()
     stat.issues = 6;
 
     % create pseudo random data and convert it from matrix to vector
-    l = 16^2;
+    l = 256;
     l_zoom = 64;
-    wave = magic(sqrt(l));
-    wave = wave(:);
-    wave = wave - max(wave)/2;
+    wave = sin(linspace(1,10*2*pi,l));
 
     % plot data
     h = figure(); clf;
@@ -2397,9 +2395,9 @@ function [stat] = overlappingPlots()
     plot(ax1, wave);
 
     % overlapping plots with zoomed data
-    ax2 = axes('Parent', h, 'Position', [0.25, 0.3, 0.3, 0.4]);
     ax3 = axes('Parent', h, 'Position', [0.2, 0.6, 0.3, 0.4]);
     ax4 = axes('Parent', h, 'Position', [0.7, 0.2, 0.2, 0.4]);
+    ax2 = axes('Parent', h, 'Position', [0.25, 0.3, 0.3, 0.4]);
 
     plot(ax2, 1:l_zoom, wave(1:l_zoom), 'r');
     plot(ax3, 1:l_zoom, wave(1:l_zoom), 'k');
