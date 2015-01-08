@@ -4891,12 +4891,14 @@ function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
 % This function is the remaining code of alignSubPlots() in the alternative
 % positioning system.
     
-    % Only handle visible handles.
+    % List only visible axes 
     N   = numel(axesHandles);
     idx = false(N,1);
     for ii = 1:N
        idx(ii) = isAxisVisible(axesHandles(ii));
     end
+    % Store the relevant axes in m2t to simplify querying e.g. positions
+    % of subplots
     m2t.relevantAxesHandles = double(axesHandles(idx));
 
     % Compute the bounding box if width or height of the figure are set by
