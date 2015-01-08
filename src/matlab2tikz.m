@@ -5539,7 +5539,7 @@ end
 function opts = opts_add(opts, key, value)
 % add a key-value pair to an options array (with duplication check)
     if ~exist('value','var')
-        value = [];
+        value = '';
     end
     value = char(value);
 
@@ -5573,9 +5573,10 @@ function value = opts_get(opts, key)
 end
 function opts = opts_append(opts, key, value)
 % append a key-value pair to an options array (duplicate keys allowed)
-    if ~exist('value','var') || isempty(value)
-        value = [];
+    if ~exist('value','var')
+        value = '';
     end
+    value = char(value);
     if ~(opts_has(opts, key) && isequal(opts_get(opts, key), value))
         opts = cat(1, opts, {key, value});
     end
