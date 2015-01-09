@@ -969,14 +969,12 @@ function legendhandle = getAssociatedLegend(m2t, handle)
     legendhandle = [];
     switch m2t.env
         case 'Octave'
-            if ~isempty(m2t.legendHandles)
-                % Make sure that m2t.legendHandles is a row vector.
-                for lhandle = m2t.legendHandles(:)'
-                    ud = get(lhandle, 'UserData');
-                    if any(handle == ud.handle)
-                        legendhandle = lhandle;
-                        break;
-                    end
+            % Make sure that m2t.legendHandles is a row vector.
+            for lhandle = m2t.legendHandles(:)'
+                ud = get(lhandle, 'UserData');
+                if isVisible(lhandle) && any(handle == ud.handle)
+                    legendhandle = lhandle;
+                    break;
                 end
             end
         case 'MATLAB'
