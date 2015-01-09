@@ -3962,11 +3962,14 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
     else
         switch color
             case 'flat'
-                cdata = getCDataWithFallbacks(patchhandle);
-
-                col1 = cdata(1,1);
-                if all(isnan(cdata) | abs(cdata-col1)<1.0e-10)
-                    [m2t, colorindex] = cdata2colorindex(m2t, col1, patchhandle);
+                cdata  = getCDataWithFallbacks(patchhandle);
+                color1 = cdata(1,1);
+                % RGB cdata
+                if ndims(cdata) == 3 && all(size(cdata) == [1,1,3])
+                    [m2t,xcolor] = rgb2colorliteral(m2t, cdata);
+                % All same color
+                elseif all(isnan(cdata) | abs(cdata-color1)<1.0e-10)
+                    [m2t, colorindex] = cdata2colorindex(m2t, color1, patchhandle);
                     [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
                 else
                     % Don't return anything meaningful and count on the caller
