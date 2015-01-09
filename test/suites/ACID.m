@@ -2307,12 +2307,12 @@ function [stat] = stackedBarsWithOther()
   yVals = min((xVals).^2, sum(Y,2));
 
   subplot(2,1,1); hold on;
-  bar(Y,'stack');
+  bar(Y,'stacked');
   plot(xVals, yVals, 'Color', 'r', 'LineWidth', 2);
   legend('show');
 
   subplot(2,1,2); hold on;
-  b2 = barh(Y,'stack','BarWidth', 0.75);
+  b2 = barh(Y,'stacked','BarWidth', 0.75);
   plot(yVals, xVals, 'Color', 'b', 'LineWidth', 2);
 
   set(b2(1),'FaceColor','c','EdgeColor','none')
