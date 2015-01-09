@@ -1890,7 +1890,8 @@ function [m2t, str] = drawPatch(m2t, handle)
         rowsCData = size(fvCData,1);
         
         % We have CData
-        if rowsCData ~= 0
+        if rowsCData > 1
+            
             % Add the color map
             m2t.axesContainers{end}.options = ...
                 opts_add(m2t.axesContainers{end}.options, ...
@@ -1932,6 +1933,9 @@ function [m2t, str] = drawPatch(m2t, handle)
                 ptType = 'patch table with point meta';
                 Faces  = [Faces fvCData];
             end
+        else
+            [m2t,xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
+            drawOptions      = opts_add(drawOptions,'fill',xFaceColor);
         end
     end
     
