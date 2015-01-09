@@ -2390,14 +2390,13 @@ function [stat] = overlappingPlots()
     wave = sin(linspace(1,10*2*pi,l));
 
     % plot data
-    h = figure(); clf;
-    ax1 = axes('Parent', h);
+    ax1 = axes()
     plot(ax1, wave);
 
     % overlapping plots with zoomed data
-    ax3 = axes('Parent', h, 'Position', [0.2, 0.6, 0.3, 0.4]);
-    ax4 = axes('Parent', h, 'Position', [0.7, 0.2, 0.2, 0.4]);
-    ax2 = axes('Parent', h, 'Position', [0.25, 0.3, 0.3, 0.4]);
+    ax3 = axes('Position', [0.2, 0.6, 0.3, 0.4]);
+    ax4 = axes('Position', [0.7, 0.2, 0.2, 0.4]);
+    ax2 = axes('Position', [0.25, 0.3, 0.3, 0.4]);
 
     plot(ax2, 1:l_zoom, wave(1:l_zoom), 'r');
     plot(ax3, 1:l_zoom, wave(1:l_zoom), 'k');
