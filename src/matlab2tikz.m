@@ -1825,7 +1825,8 @@ function [m2t, str] = drawPatch(m2t, handle)
 
     
     % No patch: if one patch and single face/edge color
-    if size(Faces,1) == 1 && s.hasOneEdgeColor && s.hasOneFaceColor
+    isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
+    if size(Faces,1) == 1 && s.hasOneEdgeColor && isFaceColorFlat
         ptType = '';
         cycle  = conditionallyCyclePath(Vertices);
         if ~isNone(s.edgeColor)
@@ -1869,7 +1870,6 @@ function [m2t, str] = drawPatch(m2t, handle)
             userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
             
             % Default interpolated shader,not supported by polygon, to faceted
-            isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
             if ~isFaceColorFlat
                 userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
                 patchOptions = opts_remove(patchOptions, 'shader');
@@ -1887,7 +1887,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         fvCData   = get(handle,'FaceVertexCData');
         rowsCData = size(fvCData,1);
         
-        % We have CData
+        % We have CData for either all faces or vertices
         if rowsCData > 1
             
             % Add the color map
@@ -1902,7 +1902,6 @@ function [m2t, str] = drawPatch(m2t, handle)
             end
             
             % Switch to face CData if not using interpolated shader
-            isFaceColorFlat = isempty(strfind(opts_get(drawOptions, 'shader'),'interp'));
             isVerticesCData = rowsCData == size(Vertices,1);
             if isFaceColorFlat && isVerticesCData
                 % Take first vertex color (see FaceColor in Patch Properties)
@@ -1912,7 +1911,7 @@ function [m2t, str] = drawPatch(m2t, handle)
             end
             
             % Point meta as true color CData, i.e. RGB in [0,1]
-            if ~isvector(fvCData)
+            if size(fvCData,2) == 3
                 % Create additional custom colormap
                 m2t.axesContainers{end}.options(end+1,:) = ...
                     {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
@@ -1931,9 +1930,12 @@ function [m2t, str] = drawPatch(m2t, handle)
                 ptType = 'patch table with point meta';
                 Faces  = [Faces fvCData];
             end
+            
+        % Scalar FaceVertexCData, i.e. one color mapping for all patches,
+        % used e.g. by Octave in drawing barseries
         else
             [m2t,xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
-            drawOptions      = opts_add(drawOptions,'fill',xFaceColor);
+            drawOptions      = opts_add(drawOptions, 'fill', xFaceColor);
         end
     end
     
