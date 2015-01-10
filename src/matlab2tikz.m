@@ -3037,11 +3037,8 @@ function [m2t, str] = drawBarseries(m2t, h)
     switch barlayout
         case 'grouped'  % grouped bar plots
             
-            % Get bar peers, number of bars and barId
-            prop               = switchMatOct(m2t, 'BarPeers', 'bargroup');
-            bargroup           = get(h, prop);
-            numBars            = numel(bargroup);
-            [~, m2t.barplotId] = ismember(handle(h), bargroup);
+            % Get number of bars series and bar series id
+            [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h);
 
             % Maximum group width relative to the minimum distance between two
             % x-values. See <MATLAB>/toolbox/matlab/specgraph/makebars.m
@@ -3134,6 +3131,17 @@ function [m2t, str] = drawBarseries(m2t, h)
     drawOpts = opts_print(m2t, drawOptions, ',');
     [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
     str = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
+end
+% ==============================================================================
+function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
+% Get number of bars series and bar series id
+    prop         = switchMatOct(m2t, 'BarPeers', 'bargroup');
+    bargroup     = get(h, prop);
+    numBarSeries = numel(bargroup);
+    if isHG2(m2t)
+        bargroup = bargroup(end:-1:1);
+    end
+    [~, barSeriesId] = ismember(handle(h), bargroup);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
