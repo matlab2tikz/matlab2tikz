@@ -829,15 +829,20 @@ function m2t = drawAxes(m2t, handle)
             opts_add(m2t.axesContainers{end}.options, ...
             'scale only axis', []);
     end
-    % Add the physical dimension of one unit of length in the coordinate system.
-    % This is used later on to translate lengths to physical units where
-    % necessary (e.g., in bar plots).
-    m2t.unitlength.x.unit = pos.w.unit;
-    xLim = get(m2t.currentHandles.gca, 'XLim');
-    m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
-    m2t.unitlength.y.unit = pos.h.unit;
-    yLim = get(m2t.currentHandles.gca, 'YLim');
-    m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
+    
+%     NOT USED IN BARPLOTS ANYMORE (if re-introduced make it
+%     m2t.axesContainer{end}.<field>)
+%     % Add the physical dimension of one unit of length in the coordinate system.
+%     % This is used later on to translate lengths to physical units where
+%     % necessary (e.g., in bar plots).
+%     m2t.unitlength.x.unit = pos.w.unit;
+%     xLim = get(m2t.currentHandles.gca, 'XLim');
+%     m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
+%     m2t.unitlength.y.unit = pos.h.unit;
+%     yLim = get(m2t.currentHandles.gca, 'YLim');
+%     m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
+    
+    % Axis direction
     for axis = 'xyz'
         m2t.([axis 'AxisReversed']) = ...
             strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
@@ -3043,10 +3048,10 @@ function [m2t, str] = drawBarseries(m2t, h)
             % Maximum group width relative to the minimum distance between two
             % x-values. See <MATLAB>/toolbox/matlab/specgraph/makebars.m
             maxGroupWidth = 0.8;
-            if numBars == 1
+            if numBarSeries == 1
                 groupWidth = 1.0;
             else
-                groupWidth = min(maxGroupWidth, numBars/(numBars+1.5));
+                groupWidth = min(maxGroupWidth, numBarSeries/(numBarSeries+1.5));
             end
 
             % Calculate the width of each bar and the center point shift as in
@@ -3056,8 +3061,8 @@ function [m2t, str] = drawBarseries(m2t, h)
             % In case of numBars==2, this returns [-1/4, 1/4],
             % In case of numBars==3, this returns [-1/3, 0, 1/3],
             % and so forth.
-            barWidth = groupWidth/numBars; % assumption
-            barShift = (m2t.barplotId - 0.5) * barWidth - groupWidth/2;
+            assumedBarWidth = groupWidth/numBarSeries; % assumption
+            barShift        = (barSeriesId - 0.5) * assumedBarWidth - groupWidth/2;
 
             % From http://www.mathworks.com/help/techdoc/ref/bar.html:
             % bar(...,width) sets the relative bar width and controls the
@@ -3065,7 +3070,7 @@ function [m2t, str] = drawBarseries(m2t, h)
             % you do not specify X, the bars within a group have a slight
             % separation. If width is 1, the bars within a group touch one
             % another. The value of width must be a scalar.
-            barWidth = get(h, 'BarWidth') * groupWidth / numBars;
+            barWidth = get(h, 'BarWidth') * assumedBarWidth;
 
             % Bar type
             drawOptions = opts_add(drawOptions, barType);
