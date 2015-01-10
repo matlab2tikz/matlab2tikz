@@ -801,6 +801,11 @@ function m2t = drawAxes(m2t, handle)
 
     % update gca
     m2t.currentHandles.gca = handle;
+    
+    % Check if axis is 3d
+    % In MATLAB, all plots are treated as 3D plots; it's just the view that
+    % makes 2D plots appear like 2D.
+    m2t.axesContainers{end}.is3D = isAxis3D(handle);
 
     % Flag if axis contains barplot
     m2t.axesContainers{end}.barAddedAxisOption = false;
@@ -858,11 +863,7 @@ function m2t = drawAxes(m2t, handle)
             opts_add(m2t.axesContainers{end}.options, 'point meta max', sprintf(m2t.ff, clim(2)));
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % In MATLAB, all plots are treated as 3D plots; it's just the view that
-    % makes 2D plots appear like 2D.
-    % Recurse into the children of this environment. Do this here to give the
-    % contained plots the chance to set m2t.currentAxesContain3dData to true.
-    m2t.currentAxesContain3dData = false;
+    % Recurse into the children of this environment.
     [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
     m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -955,7 +956,7 @@ end
 % ==============================================================================
 function m2t = add3DOptionsOfAxes(m2t, handle)
 % adds 3D specific options of an axes object
-    if m2t.currentAxesContain3dData
+    if isAxis3D(handle)
         [m2t, zopts] = getAxisOptions(m2t, handle, 'z');
         m2t.axesContainers{end}.options = opts_merge(...
             m2t.axesContainers{end}.options, zopts);
@@ -1371,6 +1372,12 @@ function tf = isAxisVisible(axisHandle)
     end
 end
 % ==============================================================================
+function tf = isAxis3D(axisHandle)
+% Check if elevation is not orthogonal to xy plane
+    axisView = get(axisHandle,'view');
+    tf       = ~ismember(axisView(2),[90,-90]);
+end
+% ==============================================================================
 function [m2t, str] = drawLine(m2t, handle, yDeviation)
 % Returns the code for drawing a regular line and error bars.
 % This is an extremely common operation and takes place in most of the
@@ -1417,13 +1424,10 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
     % This also implicitly makes sure that the lengths match.
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
-    zData = getOrDefault(handle, 'ZData', []);
-    % We would like to do
-    %   data = [xData(:), yData(:), zData(:)],
-    % but Octave fails. Hence this isempty() construction.
-    if isempty(zData)
+    if ~m2t.axesContainers{end}.is3D
         data = [xData(:), yData(:)];
     else
+        zData = get(handle, 'ZData');
         data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
 
@@ -1440,13 +1444,11 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
             opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
     end
 
-    if ~isempty(zData)
+    if m2t.axesContainers{end}.is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
         [m2t, table] = makeTable(m2t, {'','',''}, data);
         str = sprintf('%s\\addplot3 [%s]\n table[row sep=crcr] {%s};\n ', ...
             str, join(m2t, drawOptions, ','), table);
-
-        m2t.currentAxesContain3dData = true;
     else
         % split the data into logical chunks
         dataCell = splitLine(m2t, hasLines, data);
@@ -1778,8 +1780,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     Vertices = get(handle,'Vertices');
     
     % 3D vs 2D
-    if size(Vertices,2) == 3
-        m2t.currentAxesContain3dData = true;
+    if m2t.axesContainers{end}.is3D
         columnNames = {'x', 'y', 'z'};
         Vertices    = applyHgTransform(m2t, Vertices);
         plotCmd     = 'addplot3';
@@ -2381,7 +2382,6 @@ function [m2t,env] = drawSurface(m2t, handle)
 
     % Allow for empty surf
     if isNone(s.plotType)
-        m2t.currentAxesContain3dData = true;
         env = str;
         return
     end
@@ -2946,7 +2946,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
-    if isempty(zData)
+    if ~m2t.axesContainers{end}.is3D
         env = 'addplot';
         if length(sData) == 1
             nColumns = 2;
@@ -2958,7 +2958,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         end
     else
         env = 'addplot3';
-        m2t.currentAxesContain3dData = true;
         if length(sData) == 1
             nColumns = 3;
             data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
@@ -3265,13 +3264,13 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     str = '';
 
-    [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h);
-
+    [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t,h);
+    
+    
     % prepare output
     if is3D
         name = 'addplot3';
         format = [m2t.ff,',',m2t.ff,',',m2t.ff];
-        m2t.currentAxesContain3dData = true;
     else % 2D plotting
         name   = 'addplot';
         format = [m2t.ff,',',m2t.ff];
@@ -3331,7 +3330,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     %FIXME: external
 end
 % ==============================================================================
-function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h)
+function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t, h)
 % get and rescale the arrows from a quivergroup object
     x = get(h, 'XData');
     y = get(h, 'YData');
@@ -3340,13 +3339,11 @@ function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h)
     u = get(h, 'UData');
     v = get(h, 'VData');
     w = getOrDefault(h, 'WData', []);
-
-    if isempty(z)
+    
+    is3D = m2t.axesContainers{end}.is3D;
+    if ~is3D
         z = 0;
         w = 0;
-        is3D  = false;
-    else
-        is3D = true;
     end
 
     % MATLAB uses a scaling algorithm to determine the size of the arrows.
