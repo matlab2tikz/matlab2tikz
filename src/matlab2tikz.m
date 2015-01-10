@@ -2441,16 +2441,23 @@ function [m2t,env] = drawSurface(m2t, handle)
     % Check if we need extra CData.
     CData = get(handle, 'CData');
     if length(size(CData)) == 3 && size(CData, 3) == 3
-        % Explicit RGB-coded colors.
-        opts = opts_add(opts,'mesh/color input','explicit');
-
-        formatType = 'table[row sep=crcr,header=false,meta index=3]';
-        r = CData(:, :, 1);
-        g = CData(:, :, 2);
-        b = CData(:, :, 3);
-        colorFormat = join(m2t, repmat({m2t.ff},[3 1]),',');
-        color = arrayfun(@(r,g,b)(sprintf(colorFormat,r,g,b)), ...
-            r(:),g(:),b(:),'UniformOutput',false);
+        % Create additional custom colormap
+        nrows = size(data,1);
+        CData = reshape(CData, nrows,3);
+        m2t.axesContainers{end}.options(end+1,:) = ...
+            {matlab2pgfplotsColormap(m2t, CData, 'patchmap'), []};
+        % Index into custom colormap
+        color       = (0:nrows-1)';
+        
+        columnNames = [columnNames, 'c'];
+        formatType = 'table[row sep=crcr, colormap name=surfmap, point meta=\thisrow{c}]';
+        
+%         r = CData(:, :, 1);
+%         g = CData(:, :, 2);
+%         b = CData(:, :, 3);
+%         colorFormat = join(m2t, repmat({m2t.ff},[3 1]),',');
+%         color = arrayfun(@(r,g,b)(sprintf(colorFormat,r,g,b)), ...
+%             r(:),g(:),b(:),'UniformOutput',false);
 
         %formatType = 'table[row sep=crcr,header=false]';
         %formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
