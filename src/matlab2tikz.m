@@ -2420,6 +2420,17 @@ function [m2t,env] = drawSurface(m2t, handle)
         opts = opts_add(opts, 'z buffer','sort');
     end
 
+    % Check if 3D
+    if m2t.axesContainers{end}.is3D
+        columnNames = {'x','y','z'};
+        data        = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
+        plotCmd     = 'addplot3';
+    else
+        columnNames = {'x','y'};
+        data        = [dx(:), dy(:)];
+        plotCmd     = 'addplot';
+    end
+    
     % There are several possibilities of how colors are specified for surface
     % plots:
     %    * explicitly by RGB-values,
@@ -2450,8 +2461,7 @@ function [m2t,env] = drawSurface(m2t, handle)
     else
         opts = opts_add(opts,matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap),'');
         % If NaNs are present in the color specifications, don't use them for
-        % Pgfplots; they may be interpreted as strings there. The option
-        % 'header=false' will be explicitly added.
+        % Pgfplots; they may be interpreted as strings there. 
         % Note:
         % Pgfplots actually does a better job than MATLAB in determining what
         % colors to use for the patches. The circular test case on
@@ -2460,34 +2470,29 @@ function [m2t,env] = drawSurface(m2t, handle)
         needsPointmeta = any(xor(isnan(dz(:)), isnan(CData(:)))) ...
             || any(abs(CData(:) - dz(:)) > 1.0e-10);
         if needsPointmeta
-            % Get color map.
-            formatType = 'table[row sep=crcr,header=false,point meta=\thisrowno{3}]';
-            color      = CData(:);
+            columnNames = [columnNames, 'c'];
+            formatType  = 'table[row sep=crcr, point meta=\thisrow{c}]';
+            color       = CData(:);
         else
-            formatType = 'table[row sep=crcr,header=false,point meta=\thisrowno{2}]';
-            color = '';
+            formatType = 'table[row sep=crcr, point meta=\thisrow{z}]';
+            color      = [];
         end
     end
-    data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
-
+    data = [data, color];
+        
     % Add mesh/rows=<num rows> for specifying the row data instead of empty
     % lines in the data list below. This makes it possible to reduce the
     % data writing to one single sprintf() call.
     opts = opts_add(opts,'mesh/rows',sprintf('%d', numrows));
 
-    opts = opts_print(m2t, opts, ',\n');
-    str = [str, sprintf(['\n\\addplot3[%%\n%s,\n', opts ,']'], s.plotType)];
+    str = [str, sprintf('\n\\%s[%%\n%s,\n%s]', plotCmd, s.plotType, opts_print(m2t, opts, ','))];
 
     % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
     % algorithm.
     % Spectrograms need to have the grid removed,
     % m2t.axesContainers{end}.options{end+1} = 'grid=none';
     % Here is where everything is put together.
-    tabArgs = {'',data(:,1),'',data(:,2),'',data(:,3)};
-    if ~isempty(color)
-        tabArgs(end+1:end+2) = {'',color};
-    end
-    [m2t, table] = makeTable(m2t, tabArgs{:});
+    [m2t, table] = makeTable(m2t, columnNames, data);
 
     str = sprintf('%s\n%s {%%\n%s};\n', str, formatType, table);
     env = str;
@@ -2501,8 +2506,6 @@ function [m2t,env] = drawSurface(m2t, handle)
         [m2t, label] = addLabel(m2t);
         str = [str, label]; %#ok
     end
-
-    m2t.currentAxesContain3dData = true;
 end
 % ==============================================================================
 function [m2t, str] = drawVisibleText(m2t, handle)
