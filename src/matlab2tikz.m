@@ -172,7 +172,6 @@ m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
 m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
-m2t.barplotId    = 0; % identification flag for bar plots
 m2t.quiverId     = 0; % identification flag for quiver plot styles
 m2t.automaticLabelIndex = 0;
 
@@ -803,10 +802,8 @@ function m2t = drawAxes(m2t, handle)
     % update gca
     m2t.currentHandles.gca = handle;
 
-    % Bar plots need to have some values counted per axis. Setting
-    % m2t.barplotId to 0 makes sure these are recomputed in drawBarSeries()
-    % TODO: find nicer approach for barplots
-    m2t.barplotId = 0;
+    % Flag if axis contains barplot
+    m2t.axesContainers{end}.barAddedAxisOption = false;
 
     m2t.gcaAssociatedLegend = getAssociatedLegend(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3015,13 +3012,6 @@ function [m2t, str] = drawBarseries(m2t, h)
         return; % don't bother drawing invisible things
     end
 
-    % drawAxes sets m2t.barplotId to 0, so all values are recomputed for subplots.
-    if m2t.barplotId == 0
-        % 'barplotId' provides a consecutively numbered ID for each
-        % barseries plot. This allows for a proper handling of multiple bars.
-        m2t.barAddedAxisOption = false;
-    end
-
     % Add 'log origin = infty' if BaseValue differs from zero (log origin=0 is
     % the default behaviour since Pgfplots v1.5).
     baseValue = get(h, 'BaseValue');
@@ -3096,12 +3086,12 @@ function [m2t, str] = drawBarseries(m2t, h)
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
 
-            if ~m2t.barAddedAxisOption
+            if ~m2t.axesContainers{end}.barAddedAxisOption;
                 barWidth = get(h, 'BarWidth');
                 m2t.axesContainers{end}.options = ...
                     opts_add(m2t.axesContainers{end}.options, ...
                     'bar width', formatDim(barWidth,''));
-                m2t.barAddedAxisOption = true;
+                m2t.axesContainers{end}.barAddedAxisOption = true;
             end
 
             % Somewhere between pgfplots 1.5 and 1.8 and starting
