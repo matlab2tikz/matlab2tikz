@@ -210,7 +210,7 @@ ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
 ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
-ipp = ipp.addParamValue(ipp, 'extraColors', {}, @iscolordefinitions);
+ipp = ipp.addParamValue(ipp, 'extraColors', {}, @isColorDefinitions);
 ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'extraCodeAtEnd', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
@@ -387,15 +387,15 @@ function l = filehandleValidation(x)
     l = isnumeric(x) && any(x==fopen('all'));
 end
 % ==============================================================================
-function l = isCellOrChar(x)
-    l = iscell(x) || ischar(x);
+function tf = isCellOrChar(x)
+    tf = iscell(x) || ischar(x);
 end
 % ==============================================================================
-function isValid = iscolordefinitions(colors)
+function tf = isColorDefinitions(colors)
     isRGBTuple   = @(c)( numel(c) == 3 && all(0<=c & c<=1) );
     isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
 
-    isValid = iscell(colors) && all(cellfun(isValidEntry, colors));
+    tf = iscell(colors) && all(cellfun(isValidEntry, colors));
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
@@ -1354,20 +1354,20 @@ function options = setAxisLimits(m2t, handle, axis, options)
     end
 end
 % ==============================================================================
-function bool = isAxisVisible(axisHandle)
+function tf = isAxisVisible(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
         % immediately bail out here.
         children = get(axisHandle, 'Children');
-        bool = false;
+        tf = false;
         for child = children(:)'
             if isVisible(child)
-                bool = true;
+                tf = true;
                 return;
             end
         end
     else
-        bool = true;
+        tf = true;
     end
 end
 % ==============================================================================
@@ -4794,9 +4794,9 @@ function str = escapeCharacters(str)
     str = strrep(str, '\' , '\\');
 end
 % ==============================================================================
-function bool = isNone(value)
+function tf = isNone(value)
 % Checks whether a value is 'none'
-    bool = strcmpi(value, 'none');
+    tf = strcmpi(value, 'none');
 end
 % ==============================================================================
 function val = getOrDefault(handle, key, default)
@@ -4837,9 +4837,9 @@ function opts = addIfNotDefault(m2t, type, handle, key, default, pgfKey, opts)
     end
 end
 % ==============================================================================
-function out = isVisible(handles)
+function tf = isVisible(handles)
 % Determines whether an object is actually visible or not.
-    out = strcmp(get(handles,'Visible'), 'on');
+    tf = strcmp(get(handles,'Visible'), 'on');
     % There's another handle property, 'HandleVisibility', which may or may not
     % determine the visibility of the object. Empirically, it seems to be 'off'
     % whenever we're dealing with an object that's not user-created, such as
@@ -5624,29 +5624,23 @@ function [env,versionString] = getEnvironment()
     versionString = '';
 end
 % ==============================================================================
-function isHG2 = isHG2(m2t)
+function tf = isHG2(m2t)
 % Checks if graphics system is HG2 (true) or HG1 (false).
 % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
 % HG2 : MATLAB starting from R2014b (version 8.4)
-    isHG2 = false;
-    if strcmpi(m2t.env,'MATLAB') && ...
-        ~isVersionBelow(m2t.env, m2t.envVersion, [8,4])
-        isHG2 = true;
-    end
+    tf = strcmpi(m2t.env,'MATLAB') && ...
+        ~isVersionBelow(m2t.env, m2t.envVersion, [8,4]);
 end
 % ==============================================================================
-function isBelow = isVersionBelow(env, versionA, versionB)
+function tf = isVersionBelow(env, versionA, versionB)
 % Checks if versionA is smaller than versionB
     vA         = versionArray(env, versionA);
     vB         = versionArray(env, versionB);
     n          = min(length(vA), length(vB));
     deltaAB    = vA(1:n) - vB(1:n);
     difference = find(deltaAB, 1, 'first');
-    if isempty(difference)
-        isBelow = false; % equal versions
-    else
-        isBelow = (deltaAB(difference) < 0);
-    end
+    % Empty difference then same version
+    tf         = ~isempty(difference) && deltaAB(difference) < 0;
 end
 % ==============================================================================
 function str = formatDim(value, unit)
