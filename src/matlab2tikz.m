@@ -2414,9 +2414,10 @@ function [m2t,env] = drawSurface(m2t, handle)
     % to avoid it for the most default situations, e.g., when dx and dy are
     % rank-1-matrices.
     % Enforce 'z buffer=sort' if shader is flat
-    if isempty(strfind(opts_get(opts, 'shader'),'interp')) ||...
-        any(~isnan(dx(1,:)) & dx(1,:) ~= dx(2,:)) ||...
-        any(~isnan(dy(:,1)) & dy(:,1) ~= dy(:,2))
+    % Avoid 'z buffer=sort' for hist3D plots
+    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
+    isHist3D     = strcmpi(get(handle,'tag'),'hist3');
+    if m2t.axesContainers{end}.is3D && isShaderFlat && ~isHist3D
         opts = opts_add(opts, 'z buffer','sort');
     end
 
