@@ -2618,11 +2618,11 @@ function [style] = getRotationOfText(m2t, handle, style)
     end
 end
 % ==============================================================================
-function [m2t,posString] = getPositionOfText(m2t, handle)
+function [m2t,posString] = getPositionOfText(m2t, h)
 % makes the tikz position string of a text object
-    pos   = get(handle, 'Position');
+    pos   = get(h, 'Position');
     npos  = length(pos);
-    units = get(handle, 'Units');
+    units = get(h, 'Units');
     xlim  = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
     ylim  = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
     zlim  = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
@@ -2661,10 +2661,20 @@ function [m2t,posString] = getPositionOfText(m2t, handle)
         case 'data'
             type    = 'axis cs:';
             fmtUnit = '';
+        % Let Matlab do the conversion of any unit into cm 
         otherwise
             type    = '';
             fmtUnit = 'cm';
-            pos     = convertUnits(pos, units, fmtUnit);
+            if ~strcmpi(units, 'centimeters')
+                % Save old pos, set units to cm, query pos, reset
+                % NOTE: cannot use copyobj since it is buggy in R2014a, see 
+                %       http://www.mathworks.com/support/bugreports/368385
+                oldPos = get(h, 'Position');
+                set(h,'Units','centimeters')
+                pos    = get(h,'pos');
+                pos    = pos(1:npos);
+                set(h,'Units',units,'Position',oldPos)
+            end
     end
     posString = cell(1,npos);
     for ii = 1:npos
