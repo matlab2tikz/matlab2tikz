@@ -2616,62 +2616,73 @@ function [style] = getRotationOfText(m2t, handle, style)
     end
 end
 % ==============================================================================
-function [m2t,posString] = getPositionOfText(m2t, handle)
+function [m2t,posString] = getPositionOfText(m2t, h)
 % makes the tikz position string of a text object
-    pos = get(handle, 'Position');
-    units = get(handle, 'Units');
-    xlim = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
-    ylim = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
-    zlim = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
+    pos   = get(h, 'Position');
+    npos  = length(pos);
+    units = get(h, 'Units');
+    xlim  = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
+    ylim  = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
+    zlim  = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
     
     is3D = false;
     
-    switch length(pos)
-        case 2    % Text within a 2d plot
-            switch units
-                case 'normalized'
-                    posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
-                case 'data'
-                    posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos);
-                otherwise
-                    defaultUnit = 'cm';
-                    pos = convertUnits(pos, units, defaultUnit);
-                    posString = ['(' formatDim(pos(1), defaultUnit) ',' ...
-                                     formatDim(pos(2), defaultUnit) ')'];
-            end
-
-        case 3    % Text within a 3d plot
-            is3D = true;
-            pos = applyHgTransform(m2t, pos);
-            if strcmp(units, 'normalized')
-                %FIXME: does this ever happen? not documented in MATLAB
-                posString = sprintf(['(rel axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
+    switch npos
+        % Check if 3D
+        case 3
+            if pos(3) ~= 0
+                is3D = true;
+                pos  = applyHgTransform(m2t, pos);
             else
-                posString = sprintf(['(axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
+                pos  = pos(1:2);
+                npos = 2;
             end
-
-
-        case 4    % Textbox
+            
+        % Textbox
+        case 4
             % TODO:
             %   - size of the box (e.g. using node attributes minimum width / height)
             %   - Alignment of the resized box
-            switch units
-                case 'normalized'
-                    posString = sprintf(['(rel axis cs:', m2t.ff, ',', m2t.ff, ')'], pos(1:2));
-                case 'data'
-                    posString = sprintf(['(axis cs:', m2t.ff, ',', m2t.ff, ')'], pos(1:2));
-                otherwise
-                    defaultUnit = 'cm';
-                    pos = convertUnits(pos, units, defaultUnit);
-                    posString = ['(' formatDim(pos(1), defaultUnit) ',' ...
-                                     formatDim(pos(2), defaultUnit) ')'];
-            end
-
+            pos = pos(1:2);
+            npos = 2;
+            
         otherwise
             error('matlab2tikz:drawText', ...
                 'Illegal text position specification.');
+    end    
+    
+    % Format according to units
+    switch units
+        case 'normalized'
+            type    = 'rel axis cs:';
+            fmtUnit = '';
+        case 'data'
+            type    = 'axis cs:';
+            fmtUnit = '';
+        % Let Matlab do the conversion of any unit into cm 
+        otherwise
+            type    = '';
+            fmtUnit = 'cm';
+            if ~strcmpi(units, 'centimeters')
+                % Save old pos, set units to cm, query pos, reset
+                % NOTE: cannot use copyobj since it is buggy in R2014a, see 
+                %       http://www.mathworks.com/support/bugreports/368385
+                oldPos = get(h, 'Position');
+                set(h,'Units','centimeters')
+                pos    = get(h,'pos');
+                pos    = pos(1:npos);
+                set(h,'Units',units,'Position',oldPos)
+            end
+    end
+    posString = cell(1,npos);
+    for ii = 1:npos
+        posString{ii} = formatDim(pos(ii), fmtUnit);
     end
     
+    % Create final string
+    posString = sprintf('(%s%s)',type,join(m2t,posString,','));
+    
+    % Clipping
     xOutOfRange =          pos(1) < xlim(1) || pos(1) > xlim(2);
     yOutOfRange =          pos(2) < ylim(1) || pos(2) > ylim(2);
     zOutOfRange = is3D && (pos(3) < zlim(1) || pos(3) > zlim(2));
