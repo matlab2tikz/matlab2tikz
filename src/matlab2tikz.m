@@ -1780,13 +1780,15 @@ function [m2t, str] = drawPatch(m2t, handle)
     Vertices = get(handle,'Vertices');
     
     % 3D vs 2D
-    if m2t.axesContainers{end}.is3D
+    is3D = m2t.axesContainers{end}.is3D;
+    if is3D
         columnNames = {'x', 'y', 'z'};
         Vertices    = applyHgTransform(m2t, Vertices);
         plotCmd     = 'addplot3';
     else
         columnNames = {'x', 'y'};
         plotCmd     = 'addplot';
+        Vertices    = Vertices(:,1:2);
     end
         
     % Process fill, edge colors and shader
