@@ -2628,36 +2628,36 @@ end
 function [m2t,posString] = getPositionOfText(m2t, h)
 % makes the tikz position string of a text object
     pos   = get(h, 'Position');
-    npos  = length(pos);
     units = get(h, 'Units');
     xlim  = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
     ylim  = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
     zlim  = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
     
-    is3D = false;
+    is3D = m2t.axesContainers{end}.is3D;
     
-    switch npos
-        % Check if 3D
-        case 3
-            if pos(3) ~= 0
-                is3D = true;
+    try 
+        cl = class(handle(h));
+    catch
+        cl = '';
+    end
+    switch cl
+        case 'text'
+            if is3D
                 pos  = applyHgTransform(m2t, pos);
+                npos = 3;
             else
                 pos  = pos(1:2);
                 npos = 2;
             end
-            
-        % Textbox
-        case 4
+        case 'scribe.textbox'
             % TODO:
             %   - size of the box (e.g. using node attributes minimum width / height)
             %   - Alignment of the resized box
-            pos = pos(1:2);
+            pos  = pos(1:2);
             npos = 2;
-            
+        
         otherwise
-            error('matlab2tikz:drawText', ...
-                'Illegal text position specification.');
+            error('matlab2tikz:drawText', 'Unrecognized text class: %s.', cl);
     end    
     
     % Format according to units
