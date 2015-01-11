@@ -1048,6 +1048,7 @@ end
 % =========================================================================
 function [stat] = axesLocation()
   stat.description = 'Swapped axis locations.';
+  stat.issues = 259;
 
   plot(cos(1:10));
   set(gca,'XAxisLocation','top');
@@ -2390,7 +2391,7 @@ function [stat] = overlappingPlots()
     wave = sin(linspace(1,10*2*pi,l));
 
     % plot data
-    ax1 = axes()
+    ax1 = axes();
     plot(ax1, wave);
 
     % overlapping plots with zoomed data

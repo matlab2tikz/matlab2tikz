@@ -1026,52 +1026,44 @@ function m2t = drawTitleOfAxes(m2t, handle)
     end
 end
 % ==============================================================================
-function m2t = drawBoxAndLineLocationsOfAxes(m2t, handle)
+function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
 % draw the box and axis line location of an axes object
-    isboxOn = strcmp(get(handle, 'box'), 'on');
-    xloc = get(handle, 'XAxisLocation');
-    if isboxOn
-        if strcmp(xloc, 'bottom')
-            % default; nothing added
-        elseif strcmp(xloc, 'top')
+    isBoxOn       = strcmp(get(h, 'box'), 'on');
+    xLoc          = get(h, 'XAxisLocation');
+    yLoc          = get(h, 'YAxisLocation');
+    isXaxisBottom = strcmpi(xLoc,'bottom');
+    isYaxisLeft   = strcmpi(yLoc,'left');
+    
+    % Only flip the labels to the other side if not at the default
+    % left/bottom positions
+    if isBoxOn
+        if ~isXaxisBottom
             m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis x line*', 'top');
-        else
-            error('matlab2tikz:drawAxes', ...
-                'Illegal axis location ''%s''.', xloc);
-        end
-    else % box off
-        m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
-            'axis x line*', xloc);
-    end
-    yloc = get(handle, 'YAxisLocation');
-    if isboxOn
-        if strcmp(yloc, 'left')
-            % default; nothing added
-        elseif strcmp(yloc, 'right')
+            'xticklabel pos','right');
+        end
+        if ~isYaxisLeft
             m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis y line*', 'right');
-        else
-            error('matlab2tikz:drawAxes', ...
-                'Illegal axis location ''%s''.', yloc);
-        end
-    else % box off
-        m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
-            'axis y line*', yloc);
-    end
-    if m2t.currentAxesContain3dData
-        % There's no such attribute as 'ZAxisLocation'.
-        % Instead, the default seems to be 'left'.
-        if ~isboxOn
+            'yticklabel pos','right');
+        end
+        
+    % Position axes lines (strips the box)
+    else
+        m2t.axesContainers{end}.options = ...
+            opts_append(m2t.axesContainers{end}.options, ...
+            'axis x line*', xLoc);
+        m2t.axesContainers{end}.options = ...
+            opts_append(m2t.axesContainers{end}.options, ...
+            'axis y line*', yLoc);
+        if m2t.currentAxesContain3dData
+            % There's no such attribute as 'ZAxisLocation'.
+            % Instead, the default seems to be 'left'.
             m2t.axesContainers{end}.options = ...
                 opts_add(m2t.axesContainers{end}.options, ...
                 'axis z line*', 'left');
         end
-    end
+    end       
 end
 % ==============================================================================
 function m2t = drawLegendOptionsOfAxes(m2t, handle)
