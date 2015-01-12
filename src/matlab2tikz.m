@@ -5042,7 +5042,9 @@ function c = prettyPrint(m2t, strings, interpreter)
                 % untouched.
                 % Displaymath \[...\] seems to be unsupported by TikZ/PGF.
                 % If this changes, use '\\[$2\\]' as replacement below.
-                string = regexprep(s, '(\$\$)(.*?)(\$\$)', '\$$2\$');
+                % Do not escape dollar in replacement string (e.g., "\$$2\$"),
+                % since this is not properly handled by octave 3.8.2.
+                string = regexprep(s, '(\$\$)(.*?)(\$\$)', '$$2$');
 
             case 'tex' % Subset of plain TeX markup language
 
