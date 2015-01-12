@@ -172,7 +172,6 @@ m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
 m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
-m2t.barplotId    = 0; % identification flag for bar plots
 m2t.quiverId     = 0; % identification flag for quiver plot styles
 m2t.automaticLabelIndex = 0;
 
@@ -803,10 +802,8 @@ function m2t = drawAxes(m2t, handle)
     % update gca
     m2t.currentHandles.gca = handle;
 
-    % Bar plots need to have some values counted per axis. Setting
-    % m2t.barplotId to 0 makes sure these are recomputed in drawBarSeries()
-    % TODO: find nicer approach for barplots
-    m2t.barplotId = 0;
+    % Flag if axis contains barplot
+    m2t.axesContainers{end}.barAddedAxisOption = false;
 
     m2t.gcaAssociatedLegend = getAssociatedLegend(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -832,15 +829,20 @@ function m2t = drawAxes(m2t, handle)
             opts_add(m2t.axesContainers{end}.options, ...
             'scale only axis', []);
     end
-    % Add the physical dimension of one unit of length in the coordinate system.
-    % This is used later on to translate lengths to physical units where
-    % necessary (e.g., in bar plots).
-    m2t.unitlength.x.unit = pos.w.unit;
-    xLim = get(m2t.currentHandles.gca, 'XLim');
-    m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
-    m2t.unitlength.y.unit = pos.h.unit;
-    yLim = get(m2t.currentHandles.gca, 'YLim');
-    m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
+    
+%     NOT USED IN BARPLOTS ANYMORE (if re-introduced make it
+%     m2t.axesContainer{end}.<field>)
+%     % Add the physical dimension of one unit of length in the coordinate system.
+%     % This is used later on to translate lengths to physical units where
+%     % necessary (e.g., in bar plots).
+%     m2t.unitlength.x.unit = pos.w.unit;
+%     xLim = get(m2t.currentHandles.gca, 'XLim');
+%     m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
+%     m2t.unitlength.y.unit = pos.h.unit;
+%     yLim = get(m2t.currentHandles.gca, 'YLim');
+%     m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
+    
+    % Axis direction
     for axis = 'xyz'
         m2t.([axis 'AxisReversed']) = ...
             strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
@@ -2803,8 +2805,9 @@ function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
         elseif strcmpi(s.faceColor, 'interp');
             opts = opts_add(opts,'shader','interp');
         else
-            [m2t,xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
-            opts             = opts_add(opts,'fill',xFaceColor);
+            s.hasOneFaceColor = true;
+            [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
+            opts              = opts_add(opts,'fill',xFaceColor);
         end
         
     % Edge 'interp'
@@ -3014,15 +3017,6 @@ function [m2t, str] = drawBarseries(m2t, h)
         return; % don't bother drawing invisible things
     end
 
-    % drawAxes sets m2t.barplotId to 0, so all values are recomputed for subplots.
-    if m2t.barplotId == 0
-        % 'barplotId' provides a consecutively numbered ID for each
-        % barseries plot. This allows for a proper handling of multiple bars.
-        m2t.barplotTotalNumber = [];
-        m2t.barShifts = [];
-        m2t.barAddedAxisOption = false;
-    end
-
     % Add 'log origin = infty' if BaseValue differs from zero (log origin=0 is
     % the default behaviour since Pgfplots v1.5).
     baseValue = get(h, 'BaseValue');
@@ -3031,8 +3025,6 @@ function [m2t, str] = drawBarseries(m2t, h)
             opts_add(m2t.axesContainers{end}.options, ...
             'log origin', 'infty');
     end
-
-    [m2t, numBars] = countBarplotSiblings(m2t, h);
 
     xData = get(h, 'XData');
     yData = get(h, 'YData');
@@ -3049,28 +3041,28 @@ function [m2t, str] = drawBarseries(m2t, h)
     end
     switch barlayout
         case 'grouped'  % grouped bar plots
-            m2t.barplotId = m2t.barplotId + 1;
+            
+            % Get number of bars series and bar series id
+            [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h);
 
             % Maximum group width relative to the minimum distance between two
             % x-values. See <MATLAB>/toolbox/matlab/specgraph/makebars.m
             maxGroupWidth = 0.8;
-            if numBars == 1
+            if numBarSeries == 1
                 groupWidth = 1.0;
             else
-                groupWidth = min(maxGroupWidth, numBars/(numBars+1.5));
+                groupWidth = min(maxGroupWidth, numBarSeries/(numBarSeries+1.5));
             end
 
             % Calculate the width of each bar and the center point shift as in
             % makebars.m
-            if isempty(m2t.barShifts)
-                % Get the shifts of the bar centers.
-                % In case of numBars==1, this returns 0,
-                % In case of numBars==2, this returns [-1/4, 1/4],
-                % In case of numBars==3, this returns [-1/3, 0, 1/3],
-                % and so forth.
-                barWidth = groupWidth/numBars; % assumption
-                m2t.barShifts = ((1:numBars) - 0.5) * barWidth - groupWidth/2;
-            end
+            % Get the shifts of the bar centers.
+            % In case of numBars==1, this returns 0,
+            % In case of numBars==2, this returns [-1/4, 1/4],
+            % In case of numBars==3, this returns [-1/3, 0, 1/3],
+            % and so forth.
+            assumedBarWidth = groupWidth/numBarSeries; % assumption
+            barShift        = (barSeriesId - 0.5) * assumedBarWidth - groupWidth/2;
 
             % From http://www.mathworks.com/help/techdoc/ref/bar.html:
             % bar(...,width) sets the relative bar width and controls the
@@ -3078,45 +3070,30 @@ function [m2t, str] = drawBarseries(m2t, h)
             % you do not specify X, the bars within a group have a slight
             % separation. If width is 1, the bars within a group touch one
             % another. The value of width must be a scalar.
-            barWidth = get(h, 'BarWidth') * groupWidth / numBars;
+            barWidth = get(h, 'BarWidth') * assumedBarWidth;
 
-            if numel(xData) == 1
-                dx = 1;
-            else
-                dx = min(diff(xData)); % used as scaling factor for all other lengths
-            end
-
-            % MATLAB treats shift and width in normalized coordinate units,
-            % whereas Pgfplots requires physical units (pt,cm,...); hence
-            % have the units converted.
-            if (isHoriz)
-                physicalBarWidth = dx * barWidth * m2t.unitlength.y.value;
-                physicalBarShift = dx * m2t.barShifts(m2t.barplotId) * m2t.unitlength.y.value;
-                physicalBarUnit = m2t.unitlength.y.unit;
-            else
-                physicalBarWidth = dx * barWidth * m2t.unitlength.x.value;
-                physicalBarShift = dx * m2t.barShifts(m2t.barplotId) * m2t.unitlength.x.value;
-                physicalBarUnit = m2t.unitlength.x.unit;
-            end
+            % Bar type
             drawOptions = opts_add(drawOptions, barType);
+            
+            % Bar width
             drawOptions = opts_add(drawOptions, 'bar width', ...
-                                 formatDim(physicalBarWidth, physicalBarUnit));
-            if physicalBarShift ~= 0.0
+                                 formatDim(barWidth, ''));
+            % Bar shift
+            if barShift ~= 0
                 drawOptions = opts_add(drawOptions, 'bar shift', ...
-                                 formatDim(physicalBarShift, physicalBarUnit));
+                                 formatDim(barShift, ''));
             end
 
         case 'stacked' % stacked plots
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
 
-            if ~m2t.barAddedAxisOption
-                bWFactor = get(h, 'BarWidth');
+            if ~m2t.axesContainers{end}.barAddedAxisOption;
+                barWidth = get(h, 'BarWidth');
                 m2t.axesContainers{end}.options = ...
                     opts_add(m2t.axesContainers{end}.options, ...
-                    'bar width', ...
-                    formatDim(m2t.unitlength.x.value*bWFactor, m2t.unitlength.x.unit));
-                m2t.barAddedAxisOption = true;
+                    'bar width', formatDim(barWidth,''));
+                m2t.axesContainers{end}.barAddedAxisOption = true;
             end
 
             % Somewhere between pgfplots 1.5 and 1.8 and starting
@@ -3161,38 +3138,15 @@ function [m2t, str] = drawBarseries(m2t, h)
     str = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
 end
 % ==============================================================================
-function [m2t, numBars] = countBarplotSiblings(m2t, h)
-% Count the number of sibling bar plots
-    if isempty(m2t.barplotTotalNumber)
-        m2t.barplotTotalNumber = 0;
-        siblings = get(get(h, 'Parent'), 'Children');
-        for s = siblings(:)'
-
-            if ~isVisible(s)
-                continue;  % skip invisible objects
-            end
-
-            if any(strcmpi(get(s, 'Type'), {'hggroup','Bar'}))
-                cl = class(handle(s));
-                switch cl
-                    case {'specgraph.barseries', 'matlab.graphics.chart.primitive.Bar'}
-                        m2t.barplotTotalNumber = m2t.barplotTotalNumber + 1;
-                    case 'specgraph.errorbarseries'
-                        % TODO
-                        % Unfortunately, MATLAB(R) treats error bars and
-                        % corresponding bar plots as siblings of a common axes
-                        % object. For error bars to work with bar plots -- which
-                        % is trivially possible in Pgfplots -- one has to match
-                        % errorbar and bar objects (probably by their values).
-                        userWarning(m2t, 'Error bars discarded (to be implemented).');
-                    otherwise
-                        error('matlab2tikz:drawBarseries',          ...
-                            'Unknown class''%s''.', cl);
-                end
-            end
-        end
+function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
+% Get number of bars series and bar series id
+    prop         = switchMatOct(m2t, 'BarPeers', 'bargroup');
+    bargroup     = get(h, prop);
+    numBarSeries = numel(bargroup);
+    if isHG2(m2t)
+        bargroup = bargroup(end:-1:1);
     end
-    numBars = m2t.barplotTotalNumber;
+    [~, barSeriesId] = ismember(handle(h), bargroup);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
