@@ -5244,8 +5244,8 @@ function string = parseTexSubstring(m2t, string)
     % '\textless' and '\textgreater' in textmode
     % This is handled better, if 'parseStringsAsMath' is activated
     if m2t.cmdOpts.Results.parseStringsAsMath == 0
-        string = regexprep(string, '<', '\\textless');
-        string = regexprep(string, '>', '\\textgreater');
+        string = regexprep(string, '<', '\\textless{}');
+        string = regexprep(string, '>', '\\textgreater{}');
     end
 
     % Move font styles like \bf into the \text{} command.
