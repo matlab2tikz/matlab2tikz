@@ -969,14 +969,12 @@ function legendhandle = getAssociatedLegend(m2t, handle)
     legendhandle = [];
     switch m2t.env
         case 'Octave'
-            if ~isempty(m2t.legendHandles)
-                % Make sure that m2t.legendHandles is a row vector.
-                for lhandle = m2t.legendHandles(:)'
-                    ud = get(lhandle, 'UserData');
-                    if any(handle == ud.handle)
-                        legendhandle = lhandle;
-                        break;
-                    end
+            % Make sure that m2t.legendHandles is a row vector.
+            for lhandle = m2t.legendHandles(:)'
+                ud = get(lhandle, 'UserData');
+                if isVisible(lhandle) && any(handle == ud.handle)
+                    legendhandle = lhandle;
+                    break;
                 end
             end
         case 'MATLAB'
@@ -1819,7 +1817,8 @@ function [m2t, str] = drawPatch(m2t, handle)
 
     
     % No patch: if one patch and single face/edge color
-    if size(Faces,1) == 1 && s.hasOneEdgeColor && s.hasOneFaceColor
+    isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
+    if size(Faces,1) == 1 && s.hasOneEdgeColor && isFaceColorFlat
         ptType = '';
         cycle  = conditionallyCyclePath(Vertices);
         if ~isNone(s.edgeColor)
@@ -1863,7 +1862,6 @@ function [m2t, str] = drawPatch(m2t, handle)
             userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
             
             % Default interpolated shader,not supported by polygon, to faceted
-            isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
             if ~isFaceColorFlat
                 userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
                 patchOptions = opts_remove(patchOptions, 'shader');
@@ -1881,8 +1879,9 @@ function [m2t, str] = drawPatch(m2t, handle)
         fvCData   = get(handle,'FaceVertexCData');
         rowsCData = size(fvCData,1);
         
-        % We have CData
-        if rowsCData ~= 0
+        % We have CData for either all faces or vertices
+        if rowsCData > 1
+            
             % Add the color map
             m2t.axesContainers{end}.options = ...
                 opts_add(m2t.axesContainers{end}.options, ...
@@ -1895,7 +1894,6 @@ function [m2t, str] = drawPatch(m2t, handle)
             end
             
             % Switch to face CData if not using interpolated shader
-            isFaceColorFlat = isempty(strfind(opts_get(drawOptions, 'shader'),'interp'));
             isVerticesCData = rowsCData == size(Vertices,1);
             if isFaceColorFlat && isVerticesCData
                 % Take first vertex color (see FaceColor in Patch Properties)
@@ -1905,7 +1903,7 @@ function [m2t, str] = drawPatch(m2t, handle)
             end
             
             % Point meta as true color CData, i.e. RGB in [0,1]
-            if ~isvector(fvCData)
+            if size(fvCData,2) == 3
                 % Create additional custom colormap
                 m2t.axesContainers{end}.options(end+1,:) = ...
                     {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
@@ -1924,6 +1922,12 @@ function [m2t, str] = drawPatch(m2t, handle)
                 ptType = 'patch table with point meta';
                 Faces  = [Faces fvCData];
             end
+            
+        % Scalar FaceVertexCData, i.e. one color mapping for all patches,
+        % used e.g. by Octave in drawing barseries
+        else
+            [m2t,xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
+            drawOptions      = opts_add(drawOptions, 'fill', xFaceColor);
         end
     end
     
@@ -3963,11 +3967,14 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
     else
         switch color
             case 'flat'
-                cdata = getCDataWithFallbacks(patchhandle);
-
-                col1 = cdata(1,1);
-                if all(isnan(cdata) | abs(cdata-col1)<1.0e-10)
-                    [m2t, colorindex] = cdata2colorindex(m2t, col1, patchhandle);
+                cdata  = getCDataWithFallbacks(patchhandle);
+                color1 = cdata(1,1);
+                % RGB cdata
+                if ndims(cdata) == 3 && all(size(cdata) == [1,1,3])
+                    [m2t,xcolor] = rgb2colorliteral(m2t, cdata);
+                % All same color
+                elseif all(isnan(cdata) | abs(cdata-color1)<1.0e-10)
+                    [m2t, colorindex] = cdata2colorindex(m2t, color1, patchhandle);
                     [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
                 else
                     % Don't return anything meaningful and count on the caller
@@ -5542,7 +5549,7 @@ end
 function opts = opts_add(opts, key, value)
 % add a key-value pair to an options array (with duplication check)
     if ~exist('value','var')
-        value = [];
+        value = '';
     end
     value = char(value);
 
@@ -5576,9 +5583,10 @@ function value = opts_get(opts, key)
 end
 function opts = opts_append(opts, key, value)
 % append a key-value pair to an options array (duplicate keys allowed)
-    if ~exist('value','var') || isempty(value)
-        value = [];
+    if ~exist('value','var')
+        value = '';
     end
+    value = char(value);
     if ~(opts_has(opts, key) && isequal(opts_get(opts, key), value))
         opts = cat(1, opts, {key, value});
     end
