@@ -2667,7 +2667,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
                 %       http://www.mathworks.com/support/bugreports/368385
                 oldPos = get(h, 'Position');
                 set(h,'Units','centimeters')
-                pos    = get(h,'pos');
+                pos    = get(h, 'Position');
                 pos    = pos(1:npos);
                 set(h,'Units',units,'Position',oldPos)
             end
