@@ -1424,7 +1424,8 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
     % This also implicitly makes sure that the lengths match.
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
-    if ~m2t.axesContainers{end}.is3D
+    is3D  = m2t.axesContainers{end}.is3D;
+    if ~is3D
         data = [xData(:), yData(:)];
     else
         zData = get(handle, 'ZData');
@@ -1444,7 +1445,7 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
             opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
     end
 
-    if m2t.axesContainers{end}.is3D
+    if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
         [m2t, table] = makeTable(m2t, {'','',''}, data);
         str = sprintf('%s\\addplot3 [%s]\n table[row sep=crcr] {%s};\n ', ...
@@ -1783,8 +1784,8 @@ function [m2t, str] = drawPatch(m2t, handle)
     is3D = m2t.axesContainers{end}.is3D;
     if is3D
         columnNames = {'x', 'y', 'z'};
-        Vertices    = applyHgTransform(m2t, Vertices);
         plotCmd     = 'addplot3';
+        Vertices    = applyHgTransform(m2t, Vertices);
     else
         columnNames = {'x', 'y'};
         plotCmd     = 'addplot';
@@ -2379,12 +2380,12 @@ function [m2t, str] = drawHggroup(m2t, h)
 end
 % ==============================================================================
 function [m2t,env] = drawSurface(m2t, handle)
-    str = '';
+
     [m2t, opts, s] = shaderOpts(m2t, handle,'surf');
 
     % Allow for empty surf
     if isNone(s.plotType)
-        env = str;
+        str = '';
         return
     end
 
@@ -2419,19 +2420,20 @@ function [m2t,env] = drawSurface(m2t, handle)
     % Avoid 'z buffer=sort' for hist3D plots
     isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
     isHist3D     = strcmpi(get(handle,'tag'),'hist3');
-    if m2t.axesContainers{end}.is3D && isShaderFlat && ~isHist3D
+    is3D         = m2t.axesContainers{end}.is3D;
+    if is3D && isShaderFlat && ~isHist3D
         opts = opts_add(opts, 'z buffer','sort');
     end
 
     % Check if 3D
-    if m2t.axesContainers{end}.is3D
+    if is3D
         columnNames = {'x','y','z'};
-        data        = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
         plotCmd     = 'addplot3';
+        data        = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
     else
         columnNames = {'x','y'};
-        data        = [dx(:), dy(:)];
         plotCmd     = 'addplot';
+        data        = [dx(:), dy(:)];
     end
     
     % There are several possibilities of how colors are specified for surface
@@ -2450,7 +2452,7 @@ function [m2t,env] = drawSurface(m2t, handle)
         m2t.axesContainers{end}.options(end+1,:) = ...
             {matlab2pgfplotsColormap(m2t, CData, 'patchmap'), []};
         % Index into custom colormap
-        color       = (0:nrows-1)';
+        color = (0:nrows-1)';
         
         columnNames = [columnNames, 'c'];
         formatType = 'table[row sep=crcr, colormap name=surfmap, point meta=\thisrow{c}]';
@@ -2494,18 +2496,15 @@ function [m2t,env] = drawSurface(m2t, handle)
     % lines in the data list below. This makes it possible to reduce the
     % data writing to one single sprintf() call.
     opts = opts_add(opts,'mesh/rows',sprintf('%d', numrows));
+    
+    % Print the addplot options
+    str = sprintf('\n\\%s[%%\n%s,\n%s]', plotCmd, s.plotType, opts_print(m2t, opts, ','));
 
-    str = [str, sprintf('\n\\%s[%%\n%s,\n%s]', plotCmd, s.plotType, opts_print(m2t, opts, ','))];
-
-    % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
-    % algorithm.
-    % Spectrograms need to have the grid removed,
-    % m2t.axesContainers{end}.options{end+1} = 'grid=none';
-    % Here is where everything is put together.
+    % Print the data
     [m2t, table] = makeTable(m2t, columnNames, data);
-
+    
+    % Here is where everything is put together
     str = sprintf('%s\n%s {%%\n%s};\n', str, formatType, table);
-    env = str;
 
     % TODO:
     % - remove grids in spectrogram by either removing grid command
