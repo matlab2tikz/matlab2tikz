@@ -387,15 +387,15 @@ function l = filehandleValidation(x)
     l = isnumeric(x) && any(x==fopen('all'));
 end
 % ==============================================================================
-function tf = isCellOrChar(x)
-    tf = iscell(x) || ischar(x);
+function bool = isCellOrChar(x)
+    bool = iscell(x) || ischar(x);
 end
 % ==============================================================================
-function tf = isColorDefinitions(colors)
+function bool = isColorDefinitions(colors)
     isRGBTuple   = @(c)( numel(c) == 3 && all(0<=c & c<=1) );
     isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
 
-    tf = iscell(colors) && all(cellfun(isValidEntry, colors));
+    bool = iscell(colors) && all(cellfun(isValidEntry, colors));
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
@@ -1355,27 +1355,27 @@ function options = setAxisLimits(m2t, handle, axis, options)
     end
 end
 % ==============================================================================
-function tf = isAxisVisible(axisHandle)
+function bool = isAxisVisible(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
         % immediately bail out here.
         children = get(axisHandle, 'Children');
-        tf = false;
+        bool = false;
         for child = children(:)'
             if isVisible(child)
-                tf = true;
+                bool = true;
                 return;
             end
         end
     else
-        tf = true;
+        bool = true;
     end
 end
 % ==============================================================================
-function tf = isAxis3D(axisHandle)
+function bool = isAxis3D(axisHandle)
 % Check if elevation is not orthogonal to xy plane
     axisView = get(axisHandle,'view');
-    tf       = ~ismember(axisView(2),[90,-90]);
+    bool     = ~ismember(axisView(2),[90,-90]);
 end
 % ==============================================================================
 function [m2t, str] = drawLine(m2t, handle, yDeviation)
@@ -4803,9 +4803,9 @@ function str = escapeCharacters(str)
     str = strrep(str, '\' , '\\');
 end
 % ==============================================================================
-function tf = isNone(value)
+function bool = isNone(value)
 % Checks whether a value is 'none'
-    tf = strcmpi(value, 'none');
+    bool = strcmpi(value, 'none');
 end
 % ==============================================================================
 function val = getOrDefault(handle, key, default)
@@ -4846,9 +4846,9 @@ function opts = addIfNotDefault(m2t, type, handle, key, default, pgfKey, opts)
     end
 end
 % ==============================================================================
-function tf = isVisible(handles)
+function bool = isVisible(handles)
 % Determines whether an object is actually visible or not.
-    tf = strcmp(get(handles,'Visible'), 'on');
+    bool = strcmp(get(handles,'Visible'), 'on');
     % There's another handle property, 'HandleVisibility', which may or may not
     % determine the visibility of the object. Empirically, it seems to be 'off'
     % whenever we're dealing with an object that's not user-created, such as
@@ -5633,15 +5633,15 @@ function [env,versionString] = getEnvironment()
     versionString = '';
 end
 % ==============================================================================
-function tf = isHG2(m2t)
+function bool = isHG2(m2t)
 % Checks if graphics system is HG2 (true) or HG1 (false).
 % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
 % HG2 : MATLAB starting from R2014b (version 8.4)
-    tf = strcmpi(m2t.env,'MATLAB') && ...
-        ~isVersionBelow(m2t.env, m2t.envVersion, [8,4]);
+    bool = strcmpi(m2t.env,'MATLAB') && ...
+           ~isVersionBelow(m2t.env, m2t.envVersion, [8,4]);
 end
 % ==============================================================================
-function tf = isVersionBelow(env, versionA, versionB)
+function bool = isVersionBelow(env, versionA, versionB)
 % Checks if versionA is smaller than versionB
     vA         = versionArray(env, versionA);
     vB         = versionArray(env, versionB);
@@ -5649,7 +5649,7 @@ function tf = isVersionBelow(env, versionA, versionB)
     deltaAB    = vA(1:n) - vB(1:n);
     difference = find(deltaAB, 1, 'first');
     % Empty difference then same version
-    tf         = ~isempty(difference) && deltaAB(difference) < 0;
+    bool       = ~isempty(difference) && deltaAB(difference) < 0;
 end
 % ==============================================================================
 function str = formatDim(value, unit)
