@@ -447,6 +447,9 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
         m2t = handleColorbar(m2t, cbar);
     end
 
+    % Draw annotations
+    m2t = drawAnnotations(m2t);
+
     % Add all axes containers to the file contents.
     for axesContainer = m2t.axesContainers
         m2t.content = addChildren(m2t.content, axesContainer);
@@ -593,6 +596,11 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     else
         m2t.cbarHandles = [];
     end
+
+    % Remove scribe layer holding annotations (MATLAB < R2014b)
+    m2t.scribeLayer = findobj(axesHandles, 'Tag','scribeOverlay');
+    idx             = ~ismember(axesHandles, m2t.scribeLayer);
+    axesHandles     = axesHandles(idx);
 end
 % ==============================================================================
 function addComments(fid, comment)
@@ -2345,27 +2353,6 @@ function [m2t, str] = drawHggroup(m2t, h)
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
 
-        case 'scribe.scribeellipse'
-            % Annotation: ellipse
-            [m2t, str] = drawEllipse(m2t, h);
-
-        case {'scribe.arrow', 'scribe.doublearrow', 'scribe.line'}
-            % Annotation: single and double Arrow, line
-            % These annotations are fully represented by their children
-            [m2t, str] = handleAllChildren(m2t, h);
-
-        case 'scribe.textbox'
-            % Annotation: text box
-            [m2t, str] = drawText(m2t, h);
-
-        case 'scribe.textarrow'
-            % Annotation: text arrow
-            [m2t, str] = drawTextarrow(m2t, h);
-
-        case 'scribe.scriberect'
-            % Annotation: rectangle
-            [m2t, str] = drawRectangle(m2t, h);
-
         case 'unknown'
             % Weird spurious class from Octave.
             [m2t, str] = handleAllChildren(m2t, h);
@@ -2382,7 +2369,90 @@ function [m2t, str] = drawHggroup(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t,str] = drawSurface(m2t, handle)
+function m2t = drawAnnotations(m2t)
+% Draws annotation in Matlab (Octave not supported). 
+
+% In HG1 annotations are children of an invisible axis called scribeOverlay.
+% In HG2 annotations are children of annotationPane object which does not
+% have any axis properties. Hence, we cannot simply handle it with a
+% drawAxes() call. 
+
+    % Octave
+    if strcmp(getEnvironment,'Octave') 
+        return
+    end
+
+    % Create fake simplified axes overlay
+    scribeLayer = axes('Units','Normalized','Position',[0,0,1,1],'Visible','off');
+    m2t         = drawAxes(m2t, scribeLayer);
+
+    % Get annotation handles
+    if isHG2(m2t)
+        annotPanes   = findobj(m2t.currentHandles.gcf,'Tag','scribeOverlay');
+        annotHandles = findobj(get(annotPanes,'Children'),'Visible','on'); 
+    else
+        annotHandles = findobj(m2t.scribeLayer,'-depth',1,'Visible','on');
+    end
+
+    % Plot in reverse to preserve z-ordering and assign the converted 
+    % annotations to the converted fake overlay
+    for ii = numel(annotHandles):-1:1
+        m2t = drawAnnotationsHelper(m2t,annotHandles(ii));
+    end
+
+    % Delete fake overlay graphics object
+    delete(scribeLayer)
+end
+% ==============================================================================
+function m2t = drawAnnotationsHelper(m2t,h)
+    % Get class name
+    try
+        cl = class(handle(h));
+    catch %#ok
+        cl = 'unknown';
+    end
+
+    switch cl
+
+        % Line
+        case {'scribe.line', 'matlab.graphics.shape.Line'}
+            [m2t, str] = drawLine(m2t, h);
+
+        % Ellipse
+        case {'scribe.scribeellipse','matlab.graphics.shape.Ellipse'}
+            [m2t, str] = drawEllipse(m2t, h);
+
+        case {'scribe.arrow', 'scribe.doublearrow',...
+              'matlab.graphics.shape.Arrow', 'matlab.graphics.shape.DoubleEndArrow'}
+            % Annotation: single and double Arrow, line
+            % These annotations are fully represented by their children
+            [m2t, str] = handleAllChildren(m2t, h);
+
+        % Text box
+        case {'scribe.textbox','matlab.graphics.shape.TextBox'}
+            [m2t, str] = drawText(m2t, h);
+
+        % Tetx arrow
+        case {'scribe.textarrow'}%,'matlab.graphics.shape.TextArrow'}
+            % TODO: rewrite drawTextarrow. Handle all info info directly
+            % without using handleAllChildren() since HG2 does not have
+            % children (so no shortcut) as used for scribe.textarrow.
+            [m2t, str] = drawTextarrow(m2t, h);
+
+        % Rectangle
+        case {'scribe.scriberect', 'matlab.graphics.shape.Rectangle'}
+            [m2t, str] = drawRectangle(m2t, h);
+
+        otherwise
+            userWarning(m2t, 'Don''t know annotation ''%s''.', cl);
+            return
+    end
+
+    % Add annotation to scribe overlay
+    m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, str);
+end
+% ==============================================================================
+function [m2t,env] = drawSurface(m2t, handle)
 
     [m2t, opts, s] = shaderOpts(m2t, handle,'surf');
 
