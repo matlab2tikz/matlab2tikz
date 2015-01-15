@@ -2389,10 +2389,6 @@ function m2t = drawAnnotations(m2t)
         return
     end
 
-    % Create fake simplified axes overlay
-    scribeLayer = axes('Units','Normalized','Position',[0,0,1,1],'Visible','off');
-    m2t         = drawAxes(m2t, scribeLayer);
-
     % Get annotation handles
     if isHG2(m2t)
         annotPanes   = findobj(m2t.currentHandles.gcf,'Tag','scribeOverlay');
@@ -2400,7 +2396,18 @@ function m2t = drawAnnotations(m2t)
     else
         annotHandles = findobj(m2t.scribeLayer,'-depth',1,'Visible','on');
     end
-
+    
+    % There are no anotations
+    if isempty(annotHandles)
+        return
+    end
+    
+    % Create fake simplified axes overlay (no children)
+    warning('off', 'matlab2tikz:NoChildren')
+    scribeLayer = axes('Units','Normalized','Position',[0,0,1,1],'Visible','off');
+    m2t         = drawAxes(m2t, scribeLayer);
+    warning('on', 'matlab2tikz:NoChildren')
+    
     % Plot in reverse to preserve z-ordering and assign the converted 
     % annotations to the converted fake overlay
     for ii = numel(annotHandles):-1:1
