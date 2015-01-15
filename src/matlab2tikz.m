@@ -629,11 +629,11 @@ function addCustomCode(fid, before, code, after)
     end
 end
 % ==============================================================================
-function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
+function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 % Draw all children of a graphics object (if they need to be drawn).
 % #COMPLEX: mainly a switch-case
     str = '';
-    children = get(handle, 'Children');
+    children = get(h, 'Children');
 
     % prepare cell array of pgfEnvironments
     pgfEnvironments = cell(0);
@@ -696,7 +696,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
             case ''
                 warning('matlab2tikz:NoChildren',...
                         ['No children found for handle %d. ',...
-                         'Carrying on as if nothing happened'], handle);
+                         'Carrying on as if nothing happened'], double(h));
 
             otherwise
                 error('matlab2tikz:handleAllChildren',                 ...
