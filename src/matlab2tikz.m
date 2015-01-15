@@ -1389,31 +1389,38 @@ function bool = isAxis3D(axisHandle)
     bool     = ~ismember(axisView(2),[90,-90]);
 end
 % ==============================================================================
-function [m2t, str] = drawLine(m2t, handle, yDeviation)
+function [m2t, str] = drawLine(m2t, h, yDeviation)
 % Returns the code for drawing a regular line and error bars.
 % This is an extremely common operation and takes place in most of the
 % not too fancy plots.
     str = '';
 
-    if ~isVisible(handle)
+    if ~isVisible(h)
         return
     end
 
-    lineStyle = get(handle, 'LineStyle');
-    lineWidth = get(handle, 'LineWidth');
-    marker = get(handle, 'Marker');
+    % Check if there is anything to plot (line annotation has no marker)
+    lineStyle  = get(h, 'LineStyle');
+    lineWidth  = get(h, 'LineWidth');
+    marker     = getOrDefault(h, 'Marker','none');
+    hasLines   = ~isNone(lineStyle) && lineWidth > 0;
+    hasMarkers = ~isNone(marker);
+    if ~hasLines && ~hasMarkers
+        return
+    end
 
-    % Get draw options.
-    color = get(handle, 'Color');
-    [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
-    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-    [m2t, markerOptions] = getMarkerOptions(m2t, handle);
+    % Color
+    color         = get(h, 'Color');
+    [m2t, xcolor] = getColor(m2t, h, color, 'patch');
+    % Line and marker options
+    lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
+    [m2t, markerOptions] = getMarkerOptions(m2t, h);
     drawOptions = [{sprintf('color=%s', xcolor)}, ... % color
         lineOptions, ...
         markerOptions];
 
     % Check for "special" lines, e.g.:
-    if strcmp(get(handle, 'Tag'), 'zplane_unitcircle')
+    if strcmp(get(h, 'Tag'), 'zplane_unitcircle')
         % Draw unit circle and axes.
         % TODO Don't hardcode "10".
         opts = join(m2t, drawOptions, ',');
@@ -1423,23 +1430,23 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
         return
     end
 
-    hasLines = ~isNone(lineStyle) && lineWidth>0.0;
-    hasMarkers = ~isNone(marker);
-    if ~hasLines && ~hasMarkers
-        return
-    end
-
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the actual line data.
     % First put them all together in one multiarray.
     % This also implicitly makes sure that the lengths match.
-    xData = get(handle, 'XData');
-    yData = get(handle, 'YData');
+    try
+        xData = get(h, 'XData');
+        yData = get(h, 'YData');
+    catch
+        % Line annotation
+        xData = get(h, 'X');
+        yData = get(h, 'Y');
+    end
     is3D  = m2t.axesContainers{end}.is3D;
     if ~is3D
         data = [xData(:), yData(:)];
     else
-        zData = get(handle, 'ZData');
+        zData = get(h, 'ZData');
         data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
 
@@ -1579,7 +1586,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
 % Handles the marker properties of a line (or any other) plot.
     drawOptions = cell(0);
 
-    marker = get(h, 'Marker');
+    marker = getOrDefault(h, 'Marker','none');
 
     if ~isNone(marker)
         markerSize = get(h, 'MarkerSize');
