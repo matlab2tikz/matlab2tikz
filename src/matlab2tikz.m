@@ -2459,9 +2459,9 @@ function m2t = drawAnnotationsHelper(m2t,h)
     m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, str);
 end
 % ==============================================================================
-function [m2t,env] = drawSurface(m2t, handle)
+function [m2t,str] = drawSurface(m2t, h)
 
-    [m2t, opts, s] = shaderOpts(m2t, handle,'surf');
+    [m2t, opts, s] = shaderOpts(m2t, h,'surf');
 
     % Allow for empty surf
     if isNone(s.plotType)
@@ -2469,9 +2469,9 @@ function [m2t,env] = drawSurface(m2t, handle)
         return
     end
 
-    dx = get(handle, 'XData');
-    dy = get(handle, 'YData');
-    dz = get(handle, 'ZData');
+    dx = get(h, 'XData');
+    dy = get(h, 'YData');
+    dz = get(h, 'ZData');
     if any(~isfinite(dx(:))) || any(~isfinite(dy(:))) || any(~isfinite(dz(:)))
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
@@ -2500,7 +2500,7 @@ function [m2t,env] = drawSurface(m2t, handle)
     % - hist3D plots should not be z-sorted or the highest bars will cover
     %   the shortest one even if positioned in the back
     isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
-    isHist3D     = strcmpi(get(handle,'tag'),'hist3');
+    isHist3D     = strcmpi(get(h,'tag'),'hist3');
     is3D         = m2t.axesContainers{end}.is3D;
     if is3D && isShaderFlat && ~isHist3D
         opts = opts_add(opts, 'z buffer','sort');
@@ -2524,8 +2524,8 @@ function [m2t,env] = drawSurface(m2t, handle)
     %    * implicitly through a color map with a given coordinate (e.g., z).
     %
 
-    % Check if we need extra CData
-    CData = get(handle, 'CData');
+    % Check if we need extra CData.
+    CData = get(h, 'CData');
     if length(size(CData)) == 3 && size(CData, 3) == 3
         
         % Create additional custom colormap
