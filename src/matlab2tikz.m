@@ -2631,7 +2631,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
         cl = '';
     end
     switch cl
-        case 'text'
+        case {'text', 'matlab.graphics.primitive.Text'}
             if is3D
                 pos  = applyHgTransform(m2t, pos);
                 npos = 3;
@@ -2639,7 +2639,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
                 pos  = pos(1:2);
                 npos = 2;
             end
-        case 'scribe.textbox'
+        case {'scribe.textbox', 'matlab.graphics.shape.TextBox'}
             % TODO:
             %   - size of the box (e.g. using node attributes minimum width / height)
             %   - Alignment of the resized box
