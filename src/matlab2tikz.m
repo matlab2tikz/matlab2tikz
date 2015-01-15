@@ -2766,22 +2766,22 @@ function [m2t,posString] = getPositionOfText(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t, str] = drawRectangle(m2t, handle)
+function [m2t, str] = drawRectangle(m2t, h)
     str = '';
 
     % there may be some text objects floating around a Matlab figure which
     % are handled by other subfunctions (labels etc.) or don't need to be
     % handled at all
-    if     strcmp(get(handle, 'Visible'), 'off') ...
-            || strcmp(get(handle, 'HandleVisibility'), 'off')
+    if ~isVisible(h) ||...
+            strcmp(get(h, 'HandleVisibility'), 'off')
         return;
     end
 
     % TODO handle Curvature = [0.8 0.4]
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    lineStyle = get(handle, 'LineStyle');
-    lineWidth = get(handle, 'LineWidth');
+    lineStyle = get(h, 'LineStyle');
+    lineWidth = get(h, 'LineWidth');
     if isNone(lineStyle) || lineWidth==0
         return
     end
@@ -2791,22 +2791,24 @@ function [m2t, str] = drawRectangle(m2t, handle)
 
     colorOptions = cell(0);
     % fill color
-    faceColor  = get(handle, 'FaceColor');
-    if ~isNone(faceColor)
-        [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+    faceColor  = get(h, 'FaceColor');
+    isFlatAnnotation = strcmpi(class(handle(h)),'scribe.scriberect') &&...
+                       strcmpi(faceColor, 'flat');
+    if ~(isNone(faceColor) || isFlatAnnotation)
+        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
         colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
     % draw color
-    edgeColor = get(handle, 'EdgeColor');
-    lineStyle = get(handle, 'LineStyle');
+    edgeColor = get(h, 'EdgeColor');
+    lineStyle = get(h, 'LineStyle');
     if isNone(lineStyle) || isNone(edgeColor)
         colorOptions{end+1} = 'draw=none';
     else
-        [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
+        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
         colorOptions{end+1} = sprintf('draw=%s', xEdgeColor);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    pos = pos2dims(get(handle, 'Position'));
+    pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     drawOptions = [lineOptions, colorOptions];
     % plot the thing
