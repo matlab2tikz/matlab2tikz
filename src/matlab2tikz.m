@@ -2435,11 +2435,18 @@ function m2t = drawAnnotationsHelper(m2t,h)
         % Ellipse
         case {'scribe.scribeellipse','matlab.graphics.shape.Ellipse'}
             [m2t, str] = drawEllipse(m2t, h);
-
+        
+        % Arrows 
         case {'scribe.arrow', 'scribe.doublearrow',...
               'matlab.graphics.shape.Arrow', 'matlab.graphics.shape.DoubleEndArrow'}
             % Annotation: single and double Arrow, line
-            % These annotations are fully represented by their children
+            % TODO: 
+            % - write a drawArrow(). Handle all info info directly
+            %   without using handleAllChildren() since HG2 does not have
+            %   children (so no shortcut). 
+            % - It would be good if drawArrow() was callable on a 
+            %   matlab.graphics.shape.TextArrow object to draw the arrow 
+            %   part.
             [m2t, str] = handleAllChildren(m2t, h);
 
         % Text box
@@ -2449,8 +2456,9 @@ function m2t = drawAnnotationsHelper(m2t,h)
         % Tetx arrow
         case {'scribe.textarrow'}%,'matlab.graphics.shape.TextArrow'}
             % TODO: rewrite drawTextarrow. Handle all info info directly
-            % without using handleAllChildren() since HG2 does not have
-            % children (so no shortcut) as used for scribe.textarrow.
+            %       without using handleAllChildren() since HG2 does not 
+            %       have children (so no shortcut) as used for 
+            %       scribe.textarrow.
             [m2t, str] = drawTextarrow(m2t, h);
 
         % Rectangle
