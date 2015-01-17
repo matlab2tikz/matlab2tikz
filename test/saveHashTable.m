@@ -1,6 +1,14 @@
-function saveHashTable(status, ipp)
-    % saves a reference hash table to disk
-    suite = ipp.Results.testsuite;
+function saveHashTable(status)
+% SAVEHASHTABLE saves the references hashes for the Matlab2Tikz tests
+%
+% Usage:
+%  SAVEHASHTABLE(status)
+%
+% Inputs:
+%   - status: output cell array of the testing functions
+%
+% See also: runMatlab2TikzTests, testMatlab2tikz
+    suite = status{1}.testsuite; %TODO: handle multiple test suites in a single array
     filename = hashTableName(suite);
     
     % sort by file names to allow humans better traversal of such files

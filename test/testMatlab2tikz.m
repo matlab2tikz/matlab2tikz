@@ -78,23 +78,13 @@ function status = testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
-  ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
-  ipp = ipp.addParamValue(ipp, 'callMake', false, @islogical);
-  ipp = ipp.addParamValue(ipp, 'stages', defaultStages, @isValidStageDef);
-  ipp = ipp.addParamValue(ipp, 'saveHashTable', false, @islogical);
+  ipp = ipp.addParamValue(ipp, 'stages', defaultStages, @(x) true);
   
-  ipp = ipp.deprecateParam(ipp,'cleanBefore', {'callMake'});
-
   ipp = ipp.parse(ipp, varargin{:});
   
   ipp = sanitizeInputs(ipp);
   
   % -----------------------------------------------------------------------
-
-  % try to clean the output
-  cleanFiles(ipp.Results.callMake);
-
-  % output streams
   stdout = 1;
   if strcmp(env, 'Octave') && ~ipp.Results.figureVisible
       % Use the gnuplot backend to work around an fltk bug, see
@@ -104,26 +94,13 @@ function status = testMatlab2tikz(varargin)
 
   % start overall timing
   elapsedTimeOverall = tic;
-  
   status = runIndicatedTests(ipp, env);
   
   % print out overall timing
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
-
-  if ipp.Results.saveHashTable
-      fprintf(stdout, 'Saving reference hash table...\n');
-      saveHashTable(status, ipp);
-  end
 end
 % INPUT VALIDATION =============================================================
-function bool = isValidStageDef(val)
-    % determine whether a cell str contains only valid stages
-    validStages = {'plot','tikz','save','hash','type'};
-    bool = iscellstr(val) && ...
-           all(cellfun(@(c)ismember(lower(c), validStages), val));
-end
-% ==============================================================================
 function ipp = sanitizeInputs(ipp)
     % sanitize all input arguments
     ipp = sanitizeStagesDefinition(ipp);
