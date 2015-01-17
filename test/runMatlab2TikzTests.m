@@ -1,4 +1,4 @@
-function statusAll = runtests(varargin)
+function statusAll = runMatlab2TikzTests(varargin)
 %% This file runs the complete MATLAB2TIKZ test suite.
 % It is mainly used for testing on a continuous integration server, but it can
 % also be used on a development machine.
