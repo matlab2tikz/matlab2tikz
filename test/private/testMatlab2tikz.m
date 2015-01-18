@@ -1,6 +1,13 @@
 function status = testMatlab2tikz(varargin)
 %TESTMATLAB2TIKZ    unit test driver for matlab2tikz
 %
+% This function should NOT be called directly by the user (or even developer).
+% If you are a developer, please use some of the following functions instead:
+%  * `testHeadless`
+%  * `testGraphical`
+%
+% The following arguments are supported, also for the functions above.
+%
 % TESTMATLAB2TIKZ('testFunctionIndices', INDICES, ...) or
 %   TESTMATLAB2TIKZ(INDICES, ...) runs the test only for the specified
 %   indices. When empty, all tests are run. (Default: []).
