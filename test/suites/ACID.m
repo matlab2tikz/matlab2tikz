@@ -132,7 +132,8 @@ function [status] = ACID(k)
                            @stackedBarsWithOther, ...
                            @colorbarLabelTitle  , ...
                            @textAlignment       , ...
-                           @overlappingPlots
+                           @overlappingPlots    ,...
+                           @histogramPlot
                          };
 
 
@@ -2432,6 +2433,24 @@ function [stat] = overlappingPlots()
     % axis background color: ax2 = default, ax3 = green, ax4 = transparent
     set(ax3, 'Color', 'green');
     set(ax4, 'Color', 'none');
+end
+% =========================================================================
+function [stat] = histogramPlot()
+
+  if ~exist('histogram')
+      fprintf('histogram() not found. Skipping.\n\n' );
+      stat.skip = true;
+      return;
+  end
+  stat.description = 'overlapping histogram() plots and custom size bins';
+  stat.issues      = 525;
+
+  x     = randn(1000,1);
+  edges = [-10 -2:0.25:2 10];
+  histogram(x,edges);
+  hold on
+  y     = 3 + randn(1000,1);
+  histogram(y);
 end
 % =========================================================================
 function env = getEnvironment
