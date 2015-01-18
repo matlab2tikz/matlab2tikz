@@ -3937,7 +3937,13 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                 end
 
             case 'auto'
-                color = get(patchhandle, 'Color');
+                try
+                    color = get(patchhandle, 'Color');
+                catch
+                    % From R2014b use an undocumented property if Color is 
+                    % not present
+                    color = get(patchhandle, 'AutoColor');
+                end
                 [m2t, xcolor] = rgb2colorliteral(m2t, color);
 
             case 'none'
