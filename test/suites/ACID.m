@@ -2445,11 +2445,13 @@ function [stat] = histogramPlot()
   stat.description = 'overlapping histogram() plots and custom size bins';
   stat.issues      = 525;
 
-  x     = randn(1000,1);
-  edges = [-10 -2:0.25:2 10];
+  x     = [-0.2, -0.484, 0.74, 0.632, -1.344, 0.921, -0.598, -0.727,...
+           -0.708, 1.045, 0.37, -1.155, -0.807, 1.027, 0.053, 0.863,...
+           1.131, 0.134, -0.017, -0.316];
+  y     = x.^2;
+  edges = [-2 -1:0.25:3];
   histogram(x,edges);
   hold on
-  y     = 3 + randn(1000,1);
   histogram(y);
 end
 % =========================================================================
