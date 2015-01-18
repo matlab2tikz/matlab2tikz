@@ -10,26 +10,6 @@ function status = testMatlab2tikz(varargin)
 %
 % TESTMATLAB2TIKZ('figureVisible', LOGICAL, ...)
 %   plots the figure visibly during the test process. Default: false
-%
-% TESTMATLAB2TIKZ('stages', CELLSTR, ...)
-%   where the elements of the cellstr should be either
-%    - 'plot': to make the plot
-%    - 'tikz': to run matlab2tikz
-%    - 'save': to export the MATLAB figure as EPS/PDF
-%    - 'hash': to check the hash of the output
-%    - 'type': type-out the generatex file on failures
-%  Default: {'plot', 'tikz', 'save', 'hash', 'type'}
-%
-% TESTMATLAB2TIKZ('callMake', LOGICAL, ...)
-%   uses "make" to further automate running the test suite, i.e.
-%    - runs "make distclean" in the ./test/tex folder before
-%   Your path must contain "make", this usually isn't the case on Windows!
-%   Default: false
-%
-% TESTMATLAB2TIKZ('saveHashTable', LOGICAL, ...)
-%   saves ALL hashes that were found to disk. Hence, the output file should
-%   be checked carefully (e.g. with diff) against the previous version.
-%   Default: false
 % 
 % TESTMATLAB2TIKZ('testsuite', FUNCTION_HANDLE, ...)
 %   Determines which test suite is to be run. Default: @ACID
@@ -71,14 +51,12 @@ function status = testMatlab2tikz(varargin)
 
   % -----------------------------------------------------------------------
   ipp = m2tInputParser;
-
-  defaultStages = {'plot','tikz','save','hash','type'};
   
   ipp = ipp.addOptional(ipp, 'testFunctionIndices', [], @isfloat);
   ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
-  ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
-  ipp = ipp.addParamValue(ipp, 'stages', defaultStages, @(x) true);
+  ipp = ipp.addParamValue(ipp, 'actionsToExecute', @(varargin) varargin{1}, @isFunction);
+  ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @isFunction );
   
   ipp = ipp.parse(ipp, varargin{:});
   
@@ -94,13 +72,16 @@ function status = testMatlab2tikz(varargin)
 
   % start overall timing
   elapsedTimeOverall = tic;
-  status = runIndicatedTests(ipp, env);
+  status = runIndicatedTests(ipp);
   
   % print out overall timing
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 end
 % INPUT VALIDATION =============================================================
+function bool = isFunction(f)
+    bool = isa(f,'function_handle');
+end
 function ipp = sanitizeInputs(ipp)
     % sanitize all input arguments
     ipp = sanitizeFunctionIndices(ipp);
@@ -131,7 +112,7 @@ function ipp = sanitizeFigureVisible(ipp)
     end
 end
 % TEST RUNNER ==================================================================
-function status = runIndicatedTests(ipp, env)
+function status = runIndicatedTests(ipp)
 % run all indicated tests in the test suite
     % cell array to accomodate different structure
     indices = ipp.Results.testFunctionIndices;
@@ -144,30 +125,20 @@ function status = runIndicatedTests(ipp, env)
         testNumber = indices(k);
         
         fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
+        
         status{k} = emptyStatus(testsuite, testNumber);
-        status{k} = execute_plot_stage(status{k}, ipp);
-        
-        % plot not successful
-        if status{k}.skip
-            continue
-        end
-        
+
         elapsedTime = tic;
-        
-        status{k} = execute_save_stage(status{k}, ipp);
-        status{k} = execute_tikz_stage(status{k}, ipp);
-        status{k} = execute_hash_stage(status{k}, ipp);
-        status{k} = execute_type_stage(status{k}, ipp);
-        
-        if ~status{k}.closeall && ~isempty(status{k}.plotStage.fig_handle)
-            close(status{k}.plotStage.fig_handle);
-        else
-            close all;
-        end
+
+        status{k} = feval(ipp.Results.actionsToExecute, status{k}, ipp);
         
         elapsedTime = toc(elapsedTime);
         status{k}.elapsedTime = elapsedTime;
         fprintf(stdout, '%s ', status{k}.function);
-        fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
+        if status{k}.skip
+            fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
+        else    
+            fprintf(stdout, 'skipped (%4.2fs).\n\n', elapsedTime);
+        end
     end
 end

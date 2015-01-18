@@ -13,25 +13,9 @@ addpath(fullfile(pwd,'suites'));
 suite = @ACID;
 allTests = 1:numel(suite(0));
 
-if CI_MODE
-    stagesArg = {'stages', {'plot', 'tikz', 'hash', 'type'}};
-else
-    stagesArg = {}; % use default
-end
-
 %% Run tests
-% The width and height are specified to circumvent different DPIs in developer
-% machines. The float format reduces the probability that numerical differences
-% in the order of numerical precision disrupt the output.
-extraOptions = {'width' ,'\figurewidth' ,...
-                'height','\figureheight',...
-                'floatFormat', '%8.6g'  ,...
-               };
-
-statusAll = testMatlab2tikz('testFunctionIndices', allTests,...
-                            'testsuite',           suite, ...
-                            'extraOptions',        extraOptions, ...
-                            stagesArg{:}, varargin{:});
+statusAll = testHeadless('testFunctionIndices', allTests,...
+                         'testsuite',           suite, varargin{:});
 
 %% Divide between known-to-fail and other tests
 knownToFail = cellfun(@(s)s.unreliable, statusAll);
