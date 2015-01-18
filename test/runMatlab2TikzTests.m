@@ -34,7 +34,7 @@ statusAll = testMatlab2tikz('testFunctionIndices', allTests,...
                             stagesArg{:}, varargin{:});
 
 %% Divide between known-to-fail and other tests
-knownToFail = cellfun(@(s)s.unreliable, status);
+knownToFail = cellfun(@(s)s.unreliable, statusAll);
 
 statusKnownToFail = statusAll( knownToFail);
 statusNormalTests = statusAll(~knownToFail);
