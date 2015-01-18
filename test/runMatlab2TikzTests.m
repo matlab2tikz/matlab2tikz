@@ -13,23 +13,6 @@ addpath(fullfile(pwd,'suites'));
 suite = @ACID;
 allTests = 1:numel(suite(0));
 
-switch getEnvironment
-    case 'Octave'
-        m2tFailing   = [29:31];       %FIXME: these are actual M2T problems 
-        nondeterministic = [32 67];   %FIXME: these should be made deterministic 
-        plotFailing  = [74 81:83 95]; %FIXME: these plots fail
-    case 'MATLAB'
-        plotFailing = [];
-        m2tFailing  = [];
-        % R2014a
-        nondeterministicHG1 = [8];
-        % R2014b
-        nondeterministicHG2 = [12 20 34 38:40 49 52 61 89 92 93 95 96];
-        
-        nondeterministic = unique([nondeterministicHG1 nondeterministicHG2]);
-end
-testsKnownToFail = [plotFailing m2tFailing nondeterministic];
-
 if CI_MODE
     stagesArg = {'stages', {'plot', 'tikz', 'hash', 'type'}};
 else
@@ -51,8 +34,10 @@ statusAll = testMatlab2tikz('testFunctionIndices', allTests,...
                             stagesArg{:}, varargin{:});
 
 %% Divide between known-to-fail and other tests
-statusKnownToFail = statusAll( ismember(allTests, testsKnownToFail));
-statusNormalTests = statusAll(~ismember(allTests, testsKnownToFail));
+knownToFail = cellfun(@(s)s.unreliable, status);
+
+statusKnownToFail = statusAll( knownToFail);
+statusNormalTests = statusAll(~knownToFail);
 
 %% Generate a report                        
 if ~isempty(statusKnownToFail)

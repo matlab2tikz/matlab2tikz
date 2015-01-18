@@ -282,6 +282,7 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
+  stat.unreliable = isMATLAB('<', [8,4]); %R2014a and older
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -327,6 +328,7 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   if isOctave()
       fprintf( 'Octave can''t handle tight axes.\n\n' );
@@ -527,6 +529,7 @@ end
 % =========================================================================
 function [stat] = moreLegends()
   stat.description = 'More legends.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = 0:.1:7;
   y1 = sin(x);
@@ -564,7 +567,8 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
-
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
   numEntries = length(bins);
@@ -600,6 +604,7 @@ end
 % =========================================================================
 function [stat] = stemplot()
   stat.description = 'A simple stem plot.' ;
+  stat.unreliable = isOctave;
 
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
@@ -676,6 +681,7 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isOctave;
 
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
@@ -684,6 +690,7 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isOctave;
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -692,6 +699,7 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isOctave;
 
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
@@ -743,6 +751,7 @@ end
 % =========================================================================
 function [stat] = subplot2x2b ()
   stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = (1:5);
 
@@ -761,6 +770,7 @@ end
 % =========================================================================
 function [stat] = manualAlignment()
   stat.description = 'Manually aligned figures.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   xrange = linspace(-3,4,2*1024);
 
@@ -775,7 +785,8 @@ function [stat] = manualAlignment()
 end
 % =========================================================================
 function [stat] = subplotCustom ()
-  stat.description = 'Three customized aligned subplots.' ;
+  stat.description = 'Three customized aligned subplots.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = (1:5);
 
@@ -1033,6 +1044,7 @@ function [stat] = freqResponsePlot()
   stat.description = 'Frequency response plot.';
   stat.closeall = true;
   stat.issues = [409];
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1065,6 +1077,7 @@ end
 % =========================================================================
 function [stat] = multipleAxes()
   stat.description = 'Multiple axes.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x1 = 0:.1:40;
   y1 = 4.*cos(x1)./(x1+2);
@@ -1115,6 +1128,7 @@ end
 % =========================================================================
 function [stat] = scatterPlotMarkers()
   stat.description = 'Scatter plot with with different marker sizes and legend.';
+  stat.unreliable = isOctave;
 
   n = 1:10;
   d = 10;
@@ -1256,6 +1270,7 @@ end
 % =========================================================================
 function [stat] = ylabels()
   stat.description = 'Separate y-labels.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = 0:.01:2*pi;
   H = plotyy(x,sin(x),x,3*cos(x));
@@ -1337,6 +1352,7 @@ end
 % =========================================================================
 function [stat] = texrandom()
   stat.description = 'Random TeX symbols';
+  stat.unreliable = true; % due to randomness
 
   try
       rng(42); %fix seed
@@ -1742,6 +1758,7 @@ end
 % =========================================================================
 function [stat] = herrorbarPlot()
   stat.description = 'herrorbar plot.';
+  stat.unreliable = isOctave;
 
   hold on;
   X = 1:10;
@@ -1870,6 +1887,7 @@ end
 % =========================================================================
 function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
+  stat.unreliable = isOctave;
 
   n = 6;
   r = (0:n)'/n;
@@ -1900,6 +1918,7 @@ end
 % =========================================================================
 function [stat] = hgTransformPlot()
   stat.description = 'hgtransform() plot.';
+  stat.unreliable = isOctave;
 
   % Check out
   % http://www.mathworks.de/de/help/matlab/ref/hgtransform.html.
@@ -1951,7 +1970,7 @@ function [stat] = annotation1()
 
   stat.description = 'Annotations only';
 
-  if ~exist('annotation')
+  if ~ismepty(which('annotation'))
     fprintf( 'annotation() not found. Skipping.\n\n' );
     stat.skip = true;
     return;
@@ -1972,7 +1991,7 @@ end
 function [stat] = annotation2()
   stat.description = 'Annotations over plot';
 
-  if ~exist('annotation')
+  if isempty(which('annotation'))
     fprintf( 'annotation() not found. Skipping.\n\n' );
     stat.skip = true;
     return;
@@ -1999,8 +2018,9 @@ end
 % =========================================================================
 function [stat] = annotation3()
   stat.description = 'Annotated and unaligned subplots';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
-  if ~exist('annotation')
+  if ~isempty(which('annotation'))
     fprintf( 'annotation() not found. Skipping.\n\n' );
     stat.skip = true;
     return;
@@ -2223,10 +2243,12 @@ end
 function [stat] = imageOrientation_inline()
 % Run test and save pictures as inline TikZ code
     [stat] = imageOrientation(false);
+    stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 end
 function [stat] = imageOrientation_PNG()
 % Run test and save pictures as external PNGs
     [stat] = imageOrientation(true);
+    stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 end
 function [stat] = imageOrientation(imagesAsPng)
 % Parameter 'imagesAsPng' is boolean
@@ -2298,6 +2320,7 @@ end
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
   stat.issues = 442;
+  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); %Octave, R2014b and newer
 
   % dataset stacked
   [data,dummy,summy] = svd(magic(7)); %#ok
@@ -2320,6 +2343,7 @@ end
 % =========================================================================
 function [stat] = colorbarLabelTitle()
     stat.description = 'colorbar with label and title';
+    stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
     stat.issues = 429;
 
     % R2014b handles colorbars smart:  `XLabel` and `YLabel` merged into `Label`
