@@ -1,11 +1,11 @@
-function [stage, errorHasOccurred] = errorHandler(e,env)
+function [stage, errorHasOccurred] = errorHandler(e)
 % common error handler code: save and print to console
     errorHasOccurred = true;
     stage = emptyStage();
     stage.message = format_error_message(e);
     stage.error   = errorHasOccurred;
     
-    disp_error_message(env, stage.message);
+    disp_error_message(stage.message);
 end
 % =========================================================================
 function msg = format_error_message(e)
@@ -30,15 +30,16 @@ function msg = format_error_message(e)
         end
     end
 end
-function disp_error_message(env, msg)
+function disp_error_message(msg)
     stderr = 2;
     % When displaying the error message in MATLAB, all backslashes
     % have to be replaced by two backslashes. This must not, however,
     % be applied constantly as the string that's saved to the LaTeX
     % output must have only one backslash.
-    if strcmp(env, 'MATLAB')
-        fprintf(stderr, strrep(msg, '\', '\\'));
-    else
-        fprintf(stderr, msg);
+    switch getEnvironment
+        case 'MATLAB'
+            fprintf(stderr, strrep(msg, '\', '\\'));
+        case 'Octave'
+            fprintf(stderr, msg);
     end
 end

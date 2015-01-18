@@ -1,4 +1,4 @@
-function [status] = execute_save_stage(status, ipp, env)
+function [status] = execute_save_stage(status, ipp)
 % save stage: saves the figure to EPS/PDF depending on env
     if ismember('save', ipp.Results.stages)
         testNumber = status.index;
@@ -9,7 +9,7 @@ function [status] = execute_save_stage(status, ipp, env)
 
         % Save reference output as PDF
         try
-            switch env
+            switch getEnvironment
                 case 'MATLAB'
                     % MATLAB does not generate properly cropped PDF files.
                     % So, we generate EPS files that are converted later on.
@@ -28,7 +28,7 @@ function [status] = execute_save_stage(status, ipp, env)
             end
         catch %#ok
             e = lasterror('reset'); %#ok
-            [status.saveStage] = errorHandler(e, env);
+            [status.saveStage] = errorHandler(e);
         end
         status.saveStage.epsFile = reference_eps;
         status.saveStage.pdfFile = reference_pdf;

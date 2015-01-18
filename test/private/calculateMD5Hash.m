@@ -1,9 +1,9 @@
-function hash = calculateMD5Hash(filename, env)
+function hash = calculateMD5Hash(filename)
 % CALCULATEMD5HASH calculate a MD5 hash of a file
 %
 % This functionality is built-in into Octave but uses Java in MATLAB.
 
-    switch env
+    switch getEnvironment
         case 'Octave'
             hash = md5sum(filename);
             

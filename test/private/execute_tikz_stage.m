@@ -1,4 +1,4 @@
-function [status] = execute_tikz_stage(status, ipp, env)
+function [status] = execute_tikz_stage(status, ipp)
 % test stage: TikZ file generation
     if ismember('tikz', ipp.Results.stages)
         testNumber = status.index;
@@ -20,7 +20,7 @@ function [status] = execute_tikz_stage(status, ipp, env)
             % Remove (corrupted) output file. This is necessary to avoid that the
             % Makefile tries to compile it and fails.
             delete(gen_tex)
-            [status.tikzStage] = errorHandler(e, env);
+            [status.tikzStage] = errorHandler(e);
         end
         status.tikzStage.texFile = gen_tex;
         status.tikzStage.pdfFile = gen_pdf;

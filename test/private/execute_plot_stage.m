@@ -1,4 +1,4 @@
-function [status] = execute_plot_stage(defaultStatus, ipp, env)
+function [status] = execute_plot_stage(defaultStatus, ipp)
 % plot a test figure
     if ismember('plot', ipp.Results.stages)
         testsuite = ipp.Results.testsuite;
@@ -16,7 +16,7 @@ function [status] = execute_plot_stage(defaultStatus, ipp, env)
             e = lasterror('reset'); %#ok
 
             status.description = '\textcolor{red}{Error during plot generation.}';
-            [status.plotStage, errorHasOccurred] = errorHandler(e, env);
+            [status.plotStage, errorHasOccurred] = errorHandler(e);
         end
 
         status = fillStruct(status, defaultStatus);

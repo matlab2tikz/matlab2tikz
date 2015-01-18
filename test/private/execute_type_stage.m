@@ -1,4 +1,4 @@
-function [status] = execute_type_stage(status, ipp, env)
+function [status] = execute_type_stage(status, ipp)
     if ismember('type', ipp.Results.stages)
         try 
             filename = status.tikzStage.texFile;
@@ -10,7 +10,7 @@ function [status] = execute_type_stage(status, ipp, env)
             end
         catch
             e = lasterror('reset');
-            [status.typeStage] = errorHandler(e, env);
+            [status.typeStage] = errorHandler(e);
         end
     end
 end

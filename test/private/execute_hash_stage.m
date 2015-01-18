@@ -1,11 +1,11 @@
-function [status] = execute_hash_stage(status, ipp, env)
+function [status] = execute_hash_stage(status, ipp)
     % test stage: check recorded hash checksum
     if ismember('hash', ipp.Results.stages)
         calculated = '';
         expected = '';
         try
             expected = getReferenceHash(status, ipp);
-            calculated = calculateMD5Hash(status.tikzStage.texFile, env);
+            calculated = calculateMD5Hash(status.tikzStage.texFile);
 
             % do the actual check
             if ~strcmpi(expected, calculated)
@@ -16,7 +16,7 @@ function [status] = execute_hash_stage(status, ipp, env)
             end
         catch %#ok
             e = lasterror('reset'); %#ok
-            [status.hashStage] = errorHandler(e, env);
+            [status.hashStage] = errorHandler(e);
         end
         status.hashStage.expected = expected;
         status.hashStage.found    = calculated;

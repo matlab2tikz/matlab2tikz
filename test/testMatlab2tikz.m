@@ -103,13 +103,8 @@ end
 % INPUT VALIDATION =============================================================
 function ipp = sanitizeInputs(ipp)
     % sanitize all input arguments
-    ipp = sanitizeStagesDefinition(ipp);
     ipp = sanitizeFunctionIndices(ipp);
     ipp = sanitizeFigureVisible(ipp);
-end
-function ipp = sanitizeStagesDefinition(ipp)
-   % sanitize the passed stages definition field
-   ipp.Results.stages = lower(ipp.Results.stages);
 end
 function ipp = sanitizeFunctionIndices(ipp)
 % sanitize the passed function indices to the range of the test suite
@@ -150,7 +145,7 @@ function status = runIndicatedTests(ipp, env)
         
         fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
         status{k} = emptyStatus(testsuite, testNumber);
-        status{k} = execute_plot_stage(status{k}, ipp, env);
+        status{k} = execute_plot_stage(status{k}, ipp);
         
         % plot not successful
         if status{k}.skip
@@ -159,10 +154,10 @@ function status = runIndicatedTests(ipp, env)
         
         elapsedTime = tic;
         
-        status{k} = execute_save_stage(status{k}, ipp, env);
-        status{k} = execute_tikz_stage(status{k}, ipp, env);
-        status{k} = execute_hash_stage(status{k}, ipp, env);
-        status{k} = execute_type_stage(status{k}, ipp, env);
+        status{k} = execute_save_stage(status{k}, ipp);
+        status{k} = execute_tikz_stage(status{k}, ipp);
+        status{k} = execute_hash_stage(status{k}, ipp);
+        status{k} = execute_type_stage(status{k}, ipp);
         
         if ~status{k}.closeall && ~isempty(status{k}.plotStage.fig_handle)
             close(status{k}.plotStage.fig_handle);
