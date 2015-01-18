@@ -1970,7 +1970,7 @@ function [stat] = annotation1()
 
   stat.description = 'Annotations only';
 
-  if ~ismepty(which('annotation'))
+  if isempty(which('annotation'))
     fprintf( 'annotation() not found. Skipping.\n\n' );
     stat.skip = true;
     return;
@@ -2020,7 +2020,7 @@ function [stat] = annotation3()
   stat.description = 'Annotated and unaligned subplots';
   stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
-  if ~isempty(which('annotation'))
+  if isempty(which('annotation'))
     fprintf( 'annotation() not found. Skipping.\n\n' );
     stat.skip = true;
     return;
