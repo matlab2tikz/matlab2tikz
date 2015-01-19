@@ -3042,22 +3042,26 @@ function [m2t, str] = drawHistogram(m2t, h)
         opts = opts_add(opts, 'draw', xEdgeColor);
     end
     
-    % Bar type
-    opts = opts_add(opts, 'ybar interval');
-    
     % Data
     binEdges = get(h, 'BinEdges');
     binValue = get(h, 'Values');
     data     = [binEdges(:), [binValue(:); binValue(end)]];
-        
+    
+    % Bar type (depends on orientation)
+    isVertical = strcmp(get(h,'Orientation'),'vertical');
+    if isVertical
+        opts = opts_add(opts, 'ybar interval');
+    else
+        opts = opts_add(opts, 'xbar interval');
+        data = fliplr(data);
+    end
+    
     % Make table
     [m2t, table] = makeTable(m2t, {'x','y'},data);
     
-    % Add 'area legend' to the options as otherwise the legend indicators
-    % will just highlight the edges.
-    m2t.axesContainers{end}.options = ...
-        opts_add(m2t.axesContainers{end}.options, 'area legend');
-
+    % Add 'area legend' (x/ybar interval legend do not seem to work)
+    opts = opts_add(opts, 'area legend');
+    
     % Print out
     drawOpts = opts_print(m2t, opts, ',');
     str      = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
@@ -3181,8 +3185,7 @@ function [m2t, str] = drawBarseries(m2t, h)
 
     % Add 'area legend' to the options as otherwise the legend indicators
     % will just highlight the edges.
-    m2t.axesContainers{end}.options = ...
-        opts_add(m2t.axesContainers{end}.options, 'area legend');
+    drawOptions = opts_add(drawOptions, 'area legend');
 
     % plot the thing
     if isHoriz

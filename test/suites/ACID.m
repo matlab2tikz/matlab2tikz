@@ -2437,7 +2437,10 @@ end
 % =========================================================================
 function [stat] = histogramPlot()
 
-  if ~exist('histogram')
+  % histogram() was introduced in Matlab R2014b, hence skip if we a re in
+  % Octave or version lower Matlab version.
+  env = getEnvironment();
+  if strcmpi(env,'MATLAB') && isVersionBelow(env, 8,4)
       fprintf('histogram() not found. Skipping.\n\n' );
       stat.skip = true;
       return;
