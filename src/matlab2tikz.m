@@ -2379,7 +2379,7 @@ function [m2t, str] = drawHggroup(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t,env] = drawSurface(m2t, handle)
+function [m2t,str] = drawSurface(m2t, handle)
 
     [m2t, opts, s] = shaderOpts(m2t, handle,'surf');
 
@@ -2410,14 +2410,15 @@ function [m2t,env] = drawSurface(m2t, handle)
         dy = dy(:) * ones(1,numrows);
     end
 
-    % Add 'z buffer=sort' to the options to make sphere plot and the like not
-    % overlap. There are different options here some of which may be more
-    % advantageous in other situations; check out Pgfplots' manual here.
-    % Since 'z buffer=sort' is computationally more expensive for LaTeX, try
-    % to avoid it for the most default situations, e.g., when dx and dy are
-    % rank-1-matrices.
-    % Enforce 'z buffer=sort' if shader is flat
-    % Avoid 'z buffer=sort' for hist3D plots
+    % Enforce 'z buffer=sort' if shader is flat and is a 3D plot. It is to 
+    % avoid overlapping e.g. sphere plots and to properly mimic Matlab's 
+    % coloring of faces.
+    % NOTE:
+    % - 'z buffer=sort' is computationally more expensive for LaTeX, we 
+    %   could try to avoid it in some default situations, e.g. when dx and 
+    %   dy are rank-1-matrices.
+    % - hist3D plots should not be z-sorted or the highest bars will cover
+    %   the shortest one even if positioned in the back
     isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
     isHist3D     = strcmpi(get(handle,'tag'),'hist3');
     is3D         = m2t.axesContainers{end}.is3D;
@@ -2457,19 +2458,6 @@ function [m2t,env] = drawSurface(m2t, handle)
         columnNames = [columnNames, 'c'];
         formatType = 'table[row sep=crcr, colormap name=surfmap, point meta=\thisrow{c}]';
         
-%         r = CData(:, :, 1);
-%         g = CData(:, :, 2);
-%         b = CData(:, :, 3);
-%         colorFormat = join(m2t, repmat({m2t.ff},[3 1]),',');
-%         color = arrayfun(@(r,g,b)(sprintf(colorFormat,r,g,b)), ...
-%             r(:),g(:),b(:),'UniformOutput',false);
-
-        %formatType = 'table[row sep=crcr,header=false]';
-        %formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
-        %data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
-
-        %elseif length(size(colors)) > 2 || any(isnan(colors(:)))
-        %    needsPointmeta = false;
     else
         opts = opts_add(opts,matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap),'');
         % If NaNs are present in the color specifications, don't use them for
