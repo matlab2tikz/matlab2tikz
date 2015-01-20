@@ -132,7 +132,8 @@ function [status] = ACID(k)
                            @stackedBarsWithOther, ...
                            @colorbarLabelTitle  , ...
                            @textAlignment       , ...
-                           @overlappingPlots
+                           @overlappingPlots    ,...
+                           @histogramPlot
                          };
 
 
@@ -2432,6 +2433,29 @@ function [stat] = overlappingPlots()
     % axis background color: ax2 = default, ax3 = green, ax4 = transparent
     set(ax3, 'Color', 'green');
     set(ax4, 'Color', 'none');
+end
+% =========================================================================
+function [stat] = histogramPlot()
+
+  % histogram() was introduced in Matlab R2014b, hence skip if we a re in
+  % Octave or version lower Matlab version.
+  env = getEnvironment();
+  if strcmpi(env,'MATLAB') && isVersionBelow(env, 8,4)
+      fprintf('histogram() not found. Skipping.\n\n' );
+      stat.skip = true;
+      return;
+  end
+  stat.description = 'overlapping histogram() plots and custom size bins';
+  stat.issues      = 525;
+
+  x     = [-0.2, -0.484, 0.74, 0.632, -1.344, 0.921, -0.598, -0.727,...
+           -0.708, 1.045, 0.37, -1.155, -0.807, 1.027, 0.053, 0.863,...
+           1.131, 0.134, -0.017, -0.316];
+  y     = x.^2;
+  edges = [-2 -1:0.25:3];
+  histogram(x,edges);
+  hold on
+  histogram(y);
 end
 % =========================================================================
 function env = getEnvironment

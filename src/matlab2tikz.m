@@ -676,6 +676,9 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
 
             case 'rectangle'
                 [m2t, str] = drawRectangle(m2t, child);
+                
+            case 'histogram'
+                [m2t, str] = drawHistogram(m2t, child);
 
             case {'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
                     'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
@@ -3005,6 +3008,65 @@ function [m2t, xcolor, hasColor] = getColorOfMarkers(m2t, h, name, cData)
     end
 end
 % ==============================================================================
+function [m2t, str] = drawHistogram(m2t, h)
+    
+    if ~isVisible(h)
+        str = '';
+        return;
+    end
+
+    % Init options 
+    opts = opts_new();
+    
+    % Face
+    faceColor = get(h,'FaceColor');
+    if isNone(faceColor)
+        opts = opts_add(opts, 'fill', 'none');
+    else
+        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
+        opts = opts_add(opts, 'fill', xFaceColor);
+    end
+    
+    % FaceAlpha
+    faceAlpha = get(h, 'FaceAlpha');
+    if ~isNone(faceColor) && isnumeric(faceAlpha) && faceAlpha ~= 1.0
+        opts = opts_add(opts,'fill opacity', sprintf(m2t.ff,faceAlpha));
+    end
+    
+    % Edge
+    edgeColor = get(h, 'EdgeColor');
+    if isNone(edgeColor)
+        opts = opts_add(opts, 'draw', 'none');
+    else
+        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
+        opts = opts_add(opts, 'draw', xEdgeColor);
+    end
+    
+    % Data
+    binEdges = get(h, 'BinEdges');
+    binValue = get(h, 'Values');
+    data     = [binEdges(:), [binValue(:); binValue(end)]];
+    
+    % Bar type (depends on orientation)
+    isVertical = strcmp(get(h,'Orientation'),'vertical');
+    if isVertical
+        opts = opts_add(opts, 'ybar interval');
+    else
+        opts = opts_add(opts, 'xbar interval');
+        data = fliplr(data);
+    end
+    
+    % Make table
+    [m2t, table] = makeTable(m2t, {'x','y'},data);
+    
+    % Add 'area legend' (x/ybar interval legend do not seem to work)
+    opts = opts_add(opts, 'area legend');
+    
+    % Print out
+    drawOpts = opts_print(m2t, opts, ',');
+    str      = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
+end
+% ==============================================================================
 function [m2t, str] = drawBarseries(m2t, h)
 % Takes care of plots like the ones produced by MATLAB's hist.
 % The main pillar is Pgfplots's '{x,y}bar' plot.
@@ -3123,8 +3185,7 @@ function [m2t, str] = drawBarseries(m2t, h)
 
     % Add 'area legend' to the options as otherwise the legend indicators
     % will just highlight the edges.
-    m2t.axesContainers{end}.options = ...
-        opts_add(m2t.axesContainers{end}.options, 'area legend');
+    drawOptions = opts_add(drawOptions, 'area legend');
 
     % plot the thing
     if isHoriz
@@ -3937,7 +3998,13 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                 end
 
             case 'auto'
-                color = get(patchhandle, 'Color');
+                try
+                    color = get(patchhandle, 'Color');
+                catch
+                    % From R2014b use an undocumented property if Color is 
+                    % not present
+                    color = get(patchhandle, 'AutoColor');
+                end
                 [m2t, xcolor] = rgb2colorliteral(m2t, color);
 
             case 'none'
