@@ -2410,7 +2410,10 @@ function [stat] = textAlignment()
     text(1.8,0.7, {'text overlapping', 'axis limits'});
     text(-0.2,0.7, {'text overlapping', 'axis limits'});
     text(0.9,0.0, {'text overlapping', 'axis limits'});
-    text(0.9,2.0, {'text overlapping', 'axis limits'});
+    h_t = text(0.9,2.0, {'text overlapping', 'axis limits'});
+    
+    % Set different units to test if they are properly handled
+    set(h_t, 'Units', 'centimeters');
 end
 % =========================================================================
 function [stat] = overlappingPlots()

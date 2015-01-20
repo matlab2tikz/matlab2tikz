@@ -116,6 +116,10 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
           coarsenLine(meta, h, minimumPointsDistance);
 
       elseif strcmp(type, 'text')
+          % Ensure units of type 'data' (default) and restore the setting later
+          units_original = get(h, 'Units');
+          set(h, 'Units', 'data');
+
           % Check if text is inside bounds by checking if the position is inside
           % the x, y and z limits. This works for both 2D and 3D plots.
           x_lim = get(meta.gca, 'XLim');
@@ -126,17 +130,25 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
           pos = get(h, 'Position');
           bPosInsideLim = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
 
-          % In 2D plots the extent of the textbox is available and also
+          % In 2D plots the 'extent' of the textbox is available and also
           % considered to keep the textbox, if it is partially inside the axis
           % limits.
           extent = get(h, 'Extent');
-          if all(~isnan(extent))
-             x_lim(1) = x_lim(1) - extent(3); % x-limit is extended by width
-             y_lim(1) = y_lim(1) - extent(4); % y-limit is extended by height
-             axLim = [x_lim; y_lim; z_lim];
 
-             bPosInsideLimExt = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
-             bPosInsideLim = bPosInsideLim | bPosInsideLimExt;
+          % Restore original units (after reading all dimensions)
+          set(h, 'Units', units_original);
+
+          % This check makes sure the extent is only considered if it contains
+          % valid values. The 3D case returns a vector of NaNs.
+          if all(~isnan(extent))
+            % Extend the actual axis limits by the extent of the textbox so that
+            % the textbox is not discarded, if it overlaps the axis.
+            x_lim(1) = x_lim(1) - extent(3);    % x-limit is extended by width
+            y_lim(1) = y_lim(1) - extent(4);    % y-limit is extended by height
+            axLim = [x_lim; y_lim; z_lim];
+
+            bPosInsideLimExt = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
+            bPosInsideLim = bPosInsideLim | bPosInsideLimExt;
           end
 
           if ~all(bPosInsideLim)
