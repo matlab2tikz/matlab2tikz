@@ -2436,9 +2436,8 @@ function [stat] = overlappingPlots()
 end
 % =========================================================================
 function [stat] = histogramPlot()
-
-  % histogram() was introduced in Matlab R2014b, hence skip if we a re in
-  % Octave or version lower Matlab version.
+  % histogram() was introduced in Matlab R2014b, hence skip if we are in
+  % Octave or version lower Matlab version. TODO: later replace by 'isHG2()'
   env = getEnvironment();
   if strcmpi(env,'MATLAB') && isVersionBelow(env, 8,4)
       fprintf('histogram() not found. Skipping.\n\n' );
@@ -2455,7 +2454,8 @@ function [stat] = histogramPlot()
   edges = [-2 -1:0.25:3];
   histogram(x,edges);
   hold on
-  histogram(y);
+  h = histogram(y);
+  set(h, 'orientation', 'horizontal');
 end
 % =========================================================================
 function env = getEnvironment
