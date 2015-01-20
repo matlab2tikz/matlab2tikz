@@ -2428,11 +2428,11 @@ function [m2t,str] = drawSurface(m2t, handle)
 
     % Check if 3D
     if is3D
-        columnNames = {'x','y','z'};
+        columnNames = {'x','y','z','c'};
         plotCmd     = 'addplot3';
         data        = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
     else
-        columnNames = {'x','y'};
+        columnNames = {'x','y','c'};
         plotCmd     = 'addplot';
         data        = [dx(:), dy(:)];
     end
@@ -2444,18 +2444,20 @@ function [m2t,str] = drawSurface(m2t, handle)
     %    * implicitly through a color map with a given coordinate (e.g., z).
     %
 
-    % Check if we need extra CData.
+    % Check if we need extra CData
     CData = get(handle, 'CData');
     if length(size(CData)) == 3 && size(CData, 3) == 3
+        
         % Create additional custom colormap
         nrows = size(data,1);
         CData = reshape(CData, nrows,3);
         m2t.axesContainers{end}.options(end+1,:) = ...
             {matlab2pgfplotsColormap(m2t, CData, 'patchmap'), []};
+        
         % Index into custom colormap
         color = (0:nrows-1)';
         
-        columnNames = [columnNames, 'c'];
+        % Table options
         formatType = 'table[row sep=crcr, colormap name=surfmap, point meta=\thisrow{c}]';
         
     else
@@ -2470,13 +2472,12 @@ function [m2t,str] = drawSurface(m2t, handle)
         needsPointmeta = any(xor(isnan(dz(:)), isnan(CData(:)))) ...
             || any(abs(CData(:) - dz(:)) > 1.0e-10);
         if needsPointmeta
-            columnNames = [columnNames, 'c'];
-            formatType  = 'table[row sep=crcr, point meta=\thisrow{c}]';
-            color       = CData(:);
+            color = CData(:);
         else
-            formatType = 'table[row sep=crcr, point meta=\thisrow{z}]';
-            color      = [];
+            color = dz(:);      % Fallback on the z-values, especially if 2D view
         end
+        % Table options
+        formatType = 'table[row sep=crcr, point meta=\thisrow{c}]';
     end
     data = [data, color];
         
