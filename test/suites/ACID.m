@@ -1290,21 +1290,29 @@ function [stat] = ylabels()
 end
 % =========================================================================
 function [stat] = spectro()
-  stat.description = 'Spectrogram plot';
+  stat.description = 'Emulating spectrogram plot';
 
-  % In the original test case, this is 0:0.001:2, but that takes forever
-  % for LaTeX to process.
-  if isempty(which('chirp'))
-      fprintf( 'chirp() not found. Skipping.\n\n' );
-      stat.description = [];
-      stat.skip = true;
-      return
-  end
+  % Original spectrogram code left uncommented for comparison purposes
+%   if isempty(which('chirp'))
+%       fprintf( 'chirp() not found. Skipping.\n\n' );
+%       stat.description = [];
+%       stat.skip = true;
+%       return
+%   end
+%   T = 0:0.005:2;
+%   X = chirp(T,100,1,200,'q');
+%   spectrogram(X,128,120,128,1E3);
+%   title('Quadratic Chirp');
+  
+  % 2D view of a surface emulating the code above
+  [X,Y,Z] = peaks(25);
+  h = surf(X*100+200,(Y+3)/20,Z);
+  set(h,'EdgeColor','none')
 
-  T = 0:0.005:2;
-  X = chirp(T,100,1,200,'q');
-  spectrogram(X,128,120,128,1E3);
-  title('Quadratic Chirp');
+  view(0,90)
+  xlim([0,400])
+  title('Emulating spectrogram'), xlabel('Frequency (Hz)'), ylabel('Time (s)')
+
 end
 % =========================================================================
 function [stat] = mixedBarLine()
