@@ -3205,10 +3205,19 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
     prop         = switchMatOct(m2t, 'BarPeers', 'bargroup');
     bargroup     = get(h, prop);
     numBarSeries = numel(bargroup);
+    
+    % HG2 handling:
+    % - BarPeers are sorted in reversed order wrt HG1
     if isHG2(m2t)
         bargroup = bargroup(end:-1:1);
     end
-    [~, barSeriesId] = ismember(handle(h), bargroup);
+    % - Ensure graphic classes are double handles 
+    %   NOTE: Octave does not support handle()
+    h        = double(h);
+    bargroup = double(bargroup);
+    
+    % Get bar series Id
+    [~, barSeriesId] = ismember(h, bargroup);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
