@@ -114,6 +114,8 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
           movePointsCloser(meta, h);
           % Don't be too precise.
           coarsenLine(meta, h, minimumPointsDistance);
+      elseif strcmpi(type, 'stair')
+          pruneOutsideBox(meta, h);
       elseif strcmp(type, 'text')
           % Check if text is inside bounds by checking if the Extent rectangle
           % and the axes box overlap.
@@ -139,7 +141,14 @@ function pruneOutsideBox(meta, handle)
 
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
+
+  % Obtain zData, if available
+  handleFields = get(handle);
+  if isfield(handleFields, 'ZData')
+    zData = get(handle, 'ZData');
+  else
+    zData = [];
+  end
 
   if isempty(zData)
     data = [xData(:), yData(:)];

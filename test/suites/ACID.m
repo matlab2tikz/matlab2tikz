@@ -133,7 +133,8 @@ function [status] = ACID(k)
                            @colorbarLabelTitle  , ...
                            @textAlignment       , ...
                            @overlappingPlots    ,...
-                           @histogramPlot
+                           @histogramPlot       , ...
+                           @pruneOutsideBox
                          };
 
 
@@ -2456,6 +2457,31 @@ function [stat] = histogramPlot()
   hold on
   h = histogram(y);
   set(h, 'orientation', 'horizontal');
+end
+% =========================================================================
+function [stat] = pruneOutsideBox()
+    % test function 'pruneOutsideBox' that is part of 'cleanfigure'
+    stat.description = ['Test function \texttt{pruneOutsideBox()} ', ...
+                        'of \texttt{cleanfigure()}.'];
+    stat.issues      = 226;
+
+    % generate 16 deterministic values
+    data = magic(4);
+    data = data(:);
+
+    % create plots
+    subplot(2,1,1);
+    plot(data,'x-');
+    xlim([10 12]);      % only show 3 values
+    title('regular plot');
+
+    subplot(2,1,2);
+    stairs(data,'x-');
+    xlim([10 12]);      % only show 2 steps
+    title('stairs plot');
+
+    % force application of 'cleanfigure()'; don't rely on testsuite
+    cleanfigure();
 end
 % =========================================================================
 function env = getEnvironment
