@@ -3207,7 +3207,7 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
     if isHG2(m2t)
         bargroup = bargroup(end:-1:1);
     end
-    [~, barSeriesId] = ismember(handle(h), bargroup);
+    [barSeriesId, barSeriesId] = ismember(handle(h), bargroup);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
@@ -5322,7 +5322,7 @@ function string = parseTexSubstring(m2t, string)
     end
 
     % Replace Fontnames
-    [~, ~, ~, ~, fonts, ~, subStrings] = regexp(string, '\\fontname{(\w*)}');
+    [fonts, fonts, fonts, fonts, fonts, subStrings, subStrings] = regexp(string, '\\fontname{(\w*)}');
     fonts = fonts2tex(fonts);
     subStrings = [subStrings; fonts, {''}];
     string = cell2mat(subStrings(:)');
