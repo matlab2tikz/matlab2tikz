@@ -2628,13 +2628,14 @@ function [m2t,posString] = getPositionOfText(m2t, h)
     
     is3D = m2t.axesContainers{end}.is3D;
     
-    try 
-        cl = class(handle(h));
-    catch
-        cl = '';
+    % Deduce if text or textbox
+    type = get(h,'type');
+    if isempty(type) || strcmp(type,'hggroup')
+        type = get(h,'ShapeType'); % Undocumented property valid from 2008a
     end
-    switch cl
-        case {'text', 'matlab.graphics.primitive.Text'}
+    
+    switch type
+        case 'text'
             if is3D
                 pos  = applyHgTransform(m2t, pos);
                 npos = 3;
@@ -2642,7 +2643,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
                 pos  = pos(1:2);
                 npos = 2;
             end
-        case {'scribe.textbox', 'matlab.graphics.shape.TextBox'}
+        case {'textbox','textboxshape'}
             % TODO:
             %   - size of the box (e.g. using node attributes minimum width / height)
             %   - Alignment of the resized box
@@ -2650,7 +2651,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
             npos = 2;
         
         otherwise
-            error('matlab2tikz:drawText', 'Unrecognized text class: %s.', cl);
+            error('matlab2tikz:drawText', 'Unrecognized text type: %s.', type);
     end    
     
     % Format according to units
