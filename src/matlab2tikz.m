@@ -210,7 +210,7 @@ ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
 ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
-ipp = ipp.addParamValue(ipp, 'extraColors', {}, @iscolordefinitions);
+ipp = ipp.addParamValue(ipp, 'extraColors', {}, @isColorDefinitions);
 ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'extraCodeAtEnd', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
@@ -387,15 +387,15 @@ function l = filehandleValidation(x)
     l = isnumeric(x) && any(x==fopen('all'));
 end
 % ==============================================================================
-function l = isCellOrChar(x)
-    l = iscell(x) || ischar(x);
+function bool = isCellOrChar(x)
+    bool = iscell(x) || ischar(x);
 end
 % ==============================================================================
-function isValid = iscolordefinitions(colors)
+function bool = isColorDefinitions(colors)
     isRGBTuple   = @(c)( numel(c) == 3 && all(0<=c & c<=1) );
     isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
 
-    isValid = iscell(colors) && all(cellfun(isValidEntry, colors));
+    bool = iscell(colors) && all(cellfun(isValidEntry, colors));
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
@@ -804,6 +804,11 @@ function m2t = drawAxes(m2t, handle)
 
     % update gca
     m2t.currentHandles.gca = handle;
+    
+    % Check if axis is 3d
+    % In MATLAB, all plots are treated as 3D plots; it's just the view that
+    % makes 2D plots appear like 2D.
+    m2t.axesContainers{end}.is3D = isAxis3D(handle);
 
     % Flag if axis contains barplot
     m2t.axesContainers{end}.barAddedAxisOption = false;
@@ -861,11 +866,7 @@ function m2t = drawAxes(m2t, handle)
             opts_add(m2t.axesContainers{end}.options, 'point meta max', sprintf(m2t.ff, clim(2)));
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % In MATLAB, all plots are treated as 3D plots; it's just the view that
-    % makes 2D plots appear like 2D.
-    % Recurse into the children of this environment. Do this here to give the
-    % contained plots the chance to set m2t.currentAxesContain3dData to true.
-    m2t.currentAxesContain3dData = false;
+    % Recurse into the children of this environment.
     [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
     m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -958,7 +959,7 @@ end
 % ==============================================================================
 function m2t = add3DOptionsOfAxes(m2t, handle)
 % adds 3D specific options of an axes object
-    if m2t.currentAxesContain3dData
+    if isAxis3D(handle)
         [m2t, zopts] = getAxisOptions(m2t, handle, 'z');
         m2t.axesContainers{end}.options = opts_merge(...
             m2t.axesContainers{end}.options, zopts);
@@ -1059,7 +1060,7 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
         m2t.axesContainers{end}.options = ...
             opts_append(m2t.axesContainers{end}.options, ...
             'axis y line*', yLoc);
-        if m2t.currentAxesContain3dData
+        if m2t.axesContainers{end}.is3D
             % There's no such attribute as 'ZAxisLocation'.
             % Instead, the default seems to be 'left'.
             m2t.axesContainers{end}.options = ...
@@ -1374,6 +1375,12 @@ function bool = isAxisVisible(axisHandle)
     end
 end
 % ==============================================================================
+function bool = isAxis3D(axisHandle)
+% Check if elevation is not orthogonal to xy plane
+    axisView = get(axisHandle,'view');
+    bool     = ~ismember(axisView(2),[90,-90]);
+end
+% ==============================================================================
 function [m2t, str] = drawLine(m2t, handle, yDeviation)
 % Returns the code for drawing a regular line and error bars.
 % This is an extremely common operation and takes place in most of the
@@ -1420,13 +1427,11 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
     % This also implicitly makes sure that the lengths match.
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
-    zData = getOrDefault(handle, 'ZData', []);
-    % We would like to do
-    %   data = [xData(:), yData(:), zData(:)],
-    % but Octave fails. Hence this isempty() construction.
-    if isempty(zData)
+    is3D  = m2t.axesContainers{end}.is3D;
+    if ~is3D
         data = [xData(:), yData(:)];
     else
+        zData = get(handle, 'ZData');
         data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
 
@@ -1443,13 +1448,11 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
             opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
     end
 
-    if ~isempty(zData)
+    if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
         [m2t, table] = makeTable(m2t, {'','',''}, data);
         str = sprintf('%s\\addplot3 [%s]\n table[row sep=crcr] {%s};\n ', ...
             str, join(m2t, drawOptions, ','), table);
-
-        m2t.currentAxesContain3dData = true;
     else
         % split the data into logical chunks
         dataCell = splitLine(m2t, hasLines, data);
@@ -1781,14 +1784,15 @@ function [m2t, str] = drawPatch(m2t, handle)
     Vertices = get(handle,'Vertices');
     
     % 3D vs 2D
-    if size(Vertices,2) == 3
-        m2t.currentAxesContain3dData = true;
+    is3D = m2t.axesContainers{end}.is3D;
+    if is3D
         columnNames = {'x', 'y', 'z'};
-        Vertices    = applyHgTransform(m2t, Vertices);
         plotCmd     = 'addplot3';
+        Vertices    = applyHgTransform(m2t, Vertices);
     else
         columnNames = {'x', 'y'};
         plotCmd     = 'addplot';
+        Vertices    = Vertices(:,1:2);
     end
         
     % Process fill, edge colors and shader
@@ -2378,14 +2382,13 @@ function [m2t, str] = drawHggroup(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t,env] = drawSurface(m2t, handle)
-    str = '';
+function [m2t,str] = drawSurface(m2t, handle)
+
     [m2t, opts, s] = shaderOpts(m2t, handle,'surf');
 
     % Allow for empty surf
     if isNone(s.plotType)
-        m2t.currentAxesContain3dData = true;
-        env = str;
+        str = '';
         return
     end
 
@@ -2410,19 +2413,33 @@ function [m2t,env] = drawSurface(m2t, handle)
         dy = dy(:) * ones(1,numrows);
     end
 
-    % Add 'z buffer=sort' to the options to make sphere plot and the like not
-    % overlap. There are different options here some of which may be more
-    % advantageous in other situations; check out Pgfplots' manual here.
-    % Since 'z buffer=sort' is computationally more expensive for LaTeX, try
-    % to avoid it for the most default situations, e.g., when dx and dy are
-    % rank-1-matrices.
-    % Enforce 'z buffer=sort' if shader is flat
-    if isempty(strfind(opts_get(opts, 'shader'),'interp')) ||...
-        any(~isnan(dx(1,:)) & dx(1,:) ~= dx(2,:)) ||...
-        any(~isnan(dy(:,1)) & dy(:,1) ~= dy(:,2))
+    % Enforce 'z buffer=sort' if shader is flat and is a 3D plot. It is to 
+    % avoid overlapping e.g. sphere plots and to properly mimic Matlab's 
+    % coloring of faces.
+    % NOTE:
+    % - 'z buffer=sort' is computationally more expensive for LaTeX, we 
+    %   could try to avoid it in some default situations, e.g. when dx and 
+    %   dy are rank-1-matrices.
+    % - hist3D plots should not be z-sorted or the highest bars will cover
+    %   the shortest one even if positioned in the back
+    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
+    isHist3D     = strcmpi(get(handle,'tag'),'hist3');
+    is3D         = m2t.axesContainers{end}.is3D;
+    if is3D && isShaderFlat && ~isHist3D
         opts = opts_add(opts, 'z buffer','sort');
     end
 
+    % Check if 3D
+    if is3D
+        columnNames = {'x','y','z','c'};
+        plotCmd     = 'addplot3';
+        data        = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
+    else
+        columnNames = {'x','y','c'};
+        plotCmd     = 'addplot';
+        data        = [dx(:), dy(:)];
+    end
+    
     % There are several possibilities of how colors are specified for surface
     % plots:
     %    * explicitly by RGB-values,
@@ -2430,31 +2447,26 @@ function [m2t,env] = drawSurface(m2t, handle)
     %    * implicitly through a color map with a given coordinate (e.g., z).
     %
 
-    % Check if we need extra CData.
+    % Check if we need extra CData
     CData = get(handle, 'CData');
     if length(size(CData)) == 3 && size(CData, 3) == 3
-        % Explicit RGB-coded colors.
-        opts = opts_add(opts,'mesh/color input','explicit');
-
-        formatType = 'table[row sep=crcr,header=false,meta index=3]';
-        r = CData(:, :, 1);
-        g = CData(:, :, 2);
-        b = CData(:, :, 3);
-        colorFormat = join(m2t, repmat({m2t.ff},[3 1]),',');
-        color = arrayfun(@(r,g,b)(sprintf(colorFormat,r,g,b)), ...
-            r(:),g(:),b(:),'UniformOutput',false);
-
-        %formatType = 'table[row sep=crcr,header=false]';
-        %formatString = [m2t.ff, ' ', m2t.ff, ' ', m2t.ff, '\\\\\n'];
-        %data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
-
-        %elseif length(size(colors)) > 2 || any(isnan(colors(:)))
-        %    needsPointmeta = false;
+        
+        % Create additional custom colormap
+        nrows = size(data,1);
+        CData = reshape(CData, nrows,3);
+        m2t.axesContainers{end}.options(end+1,:) = ...
+            {matlab2pgfplotsColormap(m2t, CData, 'patchmap'), []};
+        
+        % Index into custom colormap
+        color = (0:nrows-1)';
+        
+        % Table options
+        formatType = 'table[row sep=crcr, colormap name=surfmap, point meta=\thisrow{c}]';
+        
     else
         opts = opts_add(opts,matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap),'');
         % If NaNs are present in the color specifications, don't use them for
-        % Pgfplots; they may be interpreted as strings there. The option
-        % 'header=false' will be explicitly added.
+        % Pgfplots; they may be interpreted as strings there. 
         % Note:
         % Pgfplots actually does a better job than MATLAB in determining what
         % colors to use for the patches. The circular test case on
@@ -2463,37 +2475,28 @@ function [m2t,env] = drawSurface(m2t, handle)
         needsPointmeta = any(xor(isnan(dz(:)), isnan(CData(:)))) ...
             || any(abs(CData(:) - dz(:)) > 1.0e-10);
         if needsPointmeta
-            % Get color map.
-            formatType = 'table[row sep=crcr,header=false,point meta=\thisrowno{3}]';
-            color      = CData(:);
+            color = CData(:);
         else
-            formatType = 'table[row sep=crcr,header=false,point meta=\thisrowno{2}]';
-            color = '';
+            color = dz(:);      % Fallback on the z-values, especially if 2D view
         end
+        % Table options
+        formatType = 'table[row sep=crcr, point meta=\thisrow{c}]';
     end
-    data = applyHgTransform(m2t, [dx(:), dy(:), dz(:)]);
-
+    data = [data, color];
+        
     % Add mesh/rows=<num rows> for specifying the row data instead of empty
     % lines in the data list below. This makes it possible to reduce the
     % data writing to one single sprintf() call.
     opts = opts_add(opts,'mesh/rows',sprintf('%d', numrows));
+    
+    % Print the addplot options
+    str = sprintf('\n\\%s[%%\n%s,\n%s]', plotCmd, s.plotType, opts_print(m2t, opts, ','));
 
-    opts = opts_print(m2t, opts, ',\n');
-    str = [str, sprintf(['\n\\addplot3[%%\n%s,\n', opts ,']'], s.plotType)];
-
-    % TODO Check if surf plot is 'spectrogram' or 'surf' and run corresponding
-    % algorithm.
-    % Spectrograms need to have the grid removed,
-    % m2t.axesContainers{end}.options{end+1} = 'grid=none';
-    % Here is where everything is put together.
-    tabArgs = {'',data(:,1),'',data(:,2),'',data(:,3)};
-    if ~isempty(color)
-        tabArgs(end+1:end+2) = {'',color};
-    end
-    [m2t, table] = makeTable(m2t, tabArgs{:});
-
+    % Print the data
+    [m2t, table] = makeTable(m2t, columnNames, data);
+    
+    % Here is where everything is put together
     str = sprintf('%s\n%s {%%\n%s};\n', str, formatType, table);
-    env = str;
 
     % TODO:
     % - remove grids in spectrogram by either removing grid command
@@ -2504,8 +2507,6 @@ function [m2t,env] = drawSurface(m2t, handle)
         [m2t, label] = addLabel(m2t);
         str = [str, label]; %#ok
     end
-
-    m2t.currentAxesContain3dData = true;
 end
 % ==============================================================================
 function [m2t, str] = drawVisibleText(m2t, handle)
@@ -2620,36 +2621,36 @@ end
 function [m2t,posString] = getPositionOfText(m2t, h)
 % makes the tikz position string of a text object
     pos   = get(h, 'Position');
-    npos  = length(pos);
     units = get(h, 'Units');
     xlim  = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
     ylim  = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
     zlim  = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
     
-    is3D = false;
+    is3D = m2t.axesContainers{end}.is3D;
     
-    switch npos
-        % Check if 3D
-        case 3
-            if pos(3) ~= 0
-                is3D = true;
+    try 
+        cl = class(handle(h));
+    catch
+        cl = '';
+    end
+    switch cl
+        case {'text', 'matlab.graphics.primitive.Text'}
+            if is3D
                 pos  = applyHgTransform(m2t, pos);
+                npos = 3;
             else
                 pos  = pos(1:2);
                 npos = 2;
             end
-            
-        % Textbox
-        case 4
+        case {'scribe.textbox', 'matlab.graphics.shape.TextBox'}
             % TODO:
             %   - size of the box (e.g. using node attributes minimum width / height)
             %   - Alignment of the resized box
-            pos = pos(1:2);
+            pos  = pos(1:2);
             npos = 2;
-            
+        
         otherwise
-            error('matlab2tikz:drawText', ...
-                'Illegal text position specification.');
+            error('matlab2tikz:drawText', 'Unrecognized text class: %s.', cl);
     end    
     
     % Format according to units
@@ -2949,7 +2950,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
-    if isempty(zData)
+    if ~m2t.axesContainers{end}.is3D
         env = 'addplot';
         if length(sData) == 1
             nColumns = 2;
@@ -2961,7 +2962,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         end
     else
         env = 'addplot3';
-        m2t.currentAxesContain3dData = true;
         if length(sData) == 1
             nColumns = 3;
             data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
@@ -3326,13 +3326,13 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     str = '';
 
-    [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h);
-
+    [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t,h);
+    
+    
     % prepare output
     if is3D
         name = 'addplot3';
         format = [m2t.ff,',',m2t.ff,',',m2t.ff];
-        m2t.currentAxesContain3dData = true;
     else % 2D plotting
         name   = 'addplot';
         format = [m2t.ff,',',m2t.ff];
@@ -3392,7 +3392,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     %FIXME: external
 end
 % ==============================================================================
-function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h)
+function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t, h)
 % get and rescale the arrows from a quivergroup object
     x = get(h, 'XData');
     y = get(h, 'YData');
@@ -3401,13 +3401,11 @@ function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(h)
     u = get(h, 'UData');
     v = get(h, 'VData');
     w = getOrDefault(h, 'WData', []);
-
-    if isempty(z)
+    
+    is3D = m2t.axesContainers{end}.is3D;
+    if ~is3D
         z = 0;
         w = 0;
-        is3D  = false;
-    else
-        is3D = true;
     end
 
     % MATLAB uses a scaling algorithm to determine the size of the arrows.
@@ -4904,9 +4902,9 @@ function opts = addIfNotDefault(m2t, type, handle, key, default, pgfKey, opts)
     end
 end
 % ==============================================================================
-function out = isVisible(handles)
+function bool = isVisible(handles)
 % Determines whether an object is actually visible or not.
-    out = strcmp(get(handles,'Visible'), 'on');
+    bool = strcmp(get(handles,'Visible'), 'on');
     % There's another handle property, 'HandleVisibility', which may or may not
     % determine the visibility of the object. Empirically, it seems to be 'off'
     % whenever we're dealing with an object that's not user-created, such as
@@ -5691,29 +5689,23 @@ function [env,versionString] = getEnvironment()
     versionString = '';
 end
 % ==============================================================================
-function isHG2 = isHG2(m2t)
+function bool = isHG2(m2t)
 % Checks if graphics system is HG2 (true) or HG1 (false).
 % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
 % HG2 : MATLAB starting from R2014b (version 8.4)
-    isHG2 = false;
-    if strcmpi(m2t.env,'MATLAB') && ...
-        ~isVersionBelow(m2t.env, m2t.envVersion, [8,4])
-        isHG2 = true;
-    end
+    bool = strcmpi(m2t.env,'MATLAB') && ...
+           ~isVersionBelow(m2t.env, m2t.envVersion, [8,4]);
 end
 % ==============================================================================
-function isBelow = isVersionBelow(env, versionA, versionB)
+function bool = isVersionBelow(env, versionA, versionB)
 % Checks if versionA is smaller than versionB
     vA         = versionArray(env, versionA);
     vB         = versionArray(env, versionB);
     n          = min(length(vA), length(vB));
     deltaAB    = vA(1:n) - vB(1:n);
     difference = find(deltaAB, 1, 'first');
-    if isempty(difference)
-        isBelow = false; % equal versions
-    else
-        isBelow = (deltaAB(difference) < 0);
-    end
+    % Empty difference then same version
+    bool       = ~isempty(difference) && deltaAB(difference) < 0;
 end
 % ==============================================================================
 function str = formatDim(value, unit)
