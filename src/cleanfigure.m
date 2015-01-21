@@ -383,6 +383,7 @@ function movePointsCloser(meta, handle)
     return;
   end
 
+  numberOfPoints = length(xData);
   data = [xData(:), yData(:)];
 
   xlim = get(meta.gca, 'XLim');
@@ -438,7 +439,11 @@ function movePointsCloser(meta, handle)
   % Insert all r{k}{:} at replaceIndices[k].
   dataNew = [];
   lastReplIndex = 0;
+  lastEntryIsReplacement = false;
   for k = 1:m
+     % Make sure that two subsequent moved points are separated by a NaN entry.
+     % This is to make sure that there is no visible line between two moved
+     % points that wasn't there before.
      d = data(lastReplIndex+1:replaceIndices(k)-1,:);
      if size(r{k}, 1) == 2
          % Two replacement entries -- pad them with a NaN.
@@ -449,12 +454,26 @@ function movePointsCloser(meta, handle)
          rep = r{k};
      end
 
+     % If the current handle is a simple line of exactly two points the continue
+     % without the following check, since such a straight line has should not be
+     % discontinued by a 'NaN' entry.
+     if numberOfPoints > 2
+         % If the last entry was a replacement and it is followed now by another
+         % replacment, then prepend a 'NaN' to prevent drawing of a connecting line.
+         if isempty(d) && ~isempty(rep) && lastEntryIsReplacement
+             rep = [NaN(1, size(r{k}, 2)); ...
+                    rep];
+         end
+     end
+
      % Add the data, depending if it is a valid point or a replacement
      if ~isempty(d)     % Add current point from valid point 'd'
          dataNew = [dataNew; d];
+         lastEntryIsReplacement = false;
      end
      if ~isempty(rep)   % Add current point from replacement point 'rep'
          dataNew = [dataNew; rep];
+         lastEntryIsReplacement = true;
      end
 
      % Store last replacement index
