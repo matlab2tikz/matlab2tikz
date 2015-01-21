@@ -454,15 +454,30 @@ function movePointsCloser(meta, handle)
          rep = r{k};
      end
 
-     % If the current handle is a simple line of exactly two points the continue
-     % without the following check, since such a straight line has should not be
-     % discontinued by a 'NaN' entry.
-     if numberOfPoints > 2
-         % If the last entry was a replacement and it is followed now by another
-         % replacment, then prepend a 'NaN' to prevent drawing of a connecting line.
-         if isempty(d) && ~isempty(rep) && lastEntryIsReplacement
-             rep = [NaN(1, size(r{k}, 2)); ...
-                    rep];
+     % Don't draw line, if connecting line would be completely outside axis.
+     % We can check this using a line clipping algorithm.
+     % Illustration of the problem:
+     % http://www.cc.gatech.edu/grads/h/Hao-wei.Hsieh/Haowei.Hsieh/sec1_example.html
+     % This boils down to a line intersects line test, where all four lines of
+     % the axis rectangle need to be considered.
+     %
+     % First consider two easy cases:
+     % 1. This can't be the case, if last point was not replaced, because it is
+     %    inside the axis limits ('lastEntryIsReplacement == 0').
+     % 2. This can't be the case, if the current point will not be replace,
+     %    because it is inside the axis limits.
+     %    ( (isempty(d) && ~isempty(rep) == 0 ).
+     if lastEntryIsReplacement && (isempty(d) && ~isempty(rep))
+         % Now check if the connecting line goes through the axis rectangle.
+         % TODO: Code that check!
+         bLineOutsideAxis = 0;
+
+         % If line is completly outside the axis, don't draw the line. This is
+         % achieved by adding a NaN and necessary, because the two points are
+         % moved close to the axis limits and thus would afterwards show a
+         % connecting line in the axis.
+         if bLineOutsideAxis
+             rep = [NaN(1, size(r{k}, 2)); rep];
          end
      end
 
