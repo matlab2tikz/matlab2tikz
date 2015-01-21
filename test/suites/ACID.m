@@ -132,7 +132,8 @@ function [status] = ACID(k)
                            @colorbarLabelTitle  , ...
                            @textAlignment       , ...
                            @overlappingPlots    ,...
-                           @histogramPlot
+                           @histogramPlot       ,...
+                           @cleanfigure_movePointsCloser
                          };
 
 
@@ -2467,6 +2468,36 @@ function [stat] = histogramPlot()
   hold on
   h = histogram(y);
   set(h, 'orientation', 'horizontal');
+end
+% =========================================================================
+function [stat] = cleanfigure_movePointsCloser()
+  % test function 'movePiontsClose' that is part of 'cleanfigure'
+  stat.description = ['Test function \texttt{movePointsCloser()} ', ...
+                        'of \texttt{cleanfigure()}.'];
+  stat.issues      = [392,400];
+
+  % all points are outside visible axis
+  points1 = [2 2 3 3 4 4; ... % x coordinates
+             2 6 2 6 2 6];    % y coordinates
+  % some points are outside visible axis
+  points2 = [1 2 2.5 3 4; ... % x coordinates
+             2 3 3.5 5 1];    % y coordinates
+
+  % unzoomed subplot
+  subplot(2,1,1);
+  plot(points1(1,:),points1(2,:),'b-x'); hold on;
+  plot(points2(1,:),points2(2,:),'r-o');
+  title('unzoomed subplot');
+
+  % zoomed subplot (vertically)
+  subplot(2,1,2);
+  plot(points1(1,:),points1(2,:),'b-x'); hold on;
+  plot(points2(1,:),points2(2,:),'r-o');
+  axis([1 4 2.5 4]);
+  title('vertically zoomed subplot');
+
+  % force application of 'cleanfigure()'; don't rely on testsuite
+  cleanfigure();
 end
 % =========================================================================
 function env = getEnvironment
