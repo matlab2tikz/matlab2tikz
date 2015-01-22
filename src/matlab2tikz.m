@@ -2437,8 +2437,8 @@ function m2t = drawAnnotationsHelper(m2t,h)
             [m2t, str] = drawEllipse(m2t, h);
         
         % Arrows 
-        case {'scribe.arrow', 'scribe.doublearrow',...
-              'matlab.graphics.shape.Arrow', 'matlab.graphics.shape.DoubleEndArrow'}
+        case {'scribe.arrow', 'scribe.doublearrow'}%,...
+              %'matlab.graphics.shape.Arrow', 'matlab.graphics.shape.DoubleEndArrow'}
             % Annotation: single and double Arrow, line
             % TODO: 
             % - write a drawArrow(). Handle all info info directly
@@ -2813,10 +2813,10 @@ function [m2t, str] = drawRectangle(m2t, h)
 
     colorOptions = cell(0);
     % fill color
-    faceColor  = get(h, 'FaceColor');
-    isFlatAnnotation = strcmpi(class(handle(h)),'scribe.scriberect') &&...
-                       strcmpi(faceColor, 'flat');
-    if ~(isNone(faceColor) || isFlatAnnotation)
+    faceColor    = get(h, 'FaceColor');
+    isAnnotation = strcmp(get(h,'type'),'rectangleshape') || strcmp(get(h,'ShapeType'),'rectangle');
+    isFlatColor  = strcmp(faceColor, 'flat');
+    if ~(isNone(faceColor) || (isAnnotation && isFlatColor))
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
         colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
