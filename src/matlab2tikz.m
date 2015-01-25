@@ -3205,10 +3205,23 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
     prop         = switchMatOct(m2t, 'BarPeers', 'bargroup');
     bargroup     = get(h, prop);
     numBarSeries = numel(bargroup);
+    
     if isHG2(m2t)
+        % In HG2, BarPeers are sorted in reverse order wrt HG1
         bargroup = bargroup(end:-1:1);
+    
+    elseif strcmpi(m2t.env,'MATLAB')
+        % In HG1, h is a double but bargroup a graphic object. Cast h to a
+        % graphic object
+        h = handle(h);
+    
+    else
+        % In Octave, the bargroup is a replicated cell array. Pick first 
+        bargroup = bargroup{1};
     end
-    [dummy, barSeriesId] = ismember(handle(h), bargroup); %#ok
+    
+    % Get bar series Id
+    [dummy, barSeriesId] = ismember(h, bargroup);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
