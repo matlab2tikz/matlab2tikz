@@ -3144,15 +3144,20 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
     bargroup     = get(h, prop);
     numBarSeries = numel(bargroup);
     
-    % HG2 handling:
-    % - BarPeers are sorted in reversed order wrt HG1
+    
     if isHG2(m2t)
+        % In HG2, BarPeers are sorted in reverse order wrt HG1
         bargroup = bargroup(end:-1:1);
+    
+    elseif strcmpi(m2t.env,'MATLAB')
+        % In HG1, h is a double but bargroup a graphic object. Cast h to a
+        % graphic object
+        h = handle(h);
+    
+    else
+        % In Octave, the bargroup is a replicated cell array. Pick first 
+        bargroup = bargroup{1};
     end
-    % - Ensure graphic classes are double handles 
-    %   NOTE: Octave does not support handle()
-    h        = double(h);
-    bargroup = double(bargroup);
     
     % Get bar series Id
     [~, barSeriesId] = ismember(h, bargroup);
