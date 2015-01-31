@@ -1690,10 +1690,12 @@ function [stat] = latexmath2()
 end
 % =========================================================================
 function [stat] = parameterCurve3d()
-  stat.description = 'Parameter curve in 3D.';
+  stat.description = 'Parameter curve in 3D with text boxes in-/outise axis.';
+  stat.issues = 378;
 
   ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
-  text(0.5, 0.5, 10, 'abs');
+  text(0.5, 0.5, 10, 'text inside axis limits');
+  text(0.0, 1.5, 10, 'text outside axis (will be removed by cleanfigure())');
 end
 % =========================================================================
 function [stat] = parameterSurf()
@@ -2372,7 +2374,8 @@ function [stat] = colorbarLabelTitle()
 end
 % =========================================================================
 function [stat] = textAlignment()
-    stat.description = 'vertical and horizontal alignment of text boxes';
+    stat.description = 'alignment of text boxes and position relative to axis';
+    stat.issues = 378;
 
     plot([0.0 2.0], [1.0 1.0],'k'); hold on;
     plot([0.0 2.0], [0.5 0.5],'k');
@@ -2402,6 +2405,15 @@ function [stat] = textAlignment()
     h_t = text(1.5,0.5,{'h=l, v=t','multiline'}, ...
         'HorizontalAlignment','left','VerticalAlignment','top');
     set(h_t,'BackgroundColor','g');
+
+    text(0.5,2.1, 'text outside axis (will be removed by cleanfigure())');
+    text(1.8,0.7, {'text overlapping', 'axis limits'});
+    text(-0.2,0.7, {'text overlapping', 'axis limits'});
+    text(0.9,0.0, {'text overlapping', 'axis limits'});
+    h_t = text(0.9,2.0, {'text overlapping', 'axis limits'});
+    
+    % Set different units to test if they are properly handled
+    set(h_t, 'Units', 'centimeters');
 end
 % =========================================================================
 function [stat] = overlappingPlots()
