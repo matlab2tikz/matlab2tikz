@@ -143,8 +143,7 @@ function pruneOutsideBox(meta, handle)
   yData = get(handle, 'YData');
 
   % Obtain zData, if available
-  handleFields = get(handle);
-  if isfield(handleFields, 'ZData')
+  if isprop(handle, 'ZData')
     zData = get(handle, 'ZData');
   else
     zData = [];
