@@ -2814,7 +2814,7 @@ function [m2t, str] = drawRectangle(m2t, h)
     colorOptions = cell(0);
     % fill color
     faceColor    = get(h, 'FaceColor');
-    isAnnotation = strcmp(get(h,'type'),'rectangleshape') || strcmp(get(h,'ShapeType'),'rectangle');
+    isAnnotation = strcmp(get(h,'type'),'rectangleshape') || strcmp(getOrDefault(h,'ShapeType',''),'rectangle');
     isFlatColor  = strcmp(faceColor, 'flat');
     if ~(isNone(faceColor) || (isAnnotation && isFlatColor))
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
