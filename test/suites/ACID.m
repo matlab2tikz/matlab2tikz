@@ -559,30 +559,37 @@ function [stat] = moreLegends()
 end
 % =========================================================================
 function [stat] = zoom()
-  stat.description = 'Plain cosine function, zoomed in.';
+    stat.description = ['Test function \texttt{pruneOutsideBox()} ', ...
+                        'of \texttt{cleanfigure()}.'];
+    stat.issues = 226;
 
-  fplot( @sin, [0,2*pi], '-*' );
-  hold on;
-  delta = pi/10;
+    % Setup
+    subplot(311)
+    title setup
+    hold on
+    plot(1:10,10:-1:1,'-r*',1:15,repmat(9,1,15),'-g*',[5.5,5.5],[1,9],'-b*')
+    stairs(1:10,'-m*')
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
+    legend('cross with points','no cross','cross no points','stairs','zoom area')
 
-  plot( [pi/2, pi/2], [1-2*delta, 1+2*delta], 'r' ); % vertical line
-  plot( [pi/2-2*delta, pi/2+2*delta], [1, 1], 'g' ); % horizontal line
+    % Last comes before simple zoomin due to cleanfigure
+    subplot(313)
+    title 'zoom in, cleanfigure, zoom out'
+    hold on
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
+    stairs(1:10,'-m*')
+    xlim([2, 8.5]), ylim([2,7.5])
+    cleanfigure()
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
+    xlim([0, 15]), ylim([0,10])
 
-  % diamond
-  plot( [ pi/2-delta, pi/2 , pi/2+delta, pi/2 , pi/2-delta ], ...
-        [ 1       , 1-delta,        1, 1+delta, 1        ], 'y'      );
-
-  % boundary lines with markers
-  plot([ pi/2-delta, pi/2 , pi/2+delta, pi/2+delta pi/2+delta, pi/2, pi/2-delta, pi/2-delta ], ...
-       [ 1-delta, 1-delta, 1-delta, 1, 1+delta, 1+delta, 1+delta, 1 ], ...
-       'ok', ...
-       'MarkerSize', 20, ...
-       'MarkerFaceColor', 'g' ...
-       );
-
-  hold off;
-
-  axis([pi/2-delta, pi/2+delta, 1-delta, 1+delta] );
+    % Simple zoom in
+    subplot(312)
+    title 'zoom in'
+    hold on
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
+    stairs(1:10,'-m*')
+    xlim([2, 8.5]), ylim([2,7.5])
 end
 % =========================================================================
 function [stat] = bars()
