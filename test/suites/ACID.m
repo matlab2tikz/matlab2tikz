@@ -130,7 +130,10 @@ function [status] = ACID(k)
                            @imageOrientation_inline, ...
                            @texInterpreter      , ...
                            @stackedBarsWithOther, ...
-                           @colorbarLabelTitle
+                           @colorbarLabelTitle  , ...
+                           @textAlignment       , ...
+                           @overlappingPlots    ,...
+                           @histogramPlot
                          };
 
 
@@ -539,30 +542,37 @@ function [stat] = moreLegends()
 end
 % =========================================================================
 function [stat] = zoom()
-  stat.description = 'Plain cosine function, zoomed in.';
+    stat.description = ['Test function \texttt{pruneOutsideBox()} ', ...
+                        'of \texttt{cleanfigure()}.'];
+    stat.issues = 226;
 
-  fplot( @sin, [0,2*pi], '-*' );
-  hold on;
-  delta = pi/10;
+    % Setup
+    subplot(311)
+    title setup
+    hold on
+    plot(1:10,10:-1:1,'-r*',1:15,repmat(9,1,15),'-g*',[5.5,5.5],[1,9],'-b*')
+    stairs(1:10,'-m*')
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
+    legend('cross with points','no cross','cross no points','stairs','zoom area')
 
-  plot( [pi/2, pi/2], [1-2*delta, 1+2*delta], 'r' ); % vertical line
-  plot( [pi/2-2*delta, pi/2+2*delta], [1, 1], 'g' ); % horizontal line
+    % Last comes before simple zoomin due to cleanfigure
+    subplot(313)
+    title 'zoom in, cleanfigure, zoom out'
+    hold on
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
+    stairs(1:10,'-m*')
+    xlim([2, 8.5]), ylim([2,7.5])
+    cleanfigure()
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
+    xlim([0, 15]), ylim([0,10])
 
-  % diamond
-  plot( [ pi/2-delta, pi/2 , pi/2+delta, pi/2 , pi/2-delta ], ...
-        [ 1       , 1-delta,        1, 1+delta, 1        ], 'y'      );
-
-  % boundary lines with markers
-  plot([ pi/2-delta, pi/2 , pi/2+delta, pi/2+delta pi/2+delta, pi/2, pi/2-delta, pi/2-delta ], ...
-       [ 1-delta, 1-delta, 1-delta, 1, 1+delta, 1+delta, 1+delta, 1 ], ...
-       'ok', ...
-       'MarkerSize', 20, ...
-       'MarkerFaceColor', 'g' ...
-       );
-
-  hold off;
-
-  axis([pi/2-delta, pi/2+delta, 1-delta, 1+delta] );
+    % Simple zoom in
+    subplot(312)
+    title 'zoom in'
+    hold on
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
+    stairs(1:10,'-m*')
+    xlim([2, 8.5]), ylim([2,7.5])
 end
 % =========================================================================
 function [stat] = bars()
@@ -1060,6 +1070,7 @@ end
 % =========================================================================
 function [stat] = axesLocation()
   stat.description = 'Swapped axis locations.';
+  stat.issues = 259;
 
   plot(cos(1:10));
   set(gca,'XAxisLocation','top');
@@ -1322,7 +1333,7 @@ function [stat] = decayingharmonic()
   t = 0:901;
   y = A * exp(-alpha*t) .* sin(beta*t);
   plot(t, y)
-  title('{\itAe}^{-\alpha\itt}sin\beta{\itt}, \alpha<<\beta, \beta>>\alpha, \alpha<\beta, \beta>\alpha')
+  title('{\itAe}^{-\alpha\itt}sin\beta{\itt}, \alpha<<\beta, \beta>>\alpha, \alpha<\beta, \beta>\alpha, b>a')
   xlabel('Time \musec.')
   ylabel('Amplitude')
 end
@@ -1682,10 +1693,12 @@ function [stat] = latexmath2()
 end
 % =========================================================================
 function [stat] = parameterCurve3d()
-  stat.description = 'Parameter curve in 3D.';
+  stat.description = 'Parameter curve in 3D with text boxes in-/outise axis.';
+  stat.issues = 378;
 
   ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
-  text(0.5, 0.5, 10, 'abs');
+  text(0.5, 0.5, 10, 'text inside axis limits');
+  text(0.0, 1.5, 10, 'text outside axis (will be removed by cleanfigure())');
 end
 % =========================================================================
 function [stat] = parameterSurf()
@@ -2330,12 +2343,12 @@ function [stat] = stackedBarsWithOther()
   yVals = min((xVals).^2, sum(Y,2));
 
   subplot(2,1,1); hold on;
-  bar(Y,'stack');
+  bar(Y,'stacked');
   plot(xVals, yVals, 'Color', 'r', 'LineWidth', 2);
   legend('show');
 
   subplot(2,1,2); hold on;
-  b2 = barh(Y,'stack','BarWidth', 0.75);
+  b2 = barh(Y,'stacked','BarWidth', 0.75);
   plot(yVals, xVals, 'Color', 'b', 'LineWidth', 2);
 
   set(b2(1),'FaceColor','c','EdgeColor','none')
@@ -2370,3 +2383,101 @@ function [stat] = colorbarLabelTitle()
     title(hc,title_multiline);
     xlabel(hc,label_multiline);
 end
+% =========================================================================
+function [stat] = textAlignment()
+    stat.description = 'alignment of text boxes and position relative to axis';
+    stat.issues = 378;
+
+    plot([0.0 2.0], [1.0 1.0],'k'); hold on;
+    plot([0.0 2.0], [0.5 0.5],'k');
+    plot([0.0 2.0], [1.5 1.5],'k');
+    plot([1.0 1.0], [0.0 2.0],'k');
+    plot([1.5 1.5], [0.0 2.0],'k');
+    plot([0.5 0.5], [0.0 2.0],'k');
+
+    text(1.0,1.0,'h=c, v=m', ...
+        'HorizontalAlignment','center','VerticalAlignment','middle');
+    text(1.5,1.0,'h=l, v=m', ...
+        'HorizontalAlignment','left','VerticalAlignment','middle');
+    text(0.5,1.0,'h=r, v=m', ...
+        'HorizontalAlignment','right','VerticalAlignment','middle');
+
+    text(0.5,1.5,'h=r, v=b', ...
+        'HorizontalAlignment','right','VerticalAlignment','bottom');
+    text(1.0,1.5,'h=c, v=b', ...
+        'HorizontalAlignment','center','VerticalAlignment','bottom');
+    text(1.5,1.5,'h=l, v=b', ...
+        'HorizontalAlignment','left','VerticalAlignment','bottom');
+
+    text(0.5,0.5,'h=r, v=t', ...
+        'HorizontalAlignment','right','VerticalAlignment','top');
+    text(1.0,0.5,'h=c, v=t', ...
+        'HorizontalAlignment','center','VerticalAlignment','top');
+    h_t = text(1.5,0.5,{'h=l, v=t','multiline'}, ...
+        'HorizontalAlignment','left','VerticalAlignment','top');
+    set(h_t,'BackgroundColor','g');
+
+    text(0.5,2.1, 'text outside axis (will be removed by cleanfigure())');
+    text(1.8,0.7, {'text overlapping', 'axis limits'});
+    text(-0.2,0.7, {'text overlapping', 'axis limits'});
+    text(0.9,0.0, {'text overlapping', 'axis limits'});
+    h_t = text(0.9,2.0, {'text overlapping', 'axis limits'});
+    
+    % Set different units to test if they are properly handled
+    set(h_t, 'Units', 'centimeters');
+end
+% =========================================================================
+function [stat] = overlappingPlots()
+    stat.description = 'Overlapping plots with zoomed data and varying background.';
+    stat.issues = 6;
+
+    % create pseudo random data and convert it from matrix to vector
+    l = 256;
+    l_zoom = 64;
+    wave = sin(linspace(1,10*2*pi,l));
+
+    % plot data
+    ax1 = axes();
+    plot(ax1, wave);
+
+    % overlapping plots with zoomed data
+    ax3 = axes('Position', [0.2, 0.6, 0.3, 0.4]);
+    ax4 = axes('Position', [0.7, 0.2, 0.2, 0.4]);
+    ax2 = axes('Position', [0.25, 0.3, 0.3, 0.4]);
+
+    plot(ax2, 1:l_zoom, wave(1:l_zoom), 'r');
+    plot(ax3, 1:l_zoom, wave(1:l_zoom), 'k');
+    plot(ax4, 1:l_zoom, wave(1:l_zoom), 'k');
+
+    % set x-axis limits of main plot and first subplot
+    xlim(ax1, [1,l]);
+    xlim(ax3, [1,l_zoom]);
+
+    % axis background color: ax2 = default, ax3 = green, ax4 = transparent
+    set(ax3, 'Color', 'green');
+    set(ax4, 'Color', 'none');
+end
+% =========================================================================
+function [stat] = histogramPlot()
+  % histogram() was introduced in Matlab R2014b, hence skip if we are in
+  % Octave or version lower Matlab version. TODO: later replace by 'isHG2()'
+  env = getEnvironment();
+  if strcmpi(env,'MATLAB') && isVersionBelow(env, 8,4)
+      fprintf('histogram() not found. Skipping.\n\n' );
+      stat.skip = true;
+      return;
+  end
+  stat.description = 'overlapping histogram() plots and custom size bins';
+  stat.issues      = 525;
+
+  x     = [-0.2, -0.484, 0.74, 0.632, -1.344, 0.921, -0.598, -0.727,...
+           -0.708, 1.045, 0.37, -1.155, -0.807, 1.027, 0.053, 0.863,...
+           1.131, 0.134, -0.017, -0.316];
+  y     = x.^2;
+  edges = [-2 -1:0.25:3];
+  histogram(x,edges);
+  hold on
+  h = histogram(y);
+  set(h, 'orientation', 'horizontal');
+end
+% =========================================================================
