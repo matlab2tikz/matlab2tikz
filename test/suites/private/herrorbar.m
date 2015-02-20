@@ -92,11 +92,11 @@ end
 u = abs(u);
 l = abs(l);
 
-if ischar(x) | ischar(y) | ischar(u) | ischar(l)
+if ischar(x) || ischar(y) || ischar(u) || ischar(l)
     error('Arguments must be numeric.')
 end
 
-if ~isequal(size(x),size(y)) | ~isequal(size(x),size(l)) | ~isequal(size(x),size(u)),
+if ~isequal(size(x),size(y)) || ~isequal(size(x),size(l)) || ~isequal(size(x),size(u)),
     error('The sizes of X, Y, L and U must be the same.');
 end
 
