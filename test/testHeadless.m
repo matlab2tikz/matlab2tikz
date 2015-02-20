@@ -35,7 +35,7 @@ end
 
 function status = actionsToExecute(status, ipp)
     status = execute_plot_stage(status, ipp);
-    
+
     if status.skip
         return
     end
@@ -45,7 +45,11 @@ function status = actionsToExecute(status, ipp)
     status = execute_type_stage(status, ipp);
 
     if ~status.closeall && ~isempty(status.plotStage.fig_handle)
-        close(status.plotStage.fig_handle);
+        try
+            close(status.plotStage.fig_handle);
+        catch
+            close('all');
+        end
     else
         close all;
     end
