@@ -17,7 +17,7 @@ function status = testMatlab2tikz(varargin)
 %
 % TESTMATLAB2TIKZ('figureVisible', LOGICAL, ...)
 %   plots the figure visibly during the test process. Default: false
-% 
+%
 % TESTMATLAB2TIKZ('testsuite', FUNCTION_HANDLE, ...)
 %   Determines which test suite is to be run. Default: @ACID
 %   A test suite is a function that takes a single integer argument, which:
@@ -58,17 +58,17 @@ function status = testMatlab2tikz(varargin)
 
   % -----------------------------------------------------------------------
   ipp = m2tInputParser;
-  
+
   ipp = ipp.addOptional(ipp, 'testFunctionIndices', [], @isfloat);
   ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'actionsToExecute', @(varargin) varargin{1}, @isFunction);
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @isFunction );
-  
+
   ipp = ipp.parse(ipp, varargin{:});
-  
+
   ipp = sanitizeInputs(ipp);
-  
+
   % -----------------------------------------------------------------------
   stdout = 1;
   if strcmp(env, 'Octave') && ~ipp.Results.figureVisible
@@ -80,7 +80,7 @@ function status = testMatlab2tikz(varargin)
   % start overall timing
   elapsedTimeOverall = tic;
   status = runIndicatedTests(ipp);
-  
+
   % print out overall timing
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
@@ -127,25 +127,25 @@ function status = runIndicatedTests(ipp)
     testsuiteName = func2str(testsuite);
     stdout = 1;
     status = cell(length(indices), 1);
-    
+
     for k = 1:length(indices)
         testNumber = indices(k);
-        
+
         fprintf(stdout, 'Executing %s test no. %d...\n', testsuiteName, indices(k));
-        
+
         status{k} = emptyStatus(testsuite, testNumber);
 
         elapsedTime = tic;
 
         status{k} = feval(ipp.Results.actionsToExecute, status{k}, ipp);
-        
+
         elapsedTime = toc(elapsedTime);
         status{k}.elapsedTime = elapsedTime;
         fprintf(stdout, '%s ', status{k}.function);
         if status{k}.skip
-            fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
-        else    
             fprintf(stdout, 'skipped (%4.2fs).\n\n', elapsedTime);
+        else
+            fprintf(stdout, 'done (%4.2fs).\n\n', elapsedTime);
         end
     end
 end
