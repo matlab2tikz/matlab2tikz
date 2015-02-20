@@ -156,6 +156,7 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
@@ -252,6 +253,7 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
+  stat.unreliable = isOctave; %FIXME: investigate
 
   x = -pi:.1:pi;
   y = sin(x);
@@ -285,7 +287,7 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
-  stat.unreliable = isMATLAB('<', [8,4]); %R2014a and older
+  stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -486,6 +488,7 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   imagesc([1 10 100]);
   try
@@ -577,8 +580,8 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
-  
+  stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
+
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
   numEntries = length(bins);
@@ -614,7 +617,6 @@ end
 % =========================================================================
 function [stat] = stemplot()
   stat.description = 'A simple stem plot.' ;
-  stat.unreliable = isOctave;
 
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
@@ -691,7 +693,6 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isOctave;
 
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
@@ -700,7 +701,6 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isOctave;
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -709,7 +709,6 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isOctave;
 
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
@@ -717,6 +716,8 @@ end
 % =========================================================================
 function [stat] = logicalImage()
   stat.description = 'An image plot of logical matrix values.' ;
+  stat.unreliable = isOctave; %FIXME: investigate
+
 
   [plotData,dummy,dummy] = svd(magic(10)); %#ok
   imagesc(plotData > mean(plotData(:)));
@@ -724,6 +725,7 @@ end
 % =========================================================================
 function [stat] = imagescplot()
   stat.description = 'An imagesc plot of $\sin(x)\cos(y)$.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   pointsX = 10;
   pointsY = 20;
@@ -735,6 +737,7 @@ end
 % =========================================================================
 function [stat] = imagescplot2()
   stat.description = 'A trimmed imagesc plot.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   a=magic(10);
   x=-5:1:4;
@@ -982,6 +985,7 @@ end
 % =========================================================================
 function [stat] = besselImage()
   stat.description = 'Bessel function.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1177,6 +1181,7 @@ end
 % =========================================================================
 function [stat] = spherePlot()
   stat.description = 'Plot a sphere.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   sphere(30);
   title('a sphere: x^2+y^2+z^2');
@@ -1312,6 +1317,7 @@ end
 % =========================================================================
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   [x,s,v] = svd(magic(33));
   x = x(end:-1:end-1000);
@@ -1771,7 +1777,7 @@ end
 % =========================================================================
 function [stat] = herrorbarPlot()
   stat.description = 'herrorbar plot.';
-  stat.unreliable = isOctave;
+  
 
   hold on;
   X = 1:10;
@@ -1856,6 +1862,7 @@ end
 % =========================================================================
 function [stat] = customLegend()
   stat.description = 'Custom legend.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -1931,8 +1938,12 @@ end
 % =========================================================================
 function [stat] = hgTransformPlot()
   stat.description = 'hgtransform() plot.';
-  stat.unreliable = isOctave;
 
+  if isOctave
+      % Octave (3.8.0) has no implementation of `hgtransform`
+      stat.skip = true;
+      return;
+  end
   % Check out
   % http://www.mathworks.de/de/help/matlab/ref/hgtransform.html.
 
@@ -1969,6 +1980,7 @@ end
 % =========================================================================
 function [stat] = alphaImage()
   stat.description = 'Image with alpha channel.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   N = 20;
   h_imsc = imagesc(repmat(1:N, N, 1));
@@ -2256,12 +2268,12 @@ end
 function [stat] = imageOrientation_inline()
 % Run test and save pictures as inline TikZ code
     [stat] = imageOrientation(false);
-    stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+    stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
 end
 function [stat] = imageOrientation_PNG()
 % Run test and save pictures as external PNGs
     [stat] = imageOrientation(true);
-    stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+    stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
 end
 function [stat] = imageOrientation(imagesAsPng)
 % Parameter 'imagesAsPng' is boolean
@@ -2356,7 +2368,7 @@ end
 % =========================================================================
 function [stat] = colorbarLabelTitle()
     stat.description = 'colorbar with label and title';
-    stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+    stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
     stat.issues = 429;
 
     % R2014b handles colorbars smart:  `XLabel` and `YLabel` merged into `Label`
@@ -2387,6 +2399,7 @@ end
 function [stat] = textAlignment()
     stat.description = 'alignment of text boxes and position relative to axis';
     stat.issues = 378;
+    stat.unreliable = isOctave; %FIXME: investigate
 
     plot([0.0 2.0], [1.0 1.0],'k'); hold on;
     plot([0.0 2.0], [0.5 0.5],'k');
@@ -2459,11 +2472,10 @@ function [stat] = overlappingPlots()
 end
 % =========================================================================
 function [stat] = histogramPlot()
-  % histogram() was introduced in Matlab R2014b, hence skip if we are in
-  % Octave or version lower Matlab version. TODO: later replace by 'isHG2()'
-  env = getEnvironment();
-  if strcmpi(env,'MATLAB') && isVersionBelow(env, 8,4)
-      fprintf('histogram() not found. Skipping.\n\n' );
+  if isOctave || isMATLAB('<', [8,4])
+      % histogram() was introduced in Matlab R2014b.
+      % TODO: later replace by 'isHG2()'
+      fprintf('histogram() not found. Skipping.\n' );
       stat.skip = true;
       return;
   end
