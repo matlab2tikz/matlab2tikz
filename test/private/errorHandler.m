@@ -4,10 +4,10 @@ function [stage, errorHasOccurred] = errorHandler(e)
     stage = emptyStage();
     stage.message = format_error_message(e);
     stage.error   = errorHasOccurred;
-    
+
     disp_error_message(stage.message);
 end
-% =========================================================================
+% ==============================================================================
 function msg = format_error_message(e)
     msg = '';
     if ~isempty(e.message)
@@ -30,6 +30,7 @@ function msg = format_error_message(e)
         end
     end
 end
+% ==============================================================================
 function disp_error_message(msg)
     stderr = 2;
     % When displaying the error message in MATLAB, all backslashes
@@ -43,3 +44,4 @@ function disp_error_message(msg)
             fprintf(stderr, msg);
     end
 end
+% ==============================================================================

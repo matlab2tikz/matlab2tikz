@@ -19,11 +19,11 @@ numFunctions = length( testfunction_handles );
 if nargin < 1 || isempty(k) || k <= 0
     status = testfunction_handles;
     return;  % This is used for querying numFunctions.
-    
+
 elseif (k<=numFunctions)
     status = testfunction_handles{k}();
     status.function = func2str(testfunction_handles{k});
-    
+
 else
     error('patchTests:outOfBounds', ...
         'Out of bounds (number of testfunctions=%d)', numFunctions);

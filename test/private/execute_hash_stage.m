@@ -5,7 +5,7 @@ function [status] = execute_hash_stage(status, ipp)
     try
         expected = getReferenceHash(status, ipp);
         calculated = calculateMD5Hash(status.tikzStage.texFile);
-        
+
         % do the actual check
         if ~strcmpi(expected, calculated)
             % throw an error to signal the testing framework
@@ -29,7 +29,7 @@ function hash = getReferenceHash(status, ipp)
     % operations is minimized (i.e. reading the file, parsing it and storing its
     % data in a MATLAB struct), as this is only done once a new test suite is
     % executed. To clear this persistent storage, run |clear functions|.
-    
+
     if isempty(hashTable) || ~isequal(hashTable.suite, ipp.Results.testsuite)
         hashTable = loadHashTable(ipp.Results.testsuite);
     end

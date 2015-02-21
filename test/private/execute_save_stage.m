@@ -31,6 +31,7 @@ function [status] = execute_save_stage(status, ipp)
     status.saveStage.pdfFile = reference_pdf;
     status.saveStage.texReference = reference_fig;
 end
+% ==============================================================================
 function fixLineEndingsInWindows(filename)
 % On R2014b Win, line endings in .eps are Unix style (LF) instead of Windows
 % style (CR+LF). This causes problems in the MikTeX `epstopdf` for some files

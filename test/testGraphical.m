@@ -22,10 +22,10 @@ function [ status ] = testGraphical( varargin )
     end
 
 end
-
+% ==============================================================================
 function status = actionsToExecute(status, ipp)
     status = execute_plot_stage(status, ipp);
-    
+
     if status.skip
         return
     end
@@ -42,3 +42,4 @@ function status = actionsToExecute(status, ipp)
         close all;
     end
 end
+% ==============================================================================

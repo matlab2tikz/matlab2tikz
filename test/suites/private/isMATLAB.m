@@ -1,5 +1,5 @@
 function bool = isMATLAB(operator, version)
-%ISMATLAB Determines whether (a certain) version of Octave is being used
+%ISMATLAB Determines whether (a certain) version of MATLAB is being used
 [env, thisVersion] = getEnvironment();
 bool = strcmpi(env, 'MATLAB');
 

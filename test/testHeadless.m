@@ -18,21 +18,21 @@ function [ status ] = testHeadless( varargin )
 % The width and height are specified to circumvent different DPIs in developer
 % machines. The float format reduces the probability that numerical differences
 % in the order of numerical precision disrupt the output.
-extraOptions = {'width' ,'\figurewidth' ,...
-                'height','\figureheight',...
-                'floatFormat', '%8.6g'  ,...
-               };
+    extraOptions = {'width' ,'\figurewidth' ,...
+                    'height','\figureheight',...
+                    'floatFormat', '%8.6g'  ,...
+                   };
 
-status = testMatlab2tikz('extraOptions', extraOptions, ...
-                         'actionsToExecute', @actionsToExecute, ...
-                         varargin{:});
+    status = testMatlab2tikz('extraOptions', extraOptions, ...
+                             'actionsToExecute', @actionsToExecute, ...
+                             varargin{:});
 
-if nargout == 0
-    makeTravisReport(status);
+    if nargout == 0
+        makeTravisReport(status);
+    end
+
 end
-
-end
-
+% ==============================================================================
 function status = actionsToExecute(status, ipp)
     status = execute_plot_stage(status, ipp);
 
@@ -54,3 +54,4 @@ function status = actionsToExecute(status, ipp)
         close all;
     end
 end
+% ==============================================================================

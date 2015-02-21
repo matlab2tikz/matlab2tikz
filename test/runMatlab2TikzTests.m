@@ -23,7 +23,7 @@ knownToFail = cellfun(@(s)s.unreliable, statusAll);
 statusKnownToFail = statusAll( knownToFail);
 statusNormalTests = statusAll(~knownToFail);
 
-%% Generate a report                        
+%% Generate a report
 if ~isempty(statusKnownToFail)
     fprintf(1, ['\nThe following tests are known to fail.' ...
                 'They do not cause the build to fail, however.\n\n']);
@@ -34,6 +34,6 @@ makeTravisReport(statusNormalTests)
 
 %% Calculate exit code
 nErrors = countNumberOfErrors(statusNormalTests);
-if CI_MODE 
+if CI_MODE
     exit(nErrors);
 end

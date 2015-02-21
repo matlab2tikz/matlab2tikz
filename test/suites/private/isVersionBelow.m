@@ -11,7 +11,7 @@ function isBelow = isVersionBelow(env, versionA, versionB)
         isBelow = (deltaAB(difference) < 0);
     end
 end
-
+% ==============================================================================
 function arr = versionArray(env, str)
 % Converts a version string to an array.
     if ischar(str)
@@ -30,3 +30,4 @@ function arr = versionArray(env, str)
     end
     arr = arr(:)';
 end
+% ==============================================================================

@@ -10,12 +10,12 @@ function saveHashTable(status)
 % See also: runMatlab2TikzTests, testMatlab2tikz
     suite = status{1}.testsuite; %TODO: handle multiple test suites in a single array
     filename = hashTableName(suite);
-    
+
     % sort by file names to allow humans better traversal of such files
     funcNames = cellfun(@(s) s.function, status, 'UniformOutput', false);
-    [dummy, iSorted] = sort(funcNames);
+    [dummy, iSorted] = sort(funcNames); %#ok
     status = status(iSorted);
-    
+
     % write to file
     fid = fopen(filename,'w+');
     for iFunc = 1:numel(status)

@@ -10,7 +10,7 @@ function displaySummaryTable(stream, status)
     for iTest = 1:numel(status)
         fprintf(stream, '%s\n', formatSummaryRow(status{iTest}));
     end
-    
+
     nErrors = countNumberOfErrors(status);
     if nErrors > 0
         fprintf(stream,'\n%3d of %3d tests failed. :-( \n', nErrors, numel(status));
@@ -52,7 +52,7 @@ function str = formatSummaryRow(oneStatus)
         summary = strtrim(summary);
     end
     functionName = strjust(sprintf('%25s', oneStatus.function), 'left');
-    
+
     str = sprintf('%15s(%3d) %s: %s', ...
           testSuite, testNumber, functionName, summary);
 end
