@@ -14,9 +14,7 @@ function [status] = execute_save_stage(status, ipp)
                 % So, we generate EPS files that are converted later on.
                 print(gcf, '-depsc2', reference_eps);
 
-                % On R2014b Win, line endings in .eps are Unix style
-                % https://github.com/matlab2tikz/matlab2tikz/issues/370
-                ensureLineEndings(reference_eps);
+                fixLineEndingsInWindows(reference_eps);
 
             case 'Octave'
                 % In Octave, figures are properly cropped when using  print().
@@ -33,19 +31,29 @@ function [status] = execute_save_stage(status, ipp)
     status.saveStage.pdfFile = reference_pdf;
     status.saveStage.texReference = reference_fig;
 end
-function ensureLineEndings(filename)
-% Read in one line and test the ending
-fid = fopen(filename,'r+');
-testline = fgets(fid);
-if ispc && ~strcmpi(testline(end-1:end), sprintf('\r\n'))
-    % Rewind, read the whole
-    fseek(fid,0,'bof');
-    str = fread(fid,'*char')';
+function fixLineEndingsInWindows(filename)
+% On R2014b Win, line endings in .eps are Unix style (LF) instead of Windows
+% style (CR+LF). This causes problems in the MikTeX `epstopdf` for some files
+% as dicussed in:
+%  * https://github.com/matlab2tikz/matlab2tikz/issues/370
+%  * http://tex.stackexchange.com/questions/208179
+    if ispc
+        fid = fopen(filename,'r+');
+        testline = fgets(fid);
+        CRLF = sprintf('\r\n');
+        endOfLine = testline(end-1:end);
+        if ~strcmpi(endOfLine, CRLF)
+            endOfLine = testline(end); % probably an LF
 
-    % Replace, overwrite and close
-    str = strrep(str, testline(end), sprintf('\r\n'));
-    fseek(fid,0,'bof');
-    fprintf(fid,'%s',str);
-    fclose(fid);
-end
+            % Rewind, read the whole
+            fseek(fid,0,'bof');
+            str = fread(fid,'*char')';
+
+            % Replace, overwrite and close
+            str = strrep(str, endOfLine, CRLF);
+            fseek(fid,0,'bof');
+            fprintf(fid,'%s',str);
+        end
+        fclose(fid);
+    end
 end
