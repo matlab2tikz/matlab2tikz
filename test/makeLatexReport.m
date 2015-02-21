@@ -92,7 +92,7 @@ function texfile_finish(texfile_handle, status)
 
     testsuites = unique(cellfun(@(s) func2str(s.testsuite) , status, ...
                        'UniformOutput', false));                 
-    testsuites = name2tex(strjoin(testsuites, ', '));
+    testsuites = name2tex(m2tstrjoin(testsuites, ', '));
 
     fprintf(texfile_handle, ...
         [
