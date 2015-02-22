@@ -24,6 +24,8 @@ function saveHashTable(status)
         if isfield(S.hashStage,'found')
             thisHash = S.hashStage.found;
         else
+            warning('SaveHashTable:NoHashFound',...
+                    'No hash found for "%s". Assuming empty.', S.function);
             thisHash = ''; % FIXME: when does this happen??
         end
         if ~isempty(thisHash)
