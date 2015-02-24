@@ -14,26 +14,11 @@ suite = @ACID;
 allTests = 1:numel(suite(0));
 
 %% Run tests
-statusAll = testHeadless('testFunctionIndices', allTests,...
-                         'testsuite',           suite, varargin{:});
+status = testHeadless('testFunctionIndices', allTests,...
+                     'testsuite',           suite, varargin{:});
 
-%% Divide between known-to-fail and other tests
-knownToFail = cellfun(@(s)s.unreliable, statusAll);
-
-statusKnownToFail = statusAll( knownToFail);
-statusNormalTests = statusAll(~knownToFail);
-
-%% Generate a report
-if ~isempty(statusKnownToFail)
-    fprintf(1, ['\nThe following tests are known to fail.' ...
-                'They do not cause the build to fail, however.\n\n']);
-    makeTravisReport(statusKnownToFail);
-    fprintf('\n\nOnly the following tests determine the build outcome:\n');
-end
-makeTravisReport(statusNormalTests)
-
+nErrors = makeTravisReport(status)
 %% Calculate exit code
-nErrors = countNumberOfErrors(statusNormalTests);
 if CI_MODE
     exit(nErrors);
 end

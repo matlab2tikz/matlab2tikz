@@ -1,8 +1,22 @@
-function makeTravisReport(status)
+function nErrors = makeTravisReport(status)
 % make a readable Travis report
     stdout = 1;
 
-    displaySummaryTable(stdout, status);
+    [reliableTests, unreliableTests] = splitUnreliableTests(status);
+
+    if ~isempty(unreliableTests)
+        fprintf(stdout, ...
+                ['\nThe following tests are known to be unreliable. ' ...
+                 'They, however, do not cause the build to fail.\n\n']);
+        displaySummaryTable(stdout, unreliableTests);
+        fprintf(stdout, ...
+                '\n\nOnly the following tests determine the build outcome:\n');
+    end
+    displaySummaryTable(stdout, reliableTests);
+
+    if nargout >= 1
+        nErrors = countNumberOfErrors(reliableTests);
+    end
 end
 % ==============================================================================
 function displaySummaryTable(stream, status)
