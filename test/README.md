@@ -19,7 +19,7 @@ following code in your MATLAB/Octave console:
 addpath(pwd);                       % for the test harness
 addpath(fullfile(pwd,'..','src'));  % for matlab2tikz
 addpath(fullfile(pwd,'suites'));    % for the test suites
-``
+```
 
 Running the tests
 =================
@@ -49,7 +49,7 @@ The headless tests can be invoked using `testHeadless;`, or, equivalently,
 There are some caveats for this method of testing:
 
  * The MD5 hash is extremely brittle to small details in the output: e.g.
-   extra whitespace or some other characters will change this.
+   extra whitespace or some other characters will change the hash.
  * This automated test does NOT test whether the output is desirable or not.
    It only checks whether the previous output is not altered! 
  * Hence, when structural changes are made, the reference hash should be changed.
@@ -59,10 +59,10 @@ Graphical tests
 ---------------
 These tests allow easy comparison of a native PDF `print` output and the
 output produced by `matlab2tikz`. For the large amount of cases, however,
-this comparison has become somewhat unwieldly.
+this comparison has become somewhat unwieldy.
 
 You can execute the tests using `testGraphical;` or, equivalently, 
-`makeLatexReport(testGraphical)`. 
+`makeLatexReport(testGraphical)`.
 This generates a LaTeX report in `test/tex/acid.tex` which can then be compiled.
 Compilation of this file can be done using the Makefile `test/tex/Makefile` 
 if you are on a Unix-like system (or have cygwin installed on Windows).
@@ -76,7 +76,8 @@ Advanced Use
 
 Both `testHeadless` and `testGraphical` can take multiple arguments, 
 those are documented in the raw test runner `testMatlab2tikz` that is used 
-behind the scenes. 
+behind the scenes. Note that this file sits in a private directory, so you 
+`help testMatlab2tikz` will not work!
 
 Also, both can be called with a single output argument, for programmatical
 access to the test results.
@@ -86,5 +87,5 @@ Automated Tests
 
 The automated tests run using [Travis-CI](https://travis-ci.org).
 These are effectively the "headless" tests.
-The script used is `runMatlab2TikzTests` that is interpreted using Octave 
-(since MATLAB requires a license).
+The script used is `runMatlab2TikzTests` that is interpreted using Octave.
+You are of course free to run this script on a development machine.
