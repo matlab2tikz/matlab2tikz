@@ -447,6 +447,9 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
         m2t = handleColorbar(m2t, cbar);
     end
 
+    % Draw annotations
+    m2t = drawAnnotations(m2t);
+
     % Add all axes containers to the file contents.
     for axesContainer = m2t.axesContainers
         m2t.content = addChildren(m2t.content, axesContainer);
@@ -593,6 +596,11 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     else
         m2t.cbarHandles = [];
     end
+
+    % Remove scribe layer holding annotations (MATLAB < R2014b)
+    m2t.scribeLayer = findobj(axesHandles, 'Tag','scribeOverlay');
+    idx             = ~ismember(axesHandles, m2t.scribeLayer);
+    axesHandles     = axesHandles(idx);
 end
 % ==============================================================================
 function addComments(fid, comment)
@@ -621,11 +629,11 @@ function addCustomCode(fid, before, code, after)
     end
 end
 % ==============================================================================
-function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
+function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 % Draw all children of a graphics object (if they need to be drawn).
 % #COMPLEX: mainly a switch-case
     str = '';
-    children = get(handle, 'Children');
+    children = get(h, 'Children');
 
     % prepare cell array of pgfEnvironments
     pgfEnvironments = cell(0);
@@ -688,7 +696,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, handle)
             case ''
                 warning('matlab2tikz:NoChildren',...
                         ['No children found for handle %d. ',...
-                         'Carrying on as if nothing happened'], handle);
+                         'Carrying on as if nothing happened'], double(h));
 
             otherwise
                 error('matlab2tikz:handleAllChildren',                 ...
@@ -1381,31 +1389,38 @@ function bool = isAxis3D(axisHandle)
     bool     = ~ismember(axisView(2),[90,-90]);
 end
 % ==============================================================================
-function [m2t, str] = drawLine(m2t, handle, yDeviation)
+function [m2t, str] = drawLine(m2t, h, yDeviation)
 % Returns the code for drawing a regular line and error bars.
 % This is an extremely common operation and takes place in most of the
 % not too fancy plots.
     str = '';
 
-    if ~isVisible(handle)
+    if ~isVisible(h)
         return
     end
 
-    lineStyle = get(handle, 'LineStyle');
-    lineWidth = get(handle, 'LineWidth');
-    marker = get(handle, 'Marker');
+    % Check if there is anything to plot (line annotation has no marker)
+    lineStyle  = get(h, 'LineStyle');
+    lineWidth  = get(h, 'LineWidth');
+    marker     = getOrDefault(h, 'Marker','none');
+    hasLines   = ~isNone(lineStyle) && lineWidth > 0;
+    hasMarkers = ~isNone(marker);
+    if ~hasLines && ~hasMarkers
+        return
+    end
 
-    % Get draw options.
-    color = get(handle, 'Color');
-    [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
-    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-    [m2t, markerOptions] = getMarkerOptions(m2t, handle);
+    % Color
+    color         = get(h, 'Color');
+    [m2t, xcolor] = getColor(m2t, h, color, 'patch');
+    % Line and marker options
+    lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
+    [m2t, markerOptions] = getMarkerOptions(m2t, h);
     drawOptions = [{sprintf('color=%s', xcolor)}, ... % color
         lineOptions, ...
         markerOptions];
 
     % Check for "special" lines, e.g.:
-    if strcmp(get(handle, 'Tag'), 'zplane_unitcircle')
+    if strcmp(get(h, 'Tag'), 'zplane_unitcircle')
         % Draw unit circle and axes.
         % TODO Don't hardcode "10".
         opts = join(m2t, drawOptions, ',');
@@ -1415,23 +1430,23 @@ function [m2t, str] = drawLine(m2t, handle, yDeviation)
         return
     end
 
-    hasLines = ~isNone(lineStyle) && lineWidth>0.0;
-    hasMarkers = ~isNone(marker);
-    if ~hasLines && ~hasMarkers
-        return
-    end
-
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the actual line data.
     % First put them all together in one multiarray.
     % This also implicitly makes sure that the lengths match.
-    xData = get(handle, 'XData');
-    yData = get(handle, 'YData');
+    try
+        xData = get(h, 'XData');
+        yData = get(h, 'YData');
+    catch
+        % Line annotation
+        xData = get(h, 'X');
+        yData = get(h, 'Y');
+    end
     is3D  = m2t.axesContainers{end}.is3D;
     if ~is3D
         data = [xData(:), yData(:)];
     else
-        zData = get(handle, 'ZData');
+        zData = get(h, 'ZData');
         data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
 
@@ -1571,7 +1586,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
 % Handles the marker properties of a line (or any other) plot.
     drawOptions = cell(0);
 
-    marker = get(h, 'Marker');
+    marker = getOrDefault(h, 'Marker','none');
 
     if ~isNone(marker)
         markerSize = get(h, 'MarkerSize');
@@ -2345,27 +2360,6 @@ function [m2t, str] = drawHggroup(m2t, h)
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
 
-        case 'scribe.scribeellipse'
-            % Annotation: ellipse
-            [m2t, str] = drawEllipse(m2t, h);
-
-        case {'scribe.arrow', 'scribe.doublearrow', 'scribe.line'}
-            % Annotation: single and double Arrow, line
-            % These annotations are fully represented by their children
-            [m2t, str] = handleAllChildren(m2t, h);
-
-        case 'scribe.textbox'
-            % Annotation: text box
-            [m2t, str] = drawText(m2t, h);
-
-        case 'scribe.textarrow'
-            % Annotation: text arrow
-            [m2t, str] = drawTextarrow(m2t, h);
-
-        case 'scribe.scriberect'
-            % Annotation: rectangle
-            [m2t, str] = drawRectangle(m2t, h);
-
         case 'unknown'
             % Weird spurious class from Octave.
             [m2t, str] = handleAllChildren(m2t, h);
@@ -2382,9 +2376,107 @@ function [m2t, str] = drawHggroup(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t,str] = drawSurface(m2t, handle)
+function m2t = drawAnnotations(m2t)
+% Draws annotation in Matlab (Octave not supported). 
 
-    [m2t, opts, s] = shaderOpts(m2t, handle,'surf');
+% In HG1 annotations are children of an invisible axis called scribeOverlay.
+% In HG2 annotations are children of annotationPane object which does not
+% have any axis properties. Hence, we cannot simply handle it with a
+% drawAxes() call. 
+
+    % Octave
+    if strcmp(getEnvironment,'Octave') 
+        return
+    end
+
+    % Get annotation handles
+    if isHG2(m2t)
+        annotPanes   = findobj(m2t.currentHandles.gcf,'Tag','scribeOverlay');
+        annotHandles = findobj(get(annotPanes,'Children'),'Visible','on'); 
+    else
+        annotHandles = findobj(m2t.scribeLayer,'-depth',1,'Visible','on');
+    end
+    
+    % There are no anotations
+    if isempty(annotHandles)
+        return
+    end
+    
+    % Create fake simplified axes overlay (no children)
+    warning('off', 'matlab2tikz:NoChildren')
+    scribeLayer = axes('Units','Normalized','Position',[0,0,1,1],'Visible','off');
+    m2t         = drawAxes(m2t, scribeLayer);
+    warning('on', 'matlab2tikz:NoChildren')
+    
+    % Plot in reverse to preserve z-ordering and assign the converted 
+    % annotations to the converted fake overlay
+    for ii = numel(annotHandles):-1:1
+        m2t = drawAnnotationsHelper(m2t,annotHandles(ii));
+    end
+
+    % Delete fake overlay graphics object
+    delete(scribeLayer)
+end
+% ==============================================================================
+function m2t = drawAnnotationsHelper(m2t,h)
+    % Get class name
+    try
+        cl = class(handle(h));
+    catch %#ok
+        cl = 'unknown';
+    end
+
+    switch cl
+
+        % Line
+        case {'scribe.line', 'matlab.graphics.shape.Line'}
+            [m2t, str] = drawLine(m2t, h);
+
+        % Ellipse
+        case {'scribe.scribeellipse','matlab.graphics.shape.Ellipse'}
+            [m2t, str] = drawEllipse(m2t, h);
+        
+        % Arrows 
+        case {'scribe.arrow', 'scribe.doublearrow'}%,...
+              %'matlab.graphics.shape.Arrow', 'matlab.graphics.shape.DoubleEndArrow'}
+            % Annotation: single and double Arrow, line
+            % TODO: 
+            % - write a drawArrow(). Handle all info info directly
+            %   without using handleAllChildren() since HG2 does not have
+            %   children (so no shortcut). 
+            % - It would be good if drawArrow() was callable on a 
+            %   matlab.graphics.shape.TextArrow object to draw the arrow 
+            %   part.
+            [m2t, str] = handleAllChildren(m2t, h);
+
+        % Text box
+        case {'scribe.textbox','matlab.graphics.shape.TextBox'}
+            [m2t, str] = drawText(m2t, h);
+
+        % Tetx arrow
+        case {'scribe.textarrow'}%,'matlab.graphics.shape.TextArrow'}
+            % TODO: rewrite drawTextarrow. Handle all info info directly
+            %       without using handleAllChildren() since HG2 does not 
+            %       have children (so no shortcut) as used for 
+            %       scribe.textarrow.
+            [m2t, str] = drawTextarrow(m2t, h);
+
+        % Rectangle
+        case {'scribe.scriberect', 'matlab.graphics.shape.Rectangle'}
+            [m2t, str] = drawRectangle(m2t, h);
+
+        otherwise
+            userWarning(m2t, 'Don''t know annotation ''%s''.', cl);
+            return
+    end
+
+    % Add annotation to scribe overlay
+    m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, str);
+end
+% ==============================================================================
+function [m2t,str] = drawSurface(m2t, h)
+
+    [m2t, opts, s] = shaderOpts(m2t, h,'surf');
 
     % Allow for empty surf
     if isNone(s.plotType)
@@ -2392,9 +2484,9 @@ function [m2t,str] = drawSurface(m2t, handle)
         return
     end
 
-    dx = get(handle, 'XData');
-    dy = get(handle, 'YData');
-    dz = get(handle, 'ZData');
+    dx = get(h, 'XData');
+    dy = get(h, 'YData');
+    dz = get(h, 'ZData');
     if any(~isfinite(dx(:))) || any(~isfinite(dy(:))) || any(~isfinite(dz(:)))
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
@@ -2423,7 +2515,7 @@ function [m2t,str] = drawSurface(m2t, handle)
     % - hist3D plots should not be z-sorted or the highest bars will cover
     %   the shortest one even if positioned in the back
     isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
-    isHist3D     = strcmpi(get(handle,'tag'),'hist3');
+    isHist3D     = strcmpi(get(h,'tag'),'hist3');
     is3D         = m2t.axesContainers{end}.is3D;
     if is3D && isShaderFlat && ~isHist3D
         opts = opts_add(opts, 'z buffer','sort');
@@ -2447,8 +2539,8 @@ function [m2t,str] = drawSurface(m2t, handle)
     %    * implicitly through a color map with a given coordinate (e.g., z).
     %
 
-    % Check if we need extra CData
-    CData = get(handle, 'CData');
+    % Check if we need extra CData.
+    CData = get(h, 'CData');
     if length(size(CData)) == 3 && size(CData, 3) == 3
         
         % Create additional custom colormap
@@ -2696,22 +2788,22 @@ function [m2t,posString] = getPositionOfText(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t, str] = drawRectangle(m2t, handle)
+function [m2t, str] = drawRectangle(m2t, h)
     str = '';
 
     % there may be some text objects floating around a Matlab figure which
     % are handled by other subfunctions (labels etc.) or don't need to be
     % handled at all
-    if     strcmp(get(handle, 'Visible'), 'off') ...
-            || strcmp(get(handle, 'HandleVisibility'), 'off')
+    if ~isVisible(h) ||...
+            strcmp(get(h, 'HandleVisibility'), 'off')
         return;
     end
 
     % TODO handle Curvature = [0.8 0.4]
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    lineStyle = get(handle, 'LineStyle');
-    lineWidth = get(handle, 'LineWidth');
+    lineStyle = get(h, 'LineStyle');
+    lineWidth = get(h, 'LineWidth');
     if isNone(lineStyle) || lineWidth==0
         return
     end
@@ -2721,22 +2813,24 @@ function [m2t, str] = drawRectangle(m2t, handle)
 
     colorOptions = cell(0);
     % fill color
-    faceColor  = get(handle, 'FaceColor');
-    if ~isNone(faceColor)
-        [m2t, xFaceColor] = getColor(m2t, handle, faceColor, 'patch');
+    faceColor    = get(h, 'FaceColor');
+    isAnnotation = strcmp(get(h,'type'),'rectangleshape') || strcmp(getOrDefault(h,'ShapeType',''),'rectangle');
+    isFlatColor  = strcmp(faceColor, 'flat');
+    if ~(isNone(faceColor) || (isAnnotation && isFlatColor))
+        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
         colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
     end
     % draw color
-    edgeColor = get(handle, 'EdgeColor');
-    lineStyle = get(handle, 'LineStyle');
+    edgeColor = get(h, 'EdgeColor');
+    lineStyle = get(h, 'LineStyle');
     if isNone(lineStyle) || isNone(edgeColor)
         colorOptions{end+1} = 'draw=none';
     else
-        [m2t, xEdgeColor] = getColor(m2t, handle, edgeColor, 'patch');
+        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
         colorOptions{end+1} = sprintf('draw=%s', xEdgeColor);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    pos = pos2dims(get(handle, 'Position'));
+    pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     drawOptions = [lineOptions, colorOptions];
     % plot the thing
