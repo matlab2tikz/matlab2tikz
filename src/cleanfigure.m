@@ -469,21 +469,17 @@ function movePointsCloser(meta, handle)
      %    ( (isempty(d) && ~isempty(rep) == 0 ).
      if lastEntryIsReplacement && (isempty(d) && ~isempty(rep))
          % Now check if the connecting line goes through the axis rectangle.
-         % TODO: Code that check!
-         bLineOutsideAxis = 0;
+         % OR: Only do this, if the original segment was not visible either
+         bLineOutsideAxis = ~segmentVisible(...
+             data([lastReplIndex,replaceIndices(k)],:), ...
+             [false;false], xlim, ylim);
 
          % If line is completly outside the axis, don't draw the line. This is
          % achieved by adding a NaN and necessary, because the two points are
          % moved close to the axis limits and thus would afterwards show a
          % connecting line in the axis.
-
-         % The last entry was a replacment, and the first one now is.
-         % Prepend a NaN.
-         
-         % Only do this, if the original segment was not visible either
-         if ~segmentVisible(data([lastReplIndex,replaceIndices(k)],:), [false;false], xlim, ylim)
-             rep = [NaN(1, size(r{k}, 2)); ...
-                    rep];
+         if bLineOutsideAxis
+             rep = [NaN(1, size(r{k}, 2)); rep];
          end
      end
 
