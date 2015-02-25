@@ -476,9 +476,11 @@ function movePointsCloser(meta, handle)
          % achieved by adding a NaN and necessary, because the two points are
          % moved close to the axis limits and thus would afterwards show a
          % connecting line in the axis.
-         if bLineOutsideAxis
-             rep = [NaN(1, size(r{k}, 2)); rep];
-         end
+
+         % The last entry was a replacment, and the first one now is.
+         % Prepend a NaN.
+         rep = [NaN(1, size(r{k}, 2)); ...
+                rep];
      end
 
      % Add the data, depending if it is a valid point or a replacement
