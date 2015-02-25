@@ -479,8 +479,12 @@ function movePointsCloser(meta, handle)
 
          % The last entry was a replacment, and the first one now is.
          % Prepend a NaN.
-         rep = [NaN(1, size(r{k}, 2)); ...
-                rep];
+         
+         % Only do this, if the original segment was not visible either
+         if ~segmentVisible(data([lastReplIndex,replaceIndices(k)],:), [false;false], xlim, ylim)
+             rep = [NaN(1, size(r{k}, 2)); ...
+                    rep];
+         end
      end
 
      % Add the data, depending if it is a valid point or a replacement
