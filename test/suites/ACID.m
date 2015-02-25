@@ -282,6 +282,7 @@ end
 function [stat] = linesWithOutliers()
     stat.description = 'Lines with outliers.';
     stat.md5 = 'ea2084452c49d1a6e0379739371b2e0a';
+    stat.issues = [392,400];
 
     far = 200;
     x = [ -far, -1,   -1,  -far, -10, -0.5, 0.5, 10,  far, 1,   1,    far, 10,   0.5, -0.5, -10,  -far ];
@@ -559,8 +560,9 @@ end
 % =========================================================================
 function [stat] = zoom()
     stat.description = ['Test function \texttt{pruneOutsideBox()} ', ...
+                        'and \texttt{movePointsCloser()} ', ...
                         'of \texttt{cleanfigure()}.'];
-    stat.issues = 226;
+    stat.issues = [226,392,400];
 
     % Setup
     subplot(311)
