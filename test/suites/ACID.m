@@ -489,7 +489,7 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
-  stat.unreliable = isOctave || isMATLAB('<', 8); %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
   imagesc([1 10 100]);
   try
@@ -1048,7 +1048,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot2()
   stat.description = 'Representation of the complex plane with zplane.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: investigate
   stat.closeall = true;
 
   % check of the signal processing toolbox is installed
@@ -1330,7 +1330,7 @@ end
 % =========================================================================
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
-  stat.unreliable = isOctave; %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
   [x,s,v] = svd(magic(33));
   x = x(end:-1:end-1000);
