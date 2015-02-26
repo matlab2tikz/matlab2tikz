@@ -14,6 +14,7 @@ function [ status ] = testGraphical( varargin )
 %
 % See also: testMatlab2tikz, testHeadless, makeLatexReport
 
+    cwd = initializeWorkingDirectory();
     status = testMatlab2tikz('actionsToExecute', @actionsToExecute, ...
                              varargin{:});
 
@@ -21,6 +22,7 @@ function [ status ] = testGraphical( varargin )
         makeLatexReport(status);
     end
 
+    cd(cwd);    % return to previous working directory
 end
 % ==============================================================================
 function status = actionsToExecute(status, ipp)
