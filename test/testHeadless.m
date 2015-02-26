@@ -23,6 +23,7 @@ function [ status ] = testHeadless( varargin )
                     'floatFormat', '%8.6g'  ,...
                    };
 
+    cwd = initializeWorkingDirectory();
     status = testMatlab2tikz('extraOptions', extraOptions, ...
                              'actionsToExecute', @actionsToExecute, ...
                              varargin{:});
@@ -31,6 +32,7 @@ function [ status ] = testHeadless( varargin )
         makeTravisReport(status);
     end
 
+    cd(cwd);    % return to previous working directory
 end
 % ==============================================================================
 function status = actionsToExecute(status, ipp)
