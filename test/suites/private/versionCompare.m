@@ -6,13 +6,13 @@ function bool = versionCompare( vA, operator, vB )
             bool = isVersionBelow(ENV, vA, vB);
         case '>'
             bool = isVersionBelow(ENV, vB, vA);
-        case '<='
+        case {'<=', '=<'}
             bool = ~isVersionBelow(ENV, vB, vA);
-        case '>='
+        case {'>=', '=>'}
             bool = ~isVersionBelow(ENV, vA, vB);
-        case {'=','=='}
+        case {'=', '=='}
             bool = ~isVersionBelow(ENV, vA, vB) && ~isVersionBelow(ENV, vB, vA);
-        case {'~=','!='}
+        case {'~=', '!='}
             bool = isVersionBelow(ENV, vA, vB) || isVersionBelow(ENV, vB, vA);
         otherwise
             error('versionCompare:UnknownOperator',...

@@ -1,15 +1,4 @@
-function bool = isMATLAB(operator, version)
+function bool = isMATLAB(varargin)
 %ISMATLAB Determines whether (a certain) version of MATLAB is being used
-[env, thisVersion] = getEnvironment();
-bool = strcmpi(env, 'MATLAB');
-
-    switch nargin
-        case 0 % nothing to be done
-        case 1 % check equality
-            version = operator;
-            operator = '==';
-            bool = bool && versionCompare(thisVersion, operator, version);
-        case 2
-            bool = bool && versionCompare(thisVersion, operator, version);
-    end
-end
+% See also: isEnvironment, isOctave
+bool = isEnvironment('MATLAB', varargin{:});
