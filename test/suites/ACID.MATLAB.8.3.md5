@@ -1,9 +1,8 @@
 alphaImage : 517b2acf964adcfce4351e61bd68effd
-annotation1 : 185c3712abb2671cfc7d330d98cc7a54
-annotation2 : 0ea2a3743cfb35d0ed26d759681397a3
-annotation3 : ab79b6999680cc0848083780ad2280e4
-annotationText : d38851d2b26e97a3d5c4032e5af55d77
-annotationTextUnits : 1541d494b4e80a6ab858819ba81b7d59
+annotationAll : 3f34845acba1235af1f62b9edab9769d
+annotationSubplots : 5f26cd035c0224e873f9b6c669f86192
+annotationText : 980a64a699884fba7074f9c382261148
+annotationTextUnits : d7550c262ed62bceeea4a43df1083944
 areaPlot : 1ecaafedecb1ef68bfa779b2df488160
 axesColors : 7fc79e2c9debab7d479070eaa8ce6268
 axesLocation : d2f2902fb3d926e6d82a8c6f71cb50bc
@@ -11,7 +10,7 @@ bars : 0f7af6b42225e822c343514a3c71b62f
 besselImage : b15e3f6695099772b18bd3145e3e437f
 bodeplots : 540ce280cea25b39c66e40ffb79bb5df
 clownImage : f47490500026972221e5b8297e45ceb3
-colorbarLabelTitle : 7b11d6bdebf99d95e97c76113aa9c858
+colorbarLabelTitle : 243351795b8079515f5d99c9f30e0951
 colorbarLogplot : 372b3580b54905058ce7c196d073dc9e
 compassplot : d94124f080e6d1714026ac59f27cc7f0
 contourPenny : 8667673c2c4b15c41e5c9bcf8d72d7fa
@@ -28,8 +27,7 @@ freqResponsePlot : b7ccbb373c49f36c7f7b3d1d0507565b
 herrorbarPlot : 5281201c0f3cee619d553d33beb321ff
 hgTransformPlot : c906c1eee955a83773c11221a6848a47
 hist3d : 941fd1a3fa6703f0c5d1769724f3df0c
-histogramPlot : 7aacc86c806dc57ac703795ca15dc404
-imageOrientation_PNG : 995957f352c80ca581b607e2457ee186
+imageOrientation_PNG : bbc6b6ac88515379704cff2fa4b3d0d2
 imageOrientation_inline : a0b05437eff0445ed0db4f5fe724fea8
 imagescplot : f25ef8d1d78519d67e37d606e5da5a5a
 imagescplot2 : 1fe43449e262a06341497c1f79171513
@@ -58,7 +56,7 @@ overlappingPlots : 0e31be70d77c4e2755c12d29865d0cd9
 pColorPlot : 9d0e5cbabbedf62e4bbc5acb71258193
 parameterCurve3d : b6704678db362f57c4d2a6c302948348
 parameterSurf : 1ccb5609df2766ef8cc6c5ad8670dc90
-peaks_contour : 2f3d8e8cf8b9dd31f24560e043e66e9e
+peaks_contour : 1811b965afbedfa23f0ada8365e5b75f
 peaks_contourf : 6e243737319d490c58ee8f26553bd94e
 pixelLegend : d017439ffd5566a1073e411cbb7dae51
 plain_cos : 8700357b79112f7897670b75a30a27bd

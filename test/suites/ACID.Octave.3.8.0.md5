@@ -4,7 +4,7 @@ axesColors : cc0a6def293580e4f51790dfb477d632
 axesLocation : 5ba110beaee8adc0f969effd8ab68e4b
 bars : fee1a09f11d4dfe717e7ff955fe6f709
 besselImage : 35c26ed361d80b82c5f83837d6b7f4d2
-colorbarLabelTitle : 949f9306d5e15e715a0bb397fb482cde
+colorbarLabelTitle : 8b9d25fac41ea619c95b263e30abff07
 colorbarLogplot : 152fd5bdbd824d9a4207f7a4fc427f14
 compassplot : b335ecd09394dd532dd3aabdecc2774f
 customLegend : 3e6a05052db192da02141c5f185b72f4
@@ -13,10 +13,8 @@ double_axes : 615382aeda96510099251721d5665900
 double_axes2 : 153b427621b503e3c5f94191d5394f85
 errorBars : 51299b4a9a7bc8a5e9c5edfb2c878315
 errorBars2 : 7404a93a8fd296c8e28cc5f4defd40a7
-herrorbarPlot : 153b427621b503e3c5f94191d5394f85
-hgTransformPlot : 7aacc86c806dc57ac703795ca15dc404
-histogramPlot : 7aacc86c806dc57ac703795ca15dc404
-imageOrientation_PNG : c90c182988cb7cdef03e3d731ec0b76b
+herrorbarPlot : 7aacc86c806dc57ac703795ca15dc404
+imageOrientation_PNG : 1819457c9f75dfd0df4c8bd1a3de648c
 imageOrientation_inline : 4ab9e00038c88f5a2724efefbb5e58a6
 imagescplot : bcb86d0e7ba6e359b933bf7772fc41b7
 imagescplot2 : 41efa59b0df26b6ae976ec551253a45a
@@ -69,7 +67,7 @@ surfPlot : 3ca53b2ac9e0eed2ebaa7d152e37448b
 surfPlot2 : 014e2ed7ea77d1434e5b405ea00349bd
 texInterpreter : b0a7769bf1bfb2a85b3079b6ff0368dd
 texcolor : 88c1dd0b2b7050a0821340fe517fd18a
-texrandom : 571569dd8061ea28237a8d1240839040
+texrandom : 9a672ec71d2544022c235c84b4e45550
 textAlignment : 8fb5557792f58a5f89f7ab13cdd1fcbb
 textext : 207fdbdd3ea0a4b9c01d933d17ded4b7
 xAxisReversed : 609fc267c0959ef0c6b158ebbcbf2d5c

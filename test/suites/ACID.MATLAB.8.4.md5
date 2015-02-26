@@ -1,9 +1,8 @@
 alphaImage : 4eaa63f678cf072618765064bfb64c55
-annotation1 : 7aacc86c806dc57ac703795ca15dc404
-annotation2 : 0073405cbd081ebb8c9171c0b1ffb4a7
-annotation3 : e698ecdbadb0620fd47387aa7ce11f99
-annotationText : 28e5b8bb98de89e7f4f47f5767bcf0ba
-annotationTextUnits : 07fd32a3fddad03787fd0bab656c75eb
+annotationAll : 38e1f845b613f5e1b616df2d8e7fdc72
+annotationSubplots : 7f2b6c865ef1db561faed58714babbc2
+annotationText : 7d84c8fe322ac47f304f44f2c94db3e1
+annotationTextUnits : 21b9d79658c1afc18b0a7ad64836143e
 areaPlot : 2dd1a3abd3276f64cc62e3e35119b580
 axesColors : 07bba31089e5d3a41b4c188517b502c9
 axesLocation : f519f61ef3045d088e2ae0107273985e
@@ -11,7 +10,7 @@ bars : e95705931907e154cc58f9ee2766850c
 besselImage : e447fc56bc0bd62e12cd3eb705038697
 bodeplots : 0cf1fa81bf6f778229b2375a274c4f67
 clownImage : a50a903aef4a7538d61474bf96d17e82
-colorbarLabelTitle : 33bbc712eccd85de2ae935fd01a8b848
+colorbarLabelTitle : d8e1e78f37b35f7d137c35cab6f103a5
 compassplot : c19e89b574a3bbb1cf38ee271f3483fa
 contourPenny : 46834dc7b5bbb3068463f075cfca7cc7
 croppedImage : 2ee8f6fd60d1c11414a25dde7b48c708
@@ -28,7 +27,7 @@ herrorbarPlot : 7922da8d681788cda856f8ceb9dd3a62
 hgTransformPlot : 73c0fa3b931b75e0182f7ab0666dff27
 hist3d : a3a135f4dbf3dc1d21e8590010aa8e29
 histogramPlot : 3898e4fb6c94f7534de400529f6b92c1
-imageOrientation_PNG : 3f4097baed3c5e30253286dfa5770de0
+imageOrientation_PNG : 26ba989c03d48b49abbe8fc896cd3c55
 imageOrientation_inline : 0ae2992741bf24e56aec63b63b2c65dc
 imagescplot : bcb86d0e7ba6e359b933bf7772fc41b7
 imagescplot2 : 41efa59b0df26b6ae976ec551253a45a

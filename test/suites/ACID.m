@@ -121,9 +121,8 @@ function [status] = ACID(k)
                            @multiplePatches     , ...
                            @logbaseline         , ...
                            @alphaImage          , ...
-                           @annotation1         , ...
-                           @annotation2         , ...
-                           @annotation3         , ...
+                           @annotationAll       , ...
+                           @annotationSubplots  , ...
                            @annotationText      , ...
                            @annotationTextUnits , ...
                            @imageOrientation_PNG, ...
@@ -2008,59 +2007,50 @@ function [stat] = alphaImage()
   set(gca, 'ALim', [-1,1]);
 end
 % =========================================================================
-function [stat] = annotation1()
-
-  stat.description = 'Annotations only';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+function stat = annotationAll()
+  stat.description = 'All possible annotations with edited properties';
 
   if isempty(which('annotation'))
-    fprintf( 'annotation() not found. Skipping.\n\n' );
-    stat.skip = true;
-    return;
+      fprintf( 'annotation() not found. Skipping.\n\n' );
+      stat.skip = true;
+      return;
   end
 
-  annotation(gcf,'arrow',[0.192857142857143 0.55],...
-    [0.729952380952381 0.433333333333333]);
+  % Create plot
+  X1 = -5:0.1:5;
+  plot(X1,log(X1.^2+1));
 
-  annotation(gcf,'ellipse',...
-    [0.538499999999999 0.240476190476191 0.157928571428572 0.2452380952381]);
+  % Create line
+  annotation('line',[0.21 0.26], [0.63 0.76], 'Color',[0.47 0.3 0.44],...
+             'LineWidth',4, 'LineStyle',':');
 
-  annotation(gcf,'textbox',...
-    [0.3 0.348251748251748 0.0328486806677437 0.0517482517482517],...
-    'String',{'y-x'},...
-    'FontSize',16);
+  % Create arrow
+  annotation('arrow',[0.25 0.22], [0.96 0.05], 'LineStyle','-.',...
+             'HeadStyle','cback2');
+
+  % Create textarrow
+  annotation('textarrow',[0.46 0.35], [0.41 0.50],...
+             'Color',[0.92 0.69 0.12], 'TextBackgroundColor',[0.92 0.83 0.83],...
+             'String',{'something'}, 'LineWidth',2, 'FontWeight','bold',...
+             'FontSize',20, 'FontName','Helvetica');
+
+  % Create doublearrow
+  annotation('doublearrow',[0.33 0.7], [0.56 0.55]);
+
+  % Create textbox
+  annotation('textbox', [0.41 0.69 0.17 0.10], 'String',{'something'},...
+             'FitBoxToText','off');
+
+  % Create ellipse
+  annotation('ellipse',  [0.70 0.44 0.15 0.51], 'Color',[0.63 0.07 0.18],...
+            'LineWidth',3, 'FaceColor',[0.80 0.87 0.96]);
+
+  % Create rectangle
+  annotation('rectangle', [0.3 0.26 0.53 0.58], 'LineWidth',8,...
+             'LineStyle',':');
 end
 % =========================================================================
-function [stat] = annotation2()
-  stat.description = 'Annotations over plot';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
-
-  if isempty(which('annotation'))
-    fprintf( 'annotation() not found. Skipping.\n\n' );
-    stat.skip = true;
-    return;
-  end
-
-  axes1 = axes('Parent',gcf);
-  hold(axes1,'all');
-
-  plot(0:pi/20:2*pi,sin(0:pi/20:2*pi))
-
-  annotation(gcf,'arrow',[0.192857142857143 0.55],...
-    [0.729952380952381 0.433333333333333]);
-
-  annotation(gcf,'ellipse',...
-    [0.538499999999999 0.240476190476191 0.157928571428572 0.2452380952381]);
-
-  annotation(gcf,'textbox',...
-    [0.3 0.348251748251748 0.0328486806677437 0.0517482517482517],...
-    'String',{'y-x'},...
-    'FontSize',16,...
-    'FitBoxToText','off',...
-    'LineStyle','none');
-end
-% =========================================================================
-function [stat] = annotation3()
+function [stat] = annotationSubplots()
   stat.description = 'Annotated and unaligned subplots';
   stat.unreliable = isMATLAB; % FIXME: investigate
 
