@@ -4508,10 +4508,11 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
 end
 % ==============================================================================
 function [m2t, table, opts] = makeTable(m2t, varargin)
-%   [m2t,table] = makeTable(m2t, 'name1', data1, 'name2', data2, ...)
-%   [m2t,table] = makeTable(m2t, {'name1','name2',...}, {data1, data2, ...})
-%   [m2t,table] = makeTable(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
+%   [m2t,table,opts] = makeTable(m2t, 'name1', data1, 'name2', data2, ...)
+%   [m2t,table,opts] = makeTable(m2t, {'name1','name2',...}, {data1, data2, ...})
+%   [m2t,table,opts] = makeTable(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
 %
+%  Returns m2t structure, formatted table and table options.
 %  When all the names are empty, no header is printed
     [variables, data] = parseInputsForTable_(varargin{:});
     opts = opts_new();
