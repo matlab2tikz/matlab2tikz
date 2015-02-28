@@ -155,7 +155,7 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  stat.unreliable = isOctave; %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
@@ -252,7 +252,7 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.unreliable = isOctave; %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB('>=,[8,4'); %FIXME: investigate
 
   x = -pi:.1:pi;
   y = sin(x);
@@ -301,6 +301,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
+  stat.unreliable = isMATLAB('>=,[8,4');
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -317,7 +318,7 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
-  stat.unreliable = isMATLAB('<', 8); % FIXME: inspect this
+  stat.unreliable = isMATLAB; % FIXME: inspect this
 
   contourf(peaks(20), 10);
   colorbar();
@@ -480,6 +481,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
+  stat.unreliable = isMATLAB('>=,[8,4'); %FIXME: investigate
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -502,7 +504,7 @@ end
 % =========================================================================
 function [stat] = legendplot()
   stat.description = 'Test inserting of legends.';
-  stat.unreliable = isMATLAB('<', 8); % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
 %    x = -pi:pi/20:pi;
 %    plot(x,cos(x),'-ro',x,sin(x),'-.b');
@@ -661,6 +663,7 @@ end
 % =========================================================================
 function [stat] = quiver3plot()
   stat.description = 'Three-dimensional quiver plot.' ;
+  stat.unreliable = isMATLAB('>=,[8,4'); %FIXME: investigate
 
   vz = 10;            % Velocity
   a = -32;            % Acceleration
@@ -991,7 +994,7 @@ end
 % =========================================================================
 function [stat] = besselImage()
   stat.description = 'Bessel function.';
-  stat.unreliable = isOctave || isMATLAB('<', [8,4]); %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1201,7 +1204,7 @@ end
 % =========================================================================
 function [stat] = surfPlot()
   stat.description = 'Surface plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
   [X,Y,Z] = peaks(30);
   surf(X,Y,Z)
@@ -1231,7 +1234,7 @@ end
 % =========================================================================
 function [stat] = surfPlot2()
   stat.description = 'Another surface plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
   z = [ ones(15, 5) zeros(15,5);
         zeros(5, 5) zeros( 5,5)];
@@ -1649,6 +1652,7 @@ end
 function [stat] = latexInterpreter()
     stat.description = '\LaTeX{} interpreter test (display math not working)';
     stat.issues = 448;
+    stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
     plot(magic(3),'-x');
 
@@ -1781,6 +1785,7 @@ end
 % =========================================================================
 function [stat] = rectanglePlot()
   stat.description = 'Rectangle handle.';
+  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
   rectangle('Position', [0.59,0.35,3.75,1.37],...
             'Curvature', [0.8,0.4],...
@@ -2185,7 +2190,7 @@ end
 % =========================================================================
 function [stat] = annotationTextUnits()
   stat.description = 'Text with changed Units';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
   if ~exist('annotation')
     fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2410,7 +2415,7 @@ end
 function [stat] = textAlignment()
     stat.description = 'alignment of text boxes and position relative to axis';
     stat.issues = 378;
-    stat.unreliable = isOctave || isMATLAB('<', [8,4]); %FIXME: investigate
+    stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
     plot([0.0 2.0], [1.0 1.0],'k'); hold on;
     plot([0.0 2.0], [0.5 0.5],'k');
