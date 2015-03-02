@@ -4433,22 +4433,45 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             position(i,:) = axesPos ./ [figureSize, figureSize];
 
         end
-
-        % Change size if DataAspectRatioMode is manual
-        if isequal(lower(get(axesHandle,'DataAspectRatioMode')),'manual')
-            % get limits
-            xLim = get(axesHandle, 'XLim');
-            yLim = get(axesHandle, 'YLim');
-            % Get Aspect Ratio between width and height
-            aspectRatio = get(axesHandle,'DataAspectRatio');
-            % And Adjust it to the figure dimensions
-            aspectRatio = aspectRatio(1) * figWidth * (yLim(2) - yLim(1)) ...
-                / (aspectRatio(2) * figHeight * (xLim(2)-xLim(1)));
-            % Recompute height
-            newHeight = position(i,3) * aspectRatio;
-            % shrink width if newHeight is too large
-            if newHeight > position(i,4)
-                % Recompute width
+        
+        if ~(strcmpi(get(axesHandle,'DataAspectRatioMode'),'auto')...
+                &&strcmpi(get(axesHandle,'PlotBoxAspectRatioMode'),'auto'))
+            limits=axis(axesHandle);
+            if ~strcmpi(get(axesHandle,'DataAspectRatioMode'),'manual')
+                limits=mod(0:length(limits)-1,2); % plot box limitting mode
+                aspectRatio=get(axesHandle,'PlotBoxAspectRatio');
+            else
+                aspectRatio=get(axesHandle,'DataAspectRatio');
+            end
+            
+            if length(limits)==4
+                % 2d view
+                aspectRatio=aspectRatio(1)*figWidth*(limits(4)-limits(3))...
+                    /(aspectRatio(2)*figHeight*(limits(2)-limits(1)));
+            else
+                % 3d view
+                projection=view(axesHandle);
+                vertex1=projection*[0;0;0;1];
+                vertex2=projection*[1;0;0;1];
+                vertex3=projection*[0;1;0;1];
+                vertex4=projection*[0;0;1;1];
+                vertex5=projection*[1;1;0;1];
+                vertex6=projection*[1;0;1;1];
+                vertex7=projection*[0;1;1;1];
+                vertex8=projection*[1;1;1;1];
+                
+                diag1=abs(vertex8(1:2)-vertex1(1:2));
+                diag2=abs(vertex5(1:2)-vertex4(1:2));
+                diag3=abs(vertex6(1:2)-vertex3(1:2));
+                diag4=abs(vertex7(1:2)-vertex2(1:2));
+                
+                dimensions=max([diag1,diag2,diag3,diag4],[],2);
+                aspectRatio=dimensions(2)*figWidth/(dimensions(1)*figHeight);
+            end
+            
+            % find limiting dimension and adjust position
+            axesAspectRatio=position(i,4)/position(i,3);
+            if aspectRatio>axesAspectRatio
                 newWidth = position(i,4) / aspectRatio;
                 % Center Axis
                 offset = (position(i,3) - newWidth) / 2;
@@ -4456,7 +4479,7 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                 % Store new width
                 position(i,3) = newWidth;
             else
-                % Center Axis
+                newHeight=position(i,3)*aspectRatio;
                 offset = (position(i,4) - newHeight) / 2;
                 position(i,2) = position(i,2) + offset;
                 % Store new height
