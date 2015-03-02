@@ -383,6 +383,7 @@ function movePointsCloser(meta, handle)
     return;
   end
 
+  numberOfPoints = length(xData);
   data = [xData(:), yData(:)];
 
   xlim = get(meta.gca, 'XLim');
@@ -452,23 +453,47 @@ function movePointsCloser(meta, handle)
      else
          rep = r{k};
      end
-     if isempty(d) && ~isempty(rep) && lastEntryIsReplacement
-         % The last entry was a replacment, and the first one now is.
-         % Prepend a NaN.
-         rep = [NaN(1, size(r{k}, 2)); ...
-                rep];
+
+     % Don't draw line, if connecting line would be completely outside axis.
+     % We can check this using a line clipping algorithm.
+     % Illustration of the problem:
+     % http://www.cc.gatech.edu/grads/h/Hao-wei.Hsieh/Haowei.Hsieh/sec1_example.html
+     % This boils down to a line intersects line test, where all four lines of
+     % the axis rectangle need to be considered.
+     %
+     % First consider two easy cases:
+     % 1. This can't be the case, if last point was not replaced, because it is
+     %    inside the axis limits ('lastEntryIsReplacement == 0').
+     % 2. This can't be the case, if the current point will not be replace,
+     %    because it is inside the axis limits.
+     %    ( (isempty(d) && ~isempty(rep) == 0 ).
+     if lastEntryIsReplacement && (isempty(d) && ~isempty(rep))
+         % Now check if the connecting line goes through the axis rectangle.
+         % OR: Only do this, if the original segment was not visible either
+         bLineOutsideAxis = ~segmentVisible(...
+             data([lastReplIndex,replaceIndices(k)],:), ...
+             [false;false], xlim, ylim);
+
+         % If line is completly outside the axis, don't draw the line. This is
+         % achieved by adding a NaN and necessary, because the two points are
+         % moved close to the axis limits and thus would afterwards show a
+         % connecting line in the axis.
+         if bLineOutsideAxis
+             rep = [NaN(1, size(r{k}, 2)); rep];
+         end
      end
-     % Add the data.
-     if ~isempty(d)
-         dataNew = [dataNew; ...
-                    d];
+
+     % Add the data, depending if it is a valid point or a replacement
+     if ~isempty(d)     % Add current point from valid point 'd'
+         dataNew = [dataNew; d];
          lastEntryIsReplacement = false;
      end
-     if ~isempty(rep)
-         dataNew = [dataNew; ...
-                    rep];
+     if ~isempty(rep)   % Add current point from replacement point 'rep'
+         dataNew = [dataNew; rep];
          lastEntryIsReplacement = true;
      end
+
+     % Store last replacement index
      lastReplIndex = replaceIndices(k);
   end
   dataNew = [dataNew; ...

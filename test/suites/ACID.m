@@ -276,6 +276,7 @@ end
 % =========================================================================
 function [stat] = linesWithOutliers()
     stat.description = 'Lines with outliers.';
+    stat.issues = [392,400];
 
     far = 200;
     x = [ -far, -1,   -1,  -far, -10, -0.5, 0.5, 10,  far, 1,   1,    far, 10,   0.5, -0.5, -10,  -far ];
@@ -549,10 +550,11 @@ end
 % =========================================================================
 function [stat] = zoom()
     stat.description = ['Test function \texttt{pruneOutsideBox()} ', ...
+                        'and \texttt{movePointsCloser()} ', ...
                         'of \texttt{cleanfigure()}.'];
-    stat.issues = 226;
     stat.unreliable = isOctave; %FIXME: investigate
     %FIXME: this generates many "division by zero" in Octave
+    stat.issues = [226,392,400];
 
     % Setup
     subplot(311)

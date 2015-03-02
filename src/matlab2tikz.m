@@ -1465,9 +1465,10 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
 
     if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
-        [m2t, table] = makeTable(m2t, {'','',''}, data);
-        str = sprintf('%s\\addplot3 [%s]\n table[row sep=crcr] {%s};\n ', ...
-            str, join(m2t, drawOptions, ','), table);
+        [m2t, table, tabOpts] = makeTable(m2t, {'','',''}, data);
+        str = sprintf('%s\\addplot3 [%s]\n table[%s] {%s};\n ', ...
+                      str, join(m2t, drawOptions, ','), ...
+                      opts_print(m2t, tabOpts,','), table);
     else
         % split the data into logical chunks
         dataCell = splitLine(m2t, hasLines, data);
@@ -1515,14 +1516,13 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
     end
 
     % Convert to string array then cell to call sprintf once (and no loops).
+    [m2t, table, tabOpts] = makeTable(m2t, repmat({''}, size(data,2)), data);
     if errorbarMode
-        tabOpts = 'row sep=crcr, y error plus index=2, y error minus index=3';
-    else
-        tabOpts = 'row sep=crcr';
+        tabOpts = opts_add(tabOpts, 'y error plus index', '2');
+        tabOpts = opts_add(tabOpts, 'y error minus index', '3');
     end
-    [m2t, table] = makeTable(m2t, repmat({''}, size(data,2)), data);
     str = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
-        opts, str, tabOpts, table);
+        opts, str, opts_print(m2t, tabOpts, ', '), table);
 end
 % ==============================================================================
 function dataCell = splitLine(m2t, hasLines, data)
@@ -1822,10 +1822,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     % gather the draw options
     % Make sure that legends are shown in area mode.
     drawOptions = opts_add(opts_new,'area legend','');
-    
-    % Use the '\\' as a row separator to make sure that the generated figures
-    % work in subplot environments.
-    verticesTableOptions = opts_add(opts_new,'row sep','crcr');
+    verticesTableOptions = opts_new();
     
     % Marker options
     [m2t, markerOptions] = getMarkerOptions(m2t, handle);
@@ -1861,6 +1858,8 @@ function [m2t, str] = drawPatch(m2t, handle)
         ptType      = 'patch table';
         cycle       = '';
         drawOptions = opts_add(drawOptions,'table/row sep','crcr');
+        % TODO: is the above "crcr" compatible with pgfplots 1.12 ?
+        % TODO: is a "patch table" externalizable?
         
         % Enforce 'patch' or cannot use 'patch table='
         if strcmpi(s.plotType,'mesh')
@@ -1974,10 +1973,11 @@ function [m2t, str] = drawPatch(m2t, handle)
     drawOpts = opts_print(m2t, drawOptions,',');
     
     % Plot the actual data.
-    [m2t, verticesTable] = makeTable(m2t, columnNames, Vertices);
+    [m2t, verticesTable, tabOpts] = makeTable(m2t, columnNames, Vertices);
+    tabOpts = opts_merge(tabOpts, verticesTableOptions);
     
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
-        str, plotCmd, drawOpts, opts_print(m2t, verticesTableOptions, ', '), verticesTable, cycle);
+        str, plotCmd, drawOpts, opts_print(m2t, tabOpts, ', '), verticesTable, cycle);
 end
 
 % ==============================================================================
@@ -2283,10 +2283,10 @@ function [m2t, str] = drawContour(m2t, h)
           zval          = cellcont{ii}(1,1);
           [m2t, xcolor] = getColor(m2t,h,zval,'image');
           % Print table
-          [m2t, table] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
+          [m2t, table, tabOpts] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
           % Fillplot
-          str = sprintf('%s\\addplot[fill=%s] table[row sep=crcr] {%%\n%s};\n', ...
-              str, xcolor{1},table);
+          str = sprintf('%s\\addplot[fill=%s] table[%s] {%%\n%s};\n', ...
+              str, xcolor{1}, opts_print(m2t, tabOpts, ','), table);
       end
       
   else
@@ -2307,10 +2307,11 @@ function [m2t, str] = drawContour(m2t, h)
       end
       
       % Make contour table
-      [m2t, table] = makeTable(m2t, {'',''}, contours);
+      [m2t, table, tabOpts] = makeTable(m2t, {'',''}, contours);
       
-      str = sprintf('\\addplot[%s] table[row sep=crcr] {%%\n%s};\n', ...
-          opts_print(m2t, plotoptions, ', '), table);
+      str = sprintf('\\addplot[%s] table[%s] {%%\n%s};\n', ...
+          opts_print(m2t, plotoptions, ', '),...
+          opts_print(m2t, tabOpts, ','), table);
       
   end
 end
@@ -2477,6 +2478,7 @@ end
 function [m2t,str] = drawSurface(m2t, h)
 
     [m2t, opts, s] = shaderOpts(m2t, h,'surf');
+    tabOpts = opts_new();
 
     % Allow for empty surf
     if isNone(s.plotType)
@@ -2552,9 +2554,7 @@ function [m2t,str] = drawSurface(m2t, h)
         % Index into custom colormap
         color = (0:nrows-1)';
         
-        % Table options
-        formatType = 'table[row sep=crcr, colormap name=surfmap, point meta=\thisrow{c}]';
-        
+        tabOpts = opts_add(tabOpts, 'colormap name','surfmap');
     else
         opts = opts_add(opts,matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap),'');
         % If NaNs are present in the color specifications, don't use them for
@@ -2571,11 +2571,11 @@ function [m2t,str] = drawSurface(m2t, h)
         else
             color = dz(:);      % Fallback on the z-values, especially if 2D view
         end
-        % Table options
-        formatType = 'table[row sep=crcr, point meta=\thisrow{c}]';
     end
+    tabOpts = opts_add(tabOpts, 'point meta','\thisrow{c}');
+
     data = [data, color];
-        
+
     % Add mesh/rows=<num rows> for specifying the row data instead of empty
     % lines in the data list below. This makes it possible to reduce the
     % data writing to one single sprintf() call.
@@ -2585,10 +2585,12 @@ function [m2t,str] = drawSurface(m2t, h)
     str = sprintf('\n\\%s[%%\n%s,\n%s]', plotCmd, s.plotType, opts_print(m2t, opts, ','));
 
     % Print the data
-    [m2t, table] = makeTable(m2t, columnNames, data);
-    
+    [m2t, table, tabOptsExtra] = makeTable(m2t, columnNames, data);
+    tabOpts = opts_merge(tabOptsExtra, tabOpts);
+
     % Here is where everything is put together
-    str = sprintf('%s\n%s {%%\n%s};\n', str, formatType, table);
+    str = sprintf('%s\ntable[%s] {%%\n%s};\n', ...
+                  str, opts_print(m2t, tabOpts, ', '), table);
 
     % TODO:
     % - remove grids in spectrogram by either removing grid command
@@ -3072,7 +3074,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
     drawOpts = join(m2t, drawOptions, ',');
 
-    metaPart = '';
+    metaPart = opts_new();
     if length(cData) == 3
         % If size(cData,1)==1, then all the colors are the same and have
         % already been accounted for above.
@@ -3082,15 +3084,17 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         %[m2t, col] = rgb2colorliteral(m2t, cData(k,:));
         %str = strcat(str, sprintf(' [%s]\n', col));
     else
-        metaPart = sprintf('meta index=%d',size(data,2));
+        metaPart = opts_add(metaPart,'meta index', sprintf('%d', size(data,2)));
         data = [data, cData(:)];
         nColumns = nColumns + 1;
     end
 
     % The actual printing.
-    [m2t, table] = makeTable(m2t, repmat({''},1,nColumns), data);
-    str = sprintf('%s\\%s[%s] plot table[row sep=crcr,%s]{%s};\n', str, env, ...
-        drawOpts, metaPart, table);
+    [m2t, table, tabOpts] = makeTable(m2t, repmat({''},1,nColumns), data);
+    tabOpts = opts_merge(tabOpts, metaPart);
+
+    str = sprintf('%s\\%s[%s] plot table[%s]{%s};\n', str, env, ...
+        drawOpts, opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
 function [m2t, xcolor, hasColor] = getColorOfMarkers(m2t, h, name, cData)
@@ -3152,14 +3156,16 @@ function [m2t, str] = drawHistogram(m2t, h)
     end
     
     % Make table
-    [m2t, table] = makeTable(m2t, {'x','y'},data);
+    [m2t, table, tableOptions] = makeTable(m2t, {'x','y'},data);
     
     % Add 'area legend' (x/ybar interval legend do not seem to work)
     opts = opts_add(opts, 'area legend');
     
     % Print out
     drawOpts = opts_print(m2t, opts, ',');
-    str      = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
+    tabOpts = opts_print(m2t, tableOptions, ',');
+    str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+                       drawOpts, tabOpts, table);
 end
 % ==============================================================================
 function [m2t, str] = drawBarseries(m2t, h)
@@ -3289,9 +3295,10 @@ function [m2t, str] = drawBarseries(m2t, h)
         [xDataPlot, yDataPlot] = deal(xData, yData);
     end
 
-    drawOpts = opts_print(m2t, drawOptions, ',');
-    [m2t, table ] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
-    str = sprintf('\\addplot[%s] plot table[row sep=crcr] {%s};\n', drawOpts, table);
+    [m2t, table, tabOpts] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
+    str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+                 opts_print(m2t, drawOptions, ','), ...
+                 opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
 function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
@@ -3299,10 +3306,23 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
     prop         = switchMatOct(m2t, 'BarPeers', 'bargroup');
     bargroup     = get(h, prop);
     numBarSeries = numel(bargroup);
+    
     if isHG2(m2t)
+        % In HG2, BarPeers are sorted in reverse order wrt HG1
         bargroup = bargroup(end:-1:1);
+    
+    elseif strcmpi(m2t.env,'MATLAB')
+        % In HG1, h is a double but bargroup a graphic object. Cast h to a
+        % graphic object
+        h = handle(h);
+    
+    else
+        % In Octave, the bargroup is a replicated cell array. Pick first 
+        bargroup = bargroup{1};
     end
-    [dummy, barSeriesId] = ismember(handle(h), bargroup); %#ok
+    
+    % Get bar series Id
+    [dummy, barSeriesId] = ismember(h, bargroup);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
@@ -3356,10 +3376,10 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     %% plot the thing
     xData = get(h, 'XData');
     yData = get(h, 'YData');
-    [m2t, table] = makeTable(m2t, '', xData, '', yData);
+    [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
 
-    str = sprintf('%s\\addplot[%s] plot table[row sep=crcr] {%s};\n', ...
-        str, drawOpts, table);
+    str = sprintf('%s\\addplot[%s] plot table[%s] {%s};\n', ...
+        str, drawOpts, opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
 function [m2t, str] = drawAreaSeries(m2t, h)
@@ -3408,9 +3428,9 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     % plot the thing
     xData = get(h, 'XData');
     yData = get(h, 'YData');
-    [m2t, table] = makeTable(m2t, '', xData, '', yData);
-    str = sprintf('%s\\addplot[%s] plot table[row sep=crcr]{%s}\n\\closedcycle;\n',...
-        str, drawOpts, table);
+    [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
+    str = sprintf('%s\\addplot[%s] plot table[%s]{%s}\n\\closedcycle;\n',...
+        str, drawOpts, opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
@@ -4500,19 +4520,22 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
     end
 end
 % ==============================================================================
-function [m2t, table] = makeTable(m2t, varargin)
-%   [m2t,table] = makeTable(m2t, 'name1', data1, 'name2', data2, ...)
-%   [m2t,table] = makeTable(m2t, {'name1','name2',...}, {data1, data2, ...})
-%   [m2t,table] = makeTable(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
+function [m2t, table, opts] = makeTable(m2t, varargin)
+%   [m2t,table,opts] = makeTable(m2t, 'name1', data1, 'name2', data2, ...)
+%   [m2t,table,opts] = makeTable(m2t, {'name1','name2',...}, {data1, data2, ...})
+%   [m2t,table,opts] = makeTable(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
 %
+%  Returns m2t structure, formatted table and table options.
 %  When all the names are empty, no header is printed
     [variables, data] = parseInputsForTable_(varargin{:});
+    opts = opts_new();
 
     COLSEP = sprintf('\t');
     if m2t.cmdOpts.Results.externalData
         ROWSEP = sprintf('\n');
     else
         ROWSEP = sprintf('\\\\\n');
+        opts = opts_add(opts, 'row sep','crcr');
     end
 
     nColumns  = numel(data);
