@@ -984,6 +984,25 @@ function m2t = retrievePositionOfAxes(m2t, handle)
             opts_add(m2t.axesContainers{end}.options, ...
             'scale only axis', []);
     end
+
+    if ~isempty(pos.aspectRatio)
+        m2t.axesContainers{end}.options=opts_add(...
+            m2t.axesContainers{end}.options,'plot box ratio',...
+            formatDim(pos.aspectRatio));
+    end
+
+    %     NOT USED IN BARPLOTS ANYMORE (if re-introduced make it
+    %     m2t.axesContainer{end}.<field>)
+    %     % Add the physical dimension of one unit of length in the coordinate system.
+    %     % This is used later on to translate lengths to physical units where
+    %     % necessary (e.g., in bar plots).
+    %     m2t.unitlength.x.unit = pos.w.unit;
+    %     xLim = get(m2t.currentHandles.gca, 'XLim');
+    %     m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
+    %     m2t.unitlength.y.unit = pos.h.unit;
+    %     yLim = get(m2t.currentHandles.gca, 'YLim');
+    %     m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
+
 end
 % ==============================================================================
 function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
@@ -4930,6 +4949,14 @@ function position = getAxesPosition(m2t, handle, widthString, heightString, axes
     position.w.unit  = figDim.x.unit;
     position.h.value = relPos(4) * figDim.y.value;
     position.h.unit  = figDim.y.unit;
+    
+    if (strcmpi(get(handle,'DataAspectRatioMode'),'manual')...
+            ||strcmpi(get(handle,'PlotBoxAspectRatioMode'),'manual'))
+        % we need to set the plot box aspect ratio
+        position.aspectRatio=getPlotBoxAspectRatio(handle);
+    else
+        position.aspectRatio=[];
+    end
 end
 % ==============================================================================
 function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
@@ -5003,6 +5030,20 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
         % Recale
         position(:,[1 3]) = position(:,[1 3]) / max(axesBoundingBox([3 4]));
         position(:,[2 4]) = position(:,[2 4]) / max(axesBoundingBox([3 4]));
+    end
+end
+% ==============================================================================
+function aspectRatio=getPlotBoxAspectRatio(axesHandle)
+    limits=axis(axesHandle);
+    if any(isinf(limits))
+        aspectRatio=get(axesHandle,'PlotBoxAspectRatio');
+    else
+        % DataAspectRatio has priority
+        dataAspectRatio=get(axesHandle,'DataAspectRatio');
+        for i=1:length(limits)/2
+            aspectRatio(i)=abs(limits(2*i-1)-limits(2*i))/dataAspectRatio(i);
+        end
+        aspectRatio=aspectRatio/min(aspectRatio);
     end
 end
 % ==============================================================================
@@ -5971,17 +6012,23 @@ function str = formatDim(value, unit)
     end
     tolerance = 1e-7;
     value  = round(value/tolerance)*tolerance;
+    str = '';
     if value == 1 && ~isempty(unit) && unit(1) == '\'
-        str = unit; % just use the unit
+        nextStr = unit; % just use the unit
     else
         % LaTeX has support for single precision (about 6.5 decimal places),
         % but such accuracy is overkill for positioning. We clip to three
         % decimals to overcome numerical rounding issues that tend to be very
         % platform and version dependent. See also #604.
-        str = sprintf('%.3f', value);
-        str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
-        str = regexprep(str, '\.$', ''); % remove trailing period
-        str = [str unit];
+        nextStr = sprintf('%.3f', value);
+        nextStr = regexprep(nextStr, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
+        nextStr = regexprep(nextStr, '\.$', ''); % remove trailing period
+        nextStr = [nextStr unit];
+    end
+    if isempty(str)
+        str = nextStr;
+    else
+        str = [str, ' ', nextStr];
     end
 end
 % ==============================================================================
