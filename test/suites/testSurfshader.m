@@ -29,7 +29,7 @@ function status = testSurfshader(k)
       error('patchTests:outOfBounds', ...
             'Out of bounds (number of testfunctions=%d)', numFunctions);
   end
-  
+
 end
 
 % =========================================================================

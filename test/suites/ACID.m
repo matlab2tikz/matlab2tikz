@@ -155,7 +155,7 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  stat.md5 = 'cf67b60b0c4efe9cc1f270b7fa72f2ad';
+  stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
@@ -174,7 +174,6 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
   stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
-  stat.md5 = '4edf67301092b2332595e840b4835268';
 
   fplot( @cos, [0,2*pi] );
 
@@ -183,8 +182,7 @@ function [stat] = plain_cos()
   set(gca, 'YTick', []);
 
   % Adjust the aspect ratio when in MATLAB(R) or Octave >= 3.4.
-  env = getEnvironment();
-  if strcmpi(env,'Octave') && isVersionBelow(env, 3,4)
+  if isOctave('<=', [3,4])
       % Octave < 3.4 doesn't have daspect unfortunately.
   else
       daspect([ 1 2 1 ])
@@ -195,7 +193,6 @@ function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
   stat.description = [ 'Twisted plot of the sine function. '                   ,...
          'Pay particular attention to how markers and Infs/NaNs are treated.' ];
-  stat.md5 = '10c124e00426e8ae7e7d7ccdffafcbd5';
 
   x = -pi:pi/10:pi;
   y = sin(x);
@@ -219,7 +216,6 @@ end
 % =========================================================================
 function [stat] = markerSizes()
   stat.description = 'Marker sizes.';
-  stat.md5 = '087e09b95a72130816a83d7bf15eb598';
 
   hold on;
 
@@ -232,7 +228,6 @@ end
 % =========================================================================
 function [stat] = markerSizes2()
   stat.description = 'Line plot with with different marker sizes.';
-  stat.md5 = '726b8ec1a5067c9a868ca93b874e046b';
 
   hold on;
   grid on;
@@ -257,7 +252,7 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.md5 = '3befb2b182b0f3c2c19ba9f7fa22dc0e';
+  stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
 
   x = -pi:.1:pi;
   y = sin(x);
@@ -281,7 +276,6 @@ end
 % =========================================================================
 function [stat] = linesWithOutliers()
     stat.description = 'Lines with outliers.';
-    stat.md5 = 'ea2084452c49d1a6e0379739371b2e0a';
     stat.issues = [392,400];
 
     far = 200;
@@ -293,7 +287,7 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
-  stat.md5 = 'fd564136304fa8e0dac8365abee077b5';
+  stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -308,7 +302,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.md5 = '2bcbbf33b2b4a3de6fe3c282acdbf6ae';
+  stat.unreliable = isMATLAB('>=',[8,4]);
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -325,7 +319,7 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
-  stat.md5 = '515a8b6209314b8a6ef0051b49b69508';
+  stat.unreliable = isMATLAB; % FIXME: inspect this
 
   contourf(peaks(20), 10);
   colorbar();
@@ -341,9 +335,9 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
-  stat.md5 = '';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
-  if getEnvironment() == 'Octave'
+  if isOctave()
       fprintf( 'Octave can''t handle tight axes.\n\n' );
       stat.skip = true;
       return
@@ -372,7 +366,6 @@ end
 % =========================================================================
 function [stat] = randomWithLines()
   stat.description = 'Lissajous points with lines.';
-  stat.md5 = '8974f87e7849393b8535c0c9daa95ef6';
 
   beta = 42.42;
   t = 1:150;
@@ -394,7 +387,6 @@ end
 % =========================================================================
 function [stat] = many_random_points ()
   stat.description = 'Test the performance when drawing many points.';
-  stat.md5 = '759011e36b98a371a628a67cc29ca81d';
 
   n = 1e3;
   alpha = 1024;
@@ -410,7 +402,6 @@ end
 % =========================================================================
 function [stat] = double_axes()
   stat.description = 'Double axes';
-  stat.md5 = '';
 
   dyb = 0.1;   % normalized units, bottom offset
   dyt = 0.1;   % separation between subsequent axes bottoms
@@ -472,7 +463,6 @@ end
 % =========================================================================
 function [stat] = double_axes2()
   stat.description = 'Double overlayed axes with a flip.' ;
-  stat.md5 = '245182a1593794038e5a601a5b7f6a42';
 
   ah1=axes;
   ph=plot([0 1],[0 1]);
@@ -487,12 +477,12 @@ function [stat] = double_axes2()
   % make the background transparent
   set(ah1,'color','none')
   % move these axes to the back
-  set(gcf,'Child',flipud(get(gcf,'Children')))
+  set(gcf,'Children',flipud(get(gcf,'Children')))
 end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.md5 = '25d66c6fdd92aeb32ddaff72d310e6f5';
+  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -501,7 +491,7 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
-  stat.md5 = '8c99ef632b10a219daa1f09083d18bf5';
+  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
   imagesc([1 10 100]);
   try
@@ -515,7 +505,7 @@ end
 % =========================================================================
 function [stat] = legendplot()
   stat.description = 'Test inserting of legends.';
-  stat.md5 = 'a9e097172b3d79183b8ecbebeb4d8bed';
+  stat.unreliable = isMATLAB || isOctave; % FIXME: investigate
 
 %    x = -pi:pi/20:pi;
 %    plot(x,cos(x),'-ro',x,sin(x),'-.b');
@@ -537,7 +527,6 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
-  stat.md5 = '7b378300e46c789401e388cf7501ccd8';
 
   x = -pi:pi/20:pi;
   plot( x, cos(x),'-ro',...
@@ -550,6 +539,7 @@ end
 % =========================================================================
 function [stat] = moreLegends()
   stat.description = 'More legends.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = 0:.1:7;
   y1 = sin(x);
@@ -562,6 +552,8 @@ function [stat] = zoom()
     stat.description = ['Test function \texttt{pruneOutsideBox()} ', ...
                         'and \texttt{movePointsCloser()} ', ...
                         'of \texttt{cleanfigure()}.'];
+    stat.unreliable = isOctave; %FIXME: investigate
+    %FIXME: this generates many "division by zero" in Octave
     stat.issues = [226,392,400];
 
     % Setup
@@ -595,6 +587,7 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
+  stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -673,6 +666,7 @@ end
 % =========================================================================
 function [stat] = quiver3plot()
   stat.description = 'Three-dimensional quiver plot.' ;
+  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
   vz = 10;            % Velocity
   a = -32;            % Acceleration
@@ -707,6 +701,7 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
@@ -715,6 +710,7 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -723,6 +719,7 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
@@ -730,6 +727,8 @@ end
 % =========================================================================
 function [stat] = logicalImage()
   stat.description = 'An image plot of logical matrix values.' ;
+  stat.unreliable = isOctave; %FIXME: investigate
+
 
   [plotData,dummy,dummy] = svd(magic(10)); %#ok
   imagesc(plotData > mean(plotData(:)));
@@ -737,6 +736,7 @@ end
 % =========================================================================
 function [stat] = imagescplot()
   stat.description = 'An imagesc plot of $\sin(x)\cos(y)$.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   pointsX = 10;
   pointsY = 20;
@@ -748,6 +748,7 @@ end
 % =========================================================================
 function [stat] = imagescplot2()
   stat.description = 'A trimmed imagesc plot.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   a=magic(10);
   x=-5:1:4;
@@ -774,6 +775,7 @@ end
 % =========================================================================
 function [stat] = subplot2x2b ()
   stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
+  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = (1:5);
 
@@ -792,6 +794,7 @@ end
 % =========================================================================
 function [stat] = manualAlignment()
   stat.description = 'Manually aligned figures.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   xrange = linspace(-3,4,2*1024);
 
@@ -806,7 +809,8 @@ function [stat] = manualAlignment()
 end
 % =========================================================================
 function [stat] = subplotCustom ()
-  stat.description = 'Three customized aligned subplots.' ;
+  stat.description = 'Three customized aligned subplots.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = (1:5);
 
@@ -869,6 +873,7 @@ end
 function [stat] = legendsubplots()
   stat.description = [ 'Subplots with legends. ' , ...
     'Increase value of "length" in the code to stress-test your TeX installation.' ];
+  stat.unreliable = isOctave; %FIXME: investigate
 
   % size of upper subplot
   rows = 4;
@@ -963,6 +968,7 @@ end
 % =========================================================================
 function [stat] = rlocusPlot()
   stat.description = 'rlocus plot.';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Skipping.\n\n' );
@@ -992,6 +998,7 @@ end
 % =========================================================================
 function [stat] = besselImage()
   stat.description = 'Bessel function.';
+  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1030,6 +1037,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot1()
   stat.description = 'Representation of the complex plane with zplane.';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1046,6 +1054,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot2()
   stat.description = 'Representation of the complex plane with zplane.';
+  stat.unreliable = isMATLAB; % FIXME: investigate
   stat.closeall = true;
 
   % check of the signal processing toolbox is installed
@@ -1064,6 +1073,7 @@ function [stat] = freqResponsePlot()
   stat.description = 'Frequency response plot.';
   stat.closeall = true;
   stat.issues = [409];
+  stat.unreliable = isMATLAB;
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1097,6 +1107,7 @@ end
 % =========================================================================
 function [stat] = multipleAxes()
   stat.description = 'Multiple axes.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x1 = 0:.1:40;
   y1 = 4.*cos(x1)./(x1+2);
@@ -1147,6 +1158,7 @@ end
 % =========================================================================
 function [stat] = scatterPlotMarkers()
   stat.description = 'Scatter plot with with different marker sizes and legend.';
+  stat.unreliable = isOctave;
 
   n = 1:10;
   d = 10;
@@ -1184,6 +1196,7 @@ end
 % =========================================================================
 function [stat] = spherePlot()
   stat.description = 'Plot a sphere.';
+  stat.unreliable = isOctave || isMATLAB('<', [8,4]); %FIXME: investigate
 
   sphere(30);
   title('a sphere: x^2+y^2+z^2');
@@ -1195,6 +1208,7 @@ end
 % =========================================================================
 function [stat] = surfPlot()
   stat.description = 'Surface plot.';
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
   [X,Y,Z] = peaks(30);
   surf(X,Y,Z)
@@ -1224,6 +1238,7 @@ end
 % =========================================================================
 function [stat] = surfPlot2()
   stat.description = 'Another surface plot.';
+  stat.unreliable = isMATLAB || isOctave; % FIXME: investigate
 
   z = [ ones(15, 5) zeros(15,5);
         zeros(5, 5) zeros( 5,5)];
@@ -1275,6 +1290,7 @@ end
 % =========================================================================
 function [stat] = meshPlot()
   stat.description = 'Mesh plot.';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   [X,Y,Z] = peaks(30);
   mesh(X,Y,Z)
@@ -1288,6 +1304,7 @@ end
 % =========================================================================
 function [stat] = ylabels()
   stat.description = 'Separate y-labels.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = 0:.01:2*pi;
   H = plotyy(x,sin(x),x,3*cos(x));
@@ -1300,6 +1317,7 @@ end
 % =========================================================================
 function [stat] = spectro()
   stat.description = 'Spectrogram plot';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % In the original test case, this is 0:0.001:2, but that takes forever
   % for LaTeX to process.
@@ -1318,6 +1336,7 @@ end
 % =========================================================================
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
+  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
   [x,s,v] = svd(magic(33));
   x = x(end:-1:end-1000);
@@ -1369,6 +1388,7 @@ end
 % =========================================================================
 function [stat] = texrandom()
   stat.description = 'Random TeX symbols';
+  stat.unreliable = true; % due to randomness
 
   try
       rng(42); %fix seed
@@ -1636,6 +1656,7 @@ end
 function [stat] = latexInterpreter()
     stat.description = '\LaTeX{} interpreter test (display math not working)';
     stat.issues = 448;
+    stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
     plot(magic(3),'-x');
 
@@ -1652,6 +1673,7 @@ end
 % =========================================================================
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
@@ -1676,18 +1698,18 @@ function [stat] = latexmath2()
 %       [ '$$\left[ {\matrix{\cos(\phi) & -\sin(\phi) \cr'             ...
 %         '\sin(\phi) & \cos(\phi) \cr}} \right]'                      ...
 %         '\left[ \matrix{x \cr y} \right]$$'                          ]);
-  h(3) = text( 'units', 'inch', 'position', [.2 3],                    ...
+  h(3) = text( 'units', 'inches', 'position', [.2 3],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
         [ '$$L\{f(t)\}  \equiv  F(s) = \int_0^\infty\!\!{e^{-st}'      ...
           'f(t)dt}$$'                                                  ]);
-  h(4) = text( 'units', 'inch', 'position', [.2 2],                    ...
+  h(4) = text( 'units', 'inches', 'position', [.2 2],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
         '$$e = \sum_{k=0}^\infty {1 \over {k!} } $$'                   );
-  h(5) = text( 'units', 'inch', 'position', [.2 1],                    ...
+  h(5) = text( 'units', 'inches', 'position', [.2 1],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
         [ '$$m \ddot y = -m g + C_D \cdot {1 \over 2}'                 ...
           '\rho {\dot y}^2 \cdot A$$'                                  ]);
-  h(6) = text( 'units', 'inch', 'position', [.2 0],                    ...
+  h(6) = text( 'units', 'inches', 'position', [.2 0],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
         '$$\int_{0}^{\infty} x^2 e^{-x^2} dx = \frac{\sqrt{\pi}}{4}$$' );
 
@@ -1699,6 +1721,7 @@ end
 % =========================================================================
 function [stat] = parameterCurve3d()
   stat.description = 'Parameter curve in 3D with text boxes in-/outise axis.';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
   stat.issues = 378;
 
   ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
@@ -1708,6 +1731,7 @@ end
 % =========================================================================
 function [stat] = parameterSurf()
   stat.description = 'Parameter and surface plot.';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if ~exist('TriScatteredInterp')
       fprintf( 'TriScatteredInterp() not found. Skipping.\n\n' );
@@ -1765,6 +1789,7 @@ end
 % =========================================================================
 function [stat] = rectanglePlot()
   stat.description = 'Rectangle handle.';
+  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
   rectangle('Position', [0.59,0.35,3.75,1.37],...
             'Curvature', [0.8,0.4],...
@@ -1796,6 +1821,7 @@ end
 % =========================================================================
 function [stat] = hist3d()
   stat.description = '3D histogram plot.';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if ~exist('hist3','builtin') && isempty(which('hist3'))
       fprintf( 'Statistics toolbox not found. Skipping.\n\n' );
@@ -1860,6 +1886,7 @@ end
 % =========================================================================
 function [stat] = customLegend()
   stat.description = 'Custom legend.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -1904,6 +1931,7 @@ end
 % =========================================================================
 function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
+  stat.unreliable = isOctave || isMATLAB('<', [8,4]); % FIXME: investigate
 
   n = 6;
   r = (0:n)'/n;
@@ -1934,7 +1962,13 @@ end
 % =========================================================================
 function [stat] = hgTransformPlot()
   stat.description = 'hgtransform() plot.';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
+  if isOctave
+      % Octave (3.8.0) has no implementation of `hgtransform`
+      stat.skip = true;
+      return;
+  end
   % Check out
   % http://www.mathworks.de/de/help/matlab/ref/hgtransform.html.
 
@@ -1971,6 +2005,7 @@ end
 % =========================================================================
 function [stat] = alphaImage()
   stat.description = 'Image with alpha channel.';
+  stat.unreliable = isOctave; %FIXME: investigate
 
   N = 20;
   h_imsc = imagesc(repmat(1:N, N, 1));
@@ -1984,7 +2019,7 @@ end
 function stat = annotationAll()
   stat.description = 'All possible annotations with edited properties';
 
-  if ~exist('annotation')
+  if isempty(which('annotation'))
       fprintf( 'annotation() not found. Skipping.\n\n' );
       stat.skip = true;
       return;
@@ -2026,8 +2061,9 @@ end
 % =========================================================================
 function [stat] = annotationSubplots()
   stat.description = 'Annotated and unaligned subplots';
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
-  if ~exist('annotation')
+  if isempty(which('annotation'))
     fprintf( 'annotation() not found. Skipping.\n\n' );
     stat.skip = true;
     return;
@@ -2072,6 +2108,7 @@ end
 % =========================================================================
 function [stat] = annotationText()
   stat.description = 'Variations of textual annotations';
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if ~exist('annotation')
     fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2157,6 +2194,7 @@ end
 % =========================================================================
 function [stat] = annotationTextUnits()
   stat.description = 'Text with changed Units';
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
   if ~exist('annotation')
     fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2250,10 +2288,12 @@ end
 function [stat] = imageOrientation_inline()
 % Run test and save pictures as inline TikZ code
     [stat] = imageOrientation(false);
+    stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
 end
 function [stat] = imageOrientation_PNG()
 % Run test and save pictures as external PNGs
     [stat] = imageOrientation(true);
+    stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
 end
 function [stat] = imageOrientation(imagesAsPng)
 % Parameter 'imagesAsPng' is boolean
@@ -2325,6 +2365,7 @@ end
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
   stat.issues = 442;
+  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); %Octave, R2014b and newer
 
   % dataset stacked
   [data,dummy,summy] = svd(magic(7)); %#ok
@@ -2347,6 +2388,7 @@ end
 % =========================================================================
 function [stat] = colorbarLabelTitle()
     stat.description = 'colorbar with label and title';
+    stat.unreliable = isMATLAB || isOctave; %FIXME: investigate
     stat.issues = 429;
 
     % R2014b handles colorbars smart:  `XLabel` and `YLabel` merged into `Label`
@@ -2377,6 +2419,7 @@ end
 function [stat] = textAlignment()
     stat.description = 'alignment of text boxes and position relative to axis';
     stat.issues = 378;
+    stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
     plot([0.0 2.0], [1.0 1.0],'k'); hold on;
     plot([0.0 2.0], [0.5 0.5],'k');
@@ -2449,11 +2492,10 @@ function [stat] = overlappingPlots()
 end
 % =========================================================================
 function [stat] = histogramPlot()
-  % histogram() was introduced in Matlab R2014b, hence skip if we are in
-  % Octave or version lower Matlab version. TODO: later replace by 'isHG2()'
-  env = getEnvironment();
-  if strcmpi(env,'MATLAB') && isVersionBelow(env, 8,4)
-      fprintf('histogram() not found. Skipping.\n\n' );
+  if isOctave || isMATLAB('<', [8,4])
+      % histogram() was introduced in Matlab R2014b.
+      % TODO: later replace by 'isHG2()'
+      fprintf('histogram() not found. Skipping.\n' );
       stat.skip = true;
       return;
   end
@@ -2469,47 +2511,5 @@ function [stat] = histogramPlot()
   hold on
   h = histogram(y);
   set(h, 'orientation', 'horizontal');
-end
-% =========================================================================
-function env = getEnvironment
-  if ~isempty(ver('MATLAB'))
-     env = 'MATLAB';
-  elseif ~isempty(ver('Octave'))
-     env = 'Octave';
-  else
-     env = [];
-  end
-end
-% =========================================================================
-function [below, noenv] = isVersionBelow ( env, threshMajor, threshMinor )
-  % get version string for `env' by iterating over all toolboxes
-  versionData = ver;
-  versionString = '';
-  for k = 1:max(size(versionData))
-      if strcmp( versionData(k).Name, env )
-          % found it: store and exit the loop
-          versionString = versionData(k).Version;
-          break
-      end
-  end
-
-  if isempty( versionString )
-      % couldn't find `env'
-      below = true;
-      noenv = true;
-      return
-  end
-
-  majorVer = str2double(regexprep( versionString, '^(\d+)\..*', '$1' ));
-  minorVer = str2double(regexprep( versionString, '^\d+\.(\d+\.?\d*)[^\d]*.*', '$1' ));
-
-  if (majorVer < threshMajor) || (majorVer == threshMajor && minorVer < threshMinor)
-      % version of `env' is below threshold
-      below = true;
-  else
-      % version of `env' is same as or above threshold
-      below = false;
-  end
-  noenv = false;
 end
 % =========================================================================
