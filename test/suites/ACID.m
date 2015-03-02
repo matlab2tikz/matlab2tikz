@@ -504,7 +504,7 @@ end
 % =========================================================================
 function [stat] = legendplot()
   stat.description = 'Test inserting of legends.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB || isOctave; % FIXME: investigate
 
 %    x = -pi:pi/20:pi;
 %    plot(x,cos(x),'-ro',x,sin(x),'-.b');
@@ -551,6 +551,7 @@ function [stat] = zoom()
     stat.description = ['Test function \texttt{pruneOutsideBox()} ', ...
                         'of \texttt{cleanfigure()}.'];
     stat.issues = 226;
+    stat.unreliable = isOctave; %FIXME: investigate
     %FIXME: this generates many "division by zero" in Octave
 
     % Setup
@@ -772,7 +773,7 @@ end
 % =========================================================================
 function [stat] = subplot2x2b ()
   stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = (1:5);
 
@@ -870,6 +871,7 @@ end
 function [stat] = legendsubplots()
   stat.description = [ 'Subplots with legends. ' , ...
     'Increase value of "length" in the code to stress-test your TeX installation.' ];
+  stat.unreliable = isOctave; %FIXME: investigate
 
   % size of upper subplot
   rows = 4;
@@ -1234,7 +1236,7 @@ end
 % =========================================================================
 function [stat] = surfPlot2()
   stat.description = 'Another surface plot.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB || isOctave; % FIXME: investigate
 
   z = [ ones(15, 5) zeros(15,5);
         zeros(5, 5) zeros( 5,5)];
