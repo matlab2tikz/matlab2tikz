@@ -1853,7 +1853,7 @@ function [m2t, str] = drawImage(m2t, handle)
 
     % Flip the image over as the PNG gets written starting at (0,0),
     % which is the top left corner.
-    cData = cData(end:-1:1,:,:);
+    %cData = cData(end:-1:1,:,:);
 
     if (m2t.cmdOpts.Results.imagesAsPng)
         [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData);
@@ -1883,10 +1883,16 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     m = size(cData, 1);
     n = size(cData, 2);
     
-    colorData = flipImageIfAxesReversed(m2t, colorData);
+    [colorData,flippedDim] = flipImageIfAxesReversed(m2t, colorData);
     
     % Write an indexed or a truecolor image
     alpha = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
+    if flippedDim(1)
+        alpha=alpha(end:-1:1,:);
+    end
+    if flippedDim(2)
+        alpha=alpha(:,end:-1:1);
+    end
     if numel(alpha)==1
         alpha = alpha(ones(size(colorData(:,:,1))));
     end
@@ -1991,13 +1997,16 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     end
 end
 % ==============================================================================
-function [colorData] = flipImageIfAxesReversed(m2t, colorData)
+function [colorData,flippedDim] = flipImageIfAxesReversed(m2t, colorData)
 % flip the image if reversed
+flippedDim=[false,false];
     if m2t.xAxisReversed
         colorData = colorData(:, end:-1:1, :);
+        flippedDim(2)=true;
     end
-    if m2t.yAxisReversed
+    if ~m2t.yAxisReversed % y-axis direction is revesed normally for images, flip otherwise
         colorData = colorData(end:-1:1, :, :);
+        flippedDim(1)=true;
     end
 end
 % ==============================================================================
@@ -2019,7 +2028,10 @@ function alpha = normalizedAlphaValues(m2t, alpha, handle)
             error('matlab2tikz:UnknownAlphaMapping', ...
                   'Unknown alpha mapping "%s"', alphaMapping);
     end
-    alpha = min(1,max(alpha,0)); % clip at range [0, 1]
+    
+    if isfloat(alpha) %important, alpha data can have integer type which should not be scaled
+        alpha = min(1,max(alpha,0)); % clip at range [0, 1]
+    end
 end
 % ==============================================================================
 function [m2t, str] = drawContour(m2t, h)
