@@ -30,7 +30,7 @@ function bool = isEnvironment(wantedEnvironment, varargin)
         	return
 
         case 1 % check equality
-        	version = varargin{1}
+        	version = varargin{1};
             operator = '==';
             bool = bool && versionCompare(thisVersion, operator, version);
 

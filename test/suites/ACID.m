@@ -252,7 +252,7 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.unreliable = isOctave || isMATLAB('>=,[8,4'); %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
 
   x = -pi:.1:pi;
   y = sin(x);
@@ -302,7 +302,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.unreliable = isMATLAB('>=,[8,4');
+  stat.unreliable = isMATLAB('>=',[8,4]);
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -482,7 +482,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.unreliable = isMATLAB('>=,[8,4'); %FIXME: investigate
+  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -666,7 +666,7 @@ end
 % =========================================================================
 function [stat] = quiver3plot()
   stat.description = 'Three-dimensional quiver plot.' ;
-  stat.unreliable = isMATLAB('>=,[8,4'); %FIXME: investigate
+  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
   vz = 10;            % Velocity
   a = -32;            % Acceleration
