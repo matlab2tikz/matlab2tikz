@@ -4,11 +4,11 @@ matlab2tikz has once greatly profited from its ancestor, Matfig2PGF,
 
 Matfig2PGF is written by Paul Wagenaars.
 
-Also, the author would like to thank Christian Feuersänger package Pgfplots
-without which the structure of matlab2tikz would hardly be possible.
+Also, the authors would like to thank Christian Feuersänger for the Pgfplots
+package which forms the basis for the matlab2tikz output on the LaTeX side.
 
-Thanks for patches, suggestions, and other contributions to
- 
+Thanks for patches, suggestions, and other contributions go to
+
  Katherine Elkington
  Andreas Gäb
  Roman Gesenhues
@@ -34,6 +34,8 @@ Thanks for patches, suggestions, and other contributions to
  Patrick Häcker
  Egon Geerardyn
  Oleg Komarov
+ Klaus Broelemann
+ Peter Pablo
  ...
 
 and MathWorks' very own

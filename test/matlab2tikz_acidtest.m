@@ -11,6 +11,9 @@ function matlab2tikz_acidtest(varargin)
 % MATLAB2TIKZ_ACIDTEST('figureVisible', LOGICAL, ...)
 %   plots the figure visibly during the test process. Default: false
 %
+% MATLAB2TIKZ_ACIDTEST('cleanBefore', LOGICAL, ...)
+%   tries to run "make clean" in the ./tex folder. Default: true
+%
 % MATLAB2TIKZ_ACIDTEST('testsuite', FUNCTION_HANDLE, ...)
 %   Determines which test suite is to be run. Default: @ACID
 %   A test suite is a function that takes a single integer argument, which:
@@ -54,18 +57,22 @@ function matlab2tikz_acidtest(varargin)
 
 
   % -----------------------------------------------------------------------
-  ipp = matlab2tikzInputParser;
+  ipp = m2tInputParser;
 
   ipp = ipp.addOptional(ipp, 'testFunctionIndices', [], @isfloat);
   ipp = ipp.addParamValue(ipp, 'extraOptions', {}, @iscell);
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @(x)(isa(x,'function_handle')));
+  ipp = ipp.addParamValue(ipp, 'cleanBefore', true, @islogical);
 
   ipp = ipp.parse(ipp, varargin{:});
   % -----------------------------------------------------------------------
 
   testsuite = ipp.Results.testsuite;
   testsuiteName = func2str(testsuite);
+  
+  % try to clean the output
+  cleanFiles(ipp.Results.cleanBefore);
 
   % first, initialize the tex output
   texfile = 'tex/acid.tex';
@@ -177,6 +184,9 @@ function matlab2tikz_acidtest(varargin)
                      );
       catch %#ok
           e = lasterror('reset'); %#ok
+          % Remove (corrupted) output file. This is necessary to avoid that the
+          % Makefile tries to compile it and fails.
+          delete(gen_tex)
           [status{k}.tikzStage, errorHasOccurred] = errorHandler(e, env);
       end
 
@@ -249,6 +259,24 @@ function matlab2tikz_acidtest(varargin)
   elapsedTimeOverall = toc(elapsedTimeOverall);
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 
+end
+% =========================================================================
+function cleanFiles(cleanBefore)
+% clean output files in ./tex using make
+    if cleanBefore && exist(fullfile('tex','Makefile'),'file')
+        fprintf(1, 'Cleaning output files...\n');
+        cwd = pwd;
+        try
+            cd('tex');
+            [exitCode, output] = system('make distclean');
+            fprintf(1,'%s\n', output);
+            assert(exitCode==0, 'Exit code 0 means correct execution');
+        catch
+            % This might happen when make is not present
+            fprintf(2, '\tNot completed succesfully\n\n');
+        end
+        cd(cwd);
+    end
 end
 % =========================================================================
 function texfile_init(texfile_handle)

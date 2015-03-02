@@ -1,3 +1,29 @@
+2014-11-21  Nico Schlömer  <nico.schloemer@gmail.com>
+
+	* Version 0.6.0.
+	* Annotation support in R2014a and earlier
+	* New subplot positioning approach (by Klaus Broelemann) that uses absolute
+	  instead of relative positions.
+	* Support stacked bar plots and others in the same axes (needs pgfplots
+	  1.11).
+	* Support legends with multiline entries.
+	* Support for the alpha channel in PNG output.
+	* Test framework updated and doesn't display figures by default.
+	* Major code clean-up and code complexity checks.
+	* Bug fixes:
+	    - Cycle paths only when needed (#317, #49, #404)
+	    - Don't use infinite xmin/max, etc. (#436)
+	    - Warn about the noSize parameter (#431)
+	    - Images aren't flipped anymore (#401)
+	    - No scientific notation in width/height (#396)
+	    - Axes with custom colors (#376)
+	    - Mesh plots are exported properly (#382)
+	    - Legend colors are handled better (#389)
+	    - Handle Z axis properties for quiver3 (#406)
+	    - Better text handling, e.g. degrees (#402)
+	    - Don't output absolute paths into TikZ by default
+	    - ...
+
 2014-10-20  Nico Schlömer  <nico.schloemer@gmail.com>
 
 	* Version 0.5.0.

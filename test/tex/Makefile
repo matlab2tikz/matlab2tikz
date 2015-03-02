@@ -2,12 +2,11 @@
 
 ECHOCMD:=/bin/echo -e
 LATEX:=lualatex --shell-escape
-
 TARGET:=acid
 
 main:
-	cd ../data/reference/; make
-	cd ../data/converted/; make
+	cd ../data/reference/ && $(MAKE)
+	cd ../data/converted/ && $(MAKE)
 	@$(LATEX) $(TARGET)
 
 .PHONY: clean
@@ -25,10 +24,10 @@ clean:
 	$(TARGET).ps \
 	missfont.log
 	@rm -f *~
-	cd ../data/reference/; make clean
-	cd ../data/converted/; make clean
+	cd ../data/reference/ && $(MAKE) clean
+	cd ../data/converted/ && $(MAKE) clean
 
 distclean: clean
 	@rm -f $(TARGET).tex
-	cd ../data/reference/; make distclean
-	cd ../data/converted/; make distclean
+	cd ../data/reference/ && $(MAKE) distclean
+	cd ../data/converted/ && $(MAKE) distclean

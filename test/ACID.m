@@ -121,15 +121,6 @@ function [status] = ACID(k)
                            @multiplePatches     , ...
                            @logbaseline         , ...
                            @alphaImage          , ...
-                           @surfShader1         , ...
-                           @surfShader2         , ...
-                           @surfShader3         , ...
-                           @surfShader4         , ...
-                           @surfShader5         , ...
-                           @surfNoShader        , ...
-                           @surfNoPlot          , ...
-                           @surfMeshInterp      , ...
-                           @surfMeshRGB         , ...
                            @annotation1         , ...
                            @annotation2         , ...
                            @annotation3         , ...
@@ -138,7 +129,8 @@ function [status] = ACID(k)
                            @imageOrientation_PNG, ...
                            @imageOrientation_inline, ...
                            @texInterpreter      , ...
-                           @stackedBarsWithOther
+                           @stackedBarsWithOther, ...
+                           @colorbarLabelTitle
                          };
 
 
@@ -161,10 +153,11 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
+  stat.md5 = '2f08dbb3f961daa409c91ce0f5be65e4';
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
-  plot(flip(m)-0.5,'x--');
+  plot(m(end:-1:1)-0.5,'x--');
 
   title({'multline','title'});
   legend({sprintf('multi-line legends\ndo work 2^2=4'), ...
@@ -179,6 +172,7 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
   stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
+  stat.md5 = '888ccfb8de61fe94ef1a4b21b515bbb2';
 
   fplot( @cos, [0,2*pi] );
 
@@ -199,6 +193,7 @@ function [stat] = sine_with_markers ()
   % Standard example plot from MATLAB's help pages.
   stat.description = [ 'Twisted plot of the sine function. '                   ,...
          'Pay particular attention to how markers and Infs/NaNs are treated.' ];
+  stat.md5 = '96317b8317f3eddee9ca01ca338f6c73';
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -222,6 +217,7 @@ end
 % =========================================================================
 function [stat] = markerSizes()
   stat.description = 'Marker sizes.';
+  stat.md5 = '466116e445acacf20b4d712600a43a63';
 
   hold on;
 
@@ -234,6 +230,7 @@ end
 % =========================================================================
 function [stat] = markerSizes2()
   stat.description = 'Line plot with with different marker sizes.';
+  stat.md5 = '0392b76c0de39655f33710fbd6bd5ac8';
 
   hold on;
   grid on;
@@ -258,13 +255,14 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
+  stat.md5 = 'a59a2a2295b5db533cc733feceda974b';
 
   x = -pi:.1:pi;
   y = sin(x);
   h = plot(x,y);
   set(gca,'XTick',-pi:pi/2:pi);
-  set(gca,'XTickLabel',{'-pi','-pi/2','0','pi/2','pi'});
 
+  set(gca,'XTickLabel',{'-pi','-pi/2','0','pi/2','pi'});
 
   xlabel('-\pi \leq \Theta \leq \pi');
   ylabel('sin(\Theta)');
@@ -272,14 +270,16 @@ function [stat] = sine_with_annotation ()
   text(-pi/4,sin(-pi/4),'\leftarrow sin(-\pi\div4)',...
       'HorizontalAlignment','left');
 
-  set(findobj(gca,'Type','line','Color',[0 0 1]),...
-      'Color','red',...
-      'LineWidth',10);
+  % Doesn't work in Octave
+  %set(findobj(gca,'Type','line','Color',[0 0 1]),...
+  %    'Color','red',...
+  %    'LineWidth',10);
 
 end
 % =========================================================================
 function [stat] = linesWithOutliers()
     stat.description = 'Lines with outliers.';
+    stat.md5 = 'ea2084452c49d1a6e0379739371b2e0a';
 
     far = 200;
     x = [ -far, -1,   -1,  -far, -10, -0.5, 0.5, 10,  far, 1,   1,    far, 10,   0.5, -0.5, -10,  -far ];
@@ -290,6 +290,7 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
+  stat.md5 = 'fd564136304fa8e0dac8365abee077b5';
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -304,6 +305,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
+  stat.md5 = '2bcbbf33b2b4a3de6fe3c282acdbf6ae';
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -320,6 +322,7 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
+  stat.md5 = '515a8b6209314b8a6ef0051b49b69508';
 
   contourf(peaks(20), 10);
   colorbar();
@@ -335,6 +338,7 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
+  stat.md5 = '';
 
   vspace = linspace(-40,40,20);
   speed_map = magic(20).';
@@ -359,6 +363,7 @@ end
 % =========================================================================
 function [stat] = randomWithLines()
   stat.description = 'Lissajous points with lines.';
+  stat.md5 = '9ddd96d692c4262ec581bbddea5dc5c0';
 
   beta = 42.42;
   t = 1:150;
@@ -380,6 +385,7 @@ end
 % =========================================================================
 function [stat] = many_random_points ()
   stat.description = 'Test the performance when drawing many points.';
+  stat.md5 = '759011e36b98a371a628a67cc29ca81d';
 
   n = 1e3;
   alpha = 1024;
@@ -395,6 +401,7 @@ end
 % =========================================================================
 function [stat] = double_axes()
   stat.description = 'Double axes';
+  stat.md5 = '';
 
   dyb = 0.1;   % normalized units, bottom offset
   dyt = 0.1;   % separation between subsequent axes bottoms
@@ -456,6 +463,7 @@ end
 % =========================================================================
 function [stat] = double_axes2()
   stat.description = 'Double overlayed axes with a flip.' ;
+  stat.md5 = '245182a1593794038e5a601a5b7f6a42';
 
   ah1=axes;
   ph=plot([0 1],[0 1]);
@@ -475,6 +483,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
+  stat.md5 = '25d66c6fdd92aeb32ddaff72d310e6f5';
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -483,6 +492,7 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
+  stat.md5 = '8c99ef632b10a219daa1f09083d18bf5';
 
   imagesc([1 10 100]);
   try
@@ -496,6 +506,8 @@ end
 % =========================================================================
 function [stat] = legendplot()
   stat.description = 'Test inserting of legends.';
+  stat.md5 = 'a9e097172b3d79183b8ecbebeb4d8bed';
+
 %    x = -pi:pi/20:pi;
 %    plot(x,cos(x),'-ro',x,sin(x),'-.b');
 %    h = legend('one pretty long legend cos_x','sin_x',2);
@@ -516,6 +528,7 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
+  stat.md5 = '7b378300e46c789401e388cf7501ccd8';
 
   x = -pi:pi/20:pi;
   plot( x, cos(x),'-ro',...
@@ -589,10 +602,10 @@ function [stat] = bars()
   barh(bins, plotData, 'grouped', 'BarWidth', 1.3);
 
   subplot(2,2,3);
-  bar(Y,'stack');
+  bar(Y, 'stacked');
 
   subplot(2,2,4);
-  b2= barh(Y,'stack','BarWidth', 0.75);
+  b2= barh(Y,'stacked','BarWidth', 0.75);
 
   set(b1(1),'FaceColor','m','EdgeColor','none')
   set(b2(1),'FaceColor','c','EdgeColor','none')
@@ -1921,104 +1934,49 @@ function [stat] = alphaImage()
   set(gca, 'ALim', [-1,1]);
 end
 % =========================================================================
-function [stat] = surfShader1()
-  stat.description = 'shader=flat/(flat mean) | Fc: flat | Ec: none';
-
-  [X,Y,Z]  = peaks(5);
-  surf(X,Y,Z,'FaceColor','flat','EdgeColor','none')
-end
-% =========================================================================
-function [stat] = surfShader2()
-  stat.description = 'shader=interp | Fc: interp | Ec: none';
-
-  [X,Y,Z]  = peaks(5);
-  surf(X,Y,Z,'FaceColor','interp','EdgeColor','none')
-end
-% =========================================================================
-function [stat] = surfShader3()
-  stat.description = 'shader=faceted | Fc: flat | Ec: RGB';
-
-  [X,Y,Z]  = peaks(5);
-  surf(X,Y,Z,'FaceColor','flat','EdgeColor','green')
-end
-% =========================================================================
-function [stat] = surfShader4()
-stat.description = 'shader=faceted | Fc: RGB | Ec: interp';
-env = getEnvironment();
-if strcmpi(env, 'MATLAB') && isVersionBelow(env, 8, 4) %R2014a and older
-    warning('m2t:ACID:surfShader4',...
-        'The MATLAB EPS export may behave strangely for this case');
-end
-
-[X,Y,Z]  = peaks(5);
-surf(X,Y,Z,'FaceColor','blue','EdgeColor','interp')
-end
-% =========================================================================
-function [stat] = surfShader5()
-stat.description = 'shader=faceted interp | Fc: interp | Ec: flat';
-
-[X,Y,Z]  = peaks(5);
-surf(X,Y,Z,'FaceColor','interp','EdgeColor','flat')
-end
-% =========================================================================
-function [stat] = surfNoShader()
-stat.description = 'no shader | Fc: RGB | Ec: RGB';
-
-[X,Y,Z]  = peaks(5);
-surf(X,Y,Z,'FaceColor','blue','EdgeColor','yellow')
-end
-% =========================================================================
-function [stat] = surfNoPlot()
-stat.description = 'no plot | Fc: none | Ec: none';
-
-[X,Y,Z]  = peaks(5);
-surf(X,Y,Z,'FaceColor','none','EdgeColor','none')
-end
-% =========================================================================
-function [stat] = surfMeshInterp()
-stat.description = 'mesh | Fc: none | Ec: interp';
-
-[X,Y,Z]  = peaks(5);
-surf(X,Y,Z,'FaceColor','none','EdgeColor','interp')
-end
-% =========================================================================
-function [stat] = surfMeshRGB()
-stat.description = 'mesh | Fc: none | Ec: RGB';
-
-[X,Y,Z]  = peaks(5);
-surf(X,Y,Z,'FaceColor','none','EdgeColor','green')
-end
-% =========================================================================
 function [stat] = annotation1()
-stat.description = 'Annotations only';
 
-annotation(gcf,'arrow',[0.192857142857143 0.55],...
+  stat.description = 'Annotations only';
+
+  if ~exist('annotation')
+    fprintf( 'annotation() not found. Skipping.\n\n' );
+    stat.skip = true;
+    return;
+  end
+
+  annotation(gcf,'arrow',[0.192857142857143 0.55],...
     [0.729952380952381 0.433333333333333]);
 
-annotation(gcf,'ellipse',...
+  annotation(gcf,'ellipse',...
     [0.538499999999999 0.240476190476191 0.157928571428572 0.2452380952381]);
 
-annotation(gcf,'textbox',...
+  annotation(gcf,'textbox',...
     [0.3 0.348251748251748 0.0328486806677437 0.0517482517482517],...
     'String',{'y-x'},...
     'FontSize',16);
 end
 % =========================================================================
 function [stat] = annotation2()
-stat.description = 'Annotations over plot';
+  stat.description = 'Annotations over plot';
 
-axes1 = axes('Parent',gcf);
-hold(axes1,'all');
+  if ~exist('annotation')
+    fprintf( 'annotation() not found. Skipping.\n\n' );
+    stat.skip = true;
+    return;
+  end
 
-plot(0:pi/20:2*pi,sin(0:pi/20:2*pi))
+  axes1 = axes('Parent',gcf);
+  hold(axes1,'all');
 
-annotation(gcf,'arrow',[0.192857142857143 0.55],...
+  plot(0:pi/20:2*pi,sin(0:pi/20:2*pi))
+
+  annotation(gcf,'arrow',[0.192857142857143 0.55],...
     [0.729952380952381 0.433333333333333]);
 
-annotation(gcf,'ellipse',...
+  annotation(gcf,'ellipse',...
     [0.538499999999999 0.240476190476191 0.157928571428572 0.2452380952381]);
 
-annotation(gcf,'textbox',...
+  annotation(gcf,'textbox',...
     [0.3 0.348251748251748 0.0328486806677437 0.0517482517482517],...
     'String',{'y-x'},...
     'FontSize',16,...
@@ -2027,93 +1985,106 @@ annotation(gcf,'textbox',...
 end
 % =========================================================================
 function [stat] = annotation3()
-stat.description = 'Annotated and unaligned subplots';
+  stat.description = 'Annotated and unaligned subplots';
 
-X1 = 0:0.01:1;
-Y1 = X1.^2;
-Y2 = Y1.^2;
-Y3 = X1.^(1/4);
+  if ~exist('annotation')
+    fprintf( 'annotation() not found. Skipping.\n\n' );
+    stat.skip = true;
+    return;
+  end
 
-set(gcf, 'Position', [100 100 1500 600]);
+  X1 = 0:0.01:1;
+  Y1 = X1.^2;
+  Y2 = Y1.^2;
+  Y3 = X1.^(1/4);
 
-axes1 = axes('Parent',gcf, 'Position',[0.07 0.4015 0.2488 0.5146]);
-box(axes1,'on');
-hold(axes1,'all');
+  set(gcf, 'Position', [100 100 1500 600]);
 
-title('f(x)=x^2');
+  axes1 = axes('Parent',gcf, 'Position',[0.07 0.4015 0.2488 0.5146]);
+  box(axes1,'on');
+  hold(axes1,'all');
 
-plot(X1,Y1,'Parent',axes1, 'DisplayName','(0:0.05:1).^2 vs 0:0.05:1');
+  title('f(x)=x^2');
 
-axes2 = axes('Parent',gcf, 'OuterPosition',[0.4062 0 0.2765 0.6314]);
-box(axes2,'on');
-hold(axes2,'all');
+  plot(X1,Y1,'Parent',axes1, 'DisplayName','(0:0.05:1).^2 vs 0:0.05:1');
 
-plot(X1,Y2,'Parent',axes2,'DisplayName','(0:0.05:1).^4 vs 0:0.05:1');
+  axes2 = axes('Parent',gcf, 'OuterPosition',[0.4062 0 0.2765 0.6314]);
+  box(axes2,'on');
+  hold(axes2,'all');
 
-axes3 = axes('Parent',gcf, 'Position',[0.7421 0.3185 0.21 0.5480]);
-box(axes3,'on');
-hold(axes3,'all');
+  plot(X1,Y2,'Parent',axes2,'DisplayName','(0:0.05:1).^4 vs 0:0.05:1');
 
-plot(X1,Y3,'Parent',axes3,'DisplayName','(0:0.05:1).^(1/4) vs 0:0.05:1');
+  axes3 = axes('Parent',gcf, 'Position',[0.7421 0.3185 0.21 0.5480]);
+  box(axes3,'on');
+  hold(axes3,'all');
 
-annotation(gcf,'textbox',[0.3667 0.5521 0.0124 0.0393], ...
-           'String',{'f^2'}, 'FitBoxToText','off');
+  plot(X1,Y3,'Parent',axes3,'DisplayName','(0:0.05:1).^(1/4) vs 0:0.05:1');
 
-annotation(gcf,'arrow',[0.3263 0.4281], [0.6606 0.3519]);
+  annotation(gcf,'textbox',[0.3667 0.5521 0.0124 0.0393], ...
+    'String',{'f^2'}, 'FitBoxToText','off');
 
-annotation(gcf,'textarrow',[0.6766 0.7229], [0.3108 0.6333],...
-           'TextEdgeColor','none', 'HorizontalAlignment','center', ...
-           'String',{'invert'});
+  annotation(gcf,'arrow',[0.3263 0.4281], [0.6606 0.3519]);
+
+  annotation(gcf,'textarrow',[0.6766 0.7229], [0.3108 0.6333],...
+    'TextEdgeColor','none', 'HorizontalAlignment','center', ...
+    'String',{'invert'});
 end
 % =========================================================================
 function [stat] = annotationText()
-stat.description = 'Variations of textual annotations';
-X1 = -5:0.1:5;
-Y1 = log(X1.^2+1);
+  stat.description = 'Variations of textual annotations';
 
-% Resize figure to fit all text inside
-set(gcf,'Position', [100 100 1000 700]);
+  if ~exist('annotation')
+    fprintf( 'annotation() not found. Skipping.\n\n' );
+    stat.skip = true;
+    return;
+  end
 
-% Otherwise the axes is plotted wrongly
-drawnow();
+  X1 = -5:0.1:5;
+  Y1 = log(X1.^2+1);
 
-% Create axes
-axes1 = axes('Parent',gcf);
-hold(axes1,'all');
+  % Resize figure to fit all text inside
+  set(gcf,'Position', [100 100 1000 700]);
 
-% Create plot
-plot(X1,Y1);
+  % Otherwise the axes is plotted wrongly
+  drawnow();
 
-% Create text
-text('Parent',axes1,'String',' \leftarrow some point on the curve',...
+  % Create axes
+  axes1 = axes('Parent',gcf);
+  hold(axes1,'all');
+
+  % Create plot
+  plot(X1,Y1);
+
+  % Create text
+  text('Parent',axes1,'String',' \leftarrow some point on the curve',...
     'Position',[-2.01811125485123 1.5988219895288 7.105427357601e-15]);
 
-% Create text
-text('Parent',axes1,'String','another point \rightarrow',...
+  % Create text
+  text('Parent',axes1,'String','another point \rightarrow',...
     'Position',[1 0.693147180559945 0],...
     'HorizontalAlignment','right');
 
-% Create textbox
-annotation(gcf,'textbox',...
+  % Create textbox
+  annotation(gcf,'textbox',...
     [0.305611222444885 0.292803442287824 0.122244488977956 0.0942562592047128],...
     'String',{'This boxes size','should adjust to','the text size'});
 
-% Create textbox
-annotation(gcf,'textbox',...
+  % Create textbox
+  annotation(gcf,'textbox',...
     [0.71643086172344 0.195876288659794 0.10020240480962 0.209240982129118],...
     'String',{'Multiple Lines due to fixed width'},...
     'FitBoxToText','off');
 
-% Create textbox
-annotation(gcf,'textbox',...
+  % Create textbox
+  annotation(gcf,'textbox',...
     [0.729456913827655 0.608247422680412 0.0851723446893787 0.104257797902974],...
     'String',{'Overlapping','and italic'},...
     'FontAngle','italic',...
     'FitBoxToText','off',...
     'BackgroundColor',[0.756862759590149 0.866666674613953 0.776470601558685]);
 
-% Create textbox
-annotation(gcf,'textbox',...
+  % Create textbox
+  annotation(gcf,'textbox',...
     [0.420000437011093 0.680170575692964 0.155149863590109 0.192171438527209],...
     'VerticalAlignment','middle',...
     'String',{'Text with a','thick and','dotted','border'},...
@@ -2122,8 +2093,8 @@ annotation(gcf,'textbox',...
     'LineStyle',':',...
     'LineWidth',4);
 
-% Create textarrow
-annotation(gcf,'textarrow',[0.21943887775551 0.2625250501002],...
+  % Create textarrow
+  annotation(gcf,'textarrow',[0.21943887775551 0.2625250501002],...
     [0.371002132196162 0.235640648011782],'TextEdgeColor','none',...
     'TextBackgroundColor',[0.678431391716003 0.921568632125854 1],...
     'TextRotation',30,...
@@ -2131,8 +2102,8 @@ annotation(gcf,'textarrow',[0.21943887775551 0.2625250501002],...
     'HorizontalAlignment','center',...
     'String',{'Rotated Text'});
 
-% Create textarrow
-annotation(gcf,'textarrow',[0.238436873747493 0.309619238476953],...
+  % Create textarrow
+  annotation(gcf,'textarrow',[0.238436873747493 0.309619238476953],...
     [0.604315828808828 0.524300441826215],'TextEdgeColor','none',...
     'TextColor',[1 1 1],...
     'TextBackgroundColor',[0 0 1],...
@@ -2145,46 +2116,53 @@ annotation(gcf,'textarrow',[0.238436873747493 0.309619238476953],...
 end
 % =========================================================================
 function [stat] = annotationTextUnits()
-stat.description = 'Text with changed Units';
-X1 = -5:0.1:5;
-Y1 = log(X1.^2+1);
+  stat.description = 'Text with changed Units';
 
-% Resize figure to fit all text inside
-set(gcf,'Units', 'inches');
-set(gcf,'Position', [1.03125, 1.03125, 10.416666666666666, 7.291666666666666 ]);
+  if ~exist('annotation')
+    fprintf( 'annotation() not found. Skipping.\n\n' );
+    stat.skip = true;
+    return;
+  end
 
-% Otherwise the axes is plotted wrongly
-drawnow();
+  X1 = -5:0.1:5;
+  Y1 = log(X1.^2+1);
 
-% Create axes
-axes1 = axes('Parent',gcf,'Units','centimeters',...
+  % Resize figure to fit all text inside
+  set(gcf,'Units', 'inches');
+  set(gcf,'Position', [1.03125, 1.03125, 10.416666666666666, 7.291666666666666 ]);
+
+  % Otherwise the axes is plotted wrongly
+  drawnow();
+
+  % Create axes
+  axes1 = axes('Parent',gcf,'Units','centimeters',...
     'Position',[3.4369697916666664, 2.035743645833333 20.489627604166664 15.083009739583332]);
-hold(axes1,'all');
+  hold(axes1,'all');
 
-% Create plot
-plot(X1,Y1);
+  % Create plot
+  plot(X1,Y1);
 
-% Create text
-text('Parent',axes1,'Units','normalized',...
+  % Create text
+  text('Parent',axes1,'Units','normalized',...
     'String',' \leftarrow some point on the curve',...
     'Position',[0.295865633074935 0.457364341085271 0]);
 
-% Create text
-text('Parent',axes1,'Units','centimeters',...
+  % Create text
+  text('Parent',axes1,'Units','centimeters',...
     'String','another point \rightarrow',...
     'Position',[12.2673383333333 2.98751989583333 0],...
     'HorizontalAlignment','right');
 
-% Create textbox
-annotation(gcf,'textbox',...
+  % Create textbox
+  annotation(gcf,'textbox',...
     [0.305611222444885 0.292803442287824 0.122244488977956 0.0942562592047128],...
     'String',{'This boxes size','should adjust to','the text size'},...
     'FitBoxToText','off',...
     'Units','pixels');
 
 
-% Create textarrow
-annotation(gcf,'textarrow',[0.21943887775551 0.2625250501002],...
+  % Create textarrow
+  annotation(gcf,'textarrow',[0.21943887775551 0.2625250501002],...
     [0.371002132196162 0.235640648011782],'TextEdgeColor','none',...
     'TextBackgroundColor',[0.678431391716003 0.921568632125854 1],...
     'TextRotation',30,...
@@ -2192,8 +2170,8 @@ annotation(gcf,'textarrow',[0.21943887775551 0.2625250501002],...
     'String',{'Rotated Text'},...
     'Units','points');
 
-% Create textarrow
-annotation(gcf,'textarrow',[0.238436873747493 0.309619238476953],...
+  % Create textarrow
+  annotation(gcf,'textarrow',[0.238436873747493 0.309619238476953],...
     [0.604315828808828 0.524300441826215],'TextEdgeColor','none',...
     'TextColor',[1 1 1],...
     'TextBackgroundColor',[0 0 1],...
@@ -2203,15 +2181,15 @@ annotation(gcf,'textarrow',[0.238436873747493 0.309619238476953],...
     'HeadStyle','diamond',...
     'Color',[1 0 0]);
 
-% Create textbox
-annotation(gcf,'textbox',...
+  % Create textbox
+  annotation(gcf,'textbox',...
     [0.71643086172344 0.195876288659794 0.10020240480962 0.209240982129118],...
     'String',{'Multiple Lines due to fixed width'},...
     'FitBoxToText','off',...
     'Units','characters');
 
-% Create textbox
-annotation(gcf,'textbox',...
+  % Create textbox
+  annotation(gcf,'textbox',...
     [0.420000437011093 0.680170575692964 0.155149863590109 0.192171438527209],...
     'VerticalAlignment','middle',...
     'String',{'Text with a','thick and','dotted','border'},...
@@ -2220,8 +2198,8 @@ annotation(gcf,'textbox',...
     'LineStyle',':',...
     'LineWidth',4);
 
-% Create textbox
-annotation(gcf,'textbox',...
+  % Create textbox
+  annotation(gcf,'textbox',...
     [0.729456913827655 0.608247422680412 0.0851723446893787 0.104257797902974],...
     'String',{'Overlapping','and italic'},...
     'FontAngle','italic',...
@@ -2325,6 +2303,35 @@ function [stat] = stackedBarsWithOther()
   plot(yVals, xVals, 'Color', 'b', 'LineWidth', 2);
 
   set(b2(1),'FaceColor','c','EdgeColor','none')
+end
+% =========================================================================
+function [stat] = colorbarLabelTitle()
+    stat.description = 'colorbar with label and title';
+    stat.issues = 429;
+
+    % R2014b handles colorbars smart:  `XLabel` and `YLabel` merged into `Label`
+    % Use colormap 'jet' to create comparable output with MATLAB R2014b
+    % * Check horizontal/vertical colorbar (subplots)
+    % * Check if 'direction' is respected
+    % * Check if multiline label and title works
+    % * Check if latex interpreter works in label and title
+
+    subplot(1,2,1)
+    imagesc(magic(3));
+    hc = colorbar;
+    colormap('jet');
+    title(hc,'title $\beta$','Interpreter','latex');
+    ylabel(hc,'label $a^2$','Interpreter','latex');
+    set(hc,'YDir','reverse');
+
+    subplot(1,2,2)
+    label_multiline = {'first','second','third'};
+    title_multiline = {'title 1','title 2'};
+    imagesc(magic(3));
+    hc = colorbar('southoutside');
+    colormap('jet');
+    title(hc,title_multiline);
+    xlabel(hc,label_multiline);
 end
 % =========================================================================
 function env = getEnvironment
