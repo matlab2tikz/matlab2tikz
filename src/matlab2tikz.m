@@ -2378,6 +2378,9 @@ function [m2t, str] = drawText(m2t, handle)
             end
         case 3    % Text within a 3d plot
             pos = applyHgTransform(m2t, pos);
+            
+            %3d axes (need to set this for axes that contain only text
+            m2t.currentAxesContain3dData=true;
             if strcmp(units, 'normalized')
                 posString = sprintf(['(rel axis cs:',m2t.ff,',',m2t.ff,',',m2t.ff,')'], pos);
             else
