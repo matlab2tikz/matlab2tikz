@@ -496,36 +496,20 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % Open file if was not open
     if ~fileWasOpen
         fid = fileOpenForWrite(m2t, m2t.tikzFileName);
+        fclose_fid = onCleanup(@() fclose(fid));
     end
                         
     % Finally print it to the file
-    try 
-        ME = [];
-        addComments(fid, m2t.content.comment);
-        addStandalone(m2t, fid, 'preamble');
-        addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
-        addStandalone(m2t, fid, 'begin');
-    
-        % printAll() handles the actual figure plotting.
-        printAll(m2t, m2t.content, fid);
+    addComments(fid, m2t.content.comment);
+    addStandalone(m2t, fid, 'preamble');
+    addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
+    addStandalone(m2t, fid, 'begin');
 
-        addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
+    printAll(m2t, m2t.content, fid); % actual plotting happens here
 
-        addStandalone(m2t, fid, 'end');
-    catch
-        ME = lasterror; %#ok<LERR> Octave compatibility
-    end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
 
-    % close the file if necessary
-    if ~fileWasOpen
-        fclose(fid);
-    end
-    
-    % Rethrow error if any
-    if ~isempty(ME)
-        rethrow(ME)
-    end
+    addStandalone(m2t, fid, 'end');
 end
 % ==============================================================================
 function addStandalone(m2t, fid, part)
@@ -4576,16 +4560,9 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
         % write the data table to an external file
         fid = fileOpenForWrite(m2t, filename);
-        try
-            ME = [];
-            fprintf(fid, '%s', table);
-        catch
-            ME = lasterror; %#ok<LERR> Octave compatibility
-        end
-        fclose(fid);
-        if ~isempty(ME)
-            rethrow(ME)
-        end
+        fclose_fid = onCleanup(@() fclose(fid));
+        
+        fprintf(fid, '%s', table);
 
         % put the filename in the TikZ output
         table = latexFilename;
@@ -5943,6 +5920,10 @@ function [formatted,treeish] = VersionControlIdentifier()
             branchFile = fullfile(gitDir, refName);
 
             if exist(branchFile, 'file') && nIter < MAXITER
+                % The FID is reused in every iteration, so `onCleanup` cannot
+                % be used to `fclose(fid)`. But since there is very little that
+                % can go wrong in a single `fscanf`, it's probably best to leave
+                % this part as it is for the time being.
                 fid     = fopen(branchFile,'r');
                 treeish = fscanf(fid,'%s');
                 fclose(fid);
