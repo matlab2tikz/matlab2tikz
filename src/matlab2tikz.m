@@ -492,13 +492,13 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     m2t.content.colors = generateColorDefinitions(m2t.extraRgbColorNames, ...
                             m2t.extraRgbColorSpecs, m2t.colorFormat);
-    
+
     % Open file if was not open
     if ~fileWasOpen
         fid = fileOpenForWrite(m2t, m2t.tikzFileName);
-        fclose_fid = onCleanup(@() fclose(fid));
+        finally_fclose_fid = onCleanup(@() fclose(fid));
     end
-                        
+
     % Finally print it to the file
     addComments(fid, m2t.content.comment);
     addStandalone(m2t, fid, 'preamble');
@@ -4560,8 +4560,8 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
         % write the data table to an external file
         fid = fileOpenForWrite(m2t, filename);
-        fclose_fid = onCleanup(@() fclose(fid));
-        
+        finally_fclose_fid = onCleanup(@() fclose(fid));
+
         fprintf(fid, '%s', table);
 
         % put the filename in the TikZ output

@@ -4,8 +4,8 @@ function makeLatexReport(status)
     % first, initialize the tex output
     texfile = 'tex/acid.tex';
     fh = fopen(texfile, 'w');
-    fclose_fh = onCleanup(@() fclose(fh));
-    
+    finally_fclose_fh = onCleanup(@() fclose(fh));
+
     assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
     texfile_init(fh);
 

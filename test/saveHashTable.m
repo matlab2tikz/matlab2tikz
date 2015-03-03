@@ -18,8 +18,8 @@ function saveHashTable(status)
 
     % write to file
     fid = fopen(filename,'w+');
-    fclose_fid = onCleanup(@() fclose(fid));
-    
+    finally_fclose_fid = onCleanup(@() fclose(fid));
+
     for iFunc = 1:numel(status)
         S = status{iFunc};
         thisFunc = S.function;

@@ -5,8 +5,8 @@ function hashTable = loadHashTable(suite)
     filename = hashTableName(suite);
     if exist(filename, 'file')
         fid = fopen(filename, 'r');
-        fclose_fid = onCleanup(@() fclose(fid));
-        
+        finally_fclose_fid = onCleanup(@() fclose(fid));
+
         data = textscan(fid, '%s : %s');
         if ~isempty(data) && ~all(cellfun(@isempty, data))
             functions = cellfun(@strtrim, data{1},'UniformOutput', false);

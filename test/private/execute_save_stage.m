@@ -40,7 +40,7 @@ function fixLineEndingsInWindows(filename)
 %  * http://tex.stackexchange.com/questions/208179
     if ispc
         fid = fopen(filename,'r+');
-        fclose_fid = onCleanup(@() fclose(fid));
+        finally_fclose_fid = onCleanup(@() fclose(fid));
         testline = fgets(fid);
         CRLF = sprintf('\r\n');
         endOfLine = testline(end-1:end);
