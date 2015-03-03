@@ -1991,7 +1991,7 @@ function [m2t, str] = drawImage(m2t, handle)
     if (m2t.cmdOpts.Results.imagesAsPng)
         [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData);
     else
-        [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData);
+        [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData(end:-1:1,:));
     end
 
     % Make sure that the axes are still visible above the image.
