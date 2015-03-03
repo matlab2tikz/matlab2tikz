@@ -1991,7 +1991,7 @@ function [m2t, str] = drawImage(m2t, handle)
     if (m2t.cmdOpts.Results.imagesAsPng)
         [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData);
     else
-        [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData(end:-1:1,:));
+        [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData);
     end
 
     % Make sure that the axes are still visible above the image.
@@ -2082,6 +2082,14 @@ end
 function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
 % writes an image as raw TikZ commands (STRONGLY DISCOURAGED)
     str = '';
+    
+    % set up cData
+    if ndims(cData) == 3
+        cData = cData(end:-1:1,:,:);
+    else
+        cData = cData(end:-1:1,:);
+    end
+    
 
     % Generate uniformly distributed X, Y, although xData and yData may be
     % non-uniform.
