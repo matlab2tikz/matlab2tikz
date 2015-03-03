@@ -13,6 +13,13 @@ addpath(fullfile(pwd,'suites'));
 suite = @ACID;
 allTests = 1:numel(suite(0));
 
+%% Prepare environment
+if strcmp(env, 'Octave')
+  % Ensure that paging is disabled
+  % https://www.gnu.org/software/octave/doc/interpreter/Paging-Screen-Output.html
+  more off
+end
+
 %% Run tests
 status = testHeadless('testFunctionIndices', allTests,...
                      'testsuite',           suite, varargin{:});
