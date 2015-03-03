@@ -71,7 +71,7 @@ function status = testMatlab2tikz(varargin)
 
   % -----------------------------------------------------------------------
   stdout = 1;
-  if strcmp(env, 'Octave') && ~ipp.Results.figureVisible
+  if strcmpi(env, 'Octave') && ~ipp.Results.figureVisible
       % Use the gnuplot backend to work around an fltk bug, see
       % <http://savannah.gnu.org/bugs/?43429>.
       graphics_toolkit gnuplot

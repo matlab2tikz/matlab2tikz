@@ -14,7 +14,7 @@ suite = @ACID;
 allTests = 1:numel(suite(0));
 
 %% Prepare environment
-if strcmp(getEnvironment(), 'Octave')
+if strcmpi(getEnvironment(), 'Octave')
   % Ensure that paging is disabled
   % https://www.gnu.org/software/octave/doc/interpreter/Paging-Screen-Output.html
   more off
