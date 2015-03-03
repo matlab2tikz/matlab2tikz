@@ -1988,10 +1988,6 @@ function [m2t, str] = drawImage(m2t, handle)
     yData = get(handle, 'YData');
     cData = get(handle, 'CData');
 
-    % Flip the image over as the PNG gets written starting at (0,0),
-    % which is the top left corner.
-    %cData = cData(end:-1:1,:,:);
-
     if (m2t.cmdOpts.Results.imagesAsPng)
         [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData);
     else
