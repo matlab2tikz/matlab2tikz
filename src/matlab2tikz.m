@@ -5006,6 +5006,10 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                     /(aspectRatio(2)*figHeight*(limits(2)-limits(1)));
             else
                 % 3d view
+                
+                % project vertices of 3d plot box (this results in 2d coordinates in
+                % an absolute coordinate system that is scaled proportionally by
+                % Matlab to fit the axes position box)
                 projection=view(axesHandle);
                 vertex1=projection*[0;0;0;1];
                 vertex2=projection*[1;0;0;1];
@@ -5016,6 +5020,7 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                 vertex7=projection*[0;1;1;1];
                 vertex8=projection*[1;1;1;1];
                 
+                % the size of the projected plot box is limited by the long diagonals
                 diag1=abs(vertex8(1:2)-vertex1(1:2));
                 diag2=abs(vertex5(1:2)-vertex4(1:2));
                 diag3=abs(vertex6(1:2)-vertex3(1:2));
