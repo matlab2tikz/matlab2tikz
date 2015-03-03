@@ -15,8 +15,8 @@ function [formatted,treeish] = VersionControlIdentifier()
     treeish     = [REFPREFIX 'HEAD'];
     try
         % get the matlab2tikz directory
-        m2tDir = fileparts(mfilename('fullpath'));
-        gitDir = fullfile(m2tDir,'..','.git');
+        privateDir = fileparts(mfilename('fullpath'));
+        gitDir = fullfile(privateDir,'..','..','.git');
 
         nIter = 1;
         while isReference(treeish)
