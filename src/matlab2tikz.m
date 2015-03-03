@@ -4066,14 +4066,25 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
             case 'patch'
                 [m2t, xcolor] = patchcolor2xcolor(m2t, color, handle);
             case 'image'
-                [m2t, colorindex] = cdata2colorindex(m2t, color, handle);
-                m = size(colorindex, 1);
-                n = size(colorindex, 2);
+                
+                m = size(color,1);
+                n = size(color,2);
                 xcolor = cell(m, n);
-                for i = 1:m
-                    for j = 1:n
-                        [m2t, xc] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex(i,j), :));
-                        xcolor{i, j} = xc;
+                
+                if ndims(color) == 3
+                    for i = 1:m
+                        for j = 1:n
+                            [m2t, xc] = rgb2colorliteral(m2t, color(i,j, :));
+                            xcolor{i, j} = xc;
+                        end
+                    end
+                else
+                    [m2t, colorindex] = cdata2colorindex(m2t, color, handle);
+                    for i = 1:m
+                        for j = 1:n
+                            [m2t, xc] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex(i,j), :));
+                            xcolor{i, j} = xc;
+                        end
                     end
                 end
             otherwise
