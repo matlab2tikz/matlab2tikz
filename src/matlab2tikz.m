@@ -2023,11 +2023,10 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaData);
     
     % Write an indexed or a truecolor image
-    hasAlpha = ~all(alphaData(:) == 1);
-    if hasAlpha
-        alphaOpts = {'Alpha', alphaData};
-    else
+    if isfloat(alphaData) && all(alphaData(:) == 1)
         alphaOpts = {};
+    else
+        alphaOpts = {'Alpha', alphaData};
     end
     if (ndims(colorData) == 2) %#ok don't use ismatrix (cfr. #143)
         if size(m2t.currentHandles.colormap, 1) <= 256 && ~hasAlpha
