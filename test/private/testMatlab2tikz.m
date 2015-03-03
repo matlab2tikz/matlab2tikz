@@ -70,7 +70,6 @@ function status = testMatlab2tikz(varargin)
   ipp = sanitizeInputs(ipp);
 
   % -----------------------------------------------------------------------
-  stdout = 1;
   if strcmpi(env, 'Octave') && ~ipp.Results.figureVisible
       % Use the gnuplot backend to work around an fltk bug, see
       % <http://savannah.gnu.org/bugs/?43429>.
@@ -83,6 +82,7 @@ function status = testMatlab2tikz(varargin)
 
   % print out overall timing
   elapsedTimeOverall = toc(elapsedTimeOverall);
+  stdout = 1;
   fprintf(stdout, 'overall time: %4.2fs\n\n', elapsedTimeOverall);
 end
 % INPUT VALIDATION =============================================================
