@@ -2015,23 +2015,17 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
 
     m = size(cData, 1);
     n = size(cData, 2);
-    
-    [colorData,flippedDim] = flipImageIfAxesReversed(m2t, colorData);
+
+    alphaData = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
+    if numel(alphaData)==1
+        alphaData = alphaData(ones(size(colorData(:,:,1))));
+    end
+    [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaData);
     
     % Write an indexed or a truecolor image
-    alpha = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
-    if flippedDim(1)
-        alpha=alpha(end:-1:1,:);
-    end
-    if flippedDim(2)
-        alpha=alpha(:,end:-1:1);
-    end
-    if numel(alpha)==1
-        alpha = alpha(ones(size(colorData(:,:,1))));
-    end
-    hasAlpha = ~all(alpha(:)==1);
+    hasAlpha = ~all(alphaData(:)==1);
     if hasAlpha
-        alphaOpts = {'Alpha', alpha};
+        alphaOpts = {'Alpha', alphaData};
     else
         alphaOpts = {};
     end
@@ -2138,16 +2132,15 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     end
 end
 % ==============================================================================
-function [colorData,flippedDim] = flipImageIfAxesReversed(m2t, colorData)
+function [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaData)
 % flip the image if reversed
-flippedDim=[false,false];
     if m2t.xAxisReversed
         colorData = colorData(:, end:-1:1, :);
-        flippedDim(2)=true;
+        alphaData = alphaData(:, end:-1:1);
     end
     if ~m2t.yAxisReversed % y-axis direction is revesed normally for images, flip otherwise
         colorData = colorData(end:-1:1, :, :);
-        flippedDim(1)=true;
+        alphaData = alphaData(end:-1:1, :);
     end
 end
 % ==============================================================================
