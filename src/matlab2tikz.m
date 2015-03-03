@@ -2023,8 +2023,10 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaData);
     
     % Write an indexed or a truecolor image
+    hasAlpha = true;
     if isfloat(alphaData) && all(alphaData(:) == 1)
         alphaOpts = {};
+        hasAlpha = false;
     else
         alphaOpts = {'Alpha', alphaData};
     end
