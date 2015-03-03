@@ -18,6 +18,8 @@ function saveHashTable(status)
 
     % write to file
     fid = fopen(filename,'w+');
+    finally_fclose_fid = onCleanup(@() fclose(fid));
+
     for iFunc = 1:numel(status)
         S = status{iFunc};
         thisFunc = S.function;
@@ -32,5 +34,4 @@ function saveHashTable(status)
             fprintf(fid, '%s : %s\n', thisFunc, thisHash);
         end
     end
-    fclose(fid);
 end

@@ -35,6 +35,7 @@ function figure2dot(filename)
   set(0, 'ShowHiddenHandles', 'on');
 
   filehandle = fopen(filename, 'w');
+  finally_fclose_filehandle = onCleanup(@() fclose(filehandle));
 
   % start printing
   fprintf(filehandle, 'digraph simple_hierarchy {\n\n');
@@ -53,7 +54,6 @@ function figure2dot(filename)
 
   % finish off
   fprintf(filehandle, '}');
-  fclose(filehandle);
   set(0, 'ShowHiddenHandles', 'off');
 
 end
