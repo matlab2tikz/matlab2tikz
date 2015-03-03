@@ -24,6 +24,10 @@ function [formatted,treeish] = VersionControlIdentifier()
             branchFile = fullfile(gitDir, refName);
 
             if exist(branchFile, 'file') && nIter < MAXITER
+                % The FID is reused in every iteration, so `onCleanup` cannot
+                % be used to `fclose(fid)`. But since there is very little that
+                % can go wrong in a single `fscanf`, it's probably best to leave
+                % this part as it is for the time being.
                 fid     = fopen(branchFile,'r');
                 treeish = fscanf(fid,'%s');
                 fclose(fid);
