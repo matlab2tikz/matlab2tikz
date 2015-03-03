@@ -25,6 +25,7 @@ status = testHeadless('testFunctionIndices', allTests,...
                      'testsuite',           suite, varargin{:});
 
 nErrors = makeTravisReport(status);
+
 %% Calculate exit code
 if CI_MODE
     exit(nErrors);
