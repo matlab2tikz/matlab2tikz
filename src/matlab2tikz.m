@@ -2017,13 +2017,13 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     n = size(cData, 2);
 
     alphaData = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
-    if numel(alphaData)==1
+    if numel(alphaData) == 1
         alphaData = alphaData(ones(size(colorData(:,:,1))));
     end
     [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaData);
     
     % Write an indexed or a truecolor image
-    hasAlpha = ~all(alphaData(:)==1);
+    hasAlpha = ~all(alphaData(:) == 1);
     if hasAlpha
         alphaOpts = {'Alpha', alphaData};
     else
