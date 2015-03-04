@@ -4522,35 +4522,29 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
         opts = opts_add(opts, 'row sep','crcr');
     end
 
-    nColumns  = numel(data);
-    nRows     = cellfun(@numel, data);
+    nColumns = numel(data);
+    nRows    = cellfun(@numel, data);
     if ~all(nRows==nRows(1))
-        warning('matlab2tikz:makeTableDifferentNumberOfRows',...
-            'Different data lengths [%s]. Only including the first %d ones.',...
-            num2str(nRows), min(nRows));
+        error('matlab2tikz:makeTableDifferentNumberOfRows',...
+            'Different data lengths [%s].', num2str(nRows));
     end
-    nRows = min(nRows);
-
+    
     FORMAT = repmat({m2t.ff}, 1, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
-    FORMAT = join(m2t, FORMAT, COLSEP);
     if all(cellfun(@isempty, variables))
         header = {};
     else
         header = {join(m2t, variables, COLSEP)};
     end
 
-    table = cell(nRows,1);
-    for iRow = 1:nRows
-        thisData = cellfun(@(x)(x(iRow)), data, 'UniformOutput', false);
-        for jCol = 1:nColumns
-            if iscell(thisData{jCol}) %TODO: probably this can be done more clearly
-                thisData{jCol} = thisData{jCol}{1};
-            end
-        end
-        table{iRow} = sprintf(FORMAT, thisData{:});
+    table = cell(1,nColumns);
+    for c = 1:nColumns
+        table{c} = num2str(data{c},FORMAT{c});
     end
     table = lower(table); % convert NaN and Inf to lower case for TikZ
+    
+    table = [table(:), repmat({{COLSEP}},nColumns,1)]';
+    table = strcat(table{1:end-1});
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
 
     if m2t.cmdOpts.Results.externalData
