@@ -4551,6 +4551,9 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
     table = strcat(table{1:end-1});
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
 
+    % Remove whitespace
+    table = table(table ~= ' ');
+
     if m2t.cmdOpts.Results.externalData
         % output data to external file
         m2t.dataFileNo = m2t.dataFileNo + 1;
