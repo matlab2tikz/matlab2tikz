@@ -4528,9 +4528,7 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
         error('matlab2tikz:makeTableDifferentNumberOfRows',...
             'Different data lengths [%s].', num2str(nRows));
     end
-    
-    FORMAT = repmat({m2t.ff}, 1, nColumns);
-    FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
+
     if all(cellfun(@isempty, variables))
         header = {};
     else
@@ -4539,10 +4537,16 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
     table = cell(1,nColumns);
     for c = 1:nColumns
-        table{c} = num2str(data{c},FORMAT{c});
+        column = data{c};
+        if isCellOrChar(column)
+            table{c} = char(column);
+        elseif isinteger(column)
+            table{c} = num2str(column(:), '%d');
+        else
+            table{c} = num2str(column(:), m2t.ff);
+        end
     end
     table = lower(table); % convert NaN and Inf to lower case for TikZ
-    
     table = [table(:), repmat({{COLSEP}},nColumns,1)]';
     table = strcat(table{1:end-1});
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
