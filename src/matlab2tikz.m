@@ -4072,7 +4072,7 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
                             xcolor{i, j} = xc;
                         end
                     end
-                else
+                elseif ndims(color) <= 2
                     [m2t, colorindex] = cdata2colorindex(m2t, color, handle);
                     for i = 1:m
                         for j = 1:n
@@ -4080,6 +4080,9 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
                             xcolor{i, j} = xc;
                         end
                     end
+                else
+                    error('matlab2tikz:getColor:image:colorDims',...
+                        'Image color data cannot have more than 3 dimensions');
                 end
             otherwise
                 error(['matlab2tikz:getColor', ...
