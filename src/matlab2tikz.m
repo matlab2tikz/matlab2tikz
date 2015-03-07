@@ -2788,8 +2788,7 @@ function [m2t, str] = drawRectangle(m2t, h)
     % there may be some text objects floating around a Matlab figure which
     % are handled by other subfunctions (labels etc.) or don't need to be
     % handled at all
-    if ~isVisible(h) ||...
-            strcmp(get(h, 'HandleVisibility'), 'off')
+    if ~isVisible(h) || strcmp(get(h, 'HandleVisibility'), 'off')
         return;
     end
 
