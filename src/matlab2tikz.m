@@ -1382,9 +1382,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     % Line and marker options
     lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
-    drawOptions = [{sprintf('color=%s', xcolor)}, ... % color
-        lineOptions, ...
-        markerOptions];
+    drawOptions = [{sprintf('color=%s', xcolor)}, lineOptions, markerOptions];
 
     % Check for "special" lines, e.g.:
     if strcmp(get(h, 'Tag'), 'zplane_unitcircle')
@@ -1398,24 +1396,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     end
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % Plot the actual line data.
-    % First put them all together in one multiarray.
-    % This also implicitly makes sure that the lengths match.
-    try
-        xData = get(h, 'XData');
-        yData = get(h, 'YData');
-    catch
-        % Line annotation
-        xData = get(h, 'X');
-        yData = get(h, 'Y');
-    end
-    is3D  = m2t.axesContainers{end}.is3D;
-    if ~is3D
-        data = [xData(:), yData(:)];
-    else
-        zData = get(h, 'ZData');
-        data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
-    end
+    [data, is3D] = getXYZDataFromLine(m2t, h);
 
     % check if the *optional* argument 'yDeviation' was given
     hasDeviations = false;
@@ -1461,6 +1442,28 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     if m2t.cmdOpts.Results.automaticLabels
         [m2t, label] = addLabel(m2t);
         str = [str, label];
+    end
+end
+% ==============================================================================
+function [data, is3D] = getXYZDataFromLine(m2t, h)
+% Retrieves the X, Y and Z (if appropriate) data from a Line object
+%
+% First put them all together in one multiarray.
+% This also implicitly makes sure that the lengths match.
+    try
+        xData = get(h, 'XData');
+        yData = get(h, 'YData');
+    catch
+        % Line annotation
+        xData = get(h, 'X');
+        yData = get(h, 'Y');
+    end
+    is3D  = m2t.axesContainers{end}.is3D;
+    if ~is3D
+        data = [xData(:), yData(:)];
+    else
+        zData = get(h, 'ZData');
+        data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
 end
 % ==============================================================================
