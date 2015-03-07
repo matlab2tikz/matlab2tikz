@@ -5493,65 +5493,8 @@ function string = parseTexSubstring(m2t, string)
     % it's best to include the workaround here.
     string = strrep(string, '§', '\S{}');
 
-    % Escape plain "&" in MATLAB and replace it and the following character with
-    % a space in Octave unless the "&" is already escaped
-    switch m2t.env
-        case 'MATLAB'
-            string = strrep(string, '&', '\&');
-        case 'Octave'
-            % Ampersands should already be escaped in Octave.
-            % Octave (tested with 3.6.0) handles un-escaped ampersands a little
-            % funny in that it removes the following character, if there is one:
-            % 'abc&def'      -> 'abc ef'
-            % 'abc&\deltaef' -> 'abc ef'
-            % 'abc&$ef'      -> 'abc ef'
-            % 'abcdef&'      -> 'abcdef'
-            % Don't remove closing brace after '&' as this would result in
-            % unbalanced braces
-            string = regexprep(string, '(?<!\\)&(?!})', ' ');
-            string = regexprep(string, '(?<!\\)&}', '}');
-            if regexp(string, '(?<!\\)&\\')
-                % If there's a backslash after the ampersand, that means not only
-                % the backslash should be removed but the whole escape sequence,
-                % e.g. '\delta' or '\$'. Actually the '\delta' case is the
-                % trickier one since by now 'string' would have been turned from
-                % 'abc&\deltaef' into '\text{abc&}\delta{}\text{ef}', i.e. after
-                % the ampersand first comes a closing brace and then '\delta';
-                % the latter as well as the ampersand itself should be removed
-                % while the brace must remain in place to avoid unbalanced braces.
-                userWarning(m2t,                                                ...
-                    ['TeX string ''%s'' contains a special character '  ...
-                    'after an un-escaped ''&''. The output generated ' ...
-                    'by matlab2tikz will not precisely match that '    ...
-                    'which you see in Octave itself in that the '      ...
-                    'special character and the preceding ''&'' is '    ...
-                    'not replaced with a space.'], origstr)
-            end
-        otherwise
-            errorUnknownEnvironment();
-    end
-
-    % Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
-    % escape sequence. An un-escaped "~" produces weird output in Octave, thus
-    % give a warning in that case
-    switch m2t.env
-        case 'MATLAB'
-            string = strrep(string, '~', '\textasciitilde{}'); % or '\~{}'
-        case 'Octave'
-            string = strrep(string, '\~', '\textasciitilde{}'); % ditto
-            if regexp(string, '(?<!\\)~')
-                userWarning(m2t,                                             ...
-                    ['TeX string ''%s'' contains un-escaped ''~''. ' ...
-                    'For proper display in Octave you probably '    ...
-                    'want to escape it even though that''s '        ...
-                    'incompatible with MATLAB. '                    ...
-                    'In the matlab2tikz output it will have its '   ...
-                    'usual TeX function as a non-breaking space.'], ...
-                    origstr)
-            end
-        otherwise
-            errorUnknownEnvironment();
-    end
+    string = escapeAmpersands(m2t, string, origstr);
+    string = escapeTildes(m2t, string, origstr);
 
     % Convert '..._\text{abc}' and '...^\text{abc}' to '..._\text{a}\text{bc}'
     % and '...^\text{a}\text{bc}', respectively.
@@ -5594,6 +5537,70 @@ function string = parseTexSubstring(m2t, string)
     % Clean up: remove '{}' at the end of 'string' unless it's prefixed by a
     % backslash
     string = regexprep(string, '(?<!\\)\{\}$', '');
+end
+% ==============================================================================
+function string = escapeTildes(m2t, string, origstr)
+% Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
+% escape sequence. An un-escaped "~" produces weird output in Octave, thus
+% give a warning in that case
+    switch m2t.env
+        case 'MATLAB'
+            string = strrep(string, '~', '\textasciitilde{}'); % or '\~{}'
+        case 'Octave'
+            string = strrep(string, '\~', '\textasciitilde{}'); % ditto
+            if regexp(string, '(?<!\\)~')
+                userWarning(m2t,                                     ...
+                    ['TeX string ''%s'' contains un-escaped ''~''. ' ...
+                    'For proper display in Octave you probably '     ...
+                    'want to escape it even though that''s '         ...
+                    'incompatible with MATLAB. '                     ...
+                    'In the matlab2tikz output it will have its '    ...
+                    'usual TeX function as a non-breaking space.'],  ...
+                    origstr)
+            end
+        otherwise
+            errorUnknownEnvironment();
+    end
+end
+% ==============================================================================
+function string = escapeAmpersands(m2t, string, origstr)
+% Escape plain "&" in MATLAB and replace it and the following character with
+% a space in Octave unless the "&" is already escaped
+    switch m2t.env
+        case 'MATLAB'
+            string = strrep(string, '&', '\&');
+        case 'Octave'
+            % Ampersands should already be escaped in Octave.
+            % Octave (tested with 3.6.0) handles un-escaped ampersands a little
+            % funny in that it removes the following character, if there is one:
+            % 'abc&def'      -> 'abc ef'
+            % 'abc&\deltaef' -> 'abc ef'
+            % 'abc&$ef'      -> 'abc ef'
+            % 'abcdef&'      -> 'abcdef'
+            % Don't remove closing brace after '&' as this would result in
+            % unbalanced braces
+            string = regexprep(string, '(?<!\\)&(?!})', ' ');
+            string = regexprep(string, '(?<!\\)&}', '}');
+            if regexp(string, '(?<!\\)&\\')
+                % If there's a backslash after the ampersand, that means not only
+                % the backslash should be removed but the whole escape sequence,
+                % e.g. '\delta' or '\$'. Actually the '\delta' case is the
+                % trickier one since by now 'string' would have been turned from
+                % 'abc&\deltaef' into '\text{abc&}\delta{}\text{ef}', i.e. after
+                % the ampersand first comes a closing brace and then '\delta';
+                % the latter as well as the ampersand itself should be removed
+                % while the brace must remain in place to avoid unbalanced braces.
+                userWarning(m2t,                                                ...
+                    ['TeX string ''%s'' contains a special character '  ...
+                    'after an un-escaped ''&''. The output generated ' ...
+                    'by matlab2tikz will not precisely match that '    ...
+                    'which you see in Octave itself in that the '      ...
+                    'special character and the preceding ''&'' is '    ...
+                    'not replaced with a space.'], origstr)
+            end
+        otherwise
+            errorUnknownEnvironment();
+    end
 end
 % ==============================================================================
 function [string] = parseStringsAsMath(m2t, string)
