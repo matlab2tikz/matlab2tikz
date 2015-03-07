@@ -5576,8 +5576,29 @@ function string = parseTexSubstring(m2t, string)
     %  <-      $3           )
     string = regexprep(string, expr, '$1$2{$3}$2{');
 
-    % Some further processing makes the output behave more like TeX math mode,
-    % but only if the matlab2tikz parameter parseStringsAsMath=true.
+    string = parseStringsAsMath(m2t, string);
+
+    % Clean up: remove empty \text{}
+    string = strrep(string, '\text{}', '');
+    % \text{}\alpha{}\text{...} -> \alpha{}\text{...}
+
+    % Clean up: convert '{}\' to '\' unless it's prefixed by a backslash which
+    % means the opening brace is escaped and thus a printable character instead
+    % of a grouping brace.
+    string = regexprep(string, '(?<!\\)\{\}(\\)', '$1');
+    % \alpha{}\text{...} -> \alpha\text{...}
+
+    % Clean up: convert '{}}' to '}' unless it's prefixed by a backslash
+    string = regexprep(string, '(?<!\\)\{\}\}', '}');
+
+    % Clean up: remove '{}' at the end of 'string' unless it's prefixed by a
+    % backslash
+    string = regexprep(string, '(?<!\\)\{\}$', '');
+end
+% ==============================================================================
+function [string] = parseStringsAsMath(m2t, string)
+% Some further processing makes the output behave more like TeX math mode,
+% but only if the matlab2tikz parameter parseStringsAsMath=true.
     if m2t.cmdOpts.Results.parseStringsAsMath
 
         % Some characters should be in math mode: =-+/,.()<>0-9
@@ -5603,24 +5624,7 @@ function string = parseTexSubstring(m2t, string)
         % Single letters are most likely variables and thus should be in math mode
         string = regexprep(string, '\\text\{([a-zA-Z])\}', '$1');
 
-    end % parseStringsAsMath
-
-    % Clean up: remove empty \text{}
-    string = strrep(string, '\text{}', '');
-    % \text{}\alpha{}\text{...} -> \alpha{}\text{...}
-
-    % Clean up: convert '{}\' to '\' unless it's prefixed by a backslash which
-    % means the opening brace is escaped and thus a printable character instead
-    % of a grouping brace.
-    string = regexprep(string, '(?<!\\)\{\}(\\)', '$1');
-    % \alpha{}\text{...} -> \alpha\text{...}
-
-    % Clean up: convert '{}}' to '}' unless it's prefixed by a backslash
-    string = regexprep(string, '(?<!\\)\{\}\}', '}');
-
-    % Clean up: remove '{}' at the end of 'string' unless it's prefixed by a
-    % backslash
-    string = regexprep(string, '(?<!\\)\{\}$', '');
+    end
 end
 % ==============================================================================
 function tex = fonts2tex(fonts)
