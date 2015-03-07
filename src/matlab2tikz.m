@@ -804,8 +804,7 @@ function m2t = drawAxes(m2t, handle)
     m2t.axesContainers{end}.barAddedAxisOption = false;
 
     m2t.gcaAssociatedLegend = getAssociatedLegend(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % get the axes position
+
     m2t = retrievePositionOfAxes(m2t, handle);
     
     % Axis direction
@@ -841,7 +840,6 @@ function m2t = drawAxes(m2t, handle)
     
     m2t = add3DOptionsOfAxes(m2t, handle);
     
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
         % in MATLAB, they may still be visible. Well.
@@ -866,24 +864,14 @@ function m2t = drawAxes(m2t, handle)
         %    m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
         %    return
     end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     m2t.axesContainers{end}.name = 'axis';
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % background color
+    
     m2t = drawBackgroundOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % title
     m2t = drawTitleOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % axes locations
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % grid line style
     m2t = drawGridOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     m2t = drawLegendOptionsOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % add manually given extra axis options
+
     m2t.axesContainers{end}.options = opts_append_userdefined(...
         m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
 end
