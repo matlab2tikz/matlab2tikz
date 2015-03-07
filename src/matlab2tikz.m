@@ -1988,10 +1988,6 @@ function [m2t, str] = drawImage(m2t, handle)
     yData = get(handle, 'YData');
     cData = get(handle, 'CData');
 
-    % Flip the image over as the PNG gets written starting at (0,0),
-    % which is the top left corner.
-    cData = cData(end:-1:1,:,:);
-
     if (m2t.cmdOpts.Results.imagesAsPng)
         [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData);
     else
@@ -2020,18 +2016,19 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     m = size(cData, 1);
     n = size(cData, 2);
 
-    colorData = flipImageIfAxesReversed(m2t, colorData);
-
-    % Write an indexed or a truecolor image
-    alpha = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
-    if numel(alpha)==1
-        alpha = alpha(ones(size(colorData(:,:,1))));
+    alphaData = normalizedAlphaValues(m2t, get(handle,'AlphaData'), handle);
+    if numel(alphaData) == 1
+        alphaData = alphaData(ones(size(colorData(:,:,1))));
     end
-    hasAlpha = ~all(alpha(:)==1);
-    if hasAlpha
-        alphaOpts = {'Alpha', alpha};
-    else
+    [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaData);
+    
+    % Write an indexed or a truecolor image
+    hasAlpha = true;
+    if isfloat(alphaData) && all(alphaData(:) == 1)
         alphaOpts = {};
+        hasAlpha = false;
+    else
+        alphaOpts = {'Alpha', alphaData};
     end
     if (ndims(colorData) == 2) %#ok don't use ismatrix (cfr. #143)
         if size(m2t.currentHandles.colormap, 1) <= 256 && ~hasAlpha
@@ -2080,6 +2077,14 @@ end
 function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
 % writes an image as raw TikZ commands (STRONGLY DISCOURAGED)
     str = '';
+    
+    % set up cData
+    if ndims(cData) == 3
+        cData = cData(end:-1:1,:,:);
+    else
+        cData = cData(end:-1:1,:);
+    end
+    
 
     % Generate uniformly distributed X, Y, although xData and yData may be
     % non-uniform.
@@ -2091,7 +2096,7 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
             hX = (xData(end)-xData(1)) / (length(xData)-1);
         otherwise
             error('drawImage:arrayLengthMismatch', ...
-                'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', m, length(xData));
+                'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', size(cData,1), length(xData));
     end
     X = xData(1):hX:xData(end);
 
@@ -2128,13 +2133,15 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     end
 end
 % ==============================================================================
-function [colorData] = flipImageIfAxesReversed(m2t, colorData)
+function [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaData)
 % flip the image if reversed
     if m2t.xAxisReversed
         colorData = colorData(:, end:-1:1, :);
+        alphaData = alphaData(:, end:-1:1);
     end
-    if m2t.yAxisReversed
+    if ~m2t.yAxisReversed % y-axis direction is revesed normally for images, flip otherwise
         colorData = colorData(end:-1:1, :, :);
+        alphaData = alphaData(end:-1:1, :);
     end
 end
 % ==============================================================================
@@ -2156,7 +2163,10 @@ function alpha = normalizedAlphaValues(m2t, alpha, handle)
             error('matlab2tikz:UnknownAlphaMapping', ...
                   'Unknown alpha mapping "%s"', alphaMapping);
     end
-    alpha = min(1,max(alpha,0)); % clip at range [0, 1]
+    
+    if isfloat(alpha) %important, alpha data can have integer type which should not be scaled
+        alpha = min(1,max(alpha,0)); % clip at range [0, 1]
+    end
 end
 % ==============================================================================
 function [m2t, str] = drawContour(m2t, h)
@@ -4050,15 +4060,29 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
             case 'patch'
                 [m2t, xcolor] = patchcolor2xcolor(m2t, color, handle);
             case 'image'
-                [m2t, colorindex] = cdata2colorindex(m2t, color, handle);
-                m = size(colorindex, 1);
-                n = size(colorindex, 2);
+                
+                m = size(color,1);
+                n = size(color,2);
                 xcolor = cell(m, n);
-                for i = 1:m
-                    for j = 1:n
-                        [m2t, xc] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex(i,j), :));
-                        xcolor{i, j} = xc;
+                
+                if ndims(color) == 3
+                    for i = 1:m
+                        for j = 1:n
+                            [m2t, xc] = rgb2colorliteral(m2t, color(i,j, :));
+                            xcolor{i, j} = xc;
+                        end
                     end
+                elseif ndims(color) <= 2
+                    [m2t, colorindex] = cdata2colorindex(m2t, color, handle);
+                    for i = 1:m
+                        for j = 1:n
+                            [m2t, xc] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex(i,j), :));
+                            xcolor{i, j} = xc;
+                        end
+                    end
+                else
+                    error('matlab2tikz:getColor:image:colorDims',...
+                        'Image color data cannot have more than 3 dimensions');
                 end
             otherwise
                 error(['matlab2tikz:getColor', ...

@@ -1977,7 +1977,7 @@ function [stat] = hgTransformPlot()
   grid on;
   axis equal;
 
-  [x y z] = cylinder([.2 0]);
+  [x,y,z] = cylinder([.2 0]);
   h(1) = surface(x,y,z,'FaceColor','red');
   h(2) = surface(x,y,-z,'FaceColor','green');
   h(3) = surface(z,x,y,'FaceColor','blue');
@@ -2004,9 +2004,11 @@ function [stat] = logbaseline()
 end
 % =========================================================================
 function [stat] = alphaImage()
-  stat.description = 'Image with alpha channel.';
+  stat.description = 'Images with alpha channel.';
   stat.unreliable = isOctave; %FIXME: investigate
 
+  subplot(2,1,1);
+  title('Scaled Alpha Data');
   N = 20;
   h_imsc = imagesc(repmat(1:N, N, 1));
   mask = zeros(N);
@@ -2014,6 +2016,15 @@ function [stat] = alphaImage()
   set(h_imsc, 'AlphaData', double(~mask));
   set(h_imsc, 'AlphaDataMapping', 'scaled');
   set(gca, 'ALim', [-1,1]);
+  title('');
+  
+  subplot(2,1,2);
+  title('Integer Alpha Data');
+  N = 2;
+  line([0 N]+0.5, [0 N]+0.5, 'LineWidth', 2, 'Color','k');
+  line([0 N]+0.5, [N 0]+0.5, 'LineWidth', 2, 'Color','k');
+  hold on
+  imagesc([0,1;2,3],'AlphaData',uint8([64,128;192,256]))
 end
 % =========================================================================
 function stat = annotationAll()
