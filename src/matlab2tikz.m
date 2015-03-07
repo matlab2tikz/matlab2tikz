@@ -879,6 +879,18 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % grid line style
+    m2t = drawGridOfAxes(m2t, handle);
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    m2t = drawLegendOptionsOfAxes(m2t, handle);
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % add manually given extra axis options
+    m2t.axesContainers{end}.options = opts_append_userdefined(...
+        m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
+end
+% ==============================================================================
+function m2t = drawGridOfAxes(m2t, handle)
+% draws the grids of an axes
+%TODO: has{XYZ}Grid is always false without a good reason
     hasXGrid = false;
     hasYGrid = false;
     hasZGrid = false;
@@ -907,12 +919,6 @@ function m2t = drawAxes(m2t, handle)
                 'axis on top', []);
         end
     end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    m2t = drawLegendOptionsOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % add manually given extra axis options
-    m2t.axesContainers{end}.options = opts_append_userdefined(...
-        m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
 end
 % ==============================================================================
 function m2t = add3DOptionsOfAxes(m2t, handle)
