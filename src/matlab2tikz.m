@@ -4052,7 +4052,7 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
 % check if the color is straight given in rgb
 % -- notice that we need the extra NaN test with respect to the QUIRK
 %    below
-    if isreal(color) && numel(color)==3 && ~any(isnan(color))
+    if isRGBVector(color)
         % everything alright: rgb color here
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
     else
@@ -4090,6 +4090,11 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
                     mode);
         end
     end
+end
+% ==============================================================================
+function bool = isRGBVector(color) 
+% this function determines whether a vector could be an RGB color
+    bool = isreal(color) && numel(color)==3 && ~any(isnan(color));
 end
 % ==============================================================================
 function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
