@@ -2473,7 +2473,7 @@ function [m2t,str] = drawSurface(m2t, h)
     dx = get(h, 'XData');
     dy = get(h, 'YData');
     dz = get(h, 'ZData');
-    if any(~isfinite(dx(:))) || any(~isfinite(dy(:))) || any(~isfinite(dz(:)))
+    if any(~isfinite([dx(:); dy(:); dz(:)]))
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'unbounded coords', 'jump');
