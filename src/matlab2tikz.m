@@ -2787,23 +2787,8 @@ function [m2t, str] = drawRectangle(m2t, h)
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
 
     colorOptions = cell(0);
-    % fill color
-    faceColor    = get(h, 'FaceColor');
-    isAnnotation = strcmp(get(h,'type'),'rectangleshape') || strcmp(getOrDefault(h,'ShapeType',''),'rectangle');
-    isFlatColor  = strcmp(faceColor, 'flat');
-    if ~(isNone(faceColor) || (isAnnotation && isFlatColor))
-        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-        colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
-    end
-    % draw color
-    edgeColor = get(h, 'EdgeColor');
-    lineStyle = get(h, 'LineStyle');
-    if isNone(lineStyle) || isNone(edgeColor)
-        colorOptions{end+1} = 'draw=none';
-    else
-        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-        colorOptions{end+1} = sprintf('draw=%s', xEdgeColor);
-    end
+    [m2t, colorOptions] = drawFaceOfRectangle(m2t, h, colorOptions);
+    [m2t, colorOptions] = drawEdgeOfRectangle(m2t, h, colorOptions);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2812,6 +2797,30 @@ function [m2t, str] = drawRectangle(m2t, h)
     str = sprintf(['\\draw[%s] (axis cs:',m2t.ff,',',m2t.ff, ')', ...
                    ' rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
          join(m2t, drawOptions,', '), pos.left, pos.bottom, pos.right, pos.top);
+end
+% ==============================================================================
+function [m2t, colorOptions] = drawFaceOfRectangle(m2t, h, colorOptions)
+% draws the face (i.e. fill) of a Rectangle
+    faceColor    = get(h, 'FaceColor');
+    isAnnotation = strcmp(get(h,'type'),'rectangleshape') || ...
+                   strcmp(getOrDefault(h,'ShapeType',''),'rectangle');
+    isFlatColor  = strcmp(faceColor, 'flat');
+    if ~(isNone(faceColor) || (isAnnotation && isFlatColor))
+        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
+        colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
+    end
+end
+% ==============================================================================
+function [m2t, colorOptions] = drawEdgeOfRectangle(m2t, h, colorOptions)
+% draws the edges of a rectangle
+    edgeColor = get(h, 'EdgeColor');
+    lineStyle = get(h, 'LineStyle');
+    if isNone(lineStyle) || isNone(edgeColor)
+        colorOptions{end+1} = 'draw=none';
+    else
+        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
+        colorOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+    end
 end
 % ==============================================================================
 function [m2t,opts,s] = shaderOpts(m2t, handle, selectedType)
