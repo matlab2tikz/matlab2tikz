@@ -1411,6 +1411,12 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
             opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
     end
 
+    [m2t, str] = writePlotData(m2t, str, data, drawOptions, is3D, hasLines);
+    [m2t, str] = addLabel(m2t, str);
+end
+% ==============================================================================
+function [m2t, str] = writePlotData(m2t, str, data, drawOptions, is3D, hasLines)
+% actually writes the plot data to file
     if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
         [m2t, table, tabOpts] = makeTable(m2t, {'','',''}, data);
@@ -1438,8 +1444,6 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
             str = [str, Part];
         end
     end
-
-    [m2t, str] = addLabel(m2t, str);
 end
 % ==============================================================================
 function [data, is3D] = getXYZDataFromLine(m2t, h)
