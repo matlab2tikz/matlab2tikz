@@ -2470,25 +2470,11 @@ function [m2t,str] = drawSurface(m2t, h)
         return
     end
 
-    dx = get(h, 'XData');
-    dy = get(h, 'YData');
-    dz = get(h, 'ZData');
+    [dx, dy, dz, numrows] = getXYZDataFromSurface(h);
     if any(~isfinite([dx(:); dy(:); dz(:)]))
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'unbounded coords', 'jump');
-    end
-
-    [numcols, numrows] = size(dz);
-
-    % If dx or dy are given as vectors, convert them to the (wasteful) matrix
-    % representation first. This makes sure we can treat the data with one
-    % single sprintf() command below.
-    if isvector(dx)
-        dx = ones(numcols,1) * dx(:)';
-    end
-    if isvector(dy)
-        dy = dy(:) * ones(1,numrows);
     end
 
     % Enforce 'z buffer=sort' if shader is flat and is a 3D plot. It is to 
@@ -2582,6 +2568,26 @@ function [m2t,str] = drawSurface(m2t, h)
     % - handling of huge data amounts in LaTeX.
 
     [m2t, str] = addLabel(m2t, str);
+end
+% ==============================================================================
+function [dx, dy, dz, numrows] = getXYZDataFromSurface(h)
+% retrieves X, Y and Z data from a Surface plot. The data gets returned in a
+% wastefull format where the dimensions of these data vectors is equal, akin
+% to the format used by meshgrid.
+    dx = get(h, 'XData');
+    dy = get(h, 'YData');
+    dz = get(h, 'ZData');
+    [numcols, numrows] = size(dz);
+
+    % If dx or dy are given as vectors, convert them to the (wasteful) matrix
+    % representation first. This makes sure we can treat the data with one
+    % single sprintf() command below.
+    if isvector(dx)
+        dx = ones(numcols,1) * dx(:)';
+    end
+    if isvector(dy)
+        dy = dy(:) * ones(1,numrows);
+    end
 end
 % ==============================================================================
 function [m2t, str] = drawVisibleText(m2t, handle)
