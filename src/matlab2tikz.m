@@ -1439,10 +1439,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
         end
     end
 
-    if m2t.cmdOpts.Results.automaticLabels
-        [m2t, label] = addLabel(m2t);
-        str = [str, label];
-    end
+    [m2t, str] = addLabel(m2t, str);
 end
 % ==============================================================================
 function [data, is3D] = getXYZDataFromLine(m2t, h)
@@ -1467,13 +1464,20 @@ function [data, is3D] = getXYZDataFromLine(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t, str] = addLabel(m2t)
-    [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
-    label = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
-    str = sprintf('\\label{%s}\n', label);
-    m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
-
-    userWarning(m2t, 'Automatically added label ''%s'' for line plot.', label);
+function [m2t, generatedCodeSoFar, labelCode] = addLabel(m2t, generatedCodeSoFar)
+% conditionally add a LaTeX label after the current plot
+    if ~exist('generatedCodeSoFar','var') || isempty(generatedCodeSoFar)
+        generatedCodeSoFar = '';
+    end
+    if m2t.cmdOpts.Results.automaticLabels
+        [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
+        labelName = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
+        labelCode = sprintf('\\label{%s}\n', labelName);
+        m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
+        
+        userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
+        generatedCodeSoFar = [generatedCodeSoFar, labelCode];
+    end
 end
 % ==============================================================================
 function [m2t,str] = plotLine2d(m2t, opts, data)
@@ -2577,10 +2581,7 @@ function [m2t,str] = drawSurface(m2t, h)
     %   or adding: 'grid=none' from/in axis options
     % - handling of huge data amounts in LaTeX.
 
-    if m2t.cmdOpts.Results.automaticLabels
-        [m2t, label] = addLabel(m2t);
-        str = [str, label]; %#ok
-    end
+    [m2t, str] = addLabel(m2t, str);
 end
 % ==============================================================================
 function [m2t, str] = drawVisibleText(m2t, handle)
