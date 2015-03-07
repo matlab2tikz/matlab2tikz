@@ -4099,13 +4099,9 @@ end
 % ==============================================================================
 function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
 % Transforms a color of the edge or the face of a patch to an xcolor literal.
-    if ~ischar(color) && ~isnumeric(color)
-        error('patchcolor2xcolor:illegalInput', ...
-            'Input argument ''color'' not a string or numeric.');
-    end
     if isnumeric(color)
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
-    else
+    elseif ischar(color)
         switch color
             case 'flat'
                 cdata  = getCDataWithFallbacks(patchhandle);
@@ -4142,6 +4138,9 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                     error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
                     'Don''t know how to handle the color model ''%s''.',color);
         end
+    else
+        error('patchcolor2xcolor:illegalInput', ...
+            'Input argument ''color'' not a string or numeric.');
     end
 end
 % ==============================================================================
