@@ -2712,11 +2712,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
 % makes the tikz position string of a text object
     pos   = get(h, 'Position');
     units = get(h, 'Units');
-    xlim  = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
-    ylim  = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
-    zlim  = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
-    
-    is3D = m2t.axesContainers{end}.is3D;
+    is3D  = m2t.axesContainers{end}.is3D;
     
     % Deduce if text or textbox
     type = get(h,'type');
@@ -2772,10 +2768,19 @@ function [m2t,posString] = getPositionOfText(m2t, h)
         posString{ii} = formatDim(pos(ii), fmtUnit);
     end
     
-    % Create final string
-    posString = sprintf('(%s%s)',type,join(m2t,posString,','));
+    posString = sprintf('(%s%s)',type,join(m2t,posString,','));    
+    m2t = disableClippingInCurrentAxes(m2t, pos);
     
-    % Clipping
+end
+% ==============================================================================
+function m2t = disableClippingInCurrentAxes(m2t, pos)
+% Disables clipping in the current axes if the `pos` vector lies outside
+% the limits of the axes. 
+    xlim  = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
+    ylim  = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
+    zlim  = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
+    is3D  = m2t.axesContainers{end}.is3D;
+    
     xOutOfRange =          pos(1) < xlim(1) || pos(1) > xlim(2);
     yOutOfRange =          pos(2) < ylim(1) || pos(2) > ylim(2);
     zOutOfRange = is3D && (pos(3) < zlim(1) || pos(3) > zlim(2));
