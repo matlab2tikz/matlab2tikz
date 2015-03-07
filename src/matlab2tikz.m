@@ -828,6 +828,11 @@ function m2t = drawAxes(m2t, handle)
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'scale only axis', []);
+        if ~isempty(pos.aspectRatio)
+            m2t.axesContainers{end}.options = opts_add(...
+                m2t.axesContainers{end}.options, 'plot box ratio', ...
+                formatDim(pos.aspectRatio));
+        end
     end
     
 %     NOT USED IN BARPLOTS ANYMORE (if re-introduced make it
@@ -4809,6 +4814,14 @@ function position = getAxesPosition(m2t, handle, widthString, heightString, axes
     position.w.unit  = figDim.x.unit;
     position.h.value = relPos(4) * figDim.y.value;
     position.h.unit  = figDim.y.unit;
+    
+    if (strcmpi(get(handle, 'DataAspectRatioMode'), 'manual') ...
+            || strcmpi(get(handle, 'PlotBoxAspectRatioMode'), 'manual'))
+        % we need to set the plot box aspect ratio
+        position.aspectRatio = getPlotBoxAspectRatio(handle);
+    else
+        position.aspectRatio = [];
+    end
 end
 % ==============================================================================
 function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
@@ -4841,22 +4854,50 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             position(i,:) = axesPos ./ [figureSize, figureSize];
 
         end
-
-        % Change size if DataAspectRatioMode is manual
-        if isequal(lower(get(axesHandle,'DataAspectRatioMode')),'manual')
-            % get limits
-            xLim = get(axesHandle, 'XLim');
-            yLim = get(axesHandle, 'YLim');
-            % Get Aspect Ratio between width and height
-            aspectRatio = get(axesHandle,'DataAspectRatio');
-            % And Adjust it to the figure dimensions
-            aspectRatio = aspectRatio(1) * figWidth * (yLim(2) - yLim(1)) ...
-                / (aspectRatio(2) * figHeight * (xLim(2)-xLim(1)));
-            % Recompute height
-            newHeight = position(i,3) * aspectRatio;
-            % shrink width if newHeight is too large
-            if newHeight > position(i,4)
-                % Recompute width
+        
+        if ~(strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'auto') ...
+                && strcmpi(get(axesHandle, 'PlotBoxAspectRatioMode'), 'auto'))
+            limits = axis(axesHandle);
+            if ~strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'manual')
+                limits = mod(0:length(limits)-1,2); % plot box limitting mode
+                aspectRatio = get(axesHandle, 'PlotBoxAspectRatio');
+            else
+                aspectRatio = get(axesHandle, 'DataAspectRatio');
+            end
+            
+            if length(limits) == 4
+                % 2d view
+                aspectRatio = aspectRatio(1) * figWidth * (limits(4) - limits(3)) ...
+                    / (aspectRatio(2) * figHeight * (limits(2) - limits(1)));
+            else
+                % 3d view
+                
+                % project vertices of 3d plot box (this results in 2d coordinates in
+                % an absolute coordinate system that is scaled proportionally by
+                % Matlab to fit the axes position box)
+                projection = view(axesHandle);
+                vertex1 = projection * [0;0;0;1];
+                vertex2 = projection * [1;0;0;1];
+                vertex3 = projection * [0;1;0;1];
+                vertex4 = projection * [0;0;1;1];
+                vertex5 = projection * [1;1;0;1];
+                vertex6 = projection * [1;0;1;1];
+                vertex7 = projection * [0;1;1;1];
+                vertex8 = projection * [1;1;1;1];
+                
+                % the size of the projected plot box is limited by the long diagonals
+                diag1 = abs(vertex8(1:2) - vertex1(1:2));
+                diag2 = abs(vertex5(1:2) - vertex4(1:2));
+                diag3 = abs(vertex6(1:2) - vertex3(1:2));
+                diag4 = abs(vertex7(1:2) - vertex2(1:2));
+                
+                dimensions = max([diag1, diag2, diag3, diag4], [], 2);
+                aspectRatio = dimensions(2) * figWidth / (dimensions(1) * figHeight);
+            end
+            
+            % find limiting dimension and adjust position
+            axesAspectRatio = position(i,4) / position(i,3);
+            if aspectRatio > axesAspectRatio
                 newWidth = position(i,4) / aspectRatio;
                 % Center Axis
                 offset = (position(i,3) - newWidth) / 2;
@@ -4864,7 +4905,7 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                 % Store new width
                 position(i,3) = newWidth;
             else
-                % Center Axis
+                newHeight = position(i,3) * aspectRatio;
                 offset = (position(i,4) - newHeight) / 2;
                 position(i,2) = position(i,2) + offset;
                 % Store new height
@@ -4882,6 +4923,20 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
         % Recale
         position(:,[1 3]) = position(:,[1 3]) / max(axesBoundingBox([3 4]));
         position(:,[2 4]) = position(:,[2 4]) / max(axesBoundingBox([3 4]));
+    end
+end
+% ==============================================================================
+function aspectRatio=getPlotBoxAspectRatio(axesHandle)
+    limits=axis(axesHandle);
+    if any(isinf(limits))
+        aspectRatio=get(axesHandle,'PlotBoxAspectRatio');
+    else
+        % DataAspectRatio has priority
+        dataAspectRatio=get(axesHandle,'DataAspectRatio');
+        for i=1:length(limits)/2
+            aspectRatio(i)=abs(limits(2*i-1)-limits(2*i))/dataAspectRatio(i);
+        end
+        aspectRatio=aspectRatio/min(aspectRatio);
     end
 end
 % ==============================================================================
@@ -5834,13 +5889,21 @@ function str = formatDim(value, unit)
     end
     tolerance = 1e-7;
     value  = round(value/tolerance)*tolerance;
-    if value == 1 && ~isempty(unit) && unit(1) == '\'
-        str = unit; % just use the unit
-    else
-        str = sprintf('%.6f', value);
-        str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
-        str = regexprep(str, '\.$', ''); % remove trailing period
-        str = [str unit];
+    str = [];
+    for i = 1:length(value)
+        if value(i) == 1 && ~isempty(unit) && unit(1) == '\'
+            nextStr = unit; % just use the unit
+        else
+            nextStr = sprintf('%.6f', value(i));
+            nextStr = regexprep(nextStr, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
+            nextStr = regexprep(nextStr, '\.$', ''); % remove trailing period
+            nextStr = [nextStr unit];
+        end
+        if isempty(str)
+            str = nextStr;
+        else
+            str = [str, ' ', nextStr];
+        end
     end
 end
 % ==============================================================================
