@@ -2476,24 +2476,11 @@ function [m2t,str] = drawSurface(m2t, h)
             opts_add(m2t.axesContainers{end}.options, ...
             'unbounded coords', 'jump');
     end
-
-    % Enforce 'z buffer=sort' if shader is flat and is a 3D plot. It is to 
-    % avoid overlapping e.g. sphere plots and to properly mimic Matlab's 
-    % coloring of faces.
-    % NOTE:
-    % - 'z buffer=sort' is computationally more expensive for LaTeX, we 
-    %   could try to avoid it in some default situations, e.g. when dx and 
-    %   dy are rank-1-matrices.
-    % - hist3D plots should not be z-sorted or the highest bars will cover
-    %   the shortest one even if positioned in the back
-    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
-    isHist3D     = strcmpi(get(h,'tag'),'hist3');
-    is3D         = m2t.axesContainers{end}.is3D;
-    if is3D && isShaderFlat && ~isHist3D
-        opts = opts_add(opts, 'z buffer','sort');
-    end
+    
+    opts = addZBufferOptions(m2t, h, opts);
 
     % Check if 3D
+    is3D = m2t.axesContainers{end}.is3D;
     if is3D
         columnNames = {'x','y','z','c'};
         plotCmd     = 'addplot3';
@@ -2568,6 +2555,24 @@ function [m2t,str] = drawSurface(m2t, h)
     % - handling of huge data amounts in LaTeX.
 
     [m2t, str] = addLabel(m2t, str);
+end
+% ==============================================================================
+function opts = addZBufferOptions(m2t, h, opts)
+    % Enforce 'z buffer=sort' if shader is flat and is a 3D plot. It is to 
+    % avoid overlapping e.g. sphere plots and to properly mimic Matlab's 
+    % coloring of faces.
+    % NOTE:
+    % - 'z buffer=sort' is computationally more expensive for LaTeX, we 
+    %   could try to avoid it in some default situations, e.g. when dx and 
+    %   dy are rank-1-matrices.
+    % - hist3D plots should not be z-sorted or the highest bars will cover
+    %   the shortest one even if positioned in the back
+    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
+    isHist3D     = strcmpi(get(h,'tag'),'hist3');
+    is3D         = m2t.axesContainers{end}.is3D;
+    if is3D && isShaderFlat && ~isHist3D
+        opts = opts_add(opts, 'z buffer','sort');
+    end
 end
 % ==============================================================================
 function [dx, dy, dz, numrows] = getXYZDataFromSurface(h)
