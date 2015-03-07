@@ -806,39 +806,7 @@ function m2t = drawAxes(m2t, handle)
     m2t.gcaAssociatedLegend = getAssociatedLegend(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get the axes position
-    pos = getAxesPosition(m2t, handle, ...
-        m2t.cmdOpts.Results.width, ...
-        m2t.cmdOpts.Results.height, ...
-        m2t.axesBoundingBox);
-    % Axes should not be in px any more
-
-    % set the width
-    if (~m2t.cmdOpts.Results.noSize)
-        % optionally prevents setting the width and height of the axis
-        m2t = setDimensionOfAxes(m2t, 'width',  pos.w);
-        m2t = setDimensionOfAxes(m2t, 'height', pos.h);
-
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'at', ...
-                ['{(' formatDim(pos.x.value, pos.x.unit) ','...
-                      formatDim(pos.y.value, pos.y.unit) ')}']);
-        % the following is general MATLAB behavior:
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'scale only axis', []);
-    end
-    
-%     NOT USED IN BARPLOTS ANYMORE (if re-introduced make it
-%     m2t.axesContainer{end}.<field>)
-%     % Add the physical dimension of one unit of length in the coordinate system.
-%     % This is used later on to translate lengths to physical units where
-%     % necessary (e.g., in bar plots).
-%     m2t.unitlength.x.unit = pos.w.unit;
-%     xLim = get(m2t.currentHandles.gca, 'XLim');
-%     m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
-%     m2t.unitlength.y.unit = pos.h.unit;
-%     yLim = get(m2t.currentHandles.gca, 'YLim');
-%     m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
+    m2t = retrievePositionOfAxes(m2t, handle);
     
     % Axis direction
     for axis = 'xyz'
@@ -873,9 +841,6 @@ function m2t = drawAxes(m2t, handle)
     
     m2t = add3DOptionsOfAxes(m2t, handle);
     
-    hasXGrid = false;
-    hasYGrid = false;
-    hasZGrid = false;
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
@@ -914,6 +879,9 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % grid line style
+    hasXGrid = false;
+    hasYGrid = false;
+    hasZGrid = false;
     if hasXGrid || hasYGrid || hasZGrid
         matlabGridLineStyle = get(handle, 'GridLineStyle');
         % Take over the grid line style in any case when in strict mode.
@@ -977,6 +945,29 @@ function legendhandle = getAssociatedLegend(m2t, handle)
             % no action needed
         otherwise
             errorUnknownEnvironment();
+    end
+end
+% ==============================================================================
+function m2t = retrievePositionOfAxes(m2t, handle)
+% This retrieves the position of an axes and stores it into the m2t data
+% structure
+    
+    pos = getAxesPosition(m2t, handle, m2t.cmdOpts.Results.width, ...
+                          m2t.cmdOpts.Results.height, m2t.axesBoundingBox);
+    % set the width
+    if (~m2t.cmdOpts.Results.noSize)
+        % optionally prevents setting the width and height of the axis
+        m2t = setDimensionOfAxes(m2t, 'width',  pos.w);
+        m2t = setDimensionOfAxes(m2t, 'height', pos.h);
+
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, 'at', ...
+                ['{(' formatDim(pos.x.value, pos.x.unit) ','...
+                      formatDim(pos.y.value, pos.y.unit) ')}']);
+        % the following is general MATLAB behavior:
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'scale only axis', []);
     end
 end
 % ==============================================================================
