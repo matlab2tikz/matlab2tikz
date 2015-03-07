@@ -2780,13 +2780,10 @@ function [m2t, str] = drawRectangle(m2t, h)
     % TODO handle Curvature = [0.8 0.4]
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % Get draw options.
     lineStyle = get(h, 'LineStyle');
     lineWidth = get(h, 'LineWidth');
-    if isNone(lineStyle) || lineWidth==0
-        return
-    end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % Get draw options.
+
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
 
     colorOptions = cell(0);
