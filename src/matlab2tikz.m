@@ -1404,7 +1404,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     end
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    [data, is3D] = getXYZDataFromLine(m2t, h);
+    [data] = getXYZDataFromLine(m2t, h);
 
     % check if the *optional* argument 'yDeviation' was given
     hasDeviations = false;
@@ -1419,12 +1419,13 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
             opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
     end
 
-    [m2t, str] = writePlotData(m2t, str, data, drawOptions, is3D, hasLines);
+    [m2t, str] = writePlotData(m2t, str, data, drawOptions, hasLines);
     [m2t, str] = addLabel(m2t, str);
 end
 % ==============================================================================
-function [m2t, str] = writePlotData(m2t, str, data, drawOptions, is3D, hasLines)
+function [m2t, str] = writePlotData(m2t, str, data, drawOptions, hasLines)
 % actually writes the plot data to file
+    is3D = m2t.axesContainers{end}.is3D;
     if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
         [m2t, table, tabOpts] = makeTable(m2t, {'','',''}, data);
@@ -1454,7 +1455,7 @@ function [m2t, str] = writePlotData(m2t, str, data, drawOptions, is3D, hasLines)
     end
 end
 % ==============================================================================
-function [data, is3D] = getXYZDataFromLine(m2t, h)
+function [data] = getXYZDataFromLine(m2t, h)
 % Retrieves the X, Y and Z (if appropriate) data from a Line object
 %
 % First put them all together in one multiarray.
