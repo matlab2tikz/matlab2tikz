@@ -5891,7 +5891,7 @@ end
 % ==============================================================================
 function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
 % Returns a different value for MATLAB and Octave
-    switch m2t.env
+    switch getEnvironment()
         case 'MATLAB'
             retval = matlabValue;
         case 'Octave'
@@ -5902,11 +5902,12 @@ function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
 end
 % ==============================================================================
 function checkDeprecatedEnvironment(m2t, minimalVersions)
-    if isfield(minimalVersions, m2t.env)
-        minVersion = minimalVersions.(m2t.env);
-        envWithVersion = sprintf('%s %s', m2t.env, minVersion.name);
+    [env, envVersion] = getEnvironment();
+    if isfield(minimalVersions, env)
+        minVersion = minimalVersions.(env);
+        envWithVersion = sprintf('%s %s', env, minVersion.name);
 
-        if isVersionBelow(m2t.env, m2t.envVersion, minVersion.num)
+        if isVersionBelow(env, envVersion, minVersion.num)
             ID = 'matlab2tikz:deprecatedEnvironment';
 
             warningMessage = ['\n', repmat('=',1,80), '\n\n', ...
@@ -5925,7 +5926,7 @@ end
 % ==============================================================================
 function errorUnknownEnvironment()
     error('matlab2tikz:unknownEnvironment',...
-          'Unknown environment. Need MATLAB(R) or Octave.')
+          'Unknown environment "%s". Need MATLAB(R) or Octave.', getEnvironment);
 end
 % ==============================================================================
 function m2t = needsPgfplotsVersion(m2t, minVersion)
