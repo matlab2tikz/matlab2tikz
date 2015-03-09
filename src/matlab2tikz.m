@@ -5800,25 +5800,6 @@ function str  = opts_print(m2t, opts, sep)
     end
     str = join(m2t, c, sep);
 end
-% DEPRECATED OPTION ARRAYS =====================================================
-% TODO: Remove deprecated functions for next release
-function opts = addToOptions(opts, key, value)
-% Adds a key-value pair to a structure and does some sanity-checking.
-    warning('m2t:Deprecated','Use "opts_add" instead!');
-    if ~exist('value','var') || isempty(value)
-        value = [];
-    end
-    opts = opts_add(opts, key, value);
-end
-function opts = merge(opts, varargin)
-% Merges multiple option lists
-    warning('m2t:Deprecated','Use "opts_merge" instead!');
-    opts = opts_merge(opts, varargin{:});
-end
-function str = prettyprintOpts(m2t, opts, sep)
-    warning('m2t:Deprecated','Use "opts_print" instead!');
-    str = opts_print(m2t, opts, sep);
-end
 % ==============================================================================
 function [env,versionString] = getEnvironment()
 % Checks if we are in MATLAB or Octave.
