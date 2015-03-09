@@ -2819,8 +2819,8 @@ function [m2t, str] = drawRectangle(m2t, h)
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
 
     colorOptions = cell(0);
-    [m2t, colorOptions] = drawFaceOfRectangle(m2t, h, colorOptions);
-    [m2t, colorOptions] = drawEdgeOfRectangle(m2t, h, colorOptions);
+    [m2t, colorOptions] = getRectangleFaceOptions(m2t, h, colorOptions);
+    [m2t, colorOptions] = getRectangleEdgeOptions(m2t, h, colorOptions);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2831,7 +2831,7 @@ function [m2t, str] = drawRectangle(m2t, h)
          join(m2t, drawOptions,', '), pos.left, pos.bottom, pos.right, pos.top);
 end
 % ==============================================================================
-function [m2t, colorOptions] = drawFaceOfRectangle(m2t, h, colorOptions)
+function [m2t, colorOptions] = getRectangleFaceOptions(m2t, h, colorOptions)
 % draws the face (i.e. fill) of a Rectangle
     faceColor    = get(h, 'FaceColor');
     isAnnotation = strcmp(get(h,'type'),'rectangleshape') || ...
@@ -2843,7 +2843,7 @@ function [m2t, colorOptions] = drawFaceOfRectangle(m2t, h, colorOptions)
     end
 end
 % ==============================================================================
-function [m2t, colorOptions] = drawEdgeOfRectangle(m2t, h, colorOptions)
+function [m2t, colorOptions] = getRectangleEdgeOptions(m2t, h, colorOptions)
 % draws the edges of a rectangle
     edgeColor = get(h, 'EdgeColor');
     lineStyle = get(h, 'LineStyle');
