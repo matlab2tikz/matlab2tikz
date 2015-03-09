@@ -5808,20 +5808,30 @@ function str  = opts_print(m2t, opts, sep)
     str = join(m2t, c, sep);
 end
 % ==============================================================================
-function [env,versionString] = getEnvironment()
+function [env, versionString] = getEnvironment()
 % Checks if we are in MATLAB or Octave.
-    alternatives = {'MATLAB','Octave'};
-    for iCase = 1:numel(alternatives)
-        env   = alternatives{iCase};
-        vData = ver(env);
-        if ~isempty(vData)
-            versionString = vData.Version;
-            return; % found the right environment
+    persistent cache
+    
+    alternatives = {'MATLAB', 'Octave'};
+    if isempty(cache)
+        for iCase = 1:numel(alternatives)
+            env   = alternatives{iCase};
+            vData = ver(env);
+            if ~isempty(vData) % found the right environment
+                versionString = vData.Version;
+                % store in cache
+                cache.env = env;
+                cache.versionString = versionString;
+                return;
+            end
         end
-    end
-    % otherwise:
-    env = '';
-    versionString = '';
+        % fall-back values
+        env = '';
+        versionString = '';
+    else
+        env = cache.env;
+        versionString = cache.versionString;
+    end    
 end
 % ==============================================================================
 function bool = isHG2(m2t)
