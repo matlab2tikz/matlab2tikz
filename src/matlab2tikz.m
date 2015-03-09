@@ -1965,7 +1965,6 @@ function [m2t, str] = drawPatch(m2t, handle)
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
         str, plotCmd, drawOpts, opts_print(m2t, tabOpts, ', '), verticesTable, cycle);
 end
-
 % ==============================================================================
 function [cycle] = conditionallyCyclePath(data)
 % returns "--cycle" when the path should be cyclic in pgfplots
@@ -2311,7 +2310,6 @@ function [m2t, str] = drawContour(m2t, h)
       
   end
 end
-
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
 % Octave doesn't have the handle() function, so there's no way to determine
