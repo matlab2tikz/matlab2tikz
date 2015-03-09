@@ -391,8 +391,16 @@ function bool = isCellOrChar(x)
     bool = iscell(x) || ischar(x);
 end
 % ==============================================================================
+function bool = isRGBTuple(color)
+% Returns true when the color is a valid RGB tuple
+    bool = numel(color) == 3 && ...
+           all(isreal(color)) && ...
+           all( 0<=color & color<=1 ); % this also disallows NaN entries
+end
+% ==============================================================================
 function bool = isColorDefinitions(colors)
-    isRGBTuple   = @(c)( numel(c) == 3 && all(0<=c & c<=1) );
+% Returns true when the input is a cell array of color definitions, i.e.
+%  a cell array with in each cell a cell of the form {'name', [R G B]}
     isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
 
     bool = iscell(colors) && all(cellfun(isValidEntry, colors));
@@ -4064,7 +4072,7 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
 % check if the color is straight given in rgb
 % -- notice that we need the extra NaN test with respect to the QUIRK
 %    below
-    if isRGBVector(color)
+    if isRGBTuple(color)
         % everything alright: rgb color here
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
     else
@@ -4102,11 +4110,6 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
                     mode);
         end
     end
-end
-% ==============================================================================
-function bool = isRGBVector(color) 
-% this function determines whether a vector could be an RGB color
-    bool = isreal(color) && numel(color)==3 && ~any(isnan(color));
 end
 % ==============================================================================
 function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
