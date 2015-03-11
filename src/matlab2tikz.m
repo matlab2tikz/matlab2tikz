@@ -2112,7 +2112,7 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
             hY = (yData(end)-yData(1)) / (length(yData)-1);
         otherwise
             error('drawImage:arrayLengthMismatch', ...
-                'Array lengths not matching (%d = size(cdata,2) ~= length(yData) = %d).', n, length(yData));
+                'Array lengths not matching (%d = size(cData,2) ~= length(yData) = %d).', size(cData,2), length(yData));
     end
     Y = yData(1):hY:yData(end);
 
