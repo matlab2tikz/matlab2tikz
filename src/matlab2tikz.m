@@ -3460,9 +3460,9 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     str = '';
 
-    [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t,h);
-    
-    
+    [x,y,z,u,v,w] = getAndRescaleQuivers(m2t,h);
+    is3D = m2t.axesContainers{end}.is3D;
+
     % prepare output
     if is3D
         name = 'addplot3';
@@ -3526,7 +3526,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     %FIXME: external
 end
 % ==============================================================================
-function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t, h)
+function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)
 % get and rescale the arrows from a quivergroup object
     x = get(h, 'XData');
     y = get(h, 'YData');
@@ -3535,7 +3535,7 @@ function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t, h)
     u = get(h, 'UData');
     v = get(h, 'VData');
     w = getOrDefault(h, 'WData', []);
-    
+
     is3D = m2t.axesContainers{end}.is3D;
     if ~is3D
         z = 0;
