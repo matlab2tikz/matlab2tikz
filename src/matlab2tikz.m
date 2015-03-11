@@ -149,11 +149,9 @@ function matlab2tikz(varargin)
 %   found on http://www.mathworks.com/matlabcentral/fileexchange/12962 .
 
 %% Check if we are in MATLAB or Octave.
-[m2t.env, m2t.envVersion] = getEnvironment();
-
 minimalVersion = struct('MATLAB', struct('name','2014a', 'num',[8 3]), ...
                         'Octave', struct('name','3.8', 'num',[3 8]));
-checkDeprecatedEnvironment(m2t, minimalVersion);
+checkDeprecatedEnvironment(minimalVersion);
 
 m2t.cmdOpts = [];
 m2t.currentHandles = [];
@@ -330,7 +328,7 @@ if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
     m2t.website, ...
     m2t.version, ...
     m2t.cmdOpts.Results.showInfo, ...
-    m2t.env...
+    getEnvironment...
     );
     % Terminate conversion if update was successful (the user is notified
     % by the updater)
@@ -468,7 +466,6 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % actually print the stuff
     minimalPgfplotsVersion = formatPgfplotsVersion(m2t, m2t.pgfplotsVersion);
 
-    environment = sprintf('%s %s',m2t.env, m2t.envVersion);
     m2t.content.comment = sprintf('This file was created by %s.\n', m2t.name);
 
     if m2t.cmdOpts.Results.showInfo
@@ -713,7 +710,7 @@ interpreter  = '';
 hasLegend = false;
 
 % Check if current handle is referenced in a legend.
-switch m2t.env
+switch getEnvironment
     case 'MATLAB'
         % Make sure that m2t.legendHandles is a row vector.
         for legendHandle = m2t.legendHandles(:)'
@@ -933,7 +930,7 @@ end
 function legendhandle = getAssociatedLegend(m2t, handle)
 % Check if the axis is referenced by a legend (only necessary for Octave)
     legendhandle = [];
-    switch m2t.env
+    switch getEnvironment
         case 'Octave'
             % Make sure that m2t.legendHandles is a row vector.
             for lhandle = m2t.legendHandles(:)'
@@ -1061,7 +1058,7 @@ function m2t = drawLegendOptionsOfAxes(m2t, handle)
     % This could be done better with a heuristic of finding
     % the nearest legend to a plot, which would cope with legends outside
     % plot boundaries.
-    switch m2t.env
+    switch getEnvironment
         case 'MATLAB'
             legendHandle = legend(handle);
             if ~isempty(legendHandle)
@@ -3330,7 +3327,7 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
         % In HG2, BarPeers are sorted in reverse order wrt HG1
         bargroup = bargroup(end:-1:1);
     
-    elseif strcmpi(m2t.env,'MATLAB')
+    elseif strcmpi(getEnvironment, 'MATLAB')
         % In HG1, h is a double but bargroup a graphic object. Cast h to a
         % graphic object
         h = handle(h);
@@ -4384,7 +4381,7 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
 % determines the text and picture alignment inside a legend
     textalign = '';
     pictalign = '';
-    switch m2t.env
+    switch getEnvironment()
         case 'Octave'
             % Octave allows to change the alignment of legend text and
             % pictograms using legend('left') and legend('right')
@@ -5551,7 +5548,7 @@ function string = escapeTildes(m2t, string, origstr)
 % Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
 % escape sequence. An un-escaped "~" produces weird output in Octave, thus
 % give a warning in that case
-    switch m2t.env
+    switch getEnvironment
         case 'MATLAB'
             string = strrep(string, '~', '\textasciitilde{}'); % or '\~{}'
         case 'Octave'
@@ -5574,7 +5571,7 @@ end
 function string = escapeAmpersands(m2t, string, origstr)
 % Escape plain "&" in MATLAB and replace it and the following character with
 % a space in Octave unless the "&" is already escaped
-    switch m2t.env
+    switch getEnvironment
         case 'MATLAB'
             string = strrep(string, '&', '\&');
         case 'Octave'
@@ -5838,8 +5835,9 @@ function bool = isHG2(m2t)
 % Checks if graphics system is HG2 (true) or HG1 (false).
 % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
 % HG2 : MATLAB starting from R2014b (version 8.4)
-    bool = strcmpi(m2t.env,'MATLAB') && ...
-           ~isVersionBelow(m2t.env, m2t.envVersion, [8,4]);
+    [env, envVersion] = getEnvironment();
+    bool = strcmpi(getEnvironment,'MATLAB') && ...
+           ~isVersionBelow(env, envVersion, [8,4]);
 end
 % ==============================================================================
 function bool = isVersionBelow(env, versionA, versionB)
@@ -5901,7 +5899,7 @@ function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
     end
 end
 % ==============================================================================
-function checkDeprecatedEnvironment(m2t, minimalVersions)
+function checkDeprecatedEnvironment(minimalVersions)
     [env, envVersion] = getEnvironment();
     if isfield(minimalVersions, env)
         minVersion = minimalVersions.(env);
