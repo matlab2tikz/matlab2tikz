@@ -6,8 +6,8 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
-%   CLEANFIGURE('minimumPointsDistance',DOUBLE,...) explicitly specified the
-%   minimum distance between two points. (default: 1.0e-10)
+%   CLEANFIGURE('targetResolution','WxH@Res',...) explicitly specify the
+%   target resolution of the path simplification. (default: '15x9@600')
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -50,15 +50,15 @@ function cleanfigure(varargin)
 
   % Set up command line options.
   m2t.cmdOpts = m2tInputParser;
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', '15x9@600',@isstr);
 
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
   % Recurse down the tree of plot objects and clean up the leaves.
   for h = m2t.cmdOpts.Results.handle(:)'
-    recursiveCleanup(meta, h, m2t.cmdOpts.Results.minimumPointsDistance, 0);
+    recursiveCleanup(meta, h, m2t.cmdOpts.Results.targetResolution, 0);
   end
 
   % Reset to initial state.
@@ -67,7 +67,7 @@ function cleanfigure(varargin)
   return;
 end
 % =========================================================================
-function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
+function indent = recursiveCleanup(meta, h, targetResolution, indent)
 
   type = get(h, 'Type');
 
@@ -93,7 +93,7 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
   if ~isempty(children)
       for child = children(:)'
           indent = indent + 4;
-          indent = recursiveCleanup(meta, child, minimumPointsDistance, indent);
+          indent = recursiveCleanup(meta, child, targetResolution, indent);
           indent = indent - 4;
       end
   else
@@ -114,7 +114,7 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
           movePointsCloser(meta, h);
           % Don't be too precise.
           % coarsenLine(meta, h, minimumPointsDistance);
-          simplifyLine(meta, h);
+          simplifyLine(meta, h, targetResolution);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
       elseif strcmp(type, 'text')
@@ -368,7 +368,7 @@ function coarsenLine(meta, handle, minimumPointsDistance)
   return;
 end
 % =========================================================================
-function simplifyLine(meta, handle, varargin)
+function simplifyLine(meta, handle, targetResolution)
   % Reduce the number of data points in the line handle.
   % this can help with plots that contain a large amount of data points not
   % all of which need to be plotted.
@@ -379,7 +379,7 @@ function simplifyLine(meta, handle, varargin)
   zData = get(handle, 'ZData');
 
   if ~isempty(zData)
-    % Don't do funny stuff when zData is present.
+    % Don't simplify 3d plots
     return;
   end
   if isempty(xData) || isempty(yData)
@@ -398,28 +398,33 @@ function simplifyLine(meta, handle, varargin)
   if isYlog
 	  vyData = log10(yData);
   end
-
-  area = featureArea(vxData,vyData);
-
-  if nargin < 3
-	  % Automatically guess a tol based on the area of the figure and the expected
-	  % area of the output
-	  a = axis(meta.gca);
-	  if ~isXlog
-		  xrange = (a(2)-a(1));
-	  else
-		  xrange = (log10(a(2))-log10(a(1)));
-	  end
-	  if ~isYlog
-		  yrange = (a(4)-a(3));
-	  else
-		  yrange = (log10(a(4))-log10(a(3)));
-	  end
-	  
-	  tol = xrange*yrange/(15*9*600);
-  else
-	  tol = varargin(1);
+  
+  % Automatically guess a tol based on the area of the figure and the expected
+  % area of the output
+  if strcmp(targetResolution,'off')
+      return
   end
+  [parms,nparms] = sscanf(targetResolution,'%fx%f@%f');
+  
+  if nparms < 3
+      parms(3) = 600;
+  end
+  
+  a = axis(meta.gca);
+  if ~isXlog
+      xrange = (a(2)-a(1));
+  else
+      xrange = (log10(a(2))-log10(a(1)));
+  end
+  if ~isYlog
+      yrange = (a(4)-a(3));
+  else
+      yrange = (log10(a(4))-log10(a(3)));
+  end
+
+  tol = xrange*yrange/(4*prod(parms));
+  
+  area = featureArea(vxData,vyData);
 
   mask = area>tol;
   mask = mask | any(isnan(xData)')' | any(isnan(yData)')';
@@ -432,13 +437,19 @@ function simplifyLine(meta, handle, varargin)
 end
 % =========================================================================
 function a = featureArea(x,y)
+  % Performs Visvalingam's algorithm:
   % Given the path defined by x,y, the function returns list of the
   % maximum area associated with each point in the list. Path then can be
   % simplified via x = x(a>tol)
+  %
+  % Runtime is O(n log(n))
+  %
+  % Used by 'simplifyLine'. 
 
   n = numel(x);
   
-  %Index of next and previous elements in the linked list which defines the path
+  % Index of next and previous elements in the linked list which defines
+  % the path
   llst = [(0:n-1)',[(2:n)';0]];
   
   % 'heap' stores the points in an array heap, referenced by their index
@@ -450,13 +461,14 @@ function a = featureArea(x,y)
   pos = (1:len)';
 
 
-  area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + (y(i)-y(j)).*x(k))/2;
+  area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + ...
+                                                    (y(i)-y(j)).*x(k))/2;
 
-  %precompute the areas
+  % Endpoints are assigned infinte area so they can't be removed
   a = [Inf;area((1:n-2)', (2:n-1)', (3:n)')';Inf];
-  %return
 
-  %store the maximum area removed so far
+  % Keep track of the maximum area removed so far to ensure 
+  % a given element will only be excluded after earlier elements
   maxArea = 0;
 
   %Heapify the 'heap' array based on the area, using Floyd's alg
@@ -469,26 +481,26 @@ function a = featureArea(x,y)
 
   %Now remove the element with the minimum area off the heap
   while len > 1
-
-    % if a(heap(1)) > maxArea
-    %   maxArea = a(heap(1));
-    % else
-    %   % ensure current element will only be excluded when earlier elements
-    %   % are also excluded
-    %   a(heap(1)) = maxArea;
-    % end
+     if a(heap(1)) > maxArea
+       maxArea = a(heap(1));
+     else
+       % ensure current element will only be excluded when earlier elements
+       % are also excluded
+       a(heap(1)) = maxArea;
+     end
 
     % remove smallest element from heap
     e = pop(1);
 
-    % remove element from linked list
+   
     left = llst(e,1);
     right = llst(e,2);
+    % remove element from linked list
     llst(left,2) = llst(e,2);
     llst(right,1) = llst(e,1);
 
 
-    %Update area of neighbouring points to the removed, if they're not the ends
+    %Update area of neighbouring points if they're not the ends points
     if llst(left,1) > 0
       a(left) = area(llst(left,1),left,llst(left,2));
       pop(pos(left-1));
@@ -506,7 +518,7 @@ function a = featureArea(x,y)
     a(heap(1)) = maxArea;
   end
 
-  % Move element at "root" down the heap, assuming the heap property
+  % Movse element at "root" down the heap, assuming the heap property
   % is satisfied for the rest of the tree
   function down(root)
     while 2*root  <= len %while the root has a child
