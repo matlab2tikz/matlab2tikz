@@ -4381,7 +4381,7 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
 % determines the text and picture alignment inside a legend
     textalign = '';
     pictalign = '';
-    switch getEnvironment()
+    switch getEnvironment
         case 'Octave'
             % Octave allows to change the alignment of legend text and
             % pictograms using legend('left') and legend('right')
@@ -5889,7 +5889,7 @@ end
 % ==============================================================================
 function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
 % Returns a different value for MATLAB and Octave
-    switch getEnvironment()
+    switch getEnvironment
         case 'MATLAB'
             retval = matlabValue;
         case 'Octave'
