@@ -373,9 +373,14 @@ function coarsenLine(meta, handle, minimumPointsDistance)
 end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
-  % Reduce the number of data points in the line handle.
-  % this can help with plots that contain a large amount of data points not
-  % all of which need to be plotted.
+  % Reduce the number of data points in the line handle by removing
+  % points which add features with area smaller than 1/4 of a pixel at the
+  % target resolution. 
+  %
+  % targetResolution is in format 'WxH@Res', eg. '15x9@600' for a 15cm by 9cm
+  % figure at 600 ppcm.
+  % 
+  % Use targetResolution = 'off' to disable line simplification
 
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
@@ -388,6 +393,17 @@ function simplifyLine(meta, handle, targetResolution)
   end
   if isempty(xData) || isempty(yData)
       return;
+  end
+  if numel(xData) <= 2
+      return;
+  end
+  if strcmp(targetResolution,'off')
+      return
+  end
+  [parms,nparms] = sscanf(targetResolution,'%fx%f@%f');
+  
+  if nparms < 3
+      parms(3) = 600;
   end
 
   % Get info about log scaling.
@@ -403,17 +419,8 @@ function simplifyLine(meta, handle, targetResolution)
 	  vyData = log10(yData);
   end
   
-  % Automatically guess a tol based on the area of the figure and the expected
-  % area of the output
-  if strcmp(targetResolution,'off')
-      return
-  end
-  [parms,nparms] = sscanf(targetResolution,'%fx%f@%f');
-  
-  if nparms < 3
-      parms(3) = 600;
-  end
-  
+  % Automatically guess a tol based on the area of the figure and 
+  % the area and resolution of the output
   a = axis(meta.gca);
   if ~isXlog
       xrange = (a(2)-a(1));
@@ -425,17 +432,38 @@ function simplifyLine(meta, handle, targetResolution)
   else
       yrange = (log10(a(4))-log10(a(3)));
   end
-
   tol = xrange*yrange/(4*prod(parms));
   
-  area = featureArea(vxData,vyData);
 
-  mask = area>tol;
-  mask = mask | any(isnan(xData)')' | any(isnan(yData)')';
+  %Split up lines which are seperated by NaNs
+  nans = isnan(vxData) | isnan(vyData);
+  idx = sort([1,find(nans)-1,find(nans)+1,numel(vxData)]);
+  linesx = {};
+  linesy = {};
+  for i = 1:2:numel(idx)
+      %Simplify based on *visual* data
+      vx = vxData(idx(i):idx(i+1));
+      vy = vyData(idx(i):idx(i+1));
+      area = featureArea(vx,vy);
+      
+      %append actual data to the list
+      x = xData(idx(i):idx(i+1));
+      y = yData(idx(i):idx(i+1));
+      linesx{end+1} = x(area>tol);
+      linesy{end+1} = y(area>tol);
+      
+	  %Add nans back in on internal splits
+      if i+1 < numel(idx)
+          linesx{end+1} = nan;
+          linesy{end+1} = nan;
+      end
+  end
+  xData = horzcat(linesx{:});
+  yData = horzcat(linesy{:});
 
   % Set the new (masked) data.
-  set(handle, 'XData', xData(mask));
-  set(handle, 'YData', yData(mask));
+  set(handle, 'XData', xData);
+  set(handle, 'YData', yData);
 
   return;
 end
