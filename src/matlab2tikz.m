@@ -2389,7 +2389,7 @@ function m2t = drawAnnotations(m2t)
     end
 
     % Get annotation handles
-    if isHG2(m2t)
+    if isHG2
         annotPanes   = findobj(m2t.currentHandles.gcf,'Tag','scribeOverlay');
         annotHandles = findobj(get(annotPanes,'Children'),'Visible','on'); 
     else
@@ -3323,7 +3323,7 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
     bargroup     = get(h, prop);
     numBarSeries = numel(bargroup);
     
-    if isHG2(m2t)
+    if isHG2
         % In HG2, BarPeers are sorted in reverse order wrt HG1
         bargroup = bargroup(end:-1:1);
     
@@ -3902,7 +3902,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
                                                 cbarOptions, cbarStyleOptions);
 
     % axis label and direction
-    if isHG2(m2t)
+    if isHG2
         % VERSION: Starting from R2014b there is only one field `label`.
         % The colorbar's position determines, if it should be a x- or y-label.
 
@@ -5831,7 +5831,7 @@ function [env, versionString] = getEnvironment()
     end    
 end
 % ==============================================================================
-function bool = isHG2(m2t)
+function bool = isHG2()
 % Checks if graphics system is HG2 (true) or HG1 (false).
 % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
 % HG2 : MATLAB starting from R2014b (version 8.4)
