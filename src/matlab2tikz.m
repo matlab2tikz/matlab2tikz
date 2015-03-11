@@ -405,7 +405,7 @@ function bool = isColorDefinitions(colors)
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
-    encoding = switchMatOct(m2t, {'native', m2t.cmdOpts.Results.encoding}, {});
+    encoding = switchMatOct({'native', m2t.cmdOpts.Results.encoding}, {});
 
     fid      = fopen(filename, 'w', encoding{:});
     if fid == -1
@@ -559,7 +559,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     % Remove all legend handles, as they are treated separately.
     if ~isempty(axesHandles)
         % TODO fix for octave
-        tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
+        tagKeyword = switchMatOct('Tag', 'tag');
         % Find all legend handles. This is MATLAB-only.
         m2t.legendHandles = findobj(fh, tagKeyword, 'legend');
         m2t.legendHandles = m2t.legendHandles(:)';
@@ -569,7 +569,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
 
     % Remove all colorbar handles, as they are treated separately.
     if ~isempty(axesHandles)
-        colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
+        colorbarKeyword = switchMatOct('Colorbar', 'colorbar');
         % Find all colorbar handles. This is MATLAB-only.
         cbarHandles = findobj(fh, tagKeyword, colorbarKeyword);
         % Octave also finds text handles here; no idea why. Filter.
@@ -3319,7 +3319,7 @@ end
 % ==============================================================================
 function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
 % Get number of bars series and bar series id
-    prop         = switchMatOct(m2t, 'BarPeers', 'bargroup');
+    prop         = switchMatOct('BarPeers', 'bargroup');
     bargroup     = get(h, prop);
     numBarSeries = numel(bargroup);
     
@@ -5233,9 +5233,9 @@ function c = prettyPrint(m2t, strings, interpreter)
                 %       would not remedy the issue -- in that case 'string' would
                 %       contain backslashes introduced by brace escaping that are
                 %       not supposed to be printable characters.
-                repl = switchMatOct(m2t, '\\{', '\{');
+                repl = switchMatOct('\\{', '\{');
                 string = regexprep(string, '(?<!\\textbackslash){', repl);
-                repl = switchMatOct(m2t, '\\}', '\}');
+                repl = switchMatOct('\\}', '\}');
                 string = regexprep(string, '(?<!\\textbackslash{)}', repl);
                 string = strrep(string, '$', '\$');
                 string = strrep(string, '%', '\%');
@@ -5626,11 +5626,11 @@ function [string] = parseStringsAsMath(m2t, string)
         string = regexprep(string, '\\text\{(\s+)}', '$1');
 
         % '<<' probably means 'much smaller than', i.e. '\ll'
-        repl = switchMatOct(m2t, '$1\\ll{}$2', '$1\ll{}$2');
+        repl = switchMatOct('$1\\ll{}$2', '$1\ll{}$2');
         string = regexprep(string, '([^<])<<([^<])', repl);
 
         % '>>' probably means 'much greater than', i.e. '\gg'
-        repl = switchMatOct(m2t, '$1\\gg{}$2', '$1\gg{}$2');
+        repl = switchMatOct('$1\\gg{}$2', '$1\gg{}$2');
         string = regexprep(string, '([^>])>>([^>])', repl);
 
         % Single letters are most likely variables and thus should be in math mode
@@ -5887,7 +5887,7 @@ function arr = versionArray(env, str)
     arr = arr(:)';
 end
 % ==============================================================================
-function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
+function [retval] = switchMatOct(matlabValue, octaveValue)
 % Returns a different value for MATLAB and Octave
     switch getEnvironment
         case 'MATLAB'
