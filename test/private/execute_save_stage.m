@@ -21,7 +21,8 @@ function [status] = execute_save_stage(status, ipp)
                 print(reference_pdf, '-dpdf', '-S415,311', '-r150');
                 pause(1.0)
             otherwise
-                error('Unknown environment. Need MATLAB(R) or GNU Octave.')
+                error('matlab2tikz:UnknownEnvironment', ...
+                     'Unknown environment. Need MATLAB(R) or GNU Octave.')
         end
     catch %#ok
         e = lasterror('reset'); %#ok
