@@ -391,8 +391,16 @@ function bool = isCellOrChar(x)
     bool = iscell(x) || ischar(x);
 end
 % ==============================================================================
+function bool = isRGBTuple(color)
+% Returns true when the color is a valid RGB tuple
+    bool = numel(color) == 3 && ...
+           all(isreal(color)) && ...
+           all( 0<=color & color<=1 ); % this also disallows NaN entries
+end
+% ==============================================================================
 function bool = isColorDefinitions(colors)
-    isRGBTuple   = @(c)( numel(c) == 3 && all(0<=c & c<=1) );
+% Returns true when the input is a cell array of color definitions, i.e.
+%  a cell array with in each cell a cell of the form {'name', [R G B]}
     isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
 
     bool = iscell(colors) && all(cellfun(isValidEntry, colors));
@@ -707,34 +715,32 @@ hasLegend = false;
 % Check if current handle is referenced in a legend.
 switch m2t.env
     case 'MATLAB'
-        if ~isempty(m2t.legendHandles)
-            % Make sure that m2t.legendHandles is a row vector.
-            for legendHandle = m2t.legendHandles(:)'
-                ud = get(legendHandle, 'UserData');
-                if isfield(ud, 'handles')
-                    plotChildren = ud.handles;
-                else
-                    plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
+        % Make sure that m2t.legendHandles is a row vector.
+        for legendHandle = m2t.legendHandles(:)'
+            ud = get(legendHandle, 'UserData');
+            if isfield(ud, 'handles')
+                plotChildren = ud.handles;
+            else
+                plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
+            end
+            if ~isempty(child)
+                k = find(child == plotChildren);
+                if isempty(k)
+                    % Lines of error bar plots are not referenced
+                    % directly in legends as an error bars plot contains
+                    % two "lines": the data and the deviations. Here, the
+                    % legends refer to the specgraph.errorbarseries
+                    % handle which is 'Parent' to the line handle.
+                    k = find(get(child,'Parent') == plotChildren);
                 end
-                if ~isempty(child)
-                    k = find(child == plotChildren);
-                    if isempty(k)
-                        % Lines of error bar plots are not referenced
-                        % directly in legends as an error bars plot contains
-                        % two "lines": the data and the deviations. Here, the
-                        % legends refer to the specgraph.errorbarseries
-                        % handle which is 'Parent' to the line handle.
-                        k = find(get(child,'Parent') == plotChildren);
-                    end
-                    if ~isempty(k)
-                        % Legend entry found. Add it to the plot.
-                        hasLegend = true;
-                        interpreter = get(legendHandle, 'Interpreter');
-                        if ~isempty(ud) && isfield(ud,'strings')
-                            legendString = ud.lstrings(k);
-                        else
-                            legendString = get(child, 'DisplayName');
-                        end
+                if ~isempty(k)
+                    % Legend entry found. Add it to the plot.
+                    hasLegend = true;
+                    interpreter = get(legendHandle, 'Interpreter');
+                    if ~isempty(ud) && isfield(ud,'strings')
+                        legendString = ud.lstrings(k);
+                    else
+                        legendString = get(child, 'DisplayName');
                     end
                 end
             end
@@ -806,41 +812,8 @@ function m2t = drawAxes(m2t, handle)
     m2t.axesContainers{end}.barAddedAxisOption = false;
 
     m2t.gcaAssociatedLegend = getAssociatedLegend(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % get the axes position
-    pos = getAxesPosition(m2t, handle, ...
-        m2t.cmdOpts.Results.width, ...
-        m2t.cmdOpts.Results.height, ...
-        m2t.axesBoundingBox);
-    % Axes should not be in px any more
 
-    % set the width
-    if (~m2t.cmdOpts.Results.noSize)
-        % optionally prevents setting the width and height of the axis
-        m2t = setDimensionOfAxes(m2t, 'width',  pos.w);
-        m2t = setDimensionOfAxes(m2t, 'height', pos.h);
-
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'at', ...
-                ['{(' formatDim(pos.x.value, pos.x.unit) ','...
-                      formatDim(pos.y.value, pos.y.unit) ')}']);
-        % the following is general MATLAB behavior:
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'scale only axis', []);
-    end
-    
-%     NOT USED IN BARPLOTS ANYMORE (if re-introduced make it
-%     m2t.axesContainer{end}.<field>)
-%     % Add the physical dimension of one unit of length in the coordinate system.
-%     % This is used later on to translate lengths to physical units where
-%     % necessary (e.g., in bar plots).
-%     m2t.unitlength.x.unit = pos.w.unit;
-%     xLim = get(m2t.currentHandles.gca, 'XLim');
-%     m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
-%     m2t.unitlength.y.unit = pos.h.unit;
-%     yLim = get(m2t.currentHandles.gca, 'YLim');
-%     m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
+    m2t = retrievePositionOfAxes(m2t, handle);
     
     % Axis direction
     for axis = 'xyz'
@@ -875,10 +848,6 @@ function m2t = drawAxes(m2t, handle)
     
     m2t = add3DOptionsOfAxes(m2t, handle);
     
-    hasXGrid = false;
-    hasYGrid = false;
-    hasZGrid = false;
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
         % in MATLAB, they may still be visible. Well.
@@ -903,19 +872,24 @@ function m2t = drawAxes(m2t, handle)
         %    m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
         %    return
     end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     m2t.axesContainers{end}.name = 'axis';
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % background color
+    
     m2t = drawBackgroundOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % title
     m2t = drawTitleOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % axes locations
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % grid line style
+    m2t = drawGridOfAxes(m2t, handle);
+    m2t = drawLegendOptionsOfAxes(m2t, handle);
+
+    m2t.axesContainers{end}.options = opts_append_userdefined(...
+        m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
+end
+% ==============================================================================
+function m2t = drawGridOfAxes(m2t, handle)
+% draws the grids of an axes
+%TODO: has{XYZ}Grid is always false without a good reason
+    hasXGrid = false;
+    hasYGrid = false;
+    hasZGrid = false;
     if hasXGrid || hasYGrid || hasZGrid
         matlabGridLineStyle = get(handle, 'GridLineStyle');
         % Take over the grid line style in any case when in strict mode.
@@ -941,12 +915,6 @@ function m2t = drawAxes(m2t, handle)
                 'axis on top', []);
         end
     end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    m2t = drawLegendOptionsOfAxes(m2t, handle);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % add manually given extra axis options
-    m2t.axesContainers{end}.options = opts_append_userdefined(...
-        m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
 end
 % ==============================================================================
 function m2t = add3DOptionsOfAxes(m2t, handle)
@@ -979,6 +947,29 @@ function legendhandle = getAssociatedLegend(m2t, handle)
             % no action needed
         otherwise
             errorUnknownEnvironment();
+    end
+end
+% ==============================================================================
+function m2t = retrievePositionOfAxes(m2t, handle)
+% This retrieves the position of an axes and stores it into the m2t data
+% structure
+    
+    pos = getAxesPosition(m2t, handle, m2t.cmdOpts.Results.width, ...
+                          m2t.cmdOpts.Results.height, m2t.axesBoundingBox);
+    % set the width
+    if (~m2t.cmdOpts.Results.noSize)
+        % optionally prevents setting the width and height of the axis
+        m2t = setDimensionOfAxes(m2t, 'width',  pos.w);
+        m2t = setDimensionOfAxes(m2t, 'height', pos.h);
+
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, 'at', ...
+                ['{(' formatDim(pos.x.value, pos.x.unit) ','...
+                      formatDim(pos.y.value, pos.y.unit) ')}']);
+        % the following is general MATLAB behavior:
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            'scale only axis', []);
     end
 end
 % ==============================================================================
@@ -1399,9 +1390,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     % Line and marker options
     lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
-    drawOptions = [{sprintf('color=%s', xcolor)}, ... % color
-        lineOptions, ...
-        markerOptions];
+    drawOptions = [{sprintf('color=%s', xcolor)}, lineOptions, markerOptions];
 
     % Check for "special" lines, e.g.:
     if strcmp(get(h, 'Tag'), 'zplane_unitcircle')
@@ -1415,24 +1404,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     end
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % Plot the actual line data.
-    % First put them all together in one multiarray.
-    % This also implicitly makes sure that the lengths match.
-    try
-        xData = get(h, 'XData');
-        yData = get(h, 'YData');
-    catch
-        % Line annotation
-        xData = get(h, 'X');
-        yData = get(h, 'Y');
-    end
-    is3D  = m2t.axesContainers{end}.is3D;
-    if ~is3D
-        data = [xData(:), yData(:)];
-    else
-        zData = get(h, 'ZData');
-        data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
-    end
+    [data] = getXYZDataFromLine(m2t, h);
 
     % check if the *optional* argument 'yDeviation' was given
     hasDeviations = false;
@@ -1447,6 +1419,13 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
             opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
     end
 
+    [m2t, str] = writePlotData(m2t, str, data, drawOptions);
+    [m2t, str] = addLabel(m2t, str);
+end
+% ==============================================================================
+function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
+% actually writes the plot data to file
+    is3D = m2t.axesContainers{end}.is3D;
     if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
         [m2t, table, tabOpts] = makeTable(m2t, {'','',''}, data);
@@ -1455,7 +1434,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
                       opts_print(m2t, tabOpts,','), table);
     else
         % split the data into logical chunks
-        dataCell = splitLine(m2t, hasLines, data);
+        dataCell = splitLine(m2t, data);
 
         % plot them
         for k = 1:length(dataCell)
@@ -1474,20 +1453,44 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
             str = [str, Part];
         end
     end
-
-    if m2t.cmdOpts.Results.automaticLabels
-        [m2t, label] = addLabel(m2t);
-        str = [str, label];
+end
+% ==============================================================================
+function [data] = getXYZDataFromLine(m2t, h)
+% Retrieves the X, Y and Z (if appropriate) data from a Line object
+%
+% First put them all together in one multiarray.
+% This also implicitly makes sure that the lengths match.
+    try
+        xData = get(h, 'XData');
+        yData = get(h, 'YData');
+    catch
+        % Line annotation
+        xData = get(h, 'X');
+        yData = get(h, 'Y');
+    end
+    is3D  = m2t.axesContainers{end}.is3D;
+    if ~is3D
+        data = [xData(:), yData(:)];
+    else
+        zData = get(h, 'ZData');
+        data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
 end
 % ==============================================================================
-function [m2t, str] = addLabel(m2t)
-    [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
-    label = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
-    str = sprintf('\\label{%s}\n', label);
-    m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
-
-    userWarning(m2t, 'Automatically added label ''%s'' for line plot.', label);
+function [m2t, generatedCodeSoFar, labelCode] = addLabel(m2t, generatedCodeSoFar)
+% conditionally add a LaTeX label after the current plot
+    if ~exist('generatedCodeSoFar','var') || isempty(generatedCodeSoFar)
+        generatedCodeSoFar = '';
+    end
+    if m2t.cmdOpts.Results.automaticLabels
+        [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
+        labelName = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
+        labelCode = sprintf('\\label{%s}\n', labelName);
+        m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
+        
+        userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
+        generatedCodeSoFar = [generatedCodeSoFar, labelCode];
+    end
 end
 % ==============================================================================
 function [m2t,str] = plotLine2d(m2t, opts, data)
@@ -1509,21 +1512,24 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
         opts, str, opts_print(m2t, tabOpts, ', '), table);
 end
 % ==============================================================================
-function dataCell = splitLine(m2t, hasLines, data)
+function dataCell = splitLine(m2t, data)
 % Split the xData, yData into several chunks of data for each of which
 % an \addplot will be generated.
     dataCell{1} = data;
 
     % Split each of the current chunks further with respect to outliers.
-    dataCell = splitByArraySize(m2t, hasLines, dataCell);
+    dataCell = splitByArraySize(m2t, dataCell);
 end
 % ==============================================================================
-function dataCellNew = splitByArraySize(m2t, hasLines, dataCell)
+function dataCellNew = splitByArraySize(m2t, dataCell)
 % TeX parses files line by line with a buffer of size buf_size. If the
 % plot has too many data points, pdfTeX's buffer size may be exceeded.
 % As a work-around, the plot is split into several smaller plots, and this
 % function does the job.
     dataCellNew = cell(0);
+    
+    %TODO: pre-allocate the cell array such that it doesn't grow during the loop
+    %TODO: scale `maxChunkLength` with the number of columns in the data array
 
     for data = dataCell
         chunkStart = 1;
@@ -1534,11 +1540,14 @@ function dataCellNew = splitByArraySize(m2t, hasLines, dataCell)
             % Copy over the data to the new containers.
             dataCellNew{end+1} = data{1}(chunkStart:chunkEnd,:);
 
-            % If the plot has lines, add an extra (overlap) point to the data
-            % stream; otherwise the line between two data chunks would be broken.
-            if hasLines && chunkEnd~=len
+            % Add an extra (overlap) point to the data stream; 
+            % otherwise the line between two data chunks would be broken.
+            % Technically, this is only needed when the plot has a line
+            % connecting the points, but the additional cost when there is no
+            % line doesn't hustify the added complexity.
+            if chunkEnd~=len
                 dataCellNew{end} = [dataCellNew{end};...
-                    data{1}(chunkEnd+1,:)];
+                                    data{1}(chunkEnd+1,:)];
             end
 
             chunkStart = chunkEnd + 1;
@@ -1963,7 +1972,6 @@ function [m2t, str] = drawPatch(m2t, handle)
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
         str, plotCmd, drawOpts, opts_print(m2t, tabOpts, ', '), verticesTable, cycle);
 end
-
 % ==============================================================================
 function [cycle] = conditionallyCyclePath(data)
 % returns "--cycle" when the path should be cyclic in pgfplots
@@ -2309,7 +2317,6 @@ function [m2t, str] = drawContour(m2t, h)
       
   end
 end
-
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
 % Octave doesn't have the handle() function, so there's no way to determine
@@ -2480,44 +2487,17 @@ function [m2t,str] = drawSurface(m2t, h)
         return
     end
 
-    dx = get(h, 'XData');
-    dy = get(h, 'YData');
-    dz = get(h, 'ZData');
-    if any(~isfinite(dx(:))) || any(~isfinite(dy(:))) || any(~isfinite(dz(:)))
+    [dx, dy, dz, numrows] = getXYZDataFromSurface(h);
+    if any(~isfinite([dx(:); dy(:); dz(:)]))
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'unbounded coords', 'jump');
     end
-
-    [numcols, numrows] = size(dz);
-
-    % If dx or dy are given as vectors, convert them to the (wasteful) matrix
-    % representation first. This makes sure we can treat the data with one
-    % single sprintf() command below.
-    if isvector(dx)
-        dx = ones(numcols,1) * dx(:)';
-    end
-    if isvector(dy)
-        dy = dy(:) * ones(1,numrows);
-    end
-
-    % Enforce 'z buffer=sort' if shader is flat and is a 3D plot. It is to 
-    % avoid overlapping e.g. sphere plots and to properly mimic Matlab's 
-    % coloring of faces.
-    % NOTE:
-    % - 'z buffer=sort' is computationally more expensive for LaTeX, we 
-    %   could try to avoid it in some default situations, e.g. when dx and 
-    %   dy are rank-1-matrices.
-    % - hist3D plots should not be z-sorted or the highest bars will cover
-    %   the shortest one even if positioned in the back
-    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
-    isHist3D     = strcmpi(get(h,'tag'),'hist3');
-    is3D         = m2t.axesContainers{end}.is3D;
-    if is3D && isShaderFlat && ~isHist3D
-        opts = opts_add(opts, 'z buffer','sort');
-    end
+    
+    opts = addZBufferOptions(m2t, h, opts);
 
     % Check if 3D
+    is3D = m2t.axesContainers{end}.is3D;
     if is3D
         columnNames = {'x','y','z','c'};
         plotCmd     = 'addplot3';
@@ -2591,9 +2571,44 @@ function [m2t,str] = drawSurface(m2t, h)
     %   or adding: 'grid=none' from/in axis options
     % - handling of huge data amounts in LaTeX.
 
-    if m2t.cmdOpts.Results.automaticLabels
-        [m2t, label] = addLabel(m2t);
-        str = [str, label]; %#ok
+    [m2t, str] = addLabel(m2t, str);
+end
+% ==============================================================================
+function opts = addZBufferOptions(m2t, h, opts)
+    % Enforce 'z buffer=sort' if shader is flat and is a 3D plot. It is to 
+    % avoid overlapping e.g. sphere plots and to properly mimic Matlab's 
+    % coloring of faces.
+    % NOTE:
+    % - 'z buffer=sort' is computationally more expensive for LaTeX, we 
+    %   could try to avoid it in some default situations, e.g. when dx and 
+    %   dy are rank-1-matrices.
+    % - hist3D plots should not be z-sorted or the highest bars will cover
+    %   the shortest one even if positioned in the back
+    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
+    isHist3D     = strcmpi(get(h,'tag'),'hist3');
+    is3D         = m2t.axesContainers{end}.is3D;
+    if is3D && isShaderFlat && ~isHist3D
+        opts = opts_add(opts, 'z buffer','sort');
+    end
+end
+% ==============================================================================
+function [dx, dy, dz, numrows] = getXYZDataFromSurface(h)
+% retrieves X, Y and Z data from a Surface plot. The data gets returned in a
+% wastefull format where the dimensions of these data vectors is equal, akin
+% to the format used by meshgrid.
+    dx = get(h, 'XData');
+    dy = get(h, 'YData');
+    dz = get(h, 'ZData');
+    [numcols, numrows] = size(dz);
+
+    % If dx or dy are given as vectors, convert them to the (wasteful) matrix
+    % representation first. This makes sure we can treat the data with one
+    % single sprintf() command below.
+    if isvector(dx)
+        dx = ones(numcols,1) * dx(:)';
+    end
+    if isvector(dy)
+        dy = dy(:) * ones(1,numrows);
     end
 end
 % ==============================================================================
@@ -2710,11 +2725,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
 % makes the tikz position string of a text object
     pos   = get(h, 'Position');
     units = get(h, 'Units');
-    xlim  = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
-    ylim  = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
-    zlim  = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
-    
-    is3D = m2t.axesContainers{end}.is3D;
+    is3D  = m2t.axesContainers{end}.is3D;
     
     % Deduce if text or textbox
     type = get(h,'type');
@@ -2770,10 +2781,19 @@ function [m2t,posString] = getPositionOfText(m2t, h)
         posString{ii} = formatDim(pos(ii), fmtUnit);
     end
     
-    % Create final string
-    posString = sprintf('(%s%s)',type,join(m2t,posString,','));
+    posString = sprintf('(%s%s)',type,join(m2t,posString,','));    
+    m2t = disableClippingInCurrentAxes(m2t, pos);
     
-    % Clipping
+end
+% ==============================================================================
+function m2t = disableClippingInCurrentAxes(m2t, pos)
+% Disables clipping in the current axes if the `pos` vector lies outside
+% the limits of the axes. 
+    xlim  = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
+    ylim  = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
+    zlim  = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
+    is3D  = m2t.axesContainers{end}.is3D;
+    
     xOutOfRange =          pos(1) < xlim(1) || pos(1) > xlim(2);
     yOutOfRange =          pos(2) < ylim(1) || pos(2) > ylim(2);
     zOutOfRange = is3D && (pos(3) < zlim(1) || pos(3) > zlim(2));
@@ -2790,41 +2810,22 @@ function [m2t, str] = drawRectangle(m2t, h)
     % there may be some text objects floating around a Matlab figure which
     % are handled by other subfunctions (labels etc.) or don't need to be
     % handled at all
-    if ~isVisible(h) ||...
-            strcmp(get(h, 'HandleVisibility'), 'off')
+    if ~isVisible(h) || strcmp(get(h, 'HandleVisibility'), 'off')
         return;
     end
 
     % TODO handle Curvature = [0.8 0.4]
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % Get draw options.
     lineStyle = get(h, 'LineStyle');
     lineWidth = get(h, 'LineWidth');
-    if isNone(lineStyle) || lineWidth==0
-        return
-    end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % Get draw options.
+
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
 
     colorOptions = cell(0);
-    % fill color
-    faceColor    = get(h, 'FaceColor');
-    isAnnotation = strcmp(get(h,'type'),'rectangleshape') || strcmp(getOrDefault(h,'ShapeType',''),'rectangle');
-    isFlatColor  = strcmp(faceColor, 'flat');
-    if ~(isNone(faceColor) || (isAnnotation && isFlatColor))
-        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-        colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
-    end
-    % draw color
-    edgeColor = get(h, 'EdgeColor');
-    lineStyle = get(h, 'LineStyle');
-    if isNone(lineStyle) || isNone(edgeColor)
-        colorOptions{end+1} = 'draw=none';
-    else
-        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-        colorOptions{end+1} = sprintf('draw=%s', xEdgeColor);
-    end
+    [m2t, colorOptions] = getRectangleFaceOptions(m2t, h, colorOptions);
+    [m2t, colorOptions] = getRectangleEdgeOptions(m2t, h, colorOptions);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2833,6 +2834,30 @@ function [m2t, str] = drawRectangle(m2t, h)
     str = sprintf(['\\draw[%s] (axis cs:',m2t.ff,',',m2t.ff, ')', ...
                    ' rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
          join(m2t, drawOptions,', '), pos.left, pos.bottom, pos.right, pos.top);
+end
+% ==============================================================================
+function [m2t, colorOptions] = getRectangleFaceOptions(m2t, h, colorOptions)
+% draws the face (i.e. fill) of a Rectangle
+    faceColor    = get(h, 'FaceColor');
+    isAnnotation = strcmp(get(h,'type'),'rectangleshape') || ...
+                   strcmp(getOrDefault(h,'ShapeType',''),'rectangle');
+    isFlatColor  = strcmp(faceColor, 'flat');
+    if ~(isNone(faceColor) || (isAnnotation && isFlatColor))
+        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
+        colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
+    end
+end
+% ==============================================================================
+function [m2t, colorOptions] = getRectangleEdgeOptions(m2t, h, colorOptions)
+% draws the edges of a rectangle
+    edgeColor = get(h, 'EdgeColor');
+    lineStyle = get(h, 'LineStyle');
+    if isNone(lineStyle) || isNone(edgeColor)
+        colorOptions{end+1} = 'draw=none';
+    else
+        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
+        colorOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+    end
 end
 % ==============================================================================
 function [m2t,opts,s] = shaderOpts(m2t, handle, selectedType)
@@ -3435,9 +3460,9 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     str = '';
 
-    [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t,h);
-    
-    
+    [x,y,z,u,v,w] = getAndRescaleQuivers(m2t,h);
+    is3D = m2t.axesContainers{end}.is3D;
+
     % prepare output
     if is3D
         name = 'addplot3';
@@ -3501,7 +3526,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     %FIXME: external
 end
 % ==============================================================================
-function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t, h)
+function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)
 % get and rescale the arrows from a quivergroup object
     x = get(h, 'XData');
     y = get(h, 'YData');
@@ -3510,7 +3535,7 @@ function [x,y,z,u,v,w,is3D] = getAndRescaleQuivers(m2t, h)
     u = get(h, 'UData');
     v = get(h, 'VData');
     w = getOrDefault(h, 'WData', []);
-    
+
     is3D = m2t.axesContainers{end}.is3D;
     if ~is3D
         z = 0;
@@ -4052,7 +4077,7 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
 % check if the color is straight given in rgb
 % -- notice that we need the extra NaN test with respect to the QUIRK
 %    below
-    if isreal(color) && numel(color)==3 && ~any(isnan(color))
+    if isRGBTuple(color)
         % everything alright: rgb color here
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
     else
@@ -4094,13 +4119,9 @@ end
 % ==============================================================================
 function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
 % Transforms a color of the edge or the face of a patch to an xcolor literal.
-    if ~ischar(color) && ~isnumeric(color)
-        error('patchcolor2xcolor:illegalInput', ...
-            'Input argument ''color'' not a string or numeric.');
-    end
     if isnumeric(color)
         [m2t, xcolor] = rgb2colorliteral(m2t, color);
-    else
+    elseif ischar(color)
         switch color
             case 'flat'
                 cdata  = getCDataWithFallbacks(patchhandle);
@@ -4137,6 +4158,9 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                     error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
                     'Don''t know how to handle the color model ''%s''.',color);
         end
+    else
+        error('patchcolor2xcolor:illegalInput', ...
+            'Input argument ''color'' not a string or numeric.');
     end
 end
 % ==============================================================================
@@ -5477,8 +5501,79 @@ function string = parseTexSubstring(m2t, string)
     % it's best to include the workaround here.
     string = strrep(string, '§', '\S{}');
 
-    % Escape plain "&" in MATLAB and replace it and the following character with
-    % a space in Octave unless the "&" is already escaped
+    string = escapeAmpersands(m2t, string, origstr);
+    string = escapeTildes(m2t, string, origstr);
+
+    % Convert '..._\text{abc}' and '...^\text{abc}' to '..._\text{a}\text{bc}'
+    % and '...^\text{a}\text{bc}', respectively.
+    % Things get a little more complicated if instead of 'a' it's e.g. '$'. The
+    % latter has been converted to '\$' by now and simply extracting the first
+    % character from '\text{\$bc}' would result in '\text{$}\text{$bc}' which
+    % is syntactically wrong. Instead the whole command '\$' has to be moved in
+    % front of the \text{...} block, e.g. '..._\text{\$bc}' -> '..._\$\text{bc}'.
+    % Note that the problem does not occur for the majority of special characters
+    % like '\alpha' because they use math mode and therefore are never inside a
+    % \text{...} block to begin with. This means that the number of special
+    % characters affected by this issue is actually quite small:
+    %   $ # % & _ { } \o § ~ \ ^
+    expr = ['(_|\^)(\\text)\{([^}\\]|\\\$|\\#|\\%|\\&|\\_|\\\{|\\\}|', ...
+        ... %   (_/^)(\text) {(non-}\| \$ | \#| \%| \&| \_| \{ | \} |
+        ... %   ($1)( $2 )  (                 $3                      ->
+        '\\o\{\}|\\S\{\}|\\textasciitilde\{\}|\\textbackslash\{\}|', ...
+        ... %    \o{}  | \S{}  | \textasciitilde{}  | \textbackslash{}  |
+        ... %  <-                         $3                                 ->
+        '\\textasciicircum\{\})'];
+    %    \textasciicircum{} )
+    %  <-      $3           )
+    string = regexprep(string, expr, '$1$2{$3}$2{');
+
+    string = parseStringsAsMath(m2t, string);
+
+    % Clean up: remove empty \text{}
+    string = strrep(string, '\text{}', '');
+    % \text{}\alpha{}\text{...} -> \alpha{}\text{...}
+
+    % Clean up: convert '{}\' to '\' unless it's prefixed by a backslash which
+    % means the opening brace is escaped and thus a printable character instead
+    % of a grouping brace.
+    string = regexprep(string, '(?<!\\)\{\}(\\)', '$1');
+    % \alpha{}\text{...} -> \alpha\text{...}
+
+    % Clean up: convert '{}}' to '}' unless it's prefixed by a backslash
+    string = regexprep(string, '(?<!\\)\{\}\}', '}');
+
+    % Clean up: remove '{}' at the end of 'string' unless it's prefixed by a
+    % backslash
+    string = regexprep(string, '(?<!\\)\{\}$', '');
+end
+% ==============================================================================
+function string = escapeTildes(m2t, string, origstr)
+% Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
+% escape sequence. An un-escaped "~" produces weird output in Octave, thus
+% give a warning in that case
+    switch m2t.env
+        case 'MATLAB'
+            string = strrep(string, '~', '\textasciitilde{}'); % or '\~{}'
+        case 'Octave'
+            string = strrep(string, '\~', '\textasciitilde{}'); % ditto
+            if regexp(string, '(?<!\\)~')
+                userWarning(m2t,                                     ...
+                    ['TeX string ''%s'' contains un-escaped ''~''. ' ...
+                    'For proper display in Octave you probably '     ...
+                    'want to escape it even though that''s '         ...
+                    'incompatible with MATLAB. '                     ...
+                    'In the matlab2tikz output it will have its '    ...
+                    'usual TeX function as a non-breaking space.'],  ...
+                    origstr)
+            end
+        otherwise
+            errorUnknownEnvironment();
+    end
+end
+% ==============================================================================
+function string = escapeAmpersands(m2t, string, origstr)
+% Escape plain "&" in MATLAB and replace it and the following character with
+% a space in Octave unless the "&" is already escaped
     switch m2t.env
         case 'MATLAB'
             string = strrep(string, '&', '\&');
@@ -5514,54 +5609,11 @@ function string = parseTexSubstring(m2t, string)
         otherwise
             errorUnknownEnvironment();
     end
-
-    % Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
-    % escape sequence. An un-escaped "~" produces weird output in Octave, thus
-    % give a warning in that case
-    switch m2t.env
-        case 'MATLAB'
-            string = strrep(string, '~', '\textasciitilde{}'); % or '\~{}'
-        case 'Octave'
-            string = strrep(string, '\~', '\textasciitilde{}'); % ditto
-            if regexp(string, '(?<!\\)~')
-                userWarning(m2t,                                             ...
-                    ['TeX string ''%s'' contains un-escaped ''~''. ' ...
-                    'For proper display in Octave you probably '    ...
-                    'want to escape it even though that''s '        ...
-                    'incompatible with MATLAB. '                    ...
-                    'In the matlab2tikz output it will have its '   ...
-                    'usual TeX function as a non-breaking space.'], ...
-                    origstr)
-            end
-        otherwise
-            errorUnknownEnvironment();
-    end
-
-    % Convert '..._\text{abc}' and '...^\text{abc}' to '..._\text{a}\text{bc}'
-    % and '...^\text{a}\text{bc}', respectively.
-    % Things get a little more complicated if instead of 'a' it's e.g. '$'. The
-    % latter has been converted to '\$' by now and simply extracting the first
-    % character from '\text{\$bc}' would result in '\text{$}\text{$bc}' which
-    % is syntactically wrong. Instead the whole command '\$' has to be moved in
-    % front of the \text{...} block, e.g. '..._\text{\$bc}' -> '..._\$\text{bc}'.
-    % Note that the problem does not occur for the majority of special characters
-    % like '\alpha' because they use math mode and therefore are never inside a
-    % \text{...} block to begin with. This means that the number of special
-    % characters affected by this issue is actually quite small:
-    %   $ # % & _ { } \o § ~ \ ^
-    expr = ['(_|\^)(\\text)\{([^}\\]|\\\$|\\#|\\%|\\&|\\_|\\\{|\\\}|', ...
-        ... %   (_/^)(\text) {(non-}\| \$ | \#| \%| \&| \_| \{ | \} |
-        ... %   ($1)( $2 )  (                 $3                      ->
-        '\\o\{\}|\\S\{\}|\\textasciitilde\{\}|\\textbackslash\{\}|', ...
-        ... %    \o{}  | \S{}  | \textasciitilde{}  | \textbackslash{}  |
-        ... %  <-                         $3                                 ->
-        '\\textasciicircum\{\})'];
-    %    \textasciicircum{} )
-    %  <-      $3           )
-    string = regexprep(string, expr, '$1$2{$3}$2{');
-
-    % Some further processing makes the output behave more like TeX math mode,
-    % but only if the matlab2tikz parameter parseStringsAsMath=true.
+end
+% ==============================================================================
+function [string] = parseStringsAsMath(m2t, string)
+% Some further processing makes the output behave more like TeX math mode,
+% but only if the matlab2tikz parameter parseStringsAsMath=true.
     if m2t.cmdOpts.Results.parseStringsAsMath
 
         % Some characters should be in math mode: =-+/,.()<>0-9
@@ -5587,24 +5639,7 @@ function string = parseTexSubstring(m2t, string)
         % Single letters are most likely variables and thus should be in math mode
         string = regexprep(string, '\\text\{([a-zA-Z])\}', '$1');
 
-    end % parseStringsAsMath
-
-    % Clean up: remove empty \text{}
-    string = strrep(string, '\text{}', '');
-    % \text{}\alpha{}\text{...} -> \alpha{}\text{...}
-
-    % Clean up: convert '{}\' to '\' unless it's prefixed by a backslash which
-    % means the opening brace is escaped and thus a printable character instead
-    % of a grouping brace.
-    string = regexprep(string, '(?<!\\)\{\}(\\)', '$1');
-    % \alpha{}\text{...} -> \alpha\text{...}
-
-    % Clean up: convert '{}}' to '}' unless it's prefixed by a backslash
-    string = regexprep(string, '(?<!\\)\{\}\}', '}');
-
-    % Clean up: remove '{}' at the end of 'string' unless it's prefixed by a
-    % backslash
-    string = regexprep(string, '(?<!\\)\{\}$', '');
+    end
 end
 % ==============================================================================
 function tex = fonts2tex(fonts)
@@ -5771,25 +5806,6 @@ function str  = opts_print(m2t, opts, sep)
         end
     end
     str = join(m2t, c, sep);
-end
-% DEPRECATED OPTION ARRAYS =====================================================
-% TODO: Remove deprecated functions for next release
-function opts = addToOptions(opts, key, value)
-% Adds a key-value pair to a structure and does some sanity-checking.
-    warning('m2t:Deprecated','Use "opts_add" instead!');
-    if ~exist('value','var') || isempty(value)
-        value = [];
-    end
-    opts = opts_add(opts, key, value);
-end
-function opts = merge(opts, varargin)
-% Merges multiple option lists
-    warning('m2t:Deprecated','Use "opts_merge" instead!');
-    opts = opts_merge(opts, varargin{:});
-end
-function str = prettyprintOpts(m2t, opts, sep)
-    warning('m2t:Deprecated','Use "opts_print" instead!');
-    str = opts_print(m2t, opts, sep);
 end
 % ==============================================================================
 function [env,versionString] = getEnvironment()
