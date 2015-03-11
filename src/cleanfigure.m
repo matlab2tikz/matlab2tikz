@@ -113,7 +113,8 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
           % Don't be too precise.
-          coarsenLine(meta, h, minimumPointsDistance);
+          % coarsenLine(meta, h, minimumPointsDistance);
+          simplifyLine(meta, h);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
       elseif strcmp(type, 'text')
@@ -369,6 +370,219 @@ function coarsenLine(meta, handle, minimumPointsDistance)
   set(handle, 'YData', data(mask, 2));
 
   return;
+end
+% =========================================================================
+function simplifyLine(meta, handle, varargin)
+  % Reduce the number of data points in the line handle.
+  % this can help with plots that contain a large amount of data points not
+  % all of which need to be plotted.
+
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  zData = get(handle, 'ZData');
+
+  if ~isempty(zData)
+    % Don't do funny stuff when zData is present.
+    return;
+  end
+  if isempty(xData) || isempty(yData)
+      return;
+  end
+
+  % Get info about log scaling.
+  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+  vxData = xData;
+  if isXlog
+	  vxData = log10(xData);
+  end
+
+  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+  vyData = yData;
+  if isYlog
+	  vyData = log10(yData);
+  end
+
+  area = featureArea(vxData,vyData);
+
+  if nargin < 3
+	  % Automatically guess a tol based on the area of the figure and the expected
+	  % area of the output
+	  a = axis(meta.gca);
+	  if ~isXlog
+		  xrange = (a(2)-a(1));
+	  else
+		  xrange = (log10(a(2))-log10(a(1)));
+	  end
+	  if ~isYlog
+		  yrange = (a(4)-a(3));
+	  else
+		  yrange = (log10(a(4))-log10(a(3)));
+	  end
+	  
+	  tol = xrange*yrange/(15*9*600);
+  else
+	  tol = varargin(1);
+  end
+
+  mask = area>tol;
+  mask = mask | any(isnan(xData)')' | any(isnan(yData)')';
+
+  % Set the new (masked) data.
+  set(handle, 'XData', xData(mask));
+  set(handle, 'YData', yData(mask));
+
+  return;
+end
+% =========================================================================
+function a = featureArea(x,y)
+  % Given the path defined by x,y, the function returns list of the
+  % maximum area associated with each point in the list. Path then can be
+  % simplified via x = x(a>tol)
+
+  n = numel(x);
+  
+  %Index of next and previous elements in the linked list which defines the path
+  llst = [(0:n-1)',[(2:n)';0]];
+  
+  % 'heap' stores the points in an array heap, referenced by their index
+  % First and last points are assumed fixed and not added to the heap
+  % 'pos' stores the current position of each point in the heap array
+  % will be needed to lookup position of updated points
+  heap = (2:n-1)';
+  len = numel(heap);
+  pos = (1:len)';
+
+
+  area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + (y(i)-y(j)).*x(k))/2;
+
+  %precompute the areas
+  a = [Inf;area((1:n-2)', (2:n-1)', (3:n)')';Inf];
+  %return
+
+  %store the maximum area removed so far
+  maxArea = 0;
+
+  %Heapify the 'heap' array based on the area, using Floyd's alg
+  root = bitshift(len,-1); %starting with the first parent node
+  while root >= 1
+    down(root);
+    root = root-1;
+  end
+  
+
+  %Now remove the element with the minimum area off the heap
+  while len > 1
+
+    % if a(heap(1)) > maxArea
+    %   maxArea = a(heap(1));
+    % else
+    %   % ensure current element will only be excluded when earlier elements
+    %   % are also excluded
+    %   a(heap(1)) = maxArea;
+    % end
+
+    % remove smallest element from heap
+    e = pop(1);
+
+    % remove element from linked list
+    left = llst(e,1);
+    right = llst(e,2);
+    llst(left,2) = llst(e,2);
+    llst(right,1) = llst(e,1);
+
+
+    %Update area of neighbouring points to the removed, if they're not the ends
+    if llst(left,1) > 0
+      a(left) = area(llst(left,1),left,llst(left,2));
+      pop(pos(left-1));
+      push();
+    end
+
+    if llst(right,2) > 0
+      a(right) = area(llst(right,1),right,llst(right,2));
+      pop(pos(right-1));
+      push();
+    end
+  end
+
+  if numel(heap) >0 &&  a(heap(1)) < maxArea
+    a(heap(1)) = maxArea;
+  end
+
+  % Move element at "root" down the heap, assuming the heap property
+  % is satisfied for the rest of the tree
+  function down(root)
+    while 2*root  <= len %while the root has a child
+      lchild = 2*root; 
+      rchild = lchild+1;
+      % Find the minimum of the root and its children
+      swap = root;
+      if a(heap(lchild)) < a(heap(swap)) ...
+          || (a(heap(lchild)) == a(heap(swap)) && rand(1)>0.5)
+        swap = lchild;
+      end
+      if rchild <= len && (a(heap(rchild)) < a(heap(swap)) ...
+          || (a(heap(rchild)) == a(heap(swap)) && rand(1)>0.5))
+        swap = rchild;
+      end
+
+      % if the root is the minimum, then we're done
+      if swap == root
+        break
+        % otherwise, swap the root and its minimum child
+      else
+        %swap in the pos array
+        pos(heap(root)-1) = swap;
+        pos(heap(swap)-1) = root;
+
+        %swap in the heap array
+        t = heap(root);
+        heap(root) = heap(swap);
+        heap(swap) = t;
+
+
+        root = swap;
+      end
+    end
+  end
+
+  function up(child)
+    while child > 1
+      parent = bitshift(n,-1);
+      if a(heap(child)) < a(heap(parent)) ...
+              || (a(heap(child)) == a(heap(parent)) && rand(1)>0.5)
+        pos(heap(parent)-1) = child;
+        pos(heap(child)-1) = parent;
+
+        t = heap(parent);
+        heap(parent) = heap(child);
+        heap(child) = t;
+
+        child = parent;
+      else
+        break
+      end
+    end
+  end
+
+  function e = pop(i)
+    %Swap the first and the last
+    pos(heap(i)-1) = len;
+    pos(heap(len)-1) = i;
+
+    e = heap(i);
+    heap(i) = heap(len);
+    heap(len) = e;
+
+    len = len-1;
+    down(i);
+  end
+
+  function push()
+      len = len+1;
+      up(len);
+  end
 end
 % =========================================================================
 function movePointsCloser(meta, handle)
