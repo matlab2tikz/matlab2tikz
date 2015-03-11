@@ -3222,7 +3222,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         case 'grouped'  % grouped bar plots
             
             % Get number of bars series and bar series id
-            [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h);
+            [numBarSeries, barSeriesId] = getNumBarAndId(h);
 
             % Maximum group width relative to the minimum distance between two
             % x-values. See <MATLAB>/toolbox/matlab/specgraph/makebars.m
@@ -3317,7 +3317,7 @@ function [m2t, str] = drawBarseries(m2t, h)
                  opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
-function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
+function [numBarSeries, barSeriesId] = getNumBarAndId(h)
 % Get number of bars series and bar series id
     prop         = switchMatOct('BarPeers', 'bargroup');
     bargroup     = get(h, prop);
