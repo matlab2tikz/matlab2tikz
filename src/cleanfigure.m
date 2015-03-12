@@ -397,7 +397,7 @@ function simplifyLine(meta, handle, targetResolution)
   if numel(xData) <= 2
       return;
   end
-  if strcmp(targetResolution,'off')
+  if strcmpi(targetResolution,'off')
       return
   end
   [parms,nparms] = sscanf(targetResolution,'%fx%f@%f');
