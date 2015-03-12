@@ -464,7 +464,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     set(0, 'ShowHiddenHandles', 'off');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % actually print the stuff
-    minimalPgfplotsVersion = formatPgfplotsVersion(m2t, m2t.pgfplotsVersion);
+    minimalPgfplotsVersion = formatPgfplotsVersion(m2t.pgfplotsVersion);
 
     m2t.content.comment = sprintf('This file was created by %s.\n', m2t.name);
 
@@ -5933,7 +5933,7 @@ function m2t = needsPgfplotsVersion(m2t, minVersion)
     end
 end
 % ==============================================================================
-function str = formatPgfplotsVersion(m2t, version)
+function str = formatPgfplotsVersion(version)
     version = versionArray(version);
     if all(isfinite(version))
         str = sprintf('%d.',version);
