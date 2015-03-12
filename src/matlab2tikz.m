@@ -4990,47 +4990,38 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
 
         end
         
-        if ~(strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'auto') ...
-                && strcmpi(get(axesHandle, 'PlotBoxAspectRatioMode'), 'auto'))
-            limits = axis(axesHandle);
-            if ~strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'manual')
-                limits = mod(0:length(limits)-1,2); % plot box limitting mode
-                aspectRatio = get(axesHandle, 'PlotBoxAspectRatio');
-            else
-                aspectRatio = get(axesHandle, 'DataAspectRatio');
+        if (strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'auto') ...
+                || strcmpi(get(axesHandle, 'PlotBoxAspectRatioMode'), 'auto'))
+                
+            if strcmpi(get(axesHandle,'Projection'),'Perspective')
+                userWarning(m2t,'Perspective projections are not currently supported')
             end
             
-            if length(limits) == 4
-                % 2d view
-                aspectRatio = aspectRatio(1) * figWidth * (limits(4) - limits(3)) ...
-                    / (aspectRatio(2) * figHeight * (limits(2) - limits(1)));
-            else
-                % 3d view
-                
-                % project vertices of 3d plot box (this results in 2d coordinates in
-                % an absolute coordinate system that is scaled proportionally by
-                % Matlab to fit the axes position box)
-                projection = view(axesHandle);
-                vertex1 = projection * [0;0;0;1];
-                vertex2 = projection * [1;0;0;1];
-                vertex3 = projection * [0;1;0;1];
-                vertex4 = projection * [0;0;1;1];
-                vertex5 = projection * [1;1;0;1];
-                vertex6 = projection * [1;0;1;1];
-                vertex7 = projection * [0;1;1;1];
-                vertex8 = projection * [1;1;1;1];
-                
-                % the size of the projected plot box is limited by the long diagonals
-                diag1 = abs(vertex8(1:2) - vertex1(1:2));
-                diag2 = abs(vertex5(1:2) - vertex4(1:2));
-                diag3 = abs(vertex6(1:2) - vertex3(1:2));
-                diag4 = abs(vertex7(1:2) - vertex2(1:2));
-                
-                dimensions = max([diag1, diag2, diag3, diag4], [], 2);
-                aspectRatio = dimensions(2) * figWidth / (dimensions(1) * figHeight);
-            end
+            % project vertices of 3d plot box (this results in 2d coordinates in
+            % an absolute coordinate system that is scaled proportionally by
+            % Matlab to fit the axes position box)
+            projection = view(axesHandle);
+            vertices = projection * [0, 1, 0, 0, 1, 1, 0, 1;
+                                     0, 0, 1, 0, 1, 0, 1, 1;
+                                     0, 0, 0, 1, 0, 1, 1, 1; 
+                                     1, 1, 1, 1, 1, 1, 1, 1];
+                         
+            % each of the columns of vertices represents a vertex of the 3D axes
+            % but we only need their XY coordinates
+            verticesXY = vertices([1 2], :);
+                                
+            % the size of the projected plot box is limited by the long diagonals
+            % The matrix A determines the connectivity, e.g. the first diagonal runs from vertices(:,3) -> vertices(:,4)
+            A = [ 0,  0,  0, -1, +1,  0,  0,  0;
+                  0,  0, -1,  0,  0, +1,  0,  0;
+                  0, -1,  0,  0,  0,  0, +1,  0;
+                 -1,  0,  0,  0,  0,  0,  0, +1];
+            diagonals = verticesXY * A';
+            % each of the columns of this matrix contains a the X and Y distance of a diagonal
+            dimensions = max(abs(diagonals), [], 2);
             
             % find limiting dimension and adjust position
+            aspectRatio = dimensions(2) * figWidth / (dimensions(1) * figHeight);
             axesAspectRatio = position(i,4) / position(i,3);
             if aspectRatio > axesAspectRatio
                 newWidth = position(i,4) / aspectRatio;
