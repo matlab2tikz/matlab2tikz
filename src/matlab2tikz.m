@@ -149,11 +149,9 @@ function matlab2tikz(varargin)
 %   found on http://www.mathworks.com/matlabcentral/fileexchange/12962 .
 
 %% Check if we are in MATLAB or Octave.
-[m2t.env, m2t.envVersion] = getEnvironment();
-
 minimalVersion = struct('MATLAB', struct('name','2014a', 'num',[8 3]), ...
                         'Octave', struct('name','3.8', 'num',[3 8]));
-checkDeprecatedEnvironment(m2t, minimalVersion);
+checkDeprecatedEnvironment(minimalVersion);
 
 m2t.cmdOpts = [];
 m2t.currentHandles = [];
@@ -330,7 +328,7 @@ if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
     m2t.website, ...
     m2t.version, ...
     m2t.cmdOpts.Results.showInfo, ...
-    m2t.env...
+    getEnvironment...
     );
     % Terminate conversion if update was successful (the user is notified
     % by the updater)
@@ -407,7 +405,7 @@ function bool = isColorDefinitions(colors)
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
-    encoding = switchMatOct(m2t, {'native', m2t.cmdOpts.Results.encoding}, {});
+    encoding = switchMatOct({'native', m2t.cmdOpts.Results.encoding}, {});
 
     fid      = fopen(filename, 'w', encoding{:});
     if fid == -1
@@ -466,9 +464,8 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     set(0, 'ShowHiddenHandles', 'off');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % actually print the stuff
-    minimalPgfplotsVersion = formatPgfplotsVersion(m2t, m2t.pgfplotsVersion);
+    minimalPgfplotsVersion = formatPgfplotsVersion(m2t.pgfplotsVersion);
 
-    environment = sprintf('%s %s',m2t.env, m2t.envVersion);
     m2t.content.comment = sprintf('This file was created by %s.\n', m2t.name);
 
     if m2t.cmdOpts.Results.showInfo
@@ -562,7 +559,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     % Remove all legend handles, as they are treated separately.
     if ~isempty(axesHandles)
         % TODO fix for octave
-        tagKeyword = switchMatOct(m2t, 'Tag', 'tag');
+        tagKeyword = switchMatOct('Tag', 'tag');
         % Find all legend handles. This is MATLAB-only.
         m2t.legendHandles = findobj(fh, tagKeyword, 'legend');
         m2t.legendHandles = m2t.legendHandles(:)';
@@ -572,7 +569,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
 
     % Remove all colorbar handles, as they are treated separately.
     if ~isempty(axesHandles)
-        colorbarKeyword = switchMatOct(m2t, 'Colorbar', 'colorbar');
+        colorbarKeyword = switchMatOct('Colorbar', 'colorbar');
         % Find all colorbar handles. This is MATLAB-only.
         cbarHandles = findobj(fh, tagKeyword, colorbarKeyword);
         % Octave also finds text handles here; no idea why. Filter.
@@ -713,7 +710,7 @@ interpreter  = '';
 hasLegend = false;
 
 % Check if current handle is referenced in a legend.
-switch m2t.env
+switch getEnvironment
     case 'MATLAB'
         % Make sure that m2t.legendHandles is a row vector.
         for legendHandle = m2t.legendHandles(:)'
@@ -933,7 +930,7 @@ end
 function legendhandle = getAssociatedLegend(m2t, handle)
 % Check if the axis is referenced by a legend (only necessary for Octave)
     legendhandle = [];
-    switch m2t.env
+    switch getEnvironment
         case 'Octave'
             % Make sure that m2t.legendHandles is a row vector.
             for lhandle = m2t.legendHandles(:)'
@@ -1061,7 +1058,7 @@ function m2t = drawLegendOptionsOfAxes(m2t, handle)
     % This could be done better with a heuristic of finding
     % the nearest legend to a plot, which would cope with legends outside
     % plot boundaries.
-    switch m2t.env
+    switch getEnvironment
         case 'MATLAB'
             legendHandle = legend(handle);
             if ~isempty(legendHandle)
@@ -1544,7 +1541,7 @@ function dataCellNew = splitByArraySize(m2t, dataCell)
             % otherwise the line between two data chunks would be broken.
             % Technically, this is only needed when the plot has a line
             % connecting the points, but the additional cost when there is no
-            % line doesn't hustify the added complexity.
+            % line doesn't justify the added complexity.
             if chunkEnd~=len
                 dataCellNew{end} = [dataCellNew{end};...
                                     data{1}(chunkEnd+1,:)];
@@ -2115,7 +2112,7 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
             hY = (yData(end)-yData(1)) / (length(yData)-1);
         otherwise
             error('drawImage:arrayLengthMismatch', ...
-                'Array lengths not matching (%d = size(cdata,2) ~= length(yData) = %d).', n, length(yData));
+                'Array lengths not matching (%d = size(cData,2) ~= length(yData) = %d).', size(cData,2), length(yData));
     end
     Y = yData(1):hY:yData(end);
 
@@ -2392,7 +2389,7 @@ function m2t = drawAnnotations(m2t)
     end
 
     % Get annotation handles
-    if isHG2(m2t)
+    if isHG2
         annotPanes   = findobj(m2t.currentHandles.gcf,'Tag','scribeOverlay');
         annotHandles = findobj(get(annotPanes,'Children'),'Visible','on'); 
     else
@@ -3225,7 +3222,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         case 'grouped'  % grouped bar plots
             
             % Get number of bars series and bar series id
-            [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h);
+            [numBarSeries, barSeriesId] = getNumBarAndId(h);
 
             % Maximum group width relative to the minimum distance between two
             % x-values. See <MATLAB>/toolbox/matlab/specgraph/makebars.m
@@ -3320,17 +3317,17 @@ function [m2t, str] = drawBarseries(m2t, h)
                  opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
-function [numBarSeries, barSeriesId] = getNumBarAndId(m2t,h)
+function [numBarSeries, barSeriesId] = getNumBarAndId(h)
 % Get number of bars series and bar series id
-    prop         = switchMatOct(m2t, 'BarPeers', 'bargroup');
+    prop         = switchMatOct('BarPeers', 'bargroup');
     bargroup     = get(h, prop);
     numBarSeries = numel(bargroup);
     
-    if isHG2(m2t)
+    if isHG2
         % In HG2, BarPeers are sorted in reverse order wrt HG1
         bargroup = bargroup(end:-1:1);
     
-    elseif strcmpi(m2t.env,'MATLAB')
+    elseif strcmpi(getEnvironment, 'MATLAB')
         % In HG1, h is a double but bargroup a graphic object. Cast h to a
         % graphic object
         h = handle(h);
@@ -3905,7 +3902,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
                                                 cbarOptions, cbarStyleOptions);
 
     % axis label and direction
-    if isHG2(m2t)
+    if isHG2
         % VERSION: Starting from R2014b there is only one field `label`.
         % The colorbar's position determines, if it should be a x- or y-label.
 
@@ -4384,7 +4381,7 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
 % determines the text and picture alignment inside a legend
     textalign = '';
     pictalign = '';
-    switch m2t.env
+    switch getEnvironment
         case 'Octave'
             % Octave allows to change the alignment of legend text and
             % pictograms using legend('left') and legend('right')
@@ -5236,9 +5233,9 @@ function c = prettyPrint(m2t, strings, interpreter)
                 %       would not remedy the issue -- in that case 'string' would
                 %       contain backslashes introduced by brace escaping that are
                 %       not supposed to be printable characters.
-                repl = switchMatOct(m2t, '\\{', '\{');
+                repl = switchMatOct('\\{', '\{');
                 string = regexprep(string, '(?<!\\textbackslash){', repl);
-                repl = switchMatOct(m2t, '\\}', '\}');
+                repl = switchMatOct('\\}', '\}');
                 string = regexprep(string, '(?<!\\textbackslash{)}', repl);
                 string = strrep(string, '$', '\$');
                 string = strrep(string, '%', '\%');
@@ -5551,7 +5548,7 @@ function string = escapeTildes(m2t, string, origstr)
 % Escape plain "~" in MATLAB and replace escaped "\~" in Octave with a proper
 % escape sequence. An un-escaped "~" produces weird output in Octave, thus
 % give a warning in that case
-    switch m2t.env
+    switch getEnvironment
         case 'MATLAB'
             string = strrep(string, '~', '\textasciitilde{}'); % or '\~{}'
         case 'Octave'
@@ -5574,7 +5571,7 @@ end
 function string = escapeAmpersands(m2t, string, origstr)
 % Escape plain "&" in MATLAB and replace it and the following character with
 % a space in Octave unless the "&" is already escaped
-    switch m2t.env
+    switch getEnvironment
         case 'MATLAB'
             string = strrep(string, '&', '\&');
         case 'Octave'
@@ -5629,11 +5626,11 @@ function [string] = parseStringsAsMath(m2t, string)
         string = regexprep(string, '\\text\{(\s+)}', '$1');
 
         % '<<' probably means 'much smaller than', i.e. '\ll'
-        repl = switchMatOct(m2t, '$1\\ll{}$2', '$1\ll{}$2');
+        repl = switchMatOct('$1\\ll{}$2', '$1\ll{}$2');
         string = regexprep(string, '([^<])<<([^<])', repl);
 
         % '>>' probably means 'much greater than', i.e. '\gg'
-        repl = switchMatOct(m2t, '$1\\gg{}$2', '$1\gg{}$2');
+        repl = switchMatOct('$1\\gg{}$2', '$1\gg{}$2');
         string = regexprep(string, '([^>])>>([^>])', repl);
 
         % Single letters are most likely variables and thus should be in math mode
@@ -5808,34 +5805,45 @@ function str  = opts_print(m2t, opts, sep)
     str = join(m2t, c, sep);
 end
 % ==============================================================================
-function [env,versionString] = getEnvironment()
+function [env, versionString] = getEnvironment()
 % Checks if we are in MATLAB or Octave.
-    alternatives = {'MATLAB','Octave'};
-    for iCase = 1:numel(alternatives)
-        env   = alternatives{iCase};
-        vData = ver(env);
-        if ~isempty(vData)
-            versionString = vData.Version;
-            return; % found the right environment
+    persistent cache
+    
+    alternatives = {'MATLAB', 'Octave'};
+    if isempty(cache)
+        for iCase = 1:numel(alternatives)
+            env   = alternatives{iCase};
+            vData = ver(env);
+            if ~isempty(vData) % found the right environment
+                versionString = vData.Version;
+                % store in cache
+                cache.env = env;
+                cache.versionString = versionString;
+                return;
+            end
         end
-    end
-    % otherwise:
-    env = '';
-    versionString = '';
+        % fall-back values
+        env = '';
+        versionString = '';
+    else
+        env = cache.env;
+        versionString = cache.versionString;
+    end    
 end
 % ==============================================================================
-function bool = isHG2(m2t)
+function bool = isHG2()
 % Checks if graphics system is HG2 (true) or HG1 (false).
 % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
 % HG2 : MATLAB starting from R2014b (version 8.4)
-    bool = strcmpi(m2t.env,'MATLAB') && ...
-           ~isVersionBelow(m2t.env, m2t.envVersion, [8,4]);
+    [env, envVersion] = getEnvironment();
+    bool = strcmpi(env,'MATLAB') && ...
+           ~isVersionBelow(envVersion, [8,4]);
 end
 % ==============================================================================
-function bool = isVersionBelow(env, versionA, versionB)
+function bool = isVersionBelow(versionA, versionB)
 % Checks if versionA is smaller than versionB
-    vA         = versionArray(env, versionA);
-    vB         = versionArray(env, versionB);
+    vA         = versionArray(versionA);
+    vB         = versionArray(versionB);
     n          = min(length(vA), length(vB));
     deltaAB    = vA(1:n) - vB(1:n);
     difference = find(deltaAB, 1, 'first');
@@ -5860,11 +5868,11 @@ function str = formatDim(value, unit)
     end
 end
 % ==============================================================================
-function arr = versionArray(env, str)
+function arr = versionArray(str)
 % Converts a version string to an array.
     if ischar(str)
         % Translate version string from '2.62.8.1' to [2; 62; 8; 1].
-        switch env
+        switch getEnvironment
             case 'MATLAB'
                 split = regexp(str, '\.', 'split'); % compatibility MATLAB < R2013a
             case  'Octave'
@@ -5879,9 +5887,9 @@ function arr = versionArray(env, str)
     arr = arr(:)';
 end
 % ==============================================================================
-function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
+function [retval] = switchMatOct(matlabValue, octaveValue)
 % Returns a different value for MATLAB and Octave
-    switch m2t.env
+    switch getEnvironment
         case 'MATLAB'
             retval = matlabValue;
         case 'Octave'
@@ -5891,12 +5899,13 @@ function [retval] = switchMatOct(m2t, matlabValue, octaveValue)
     end
 end
 % ==============================================================================
-function checkDeprecatedEnvironment(m2t, minimalVersions)
-    if isfield(minimalVersions, m2t.env)
-        minVersion = minimalVersions.(m2t.env);
-        envWithVersion = sprintf('%s %s', m2t.env, minVersion.name);
+function checkDeprecatedEnvironment(minimalVersions)
+    [env, envVersion] = getEnvironment();
+    if isfield(minimalVersions, env)
+        minVersion = minimalVersions.(env);
+        envWithVersion = sprintf('%s %s', env, minVersion.name);
 
-        if isVersionBelow(m2t.env, m2t.envVersion, minVersion.num)
+        if isVersionBelow(envVersion, minVersion.num)
             ID = 'matlab2tikz:deprecatedEnvironment';
 
             warningMessage = ['\n', repmat('=',1,80), '\n\n', ...
@@ -5915,17 +5924,17 @@ end
 % ==============================================================================
 function errorUnknownEnvironment()
     error('matlab2tikz:unknownEnvironment',...
-          'Unknown environment. Need MATLAB(R) or Octave.')
+          'Unknown environment "%s". Need MATLAB(R) or Octave.', getEnvironment);
 end
 % ==============================================================================
 function m2t = needsPgfplotsVersion(m2t, minVersion)
-    if isVersionBelow(m2t, m2t.pgfplotsVersion, minVersion)
+    if isVersionBelow(m2t.pgfplotsVersion, minVersion)
         m2t.pgfplotsVersion = minVersion;
     end
 end
 % ==============================================================================
-function str = formatPgfplotsVersion(m2t, version)
-    version = versionArray(m2t, version);
+function str = formatPgfplotsVersion(version)
+    version = versionArray(version);
     if all(isfinite(version))
         str = sprintf('%d.',version);
         str = str(1:end-1); % remove the last period

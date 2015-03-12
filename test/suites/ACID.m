@@ -1441,7 +1441,7 @@ function [stat] = texrandom()
       % \fontname{Times} etc. isn't included
       % \fontsize{12} etc. isn't included
 
-  switch getEnvironment()
+  switch getEnvironment
       case 'MATLAB'
           % MATLAB expects tilde and ampersand to be un-escaped and backslashes
           % to be escaped
