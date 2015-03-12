@@ -524,7 +524,6 @@ function a = featureArea(x,y)
     % remove smallest element from heap
     e = pop(1);
 
-   
     left = llst(e,1);
     right = llst(e,2);
     % remove element from linked list
@@ -554,16 +553,14 @@ function a = featureArea(x,y)
   % is satisfied for the rest of the tree
   function down(root)
     while 2*root  <= len %while the root has a child
-      lchild = 2*root; 
+      lchild = 2*root;
       rchild = lchild+1;
       % Find the minimum of the root and its children
       swap = root;
-      if a(heap(lchild)) < a(heap(swap)) ...
-          || (a(heap(lchild)) == a(heap(swap)) && rand(1)>0.5)
+      if a(heap(lchild)) < a(heap(swap))
         swap = lchild;
       end
-      if rchild <= len && (a(heap(rchild)) < a(heap(swap)) ...
-          || (a(heap(rchild)) == a(heap(swap)) && rand(1)>0.5))
+      if rchild <= len && (a(heap(rchild)) < a(heap(swap)))
         swap = rchild;
       end
 
@@ -590,8 +587,7 @@ function a = featureArea(x,y)
   function up(child)
     while child > 1
       parent = bitshift(n,-1);
-      if a(heap(child)) < a(heap(parent)) ...
-              || (a(heap(child)) == a(heap(parent)) && rand(1)>0.5)
+      if a(heap(child)) < a(heap(parent))
         pos(heap(parent)-1) = child;
         pos(heap(child)-1) = parent;
 
