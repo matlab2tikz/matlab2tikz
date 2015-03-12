@@ -5836,7 +5836,7 @@ function bool = isHG2()
 % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
 % HG2 : MATLAB starting from R2014b (version 8.4)
     [env, envVersion] = getEnvironment();
-    bool = strcmpi(getEnvironment,'MATLAB') && ...
+    bool = strcmpi(env,'MATLAB') && ...
            ~isVersionBelow(env, envVersion, [8,4]);
 end
 % ==============================================================================
