@@ -550,7 +550,7 @@ function a = featureArea(x,y)
     a(heap(1)) = maxArea;
   end
 
-  % Movse element at "root" down the heap, assuming the heap property
+  % Move element at "root" down the heap, assuming the heap property
   % is satisfied for the rest of the tree
   function down(root)
     while 2*root  <= len %while the root has a child
