@@ -5837,13 +5837,13 @@ function bool = isHG2()
 % HG2 : MATLAB starting from R2014b (version 8.4)
     [env, envVersion] = getEnvironment();
     bool = strcmpi(env,'MATLAB') && ...
-           ~isVersionBelow(env, envVersion, [8,4]);
+           ~isVersionBelow(envVersion, [8,4]);
 end
 % ==============================================================================
-function bool = isVersionBelow(env, versionA, versionB)
+function bool = isVersionBelow(versionA, versionB)
 % Checks if versionA is smaller than versionB
-    vA         = versionArray(env, versionA);
-    vB         = versionArray(env, versionB);
+    vA         = versionArray(versionA);
+    vB         = versionArray(versionB);
     n          = min(length(vA), length(vB));
     deltaAB    = vA(1:n) - vB(1:n);
     difference = find(deltaAB, 1, 'first');
@@ -5868,11 +5868,11 @@ function str = formatDim(value, unit)
     end
 end
 % ==============================================================================
-function arr = versionArray(env, str)
+function arr = versionArray(str)
 % Converts a version string to an array.
     if ischar(str)
         % Translate version string from '2.62.8.1' to [2; 62; 8; 1].
-        switch env
+        switch getEnvironment
             case 'MATLAB'
                 split = regexp(str, '\.', 'split'); % compatibility MATLAB < R2013a
             case  'Octave'
@@ -5905,7 +5905,7 @@ function checkDeprecatedEnvironment(minimalVersions)
         minVersion = minimalVersions.(env);
         envWithVersion = sprintf('%s %s', env, minVersion.name);
 
-        if isVersionBelow(env, envVersion, minVersion.num)
+        if isVersionBelow(envVersion, minVersion.num)
             ID = 'matlab2tikz:deprecatedEnvironment';
 
             warningMessage = ['\n', repmat('=',1,80), '\n\n', ...
@@ -5928,13 +5928,13 @@ function errorUnknownEnvironment()
 end
 % ==============================================================================
 function m2t = needsPgfplotsVersion(m2t, minVersion)
-    if isVersionBelow(m2t, m2t.pgfplotsVersion, minVersion)
+    if isVersionBelow(m2t.pgfplotsVersion, minVersion)
         m2t.pgfplotsVersion = minVersion;
     end
 end
 % ==============================================================================
 function str = formatPgfplotsVersion(m2t, version)
-    version = versionArray(m2t, version);
+    version = versionArray(version);
     if all(isfinite(version))
         str = sprintf('%d.',version);
         str = str(1:end-1); % remove the last period

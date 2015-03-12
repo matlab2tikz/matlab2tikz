@@ -1,19 +1,18 @@
 function bool = versionCompare( vA, operator, vB )
 %VERSIONCOMPARE Performs a version comparison operation
-    ENV = getEnvironment();
     switch operator
         case '<'
-            bool = isVersionBelow(ENV, vA, vB);
+            bool = isVersionBelow(vA, vB);
         case '>'
-            bool = isVersionBelow(ENV, vB, vA);
+            bool = isVersionBelow(vB, vA);
         case {'<=', '=<'}
-            bool = ~isVersionBelow(ENV, vB, vA);
+            bool = ~isVersionBelow(vB, vA);
         case {'>=', '=>'}
-            bool = ~isVersionBelow(ENV, vA, vB);
+            bool = ~isVersionBelow(vA, vB);
         case {'=', '=='}
-            bool = ~isVersionBelow(ENV, vA, vB) && ~isVersionBelow(ENV, vB, vA);
+            bool = ~isVersionBelow(vA, vB) && ~isVersionBelow(vB, vA);
         case {'~=', '!='}
-            bool = isVersionBelow(ENV, vA, vB) || isVersionBelow(ENV, vB, vA);
+            bool = isVersionBelow(vA, vB) || isVersionBelow(vB, vA);
         otherwise
             error('versionCompare:UnknownOperator',...
                   '"%s" is not a known comparison operator', operator);
