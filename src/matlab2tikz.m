@@ -1541,7 +1541,7 @@ function dataCellNew = splitByArraySize(m2t, dataCell)
             % otherwise the line between two data chunks would be broken.
             % Technically, this is only needed when the plot has a line
             % connecting the points, but the additional cost when there is no
-            % line doesn't hustify the added complexity.
+            % line doesn't justify the added complexity.
             if chunkEnd~=len
                 dataCellNew{end} = [dataCellNew{end};...
                                     data{1}(chunkEnd+1,:)];
