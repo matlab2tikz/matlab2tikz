@@ -112,8 +112,6 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
-          % Don't be too precise.
-          % coarsenLine(meta, h, minimumPointsDistance);
           simplifyLine(meta, h, targetResolution);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
@@ -301,75 +299,6 @@ function out = segmentsIntersect(X1, X2, X3, X4)
   lambda = crossLines(X1, X2, X3, X4);
   out = all(lambda > 0.0) && all(lambda < 1.0);
   return
-end
-% =========================================================================
-function coarsenLine(meta, handle, minimumPointsDistance)
-  % Reduce the number of data points in the line handle.
-  % Given a minimum distance at which two nodes are considered different,
-  % this can help with plots that contain a large amount of data points not
-  % all of which need to be plotted.
-  %
-  if ( abs(minimumPointsDistance) < 1.0e-15 )
-      % bail out early
-      return
-  end
-
-  % Extract the data from the current line handle.
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
-  if ~isempty(zData)
-    % Don't do funny stuff when zData is present.
-    return;
-  end
-
-  data = [xData(:), yData(:)];
-
-  if isempty(data)
-      return;
-  end
-
-  % Generate a mask which is true for the first point, and all
-  % subsequent points which have a greater norm2-distance from
-  % the previous point than 'threshold'.
-  n = size(data, 1);
-
-  % Get info about log scaling.
-  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-
-  mask = false(n, 1);
-
-  XRef = data(1,:);
-  mask(1) = true;
-  for kk = 2:n
-      % Compute the visible distance of those points,
-      % incorporating possible log-scaling of the axes.
-      visDiff = XRef - data(kk,:);
-      if isXlog
-          % visDiff(1) = log10(XRef(1)) - log10(data(kk,1));
-          visDiff(1) = log10(visDiff(1));
-      end
-      if isYlog
-          visDiff(2) = log10(visDiff(2));
-      end
-      % Check if it's larger than the threshold and
-      % update the reference point in that case.
-      if norm(visDiff) > minimumPointsDistance
-          XRef = data(kk,:);
-          mask(kk) = true;
-      end
-  end
-  mask(end) = true;
-
-  % Make sure to keep NaNs.
-  mask = mask | any(isnan(data)')';
-
-  % Set the new (masked) data.
-  set(handle, 'XData', data(mask, 1));
-  set(handle, 'YData', data(mask, 2));
-
-  return;
 end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
