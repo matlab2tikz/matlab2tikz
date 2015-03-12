@@ -375,11 +375,11 @@ end
 function simplifyLine(meta, handle, targetResolution)
   % Reduce the number of data points in the line handle by removing
   % points which add features with area smaller than 1/4 of a pixel at the
-  % target resolution. 
+  % target resolution.
   %
   % targetResolution is in format 'WxH@Res', eg. '15x9@600' for a 15cm by 9cm
   % figure at 600 ppcm.
-  % 
+  %
   % Use targetResolution = 'off' to disable line simplification
 
   % Extract the data from the current line handle.
@@ -392,48 +392,48 @@ function simplifyLine(meta, handle, targetResolution)
     return;
   end
   if isempty(xData) || isempty(yData)
-      return;
+    return;
   end
   if numel(xData) <= 2
-      return;
+    return;
   end
   if strcmpi(targetResolution,'off')
-      return
+    return
   end
   [parms,nparms] = sscanf(targetResolution,'%fx%f@%f');
-  
+
   if nparms < 3
-      parms(3) = 600;
+    parms(3) = 600;
   end
 
   % Get info about log scaling.
   isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
   vxData = xData;
   if isXlog
-	  vxData = log10(xData);
+    vxData = log10(xData);
   end
 
   isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
   vyData = yData;
   if isYlog
-	  vyData = log10(yData);
+    vyData = log10(yData);
   end
-  
+
   % Automatically guess a tol based on the area of the figure and 
   % the area and resolution of the output
   a = axis(meta.gca);
   if ~isXlog
-      xrange = (a(2)-a(1));
+    xrange = (a(2)-a(1));
   else
-      xrange = (log10(a(2))-log10(a(1)));
+    xrange = (log10(a(2))-log10(a(1)));
   end
   if ~isYlog
-      yrange = (a(4)-a(3));
+    yrange = (a(4)-a(3));
   else
-      yrange = (log10(a(4))-log10(a(3)));
+    yrange = (log10(a(4))-log10(a(3)));
   end
   tol = xrange*yrange/(4*prod(parms));
-  
+
 
   %Split up lines which are seperated by NaNs
   nans = isnan(vxData) | isnan(vyData);
@@ -441,22 +441,22 @@ function simplifyLine(meta, handle, targetResolution)
   linesx = {};
   linesy = {};
   for i = 1:2:numel(idx)
-      %Simplify based on *visual* data
-      vx = vxData(idx(i):idx(i+1));
-      vy = vyData(idx(i):idx(i+1));
-      area = featureArea(vx,vy);
-      
-      %append actual data to the list
-      x = xData(idx(i):idx(i+1));
-      y = yData(idx(i):idx(i+1));
-      linesx{end+1} = x(area>tol);
-      linesy{end+1} = y(area>tol);
-      
-	  %Add nans back in on internal splits
-      if i+1 < numel(idx)
-          linesx{end+1} = nan;
-          linesy{end+1} = nan;
-      end
+    %Simplify based on *visual* data
+    vx = vxData(idx(i):idx(i+1));
+    vy = vyData(idx(i):idx(i+1));
+    area = featureArea(vx,vy);
+
+    %append actual data to the list
+    x = xData(idx(i):idx(i+1));
+    y = yData(idx(i):idx(i+1));
+    linesx{end+1} = x(area>tol);
+    linesy{end+1} = y(area>tol);
+
+    %Add nans back in on internal splits
+    if i+1 < numel(idx)
+      linesx{end+1} = nan;
+      linesy{end+1} = nan;
+    end
   end
   xData = horzcat(linesx{:});
   yData = horzcat(linesy{:});
@@ -476,14 +476,14 @@ function a = featureArea(x,y)
   %
   % Runtime is O(n log(n))
   %
-  % Used by 'simplifyLine'. 
+  % Used by 'simplifyLine'.
 
   n = numel(x);
-  
+
   % Index of next and previous elements in the linked list which defines
   % the path
   llst = [(0:n-1)',[(2:n)';0]];
-  
+
   % 'heap' stores the points in an array heap, referenced by their index
   % First and last points are assumed fixed and not added to the heap
   % 'pos' stores the current position of each point in the heap array
@@ -509,7 +509,6 @@ function a = featureArea(x,y)
     down(root);
     root = root-1;
   end
-  
 
   %Now remove the element with the minimum area off the heap
   while len > 1
@@ -578,7 +577,6 @@ function a = featureArea(x,y)
         heap(root) = heap(swap);
         heap(swap) = t;
 
-
         root = swap;
       end
     end
@@ -616,8 +614,8 @@ function a = featureArea(x,y)
   end
 
   function push()
-      len = len+1;
-      up(len);
+    len = len+1;
+    up(len);
   end
 end
 % =========================================================================
