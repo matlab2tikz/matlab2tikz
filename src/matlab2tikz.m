@@ -4990,8 +4990,8 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
 
         end
         
-        if (strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'auto') ...
-                || strcmpi(get(axesHandle, 'PlotBoxAspectRatioMode'), 'auto'))
+        if ~(strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'auto') ...
+                && strcmpi(get(axesHandle, 'PlotBoxAspectRatioMode'), 'auto'))
                 
             if strcmpi(get(axesHandle,'Projection'),'Perspective')
                 userWarning(m2t,'Perspective projections are not currently supported')
