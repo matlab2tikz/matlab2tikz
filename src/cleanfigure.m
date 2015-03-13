@@ -411,11 +411,14 @@ function a = featureArea(x,y)
 
   % 'heap' stores the points in an array heap, referenced by their index
   % First and last points are assumed fixed and not added to the heap
-  % 'pos' stores the current position of each point in the heap array
-  % will be needed to lookup position of updated points
   heap = (2:n-1)';
   len = numel(heap);
-  pos = (1:len)';
+
+  % 'pos' stores the current position of each point in the heap array
+  % will be needed to lookup position of updated points. 
+  %
+  % pos(i) = 0 denotes not in the heap
+  pos = [0;(1:len)';0];
 
 
   area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + ...
@@ -458,13 +461,13 @@ function a = featureArea(x,y)
     %Update area of neighbouring points if they're not the ends points
     if llst(left,1) > 0
       a(left) = area(llst(left,1),left,llst(left,2));
-      pop(pos(left-1));
+      pop(pos(left));
       push();
     end
 
     if llst(right,2) > 0
       a(right) = area(llst(right,1),right,llst(right,2));
-      pop(pos(right-1));
+      pop(pos(right));
       push();
     end
   end
@@ -494,13 +497,11 @@ function a = featureArea(x,y)
         % otherwise, swap the root and its minimum child
       else
         %swap in the pos array
-        pos(heap(root)-1) = swap;
-        pos(heap(swap)-1) = root;
+        pos(heap(root)) = swap;
+        pos(heap(swap)) = root;
 
         %swap in the heap array
-        t = heap(root);
-        heap(root) = heap(swap);
-        heap(swap) = t;
+        heap([root swap]) = heap([swap root])
 
         root = swap;
       end
@@ -511,12 +512,11 @@ function a = featureArea(x,y)
     while child > 1
       parent = bitshift(n,-1);
       if a(heap(child)) < a(heap(parent))
-        pos(heap(parent)-1) = child;
-        pos(heap(child)-1) = parent;
 
-        t = heap(parent);
-        heap(parent) = heap(child);
-        heap(child) = t;
+        pos(heap(parent)) = child;
+        pos(heap(child)) = parent;
+
+        heap([parent child]) = heap([child parent])
 
         child = parent;
       else
@@ -527,8 +527,8 @@ function a = featureArea(x,y)
 
   function e = pop(i)
     %Swap the first and the last
-    pos(heap(i)-1) = len;
-    pos(heap(len)-1) = i;
+    pos(heap(i)) = len;
+    pos(heap(len)) = i;
 
     e = heap(i);
     heap(i) = heap(len);
