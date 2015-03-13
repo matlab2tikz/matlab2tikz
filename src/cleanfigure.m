@@ -53,6 +53,9 @@ function cleanfigure(varargin)
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', '15x9@600',@isstr);
 
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
+
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
@@ -389,8 +392,6 @@ function simplifyLine(meta, handle, targetResolution)
     % Set the new (masked) data.
     set(handle, 'XData', xData);
     set(handle, 'YData', yData);
-
-    return;
 end
 % =========================================================================
 function a = featureArea(x,y)
@@ -409,15 +410,15 @@ function a = featureArea(x,y)
     % the path
     linkedList = [(0:n-1)',[(2:n)';0]];
 
-    % 'heap' stores the points in an array heap, referenced by their index
-    % First and last points are assumed fixed and not added to the heap
+    % 'heap' stores the points in an (implicit) heap, referenced by their index.
+    % First and last points are assumed fixed and not added to the heap.
     heap = (2:n-1)';
     len = numel(heap);
 
-    % 'pos' stores the current position of each point in the heap array
-    % will be needed to lookup position of updated points. 
+    % 'pos' stores the current position of each point in the heap array.
+    % Needed to lookup position of points when their neighbours are updated.
     %
-    % pos(i) = 0 denotes not in the heap
+    % pos(i) = 0 denotes that the elements are not in the heap.
     pos = [0;(1:len)';0];
 
     area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + ...
@@ -437,22 +438,23 @@ function a = featureArea(x,y)
         root = root-1;
     end
 
-    %Now remove the element with the minimum area off the heap
+    % Now iteratively removed the point associated with the minimum area from 
+    % the path, and update it's neighbours
     while len > 1
+        % ensure the current element will only be excluded when elements
+        % which were removed earlier are also excluded
         if a(heap(1)) > maxArea
             maxArea = a(heap(1));
         else
-            % ensure current element will only be excluded when earlier elements
-            % are also excluded
             a(heap(1)) = maxArea;
         end
 
         % remove smallest element from heap
         e = pop(1);
 
+        % remove that element from linked list
         left = linkedList(e,1);
         right = linkedList(e,2);
-        % remove element from linked list
         linkedList(left,2) = linkedList(e,2);
         linkedList(right,1) = linkedList(e,1);
 
@@ -471,73 +473,78 @@ function a = featureArea(x,y)
         end
     end
 
+    %Update the last element on the heap
     if numel(heap) >0 &&  a(heap(1)) < maxArea
         a(heap(1)) = maxArea;
     end
 
-    % Move element at "root" down the heap, assuming the heap property
-    % is satisfied for the rest of the tree
+
+    % Heap utility functions
+    function swap(a,b)
+        %a and b in the heap, keeping pos up to date
+        pos(heap(a)) = b;
+        pos(heap(b)) = a;
+        heap([a b]) = heap([b a]);
+    end
+
     function down(root)
+        % Move element at "root" down the heap, assuming the heap property
+        % is satisfied for the rest of the tree
         while 2*root  <= len %while the root has a child
             lchild = 2*root;
             rchild = lchild+1;
             % Find the minimum of the root and its children
-            swap = root;
-            if a(heap(lchild)) < a(heap(swap))
-                swap = lchild;
+            minimum = root;
+            if a(heap(lchild)) < a(heap(minimum))
+                minimum = lchild;
             end
-            if rchild <= len && (a(heap(rchild)) < a(heap(swap)))
-                swap = rchild;
+            if rchild <= len && (a(heap(rchild)) < a(heap(minimum)))
+                minimum = rchild;
             end
 
-            % if the root is the minimum, then we're done
-            if swap == root
+            if minimum == root
+                % if the root is the minimum, then we're done
                 break
-                % otherwise, swap the root and its minimum child
             else
-                %swap in the pos array
-                pos(heap(root)) = swap;
-                pos(heap(swap)) = root;
-
-                %swap in the heap array
-                heap([root swap]) = heap([swap root])
-
-                root = swap;
+                % otherwise, swap the root and its minimum child and continue
+                swap(root,minimum);
+                root = minimum;
             end
         end
     end
 
     function up(child)
+        %Move element up the heap until it finds the correct position
         while child > 1
             parent = bitshift(n,-1);
             if a(heap(child)) < a(heap(parent))
-
-                pos(heap(parent)) = child;
-                pos(heap(child)) = parent;
-
-                heap([parent child]) = heap([child parent])
-
+                % If this element is less than its parent, swap them
+                swap(parent,child)
                 child = parent;
             else
+                %Otherwise the heap property is restored
                 break
             end
         end
     end
 
     function e = pop(i)
-        %Swap the first and the last
-        pos(heap(i)) = len;
-        pos(heap(len)) = i;
+        % Remove element at position i off the heap and return its value
 
         e = heap(i);
-        heap(i) = heap(len);
-        heap(len) = e;
 
+        %Swap the first and the last
+        swap(i,len);
+
+        %Remove the last element from the heap
         len = len-1;
+
+        %Move the new ith element down the heap until it finds the correct spot
         down(i);
     end
 
     function push()
+        % Add the element at len+1 in the 'heap' array back into the heap
         len = len+1;
         up(len);
     end
