@@ -302,250 +302,249 @@ function out = segmentsIntersect(X1, X2, X3, X4)
 end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
-  % Reduce the number of data points in the line handle by removing
-  % points which add features with area smaller than 1/4 of a pixel at the
-  % target resolution.
-  %
-  % targetResolution is in format 'WxH@Res', eg. '15x9@600' for a 15cm by 9cm
-  % figure at 600 ppcm.
-  %
-  % Use targetResolution = 'off' to disable line simplification
+    % Reduce the number of data points in the line handle by removing
+    % points which add features with area smaller than 1/4 of a pixel at the
+    % target resolution.
+    %
+    % targetResolution is in format 'WxH@Res', eg. '15x9@600' for a 15cm by 9cm
+    % figure at 600 ppcm.
+    %
+    % Use targetResolution = 'off' to disable line simplification
 
-  % Extract the data from the current line handle.
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
+    % Extract the data from the current line handle.
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+    zData = get(handle, 'ZData');
 
-  if ~isempty(zData)
-    % Don't simplify 3d plots
-    return;
-  end
-  if isempty(xData) || isempty(yData)
-    return;
-  end
-  if numel(xData) <= 2
-    return;
-  end
-  if strcmpi(targetResolution,'off')
-    return
-  end
-  [parms,nparms] = sscanf(targetResolution,'%fx%f@%f');
-
-  if nparms < 3
-    parms(3) = 600;
-  end
-
-  % Get info about log scaling.
-  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-  vxData = xData;
-  if isXlog
-    vxData = log10(xData);
-  end
-
-  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-  vyData = yData;
-  if isYlog
-    vyData = log10(yData);
-  end
-
-  % Automatically guess a tol based on the area of the figure and 
-  % the area and resolution of the output
-  a = axis(meta.gca);
-  if ~isXlog
-    xrange = (a(2)-a(1));
-  else
-    xrange = (log10(a(2))-log10(a(1)));
-  end
-  if ~isYlog
-    yrange = (a(4)-a(3));
-  else
-    yrange = (log10(a(4))-log10(a(3)));
-  end
-  tol = xrange*yrange/(4*prod(parms));
-
-
-  %Split up lines which are seperated by NaNs
-  nans = isnan(vxData) | isnan(vyData);
-  idx = sort([1,find(nans)-1,find(nans)+1,numel(vxData)]);
-  linesx = {};
-  linesy = {};
-  for i = 1:2:numel(idx)
-    %Simplify based on *visual* data
-    vx = vxData(idx(i):idx(i+1));
-    vy = vyData(idx(i):idx(i+1));
-    area = featureArea(vx,vy);
-
-    %append actual data to the list
-    x = xData(idx(i):idx(i+1));
-    y = yData(idx(i):idx(i+1));
-    linesx{end+1} = x(area>tol);
-    linesy{end+1} = y(area>tol);
-
-    %Add nans back in on internal splits
-    if i+1 < numel(idx)
-      linesx{end+1} = nan;
-      linesy{end+1} = nan;
+    if ~isempty(zData)
+        % Don't simplify 3d plots
+        return;
     end
-  end
-  xData = horzcat(linesx{:});
-  yData = horzcat(linesy{:});
+    if isempty(xData) || isempty(yData)
+        return;
+    end
+    if numel(xData) <= 2
+        return;
+    end
+    if strcmpi(targetResolution,'off')
+        return
+    end
+    [parms,nparms] = sscanf(targetResolution,'%fx%f@%f');
 
-  % Set the new (masked) data.
-  set(handle, 'XData', xData);
-  set(handle, 'YData', yData);
+    if nparms < 3
+        parms(3) = 600;
+    end
 
-  return;
+    % Get info about log scaling.
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    vxData = xData;
+    if isXlog
+        vxData = log10(xData);
+    end
+
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    vyData = yData;
+    if isYlog
+        vyData = log10(yData);
+    end
+
+    % Automatically guess a tol based on the area of the figure and
+    % the area and resolution of the output
+    a = axis(meta.gca);
+    if ~isXlog
+        xrange = (a(2)-a(1));
+    else
+        xrange = (log10(a(2))-log10(a(1)));
+    end
+    if ~isYlog
+        yrange = (a(4)-a(3));
+    else
+        yrange = (log10(a(4))-log10(a(3)));
+    end
+    tol = xrange*yrange/(4*prod(parms));
+
+
+    %Split up lines which are seperated by NaNs
+    nans = isnan(vxData) | isnan(vyData);
+    idx = sort([1,find(nans)-1,find(nans)+1,numel(vxData)]);
+    linesx = {};
+    linesy = {};
+    for i = 1:2:numel(idx)
+        %Simplify based on *visual* data
+        vx = vxData(idx(i):idx(i+1));
+        vy = vyData(idx(i):idx(i+1));
+        area = featureArea(vx,vy);
+
+        %append actual data to the list
+        x = xData(idx(i):idx(i+1));
+        y = yData(idx(i):idx(i+1));
+        linesx{end+1} = x(area>tol);
+        linesy{end+1} = y(area>tol);
+
+        %Add nans back in on internal splits
+        if i+1 < numel(idx)
+            linesx{end+1} = nan;
+            linesy{end+1} = nan;
+        end
+    end
+    xData = horzcat(linesx{:});
+    yData = horzcat(linesy{:});
+
+    % Set the new (masked) data.
+    set(handle, 'XData', xData);
+    set(handle, 'YData', yData);
+
+    return;
 end
 % =========================================================================
 function a = featureArea(x,y)
-  % Performs Visvalingam's algorithm:
-  % Given the path defined by x,y, the function returns list of the
-  % maximum area associated with each point in the list. Path then can be
-  % simplified via x = x(a>tol)
-  %
-  % Runtime is O(n log(n))
-  %
-  % Used by 'simplifyLine'.
+    % Performs Visvalingam's algorithm:
+    % Given the path defined by x,y, the function returns list of the
+    % maximum area associated with each point in the list. Path then can be
+    % simplified via x = x(a>tol)
+    %
+    % Runtime is O(n log(n))
+    %
+    % Used by 'simplifyLine'.
 
-  n = numel(x);
+    n = numel(x);
 
-  % Index of next and previous elements in the linked list which defines
-  % the path
-  llst = [(0:n-1)',[(2:n)';0]];
+    % Index of next and previous elements in the linked list which defines
+    % the path
+    linkedList = [(0:n-1)',[(2:n)';0]];
 
-  % 'heap' stores the points in an array heap, referenced by their index
-  % First and last points are assumed fixed and not added to the heap
-  heap = (2:n-1)';
-  len = numel(heap);
+    % 'heap' stores the points in an array heap, referenced by their index
+    % First and last points are assumed fixed and not added to the heap
+    heap = (2:n-1)';
+    len = numel(heap);
 
-  % 'pos' stores the current position of each point in the heap array
-  % will be needed to lookup position of updated points. 
-  %
-  % pos(i) = 0 denotes not in the heap
-  pos = [0;(1:len)';0];
+    % 'pos' stores the current position of each point in the heap array
+    % will be needed to lookup position of updated points. 
+    %
+    % pos(i) = 0 denotes not in the heap
+    pos = [0;(1:len)';0];
 
+    area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + ...
+        (y(i)-y(j)).*x(k))/2;
 
-  area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + ...
-                                                    (y(i)-y(j)).*x(k))/2;
+    % Endpoints are assigned infinte area so they can't be removed
+    a = [Inf;area((1:n-2)', (2:n-1)', (3:n)')';Inf];
 
-  % Endpoints are assigned infinte area so they can't be removed
-  a = [Inf;area((1:n-2)', (2:n-1)', (3:n)')';Inf];
+    % Keep track of the maximum area removed so far to ensure
+    % a given element will only be excluded after earlier elements
+    maxArea = 0;
 
-  % Keep track of the maximum area removed so far to ensure 
-  % a given element will only be excluded after earlier elements
-  maxArea = 0;
-
-  %Heapify the 'heap' array based on the area, using Floyd's alg
-  root = bitshift(len,-1); %starting with the first parent node
-  while root >= 1
-    down(root);
-    root = root-1;
-  end
-
-  %Now remove the element with the minimum area off the heap
-  while len > 1
-     if a(heap(1)) > maxArea
-       maxArea = a(heap(1));
-     else
-       % ensure current element will only be excluded when earlier elements
-       % are also excluded
-       a(heap(1)) = maxArea;
-     end
-
-    % remove smallest element from heap
-    e = pop(1);
-
-    left = llst(e,1);
-    right = llst(e,2);
-    % remove element from linked list
-    llst(left,2) = llst(e,2);
-    llst(right,1) = llst(e,1);
-
-
-    %Update area of neighbouring points if they're not the ends points
-    if llst(left,1) > 0
-      a(left) = area(llst(left,1),left,llst(left,2));
-      pop(pos(left));
-      push();
+    %Heapify the 'heap' array based on the area, using Floyd's alg
+    root = bitshift(len,-1); %starting with the first parent node
+    while root >= 1
+        down(root);
+        root = root-1;
     end
 
-    if llst(right,2) > 0
-      a(right) = area(llst(right,1),right,llst(right,2));
-      pop(pos(right));
-      push();
+    %Now remove the element with the minimum area off the heap
+    while len > 1
+        if a(heap(1)) > maxArea
+            maxArea = a(heap(1));
+        else
+            % ensure current element will only be excluded when earlier elements
+            % are also excluded
+            a(heap(1)) = maxArea;
+        end
+
+        % remove smallest element from heap
+        e = pop(1);
+
+        left = linkedList(e,1);
+        right = linkedList(e,2);
+        % remove element from linked list
+        linkedList(left,2) = linkedList(e,2);
+        linkedList(right,1) = linkedList(e,1);
+
+
+        %Update area of neighbouring points if they're not the ends points
+        if linkedList(left,1) > 0
+            a(left) = area(linkedList(left,1),left,linkedList(left,2));
+            pop(pos(left));
+            push();
+        end
+
+        if linkedList(right,2) > 0
+            a(right) = area(linkedList(right,1),right,linkedList(right,2));
+            pop(pos(right));
+            push();
+        end
     end
-  end
 
-  if numel(heap) >0 &&  a(heap(1)) < maxArea
-    a(heap(1)) = maxArea;
-  end
-
-  % Move element at "root" down the heap, assuming the heap property
-  % is satisfied for the rest of the tree
-  function down(root)
-    while 2*root  <= len %while the root has a child
-      lchild = 2*root;
-      rchild = lchild+1;
-      % Find the minimum of the root and its children
-      swap = root;
-      if a(heap(lchild)) < a(heap(swap))
-        swap = lchild;
-      end
-      if rchild <= len && (a(heap(rchild)) < a(heap(swap)))
-        swap = rchild;
-      end
-
-      % if the root is the minimum, then we're done
-      if swap == root
-        break
-        % otherwise, swap the root and its minimum child
-      else
-        %swap in the pos array
-        pos(heap(root)) = swap;
-        pos(heap(swap)) = root;
-
-        %swap in the heap array
-        heap([root swap]) = heap([swap root])
-
-        root = swap;
-      end
+    if numel(heap) >0 &&  a(heap(1)) < maxArea
+        a(heap(1)) = maxArea;
     end
-  end
 
-  function up(child)
-    while child > 1
-      parent = bitshift(n,-1);
-      if a(heap(child)) < a(heap(parent))
+    % Move element at "root" down the heap, assuming the heap property
+    % is satisfied for the rest of the tree
+    function down(root)
+        while 2*root  <= len %while the root has a child
+            lchild = 2*root;
+            rchild = lchild+1;
+            % Find the minimum of the root and its children
+            swap = root;
+            if a(heap(lchild)) < a(heap(swap))
+                swap = lchild;
+            end
+            if rchild <= len && (a(heap(rchild)) < a(heap(swap)))
+                swap = rchild;
+            end
 
-        pos(heap(parent)) = child;
-        pos(heap(child)) = parent;
+            % if the root is the minimum, then we're done
+            if swap == root
+                break
+                % otherwise, swap the root and its minimum child
+            else
+                %swap in the pos array
+                pos(heap(root)) = swap;
+                pos(heap(swap)) = root;
 
-        heap([parent child]) = heap([child parent])
+                %swap in the heap array
+                heap([root swap]) = heap([swap root])
 
-        child = parent;
-      else
-        break
-      end
+                root = swap;
+            end
+        end
     end
-  end
 
-  function e = pop(i)
-    %Swap the first and the last
-    pos(heap(i)) = len;
-    pos(heap(len)) = i;
+    function up(child)
+        while child > 1
+            parent = bitshift(n,-1);
+            if a(heap(child)) < a(heap(parent))
 
-    e = heap(i);
-    heap(i) = heap(len);
-    heap(len) = e;
+                pos(heap(parent)) = child;
+                pos(heap(child)) = parent;
 
-    len = len-1;
-    down(i);
-  end
+                heap([parent child]) = heap([child parent])
 
-  function push()
-    len = len+1;
-    up(len);
-  end
+                child = parent;
+            else
+                break
+            end
+        end
+    end
+
+    function e = pop(i)
+        %Swap the first and the last
+        pos(heap(i)) = len;
+        pos(heap(len)) = i;
+
+        e = heap(i);
+        heap(i) = heap(len);
+        heap(len) = e;
+
+        len = len-1;
+        down(i);
+    end
+
+    function push()
+        len = len+1;
+        up(len);
+    end
 end
 % =========================================================================
 function movePointsCloser(meta, handle)
