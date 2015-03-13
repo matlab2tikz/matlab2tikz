@@ -368,24 +368,28 @@ function simplifyLine(meta, handle, targetResolution)
 
 
     %Split up lines which are seperated by NaNs
-    nans = isnan(vxData) | isnan(vyData);
-    idx = sort([1,find(nans)-1,find(nans)+1,numel(vxData)]);
+    inan   = isnan(vxData) | isnan(vyData);
+    df     = diff([false, ~inan, false]);
+    pstart = find(df == 1);
+    pend   = find(df == -1)-1;
+
     linesx = {};
     linesy = {};
-    for i = 1:2:numel(idx)
+
+    for i = 1:numel(pstart)
         %Simplify based on *visual* data
-        vx = vxData(idx(i):idx(i+1));
-        vy = vyData(idx(i):idx(i+1));
+        vx = vxData(pstart(i):pend(i));
+        vy = vyData(pstart(i):pend(i));
         area = featureArea(vx,vy);
 
         %append actual data to the list
-        x = xData(idx(i):idx(i+1));
-        y = yData(idx(i):idx(i+1));
+        x = xData(pstart(i):pend(i));
+        y = yData(pstart(i):pend(i));
         linesx{end+1} = x(area>tol);
         linesy{end+1} = y(area>tol);
 
-        %Add nans back in on internal splits
-        if i+1 < numel(idx)
+        %Add nans back in at internal splits
+        if i < numel(pstart)
             linesx{end+1} = nan;
             linesy{end+1} = nan;
         end
