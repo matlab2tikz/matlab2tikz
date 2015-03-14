@@ -486,15 +486,7 @@ function a = featureArea(x,y)
         a(heap(1)) = maxArea;
     end
 
-
     % Heap utility functions
-    function swap(a,b)
-        %a and b in the heap, keeping pos up to date
-        pos(heap(a)) = b;
-        pos(heap(b)) = a;
-        heap([a b]) = heap([b a]);
-    end
-
     function down(root)
         % Move element at "root" down the heap, assuming the heap property
         % is satisfied for the rest of the tree
@@ -515,7 +507,8 @@ function a = featureArea(x,y)
                 break
             else
                 % otherwise, swap the root and its minimum child and continue
-                swap(root,minimum);
+                pos(heap([root,minimum])) = [minimum,root];
+                heap([root,minimum]) = heap([minimum,root]);
                 root = minimum;
             end
         end
@@ -527,7 +520,8 @@ function a = featureArea(x,y)
             parent = bitshift(n,-1);
             if a(heap(child)) < a(heap(parent))
                 % If this element is less than its parent, swap them
-                swap(parent,child)
+                pos(heap([parent,child])) = [child,parent];
+                heap([parent,child]) = heap([child,parent]);
                 child = parent;
             else
                 %Otherwise the heap property is restored
@@ -542,7 +536,8 @@ function a = featureArea(x,y)
         e = heap(i);
 
         %Swap the first and the last
-        swap(i,len);
+        pos(heap([i,len])) = [len,i];
+        heap([i,len]) = heap([len,i]);
 
         %Remove the last element from the heap
         len = len-1;
