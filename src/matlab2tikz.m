@@ -4016,7 +4016,7 @@ function [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, cbarSt
             cbarStyleOptions = opts_add(cbarStyleOptions, 'width',...
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'eastoutside'
-            %cbarOptions = 'right';
+            %cbarTemplate = 'right';
         case 'westoutside'
             cbarTemplate = 'left';
         case 'northoutside'
