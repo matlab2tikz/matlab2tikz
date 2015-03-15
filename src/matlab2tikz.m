@@ -4541,11 +4541,9 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
     table = cell(nRows,1);
     for iRow = 1:nRows
-        thisData = cellfun(@(x)(x(iRow)), data, 'UniformOutput', false);
+        thisData = cell(1,nColumns);
         for jCol = 1:nColumns
-            if iscell(thisData{jCol}) %TODO: probably this can be done more clearly
-                thisData{jCol} = thisData{jCol}{1};
-            end
+            thisData{1,jCol} = data{jCol}(iRow);
         end
         table{iRow} = sprintf(FORMAT, thisData{:});
     end
