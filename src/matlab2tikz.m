@@ -3898,18 +3898,17 @@ function axisOptions = getColorbarOptions(m2t, handle)
 
     % begin collecting axes options
     axisOptions = opts_new();
-    cbarOptions = {};
     cbarStyleOptions = opts_new();
 
-    [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, ...
-                                                cbarOptions, cbarStyleOptions);
+    [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, ...
+                                                cbarStyleOptions);
 
     % axis label and direction
     if isHG2
         % VERSION: Starting from R2014b there is only one field `label`.
         % The colorbar's position determines, if it should be a x- or y-label.
-
-        if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
+        
+        if strcmpi(cbarTemplate, 'horizontal')
             labelOption = 'xlabel';
         else
             labelOption = 'ylabel';
@@ -3919,7 +3918,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
         % direction
         dirString = get(handle, 'Direction');
         if ~strcmpi(dirString, 'normal') % only if not 'normal'
-            if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
+            if strcmpi(cbarTemplate, 'horizontal')
                 dirOption = 'x dir';
             else
                 dirOption = 'y dir';
@@ -3945,22 +3944,14 @@ function axisOptions = getColorbarOptions(m2t, handle)
     if m2t.cmdOpts.Results.strict
         % Sampled colors.
         numColors = size(m2t.currentHandles.colormap, 1);
-        cbarOptions{end+1} = 'sampled';
+        axisOptions = opts_add(axisOptions, 'colorbar sampled');
         cbarStyleOptions = opts_add(cbarStyleOptions, 'samples', ...
             sprintf('%d', numColors+1));
 
     end
 
     % Merge them together in axisOptions.
-    if isempty(cbarOptions)
-        axisOptions = opts_add(axisOptions, 'colorbar', []);
-    else
-        if length(cbarOptions) > 1
-            userWarning(m2t, ...
-                'Pgfplots cannot deal with more than one colorbar option yet.');
-        end
-        axisOptions = opts_add(axisOptions, ['colorbar ', cbarOptions{1}]);
-    end
+    axisOptions = opts_add(axisOptions, strtrim(['colorbar ', cbarTemplate]));
 
     if ~isempty(cbarStyleOptions)
         axisOptions = opts_add(axisOptions, ...
@@ -3971,13 +3962,14 @@ function axisOptions = getColorbarOptions(m2t, handle)
     % do _not_ handle colorbar's children
 end
 % ==============================================================================
-function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOptions, cbarStyleOptions)
+function [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, cbarStyleOptions)
 % set position, ticks etc. of a colorbar
     loc = get(handle, 'Location');
+    cbarTemplate = '';
 
     switch lower(loc) % case insensitive (MATLAB: CamelCase, Octave: lower case)
         case 'north'
-            cbarOptions{end+1} = 'horizontal';
+            cbarTemplate = 'horizontal';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.5,0.97)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
@@ -3987,7 +3979,7 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
             cbarStyleOptions = opts_add(cbarStyleOptions, 'width',...
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'south'
-            cbarOptions{end+1} = 'horizontal';
+            cbarTemplate = 'horizontal';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.5,0.03)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor', ...
@@ -3997,7 +3989,7 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
             cbarStyleOptions = opts_add(cbarStyleOptions, 'width',...
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'east'
-            cbarOptions{end+1} = 'right';
+            cbarTemplate = 'right';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.97,0.5)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor', ...
@@ -4007,7 +3999,7 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
             cbarStyleOptions = opts_add(cbarStyleOptions, 'width',...
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'west'
-            cbarOptions{end+1} = 'left';
+            cbarTemplate = 'left';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.03,0.5)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
@@ -4017,12 +4009,12 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
             cbarStyleOptions = opts_add(cbarStyleOptions, 'width',...
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'eastoutside'
-            %cbarOptions{end+1} = 'right';
+            %cbarOptions = 'right';
         case 'westoutside'
-            cbarOptions{end+1} = 'left';
+            cbarTemplate = 'left';
         case 'northoutside'
             % TODO move to top
-            cbarOptions{end+1} = 'horizontal';
+            cbarTemplate = 'horizontal';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.5,1.03)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
@@ -4031,7 +4023,7 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
                 'xticklabel pos', 'upper');
         case 'southoutside'
 
-            cbarOptions{end+1} = 'horizontal';
+            cbarTemplate = 'horizontal';
         otherwise
             error('matlab2tikz:getColorOptions:unknownLocation',...
                 'getColorbarOptions: Unknown ''Location'' %s.', loc)
