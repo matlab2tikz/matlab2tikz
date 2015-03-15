@@ -4528,6 +4528,10 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
         error('matlab2tikz:makeTableDifferentNumberOfRows',...
             'Different data lengths [%s].', num2str(nRows));
     end
+    nRows = nRows(1);
+
+    FORMAT = repmat({m2t.ff}, 1, nColumns);
+    FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
 
     if all(cellfun(@isempty, variables))
         header = '';
