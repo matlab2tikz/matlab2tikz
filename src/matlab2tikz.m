@@ -4567,36 +4567,38 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
         opts = opts_add(opts, 'row sep','crcr');
     end
 
-    nColumns  = numel(data);
-    nRows     = cellfun(@numel, data);
+    nColumns = numel(data);
+    nRows    = cellfun(@numel, data);
     if ~all(nRows==nRows(1))
-        warning('matlab2tikz:makeTableDifferentNumberOfRows',...
-            'Different data lengths [%s]. Only including the first %d ones.',...
-            num2str(nRows), min(nRows));
+        error('matlab2tikz:makeTableDifferentNumberOfRows',...
+            'Different data lengths [%s].', num2str(nRows));
     end
-    nRows = min(nRows);
+    nRows = nRows(1);
 
     FORMAT = repmat({m2t.ff}, 1, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
     FORMAT = join(m2t, FORMAT, COLSEP);
     if all(cellfun(@isempty, variables))
-        header = {};
+        header = '';
     else
-        header = {join(m2t, variables, COLSEP)};
+        header = [join(m2t, variables, COLSEP) ROWSEP];
     end
 
     table = cell(nRows,1);
     for iRow = 1:nRows
-        thisData = cellfun(@(x)(x(iRow)), data, 'UniformOutput', false);
+        thisData = cell(1,nColumns);
         for jCol = 1:nColumns
-            if iscell(thisData{jCol}) %TODO: probably this can be done more clearly
-                thisData{jCol} = thisData{jCol}{1};
-            end
+            thisData{1,jCol} = data{jCol}(iRow);
         end
-        table{iRow} = sprintf(FORMAT, thisData{:});
     end
     table = lower(table); % convert NaN and Inf to lower case for TikZ
-    table = [join(m2t, [header;table], ROWSEP) ROWSEP];
+    COLSEP = repmat(COLSEP, nRows(1), 1);
+    ROWSEP = repmat(ROWSEP, nRows(1), 1);
+    table  = [join(m2t, table, COLSEP) ROWSEP]';
+    table  = [header, table(:)'];
+
+    % Remove whitespace
+    table = table(table ~= ' ');
 
     if m2t.cmdOpts.Results.externalData
         % output data to external file
@@ -4729,12 +4731,13 @@ function newstr = join(m2t, cellstr, delimiter)
     % convert all values to strings first
     nElem = numel(cellstr);
     for k = 1:nElem
-        if isnumeric(cellstr{k})
+        if ischar(cellstr{k}) % Short-circuit here
+        elseif isnumeric(cellstr{k})
             cellstr{k} = sprintf(m2t.ff, cellstr{k});
         elseif iscell(cellstr{k})
             cellstr{k} = join(m2t, cellstr{k}, delimiter);
             % this will fail for heavily nested cells
-        elseif ~ischar(cellstr{k})
+        else 
             error('matlab2tikz:join:NotCellstrOrNumeric',...
                 'Expected cellstr or numeric.');
         end
