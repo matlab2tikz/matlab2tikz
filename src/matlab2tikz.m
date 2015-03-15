@@ -4685,12 +4685,13 @@ function newstr = join(m2t, cellstr, delimiter)
     % convert all values to strings first
     nElem = numel(cellstr);
     for k = 1:nElem
-        if isnumeric(cellstr{k})
+        if ischar(cellstr{k}) % Short-circuit here
+        elseif isnumeric(cellstr{k})
             cellstr{k} = sprintf(m2t.ff, cellstr{k});
         elseif iscell(cellstr{k})
             cellstr{k} = join(m2t, cellstr{k}, delimiter);
             % this will fail for heavily nested cells
-        elseif ~ischar(cellstr{k})
+        else 
             error('matlab2tikz:join:NotCellstrOrNumeric',...
                 'Expected cellstr or numeric.');
         end
