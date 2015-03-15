@@ -4567,14 +4567,13 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
         opts = opts_add(opts, 'row sep','crcr');
     end
 
-    nColumns  = numel(data);
-    nRows     = cellfun(@numel, data);
+    nColumns = numel(data);
+    nRows    = cellfun(@numel, data);
     if ~all(nRows==nRows(1))
-        warning('matlab2tikz:makeTableDifferentNumberOfRows',...
-            'Different data lengths [%s]. Only including the first %d ones.',...
-            num2str(nRows), min(nRows));
+        error('matlab2tikz:makeTableDifferentNumberOfRows',...
+            'Different data lengths [%s].', num2str(nRows));
     end
-    nRows = min(nRows);
+    nRows = nRows(1);
 
     FORMAT = repmat({m2t.ff}, 1, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
@@ -4587,11 +4586,9 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
     table = cell(nRows,1);
     for iRow = 1:nRows
-        thisData = cellfun(@(x)(x(iRow)), data, 'UniformOutput', false);
+        thisData = cell(1,nColumns);
         for jCol = 1:nColumns
-            if iscell(thisData{jCol}) %TODO: probably this can be done more clearly
-                thisData{jCol} = thisData{jCol}{1};
-            end
+            thisData{1,jCol} = data{jCol}(iRow);
         end
         table{iRow} = sprintf(FORMAT, thisData{:});
     end
