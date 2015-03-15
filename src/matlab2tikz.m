@@ -2186,90 +2186,7 @@ function [m2t, str] = drawContour(m2t, h)
   % Draw a contour group (MATLAB R2014b and newer only)
   isFilled = strcmpi(get(h,'Fill'),'on');
   if isFilled
-      % Loop each contour and plot a filled region
-      %
-      % NOTE:
-      % - we cannot plot from inner to outer contour since the last
-      % filled area will cover the inner regions. Therefore, we need to
-      % invert the plotting order in those cases.
-      % - we need to distinguish between contour groups. A group is
-      % defined by inclusion, i.e. its members are contained within one
-      % outer contour. The outer contours of two groups cannot include
-      % each other.
-      
-      % Split contours in cell array
-      cellcont = mat2cell(contours, diff([istart; nrows+1]));
-      ncont    = numel(cellcont);
-      
-      % Determine contour groups and the plotting order.
-      % The ContourMatrix lists the contours in ascending order by level. 
-      % Hence, if the lowest (first) contour contains any others, then the 
-      % group will be a peak. Otherwise, the group will be a valley, and 
-      % the contours will have to be plotted in reverse order, i.e. from
-      % highest (largest) to lowest (narrowest).
-      order = NaN(ncont,1);
-      ifree = true(ncont,1);
-      from  = 1;
-      while any(ifree)
-          % Select peer with lowest level among the free contours, i.e.
-          % those which do not belong to any group yet
-          pospeer = find(ifree,1,'first');
-          peer    = cellcont{pospeer};
-          igroup  = false(ncont,1);
-          
-          % Loop through all contours
-          for ii = 1:numel(cellcont)
-              if ~ifree(ii), continue, end
-              
-              curr = cellcont{ii};
-              % Current contour contained in the peer
-              if inpolygon(curr(2,1),curr(2,2), peer(2:end,1),peer(2:end,2))
-                  igroup(ii) = true;
-                  isinverse  = false;
-                  % Peer contained in the current
-              elseif inpolygon(peer(2,1),peer(2,2),curr(2:end,1),curr(2:end,2))
-                  igroup(ii) = true;
-                  isinverse  = true;
-              end
-          end
-          % Order members of group according to the inclusion principle
-          nmembers = nnz(igroup ~= 0);
-          if isinverse
-              order(igroup) = nmembers+from-1:-1:from;
-          else
-              order(igroup) = from:nmembers+from-1;
-          end
-          
-          % Continue numbering
-          from  = from + nmembers;
-          ifree = ifree & ~igroup;
-      end
-      
-      % Reorder the contours
-      cellcont(order,1) = cellcont;
-      
-      % Add zero level fill
-      xdata = get(h,'XData');
-      ydata = get(h,'YData');
-      zerolevel = [0 4;
-          min(xdata), min(ydata);
-          min(xdata), max(ydata);
-          max(xdata), max(ydata);
-          max(xdata), min(ydata)];
-      cellcont = [zerolevel; cellcont];
-      
-      % Plot
-      columnNames = {'x','y'};
-      for ii = 1:ncont + 1
-          % Get color
-          zval          = cellcont{ii}(1,1);
-          [m2t, xcolor] = getColor(m2t,h,zval,'image');
-          % Print table
-          [m2t, table, tabOpts] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
-          % Fillplot
-          str = sprintf('%s\\addplot[fill=%s] table[%s] {%%\n%s};\n', ...
-              str, xcolor{1}, opts_print(m2t, tabOpts, ','), table);
-      end
+      [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows);
       
   else
       % Add colormap
@@ -2308,6 +2225,93 @@ function [istart, nrows] = findStartOfContourData(contours)
         pos         = pos + contours(pos, 2) + 1;
     end
     istart = find(istart);
+end
+% ==============================================================================
+function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
+    % Loop each contour and plot a filled region
+    %
+    % NOTE:
+    % - we cannot plot from inner to outer contour since the last
+    % filled area will cover the inner regions. Therefore, we need to
+    % invert the plotting order in those cases.
+    % - we need to distinguish between contour groups. A group is
+    % defined by inclusion, i.e. its members are contained within one
+    % outer contour. The outer contours of two groups cannot include
+    % each other.
+
+    % Split contours in cell array
+    cellcont = mat2cell(contours, diff([istart; nrows+1]));
+    ncont    = numel(cellcont);
+
+    % Determine contour groups and the plotting order.
+    % The ContourMatrix lists the contours in ascending order by level.
+    % Hence, if the lowest (first) contour contains any others, then the
+    % group will be a peak. Otherwise, the group will be a valley, and
+    % the contours will have to be plotted in reverse order, i.e. from
+    % highest (largest) to lowest (narrowest).
+    order = NaN(ncont,1);
+    ifree = true(ncont,1);
+    from  = 1;
+    while any(ifree)
+        % Select peer with lowest level among the free contours, i.e.
+        % those which do not belong to any group yet
+        pospeer = find(ifree,1,'first');
+        peer    = cellcont{pospeer};
+        igroup  = false(ncont,1);
+
+        % Loop through all contours
+        for ii = 1:numel(cellcont)
+            if ~ifree(ii), continue, end
+
+            curr = cellcont{ii};
+            % Current contour contained in the peer
+            if inpolygon(curr(2,1),curr(2,2), peer(2:end,1),peer(2:end,2))
+                igroup(ii) = true;
+                isinverse  = false;
+                % Peer contained in the current
+            elseif inpolygon(peer(2,1),peer(2,2),curr(2:end,1),curr(2:end,2))
+                igroup(ii) = true;
+                isinverse  = true;
+            end
+        end
+        % Order members of group according to the inclusion principle
+        nmembers = nnz(igroup ~= 0);
+        if isinverse
+            order(igroup) = nmembers+from-1:-1:from;
+        else
+            order(igroup) = from:nmembers+from-1;
+        end
+
+        % Continue numbering
+        from  = from + nmembers;
+        ifree = ifree & ~igroup;
+    end
+
+    % Reorder the contours
+    cellcont(order,1) = cellcont;
+
+    % Add zero level fill
+    xdata = get(h,'XData');
+    ydata = get(h,'YData');
+    zerolevel = [0,          4;
+                 min(xdata), min(ydata);
+                 min(xdata), max(ydata);
+                 max(xdata), max(ydata);
+                 max(xdata), min(ydata)];
+    cellcont = [zerolevel; cellcont];
+
+    % Plot
+    columnNames = {'x','y'};
+    for ii = 1:ncont + 1
+        % Get color
+        zval          = cellcont{ii}(1,1);
+        [m2t, xcolor] = getColor(m2t,h,zval,'image');
+        % Print table
+        [m2t, table, tabOpts] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
+        % Fillplot
+        str = sprintf('%s\\addplot[fill=%s] table[%s] {%%\n%s};\n', ...
+            str, xcolor{1}, opts_print(m2t, tabOpts, ','), table);
+    end
 end
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
