@@ -4532,22 +4532,18 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
     FORMAT = repmat({m2t.ff}, 1, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
-
+    FORMAT = join(m2t, FORMAT, COLSEP);
     if all(cellfun(@isempty, variables))
         header = '';
     else
         header = [join(m2t, variables, COLSEP) ROWSEP];
     end
 
-    table = cell(1,nColumns);
-    for c = 1:nColumns
-        column = data{c};
-        if isCellOrChar(column)
-            table{c} = char(column);
-        elseif isinteger(column)
-            table{c} = num2str(column(:), '%d');
-        else
-            table{c} = num2str(column(:), m2t.ff);
+    table = cell(nRows,1);
+    for iRow = 1:nRows
+        thisData = cell(1,nColumns);
+        for jCol = 1:nColumns
+            thisData{1,jCol} = data{jCol}(iRow);
         end
     end
     table = lower(table); % convert NaN and Inf to lower case for TikZ
