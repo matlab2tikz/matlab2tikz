@@ -2171,16 +2171,7 @@ function [m2t, str] = drawContour(m2t, h)
 
   % Retrieve ContourMatrix
   contours = get(h,'ContourMatrix')';
-
-  % Index beginning of contour data (see contourc.m for details)
-  nrows  = size(contours,1);
-  istart = false(nrows,1);
-  pos    = 1;
-  while pos < nrows
-      istart(pos) = true;
-      pos         = pos + contours(pos, 2) + 1;
-  end
-  istart = find(istart);
+  [istart, nrows] = findStartOfContourData(contours);
     
   % Scale negative contours one level down (for proper coloring)
   Levels    = contours(istart,1);
@@ -2305,6 +2296,18 @@ function [m2t, str] = drawContour(m2t, h)
           opts_print(m2t, tabOpts, ','), table);
       
   end
+end
+% ==============================================================================
+function [istart, nrows] = findStartOfContourData(contours)
+% Index beginning of contour data (see contourc.m for details)
+    nrows  = size(contours,1);
+    istart = false(nrows,1);
+    pos    = 1;
+    while pos < nrows
+        istart(pos) = true;
+        pos         = pos + contours(pos, 2) + 1;
+    end
+    istart = find(istart);
 end
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
