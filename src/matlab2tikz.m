@@ -998,20 +998,38 @@ end
 % ==============================================================================
 function [m2t, opts] = getTitle(m2t, handle, opts)
 % gets the title and its markup from an axes/colorbar/...
-     title = get(get(handle, 'Title'), 'String');
-    if ~isempty(title)
-        titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
-        title = prettyPrint(m2t, title, titleInterpreter);
-        titleStyle = getFontStyle(m2t, get(handle,'Title'));
-        if length(title) > 1 %multiline
-            titleStyle = opts_add(titleStyle, 'align', 'center');
+    [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, 'Title');
+end
+function [m2t, opts] = getLabel(m2t, handle, opts, tikzKeyword)
+% gets the label and its markup from an axes/colorbar/...
+    [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, 'Label', tikzKeyword);
+end
+function [m2t, opts] = setAxisLabel(m2t, handle, axis, opts)
+% convert an {x,y,z} axis label to TikZ
+    labelName = [upper(axis) 'Label'];
+    [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelName);
+end
+function [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelKind, tikzKeyword)
+% gets a string element from an object
+    if ~exist('tikzKeyword', 'var') || isempty(tikzKeyword)
+        tikzKeyword = lower(labelKind);
+    end
+    object = get(handle, labelKind);
+    
+    str = get(object, 'String');
+    if ~isempty(str)
+        interpreter = get(object, 'Interpreter');
+        str = prettyPrint(m2t, str, interpreter);
+        style = getFontStyle(m2t, object);
+        if length(str) > 1 %multiline
+            style = opts_add(style, 'align', 'center');
         end
-        if ~isempty(titleStyle)
-            opts = opts_add(opts, 'title style', ...
-                   sprintf('{%s}', opts_print(m2t, titleStyle, ',')));
+        if ~isempty(style)
+            opts = opts_add(opts, [tikzKeyword ' style'], ...
+                   sprintf('{%s}', opts_print(m2t, style, ',')));
         end
-        title = join(m2t, title, '\\[1ex]');
-        opts =  opts_add(opts, 'title', sprintf('{%s}', title));
+        str = join(m2t, str, '\\[1ex]');
+        opts =  opts_add(opts, tikzKeyword, sprintf('{%s}', str));
     end
 end
 % ==============================================================================
@@ -1298,37 +1316,6 @@ function assertRegularAxes(handle)
         error('matlab2tikz:notARegularAxes', ...
               ['The object "%s" is not a regular axes object. ' ...
                'It cannot be handled with drawAxes!'], handle);
-    end
-end
-% ==============================================================================
-function [m2t, options] = setAxisLabel(m2t, handle, axis, options)
-% convert an {x,y,z} axis label to TikZ
-    axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
-    if ~isempty(axisLabel)
-        axisLabelInterpreter = ...
-            get(get(handle, [upper(axis),'Label']), 'Interpreter');
-        label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
-        if length(label) > 1
-            % If there's more than one cell item, the list
-            % is displayed multi-row in MATLAB(R).
-            % To replicate the same in Pgfplots, one can
-            % use xlabel={first\\second\\third} only if the
-            % alignment or the width of the "label box"
-            % is defined. This is a restriction that comes with
-            % TikZ nodes.
-            options = opts_add(options, ...
-                [axis, 'label style'], '{align=center}');
-        end
-        label = join(m2t, label,'\\[1ex]');
-        %if isVisible(handle)
-        options = opts_add(options, ...
-            [axis, 'label'], sprintf('{%s}', label));
-        %else
-        %    m2t.axesContainers{end}.options{end+1} = ...
-        %        sprintf(['extra description/.code={\n', ...
-        %                 '\\node[/pgfplots/every axis label,/pgfplots/every axis %s label]{%s};\n', ...
-        %                 '}'], axis, label);
-        %end
     end
 end
 % ==============================================================================
@@ -3922,29 +3909,12 @@ function axisOptions = getColorbarOptions(m2t, handle)
         % VERSION: Starting from R2014b there is only one field `label`.
         % The colorbar's position determines, if it should be a x- or y-label.
 
-        % label
-        % TODO: Move redundant interpreter and multiline code to a separate
-        % function. It is duplicated below in 'title' and in functions
-        % 'getAxisOptions' and 'drawTitleOfAxes'.
-        labelString = get(get(handle, 'Label'), 'String');
-        if ~isempty(labelString) % add only, if not empty
-            labelInterpreter = get(get(handle, 'Label'), 'Interpreter');
-            labelString = prettyPrint(m2t, labelString, labelInterpreter);
-            if length(labelString) > 1 % multiline
-                cbarStyleOptions = opts_add(cbarStyleOptions, 'label style', ...
-                    '{align=center}');
-            end
-            labelString = join(m2t, labelString, '\\[1ex]');
-
-            if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
-                labelOption = 'xlabel';
-            else
-                labelOption = 'ylabel';
-            end
-
-            cbarStyleOptions = opts_add(cbarStyleOptions, labelOption, ...
-                sprintf('{%s}', labelString));
+        if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
+            labelOption = 'xlabel';
+        else
+            labelOption = 'ylabel';
         end
+        [m2t, cbarStyleOptions] = getLabel(m2t, handle, cbarStyleOptions, labelOption);
 
         % direction
         dirString = get(handle, 'Direction');
