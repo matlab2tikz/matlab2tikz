@@ -709,10 +709,14 @@ legendString = '';
 interpreter  = '';
 hasLegend = false;
 
+if isempty(child)
+    return; % an empty (i.e. non-existent) child cannot have a legend entry
+end
+
 % Check if current handle is referenced in a legend.
 switch getEnvironment
     case 'MATLAB'
-        % Make sure that m2t.legendHandles is a row vector.
+        %FIXME: this part should be restructured.
         for legendHandle = m2t.legendHandles(:)'
             ud = get(legendHandle, 'UserData');
             if isfield(ud, 'handles')
@@ -720,25 +724,23 @@ switch getEnvironment
             else
                 plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
             end
-            if ~isempty(child)
-                k = find(child == plotChildren);
-                if isempty(k)
-                    % Lines of error bar plots are not referenced
-                    % directly in legends as an error bars plot contains
-                    % two "lines": the data and the deviations. Here, the
-                    % legends refer to the specgraph.errorbarseries
-                    % handle which is 'Parent' to the line handle.
-                    k = find(get(child,'Parent') == plotChildren);
-                end
-                if ~isempty(k)
-                    % Legend entry found. Add it to the plot.
-                    hasLegend = true;
-                    interpreter = get(legendHandle, 'Interpreter');
-                    if ~isempty(ud) && isfield(ud,'strings')
-                        legendString = ud.lstrings(k);
-                    else
-                        legendString = get(child, 'DisplayName');
-                    end
+            k = find(child == plotChildren);
+            if isempty(k)
+                % Lines of error bar plots are not referenced
+                % directly in legends as an error bars plot contains
+                % two "lines": the data and the deviations. Here, the
+                % legends refer to the specgraph.errorbarseries
+                % handle which is 'Parent' to the line handle.
+                k = find(get(child,'Parent') == plotChildren);
+            end
+            if ~isempty(k)
+                % Legend entry found. Add it to the plot.
+                hasLegend = true;
+                interpreter = get(legendHandle, 'Interpreter');
+                if ~isempty(ud) && isfield(ud,'strings')
+                    legendString = ud.lstrings(k);
+                else
+                    legendString = get(child, 'DisplayName');
                 end
             end
         end
