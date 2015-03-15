@@ -4532,7 +4532,7 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
     if all(cellfun(@isempty, variables))
         header = '';
     else
-        header = join(m2t, variables, COLSEP);
+        header = [join(m2t, variables, COLSEP) ROWSEP];
     end
 
     table = cell(1,nColumns);
@@ -4550,7 +4550,7 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
     COLSEP = repmat(COLSEP, nRows(1), 1);
     ROWSEP = repmat(ROWSEP, nRows(1), 1);
     table  = [join(m2t, table, COLSEP) ROWSEP]';
-    table  = [header, table(:)];
+    table  = [header, table(:)'];
 
     % Remove whitespace
     table = table(table ~= ' ');
