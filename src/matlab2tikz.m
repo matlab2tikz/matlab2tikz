@@ -3205,6 +3205,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'log origin', 'infty');
+        %TODO: wait for pgfplots to implement other base values (see #438)
     end
 
     xData = get(h, 'XData');
@@ -3213,13 +3214,51 @@ function [m2t, str] = drawBarseries(m2t, h)
     % init drawOptions
     drawOptions = opts_new();
 
-    barlayout = get(h, 'BarLayout');
-    isHoriz = strcmp(get(h, 'Horizontal'), 'on');
-    if (isHoriz)
+    [barType, isHoriz] = getOrientationOfBarSeries(h);
+    [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions);
+
+    % define edge color
+    edgeColor = get(h, 'EdgeColor');
+    lineStyle = get(h, 'LineStyle');
+    if isNone(lineStyle) || isNone(edgeColor)
+        drawOptions = opts_add(drawOptions, 'draw', 'none');
+    else
+        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
+        drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
+    end
+
+    [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions);
+
+    % Add 'area legend' to the options as otherwise the legend indicators
+    % will just highlight the edges.
+    drawOptions = opts_add(drawOptions, 'area legend');
+
+    % plot the thing
+    if isHoriz
+        [yDataPlot, xDataPlot] = deal(xData, yData); % swap values
+    else
+        [xDataPlot, yDataPlot] = deal(xData, yData);
+    end
+
+    [m2t, table, tabOpts] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
+    str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+                 opts_print(m2t, drawOptions, ','), ...
+                 opts_print(m2t, tabOpts, ','), table);
+end
+% ==============================================================================
+function [barType, isHorizontal] = getOrientationOfBarSeries(h)
+% determines the orientation (horizontal/vertical) of a BarSeries object
+    isHorizontal = strcmp(get(h, 'Horizontal'), 'on');
+    if isHorizontal
         barType = 'xbar';
     else
         barType = 'ybar';
     end
+end
+% ==============================================================================
+function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions)
+% sets the options specific to a bar layour (grouped vs stacked)
+    barlayout = get(h, 'BarLayout');
     switch barlayout
         case 'grouped'  % grouped bar plots
             
@@ -3289,34 +3328,6 @@ function [m2t, str] = drawBarseries(m2t, h)
             error('matlab2tikz:drawBarseries', ...
                 'Don''t know how to handle BarLayout ''%s''.', barlayout);
     end
-
-    % define edge color
-    edgeColor = get(h, 'EdgeColor');
-    lineStyle = get(h, 'LineStyle');
-    if isNone(lineStyle) || isNone(edgeColor)
-        drawOptions = opts_add(drawOptions, 'draw', 'none');
-    else
-        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-        drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
-    end
-
-    [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions);
-
-    % Add 'area legend' to the options as otherwise the legend indicators
-    % will just highlight the edges.
-    drawOptions = opts_add(drawOptions, 'area legend');
-
-    % plot the thing
-    if isHoriz
-        [yDataPlot, xDataPlot] = deal(xData, yData); % swap values
-    else
-        [xDataPlot, yDataPlot] = deal(xData, yData);
-    end
-
-    [m2t, table, tabOpts] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
-    str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
-                 opts_print(m2t, drawOptions, ','), ...
-                 opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
 function [numBarSeries, barSeriesId] = getNumBarAndId(h)
