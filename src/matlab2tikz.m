@@ -992,23 +992,26 @@ end
 % ==============================================================================
 function m2t = drawTitleOfAxes(m2t, handle)
 % processes the title of an axes object
-    title = get(get(handle, 'Title'), 'String');
+    [m2t, m2t.axesContainers{end}.options] = getTitle(m2t, handle, ...
+        m2t.axesContainers{end}.options);
+end
+% ==============================================================================
+function [m2t, opts] = getTitle(m2t, handle, opts)
+% gets the title and its markup from an axes/colorbar/...
+     title = get(get(handle, 'Title'), 'String');
     if ~isempty(title)
         titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
         title = prettyPrint(m2t, title, titleInterpreter);
         titleStyle = getFontStyle(m2t, get(handle,'Title'));
-        if length(title) > 1
+        if length(title) > 1 %multiline
             titleStyle = opts_add(titleStyle, 'align', 'center');
         end
         if ~isempty(titleStyle)
-            m2t.axesContainers{end}.options = opts_add(...
-                m2t.axesContainers{end}.options, 'title style', ...
-                sprintf('{%s}', opts_print(m2t, titleStyle, ',')));
+            opts = opts_add(opts, 'title style', ...
+                   sprintf('{%s}', opts_print(m2t, titleStyle, ',')));
         end
         title = join(m2t, title, '\\[1ex]');
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'title', sprintf('{%s}', title));
+        opts =  opts_add(opts, 'title', sprintf('{%s}', title));
     end
 end
 % ==============================================================================
@@ -3967,19 +3970,8 @@ function axisOptions = getColorbarOptions(m2t, handle)
     end
 
     % title
-    title = get(get(handle, 'Title'), 'String');
-    if ~isempty(title)
-        titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
-        title = prettyPrint(m2t, title, titleInterpreter);
-        if length(title) > 1 % multiline
-            cbarStyleOptions = opts_add(cbarStyleOptions, 'title style', ...
-                    '{align=center}');
-        end
-        title = join(m2t, title, '\\[1ex]');
-        cbarStyleOptions = opts_add(cbarStyleOptions, 'title', ...
-            sprintf('{%s}', title));
-    end
-
+    [m2t, cbarStyleOptions] = getTitle(m2t, handle, cbarStyleOptions);
+    
     if m2t.cmdOpts.Results.strict
         % Sampled colors.
         numColors = size(m2t.currentHandles.colormap, 1);
