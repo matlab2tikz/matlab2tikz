@@ -3947,7 +3947,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
 
     % title
     [m2t, cbarStyleOptions] = getTitle(m2t, handle, cbarStyleOptions);
-    
+
     if m2t.cmdOpts.Results.strict
         % Sampled colors.
         numColors = size(m2t.currentHandles.colormap, 1);
@@ -3955,6 +3955,12 @@ function axisOptions = getColorbarOptions(m2t, handle)
         cbarStyleOptions = opts_add(cbarStyleOptions, 'samples', ...
             sprintf('%d', numColors+1));
 
+        if ~isempty(cbarTemplate)
+            userWarning(m2t, ...
+-               'Pgfplots cannot deal with more than one colorbar option yet.');
+            %FIXME: can we get sampled horizontal color bars to work?
+            %FIXME: sampled colorbars should be inferred, not by using strict!
+        end
     end
 
     % Merge them together in axisOptions.
