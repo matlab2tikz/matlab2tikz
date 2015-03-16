@@ -1004,7 +1004,7 @@ function [m2t, opts] = getLabel(m2t, handle, opts, tikzKeyword)
 % gets the label and its markup from an axes/colorbar/...
     [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, 'Label', tikzKeyword);
 end
-function [m2t, opts] = setAxisLabel(m2t, handle, axis, opts)
+function [m2t, opts] = getAxisLabel(m2t, handle, axis, opts)
 % convert an {x,y,z} axis label to TikZ
     labelName = [upper(axis) 'Label'];
     [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelName);
@@ -1210,7 +1210,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     [options] = getAxisTicks(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis label
-    [m2t, options] = setAxisLabel(m2t, handle, axis, options);
+    [m2t, options] = getAxisLabel(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get grids
     if strcmp(getOrDefault(handle, [upper(axis),'Grid'], 'off'), 'on');
@@ -3245,7 +3245,7 @@ end
 % ==============================================================================
 function [barType, isHorizontal] = getOrientationOfBarSeries(h)
 % determines the orientation (horizontal/vertical) of a BarSeries object
-    isHorizontal = strcmp(get(h, 'Horizontal'), 'on');
+    isHorizontal = strcmpi(get(h, 'Horizontal'), 'on');
     if isHorizontal
         barType = 'xbar';
     else
@@ -3258,7 +3258,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
     barlayout = get(h, 'BarLayout');
     switch barlayout
         case 'grouped'  % grouped bar plots
-            
+
             % Get number of bars series and bar series id
             [numBarSeries, barSeriesId] = getNumBarAndId(h);
 
@@ -3914,7 +3914,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
     if isHG2
         % VERSION: Starting from R2014b there is only one field `label`.
         % The colorbar's position determines, if it should be a x- or y-label.
-        
+
         if strcmpi(cbarTemplate, 'horizontal')
             labelOption = 'xlabel';
         else
