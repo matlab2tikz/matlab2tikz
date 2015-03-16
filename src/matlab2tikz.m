@@ -709,10 +709,14 @@ legendString = '';
 interpreter  = '';
 hasLegend = false;
 
+if isempty(child)
+    return; % an empty (i.e. non-existent) child cannot have a legend entry
+end
+
 % Check if current handle is referenced in a legend.
 switch getEnvironment
     case 'MATLAB'
-        % Make sure that m2t.legendHandles is a row vector.
+        %FIXME: this part should be restructured.
         for legendHandle = m2t.legendHandles(:)'
             ud = get(legendHandle, 'UserData');
             if isfield(ud, 'handles')
@@ -720,25 +724,23 @@ switch getEnvironment
             else
                 plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
             end
-            if ~isempty(child)
-                k = find(child == plotChildren);
-                if isempty(k)
-                    % Lines of error bar plots are not referenced
-                    % directly in legends as an error bars plot contains
-                    % two "lines": the data and the deviations. Here, the
-                    % legends refer to the specgraph.errorbarseries
-                    % handle which is 'Parent' to the line handle.
-                    k = find(get(child,'Parent') == plotChildren);
-                end
-                if ~isempty(k)
-                    % Legend entry found. Add it to the plot.
-                    hasLegend = true;
-                    interpreter = get(legendHandle, 'Interpreter');
-                    if ~isempty(ud) && isfield(ud,'strings')
-                        legendString = ud.lstrings(k);
-                    else
-                        legendString = get(child, 'DisplayName');
-                    end
+            k = find(child == plotChildren);
+            if isempty(k)
+                % Lines of error bar plots are not referenced
+                % directly in legends as an error bars plot contains
+                % two "lines": the data and the deviations. Here, the
+                % legends refer to the specgraph.errorbarseries
+                % handle which is 'Parent' to the line handle.
+                k = find(get(child,'Parent') == plotChildren);
+            end
+            if ~isempty(k)
+                % Legend entry found. Add it to the plot.
+                hasLegend = true;
+                interpreter = get(legendHandle, 'Interpreter');
+                if ~isempty(ud) && isfield(ud,'strings')
+                    legendString = ud.lstrings(k);
+                else
+                    legendString = get(child, 'DisplayName');
                 end
             end
         end
@@ -990,23 +992,44 @@ end
 % ==============================================================================
 function m2t = drawTitleOfAxes(m2t, handle)
 % processes the title of an axes object
-    title = get(get(handle, 'Title'), 'String');
-    if ~isempty(title)
-        titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
-        title = prettyPrint(m2t, title, titleInterpreter);
-        titleStyle = getFontStyle(m2t, get(handle,'Title'));
-        if length(title) > 1
-            titleStyle = opts_add(titleStyle, 'align', 'center');
+    [m2t, m2t.axesContainers{end}.options] = getTitle(m2t, handle, ...
+        m2t.axesContainers{end}.options);
+end
+% ==============================================================================
+function [m2t, opts] = getTitle(m2t, handle, opts)
+% gets the title and its markup from an axes/colorbar/...
+    [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, 'Title');
+end
+function [m2t, opts] = getLabel(m2t, handle, opts, tikzKeyword)
+% gets the label and its markup from an axes/colorbar/...
+    [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, 'Label', tikzKeyword);
+end
+function [m2t, opts] = getAxisLabel(m2t, handle, axis, opts)
+% convert an {x,y,z} axis label to TikZ
+    labelName = [upper(axis) 'Label'];
+    [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelName);
+end
+function [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelKind, tikzKeyword)
+% gets a string element from an object
+    if ~exist('tikzKeyword', 'var') || isempty(tikzKeyword)
+        tikzKeyword = lower(labelKind);
+    end
+    object = get(handle, labelKind);
+    
+    str = get(object, 'String');
+    if ~isempty(str)
+        interpreter = get(object, 'Interpreter');
+        str = prettyPrint(m2t, str, interpreter);
+        style = getFontStyle(m2t, object);
+        if length(str) > 1 %multiline
+            style = opts_add(style, 'align', 'center');
         end
-        if ~isempty(titleStyle)
-            m2t.axesContainers{end}.options = opts_add(...
-                m2t.axesContainers{end}.options, 'title style', ...
-                sprintf('{%s}', opts_print(m2t, titleStyle, ',')));
+        if ~isempty(style)
+            opts = opts_add(opts, [tikzKeyword ' style'], ...
+                   sprintf('{%s}', opts_print(m2t, style, ',')));
         end
-        title = join(m2t, title, '\\[1ex]');
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'title', sprintf('{%s}', title));
+        str = join(m2t, str, '\\[1ex]');
+        opts =  opts_add(opts, tikzKeyword, sprintf('{%s}', str));
     end
 end
 % ==============================================================================
@@ -1187,7 +1210,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     [options] = getAxisTicks(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis label
-    [m2t, options] = setAxisLabel(m2t, handle, axis, options);
+    [m2t, options] = getAxisLabel(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get grids
     if strcmp(getOrDefault(handle, [upper(axis),'Grid'], 'off'), 'on');
@@ -1293,37 +1316,6 @@ function assertRegularAxes(handle)
         error('matlab2tikz:notARegularAxes', ...
               ['The object "%s" is not a regular axes object. ' ...
                'It cannot be handled with drawAxes!'], handle);
-    end
-end
-% ==============================================================================
-function [m2t, options] = setAxisLabel(m2t, handle, axis, options)
-% convert an {x,y,z} axis label to TikZ
-    axisLabel = get(get(handle, [upper(axis),'Label']), 'String');
-    if ~isempty(axisLabel)
-        axisLabelInterpreter = ...
-            get(get(handle, [upper(axis),'Label']), 'Interpreter');
-        label = prettyPrint(m2t, axisLabel, axisLabelInterpreter);
-        if length(label) > 1
-            % If there's more than one cell item, the list
-            % is displayed multi-row in MATLAB(R).
-            % To replicate the same in Pgfplots, one can
-            % use xlabel={first\\second\\third} only if the
-            % alignment or the width of the "label box"
-            % is defined. This is a restriction that comes with
-            % TikZ nodes.
-            options = opts_add(options, ...
-                [axis, 'label style'], '{align=center}');
-        end
-        label = join(m2t, label,'\\[1ex]');
-        %if isVisible(handle)
-        options = opts_add(options, ...
-            [axis, 'label'], sprintf('{%s}', label));
-        %else
-        %    m2t.axesContainers{end}.options{end+1} = ...
-        %        sprintf(['extra description/.code={\n', ...
-        %                 '\\node[/pgfplots/every axis label,/pgfplots/every axis %s label]{%s};\n', ...
-        %                 '}'], axis, label);
-        %end
     end
 end
 % ==============================================================================
@@ -2179,16 +2171,7 @@ function [m2t, str] = drawContour(m2t, h)
 
   % Retrieve ContourMatrix
   contours = get(h,'ContourMatrix')';
-
-  % Index beginning of contour data (see contourc.m for details)
-  nrows  = size(contours,1);
-  istart = false(nrows,1);
-  pos    = 1;
-  while pos < nrows
-      istart(pos) = true;
-      pos         = pos + contours(pos, 2) + 1;
-  end
-  istart = find(istart);
+  [istart, nrows] = findStartOfContourData(contours);
     
   % Scale negative contours one level down (for proper coloring)
   Levels    = contours(istart,1);
@@ -2203,90 +2186,7 @@ function [m2t, str] = drawContour(m2t, h)
   % Draw a contour group (MATLAB R2014b and newer only)
   isFilled = strcmpi(get(h,'Fill'),'on');
   if isFilled
-      % Loop each contour and plot a filled region
-      %
-      % NOTE:
-      % - we cannot plot from inner to outer contour since the last
-      % filled area will cover the inner regions. Therefore, we need to
-      % invert the plotting order in those cases.
-      % - we need to distinguish between contour groups. A group is
-      % defined by inclusion, i.e. its members are contained within one
-      % outer contour. The outer contours of two groups cannot include
-      % each other.
-      
-      % Split contours in cell array
-      cellcont = mat2cell(contours, diff([istart; nrows+1]));
-      ncont    = numel(cellcont);
-      
-      % Determine contour groups and the plotting order.
-      % The ContourMatrix lists the contours in ascending order by level. 
-      % Hence, if the lowest (first) contour contains any others, then the 
-      % group will be a peak. Otherwise, the group will be a valley, and 
-      % the contours will have to be plotted in reverse order, i.e. from
-      % highest (largest) to lowest (narrowest).
-      order = NaN(ncont,1);
-      ifree = true(ncont,1);
-      from  = 1;
-      while any(ifree)
-          % Select peer with lowest level among the free contours, i.e.
-          % those which do not belong to any group yet
-          pospeer = find(ifree,1,'first');
-          peer    = cellcont{pospeer};
-          igroup  = false(ncont,1);
-          
-          % Loop through all contours
-          for ii = 1:numel(cellcont)
-              if ~ifree(ii), continue, end
-              
-              curr = cellcont{ii};
-              % Current contour contained in the peer
-              if inpolygon(curr(2,1),curr(2,2), peer(2:end,1),peer(2:end,2))
-                  igroup(ii) = true;
-                  isinverse  = false;
-                  % Peer contained in the current
-              elseif inpolygon(peer(2,1),peer(2,2),curr(2:end,1),curr(2:end,2))
-                  igroup(ii) = true;
-                  isinverse  = true;
-              end
-          end
-          % Order members of group according to the inclusion principle
-          nmembers = nnz(igroup ~= 0);
-          if isinverse
-              order(igroup) = nmembers+from-1:-1:from;
-          else
-              order(igroup) = from:nmembers+from-1;
-          end
-          
-          % Continue numbering
-          from  = from + nmembers;
-          ifree = ifree & ~igroup;
-      end
-      
-      % Reorder the contours
-      cellcont(order,1) = cellcont;
-      
-      % Add zero level fill
-      xdata = get(h,'XData');
-      ydata = get(h,'YData');
-      zerolevel = [0 4;
-          min(xdata), min(ydata);
-          min(xdata), max(ydata);
-          max(xdata), max(ydata);
-          max(xdata), min(ydata)];
-      cellcont = [zerolevel; cellcont];
-      
-      % Plot
-      columnNames = {'x','y'};
-      for ii = 1:ncont + 1
-          % Get color
-          zval          = cellcont{ii}(1,1);
-          [m2t, xcolor] = getColor(m2t,h,zval,'image');
-          % Print table
-          [m2t, table, tabOpts] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
-          % Fillplot
-          str = sprintf('%s\\addplot[fill=%s] table[%s] {%%\n%s};\n', ...
-              str, xcolor{1}, opts_print(m2t, tabOpts, ','), table);
-      end
+      [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows);
       
   else
       % Add colormap
@@ -2313,6 +2213,105 @@ function [m2t, str] = drawContour(m2t, h)
           opts_print(m2t, tabOpts, ','), table);
       
   end
+end
+% ==============================================================================
+function [istart, nrows] = findStartOfContourData(contours)
+% Index beginning of contour data (see contourc.m for details)
+    nrows  = size(contours,1);
+    istart = false(nrows,1);
+    pos    = 1;
+    while pos < nrows
+        istart(pos) = true;
+        pos         = pos + contours(pos, 2) + 1;
+    end
+    istart = find(istart);
+end
+% ==============================================================================
+function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
+    % Loop each contour and plot a filled region
+    %
+    % NOTE:
+    % - we cannot plot from inner to outer contour since the last
+    % filled area will cover the inner regions. Therefore, we need to
+    % invert the plotting order in those cases.
+    % - we need to distinguish between contour groups. A group is
+    % defined by inclusion, i.e. its members are contained within one
+    % outer contour. The outer contours of two groups cannot include
+    % each other.
+
+    % Split contours in cell array
+    cellcont = mat2cell(contours, diff([istart; nrows+1]));
+    ncont    = numel(cellcont);
+
+    % Determine contour groups and the plotting order.
+    % The ContourMatrix lists the contours in ascending order by level.
+    % Hence, if the lowest (first) contour contains any others, then the
+    % group will be a peak. Otherwise, the group will be a valley, and
+    % the contours will have to be plotted in reverse order, i.e. from
+    % highest (largest) to lowest (narrowest).
+    order = NaN(ncont,1);
+    ifree = true(ncont,1);
+    from  = 1;
+    while any(ifree)
+        % Select peer with lowest level among the free contours, i.e.
+        % those which do not belong to any group yet
+        pospeer = find(ifree,1,'first');
+        peer    = cellcont{pospeer};
+        igroup  = false(ncont,1);
+
+        % Loop through all contours
+        for ii = 1:numel(cellcont)
+            if ~ifree(ii), continue, end
+
+            curr = cellcont{ii};
+            % Current contour contained in the peer
+            if inpolygon(curr(2,1),curr(2,2), peer(2:end,1),peer(2:end,2))
+                igroup(ii) = true;
+                isinverse  = false;
+                % Peer contained in the current
+            elseif inpolygon(peer(2,1),peer(2,2),curr(2:end,1),curr(2:end,2))
+                igroup(ii) = true;
+                isinverse  = true;
+            end
+        end
+        % Order members of group according to the inclusion principle
+        nmembers = nnz(igroup ~= 0);
+        if isinverse
+            order(igroup) = nmembers+from-1:-1:from;
+        else
+            order(igroup) = from:nmembers+from-1;
+        end
+
+        % Continue numbering
+        from  = from + nmembers;
+        ifree = ifree & ~igroup;
+    end
+
+    % Reorder the contours
+    cellcont(order,1) = cellcont;
+
+    % Add zero level fill
+    xdata = get(h,'XData');
+    ydata = get(h,'YData');
+    zerolevel = [0,          4;
+                 min(xdata), min(ydata);
+                 min(xdata), max(ydata);
+                 max(xdata), max(ydata);
+                 max(xdata), min(ydata)];
+    cellcont = [zerolevel; cellcont];
+
+    % Plot
+    columnNames = {'x','y'};
+    for ii = 1:ncont + 1
+        % Get color
+        zval          = cellcont{ii}(1,1);
+        [m2t, xcolor] = getColor(m2t,h,zval,'image');
+        % Print table
+        [m2t, table, tabOpts] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
+        % Fillplot
+        str = sprintf('%s\\addplot[fill=%s] table[%s] {%%\n%s};\n', ...
+            str, xcolor{1}, opts_print(m2t, tabOpts, ','), table);
+    end
 end
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
@@ -3203,6 +3202,7 @@ function [m2t, str] = drawBarseries(m2t, h)
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'log origin', 'infty');
+        %TODO: wait for pgfplots to implement other base values (see #438)
     end
 
     xData = get(h, 'XData');
@@ -3211,16 +3211,54 @@ function [m2t, str] = drawBarseries(m2t, h)
     % init drawOptions
     drawOptions = opts_new();
 
-    barlayout = get(h, 'BarLayout');
-    isHoriz = strcmp(get(h, 'Horizontal'), 'on');
-    if (isHoriz)
+    [barType, isHoriz] = getOrientationOfBarSeries(h);
+    [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions);
+
+    % define edge color
+    edgeColor = get(h, 'EdgeColor');
+    lineStyle = get(h, 'LineStyle');
+    if isNone(lineStyle) || isNone(edgeColor)
+        drawOptions = opts_add(drawOptions, 'draw', 'none');
+    else
+        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
+        drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
+    end
+
+    [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions);
+
+    % Add 'area legend' to the options as otherwise the legend indicators
+    % will just highlight the edges.
+    drawOptions = opts_add(drawOptions, 'area legend');
+
+    % plot the thing
+    if isHoriz
+        [yDataPlot, xDataPlot] = deal(xData, yData); % swap values
+    else
+        [xDataPlot, yDataPlot] = deal(xData, yData);
+    end
+
+    [m2t, table, tabOpts] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
+    str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+                 opts_print(m2t, drawOptions, ','), ...
+                 opts_print(m2t, tabOpts, ','), table);
+end
+% ==============================================================================
+function [barType, isHorizontal] = getOrientationOfBarSeries(h)
+% determines the orientation (horizontal/vertical) of a BarSeries object
+    isHorizontal = strcmpi(get(h, 'Horizontal'), 'on');
+    if isHorizontal
         barType = 'xbar';
     else
         barType = 'ybar';
     end
+end
+% ==============================================================================
+function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions)
+% sets the options specific to a bar layour (grouped vs stacked)
+    barlayout = get(h, 'BarLayout');
     switch barlayout
         case 'grouped'  % grouped bar plots
-            
+
             % Get number of bars series and bar series id
             [numBarSeries, barSeriesId] = getNumBarAndId(h);
 
@@ -3287,34 +3325,6 @@ function [m2t, str] = drawBarseries(m2t, h)
             error('matlab2tikz:drawBarseries', ...
                 'Don''t know how to handle BarLayout ''%s''.', barlayout);
     end
-
-    % define edge color
-    edgeColor = get(h, 'EdgeColor');
-    lineStyle = get(h, 'LineStyle');
-    if isNone(lineStyle) || isNone(edgeColor)
-        drawOptions = opts_add(drawOptions, 'draw', 'none');
-    else
-        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-        drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
-    end
-
-    [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions);
-
-    % Add 'area legend' to the options as otherwise the legend indicators
-    % will just highlight the edges.
-    drawOptions = opts_add(drawOptions, 'area legend');
-
-    % plot the thing
-    if isHoriz
-        [yDataPlot, xDataPlot] = deal(xData, yData); % swap values
-    else
-        [xDataPlot, yDataPlot] = deal(xData, yData);
-    end
-
-    [m2t, table, tabOpts] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
-    str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
-                 opts_print(m2t, drawOptions, ','), ...
-                 opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
 function [numBarSeries, barSeriesId] = getNumBarAndId(h)
@@ -3895,45 +3905,27 @@ function axisOptions = getColorbarOptions(m2t, handle)
 
     % begin collecting axes options
     axisOptions = opts_new();
-    cbarOptions = {};
     cbarStyleOptions = opts_new();
 
-    [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, ...
-                                                cbarOptions, cbarStyleOptions);
+    [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, ...
+                                                cbarStyleOptions);
 
     % axis label and direction
     if isHG2
         % VERSION: Starting from R2014b there is only one field `label`.
         % The colorbar's position determines, if it should be a x- or y-label.
 
-        % label
-        % TODO: Move redundant interpreter and multiline code to a separate
-        % function. It is duplicated below in 'title' and in functions
-        % 'getAxisOptions' and 'drawTitleOfAxes'.
-        labelString = get(get(handle, 'Label'), 'String');
-        if ~isempty(labelString) % add only, if not empty
-            labelInterpreter = get(get(handle, 'Label'), 'Interpreter');
-            labelString = prettyPrint(m2t, labelString, labelInterpreter);
-            if length(labelString) > 1 % multiline
-                cbarStyleOptions = opts_add(cbarStyleOptions, 'label style', ...
-                    '{align=center}');
-            end
-            labelString = join(m2t, labelString, '\\[1ex]');
-
-            if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
-                labelOption = 'xlabel';
-            else
-                labelOption = 'ylabel';
-            end
-
-            cbarStyleOptions = opts_add(cbarStyleOptions, labelOption, ...
-                sprintf('{%s}', labelString));
+        if strcmpi(cbarTemplate, 'horizontal')
+            labelOption = 'xlabel';
+        else
+            labelOption = 'ylabel';
         end
+        [m2t, cbarStyleOptions] = getLabel(m2t, handle, cbarStyleOptions, labelOption);
 
         % direction
         dirString = get(handle, 'Direction');
         if ~strcmpi(dirString, 'normal') % only if not 'normal'
-            if ~isempty(cbarOptions) && strcmpi(cbarOptions{1}, 'horizontal')
+            if strcmpi(cbarTemplate, 'horizontal')
                 dirOption = 'x dir';
             else
                 dirOption = 'y dir';
@@ -3954,38 +3946,25 @@ function axisOptions = getColorbarOptions(m2t, handle)
     end
 
     % title
-    title = get(get(handle, 'Title'), 'String');
-    if ~isempty(title)
-        titleInterpreter = get(get(handle, 'Title'), 'Interpreter');
-        title = prettyPrint(m2t, title, titleInterpreter);
-        if length(title) > 1 % multiline
-            cbarStyleOptions = opts_add(cbarStyleOptions, 'title style', ...
-                    '{align=center}');
-        end
-        title = join(m2t, title, '\\[1ex]');
-        cbarStyleOptions = opts_add(cbarStyleOptions, 'title', ...
-            sprintf('{%s}', title));
-    end
+    [m2t, cbarStyleOptions] = getTitle(m2t, handle, cbarStyleOptions);
 
     if m2t.cmdOpts.Results.strict
         % Sampled colors.
         numColors = size(m2t.currentHandles.colormap, 1);
-        cbarOptions{end+1} = 'sampled';
+        axisOptions = opts_add(axisOptions, 'colorbar sampled');
         cbarStyleOptions = opts_add(cbarStyleOptions, 'samples', ...
             sprintf('%d', numColors+1));
 
+        if ~isempty(cbarTemplate)
+            userWarning(m2t, ...
+-               'Pgfplots cannot deal with more than one colorbar option yet.');
+            %FIXME: can we get sampled horizontal color bars to work?
+            %FIXME: sampled colorbars should be inferred, not by using strict!
+        end
     end
 
     % Merge them together in axisOptions.
-    if isempty(cbarOptions)
-        axisOptions = opts_add(axisOptions, 'colorbar', []);
-    else
-        if length(cbarOptions) > 1
-            userWarning(m2t, ...
-                'Pgfplots cannot deal with more than one colorbar option yet.');
-        end
-        axisOptions = opts_add(axisOptions, ['colorbar ', cbarOptions{1}]);
-    end
+    axisOptions = opts_add(axisOptions, strtrim(['colorbar ', cbarTemplate]));
 
     if ~isempty(cbarStyleOptions)
         axisOptions = opts_add(axisOptions, ...
@@ -3996,13 +3975,14 @@ function axisOptions = getColorbarOptions(m2t, handle)
     % do _not_ handle colorbar's children
 end
 % ==============================================================================
-function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOptions, cbarStyleOptions)
+function [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, cbarStyleOptions)
 % set position, ticks etc. of a colorbar
     loc = get(handle, 'Location');
+    cbarTemplate = '';
 
     switch lower(loc) % case insensitive (MATLAB: CamelCase, Octave: lower case)
         case 'north'
-            cbarOptions{end+1} = 'horizontal';
+            cbarTemplate = 'horizontal';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.5,0.97)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
@@ -4012,7 +3992,7 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
             cbarStyleOptions = opts_add(cbarStyleOptions, 'width',...
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'south'
-            cbarOptions{end+1} = 'horizontal';
+            cbarTemplate = 'horizontal';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.5,0.03)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor', ...
@@ -4022,7 +4002,7 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
             cbarStyleOptions = opts_add(cbarStyleOptions, 'width',...
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'east'
-            cbarOptions{end+1} = 'right';
+            cbarTemplate = 'right';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.97,0.5)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor', ...
@@ -4032,7 +4012,7 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
             cbarStyleOptions = opts_add(cbarStyleOptions, 'width',...
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'west'
-            cbarOptions{end+1} = 'left';
+            cbarTemplate = 'left';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.03,0.5)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
@@ -4042,12 +4022,12 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
             cbarStyleOptions = opts_add(cbarStyleOptions, 'width',...
                 '0.97*\pgfkeysvalueof{/pgfplots/parent axis width}');
         case 'eastoutside'
-            %cbarOptions{end+1} = 'right';
+            %cbarTemplate = 'right';
         case 'westoutside'
-            cbarOptions{end+1} = 'left';
+            cbarTemplate = 'left';
         case 'northoutside'
             % TODO move to top
-            cbarOptions{end+1} = 'horizontal';
+            cbarTemplate = 'horizontal';
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
                 '{(0.5,1.03)}');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
@@ -4056,7 +4036,7 @@ function [cbarOptions, cbarStyleOptions] = getColorbarPosOptions(handle, cbarOpt
                 'xticklabel pos', 'upper');
         case 'southoutside'
 
-            cbarOptions{end+1} = 'horizontal';
+            cbarTemplate = 'horizontal';
         otherwise
             error('matlab2tikz:getColorOptions:unknownLocation',...
                 'getColorbarOptions: Unknown ''Location'' %s.', loc)
