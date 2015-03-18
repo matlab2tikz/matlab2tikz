@@ -367,8 +367,8 @@ function simplifyLine(meta, handle, targetResolution)
         yrange = (log10(a(4))-log10(a(3)));
     end
     tol = xrange*yrange/(4*prod(targetResolution));
-    nPixelsX = targetResolution(1)*targetResolution(3);
-    nPixelsY = targetResolution(2)*targetResolution(3);
+    nPixelsX = targetResolution(1)*sqrt(targetResolution(3));
+    nPixelsY = targetResolution(2)*sqrt(targetResolution(3));
 
 
     %Split up lines which are seperated by NaNs
