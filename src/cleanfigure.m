@@ -390,6 +390,7 @@ function simplifyLine(meta, handle, targetResolution)
         % simplification path
         mask = [true,diff(round(vx/xrange*nPixelsX/4))~=0];
         mask = [true,diff(round(vy/yrange*nPixelsY/4))~=0] | mask;
+        mask = find(mask);
         vx = vx(mask);
         vy = vy(mask);
 
@@ -444,6 +445,8 @@ function a = featureArea(x,y)
     % pos(i) = 0 denotes that the elements are not in the heap.
     pos = [0;(1:len)';0];
 
+    %Area of the triangle with verticies at index i,j and k in the line.
+    %From Shoelace formula
     area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + ...
         (y(i)-y(j)).*x(k))/2;
 
