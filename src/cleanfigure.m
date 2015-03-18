@@ -117,11 +117,11 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
       %display(sprintf([repmat(' ',1,indent), '  handle this']))
 
       if strcmp(type, 'line')
+          simplifyLine(meta, h, targetResolution);
           pruneOutsideBox(meta, h);
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
-          simplifyLine(meta, h, targetResolution);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
       elseif strcmp(type, 'text')
