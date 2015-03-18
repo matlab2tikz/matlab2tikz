@@ -6,8 +6,14 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
-%   CLEANFIGURE('targetResolution','WxH@Res',...) explicitly specify the
-%   target resolution of the path simplification. (default: '15x9@600')
+%   CLEANFIGURE('targetResolution',[W,H,Res],...)  
+%   Reduce the number of data points in the line handle by removing points which
+%   add features with area smaller than 1/4 of a pixel at the target resolution.
+%   W is the target width of the figure, H is the target height, and Res is the
+%   target resolution.
+%      Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
+%   simplification.
+%  (default [15 9 600])
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -51,7 +57,7 @@ function cleanfigure(varargin)
   % Set up command line options.
   m2t.cmdOpts = m2tInputParser;
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', '15x9@600',@isstr);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', [15 9 600], @(a) isvector(a) && numel(a) == 3);
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
@@ -305,10 +311,13 @@ function simplifyLine(meta, handle, targetResolution)
     % points which add features with area smaller than 1/4 of a pixel at the
     % target resolution.
     %
-    % targetResolution is in format 'WxH@Res', eg. '15x9@600' for a 15cm by 9cm
-    % figure at 600 ppcm.
+    % targetResolution is in format [W,H,Res], where W is the target
+    % width of the figure, H is the target height, and Res is the target
+    % resolution.
+    %  (default [15 9 600])
     %
-    % Use targetResolution = 'off' to disable line simplification
+    % Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
+    % simplification
 
     % Extract the data from the current line handle.
     xData = get(handle, 'XData');
@@ -325,14 +334,11 @@ function simplifyLine(meta, handle, targetResolution)
     if numel(xData) <= 2
         return;
     end
-    if strcmpi(targetResolution,'off')
+
+    if any(isinf(targetResolution))
         return
     end
-    [parms,nparms] = sscanf(targetResolution,'%fx%f@%f');
 
-    if nparms < 3
-        parms(3) = 600;
-    end
 
     % Get info about log scaling.
     isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
@@ -360,7 +366,9 @@ function simplifyLine(meta, handle, targetResolution)
     else
         yrange = (log10(a(4))-log10(a(3)));
     end
-    tol = xrange*yrange/(4*prod(parms));
+    tol = xrange*yrange/(4*prod(targetResolution));
+    nPixelsX = targetResolution(1)*targetResolution(3);
+    nPixelsY = targetResolution(2)*targetResolution(3);
 
 
     %Split up lines which are seperated by NaNs
@@ -376,11 +384,22 @@ function simplifyLine(meta, handle, targetResolution)
         %Simplify based on *visual* data
         vx = vxData(pstart(i):pend(i));
         vy = vyData(pstart(i):pend(i));
+
+
+        % Discretize data to 16th of a pixel before doing true
+        % simplification path
+        mask = [true,diff(round(vx/xrange*nPixelsX/4))~=0];
+        mask = [true,diff(round(vy/yrange*nPixelsY/4))~=0] | mask;
+        vx = vx(mask);
+        vy = vy(mask);
+
         area = featureArea(vx,vy);
 
         %append actual data to the list
         x = xData(pstart(i):pend(i));
         y = yData(pstart(i):pend(i));
+        x = x(mask);
+        y = y(mask);
         linesx{end+1} = x(area>tol);
         linesy{end+1} = y(area>tol);
 
@@ -444,7 +463,7 @@ function a = featureArea(x,y)
 
     % Now iteratively removed the point associated with the minimum area from 
     % the path, and update it's neighbours
-    while len > 1
+    while len > 1 
         % ensure the current element will only be excluded when elements
         % which were removed earlier are also excluded
         if a(heap(1)) > maxArea
