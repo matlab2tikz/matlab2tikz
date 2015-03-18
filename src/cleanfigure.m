@@ -9,8 +9,8 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('targetResolution',[W,H,Res],...)  
 %   Reduce the number of data points in the line handle by removing points which
 %   add features with area smaller than 1/4 of a pixel at the target resolution.
-%   W is the target width of the figure, H is the target height, and Res is the
-%   target resolution.
+%   W and H are the target width and height of the figure (eg in cm) and Res is
+%   the target resolution (eg in pixels per cm^2)
 %      Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
 %   simplification.
 %  (default [15 9 600])
@@ -57,7 +57,7 @@ function cleanfigure(varargin)
   % Set up command line options.
   m2t.cmdOpts = m2tInputParser;
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', [15 9 600], @(a) isvector(a) && numel(a) == 3);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', [15 9 600], @(a)numel(a) == 3);
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
@@ -392,8 +392,8 @@ function simplifyLine(meta, handle, targetResolution)
 
         % Discretize data to 16th of a pixel before doing true
         % simplification path
-        mask = [true,diff(round(vx/xrange*nPixelsX/4))~=0];
-        mask = [true,diff(round(vy/yrange*nPixelsY/4))~=0] | mask;
+        mask = [true,diff(round(vx/xrange*nPixelsX*4))~=0];
+        mask = [true,diff(round(vy/yrange*nPixelsY*4))~=0] | mask;
         mask = find(mask);
         vx = vx(mask);
         vy = vy(mask);
