@@ -398,15 +398,20 @@ function simplifyLine(meta, handle, targetResolution)
         vx = vx(mask);
         vy = vy(mask);
 
-        area = featureArea(vx,vy);
-
-        %append actual data to the list
+        %actual data to append to the list
         x = xData(pstart(i):pend(i));
         y = yData(pstart(i):pend(i));
         x = x(mask);
         y = y(mask);
-        linesx{end+1} = x(area>tol);
-        linesy{end+1} = y(area>tol);
+
+        if numel(vx) > 2
+            area = featureArea(vx,vy);
+            linesx{end+1} = x(area>tol);
+            linesy{end+1} = y(area>tol);
+        else
+            linesx{end+1} = x;
+            linesy{end+1} = y;
+        end
 
         %Add nans back in at internal splits
         if i < numel(pstart)
