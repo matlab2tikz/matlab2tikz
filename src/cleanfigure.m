@@ -6,8 +6,14 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
-%   CLEANFIGURE('minimumPointsDistance',DOUBLE,...) explicitly specified the
-%   minimum distance between two points. (default: 1.0e-10)
+%   CLEANFIGURE('targetResolution',[W,H,Res],...)  
+%   Reduce the number of data points in the line handle by removing points which
+%   add features with area smaller than 1/4 of a pixel at the target resolution.
+%   W and H are the target width and height of the figure (eg in cm) and Res is
+%   the target resolution (eg in pixels per cm^2)
+%      Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
+%   simplification.
+%  (default [15 9 600])
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -50,15 +56,18 @@ function cleanfigure(varargin)
 
   % Set up command line options.
   m2t.cmdOpts = m2tInputParser;
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', [15 9 600], @(a)numel(a) == 3);
+
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
 
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
   % Recurse down the tree of plot objects and clean up the leaves.
   for h = m2t.cmdOpts.Results.handle(:)'
-    recursiveCleanup(meta, h, m2t.cmdOpts.Results.minimumPointsDistance, 0);
+    recursiveCleanup(meta, h, m2t.cmdOpts.Results.targetResolution, 0);
   end
 
   % Reset to initial state.
@@ -67,7 +76,7 @@ function cleanfigure(varargin)
   return;
 end
 % =========================================================================
-function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
+function indent = recursiveCleanup(meta, h, targetResolution, indent)
 
   type = get(h, 'Type');
 
@@ -93,7 +102,7 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
   if ~isempty(children)
       for child = children(:)'
           indent = indent + 4;
-          indent = recursiveCleanup(meta, child, minimumPointsDistance, indent);
+          indent = recursiveCleanup(meta, child, targetResolution, indent);
           indent = indent - 4;
       end
   else
@@ -108,12 +117,11 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
       %display(sprintf([repmat(' ',1,indent), '  handle this']))
 
       if strcmp(type, 'line')
+          simplifyLine(meta, h, targetResolution);
           pruneOutsideBox(meta, h);
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
-          % Don't be too precise.
-          coarsenLine(meta, h, minimumPointsDistance);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
       elseif strcmp(type, 'text')
@@ -298,73 +306,274 @@ function out = segmentsIntersect(X1, X2, X3, X4)
   return
 end
 % =========================================================================
-function coarsenLine(meta, handle, minimumPointsDistance)
-  % Reduce the number of data points in the line handle.
-  % Given a minimum distance at which two nodes are considered different,
-  % this can help with plots that contain a large amount of data points not
-  % all of which need to be plotted.
-  %
-  if ( abs(minimumPointsDistance) < 1.0e-15 )
-      % bail out early
-      return
-  end
+function simplifyLine(meta, handle, targetResolution)
+    % Reduce the number of data points in the line handle by removing
+    % points which add features with area smaller than 1/4 of a pixel at the
+    % target resolution.
+    %
+    % targetResolution is in format [W,H,Res], where W is the target
+    % width of the figure, H is the target height, and Res is the target
+    % resolution.
+    %  (default [15 9 600])
+    %
+    % Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
+    % simplification
 
-  % Extract the data from the current line handle.
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
-  if ~isempty(zData)
-    % Don't do funny stuff when zData is present.
-    return;
-  end
+    % Extract the data from the current line handle.
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+    zData = get(handle, 'ZData');
 
-  data = [xData(:), yData(:)];
+    if ~isempty(zData)
+        % Don't simplify 3d plots
+        return;
+    end
+    if isempty(xData) || isempty(yData)
+        return;
+    end
+    if numel(xData) <= 2
+        return;
+    end
 
-  if isempty(data)
-      return;
-  end
+    if any(isinf(targetResolution))
+        return
+    end
 
-  % Generate a mask which is true for the first point, and all
-  % subsequent points which have a greater norm2-distance from
-  % the previous point than 'threshold'.
-  n = size(data, 1);
 
-  % Get info about log scaling.
-  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    % Get info about log scaling.
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    vxData = xData;
+    if isXlog
+        vxData = log10(xData);
+    end
 
-  mask = false(n, 1);
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    vyData = yData;
+    if isYlog
+        vyData = log10(yData);
+    end
 
-  XRef = data(1,:);
-  mask(1) = true;
-  for kk = 2:n
-      % Compute the visible distance of those points,
-      % incorporating possible log-scaling of the axes.
-      visDiff = XRef - data(kk,:);
-      if isXlog
-          % visDiff(1) = log10(XRef(1)) - log10(data(kk,1));
-          visDiff(1) = log10(visDiff(1));
-      end
-      if isYlog
-          visDiff(2) = log10(visDiff(2));
-      end
-      % Check if it's larger than the threshold and
-      % update the reference point in that case.
-      if norm(visDiff) > minimumPointsDistance
-          XRef = data(kk,:);
-          mask(kk) = true;
-      end
-  end
-  mask(end) = true;
+    % Automatically guess a tol based on the area of the figure and
+    % the area and resolution of the output
+    a = axis(meta.gca);
+    if ~isXlog
+        xrange = (a(2)-a(1));
+    else
+        xrange = (log10(a(2))-log10(a(1)));
+    end
+    if ~isYlog
+        yrange = (a(4)-a(3));
+    else
+        yrange = (log10(a(4))-log10(a(3)));
+    end
+    tol = xrange*yrange/(4*prod(targetResolution));
+    nPixelsX = targetResolution(1)*sqrt(targetResolution(3));
+    nPixelsY = targetResolution(2)*sqrt(targetResolution(3));
 
-  % Make sure to keep NaNs.
-  mask = mask | any(isnan(data)')';
 
-  % Set the new (masked) data.
-  set(handle, 'XData', data(mask, 1));
-  set(handle, 'YData', data(mask, 2));
+    %Split up lines which are seperated by NaNs
+    inan   = isnan(vxData) | isnan(vyData);
+    df     = diff([false, ~inan, false]);
+    pstart = find(df == 1);
+    pend   = find(df == -1)-1;
 
-  return;
+    linesx = {};
+    linesy = {};
+
+    for i = 1:numel(pstart)
+        %Simplify based on *visual* data
+        vx = vxData(pstart(i):pend(i));
+        vy = vyData(pstart(i):pend(i));
+
+
+        % Discretize data to 16th of a pixel before doing true
+        % simplification path
+        mask = [true,diff(round(vx/xrange*nPixelsX*4))~=0];
+        mask = [true,diff(round(vy/yrange*nPixelsY*4))~=0] | mask;
+        mask = find(mask);
+        vx = vx(mask);
+        vy = vy(mask);
+
+        %actual data to append to the list
+        x = xData(pstart(i):pend(i));
+        y = yData(pstart(i):pend(i));
+        x = x(mask);
+        y = y(mask);
+
+        if numel(vx) > 2
+            area = featureArea(vx,vy);
+            linesx{end+1} = x(area>tol);
+            linesy{end+1} = y(area>tol);
+        else
+            linesx{end+1} = x;
+            linesy{end+1} = y;
+        end
+
+        %Add nans back in at internal splits
+        if i < numel(pstart)
+            linesx{end+1} = nan;
+            linesy{end+1} = nan;
+        end
+    end
+    xData = horzcat(linesx{:});
+    yData = horzcat(linesy{:});
+
+    % Set the new (masked) data.
+    set(handle, 'XData', xData);
+    set(handle, 'YData', yData);
+end
+% =========================================================================
+function a = featureArea(x,y)
+    % Performs Visvalingam's algorithm:
+    % Given the path defined by x,y, the function returns list of the
+    % maximum area associated with each point in the list. Path then can be
+    % simplified via x = x(a>tol)
+    %
+    % Runtime is O(n log(n))
+    %
+    % Used by 'simplifyLine'.
+
+    n = numel(x);
+
+    % Index of next and previous elements in the linked list which defines
+    % the path
+    linkedList = [(0:n-1)',[(2:n)';0]];
+
+    % 'heap' stores the points in an (implicit) heap, referenced by their index.
+    % First and last points are assumed fixed and not added to the heap.
+    heap = (2:n-1)';
+    len = numel(heap);
+
+    % 'pos' stores the current position of each point in the heap array.
+    % Needed to lookup position of points when their neighbours are updated.
+    %
+    % pos(i) = 0 denotes that the elements are not in the heap.
+    pos = [0;(1:len)';0];
+
+    %Area of the triangle with verticies at index i,j and k in the line.
+    %From Shoelace formula
+    area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + ...
+        (y(i)-y(j)).*x(k))/2;
+
+    % Endpoints are assigned infinte area so they can't be removed
+    a = [Inf;area((1:n-2)', (2:n-1)', (3:n)')';Inf];
+
+    % Keep track of the maximum area removed so far to ensure
+    % a given element will only be excluded after earlier elements
+    maxArea = 0;
+
+    %Heapify the 'heap' array based on the area, using Floyd's alg
+    root = bitshift(len,-1); %starting with the first parent node
+    while root >= 1
+        down(root);
+        root = root-1;
+    end
+
+    % Now iteratively removed the point associated with the minimum area from 
+    % the path, and update it's neighbours
+    while len > 1 
+        % ensure the current element will only be excluded when elements
+        % which were removed earlier are also excluded
+        if a(heap(1)) > maxArea
+            maxArea = a(heap(1));
+        else
+            a(heap(1)) = maxArea;
+        end
+
+        % remove smallest element from heap
+        e = pop(1);
+
+        % remove that element from linked list
+        left = linkedList(e,1);
+        right = linkedList(e,2);
+        linkedList(left,2) = linkedList(e,2);
+        linkedList(right,1) = linkedList(e,1);
+
+
+        %Update area of neighbouring points if they're not the ends points
+        if linkedList(left,1) > 0
+            a(left) = area(linkedList(left,1),left,linkedList(left,2));
+            pop(pos(left));
+            push();
+        end
+
+        if linkedList(right,2) > 0
+            a(right) = area(linkedList(right,1),right,linkedList(right,2));
+            pop(pos(right));
+            push();
+        end
+    end
+
+    %Update the last element on the heap
+    if numel(heap) >0 &&  a(heap(1)) < maxArea
+        a(heap(1)) = maxArea;
+    end
+
+    % Heap utility functions
+    function down(root)
+        % Move element at "root" down the heap, assuming the heap property
+        % is satisfied for the rest of the tree
+        while 2*root  <= len %while the root has a child
+            lchild = 2*root;
+            rchild = lchild+1;
+            % Find the minimum of the root and its children
+            minimum = root;
+            if a(heap(lchild)) < a(heap(minimum))
+                minimum = lchild;
+            end
+            if rchild <= len && (a(heap(rchild)) < a(heap(minimum)))
+                minimum = rchild;
+            end
+
+            if minimum == root
+                % if the root is the minimum, then we're done
+                break
+            else
+                % otherwise, swap the root and its minimum child and continue
+                pos(heap([root,minimum])) = [minimum,root];
+                heap([root,minimum]) = heap([minimum,root]);
+                root = minimum;
+            end
+        end
+    end
+
+    function up(child)
+        %Move element up the heap until it finds the correct position
+        while child > 1
+            parent = bitshift(n,-1);
+            if a(heap(child)) < a(heap(parent))
+                % If this element is less than its parent, swap them
+                pos(heap([parent,child])) = [child,parent];
+                heap([parent,child]) = heap([child,parent]);
+                child = parent;
+            else
+                %Otherwise the heap property is restored
+                break
+            end
+        end
+    end
+
+    function e = pop(i)
+        % Remove element at position i off the heap and return its value
+
+        e = heap(i);
+
+        %Swap the first and the last
+        pos(heap([i,len])) = [len,i];
+        heap([i,len]) = heap([len,i]);
+
+        %Remove the last element from the heap
+        len = len-1;
+
+        %Move the new ith element down the heap until it finds the correct spot
+        down(i);
+    end
+
+    function push()
+        % Add the element at len+1 in the 'heap' array back into the heap
+        len = len+1;
+        up(len);
+    end
 end
 % =========================================================================
 function movePointsCloser(meta, handle)
