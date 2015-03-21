@@ -56,7 +56,7 @@ function cleanfigure(varargin)
   % Set up command line options.
   m2t.cmdOpts = m2tInputParser;
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', [15 9 600], @(a)numel(a) == 3);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', [15 9 600], @isValidTargetResolution);
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
@@ -811,5 +811,9 @@ function lambda = crossLines(X1, X2, X3, X4)
           -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
   lambda = invA * rhs;
 
+end
+% =========================================================================
+function bool = isValidTargetResolution(val)
+    bool = ~any(isnan(val)) && isnumeric(val) && numel(val) == 3;
 end
 % =========================================================================
