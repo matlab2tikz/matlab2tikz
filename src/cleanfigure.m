@@ -428,6 +428,9 @@ function simplifyLine(meta, handle, targetResolution)
         mask = [true,diff(round(x/xrange*nPixelsX*ZOOM_MULTIPLIER))~=0];
         mask = [true,diff(round(y/yrange*nPixelsY*ZOOM_MULTIPLIER))~=0] | mask;
 
+        % Keep end point or it might truncate a whole pixel
+        mask(end) = true;
+
         % Filter out redundant data
         x = x(mask);
         y = y(mask);
