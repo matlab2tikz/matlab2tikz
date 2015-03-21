@@ -107,6 +107,7 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
   else
       % We're in a leaf, so apply all the fancy simplications.
 
+      % Skip invisible objects.
       %if ~strcmp(get(h, 'Visible'), 'on')
       %    display(sprintf([repmat(' ',1,indent), '  invisible']))
       %    return;
@@ -320,6 +321,11 @@ function simplifyLine(meta, handle, targetResolution)
     %
     % Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
     % simplification.
+
+    % Points per pixel retained before the line simplification. In other
+    % words, how much you can zoom-in before losing resolution.
+    ZOOM_MULTIPLIER = 4;
+
     % Do not simpify
     if any(isinf(targetResolution))
         return
@@ -331,7 +337,7 @@ function simplifyLine(meta, handle, targetResolution)
     zData = get(handle, 'ZData');
 
     if ~isempty(zData)
-        % Don't simplify 3d plots
+        % TODO: 3d simplificattion of frontal 2d projection
         return;
     end
     if isempty(xData) || isempty(yData)
@@ -341,7 +347,7 @@ function simplifyLine(meta, handle, targetResolution)
         return;
     end
 
-    % Get info about log scaling.
+    % Get info about log scaling
     isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
     vxData = xData;
     if isXlog
@@ -367,12 +373,12 @@ function simplifyLine(meta, handle, targetResolution)
     else
         yrange = (log10(a(4))-log10(a(3)));
     end
-    tol = xrange*yrange/(4*prod(targetResolution));
-    nPixelsX = targetResolution(1)*sqrt(targetResolution(3));
-    nPixelsY = targetResolution(2)*sqrt(targetResolution(3));
+    tol = xrange*yrange/(ZOOM_MULTIPLIER*prod(targetResolution));
 
+    % Pixelate data up to some zoom multiplier Zx
+    [vxData, vyData] = pixelate(vxData, vyData, ZOOM_MULTIPLIER);
 
-    %Split up lines which are seperated by NaNs
+    % Split up lines which are seperated by NaNs
     inan   = isnan(vxData) | isnan(vyData);
     df     = diff([false, ~inan, false]);
     pstart = find(df == 1);
@@ -384,25 +390,6 @@ function simplifyLine(meta, handle, targetResolution)
     for ii = 1:nlines
         vx = vxData(pstart(ii):pend(ii));
         vy = vyData(pstart(ii):pend(ii));
-    for i = 1:numel(pstart)
-        %Simplify based on *visual* data
-        vx = vxData(pstart(i):pend(i));
-        vy = vyData(pstart(i):pend(i));
-
-
-        % Discretize data to 16th of a pixel before doing true
-        % simplification path
-        mask = [true,diff(round(vx/xrange*nPixelsX*4))~=0];
-        mask = [true,diff(round(vy/yrange*nPixelsY*4))~=0] | mask;
-        mask = find(mask);
-        vx = vx(mask);
-        vy = vy(mask);
-
-        %actual data to append to the list
-        x = xData(pstart(i):pend(i));
-        y = yData(pstart(i):pend(i));
-        x = x(mask);
-        y = y(mask);
 
         if numel(vx) > 2
             area = featureArea(vx,vy);
@@ -421,9 +408,30 @@ function simplifyLine(meta, handle, targetResolution)
     xData = [linesx{1:end-1}];
     yData = [linesy{1:end-1}];
 
-    % Set the new (masked) data.
+    % Update with the new (masked) data
     set(handle, 'XData', xData);
     set(handle, 'YData', yData);
+    
+    function [x, y] = pixelate(x, y, ZOOM_MULTIPLIER)
+        % Pixelate data up to a zoom multiplier. Resolution is lost only
+        % beyond that multiplier magnification
+
+        width  = targetResolution(1);
+        height = targetResolution(2);
+        PPU    = sqrt(targetResolution(3)); % desired Pixel Per Unit length
+
+        nPixelsX = width*PPU;
+        nPixelsY = height*PPU;
+
+        % Convert data to pixel units, magnify and mark only the first
+        % point that occupies a given position
+        mask = [true,diff(round(x/xrange*nPixelsX*ZOOM_MULTIPLIER))~=0];
+        mask = [true,diff(round(y/yrange*nPixelsY*ZOOM_MULTIPLIER))~=0] | mask;
+
+        % Filter out redundant data
+        x = x(mask);
+        y = y(mask);
+    end
 end
 % =========================================================================
 function a = featureArea(x,y)
