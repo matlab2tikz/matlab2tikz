@@ -316,6 +316,11 @@ function simplifyLine(meta, handle, targetResolution)
     %
     % Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
     % simplification.
+    % Do not simpify
+    if any(isinf(targetResolution))
+        return
+    end
+
     % Extract the data from the current line handle.
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
@@ -331,11 +336,6 @@ function simplifyLine(meta, handle, targetResolution)
     if numel(xData) <= 2
         return;
     end
-
-    if any(isinf(targetResolution))
-        return
-    end
-
 
     % Get info about log scaling.
     isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
