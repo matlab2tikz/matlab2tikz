@@ -373,10 +373,13 @@ function simplifyLine(meta, handle, targetResolution)
     df     = diff([false, ~inan, false]);
     pstart = find(df == 1);
     pend   = find(df == -1)-1;
+    nlines = numel(pstart);
 
-    linesx = {};
-    linesy = {};
+    [linesx, linesy] = deal(cell(1,nlines*2));
 
+    for ii = 1:nlines
+        vx = vxData(pstart(ii):pend(ii));
+        vy = vyData(pstart(ii):pend(ii));
     for i = 1:numel(pstart)
         %Simplify based on *visual* data
         vx = vxData(pstart(i):pend(i));
@@ -399,21 +402,20 @@ function simplifyLine(meta, handle, targetResolution)
 
         if numel(vx) > 2
             area = featureArea(vx,vy);
-            linesx{end+1} = x(area>tol);
-            linesy{end+1} = y(area>tol);
-        else
-            linesx{end+1} = x;
-            linesy{end+1} = y;
+            vx   = vx(area>tol);
+            vy   = vy(area>tol);
         end
 
-        %Add nans back in at internal splits
-        if i < numel(pstart)
-            linesx{end+1} = nan;
-            linesy{end+1} = nan;
-        end
+        % Place eventually simplified lines segments on odd positions
+        linesx{ii*2-1} = vx;
+        linesy{ii*2-1} = vy;
+
+        % Add nans back (if any) in between the line segments 
+        linesx{ii*2} = nan;
+        linesy{ii*2} = nan;
     end
-    xData = horzcat(linesx{:});
-    yData = horzcat(linesy{:});
+    xData = [linesx{1:end-1}];
+    yData = [linesy{1:end-1}];
 
     % Set the new (masked) data.
     set(handle, 'XData', xData);
