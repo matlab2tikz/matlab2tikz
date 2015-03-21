@@ -6,14 +6,13 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
-%   CLEANFIGURE('targetResolution',[W,H,Res],...)  
-%   Reduce the number of data points in the line handle by removing points which
-%   add features with area smaller than 1/4 of a pixel at the target resolution.
-%   W and H are the target width and height of the figure (eg in cm) and Res is
-%   the target resolution (eg in pixels per cm^2)
-%      Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
-%   simplification.
-%  (default [15 9 600])
+%   CLEANFIGURE('targetResolution',[W,H,RES],...)  
+%   Reduce the number of data points in the line handle by applying
+%   unperceivable changes at the target resolution.
+%   W and H are the target width and height of the figure, e.g. 15x9 cm, and 
+%   RES is the target resolution of a unit square, e.g. 600 pixels per cm^2.
+%   Use targetResolution = Inf, or targetResolution(3) = Inf to disable 
+%   line simplification. (default: [15 9 600])
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -108,7 +107,6 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
   else
       % We're in a leaf, so apply all the fancy simplications.
 
-      %% Skip invisible objects.
       %if ~strcmp(get(h, 'Visible'), 'on')
       %    display(sprintf([repmat(' ',1,indent), '  invisible']))
       %    return;
@@ -307,18 +305,17 @@ function out = segmentsIntersect(X1, X2, X3, X4)
 end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
-    % Reduce the number of data points in the line handle by removing
-    % points which add features with area smaller than 1/4 of a pixel at the
-    % target resolution.
+    % Reduce the number of data points in the line 'handle', first by 
+    % reducing the resolution up to a zoom multiplier and then by 
+    % simplifying the path of the line by ensuring the change is negligible
+    % at the target resolution.
     %
-    % targetResolution is in format [W,H,Res], where W is the target
-    % width of the figure, H is the target height, and Res is the target
-    % resolution.
-    %  (default [15 9 600])
+    % 'targetResolution' is in format [W,H,RES], where W and H are the
+    % target width and height of the figure, and RES is the target 
+    % resolution in points of a unit square. (default: [15 9 600])
     %
     % Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
-    % simplification
-
+    % simplification.
     % Extract the data from the current line handle.
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
