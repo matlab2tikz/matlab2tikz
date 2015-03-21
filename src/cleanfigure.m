@@ -425,14 +425,29 @@ function simplifyLine(meta, handle, targetResolution)
 end
 % =========================================================================
 function a = featureArea(x,y)
-    % Performs Visvalingam's algorithm:
-    % Given the path defined by x,y, the function returns list of the
-    % maximum area associated with each point in the list. Path then can be
-    % simplified via x = x(a>tol)
+    % The function uses Visvalingam's line simplification algorithm to skip
+    % points on the path defined by X and Y, and returns the vector of
+    % areas A affected by each of these changes.
+    %
+    % Every time a point is removed from the path, the algorithm calculates
+    % the area of the triangle formed by the skipped point and its
+    % neighbors. The bigger the area, the stronger is the perceived change
+    % in the path.
+    % The algorithm builds the list of areas sequentially and the final
+    % simplification filters out only those points whose area is below a
+    % certain threshold, i.e. the perceived change is negligible.
+    %
+    % For a graphical example see: http://bost.ocks.org/mike/simplify/
     %
     % Runtime is O(n log(n))
     %
     % Used by 'simplifyLine'.
+
+    % The algorithm simplifies the path in ascending order of the changed
+    % area. Every time a point is skipped, the two adjacent areas have to
+    % be recalculated and a new minimum has to be found. The implementation
+    % takes advantage of a min heap and a linked list of vertices (see
+    % http://en.wikipedia.org/wiki/Binary_heap)
 
     n = numel(x);
 
@@ -451,8 +466,9 @@ function a = featureArea(x,y)
     % pos(i) = 0 denotes that the elements are not in the heap.
     pos = [0;(1:len)';0];
 
-    %Area of the triangle with verticies at index i,j and k in the line.
-    %From Shoelace formula
+    % Area of the triangle with verticies at index i, j and k in the line.
+    % See http://en.wikipedia.org/wiki/Triangle#Using_coordinates (Shoelace
+    % formula)
     area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + ...
         (y(i)-y(j)).*x(k))/2;
 
@@ -463,35 +479,34 @@ function a = featureArea(x,y)
     % a given element will only be excluded after earlier elements
     maxArea = 0;
 
-    %Heapify the 'heap' array based on the area, using Floyd's alg
+    % Heapify the 'heap' array based on the area, using Floyd's alg
     root = bitshift(len,-1); %starting with the first parent node
     while root >= 1
         down(root);
         root = root-1;
     end
 
-    % Now iteratively removed the point associated with the minimum area from 
+    % Now iteratively remove the point associated with the minimum area from
     % the path, and update it's neighbours
-    while len > 1 
-        % ensure the current element will only be excluded when elements
-        % which were removed earlier are also excluded
+    while len > 1
+        % Ensure the current element is excluded only after the elements
+        % which were removed earlier
         if a(heap(1)) > maxArea
             maxArea = a(heap(1));
         else
             a(heap(1)) = maxArea;
         end
 
-        % remove smallest element from heap
+        % Remove smallest element from heap
         e = pop(1);
 
-        % remove that element from linked list
+        % Remove same element from linked list
         left = linkedList(e,1);
         right = linkedList(e,2);
         linkedList(left,2) = linkedList(e,2);
         linkedList(right,1) = linkedList(e,1);
 
-
-        %Update area of neighbouring points if they're not the ends points
+        % Update area of neighbouring points (unless ends points)
         if linkedList(left,1) > 0
             a(left) = area(linkedList(left,1),left,linkedList(left,2));
             pop(pos(left));
@@ -505,7 +520,7 @@ function a = featureArea(x,y)
         end
     end
 
-    %Update the last element on the heap
+    % Update the last element on the heap
     if numel(heap) >0 &&  a(heap(1)) < maxArea
         a(heap(1)) = maxArea;
     end
@@ -539,7 +554,7 @@ function a = featureArea(x,y)
     end
 
     function up(child)
-        %Move element up the heap until it finds the correct position
+        % Move element up the heap until it finds the correct position
         while child > 1
             parent = bitshift(n,-1);
             if a(heap(child)) < a(heap(parent))
@@ -548,7 +563,7 @@ function a = featureArea(x,y)
                 heap([parent,child]) = heap([child,parent]);
                 child = parent;
             else
-                %Otherwise the heap property is restored
+                % Otherwise the heap property is restored
                 break
             end
         end
@@ -559,14 +574,14 @@ function a = featureArea(x,y)
 
         e = heap(i);
 
-        %Swap the first and the last
+        % Swap the first and the last
         pos(heap([i,len])) = [len,i];
         heap([i,len]) = heap([len,i]);
 
-        %Remove the last element from the heap
+        % Remove the last element from the heap
         len = len-1;
 
-        %Move the new ith element down the heap until it finds the correct spot
+        % Move the new ith element down the heap until it finds the correct spot
         down(i);
     end
 
