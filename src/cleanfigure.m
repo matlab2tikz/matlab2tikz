@@ -374,9 +374,8 @@ function simplifyLine(meta, handle, targetResolution)
         yrange = (log10(a(4))-log10(a(3)));
     end
     tol = xrange*yrange/(ZOOM_MULTIPLIER*prod(targetResolution));
-
-    % Pixelate data up to some zoom multiplier Zx
-    [vxData, vyData] = pixelate(vxData, vyData, ZOOM_MULTIPLIER);
+    nPixelsX = targetResolution(1)*sqrt(targetResolution(3));
+    nPixelsY = targetResolution(2)*sqrt(targetResolution(3));
 
     % Split up lines which are seperated by NaNs
     inan   = isnan(vxData) | isnan(vyData);
@@ -390,6 +389,10 @@ function simplifyLine(meta, handle, targetResolution)
     for ii = 1:nlines
         vx = vxData(pstart(ii):pend(ii));
         vy = vyData(pstart(ii):pend(ii));
+
+        % Pixelate data up to a zoom multiplier. Resolution is lost only
+        % beyond that multiplier magnification
+        [vx, vy] = pixelate(vx, vy, ZOOM_MULTIPLIER);
 
         if numel(vx) > 2
             area = featureArea(vx,vy);
@@ -413,16 +416,6 @@ function simplifyLine(meta, handle, targetResolution)
     set(handle, 'YData', yData);
     
     function [x, y] = pixelate(x, y, ZOOM_MULTIPLIER)
-        % Pixelate data up to a zoom multiplier. Resolution is lost only
-        % beyond that multiplier magnification
-
-        width  = targetResolution(1);
-        height = targetResolution(2);
-        PPU    = sqrt(targetResolution(3)); % desired Pixel Per Unit length
-
-        nPixelsX = width*PPU;
-        nPixelsY = height*PPU;
-
         % Convert data to pixel units, magnify and mark only the first
         % point that occupies a given position
         mask = [true,diff(round(x/xrange*nPixelsX*ZOOM_MULTIPLIER))~=0];
