@@ -716,40 +716,15 @@ end
 % Check if current handle is referenced in a legend.
 switch getEnvironment
     case 'MATLAB'
-        %FIXME: this part should be restructured.
-        for legendHandle = m2t.legendHandles(:)'
-            ud = get(legendHandle, 'UserData');
-            if isfield(ud, 'handles')
-                plotChildren = ud.handles;
-            else
-                plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
-            end
-            k = find(child == plotChildren);
-            if isempty(k)
-                % Lines of error bar plots are not referenced
-                % directly in legends as an error bars plot contains
-                % two "lines": the data and the deviations. Here, the
-                % legends refer to the specgraph.errorbarseries
-                % handle which is 'Parent' to the line handle.
-                k = find(get(child,'Parent') == plotChildren);
-            end
-            if ~isempty(k)
-                % Legend entry found. Add it to the plot.
-                hasLegend = true;
-                interpreter = get(legendHandle, 'Interpreter');
-                if ~isempty(ud) && isfield(ud,'strings')
-                    legendString = ud.lstrings(k);
-                else
-                    legendString = get(child, 'DisplayName');
-                end
-            end
-        end
+        [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child);
+
     case 'Octave'
         % Octave associates legends with axes, not with (line) plot.
         % The variable m2t.gcaHasLegend is set in drawAxes().
         hasLegend = ~isempty(m2t.gcaAssociatedLegend);
         interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
         legendString = getOrDefault(child,'displayname','');
+
     otherwise
         errorUnknownEnvironment();
 end
@@ -759,6 +734,42 @@ delimeter = sprintf('\n');
 legendString = regexp(legendString,delimeter,'split');
 
 m2t.currentHandleHasLegend = hasLegend && ~isempty(legendString);
+end
+% ==============================================================================
+function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child)
+% finds the legend info in MATLAB (only!). Eventually this could be merged back
+% into `findLegendInformation`
+    legendString = '';
+    interpreter  = '';
+    hasLegend = false;
+    %FIXME: this part (e.g. fall back objects) should be restructured.
+    for legendHandle = m2t.legendHandles(:)'
+        ud = get(legendHandle, 'UserData');
+        if isfield(ud, 'handles')
+            plotChildren = ud.handles;
+        else
+            plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
+        end
+        k = find(child == plotChildren);
+        if isempty(k)
+            % Lines of error bar plots are not referenced
+            % directly in legends as an error bars plot contains
+            % two "lines": the data and the deviations. Here, the
+            % legends refer to the specgraph.errorbarseries
+            % handle which is 'Parent' to the line handle.
+            k = find(get(child,'Parent') == plotChildren);
+        end
+        if ~isempty(k)
+            % Legend entry found. Add it to the plot.
+            hasLegend = true;
+            interpreter = get(legendHandle, 'Interpreter');
+            if ~isempty(ud) && isfield(ud,'strings')
+                legendString = ud.lstrings(k);
+            else
+                legendString = get(child, 'DisplayName');
+            end
+        end
+    end
 end
 % ==============================================================================
 function str = addLegendInformation(m2t, str, legendString, interpreter)
@@ -1403,10 +1414,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     end
 
     % Check if any value is infinite/NaN. In that case, add appropriate option.
-    if any(~isfinite(data(:)))
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
-    end
+    m2t = jumpAtUnboundCoords(m2t, data);
 
     [m2t, str] = writePlotData(m2t, str, data, drawOptions);
     [m2t, str] = addLabel(m2t, str);
@@ -1941,11 +1949,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         drawOptions = opts_add(drawOptions,'forget plot','');
     end
 
-    % -----------------------------------------------------------------------
-    if any(~isfinite(Faces(:)))
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
-    end
+    m2t = jumpAtUnboundCoords(m2t, Faces(:));
     
     % Add Faces table
     if ~isempty(ptType)
@@ -1970,6 +1974,14 @@ function [cycle] = conditionallyCyclePath(data)
         cycle = '';
     else
         cycle = '--cycle';
+    end
+end
+% ==============================================================================
+function m2t = jumpAtUnboundCoords(m2t, data)
+% signals the axis that unbound coords should be a jump
+    if any(~isfinite(data(:)))
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
     end
 end
 % ==============================================================================
@@ -2484,11 +2496,7 @@ function [m2t,str] = drawSurface(m2t, h)
     end
 
     [dx, dy, dz, numrows] = getXYZDataFromSurface(h);
-    if any(~isfinite([dx(:); dy(:); dz(:)]))
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'unbounded coords', 'jump');
-    end
+    m2t = jumpAtUnboundCoords(m2t, [dx(:); dy(:); dz(:)]);
     
     opts = addZBufferOptions(m2t, h, opts);
 
