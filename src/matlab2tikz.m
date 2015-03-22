@@ -1556,10 +1556,10 @@ end
 % ==============================================================================
 function lineOpts = getLineOptions(m2t, lineStyle, lineWidth)
 % Gathers the line options.
-    lineOpts = cell(0);
+    lineOpts = opts_new();
 
     if ~isNone(lineStyle) && (lineWidth > m2t.tol)
-        lineOpts{end+1} = sprintf('%s', translateLineStyle(lineStyle));
+        lineOpts = opts_add(lineOpts, translateLineStyle(lineStyle));
     end
 
     % Take over the line width in any case when in strict mode. If not, don't add
@@ -1570,8 +1570,10 @@ function lineOpts = getLineOptions(m2t, lineStyle, lineWidth)
     matlabDefaultLineWidth = 0.5;
     if m2t.cmdOpts.Results.strict ...
             || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
-        lineOpts{end+1} = sprintf('line width=%.1fpt', lineWidth);
+        lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
     end
+    
+    lineOpts = opts_to_legacy(lineOpts); %FIXME: move into call sites
 end
 % ==============================================================================
 function [m2t, drawOptions] = getMarkerOptions(m2t, h)
