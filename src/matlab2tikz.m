@@ -1915,11 +1915,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         end
     end
     
-    if ~m2t.currentHandleHasLegend
-        % No legend entry found. Don't include plot in legend.
-        drawOptions = opts_add(drawOptions,'forget plot','');
-    end
-
+    drawOptions = showInLegend(m2t.currentHandleHasLegend, drawOptions);
     m2t = jumpAtUnboundCoords(m2t, Faces(:));
     
     % Add Faces table
@@ -1935,6 +1931,14 @@ function [m2t, str] = drawPatch(m2t, handle)
     
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
         str, plotCmd, drawOpts, opts_print(m2t, tabOpts, ', '), verticesTable, cycle);
+end
+% ==============================================================================
+function [drawOptions] = showInLegend(currentHandleHasLegend, drawOptions)
+% hides the current plot from the legend
+    if ~currentHandleHasLegend
+        % No legend entry found. Don't include plot in legend.
+        drawOptions = opts_add(drawOptions, 'forget plot', '');
+    end
 end
 % ==============================================================================
 function [m2t, options] = assignColor(m2t, handle, options, property, color, noneValue)
