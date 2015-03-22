@@ -3109,7 +3109,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
     [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData);
-    nColumns = size(data, 2);
     
     if ~constMarkerkSize %
         drawOptions = opts_add(drawOptions, 'visualization depends on', ...
@@ -3120,22 +3119,10 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
     drawOpts = opts_print(m2t, drawOptions, ',');
 
-    metaPart = opts_new();
-    if length(cData) == 3
-        % If size(cData,1)==1, then all the colors are the same and have
-        % already been accounted for above.
-
-    elseif size(cData,2) == 3
-        %TODO Hm, can't deal with this?
-        %[m2t, col] = rgb2colorliteral(m2t, cData(k,:));
-        %str = strcat(str, sprintf(' [%s]\n', col));
-    else
-        metaPart = opts_add(metaPart,'meta index', sprintf('%d', size(data,2)));
-        data = [data, cData(:)];
-        nColumns = nColumns + 1;
-    end
+    [data, metaPart] = addCDataToScatterData(data, cData);
 
     % The actual printing.
+    nColumns = size(data, 2);
     [m2t, table, tabOpts] = makeTable(m2t, repmat({''},1,nColumns), data);
     tabOpts = opts_merge(tabOpts, metaPart);
 
@@ -3164,7 +3151,25 @@ function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sD
         end
     end
 end
-% ===
+% ==============================================================================
+function [data, metaOptions] = addCDataToScatterData(data, cData)
+% adds the cData vector to the data table of a scatter plot
+    metaOptions = opts_new();
+    if length(cData) == 3
+        % If size(cData,1)==1, then all the colors are the same and have
+        % already been accounted for above.
+
+    elseif size(cData,2) == 3
+        %TODO Hm, can't deal with this?
+        %[m2t, col] = rgb2colorliteral(m2t, cData(k,:));
+        %str = strcat(str, sprintf(' [%s]\n', col));
+    else
+        metaOptions = opts_add(metaOptions, ...
+                               'meta index', sprintf('%d', size(data,2)));
+        data = [data, cData(:)];
+    end
+end
+% ==============================================================================
 function [m2t, xcolor, hasColor] = getColorOfMarkers(m2t, h, name, cData)
     color = get(h, name);
     hasColor = ~isNone(color);
