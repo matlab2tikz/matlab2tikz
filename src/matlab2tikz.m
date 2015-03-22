@@ -3444,7 +3444,7 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     if ~isfield(m2t, 'addedAreaOption') || isempty(m2t.addedAreaOption) || ~m2t.addedAreaOption
         % Add 'area style' to axes options.
         m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'area style', []);
+            opts_add(m2t.axesContainers{end}.options, 'area style');
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, 'stack plots', 'y');
         m2t.addedAreaOption = true;
@@ -3452,7 +3452,7 @@ function [m2t, str] = drawAreaSeries(m2t, h)
 
     % Handle draw options.
     % define edge color
-    drawOptions = {};
+    drawOptions = opts_new();
     edgeColor = get(h, 'EdgeColor');
     [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3469,13 +3469,13 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % gather the draw options
     lineStyle = get(h, 'LineStyle');
-    drawOptions{end+1} = sprintf('fill=%s', xFaceColor);
+    drawOptions = opts_add(drawOptions, 'fill', xFaceColor);
     if isNone(lineStyle)
-        drawOptions{end+1} = 'draw=none';
+        drawOptions = opts_add(drawOptions, 'draw', 'none');
     else
-        drawOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+        drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
     end
-    drawOpts = join(m2t, drawOptions, ',');
+    drawOpts = opts_print(m2t, drawOptions, ',');
 
     % plot the thing
     xData = get(h, 'XData');
