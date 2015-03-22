@@ -1576,6 +1576,8 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
 % Handles the marker properties of a line (or any other) plot.
     drawOptions = cell(0);
 
+    %FIXME: use opts_* API instead of manual manipulations!
+
     marker = getOrDefault(h, 'Marker','none');
 
     if ~isNone(marker)
@@ -1832,14 +1834,10 @@ function [m2t, str] = drawPatch(m2t, handle)
     if size(Faces,1) == 1 && s.hasOneEdgeColor && isFaceColorFlat
         ptType = '';
         cycle  = conditionallyCyclePath(Vertices);
-        if ~isNone(s.edgeColor)
-            [m2t, xEdgeColor]  = getColor(m2t, handle, s.edgeColor, 'patch');
-            drawOptions        = opts_add(drawOptions, 'draw', xEdgeColor);
-        end
-        if ~isNone(s.faceColor)
-            [m2t,xFaceColor]   = getColor(m2t, handle, s.faceColor, 'patch');
-            drawOptions        = opts_add(drawOptions,'fill',xFaceColor);
-        end
+        [m2t, drawOptions] = assignColor(m2t, handle, drawOptions, 'draw', ...
+                                         s.edgeColor);
+        [m2t, drawOptions] = assignColor(m2t, handle, drawOptions, 'fill', ...
+                                         s.faceColor);
         
     % Multiple patches    
     else
@@ -1861,6 +1859,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         
         % Color
         % -----------------------------------------------------------------------
+                
         fvCData   = get(handle,'FaceVertexCData');
         rowsCData = size(fvCData,1);
         
@@ -1936,6 +1935,20 @@ function [m2t, str] = drawPatch(m2t, handle)
     
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
         str, plotCmd, drawOpts, opts_print(m2t, tabOpts, ', '), verticesTable, cycle);
+end
+% ==============================================================================
+function [m2t, options] = assignColor(m2t, handle, options, property, color, noneValue)
+% assigns the MATLAB color of the object identified by "handle" to the LaTeX
+% property stored in the options array.
+% TODO: probably this should be integrated with getAndCheckDefault etc.
+    if ~isNone(color)
+        [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
+        options = opts_add(options, property, xcolor);
+    else
+        if exist('noneValue','var')
+            options = opts_add(options, property, noneValue);
+        end
+    end
 end
 % ==============================================================================
 function drawOptions = getPatchShapeOpts(m2t, h, drawOptions, patchOptions)
@@ -2655,10 +2668,6 @@ function [m2t, str] = drawText(m2t, handle)
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get required properties
-    color  = get(handle, 'Color');
-    [m2t, tcolor] = getColor(m2t, handle, color, 'patch');
-    bgColor = get(handle,'BackgroundColor');
-    EdgeColor = get(handle, 'EdgeColor');
     String = get(handle, 'String');
     Interpreter = get(handle, 'Interpreter');
     String = prettyPrint(m2t, String, Interpreter);
@@ -2667,10 +2676,9 @@ function [m2t, str] = drawText(m2t, handle)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % translate them to pgf style
     style = opts_new();
-    if ~isNone(bgColor)
-        [m2t, bcolor] = getColor(m2t, handle, bgColor, 'patch');
-        style = opts_add(style, 'fill', bcolor);
-    end
+    
+    bgColor = get(handle,'BackgroundColor');
+    [m2t, style] = assignColor(m2t, handle, style, 'fill', bgColor);
 
     style = getXYAlignmentOfText(handle, style);
 
@@ -2678,11 +2686,13 @@ function [m2t, str] = drawText(m2t, handle)
 
     style = opts_merge(style, getFontStyle(m2t, handle));
 
+    color  = get(handle, 'Color');
+    [m2t, tcolor] = getColor(m2t, handle, color, 'patch');
     style = opts_add(style, 'text', tcolor);
-    if ~isNone(EdgeColor)
-        [m2t, ecolor] = getColor(m2t, handle, EdgeColor, 'patch');
-        style = opts_add(style, 'draw', ecolor);
-    end
+
+    EdgeColor = get(handle, 'EdgeColor');
+    [m2t, style] = assignColor(m2t, handle, style, 'draw', EdgeColor);
+    
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % plot the thing
     [m2t, posString] = getPositionOfText(m2t, handle);
@@ -3145,12 +3155,7 @@ function [m2t, str] = drawHistogram(m2t, h)
     
     % Face
     faceColor = get(h,'FaceColor');
-    if isNone(faceColor)
-        opts = opts_add(opts, 'fill', 'none');
-    else
-        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-        opts = opts_add(opts, 'fill', xFaceColor);
-    end
+    [m2t, opts] = assignColor(m2t, h, opts, 'fill', faceColor, 'none');
     
     % FaceAlpha
     faceAlpha = get(h, 'FaceAlpha');
@@ -3160,12 +3165,7 @@ function [m2t, str] = drawHistogram(m2t, h)
     
     % Edge
     edgeColor = get(h, 'EdgeColor');
-    if isNone(edgeColor)
-        opts = opts_add(opts, 'draw', 'none');
-    else
-        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-        opts = opts_add(opts, 'draw', xEdgeColor);
-    end
+    [m2t, opts] = assignColor(m2t, h, opts, 'draw', edgeColor, 'none');
     
     % Data
     binEdges = get(h, 'BinEdges');
@@ -3228,11 +3228,11 @@ function [m2t, str] = drawBarseries(m2t, h)
     % define edge color
     edgeColor = get(h, 'EdgeColor');
     lineStyle = get(h, 'LineStyle');
-    if isNone(lineStyle) || isNone(edgeColor)
+    if isNone(lineStyle)
         drawOptions = opts_add(drawOptions, 'draw', 'none');
     else
-        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-        drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
+        [m2t, drawOptions] = assignColor(m2t, h, drawOptions, 'draw', ...
+            edgeColor, 'none');
     end
 
     [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions);
@@ -3372,10 +3372,7 @@ function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
         obj = h;
     end
     faceColor = get(obj, 'FaceColor');
-    if ~isNone(faceColor)
-        [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-        drawOptions = opts_add(drawOptions, 'fill', xFaceColor);
-    end
+    [m2t, drawOptions] = assignColor(m2t, h, drawOptions, 'fill', faceColor);
 end
 % ==============================================================================
 function [m2t, str] = drawStemSeries(m2t, h)
