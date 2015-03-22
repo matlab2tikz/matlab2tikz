@@ -3396,17 +3396,15 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     [m2t, plotColor] = getColor(m2t, h, color, 'patch');
 
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-    [m2t, markerOptions] = getMarkerOptions(m2t, h);
-    lineOptions = opts_to_legacy(lineOptions);  %FIXME: remove this 
-    markerOptions = opts_to_legacy(markerOptions); %FIXME: remove this 
+    [m2t, markerOptions] = getMarkerOptions(m2t, h); 
 
-    drawOptions = [plotType,                      ...
-        sprintf('color=%s', plotColor),...
-        lineOptions, ...
-        markerOptions];
+    drawOptions = opts_new();
+    drawOptions = opts_add(drawOptions, plotType);
+    drawOptions = opts_add(drawOptions, 'color', plotColor);
+    drawOptions = opts_merge(drawOptions, lineOptions, markerOptions);
 
     %% insert draw options
-    drawOpts =  join(m2t, drawOptions, ',');
+    drawOpts =  opts_print(m2t, drawOptions, ',');
 
     %% plot the thing
     xData = get(h, 'XData');
