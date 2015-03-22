@@ -1391,6 +1391,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     % Line and marker options
     lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
+    lineOptions = opts_to_legacy(lineOptions); %FIXME: remove this
     markerOptions = opts_to_legacy(markerOptions); %FIXME: remove this
     drawOptions = [{sprintf('color=%s', xcolor)}, lineOptions, markerOptions];
 
@@ -1572,8 +1573,6 @@ function lineOpts = getLineOptions(m2t, lineStyle, lineWidth)
             || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
         lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
     end
-    
-    lineOpts = opts_to_legacy(lineOpts); %FIXME: move into call sites
 end
 % ==============================================================================
 function [m2t, drawOptions] = getMarkerOptions(m2t, h)
@@ -1822,9 +1821,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     lineStyle   = get(handle, 'LineStyle');
     lineWidth   = get(handle, 'LineWidth');
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-%     drawOptions = opts_merge(drawOptions, lineOptions); % TODO: use opts_* API in getLineOptions
-    drawOptions = [drawOptions; [lineOptions(:), repmat({[]},numel(lineOptions),1)]];
-
+    drawOptions = opts_merge(drawOptions, lineOptions);
     
     % No patch: if one patch and single face/edge color
     isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
@@ -2841,22 +2838,21 @@ function [m2t, str] = drawRectangle(m2t, h)
     lineStyle = get(h, 'LineStyle');
     lineWidth = get(h, 'LineWidth');
 
-    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+    drawOptions = getLineOptions(m2t, lineStyle, lineWidth);
 
-    colorOptions = cell(0);
-    [m2t, colorOptions] = getRectangleFaceOptions(m2t, h, colorOptions);
-    [m2t, colorOptions] = getRectangleEdgeOptions(m2t, h, colorOptions);
+    [m2t, drawOptions] = getRectangleFaceOptions(m2t, h, drawOptions);
+    [m2t, drawOptions] = getRectangleEdgeOptions(m2t, h, drawOptions);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    drawOptions = [lineOptions, colorOptions];
     % plot the thing
     str = sprintf(['\\draw[%s] (axis cs:',m2t.ff,',',m2t.ff, ')', ...
                    ' rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
-         join(m2t, drawOptions,', '), pos.left, pos.bottom, pos.right, pos.top);
+                  opts_print(m2t, drawOptions, ', '), ...
+                  pos.left, pos.bottom, pos.right, pos.top);
 end
 % ==============================================================================
-function [m2t, colorOptions] = getRectangleFaceOptions(m2t, h, colorOptions)
+function [m2t, drawOptions] = getRectangleFaceOptions(m2t, h, drawOptions)
 % draws the face (i.e. fill) of a Rectangle
     faceColor    = get(h, 'FaceColor');
     isAnnotation = strcmp(get(h,'type'),'rectangleshape') || ...
@@ -2864,19 +2860,18 @@ function [m2t, colorOptions] = getRectangleFaceOptions(m2t, h, colorOptions)
     isFlatColor  = strcmp(faceColor, 'flat');
     if ~(isNone(faceColor) || (isAnnotation && isFlatColor))
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-        colorOptions{end+1} = sprintf('fill=%s', xFaceColor);
+        drawOptions = opts_add(drawOptions, 'fill', xFaceColor);
     end
 end
 % ==============================================================================
-function [m2t, colorOptions] = getRectangleEdgeOptions(m2t, h, colorOptions)
+function [m2t, drawOptions] = getRectangleEdgeOptions(m2t, h, drawOptions)
 % draws the edges of a rectangle
     edgeColor = get(h, 'EdgeColor');
     lineStyle = get(h, 'LineStyle');
     if isNone(lineStyle) || isNone(edgeColor)
-        colorOptions{end+1} = 'draw=none';
+        drawOptions = opts_add(drawOptions, 'draw', 'none');
     else
-        [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-        colorOptions{end+1} = sprintf('draw=%s', xEdgeColor);
+        [m2t, drawOptions] = assignColor(m2t, h, drawOptions, 'draw', edgeColor);
     end
 end
 % ==============================================================================
@@ -3399,6 +3394,7 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
 
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
+    lineOptions = opts_to_legacy(lineOptions);  %FIXME: remove this 
     markerOptions = opts_to_legacy(markerOptions); %FIXME: remove this 
 
     drawOptions = [plotType,                      ...
@@ -3522,7 +3518,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
     arrowOpts = [arrowOpts, ...
         sprintf('color=%s', arrowcolor), ... % color
-        getLineOptions(m2t, lineStyle, lineWidth), ... % line options
+        opts_to_legacy(getLineOptions(m2t, lineStyle, lineWidth)), ... % line options %FIXME: remove legacy
         ];
 
     % define arrow style
@@ -3688,11 +3684,11 @@ function [m2t, str] = drawEllipse(m2t, handle)
 
 %     c = get(h, 'Children');
 
+    drawOptions = opts_new();
+
     p = get(handle,'position');
     radius = p([3 4]) / 2;
     center = p([1 2]) + radius;
-
-    str = '';
 
     lineStyle = get(handle, 'LineStyle');
     lineWidth = get(handle, 'LineWidth');
@@ -3700,22 +3696,23 @@ function [m2t, str] = drawEllipse(m2t, handle)
     color = get(handle, 'Color');
     [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
-
+    
     filling = get(handle, 'FaceColor');
 
     %% Has a filling?
     if isNone(filling)
-        drawOptions = [{sprintf('%s', xcolor)}, ... % color
-            lineOptions];
+        drawOptions = opts_add(drawOptions, xcolor);
         drawCommand = '\draw';
     else
         [m2t, xcolorF] = getColor(m2t, handle, filling, 'patch');
-        drawOptions = [{sprintf('draw=%s,fill=%s', xcolor,xcolorF)}, ... % color
-            lineOptions];
+        drawOptions = opts_add(drawOptions, 'draw', xcolor);
+        drawOptions = opts_add(drawOptions, 'fill', xcolorF);
+
         drawCommand = '\filldraw';
     end
+    drawOptions = opts_merge(drawOptions, lineOptions);
 
-    opt = join(m2t, drawOptions, ',');
+    opt = opts_print(m2t, drawOptions, ',');
 
     str = sprintf('%s [%s] (axis cs:%g,%g) ellipse [x radius=%g, y radius=%g];\n', ...
         drawCommand, opt, center, radius);
