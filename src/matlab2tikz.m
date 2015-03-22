@@ -3508,22 +3508,21 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         return
     end
 
-    arrowOpts = cell(0);
+    arrowOpts = opts_new();
     if showArrowHead
-        arrowOpts = [arrowOpts, '->'];
+        arrowOpts = opts_add(arrowOpts, '->');
     else
-        arrowOpts = [arrowOpts, '-'];
+        arrowOpts = opts_add(arrowOpts, '-');
     end
 
     color = get(h, 'Color');
+    lineOpts = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
-    arrowOpts = [arrowOpts, ...
-        sprintf('color=%s', arrowcolor), ... % color
-        opts_to_legacy(getLineOptions(m2t, lineStyle, lineWidth)), ... % line options %FIXME: remove legacy
-        ];
+    arrowOpts = opts_add(arrowOpts, 'color', arrowcolor);
+    arrowOpts = opts_merge(arrowOpts, lineOpts);
 
     % define arrow style
-    arrowOptions = join(m2t, arrowOpts, ',');
+    arrowOptions = opts_print(m2t, arrowOpts, ',');
 
     % Append the arrow style to the TikZ options themselves.
     % TODO: Look into replacing this by something more 'local',
