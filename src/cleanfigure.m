@@ -387,22 +387,32 @@ function simplifyLine(meta, handle, targetResolution)
     [linesx, linesy] = deal(cell(1,nlines*2));
 
     for ii = 1:nlines
+        % Visual data used for simplifications
         vx = vxData(pstart(ii):pend(ii));
         vy = vyData(pstart(ii):pend(ii));
 
+        % Actual data that inherits the simplifications
+        x = xData(pstart(ii):pend(ii));
+        y = yData(pstart(ii):pend(ii));
+        
         % Pixelate data up to a zoom multiplier. Resolution is lost only
         % beyond that multiplier magnification
-        [vx, vy] = pixelate(vx, vy, ZOOM_MULTIPLIER);
-
+        mask = pixelate(vx, vy, ZOOM_MULTIPLIER);
+        vx   = vx(mask);
+        vy   = vy(mask);
+        x    = x(mask);
+        y    = y(mask); 
+        
+        % Line simplification
         if numel(vx) > 2
             area = featureArea(vx,vy);
-            vx   = vx(area>tol);
-            vy   = vy(area>tol);
+            x    = x(area>tol);
+            y    = y(area>tol);
         end
 
         % Place eventually simplified lines segments on odd positions
-        linesx{ii*2-1} = vx;
-        linesy{ii*2-1} = vy;
+        linesx{ii*2-1} = x;
+        linesy{ii*2-1} = y;
 
         % Add nans back (if any) in between the line segments 
         linesx{ii*2} = nan;
@@ -415,7 +425,7 @@ function simplifyLine(meta, handle, targetResolution)
     set(handle, 'XData', xData);
     set(handle, 'YData', yData);
     
-    function [x, y] = pixelate(x, y, ZOOM_MULTIPLIER)
+    function mask = pixelate(x, y, ZOOM_MULTIPLIER)
         % Convert data to pixel units, magnify and mark only the first
         % point that occupies a given position
         mask = [true,diff(round(x/xrange*nPixelsX*ZOOM_MULTIPLIER))~=0];
@@ -423,10 +433,6 @@ function simplifyLine(meta, handle, targetResolution)
 
         % Keep end point or it might truncate a whole pixel
         mask(end) = true;
-
-        % Filter out redundant data
-        x = x(mask);
-        y = y(mask);
     end
 end
 % =========================================================================
