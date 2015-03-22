@@ -1857,35 +1857,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         end
         drawOptions = opts_add(drawOptions,s.plotType,''); % Eventually add mesh, but after patch!
         
-        % Patch type
-        % -----------------------------------------------------------------------
-        vertexCount = size(Faces,2);
-        
-        % triangle (default), do nothing
-        if vertexCount == 3
-            
-        % rectangle
-        elseif vertexCount == 4
-            drawOptions = opts_add(drawOptions,'patch type','rectangle');
-            
-        % polygon
-        else
-            
-            % Warn to load the library
-            userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
-            
-            % Default interpolated shader,not supported by polygon, to faceted
-            if ~isFaceColorFlat
-                userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
-                patchOptions = opts_remove(patchOptions, 'shader');
-                patchOptions = opts_add(patchOptions, 'shader','faceted');
-            end
-            
-            % Add draw options
-            drawOptions = opts_add(drawOptions,'patch type','polygon');
-            drawOptions = opts_add(drawOptions,'vertex count',sprintf('%d',vertexCount));
-        end
-        drawOptions = opts_merge(drawOptions, patchOptions);
+        drawOptions = getPatchShapeOpts(m2t, handle, drawOptions, patchOptions);
         
         % Color
         % -----------------------------------------------------------------------
@@ -1964,6 +1936,37 @@ function [m2t, str] = drawPatch(m2t, handle)
     
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
         str, plotCmd, drawOpts, opts_print(m2t, tabOpts, ', '), verticesTable, cycle);
+end
+% ==============================================================================
+function drawOptions = getPatchShapeOpts(m2t, h, drawOptions, patchOptions)
+% retrieves the shape options (i.e. number of vertices) of patch objects
+    vertexCount = size(get(h, 'Faces'), 2);
+
+    switch vertexCount
+        case 3 % triangle (default)
+            % do nothing special
+
+        case 4 % rectangle
+            drawOptions = opts_add(drawOptions,'patch type', 'rectangle');
+
+        otherwise % generic polygon
+            userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
+
+            % Default interpolated shader,not supported by polygon, to faceted
+            if ~isFaceColorFlat
+                % NOTE: check if pgfplots supports this (or specify version)
+                userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
+                patchOptions = opts_remove(patchOptions, 'shader');
+                patchOptions = opts_add(patchOptions, 'shader', 'faceted');
+            end
+
+            % Add draw options
+            drawOptions = opts_add(drawOptions, 'patch type', 'polygon');
+            drawOptions = opts_add(drawOptions, 'vertex count', ...
+                                                sprintf('%d', vertexCount));
+    end
+
+    drawOptions = opts_merge(drawOptions, patchOptions);
 end
 % ==============================================================================
 function [cycle] = conditionallyCyclePath(data)
