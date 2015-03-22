@@ -1836,8 +1836,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         [m2t, drawOptions] = assignColor(m2t, handle, drawOptions, 'fill', ...
                                          s.faceColor);
         
-    % Multiple patches    
-    else
+    else % Multiple patches    
         
         % Patch table type
         ptType      = 'patch table';
@@ -4457,10 +4456,16 @@ function [pTicks, pTickLabels] = ...
     
     ticks = removeSuperfluousTicks(ticks, tickLabels);
 
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    isNeeded = areTickLabelsNecessary(m2t, ticks, tickLabels, isLogAxis);
+    
+    pTickLabels = formatPgfTickLabels(m2t, isNeeded, tickLabels, ...
+        isLogAxis, tickLabelMode);
+end
+% ==============================================================================
+function bool = areTickLabelsNecessary(m2t, ticks, tickLabels, isLogAxis)
     % Check if tickLabels are really necessary (and not already covered by
     % the tick values themselves).
-    plotLabelsNecessary = false;
+    bool = false;
 
     k = find(ticks ~= 0.0, 1); % get an index with non-zero tick value
     if isLogAxis || isempty(k) % only a 0-tick
@@ -4495,12 +4500,15 @@ function [pTicks, pTickLabels] = ...
             s = str2double(tickLabels{k});
         end
         if isnan(s)  ||  abs(ticks(k)-s*scalingFactor) > m2t.tol
-            plotLabelsNecessary = true;
-            break;
+            bool = true;
+            return; 
         end
     end
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+end
+% ==============================================================================
+function pTickLabels = formatPgfTickLabels(m2t, plotLabelsNecessary, ...
+        tickLabels, isLogAxis, tickLabelMode)
+% formats the tick labels for pgfplots
     if plotLabelsNecessary
         % if the axis is logscaled, MATLAB does not store the labels,
         % but the exponents to 10
