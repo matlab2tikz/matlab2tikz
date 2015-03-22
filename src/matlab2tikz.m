@@ -4440,16 +4440,8 @@ function [pTicks, pTickLabels] = ...
             ) ...
             );
     end
-
-    % What MATLAB does when there the number of ticks and tick labels do not
-    % coincide is somewhat unclear. To fix bug
-    %     https://github.com/matlab2tikz/matlab2tikz/issues/161,
-    % cut off the first entries in `ticks`.
-    m = length(ticks);
-    n = length(tickLabels);
-    if n < m
-        ticks = ticks(m-n+1:end);
-    end
+    
+    ticks = removeSuperfluousTicks(ticks, tickLabels);
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Check if tickLabels are really necessary (and not already covered by
@@ -4515,6 +4507,17 @@ function [pTicks, pTickLabels] = ...
         pTickLabels = join(m2t, tickLabels, ',');
     else
         pTickLabels = [];
+    end
+end
+% ==============================================================================
+function ticks = removeSuperfluousTicks(ticks, tickLabels)
+% What MATLAB does when the number of ticks and tick labels is not the same,
+% is somewhat unclear. Cut of the first entries to fix bug 
+%     https://github.com/matlab2tikz/matlab2tikz/issues/161,
+    m = length(ticks);
+    n = length(tickLabels);
+    if n < m
+        ticks = ticks(m-n+1:end);
     end
 end
 % ==============================================================================
