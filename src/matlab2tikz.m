@@ -5795,6 +5795,7 @@ function c = opts_to_legacy(opts)
     end
 end
 function opts = opts_from_legacy(c)
+% converts a legacy option array to an actual option array
     opts = opts_new();
     for kOption = 1:numel(c)
         entry = c{kOption};
