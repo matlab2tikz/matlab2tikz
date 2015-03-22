@@ -1611,9 +1611,8 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         markerFaceColor = get(h, 'markerfaceColor');
         markerEdgeColor = get(h, 'markeredgeColor');
         
-        [tikzMarker, markOptions] = translateMarker(m2t, marker,         ...
-            opts_to_legacy(markOptions), ~isNone(markerFaceColor));
-        markOptions = opts_from_legacy(markOptions); %FIXME: move this into translateMarker
+        [tikzMarker, markOptions] = translateMarker(m2t, marker, ...
+                                        markOptions, ~isNone(markerFaceColor));
         
         [m2t, markOptions] = assignColor(m2t, h, markOptions, 'fill', markerFaceColor);
         
@@ -1742,15 +1741,15 @@ function [tikzMarker, markOptions] = ...
 
                 case 'v'
                     tikzMarker = 'triangle';
-                    markOptions{end+1} = 'rotate=180';
+                    markOptions = opts_add(markOptions, 'rotate', '180');
 
                 case '<'
                     tikzMarker = 'triangle';
-                    markOptions{end+1} = 'rotate=90';
+                    markOptions = opts_add(markOptions, 'rotate', '90');
 
                 case '>'
                     tikzMarker = 'triangle';
-                    markOptions{end+1} = 'rotate=270';
+                    markOptions = opts_add(markOptions, 'rotate', '270');
 
                 case {'p','pentagram'}
                     tikzMarker = 'star';
@@ -3008,7 +3007,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     markerEdgeColor = get(h, 'MarkerEdgeColor');
     hasFaceColor = ~isNone(markerFaceColor);
     hasEdgeColor = ~isNone(markerEdgeColor);
-    markOptions = cell(0);
+    markOptions = opts_new();
     [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, ...
         markOptions, hasFaceColor);
 
@@ -3027,7 +3026,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         if constMarkerkSize
             drawOptions = { 'only marks', ...
                 ['mark=' tikzMarker], ...
-                ['mark options={', join(m2t, markOptions, ','), '}'],...
+                ['mark options={', opts_print(m2t, markOptions, ','), '}'],...
                 sprintf('mark size=%.4fpt', sData)};
             if hasFaceColor && hasEdgeColor
                 drawOptions{end+1} = { ['draw=' ecolor], ...
@@ -3037,7 +3036,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             end
         else % if changing marker size but same color on all marks
             markerOptions = { ['mark=', tikzMarker], ...
-                ['mark options={', join(m2t, markOptions, ','), '}'] };
+                ['mark options={', opts_print(m2t, markOptions, ','), '}'] };
             if hasEdgeColor
                 markerOptions{end+1} = ['draw=' ecolor];
             else
@@ -3051,7 +3050,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
                 'only marks', ...
                 ['color=' xcolor], ...
                 ['mark=' tikzMarker], ...
-                ['mark options={', join(m2t, markOptions, ','), '}'] };
+                ['mark options={', opts_print(m2t, markOptions, ','), '}'] };
             if ~hasFaceColor
                 drawOptions{end+1} = { ['scatter/use mapped color=' xcolor] };
             else
@@ -3063,7 +3062,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
     else
         markerOptions = { ['mark=', tikzMarker], ...
-            ['mark options={', join(m2t, markOptions, ','), '}'] };
+            ['mark options={', opts_print(m2t, markOptions, ','), '}'] };
         if hasEdgeColor && hasFaceColor
             [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
             markerOptions{end+1} = ['draw=' ecolor];
