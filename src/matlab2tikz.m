@@ -1853,62 +1853,10 @@ function [m2t, str] = drawPatch(m2t, handle)
         
         drawOptions = getPatchShapeOpts(m2t, handle, drawOptions, patchOptions);
         
-        % Color
-        % -----------------------------------------------------------------------
-                
-        fvCData   = get(handle,'FaceVertexCData');
-        rowsCData = size(fvCData,1);
-        
-        % We have CData for either all faces or vertices
-        if rowsCData > 1
-            
-            % Add the color map
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
-            
-            % Determine if mapping is direct or scaled
-            CDataMapping = get(handle,'CDataMapping');
-            if strcmp(CDataMapping, 'direct')
-                drawOptions = opts_add(drawOptions, 'colormap access','direct');
-            end
-            
-            % Switch to face CData if not using interpolated shader
-            isVerticesCData = rowsCData == size(Vertices,1);
-            if isFaceColorFlat && isVerticesCData
-                % Take first vertex color (see FaceColor in Patch Properties)
-                fvCData         = fvCData(Faces(:,1)+ 1,:);
-                rowsCData       = size(fvCData,1);
-                isVerticesCData = false;
-            end
-            
-            % Point meta as true color CData, i.e. RGB in [0,1]
-            if size(fvCData,2) == 3
-                % Create additional custom colormap
-                m2t.axesContainers{end}.options(end+1,:) = ...
-                    {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
-                drawOptions = opts_append(drawOptions, 'colormap name','patchmap');
-                
-                % Index into custom colormap
-                fvCData = (0:rowsCData-1)';
-            end
-            
-            % Add pointmeta data to vertices or faces
-            if isVerticesCData
-                columnNames{end+1}   = 'c';
-                verticesTableOptions = opts_add(verticesTableOptions, 'point meta','\thisrow{c}');
-                Vertices             = [Vertices, fvCData];
-            else
-                ptType = 'patch table with point meta';
-                Faces  = [Faces fvCData];
-            end
-            
-        % Scalar FaceVertexCData, i.e. one color mapping for all patches,
-        % used e.g. by Octave in drawing barseries
-        else
-            [m2t,xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
-            drawOptions      = opts_add(drawOptions, 'fill', xFaceColor);
-        end
+        [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
+         columnNames] = setColorsOfPatches(m2t, handle, drawOptions, ...
+           Vertices, Faces, verticesTableOptions, ptType, columnNames, ...
+           isFaceColorFlat);
     end
     
     drawOptions = showInLegend(m2t.currentHandleHasLegend, drawOptions);
@@ -1927,6 +1875,70 @@ function [m2t, str] = drawPatch(m2t, handle)
     
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
         str, plotCmd, drawOpts, opts_print(m2t, tabOpts, ', '), verticesTable, cycle);
+end
+% ==============================================================================
+function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
+         columnNames] = setColorsOfPatches(m2t, handle, drawOptions, ...
+           Vertices, Faces, verticesTableOptions, ptType, columnNames, isFaceColorFlat)
+% this behemoth does the color setting for patches
+
+    % TODO: this function can probably be split further, just look at all those
+    % parameters being passed.
+    
+    fvCData   = get(handle,'FaceVertexCData');
+    rowsCData = size(fvCData,1);
+    
+    % We have CData for either all faces or vertices
+    if rowsCData > 1
+        
+        % Add the color map
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, ...
+            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+        
+        % Determine if mapping is direct or scaled
+        CDataMapping = get(handle,'CDataMapping');
+        if strcmp(CDataMapping, 'direct')
+            drawOptions = opts_add(drawOptions, 'colormap access','direct');
+        end
+        
+        % Switch to face CData if not using interpolated shader
+        isVerticesCData = rowsCData == size(Vertices,1);
+        if isFaceColorFlat && isVerticesCData
+            % Take first vertex color (see FaceColor in Patch Properties)
+            fvCData         = fvCData(Faces(:,1)+ 1,:);
+            rowsCData       = size(fvCData,1);
+            isVerticesCData = false;
+        end
+        
+        % Point meta as true color CData, i.e. RGB in [0,1]
+        if size(fvCData,2) == 3
+            % Create additional custom colormap
+            m2t.axesContainers{end}.options(end+1,:) = ...
+                {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
+            drawOptions = opts_append(drawOptions, 'colormap name','patchmap');
+            
+            % Index into custom colormap
+            fvCData = (0:rowsCData-1)';
+        end
+        
+        % Add pointmeta data to vertices or faces
+        if isVerticesCData
+            columnNames{end+1}   = 'c';
+            verticesTableOptions = opts_add(verticesTableOptions, 'point meta','\thisrow{c}');
+            Vertices             = [Vertices, fvCData];
+        else
+            ptType = 'patch table with point meta';
+            Faces  = [Faces fvCData];
+        end
+        
+    else
+        % Scalar FaceVertexCData, i.e. one color mapping for all patches,
+        % used e.g. by Octave in drawing barseries
+        
+        [m2t,xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
+        drawOptions      = opts_add(drawOptions, 'fill', xFaceColor);
+    end
 end
 % ==============================================================================
 function [drawOptions] = showInLegend(currentHandleHasLegend, drawOptions)
@@ -3011,8 +3023,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 
     constMarkerkSize = length(sData) == 1; % constant marker size
 
-    % Rescale marker size (not definitive, follow discussion on:
-    % https://github.com/matlab2tikz/matlab2tikz/pull/316)
+    % Rescale marker size (not definitive, follow discussion in #316)
     sData = translateMarkerSize(m2t, matlabMarker, sqrt(sData)/2);
 
     drawOptions = opts_new();
