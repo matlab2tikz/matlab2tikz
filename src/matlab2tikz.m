@@ -1391,15 +1391,16 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     % Line and marker options
     lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
-    lineOptions = opts_to_legacy(lineOptions); %FIXME: remove this
-    markerOptions = opts_to_legacy(markerOptions); %FIXME: remove this
-    drawOptions = [{sprintf('color=%s', xcolor)}, lineOptions, markerOptions];
+
+    drawOptions = opts_new();
+    drawOptions = opts_add(drawOptions, 'color', xcolor);
+    drawOptions = opts_merge(drawOptions, lineOptions, markerOptions);
 
     % Check for "special" lines, e.g.:
     if strcmp(get(h, 'Tag'), 'zplane_unitcircle')
         % Draw unit circle and axes.
         % TODO Don't hardcode "10".
-        opts = join(m2t, drawOptions, ',');
+        opts = opts_print(m2t, drawOptions, ',');
         str = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts),...
             sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
             sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
@@ -1430,7 +1431,7 @@ function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
         [m2t, table, tabOpts] = makeTable(m2t, {'','',''}, data);
         str = sprintf('%s\\addplot3 [%s]\n table[%s] {%s};\n ', ...
-                      str, join(m2t, drawOptions, ','), ...
+                      str, opts_print(m2t, drawOptions, ','), ...
                       opts_print(m2t, tabOpts,','), table);
     else
         % split the data into logical chunks
@@ -1444,9 +1445,11 @@ function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
             %if ~isempty(m2t.legendHandles) && (~m2t.currentHandleHasLegend || k < length(dataCell))
             if ~m2t.currentHandleHasLegend || k < length(dataCell)
                 % No legend entry found. Don't include plot in legend.
-                opts = join(m2t, [drawOptions, {'forget plot'}], ',');
+                
+                hiddenDrawOptions = opts_add(drawOptions, 'forget plot');
+                opts = opts_print(m2t, hiddenDrawOptions, ',');
             else
-                opts = join(m2t, drawOptions, ',');
+                opts = opts_print(m2t, drawOptions, ',');
             end
 
             [m2t, Part] = plotLine2d(m2t, opts, dataCell{k});
