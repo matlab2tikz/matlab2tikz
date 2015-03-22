@@ -1575,11 +1575,9 @@ end
 % ==============================================================================
 function [m2t, drawOptions] = getMarkerOptions(m2t, h)
 % Handles the marker properties of a line (or any other) plot.
-    drawOptions = cell(0);
+    drawOptions = opts_new();
 
-    %FIXME: use opts_* API instead of manual manipulations!
-
-    marker = getOrDefault(h, 'Marker','none');
+    marker = getOrDefault(h, 'Marker', 'none');
 
     if ~isNone(marker)
         markerSize = get(h, 'MarkerSize');
@@ -1593,47 +1591,45 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         % if not, don't add anything in case of default marker size
         % and effectively take Pgfplots' default.
         if m2t.cmdOpts.Results.strict || ~isDefault
-            drawOptions{end+1} = sprintf('mark size=%.1fpt', tikzMarkerSize);
+            drawOptions = opts_add(drawOptions, 'mark size', ...
+                                   sprintf('%.1fpt', tikzMarkerSize));
         end
 
-        markOptions = cell(0);
+        markOptions = opts_new();
         % make sure that the markers get painted in solid (and not dashed)
         % if the 'lineStyle' is not solid (otherwise there is no problem)
         if ~strcmp(lineStyle, 'solid')
-            markOptions{end+1} = 'solid';
+            markOptions = opts_add(markOptions, 'solid');
         end
 
         % print no lines
         if isNone(lineStyle) || lineWidth==0
-            drawOptions{end+1} = 'only marks';
+            drawOptions = opts_add(drawOptions, 'only marks');
         end
 
         % get the marker color right
         markerFaceColor = get(h, 'markerfaceColor');
         markerEdgeColor = get(h, 'markeredgeColor');
+        
         [tikzMarker, markOptions] = translateMarker(m2t, marker,         ...
-            markOptions, ~isNone(markerFaceColor));
-        if ~isNone(markerFaceColor)
-            [m2t, xcolor] = getColor(m2t, h, markerFaceColor, 'patch');
-            if ~isempty(xcolor)
-                markOptions{end+1} = sprintf('fill=%s', xcolor);
-            end
-        end
-        if ~isNone(markerEdgeColor) && ~strcmp(markerEdgeColor,'auto')
-            [m2t, xcolor] = getColor(m2t, h, markerEdgeColor, 'patch');
-            if ~isempty(xcolor)
-                markOptions{end+1} = sprintf('draw=%s', xcolor);
-            end
+            opts_to_legacy(markOptions), ~isNone(markerFaceColor));
+        markOptions = opts_from_legacy(markOptions); %FIXME: move this into translateMarker
+        
+        [m2t, markOptions] = assignColor(m2t, h, markOptions, 'fill', markerFaceColor);
+        
+        if ~strcmp(markerEdgeColor,'auto')
+            [m2t, markOptions] = assignColor(m2t, h, markOptions, 'draw', markerEdgeColor);
         end
 
         % add it all to drawOptions
-        drawOptions{end+1} = sprintf('mark=%s', tikzMarker);
+        drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
 
         if ~isempty(markOptions)
-            mo = join(m2t, markOptions, ',');
-            drawOptions{end+1} = ['mark options={', mo, '}'];
+            mo = opts_print(m2t, markOptions, ',');
+            drawOptions = opts_add(drawOptions, 'mark options', ['{' mo '}']);
         end
     end
+    drawOptions = opts_to_legacy(drawOptions); %FIXME: move this to the call sites
 end
 % ==============================================================================
 function [tikzMarkerSize, isDefault] = ...
@@ -1948,7 +1944,9 @@ function [m2t, options] = assignColor(m2t, handle, options, property, color, non
 % TODO: probably this should be integrated with getAndCheckDefault etc.
     if ~isNone(color)
         [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
-        options = opts_add(options, property, xcolor);
+        if ~isempty(xcolor)
+            options = opts_add(options, property, xcolor);
+        end
     else
         if exist('noneValue','var')
             options = opts_add(options, property, noneValue);
@@ -3061,10 +3059,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             end
         end
     elseif size(cData,2) == 3
-        drawOptions = { 'only marks' ...
+        drawOptions = { 'only marks' };
             % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
-            %                        'scatter rgb' ...
-            };
     else
         markerOptions = { ['mark=', tikzMarker], ...
             ['mark options={', join(m2t, markOptions, ','), '}'] };
@@ -5758,7 +5754,7 @@ function opts = opts_append(opts, key, value)
 end
 function opts = opts_append_userdefined(opts, userDefined)
 % appends user-defined options to an options array
-% the sserDefined options can come either as a single string or a cellstr that
+% the userDefined options can come either as a single string or a cellstr that
 % is already TikZ-formatted. The internal 2D cell format is NOT supported.
     if ~isempty(userDefined)
         if ischar(userDefined)
@@ -5766,6 +5762,32 @@ function opts = opts_append_userdefined(opts, userDefined)
         end
         for k = 1:length(userDefined)
             opts = opts_append(opts, userDefined{k});
+        end
+    end
+end
+function c = opts_to_legacy(opts)
+% converts an option array to the legacy (1D) cell format
+    nOpts = size(opts,1);
+    c = cell(1,nOpts);
+    for k = 1:nOpts
+        if isempty(opts{k,2})
+            c{k} = sprintf('%s', opts{k,1});
+        else
+            c{k} = sprintf('%s=%s', opts{k,1}, opts{k,2});
+        end
+    end
+end
+function opts = opts_from_legacy(c)
+    opts = opts_new();
+    for kOption = 1:numel(c)
+        entry = c{kOption};
+        iSplit = strfind(entry,'=');
+        if isempty(iSplit)
+            opts = opts_append(opts, entry);
+        else
+            key = entry(1:iSplit(1)-1);
+            value = entry(iSplit(1)+1:end);
+            opts = opts_append(opts, key, value);
         end
     end
 end
@@ -5786,15 +5808,7 @@ function opts = opts_merge(opts, varargin)
 end
 function str  = opts_print(m2t, opts, sep)
 % pretty print an options array
-    nOpts = size(opts,1);
-    c = cell(nOpts,1);
-    for k = 1:nOpts
-        if isempty(opts{k,2})
-            c{k} = sprintf('%s', opts{k,1});
-        else
-            c{k} = sprintf('%s=%s', opts{k,1}, opts{k,2});
-        end
-    end
+    c = opts_to_legacy(opts);
     str = join(m2t, c, sep);
 end
 % ==============================================================================
