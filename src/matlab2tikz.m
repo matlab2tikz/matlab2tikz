@@ -1391,6 +1391,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     % Line and marker options
     lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
+    markerOptions = opts_to_legacy(markerOptions); %FIXME: remove this
     drawOptions = [{sprintf('color=%s', xcolor)}, lineOptions, markerOptions];
 
     % Check for "special" lines, e.g.:
@@ -1628,7 +1629,6 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
             drawOptions = opts_add(drawOptions, 'mark options', ['{' mo '}']);
         end
     end
-    drawOptions = opts_to_legacy(drawOptions); %FIXME: move this to the call sites
 end
 % ==============================================================================
 function [tikzMarkerSize, isDefault] = ...
@@ -1814,8 +1814,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     
     % Marker options
     [m2t, markerOptions] = getMarkerOptions(m2t, handle);
-%     drawOptions          = opts_merge(drawOptions, markerOptions); % TODO: use opts_* API in getMarkerOptions
-    drawOptions = [drawOptions; [markerOptions(:), repmat({[]},numel(markerOptions),1)]];
+    drawOptions          = opts_merge(drawOptions, markerOptions);
     
     % Line options
     lineStyle   = get(handle, 'LineStyle');
@@ -3398,6 +3397,7 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
 
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
+    markerOptions = opts_to_legacy(markerOptions); %FIXME: remove this 
 
     drawOptions = [plotType,                      ...
         sprintf('color=%s', plotColor),...
