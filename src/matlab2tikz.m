@@ -3097,27 +3097,9 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
-    if ~m2t.axesContainers{end}.is3D
-        env = 'addplot';
-        if length(sData) == 1
-            nColumns = 2;
-            data = [xData(:), yData(:)];
-        else
-            nColumns = 3;
-            sColumn = 2;
-            data = [xData(:), yData(:), sData(:)];
-        end
-    else
-        env = 'addplot3';
-        if length(sData) == 1
-            nColumns = 3;
-            data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
-        else
-            nColumns = 4;
-            sColumn = 3;
-            data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)]);
-        end
-    end
+    [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData);
+    nColumns = size(data, 2);
+    
     if ~constMarkerkSize %
         drawOptions = opts_add(drawOptions, 'visualization depends on', ...
             ['{\thisrowno{', num2str(sColumn), '} \as \perpointmarksize}']);
@@ -3150,6 +3132,28 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         drawOpts, opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
+function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData)
+% reorganizes the {X,Y,Z,S} data into a single matrix
+    sColumn = [];
+    if ~m2t.axesContainers{end}.is3D
+        env = 'addplot';
+        if length(sData) == 1
+            data = [xData(:), yData(:)];
+        else
+            sColumn = 2;
+            data = [xData(:), yData(:), sData(:)];
+        end
+    else
+        env = 'addplot3';
+        if length(sData) == 1
+            data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
+        else
+            sColumn = 3;
+            data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)]);
+        end
+    end
+end
+% ===
 function [m2t, xcolor, hasColor] = getColorOfMarkers(m2t, h, name, cData)
     color = get(h, name);
     hasColor = ~isNone(color);
