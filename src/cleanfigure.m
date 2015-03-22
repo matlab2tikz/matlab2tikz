@@ -369,7 +369,7 @@ function simplifyLine(meta, handle, targetResolution)
     else
         yrange = (log10(a(4))-log10(a(3)));
     end
-    tol = xrange*yrange/(ZOOM_MULTIPLIER*prod(targetResolution));
+    tol = xrange*yrange/(ZOOM_MULTIPLIER^2*prod(targetResolution));
     nPixelsX = targetResolution(1)*sqrt(targetResolution(3));
     nPixelsY = targetResolution(2)*sqrt(targetResolution(3));
 
@@ -391,9 +391,8 @@ function simplifyLine(meta, handle, targetResolution)
         x = xData(pstart(ii):pend(ii));
         y = yData(pstart(ii):pend(ii));
         
-        % Pixelate data up to a zoom multiplier. Resolution is lost only
-        % beyond that multiplier magnification
-        mask = pixelate(vx, vy, ZOOM_MULTIPLIER);
+        % Pixelate data up to 4 times the zoom multiplier 
+        mask = pixelate(vx, vy, 4*ZOOM_MULTIPLIER);
         vx   = vx(mask);
         vy   = vy(mask);
         x    = x(mask);
@@ -421,11 +420,13 @@ function simplifyLine(meta, handle, targetResolution)
     set(handle, 'XData', xData);
     set(handle, 'YData', yData);
     
-    function mask = pixelate(x, y, ZOOM_MULTIPLIER)
+    function mask = pixelate(x, y, multiplier)
+        % Resolution is lost only beyond the multiplier magnification
+
         % Convert data to pixel units, magnify and mark only the first
         % point that occupies a given position
-        mask = [true,diff(round(x/xrange*nPixelsX*ZOOM_MULTIPLIER))~=0];
-        mask = [true,diff(round(y/yrange*nPixelsY*ZOOM_MULTIPLIER))~=0] | mask;
+        mask = [true,diff(round(x/xrange*nPixelsX*multiplier))~=0];
+        mask = [true,diff(round(y/yrange*nPixelsY*multiplier))~=0] | mask;
 
         % Keep end point or it might truncate a whole pixel
         mask(end) = true;
