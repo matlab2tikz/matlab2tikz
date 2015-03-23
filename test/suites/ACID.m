@@ -1382,6 +1382,7 @@ function [stat] = textext()
   txstr(3) = { 'You can use LaTeX symbols like \pi \chi \Xi' };
   txstr(4) = { '\bfOr use bold \rm\itor italic font\rm' };
   txstr(5) = { '\fontname{courier}Or even change fonts' };
+  txstr(5) = { 'and use umlauts like äöüßÄÖÜ and accents éèêŐőŰűç' };
   plot( 0:6, sin(0:6) )
   text( 5.75, sin(2.5), txstr, 'HorizontalAlignment', 'right' )
 end
