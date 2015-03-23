@@ -1968,7 +1968,11 @@ function [m2t, options] = assignColor(m2t, handle, options, property, color, non
 end
 % ==============================================================================
 function drawOptions = getPatchShapeOpts(m2t, h, drawOptions, patchOptions)
-% retrieves the shape options (i.e. number of vertices) of patch objects
+% Retrieves the shape options (i.e. number of vertices) of patch objects
+% Depending on the number of vertices, patches can be triangular, rectangular 
+% or polygonal
+% See pgfplots 1.12 manual section 5.8.1 "Additional Patch Types" and the
+% patchplots library
     vertexCount = size(get(h, 'Faces'), 2);
 
     switch vertexCount
@@ -2010,8 +2014,11 @@ function [cycle] = conditionallyCyclePath(data)
 end
 % ==============================================================================
 function m2t = jumpAtUnboundCoords(m2t, data)
-% signals the axis that unbound coords should be a jump
+% signals the axis to allow discontinuities in the plot at unbounded 
+% coordinates (i.e. Inf and NaN). 
+% See also pgfplots 1.12 manual section 4.5.13 "Interrupted Plots".
     if any(~isfinite(data(:)))
+        m2t = needsPgfplotsVersion(m2t, [1 4]);
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
     end
@@ -4478,13 +4485,13 @@ function [pTicks, pTickLabels] = ...
     
     ticks = removeSuperfluousTicks(ticks, tickLabels);
 
-    isNeeded = areTickLabelsNecessary(m2t, ticks, tickLabels, isLogAxis);
+    isNeeded = isTickLabelsNecessary(m2t, ticks, tickLabels, isLogAxis);
     
     pTickLabels = formatPgfTickLabels(m2t, isNeeded, tickLabels, ...
         isLogAxis, tickLabelMode);
 end
 % ==============================================================================
-function bool = areTickLabelsNecessary(m2t, ticks, tickLabels, isLogAxis)
+function bool = isTickLabelsNecessary(m2t, ticks, tickLabels, isLogAxis)
     % Check if tickLabels are really necessary (and not already covered by
     % the tick values themselves).
     bool = false;
