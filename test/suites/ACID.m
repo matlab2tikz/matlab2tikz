@@ -2541,14 +2541,14 @@ function [stat] = alphaTest()
   set(h, 'LineWidth', 4);
   set(h, 'Marker', 'x');
   set(h, 'MarkerSize', 16);
-  set(h, 'MarkerEdgeColor', [1 1 0]);
+  set(h, 'MarkerEdgeColor', [1 0.5 0]);
   set(h, 'MarkerFaceColor', [1 0 0]);       % has no visual effect
   
   % line with different properties
   h = line([3 3.5], [1.5 3.5]);
-  set(h, 'Color', [1 1 1 0.4]);             % RGBA (with alpha channel)
+  set(h, 'Color', [1 1 1 0.3]);             % RGBA (with alpha channel)
   set(h, 'LineStyle', ':');
-  set(h, 'LineWidth', 4);
+  set(h, 'LineWidth', 6);
   set(h, 'Marker', 'o');
   set(h, 'MarkerSize', 14);
   set(h, 'MarkerEdgeColor', [1 1 0]);
