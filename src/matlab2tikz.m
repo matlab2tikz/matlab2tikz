@@ -1951,7 +1951,9 @@ end
 % ==============================================================================
 function [m2t, options] = assignColor(m2t, handle, options, property, color, noneValue)
 % assigns the MATLAB color of the object identified by "handle" to the LaTeX
-% property stored in the options array.
+% property stored in the options array. An optional "noneValue" can be provided
+% that is set when the color == 'none' (if it is omitted, the property will not
+% be set).
 % TODO: probably this should be integrated with getAndCheckDefault etc.
     if ~isNone(color)
         [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
