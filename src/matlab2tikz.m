@@ -1445,8 +1445,7 @@ function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
             %if ~isempty(m2t.legendHandles) && (~m2t.currentHandleHasLegend || k < length(dataCell))
             if ~m2t.currentHandleHasLegend || k < length(dataCell)
                 % No legend entry found. Don't include plot in legend.
-                
-                hiddenDrawOptions = opts_add(drawOptions, 'forget plot');
+                hiddenDrawOptions = maybeShowInLegend(false, drawOptions);
                 opts = opts_print(m2t, hiddenDrawOptions, ',');
             else
                 opts = opts_print(m2t, drawOptions, ',');
@@ -1859,7 +1858,7 @@ function [m2t, str] = drawPatch(m2t, handle)
            isFaceColorFlat, s);
     end
     
-    drawOptions = showInLegend(m2t.currentHandleHasLegend, drawOptions);
+    drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
     m2t = jumpAtUnboundCoords(m2t, Faces(:));
     
     % Add Faces table
@@ -1941,9 +1940,9 @@ function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
     end
 end
 % ==============================================================================
-function [drawOptions] = showInLegend(currentHandleHasLegend, drawOptions)
-% hides the current plot from the legend
-    if ~currentHandleHasLegend
+function [drawOptions] = maybeShowInLegend(showInLegend, drawOptions)
+% sets the appropriate options to show/hide the plot in the legend
+    if ~showInLegend
         % No legend entry found. Don't include plot in legend.
         drawOptions = opts_add(drawOptions, 'forget plot', '');
     end
