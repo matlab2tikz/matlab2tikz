@@ -1824,54 +1824,64 @@ function [m2t, str] = drawPatch(m2t, handle)
     lineWidth   = get(handle, 'LineWidth');
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
     drawOptions = opts_merge(drawOptions, lineOptions);
-    
+
     % No patch: if one patch and single face/edge color
     isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
     if size(Faces,1) == 1 && s.hasOneEdgeColor && isFaceColorFlat
         ptType = '';
         cycle  = conditionallyCyclePath(Vertices);
+
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'draw', ...
                                          s.edgeColor);
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'fill', ...
                                          s.faceColor);
-        
-    else % Multiple patches    
-        
+
+        if opts_has(patchOptions, 'draw opacity')
+            drawOptions         = opts_add(drawOptions,'draw opacity', ...
+                                            sprintf(m2t.ff, s.edgeAlpha));
+        end
+        if opts_has(patchOptions, 'fill opacity')
+            drawOptions         = opts_add(drawOptions,'fill opacity', ...
+                                            sprintf(m2t.ff, s.faceAlpha));
+        end
+
+    else % Multiple patches
+
         % Patch table type
         ptType      = 'patch table';
         cycle       = '';
         drawOptions = opts_add(drawOptions,'table/row sep','crcr');
         % TODO: is the above "crcr" compatible with pgfplots 1.12 ?
         % TODO: is a "patch table" externalizable?
-        
+
         % Enforce 'patch' or cannot use 'patch table='
         if strcmpi(s.plotType,'mesh')
             drawOptions = opts_add(drawOptions,'patch','');
         end
         drawOptions = opts_add(drawOptions,s.plotType,''); % Eventually add mesh, but after patch!
-        
+
         drawOptions = getPatchShapeOpts(m2t, handle, drawOptions, patchOptions);
-        
+
         [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
          columnNames] = setColorsOfPatches(m2t, handle, drawOptions, ...
            Vertices, Faces, verticesTableOptions, ptType, columnNames, ...
            isFaceColorFlat, s);
     end
-    
+
     drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
     m2t = jumpAtUnboundCoords(m2t, Faces(:));
-    
+
     % Add Faces table
     if ~isempty(ptType)
         [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces);
         drawOptions = opts_add(drawOptions, ptType, sprintf('{%s}', facesTable));
     end
     drawOpts = opts_print(m2t, drawOptions,',');
-    
+
     % Plot the actual data.
     [m2t, verticesTable, tabOpts] = makeTable(m2t, columnNames, Vertices);
     tabOpts = opts_merge(tabOpts, verticesTableOptions);
-    
+
     str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
         str, plotCmd, drawOpts, opts_print(m2t, tabOpts, ', '), verticesTable, cycle);
 end
@@ -2949,13 +2959,18 @@ end
 % ==============================================================================
 function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
 
-            
     % Set opacity if FaceAlpha < 1 in MATLAB
     s.faceAlpha = get(handle, 'FaceAlpha');
     if isnumeric(s.faceAlpha) && s.faceAlpha ~= 1.0
-        opts = opts_add(opts,'opacity',sprintf(m2t.ff,s.faceAlpha));
+        opts = opts_add(opts,'fill opacity',sprintf(m2t.ff,s.faceAlpha));
     end
-    
+
+    % Set opacity if EdgeAlpha < 1 in MATLAB
+    s.edgeAlpha = get(handle, 'EdgeAlpha');
+    if isnumeric(s.edgeAlpha) && s.edgeAlpha ~= 1.0
+        opts = opts_add(opts,'draw opacity',sprintf(m2t.ff,s.edgeAlpha));
+    end
+
     % Edge 'none'
     if isNone(s.edgeColor)
         s.hasOneEdgeColor = true; % consider void as true
@@ -5396,6 +5411,9 @@ function parsed = parseTexString(m2t, string)
     % start-> $ \text {(non-}) } $<-end
     % ...or when the parsed string is empty
     parsed = regexprep(parsed, '^\$\$$', '');
+
+    % Ensure math mode for pipe symbol (issue #587)
+    parsed = strrep(parsed, '|', '$|$');
 end
 % ==============================================================================
 function string = parseTexSubstring(m2t, string)
