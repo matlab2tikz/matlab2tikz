@@ -5329,6 +5329,9 @@ function parsed = parseTexString(m2t, string)
     % start-> $ \text {(non-}) } $<-end
     % ...or when the parsed string is empty
     parsed = regexprep(parsed, '^\$\$$', '');
+
+    % Ensure math mode for pipe symbol (issue #587)
+    parsed = strrep(parsed, '|', '$|$');
 end
 % ==============================================================================
 function string = parseTexSubstring(m2t, string)
