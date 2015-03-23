@@ -1860,7 +1860,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         end
         drawOptions = opts_add(drawOptions,s.plotType,''); % Eventually add mesh, but after patch!
 
-        drawOptions = getPatchShapeOpts(m2t, handle, drawOptions, patchOptions);
+        drawOptions = getPatchShape(m2t, handle, drawOptions, patchOptions);
 
         [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
          columnNames] = setColorsOfPatches(m2t, handle, drawOptions, ...
@@ -1978,7 +1978,7 @@ function [m2t, options] = setColor(m2t, handle, options, property, color, noneVa
     end
 end
 % ==============================================================================
-function drawOptions = getPatchShapeOpts(m2t, h, drawOptions, patchOptions)
+function drawOptions = getPatchShape(m2t, h, drawOptions, patchOptions)
 % Retrieves the shape options (i.e. number of vertices) of patch objects
 % Depending on the number of vertices, patches can be triangular, rectangular 
 % or polygonal
