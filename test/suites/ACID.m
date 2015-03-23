@@ -2473,6 +2473,9 @@ end
 % =========================================================================
 function [stat] = overlappingPlots()
     stat.description = 'Overlapping plots with zoomed data and varying background.';
+    stat.unreliable = isMATLAB('>=', [8,4]);
+    % FIXME this test is unreliable because the x/y lims of `ax2` are not set
+    % explicitly. We should not set them explicitly, rather implement #591
     stat.issues = 6;
 
     % create pseudo random data and convert it from matrix to vector
