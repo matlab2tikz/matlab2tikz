@@ -1825,12 +1825,20 @@ function [m2t, str] = drawPatch(m2t, handle)
         ptType = '';
         cycle  = conditionallyCyclePath(Vertices);
         if ~isNone(s.edgeColor)
-            [m2t, xEdgeColor]  = getColor(m2t, handle, s.edgeColor, 'patch');
-            drawOptions        = opts_add(drawOptions, 'draw', xEdgeColor);
+            [m2t, xEdgeColor]   = getColor(m2t, handle, s.edgeColor, 'patch');
+            drawOptions         = opts_add(drawOptions, 'draw', xEdgeColor);
         end
         if ~isNone(s.faceColor)
-            [m2t,xFaceColor]   = getColor(m2t, handle, s.faceColor, 'patch');
-            drawOptions        = opts_add(drawOptions,'fill',xFaceColor);
+            [m2t,xFaceColor]    = getColor(m2t, handle, s.faceColor, 'patch');
+            drawOptions         = opts_add(drawOptions,'fill',xFaceColor);
+        end
+        if opts_has(patchOptions, 'draw opacity')
+            drawOptions         = opts_add(drawOptions,'draw opacity', ...
+                                            sprintf(m2t.ff, s.edgeAlpha));
+        end
+        if opts_has(patchOptions, 'fill opacity')
+            drawOptions         = opts_add(drawOptions,'fill opacity', ...
+                                            sprintf(m2t.ff, s.faceAlpha));
         end
         
     % Multiple patches    
@@ -2906,13 +2914,18 @@ end
 % ==============================================================================
 function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
 
-            
     % Set opacity if FaceAlpha < 1 in MATLAB
     s.faceAlpha = get(handle, 'FaceAlpha');
     if isnumeric(s.faceAlpha) && s.faceAlpha ~= 1.0
-        opts = opts_add(opts,'opacity',sprintf(m2t.ff,s.faceAlpha));
+        opts = opts_add(opts,'fill opacity',sprintf(m2t.ff,s.faceAlpha));
     end
-    
+
+    % Set opacity if EdgeAlpha < 1 in MATLAB
+    s.edgeAlpha = get(handle, 'EdgeAlpha');
+    if isnumeric(s.edgeAlpha) && s.edgeAlpha ~= 1.0
+        opts = opts_add(opts,'draw opacity',sprintf(m2t.ff,s.edgeAlpha));
+    end
+
     % Edge 'none'
     if isNone(s.edgeColor)
         s.hasOneEdgeColor = true; % consider void as true
