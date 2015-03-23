@@ -1856,7 +1856,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
          columnNames] = setColorsOfPatches(m2t, handle, drawOptions, ...
            Vertices, Faces, verticesTableOptions, ptType, columnNames, ...
-           isFaceColorFlat);
+           isFaceColorFlat, s);
     end
     
     drawOptions = showInLegend(m2t.currentHandleHasLegend, drawOptions);
@@ -1879,7 +1879,7 @@ end
 % ==============================================================================
 function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
          columnNames] = setColorsOfPatches(m2t, handle, drawOptions, ...
-           Vertices, Faces, verticesTableOptions, ptType, columnNames, isFaceColorFlat)
+           Vertices, Faces, verticesTableOptions, ptType, columnNames, isFaceColorFlat, s)
 % this behemoth does the color setting for patches
 
     % TODO: this function can probably be split further, just look at all those
