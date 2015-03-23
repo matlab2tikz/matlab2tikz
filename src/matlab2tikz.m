@@ -377,7 +377,7 @@ end
 % ==============================================================================
 function l = filenameValidation(x, p)
 % is the filename argument NOT another keyword?
-    l = ischar(x) && ~any(strcmp(x,p.Parameters));
+    l = ischar(x) && ~any(strcmp(x,p.Parameters)); %FIXME: See #471
 end
 % ==============================================================================
 function l = filehandleValidation(x)
@@ -828,7 +828,7 @@ function m2t = drawAxes(m2t, handle)
     % Axis direction
     for axis = 'xyz'
         m2t.([axis 'AxisReversed']) = ...
-            strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
+            strcmpi(get(handle,[upper(axis),'Dir']), 'reverse');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Add color scaling
@@ -907,7 +907,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         % and effectively take Pgfplots' default.
         defaultMatlabGridLineStyle = ':';
         if m2t.cmdOpts.Results.strict ...
-                || ~strcmp(matlabGridLineStyle,defaultMatlabGridLineStyle)
+                || ~strcmpi(matlabGridLineStyle,defaultMatlabGridLineStyle)
             gls = translateLineStyle(matlabGridLineStyle);
             axisGridOpts = {'grid style', sprintf('{%s}', gls)};
             m2t.axesContainers{end}.options = cat(1, ...
@@ -1047,7 +1047,7 @@ end
 % ==============================================================================
 function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
 % draw the box and axis line location of an axes object
-    isBoxOn       = strcmp(get(h, 'box'), 'on');
+    isBoxOn       = strcmpi(get(h, 'box'), 'on');
     xLoc          = get(h, 'XAxisLocation');
     yLoc          = get(h, 'YAxisLocation');
     isXaxisBottom = strcmpi(xLoc,'bottom');
@@ -1114,7 +1114,7 @@ function m2t = drawLegendOptionsOfAxes(m2t, handle)
             % So let's make sure "siblings" is a row vector by reshaping it:
             siblings = reshape(siblings, 1, []);
             for sibling = siblings
-                if sibling && strcmp(get(sibling,'Type'), 'axes') && strcmp(get(sibling,'Tag'), 'legend')
+                if sibling && strcmpi(get(sibling,'Type'), 'axes') && strcmpi(get(sibling,'Tag'), 'legend')
                     legDims = pos2dims(get(sibling, 'Position')); %#ok
 
                     % TODO The following logic does not work for 3D plots.
@@ -1186,7 +1186,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
                                               [upper(axis),'Color'], [ 0 0 0 ]);
     if ~isDfltColor || m2t.cmdOpts.Results.strict
         [m2t, col] = getColor(m2t, handle, color, 'patch');
-        if strcmp(get(handle, 'box'), 'on')
+        if strcmpi(get(handle, 'box'), 'on')
             % If the axes are arranged as a box, make sure that the individual
             % axes are drawn as four separate paths. This makes the alignment
             % at the box corners somewhat less nice, but allows for different
@@ -1204,14 +1204,14 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % handle the orientation
-    isAxisReversed = strcmp(get(handle,[upper(axis),'Dir']), 'reverse');
+    isAxisReversed = strcmpi(get(handle,[upper(axis),'Dir']), 'reverse');
     m2t.([axis 'AxisReversed']) = isAxisReversed;
     if isAxisReversed
         options = opts_add(options, [axis, ' dir'], 'reverse');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     axisScale = getOrDefault(handle, [upper(axis) 'Scale'], 'lin');
-    if strcmp(axisScale, 'log');
+    if strcmpi(axisScale, 'log');
         options = opts_add(options, [axis,'mode'], 'log');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1225,10 +1225,10 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     [m2t, options] = getAxisLabel(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get grids
-    if strcmp(getOrDefault(handle, [upper(axis),'Grid'], 'off'), 'on');
+    if strcmpi(getOrDefault(handle, [upper(axis),'Grid'], 'off'), 'on');
         options = opts_add(options, [axis, 'majorgrids'], []);
     end
-    if strcmp(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'), 'on');
+    if strcmpi(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'), 'on');
         options = opts_add(options, [axis, 'minorgrids'], []);
     end
 end
@@ -1246,12 +1246,12 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
         % If no ticks are present, we need to enforce this in any case.
         pgfTicks = '\empty';
     else
-        if strcmp(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict
+        if strcmpi(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict
             % If the ticks are set automatically, and strict conversion is
             % not required, then let Pgfplots take care of the ticks.
             % In most cases, this looks a lot better anyway.
             pgfTicks = [];
-        else % strcmp(tickMode,'manual') || m2t.cmdOpts.Results.strict
+        else % strcmpi(tickMode,'manual') || m2t.cmdOpts.Results.strict
             pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
         end
     end
@@ -1260,17 +1260,17 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     tickLabelMode = get(handle, keywordTickLabelMode);
     keywordTickLabel = [upper(axis), 'TickLabel'];
     tickLabels = cellstr(get(handle, keywordTickLabel));
-    if strcmp(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict
+    if strcmpi(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict
         pgfTickLabels = [];
-    else % strcmp(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
+    else % strcmpi(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
         keywordScale = [upper(axis), 'Scale'];
-        isAxisLog = strcmp(getOrDefault(handle,keywordScale, 'lin'), 'log');
+        isAxisLog = strcmpi(getOrDefault(handle,keywordScale, 'lin'), 'log');
         [pgfTicks, pgfTickLabels] = ...
             matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isAxisLog, tickLabelMode);
     end
 
     keywordMinorTick = [upper(axis), 'MinorTick'];
-    hasMinorTicks = strcmp(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
+    hasMinorTicks = strcmpi(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
     tickDirection = getOrDefault(handle, 'TickDir', 'in');
     
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
@@ -1397,7 +1397,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     drawOptions = opts_merge(drawOptions, lineOptions, markerOptions);
 
     % Check for "special" lines, e.g.:
-    if strcmp(get(h, 'Tag'), 'zplane_unitcircle')
+    if strcmpi(get(h, 'Tag'), 'zplane_unitcircle')
         % Draw unit circle and axes.
         % TODO Don't hardcode "10".
         opts = opts_print(m2t, drawOptions, ',');
@@ -1603,7 +1603,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         markOptions = opts_new();
         % make sure that the markers get painted in solid (and not dashed)
         % if the 'lineStyle' is not solid (otherwise there is no problem)
-        if ~strcmp(lineStyle, 'solid')
+        if ~strcmpi(lineStyle, 'solid')
             markOptions = opts_add(markOptions, 'solid');
         end
 
@@ -1621,7 +1621,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         
         [m2t, markOptions] = assignColor(m2t, h, markOptions, 'fill', markerFaceColor);
         
-        if ~strcmp(markerEdgeColor,'auto')
+        if ~strcmpi(markerEdgeColor,'auto')
             [m2t, markOptions] = assignColor(m2t, h, markOptions, 'draw', markerEdgeColor);
         end
 
@@ -1898,7 +1898,7 @@ function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
         
         % Determine if mapping is direct or scaled
         CDataMapping = get(handle,'CDataMapping');
-        if strcmp(CDataMapping, 'direct')
+        if strcmpi(CDataMapping, 'direct')
             drawOptions = opts_add(drawOptions, 'colormap access','direct');
         end
         
@@ -2425,7 +2425,7 @@ function m2t = drawAnnotations(m2t)
 % drawAxes() call. 
 
     % Octave
-    if strcmp(getEnvironment,'Octave') 
+    if strcmpi(getEnvironment,'Octave') 
         return
     end
 
@@ -2660,8 +2660,8 @@ function [m2t, str] = drawVisibleText(m2t, handle)
     % descriptions therein.  Also, Matlab treats text objects with a NaN in the
     % position as invisible.
     if any(isnan(get(handle, 'Position')) | isnan(get(handle, 'Rotation'))) ...
-            || strcmp(get(handle, 'Visible'), 'off') ...
-            || (strcmp(get(handle, 'HandleVisibility'), 'off') && ...
+            || strcmpi(get(handle, 'Visible'), 'off') ...
+            || (strcmpi(get(handle, 'HandleVisibility'), 'off') && ...
                 ~m2t.cmdOpts.Results.showHiddenStrings)
 
         str = '';
@@ -2760,7 +2760,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
     
     % Deduce if text or textbox
     type = get(h,'type');
-    if isempty(type) || strcmp(type,'hggroup')
+    if isempty(type) || strcmpi(type,'hggroup')
         type = get(h,'ShapeType'); % Undocumented property valid from 2008a
     end
     
@@ -2841,7 +2841,7 @@ function [m2t, str] = drawRectangle(m2t, h)
     % there may be some text objects floating around a Matlab figure which
     % are handled by other subfunctions (labels etc.) or don't need to be
     % handled at all
-    if ~isVisible(h) || strcmp(get(h, 'HandleVisibility'), 'off')
+    if ~isVisible(h) || strcmpi(get(h, 'HandleVisibility'), 'off')
         return;
     end
 
@@ -2869,9 +2869,9 @@ end
 function [m2t, drawOptions] = getRectangleFaceOptions(m2t, h, drawOptions)
 % draws the face (i.e. fill) of a Rectangle
     faceColor    = get(h, 'FaceColor');
-    isAnnotation = strcmp(get(h,'type'),'rectangleshape') || ...
-                   strcmp(getOrDefault(h,'ShapeType',''),'rectangle');
-    isFlatColor  = strcmp(faceColor, 'flat');
+    isAnnotation = strcmpi(get(h,'type'),'rectangleshape') || ...
+                   strcmpi(getOrDefault(h,'ShapeType',''),'rectangle');
+    isFlatColor  = strcmpi(faceColor, 'flat');
     if ~(isNone(faceColor) || (isAnnotation && isFlatColor))
         [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
         drawOptions = opts_add(drawOptions, 'fill', xFaceColor);
@@ -3173,7 +3173,7 @@ end
 function [m2t, xcolor, hasColor] = getColorOfMarkers(m2t, h, name, cData)
     color = get(h, name);
     hasColor = ~isNone(color);
-    if hasColor && ~strcmp(color,'flat');
+    if hasColor && ~strcmpi(color,'flat');
         [m2t, xcolor] = getColor(m2t, h, color, 'patch');
     else
         [m2t, xcolor] = getColor(m2t, h, cData, 'patch');
@@ -3210,7 +3210,7 @@ function [m2t, str] = drawHistogram(m2t, h)
     data     = [binEdges(:), [binValue(:); binValue(end)]];
     
     % Bar type (depends on orientation)
-    isVertical = strcmp(get(h,'Orientation'),'vertical');
+    isVertical = strcmpi(get(h,'Orientation'),'vertical');
     if isVertical
         opts = opts_add(opts, 'ybar interval');
     else
@@ -5078,7 +5078,7 @@ end
 % ==============================================================================
 function bool = isVisible(handles)
 % Determines whether an object is actually visible or not.
-    bool = strcmp(get(handles,'Visible'), 'on');
+    bool = strcmpi(get(handles,'Visible'), 'on');
     % There's another handle property, 'HandleVisibility', which may or may not
     % determine the visibility of the object. Empirically, it seems to be 'off'
     % whenever we're dealing with an object that's not user-created, such as
@@ -5191,7 +5191,7 @@ function printAll(m2t, env, fid)
 
     % End the tikzpicture environment with an empty comment and no newline
     % so no additional space is generated after the tikzpicture in TeX.
-    if strcmp(env.name, 'tikzpicture')
+    if strcmp(env.name, 'tikzpicture') % LaTeX is case sensitive
         fprintf(fid, '\\end{%s}%%', env.name);
     else
         fprintf(fid, '\\end{%s}\n', env.name);
