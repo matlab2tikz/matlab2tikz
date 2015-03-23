@@ -5814,6 +5814,7 @@ function opts = opts_append_userdefined(opts, userDefined)
 end
 function c = opts_to_legacy(opts)
 % converts an option array to the legacy (1D) cell format
+% TODO: eventually inline this function back into opts_print
     nOpts = size(opts,1);
     c = cell(1,nOpts);
     for k = 1:nOpts
@@ -5826,6 +5827,7 @@ function c = opts_to_legacy(opts)
 end
 function opts = opts_from_legacy(c)
 % converts a legacy option array to an actual option array
+% TODO: eventually remove this function
     opts = opts_new();
     for kOption = 1:numel(c)
         entry = c{kOption};
