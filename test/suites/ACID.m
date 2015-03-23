@@ -1349,6 +1349,7 @@ end
 % =========================================================================
 function [stat] = decayingharmonic()
   stat.description = 'Decaying harmonic oscillation with \TeX{} title.';
+  stat.issue = 587;
 
   % Based on an example from
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
@@ -1360,7 +1361,7 @@ function [stat] = decayingharmonic()
   plot(t, y)
   title('{\itAe}^{-\alpha\itt}sin\beta{\itt}, \alpha<<\beta, \beta>>\alpha, \alpha<\beta, \beta>\alpha, b>a')
   xlabel('Time \musec.')
-  ylabel('Amplitude')
+  ylabel('Amplitude |X|')
 end
 % =========================================================================
 function [stat] = texcolor()
