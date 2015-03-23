@@ -5819,35 +5819,6 @@ function opts = opts_append_userdefined(opts, userDefined)
         end
     end
 end
-function c = opts_to_legacy(opts)
-% converts an option array to the legacy (1D) cell format
-% TODO: eventually inline this function back into opts_print
-    nOpts = size(opts,1);
-    c = cell(1,nOpts);
-    for k = 1:nOpts
-        if isempty(opts{k,2})
-            c{k} = sprintf('%s', opts{k,1});
-        else
-            c{k} = sprintf('%s=%s', opts{k,1}, opts{k,2});
-        end
-    end
-end
-function opts = opts_from_legacy(c)
-% converts a legacy option array to an actual option array
-% TODO: eventually remove this function
-    opts = opts_new();
-    for kOption = 1:numel(c)
-        entry = c{kOption};
-        iSplit = strfind(entry,'=');
-        if isempty(iSplit)
-            opts = opts_append(opts, entry);
-        else
-            key = entry(1:iSplit(1)-1);
-            value = entry(iSplit(1)+1:end);
-            opts = opts_append(opts, key, value);
-        end
-    end
-end
 function opts = opts_remove(opts, varargin)
 % remove some key-value pairs from an options array
     keysToDelete = varargin;
@@ -5865,7 +5836,15 @@ function opts = opts_merge(opts, varargin)
 end
 function str  = opts_print(m2t, opts, sep)
 % pretty print an options array
-    c = opts_to_legacy(opts);
+    nOpts = size(opts,1);
+    c = cell(1,nOpts);
+    for k = 1:nOpts
+        if isempty(opts{k,2})
+            c{k} = sprintf('%s', opts{k,1});
+        else
+            c{k} = sprintf('%s=%s', opts{k,1}, opts{k,2});
+        end
+    end
     str = join(m2t, c, sep);
 end
 % ==============================================================================
