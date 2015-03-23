@@ -1619,10 +1619,10 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         [tikzMarker, markOptions] = translateMarker(m2t, marker, ...
                                         markOptions, ~isNone(markerFaceColor));
         
-        [m2t, markOptions] = assignColor(m2t, h, markOptions, 'fill', markerFaceColor);
+        [m2t, markOptions] = setColor(m2t, h, markOptions, 'fill', markerFaceColor);
         
         if ~strcmpi(markerEdgeColor,'auto')
-            [m2t, markOptions] = assignColor(m2t, h, markOptions, 'draw', markerEdgeColor);
+            [m2t, markOptions] = setColor(m2t, h, markOptions, 'draw', markerEdgeColor);
         end
 
         % add it all to drawOptions
@@ -1831,9 +1831,9 @@ function [m2t, str] = drawPatch(m2t, handle)
     if size(Faces,1) == 1 && s.hasOneEdgeColor && isFaceColorFlat
         ptType = '';
         cycle  = conditionallyCyclePath(Vertices);
-        [m2t, drawOptions] = assignColor(m2t, handle, drawOptions, 'draw', ...
+        [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'draw', ...
                                          s.edgeColor);
-        [m2t, drawOptions] = assignColor(m2t, handle, drawOptions, 'fill', ...
+        [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'fill', ...
                                          s.faceColor);
         
     else % Multiple patches    
@@ -1949,7 +1949,7 @@ function [drawOptions] = showInLegend(currentHandleHasLegend, drawOptions)
     end
 end
 % ==============================================================================
-function [m2t, options] = assignColor(m2t, handle, options, property, color, noneValue)
+function [m2t, options] = setColor(m2t, handle, options, property, color, noneValue)
 % assigns the MATLAB color of the object identified by "handle" to the LaTeX
 % property stored in the options array. An optional "noneValue" can be provided
 % that is set when the color == 'none' (if it is omitted, the property will not
@@ -1958,6 +1958,8 @@ function [m2t, options] = assignColor(m2t, handle, options, property, color, non
     if ~isNone(color)
         [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
         if ~isempty(xcolor)
+            % this may happen when color == 'flat' and CData is Nx3, e.g. in 
+            % scatter plot or in patches
             options = opts_add(options, property, xcolor);
         end
     else
@@ -2701,7 +2703,7 @@ function [m2t, str] = drawText(m2t, handle)
     style = opts_new();
     
     bgColor = get(handle,'BackgroundColor');
-    [m2t, style] = assignColor(m2t, handle, style, 'fill', bgColor);
+    [m2t, style] = setColor(m2t, handle, style, 'fill', bgColor);
 
     style = getXYAlignmentOfText(handle, style);
 
@@ -2714,7 +2716,7 @@ function [m2t, str] = drawText(m2t, handle)
     style = opts_add(style, 'text', tcolor);
 
     EdgeColor = get(handle, 'EdgeColor');
-    [m2t, style] = assignColor(m2t, handle, style, 'draw', EdgeColor);
+    [m2t, style] = setColor(m2t, handle, style, 'draw', EdgeColor);
     
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % plot the thing
@@ -2894,7 +2896,7 @@ function [m2t, drawOptions] = getRectangleEdgeOptions(m2t, h, drawOptions)
     if isNone(lineStyle) || isNone(edgeColor)
         drawOptions = opts_add(drawOptions, 'draw', 'none');
     else
-        [m2t, drawOptions] = assignColor(m2t, h, drawOptions, 'draw', edgeColor);
+        [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'draw', edgeColor);
     end
 end
 % ==============================================================================
@@ -3201,7 +3203,7 @@ function [m2t, str] = drawHistogram(m2t, h)
     
     % Face
     faceColor = get(h,'FaceColor');
-    [m2t, opts] = assignColor(m2t, h, opts, 'fill', faceColor, 'none');
+    [m2t, opts] = setColor(m2t, h, opts, 'fill', faceColor, 'none');
     
     % FaceAlpha
     faceAlpha = get(h, 'FaceAlpha');
@@ -3211,7 +3213,7 @@ function [m2t, str] = drawHistogram(m2t, h)
     
     % Edge
     edgeColor = get(h, 'EdgeColor');
-    [m2t, opts] = assignColor(m2t, h, opts, 'draw', edgeColor, 'none');
+    [m2t, opts] = setColor(m2t, h, opts, 'draw', edgeColor, 'none');
     
     % Data
     binEdges = get(h, 'BinEdges');
@@ -3277,7 +3279,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     if isNone(lineStyle)
         drawOptions = opts_add(drawOptions, 'draw', 'none');
     else
-        [m2t, drawOptions] = assignColor(m2t, h, drawOptions, 'draw', ...
+        [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'draw', ...
             edgeColor, 'none');
     end
 
@@ -3418,7 +3420,7 @@ function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
         obj = h;
     end
     faceColor = get(obj, 'FaceColor');
-    [m2t, drawOptions] = assignColor(m2t, h, drawOptions, 'fill', faceColor);
+    [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'fill', faceColor);
 end
 % ==============================================================================
 function [m2t, str] = drawStemSeries(m2t, h)
