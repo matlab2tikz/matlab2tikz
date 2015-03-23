@@ -2547,7 +2547,7 @@ function [stat] = alphaTest()
   set(h, 'MarkerSize', 16);
   set(h, 'MarkerEdgeColor', [1 0.5 0]);
   set(h, 'MarkerFaceColor', [1 0 0]);       % has no visual effect
-  
+
   % line with different properties
   h = line([3 3.5], [1.5 3.5]);
   set(h, 'Color', [1 1 1]);
