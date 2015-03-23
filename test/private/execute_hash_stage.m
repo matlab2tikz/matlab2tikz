@@ -28,7 +28,7 @@ function hash = getReferenceHash(status, ipp)
     % By storing the hash table in a persistent variable, the amount of disk
     % operations is minimized (i.e. reading the file, parsing it and storing its
     % data in a MATLAB struct), as this is only done once a new test suite is
-    % executed. To clear this persistent storage, run |clear functions|.
+    % executed. To clear this persistent storage, run `clear getReferenceHash`.
 
     if isempty(hashTable) || ~isequal(hashTable.suite, ipp.Results.testsuite)
         hashTable = loadHashTable(ipp.Results.testsuite);
