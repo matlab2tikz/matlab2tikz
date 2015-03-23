@@ -131,8 +131,9 @@ function [status] = ACID(k)
                            @stackedBarsWithOther, ...
                            @colorbarLabelTitle  , ...
                            @textAlignment       , ...
-                           @overlappingPlots    ,...
-                           @histogramPlot
+                           @overlappingPlots    , ...
+                           @histogramPlot       , ...
+                           @alphaTest
                          };
 
 
@@ -2522,5 +2523,35 @@ function [stat] = histogramPlot()
   hold on
   h = histogram(y);
   set(h, 'orientation', 'horizontal');
+end
+% =========================================================================
+function [stat] = alphaTest()
+  stat.description = 'overlapping objects with transparency and other properties';
+  stat.issues      = 593;
+
+  contourf(peaks(5)); hold on;              % background
+
+  % rectangular patch with different properties
+  h = fill([2 2 4 4], [2 3 3 2], 'r');
+  set(h, 'FaceColor', 'r');
+  set(h, 'FaceAlpha', 0.2);
+  set(h, 'EdgeColor', 'g');
+  set(h, 'EdgeAlpha', 0.4);
+  set(h, 'LineStyle', ':');
+  set(h, 'LineWidth', 4);
+  set(h, 'Marker', 'x');
+  set(h, 'MarkerSize', 16);
+  set(h, 'MarkerEdgeColor', [1 1 0]);
+  set(h, 'MarkerFaceColor', [1 0 0]);       % has no visual effect
+  
+  % line with different properties
+  h = line([3 3.5], [1.5 3.5]);
+  set(h, 'Color', [1 1 1 0.4]);             % RGBA (with alpha channel)
+  set(h, 'LineStyle', ':');
+  set(h, 'LineWidth', 4);
+  set(h, 'Marker', 'o');
+  set(h, 'MarkerSize', 14);
+  set(h, 'MarkerEdgeColor', [1 1 0]);
+  set(h, 'MarkerFaceColor', [1 0 0]);
 end
 % =========================================================================
