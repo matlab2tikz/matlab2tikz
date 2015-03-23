@@ -2546,7 +2546,12 @@ function [stat] = alphaTest()
   
   % line with different properties
   h = line([3 3.5], [1.5 3.5]);
-  set(h, 'Color', [1 1 1 0.3]);             % RGBA (with alpha channel)
+  set(h, 'Color', [1 1 1]);
+  if isMATLAB('>=', [8,4])
+      % TODO: later replace by 'isHG2()'
+      fprintf('Note: RGBA (with alpha channel) only in HG2.\n' );
+      set(h, 'Color', [1 1 1 0.3]);
+  end
   set(h, 'LineStyle', ':');
   set(h, 'LineWidth', 6);
   set(h, 'Marker', 'o');
