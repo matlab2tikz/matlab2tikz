@@ -2316,37 +2316,38 @@ function [stat] = imageOrientation(imagesAsPng)
     stat.extraOptions = {'imagesAsPng', imagesAsPng};
 
     data = magic(3);
+    data = [[0,0,9]; data]; % ensure non-quadratic matrix
 
     subplot(3,2,1);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','normal');
     xlabel('XDir normal');
     set(gca,'YDir','normal');
     ylabel('YDir normal');
 
     subplot(3,2,2);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','reverse');
     xlabel('XDir reverse');
     set(gca,'YDir','normal');
     ylabel('YDir normal');
 
     subplot(3,2,3);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','normal');
     xlabel('XDir normal');
     set(gca,'YDir','reverse');
     ylabel('YDir reverse');
 
     subplot(3,2,4);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','reverse');
     xlabel('XDir reverse');
     set(gca,'YDir','reverse');
     ylabel('YDir reverse');
 
     subplot(3,2,5);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','normal');
     xlabel('XDir normal');
     set(gca,'YDir','reverse');
@@ -2355,7 +2356,7 @@ function [stat] = imageOrientation(imagesAsPng)
     title('like above, but axis off');
 
     subplot(3,2,6);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','reverse');
     xlabel('XDir reverse');
     set(gca,'YDir','reverse');
