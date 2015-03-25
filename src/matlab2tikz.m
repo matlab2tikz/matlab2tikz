@@ -2133,9 +2133,9 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
         'locations of the master TeX file and the included TikZ file.\n'], ...
         pngFileName, pngReferencePath);
 end
+% ==============================================================================
 function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
 % writes an image as raw TikZ commands (STRONGLY DISCOURAGED)
-    str = '';
 
     % set up cData
     if ndims(cData) == 3
@@ -2169,9 +2169,6 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
                 'Array lengths not matching (%d = size(cData,2) ~= length(yData) = %d).', size(cData,2), length(yData));
     end
     Y = yData(1):hY:yData(end);
-
-    m = length(X);
-    n = length(Y);
     [m2t, xcolor] = getColor(m2t, handle, cData, 'image');
 
     % The following section takes pretty long to execute, although in
@@ -2182,12 +2179,19 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     % <http://www.mathworks.de/support/service_requests/Service_Request_Detail.do?ID=183481&filter=&sort=&statusorder=0&dateorder=0>.
     % An alternative approach could be to use 'surf' or 'patch' of pgfplots
     % with inline tables.
-
+    str = '';
+    m = length(X);
+    n = length(Y);
     for i = 1:m
         for j = 1:n
             str = [str, ...
-                sprintf(['\t\\fill [%s] (axis cs:', m2t.ff,',', m2t.ff,') rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
-                xcolor{m-i+1,j}, Y(j)-hY/2,  X(i)-hX/2, Y(j)+hY/2, X(i)+hX/2 )];
+                sprintf(['\t\\fill [%s] ', ...
+                    '(axis cs:', m2t.ff,',', m2t.ff,') rectangle ', ...
+                    '(axis cs:', m2t.ff,',',m2t.ff,');\n'], ...
+                    xcolor{n-j+1,i}, ...
+                    X(i)-hX/2, Y(j)-hY/2, ...
+                    X(i)+hX/2, Y(j)+hY/2 ...
+                    )];
         end
     end
 end
