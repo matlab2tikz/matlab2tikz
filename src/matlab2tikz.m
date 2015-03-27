@@ -1837,15 +1837,9 @@ function [m2t, str] = drawPatch(m2t, handle)
                                          s.edgeColor);
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'fill', ...
                                          s.faceColor);
-
-        if opts_has(patchOptions, 'draw opacity')
-            drawOptions         = opts_add(drawOptions,'draw opacity', ...
-                                            sprintf(m2t.ff, s.edgeAlpha));
-        end
-        if opts_has(patchOptions, 'fill opacity')
-            drawOptions         = opts_add(drawOptions,'fill opacity', ...
-                                            sprintf(m2t.ff, s.faceAlpha));
-        end
+                                     
+        [drawOptions] = opts_copy(patchOptions, 'draw opacity', drawOptions);
+        [drawOptions] = opts_copy(patchOptions, 'fill opacity', drawOptions);
 
     else % Multiple patches
 
@@ -5849,6 +5843,16 @@ function opts = opts_append_userdefined(opts, userDefined)
         for k = 1:length(userDefined)
             opts = opts_append(opts, userDefined{k});
         end
+    end
+end
+function opts = opts_copy(opts_from, name_from, opts, name_to)
+% copies an option (if it exists) from one option array to another one
+    if ~exist('name_to', 'var') || isempty(name_to)
+        name_to = name_from;
+    end
+    if opts_has(opts_from, name_from)
+        value = opts_get(opts_from, name_from);
+        opts = opts_append(opts, name_to, value);
     end
 end
 function opts = opts_remove(opts, varargin)
