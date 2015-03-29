@@ -56,7 +56,7 @@ function cleanfigure(varargin)
   % Set up command line options.
   m2t.cmdOpts = m2tInputParser;
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', [15 9 600], @isValidTargetResolution);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', 600, @isValidTargetResolution);
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
@@ -318,15 +318,31 @@ function simplifyLine(meta, handle, targetResolution)
     % Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
     % simplification.
 
-    % Points per pixel retained before the line simplification. In other
-    % words, how much you can zoom-in before losing resolution.
+    % The figure is pixelated at N times the target resolution before the 
+    % real line simplification. 
     ZOOM_MULTIPLIER = 4;
-
+    
     % Do not simpify
-    if any(isinf(targetResolution))
+    if any(isinf(targetResolution) | targetResolution == 0)
         return
     end
-
+    
+    % Target Pixels Per Inch 
+    if isscalar(targetResolution)
+        PPI       = targetResolution;
+        oldunits  = get(gcf,'Units');
+        set(gcf,'Units','Inches');
+        figSizeIn = get(gcf,'Position'); % query figure size in inches
+        W         = figSizeIn(3);
+        H         = figSizeIn(4);
+        set(gcf,'Units', oldunits) % restore original unit
+    % Target W x H in pixels 
+    else
+        W   = targetResolution(1);
+        H   = targetResolution(2);
+        PPI = 1;
+    end
+    
     % Extract the data from the current line handle.
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
@@ -369,10 +385,12 @@ function simplifyLine(meta, handle, targetResolution)
     else
         yrange = (log10(a(4))-log10(a(3)));
     end
-    tol = xrange*yrange/(ZOOM_MULTIPLIER^2*prod(targetResolution));
-    nPixelsX = targetResolution(1)*sqrt(targetResolution(3));
-    nPixelsY = targetResolution(2)*sqrt(targetResolution(3));
-
+    tol = xrange*yrange/(W*H*PPI^2);
+    
+    % Conversion factors of data units into pixels
+    xToPix = W*PPI/xrange;
+    yToPix = H*PPI/yrange;
+    
     % Split up lines which are seperated by NaNs
     inan   = isnan(vxData) | isnan(vyData);
     df     = diff([false, ~inan, false]);
@@ -391,8 +409,8 @@ function simplifyLine(meta, handle, targetResolution)
         x = xData(pstart(ii):pend(ii));
         y = yData(pstart(ii):pend(ii));
         
-        % Pixelate data up to 4 times the zoom multiplier 
-        mask = pixelate(vx, vy, 4*ZOOM_MULTIPLIER);
+        % Pixelate data at the zoom multiplier 
+        mask = pixelate(vx, vy, xToPix, yToPix, ZOOM_MULTIPLIER);
         vx   = vx(mask);
         vy   = vy(mask);
         x    = x(mask);
@@ -420,13 +438,13 @@ function simplifyLine(meta, handle, targetResolution)
     set(handle, 'XData', xData);
     set(handle, 'YData', yData);
     
-    function mask = pixelate(x, y, multiplier)
+    function mask = pixelate(x, y, xToPix, yToPix, multiplier)
         % Resolution is lost only beyond the multiplier magnification
 
         % Convert data to pixel units, magnify and mark only the first
         % point that occupies a given position
-        mask = [true,diff(round(x/xrange*nPixelsX*multiplier))~=0];
-        mask = [true,diff(round(y/yrange*nPixelsY*multiplier))~=0] | mask;
+        mask = [true,diff(round(x * xToPix * multiplier))~=0];
+        mask = [true,diff(round(y * yToPix * multiplier))~=0] | mask;
 
         % Keep end point or it might truncate a whole pixel
         mask(end) = true;
@@ -817,6 +835,6 @@ function lambda = crossLines(X1, X2, X3, X4)
 end
 % =========================================================================
 function bool = isValidTargetResolution(val)
-    bool = ~any(isnan(val)) && isnumeric(val) && numel(val) == 3;
+    bool = isnumeric(val) && ~any(isnan(val)) && (isscalar(val) || numel(val) == 2);
 end
 % =========================================================================
