@@ -318,10 +318,6 @@ function simplifyLine(meta, handle, targetResolution)
     % Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
     % simplification.
 
-    % The figure is pixelated at N times the target resolution before the 
-    % real line simplification. 
-    ZOOM_MULTIPLIER = 4;
-    
     % Do not simpify
     if any(isinf(targetResolution) | targetResolution == 0)
         return
@@ -378,6 +374,13 @@ function simplifyLine(meta, handle, targetResolution)
     xToPix = W/xrange;
     yToPix = H/yrange;
 
+    % Pixelate data at the zoom multiplier
+    mask   = pixelate(vxData, vyData, xToPix, yToPix);
+    xData  = xData(mask);
+    yData  = yData(mask); 
+    vxData = vxData(mask);
+    vyData = vyData(mask);
+
     % Split up lines which are seperated by NaNs
     inan   = isnan(vxData) | isnan(vyData);
     df     = diff([false, ~inan, false]);
@@ -395,14 +398,7 @@ function simplifyLine(meta, handle, targetResolution)
         % Actual data that inherits the simplifications
         x = xData(pstart(ii):pend(ii));
         y = yData(pstart(ii):pend(ii));
-        
-        % Pixelate data at the zoom multiplier 
-        mask = pixelate(vx, vy, xToPix, yToPix, ZOOM_MULTIPLIER);
-        vx   = vx(mask);
-        vy   = vy(mask);
-        x    = x(mask);
-        y    = y(mask); 
-        
+
         % Line simplification
         if numel(vx) > 2
             area = featureArea(vx,vy);
@@ -424,18 +420,26 @@ function simplifyLine(meta, handle, targetResolution)
     % Update with the new (masked) data
     set(handle, 'XData', xData);
     set(handle, 'YData', yData);
-    
-    function mask = pixelate(x, y, xToPix, yToPix, multiplier)
-        % Resolution is lost only beyond the multiplier magnification
+end
+% =========================================================================
+function mask = pixelate(x, y, xToPix, yToPix)
+    % Rough reduction of data points at a multiple of the target resolution
 
-        % Convert data to pixel units, magnify and mark only the first
-        % point that occupies a given position
-        mask = [true,diff(round(x * xToPix * multiplier))~=0];
-        mask = [true,diff(round(y * yToPix * multiplier))~=0] | mask;
+    % The resolution is lost only beyond the multiplier magnification
+    mult = 2;
 
-        % Keep end point or it might truncate a whole pixel
-        mask(end) = true;
-    end
+    % Convert data to pixel units, magnify and mark only the first
+    % point that occupies a given position
+    mask = diff(round(x * xToPix * mult))~=0;
+    mask = diff(round(y * yToPix * mult))~=0 | mask;
+
+    % Keep end points or it might truncate whole pixels
+    inan         = isnan(x) | isnan(y);
+    df           = diff([false, inan, false]);
+    istart       = df == 1;
+    pend         = find(df == -1)-1;
+    mask(istart) = true;
+    mask(pend)   = true;
 end
 % =========================================================================
 function a = featureArea(x,y)
