@@ -357,17 +357,16 @@ function simplifyLine(meta, handle, targetResolution)
 
     % Automatically guess a tol based on the area of the figure and
     % the area and resolution of the output
-    a = axis(meta.gca);
-    if ~isXlog
-        xrange = (a(2)-a(1));
-    else
-        xrange = (log10(a(2))-log10(a(1)));
+    xLim = xlim(meta.gca);
+    if isXlog
+        xLim = log10(xLim);
     end
-    if ~isYlog
-        yrange = (a(4)-a(3));
-    else
-        yrange = (log10(a(4))-log10(a(3)));
+    xrange = xLim(2)-xLim(1);
+    yLim   = ylim(meta.gca);
+    if isYlog
+        yLim = log10(yLim);
     end
+    yrange = yLim(2)-yLim(1);
     tol    = xrange*yrange/(W*H);
 
     % Conversion factors of data units into pixels
