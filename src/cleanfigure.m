@@ -381,6 +381,14 @@ function simplifyLine(meta, handle, targetResolution)
     vxData = vxData(mask);
     vyData = vyData(mask);
 
+    % Do not simplify the line any further if it has markers
+    hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
+    if hasMarkers
+        set(handle, 'XData', xData);
+        set(handle, 'YData', yData);
+        return
+    end
+
     % Split up lines which are seperated by NaNs
     inan   = isnan(vxData) | isnan(vyData);
     df     = diff([false, ~inan, false]);
