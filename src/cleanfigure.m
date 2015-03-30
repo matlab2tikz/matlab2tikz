@@ -326,23 +326,10 @@ function simplifyLine(meta, handle, targetResolution)
     if any(isinf(targetResolution) | targetResolution == 0)
         return
     end
-    
-    % Target Pixels Per Inch 
-    if isscalar(targetResolution)
-        PPI       = targetResolution;
-        oldunits  = get(gcf,'Units');
-        set(gcf,'Units','Inches');
-        figSizeIn = get(gcf,'Position'); % query figure size in inches
-        W         = figSizeIn(3);
-        H         = figSizeIn(4);
-        set(gcf,'Units', oldunits) % restore original unit
-    % Target W x H in pixels 
-    else
-        W   = targetResolution(1);
-        H   = targetResolution(2);
-        PPI = 1;
-    end
-    
+
+    % Retrieve target figure size in pixels
+    [W, H] = getWidthHeightInPixels(targetResolution);
+
     % Extract the data from the current line handle.
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
@@ -385,12 +372,12 @@ function simplifyLine(meta, handle, targetResolution)
     else
         yrange = (log10(a(4))-log10(a(3)));
     end
-    tol = xrange*yrange/(W*H*PPI^2);
-    
+    tol    = xrange*yrange/(W*H);
+
     % Conversion factors of data units into pixels
-    xToPix = W*PPI/xrange;
-    yToPix = H*PPI/yrange;
-    
+    xToPix = W/xrange;
+    yToPix = H/yrange;
+
     % Split up lines which are seperated by NaNs
     inan   = isnan(vxData) | isnan(vyData);
     df     = diff([false, ~inan, false]);
@@ -616,6 +603,26 @@ function a = featureArea(x,y)
         % Add the element at len+1 in the 'heap' array back into the heap
         len = len+1;
         up(len);
+    end
+end
+% =========================================================================
+function [W, H] = getWidthHeightInPixels(targetResolution)
+    % Retrieves target figure width and height in pixels
+
+    % targetResolution is PPI
+    if isscalar(targetResolution)
+        % Query figure size in inches and convert W and H to target pixels
+        oldunits  = get(gcf,'Units');
+        set(gcf,'Units','Inches');
+        figSizeIn = get(gcf,'Position');
+        W         = figSizeIn(3) * targetResolution;
+        H         = figSizeIn(4) * targetResolution;
+        set(gcf,'Units', oldunits) % restore original unit
+
+    % It is already in the format we want
+    else
+        W = targetResolution(1);
+        H = targetResolution(2);
     end
 end
 % =========================================================================
