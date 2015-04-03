@@ -6,13 +6,15 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
-%   CLEANFIGURE('targetResolution',[W,H,RES],...)  
-%   Reduce the number of data points in the line handle by applying
+%   CLEANFIGURE('targetResolution',PPI,...)  
+%   CLEANFIGURE('targetResolution',[W,H],...)
+%   Reduce the number of data points in line objects by applying
 %   unperceivable changes at the target resolution.
-%   W and H are the target width and height of the figure, e.g. 15x9 cm, and 
-%   RES is the target resolution of a unit square, e.g. 600 pixels per cm^2.
-%   Use targetResolution = Inf, or targetResolution(3) = Inf to disable 
-%   line simplification. (default: [15 9 600])
+%   The target resolution can be specificed as the number of Pixels Per 
+%   Inch (PPI), e.g. 300, or as the Width and Heigth of the figure in 
+%   pixels, e.g. [9000, 5400].
+%   Use targetResolution = Inf or 0 to disable line simplification. 
+%   (default: 600)
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -311,16 +313,14 @@ end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
     % Reduce the number of data points in the line 'handle', first by 
-    % reducing the resolution up to a zoom multiplier and then by 
-    % simplifying the path of the line by ensuring the change is negligible
-    % at the target resolution.
+    % reducing the resolution up to a zoom multiplier (see pixelate) and 
+    % then by simplifying the path of the line by ensuring the change is 
+    % negligible at the target resolution.
     %
-    % 'targetResolution' is in format [W,H,RES], where W and H are the
-    % target width and height of the figure, and RES is the target 
-    % resolution in points of a unit square. (default: [15 9 600])
-    %
-    % Use targetResolution = Inf, or targetResolution(3) = Inf to disable line
-    % simplification.
+    % The target resolution is either specificed as the number of PPI or as
+    % the [Width, Heigth] of the figure in pixels.
+    % A scalar value of INF or 0 disables line simplification. 
+    % (default = 600)
 
     % Do not simpify
     if any(isinf(targetResolution) | targetResolution == 0)
@@ -464,7 +464,7 @@ function a = featureArea(x,y)
     % in the path.
     % The algorithm builds the list of areas sequentially and the final
     % simplification filters out only those points whose area is below a
-    % certain threshold, i.e. the perceived change is negligible.
+    % certain threshold such that the perceived change is negligible.
     %
     % For a graphical example see: http://bost.ocks.org/mike/simplify/
     %
