@@ -437,8 +437,8 @@ function mask = pixelate(x, y, xToPix, yToPix)
 
     % Convert data to pixel units, magnify and mark only the first
     % point that occupies a given position
-    mask = diff(round(x * xToPix * mult))~=0;
-    mask = diff(round(y * yToPix * mult))~=0 | mask;
+    mask = [true, diff(round(x * xToPix * mult))~=0];
+    mask = [true, diff(round(y * yToPix * mult))~=0] | mask;
 
     % Keep end points or it might truncate whole pixels
     inan         = isnan(x) | isnan(y);
