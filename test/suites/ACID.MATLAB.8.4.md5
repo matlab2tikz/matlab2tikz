@@ -26,10 +26,10 @@ fill3plot : 995eb99466ada66f78c88a9ac732dcf2
 freqResponsePlot : 85cbaaaa71a8eedb2712d5e1412126a5
 herrorbarPlot : 7922da8d681788cda856f8ceb9dd3a62
 hgTransformPlot : 73c0fa3b931b75e0182f7ab0666dff27
-hist3d : a3a135f4dbf3dc1d21e8590010aa8e29
+hist3d : 06a50a0b322410ffa85b87255ee1a594
 histogramPlot : 3898e4fb6c94f7534de400529f6b92c1
-imageOrientation_PNG : 26ba989c03d48b49abbe8fc896cd3c55
-imageOrientation_inline : 0ae2992741bf24e56aec63b63b2c65dc
+imageOrientation_PNG : 7ab79beaea75eda20fce136b22eae715
+imageOrientation_inline : 8aaf397078fbd5db2313dd5c56625ea3
 imagescplot : bcb86d0e7ba6e359b933bf7772fc41b7
 imagescplot2 : 41efa59b0df26b6ae976ec551253a45a
 latexInterpreter : a75b97159c46a1422e19354e54d0ec70
