@@ -3526,6 +3526,10 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     else
         drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
     end
+
+    % Toggle legend entry
+    drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
+
     drawOpts = opts_print(m2t, drawOptions, ',');
 
     % plot the thing
@@ -3769,7 +3773,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
 
     filling = get(handle, 'FaceColor');
 
-    %% Has a filling?
+    % Has a filling?
     if isNone(filling)
         drawOptions = opts_add(drawOptions, xcolor);
         drawCommand = '\draw';
