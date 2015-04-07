@@ -719,11 +719,15 @@ switch getEnvironment
         [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child);
 
     case 'Octave'
-        % Octave associates legends with axes, not with (line) plot.
+        % Octave does not store a reference to the legend entry in the
+        % plotted objects. It references the plotted objects in reverse,
+        % in the legend's 'deletefcn' property.
         % The variable m2t.gcaHasLegend is set in drawAxes().
-        hasLegend = ~isempty(m2t.gcaAssociatedLegend);
-        interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
-        legendString = getOrDefault(child,'displayname','');
+        delfun           = get(m2t.gcaAssociatedLegend,'deletefcn');
+        legendEntryPeers = delfun{6};
+        hasLegend        = ismember(child, legendEntryPeers);
+        interpreter      = get(m2t.gcaAssociatedLegend, 'interpreter');
+        legendString     = getOrDefault(child,'displayname','');
 
     otherwise
         errorUnknownEnvironment();
