@@ -825,13 +825,6 @@ function m2t = drawAxes(m2t, handle)
 
     m2t = retrievePositionOfAxes(m2t, handle);
 
-    % set the aspect ratio
-    if ~isempty(pos.aspectRatio)
-        m2t.axesContainers{end}.options = opts_add(...
-            m2t.axesContainers{end}.options, 'plot box ratio', ...
-            formatDim(pos.aspectRatio));
-    end
-    
     % Axis direction
     for axis = 'xyz'
         m2t.([axis 'AxisReversed']) = ...
@@ -988,6 +981,13 @@ function m2t = retrievePositionOfAxes(m2t, handle)
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
             'scale only axis', []);
+    end
+
+    % set the aspect ratio
+    if ~isempty(pos.aspectRatio)
+        m2t.axesContainers{end}.options = opts_add(...
+            m2t.axesContainers{end}.options, 'plot box ratio', ...
+            formatDim(pos.aspectRatio));
     end
 end
 % ==============================================================================
