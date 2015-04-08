@@ -4908,8 +4908,8 @@ function position = getAxesPosition(m2t, handle, widthString, heightString, axes
     position.h.value = relPos(4) * figDim.y.value;
     position.h.unit  = figDim.y.unit;
     
-    if (strcmpi(get(handle, 'DataAspectRatioMode'), 'manual') ...
-            || strcmpi(get(handle, 'PlotBoxAspectRatioMode'), 'manual'))
+    if strcmpi(get(handle, 'DataAspectRatioMode'), 'manual') ||...
+       strcmpi(get(handle, 'PlotBoxAspectRatioMode'), 'manual')
         % we need to set the plot box aspect ratio
         position.aspectRatio = getPlotBoxAspectRatio(handle);
     else
@@ -5010,17 +5010,16 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
     end
 end
 % ==============================================================================
-function aspectRatio=getPlotBoxAspectRatio(axesHandle)
-    limits=axis(axesHandle);
+function aspectRatio = getPlotBoxAspectRatio(axesHandle)
+    limits = axis(axesHandle);
     if any(isinf(limits))
-        aspectRatio=get(axesHandle,'PlotBoxAspectRatio');
+        aspectRatio = get(axesHandle,'PlotBoxAspectRatio');
     else
         % DataAspectRatio has priority
-        dataAspectRatio=get(axesHandle,'DataAspectRatio');
-        for i=1:length(limits)/2
-            aspectRatio(i)=abs(limits(2*i-1)-limits(2*i))/dataAspectRatio(i);
-        end
-        aspectRatio=aspectRatio/min(aspectRatio);
+        dataAspectRatio = get(axesHandle,'DataAspectRatio');
+        limits          = reshape(limits, 2, length(limits)/2)';
+        aspectRatio     = abs(limits(:,2) - limits(:,1))./dataAspectRatio(:);
+        aspectRatio     = aspectRatio/min(aspectRatio);
     end
 end
 % ==============================================================================
