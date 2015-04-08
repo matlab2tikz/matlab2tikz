@@ -2369,14 +2369,23 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     % Plot
     columnNames = {'x','y'};
     for ii = 1:ncont + 1
+        drawOpts = opts_new();
+
         % Get color
         zval          = cellcont{ii}(1,1);
         [m2t, xcolor] = getColor(m2t,h,zval,'image');
+        drawOpts      = opts_add(drawOpts,'fill',xcolor);
+
+        % Toggle legend entry
+        hasLegend = ii == 1 && m2t.currentHandleHasLegend;
+        drawOpts  = maybeShowInLegend(hasLegend, drawOpts);
+
         % Print table
         [m2t, table, tabOpts] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
+
         % Fillplot
-        str = sprintf('%s\\addplot[fill=%s] table[%s] {%%\n%s};\n', ...
-            str, xcolor{1}, opts_print(m2t, tabOpts, ','), table);
+        str = sprintf('%s\\addplot[%s] table[%s] {%%\n%s};\n', ...
+            str, opts_print(m2t,drawOpts,','), opts_print(m2t,tabOpts,','), table);
     end
 end
 % ==============================================================================
