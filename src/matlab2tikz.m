@@ -5017,8 +5017,9 @@ function aspectRatio = getPlotBoxAspectRatio(axesHandle)
     else
         % DataAspectRatio has priority
         dataAspectRatio = get(axesHandle,'DataAspectRatio');
-        limits          = reshape(limits, 2, length(limits)/2)';
-        aspectRatio     = abs(limits(:,2) - limits(:,1))./dataAspectRatio(:);
+        nlimits         = length(limits)/2;
+        limits          = reshape(limits, 2, nlimits);
+        aspectRatio     = abs(limits(2,:) - limits(1,:))./dataAspectRatio(1:nlimits);
         aspectRatio     = aspectRatio/min(aspectRatio);
     end
 end
