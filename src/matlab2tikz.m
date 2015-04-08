@@ -1002,7 +1002,6 @@ function m2t = retrievePositionOfAxes(m2t, handle)
     %     m2t.unitlength.y.unit = pos.h.unit;
     %     yLim = get(m2t.currentHandles.gca, 'YLim');
     %     m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
-
 end
 % ==============================================================================
 function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
