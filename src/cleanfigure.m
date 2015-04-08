@@ -371,26 +371,27 @@ function simplifyLine(meta, handle, targetResolution)
         yLim = log10(yLim);
     end
     yrange = yLim(2)-yLim(1);
-    tol    = xrange*yrange/(W*H);
 
     % Conversion factors of data units into pixels
     xToPix = W/xrange;
     yToPix = H/yrange;
 
-    % Pixelate data at the zoom multiplier
-    mask   = pixelate(vxData, vyData, xToPix, yToPix);
-    xData  = xData(mask);
-    yData  = yData(mask); 
-    vxData = vxData(mask);
-    vyData = vyData(mask);
-
-    % Do not simplify the line any further if it has markers
+    % If the path has markers, perform pixelation instead of simplification
     hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
     if hasMarkers
+        % Pixelate data at the zoom multiplier
+        mask   = pixelate(vxData, vyData, xToPix, yToPix);
+        xData  = xData(mask);
+        yData  = yData(mask); 
         set(handle, 'XData', xData);
         set(handle, 'YData', yData);
         return
     end
+
+    xPixelWidth = 1/xToPix;
+    yPixelWidth = 1/yToPix;
+    tol = min(xPixelWidth,yPixelWidth);
+
 
     % Split up lines which are seperated by NaNs
     inan   = isnan(vxData) | isnan(vyData);
@@ -412,9 +413,9 @@ function simplifyLine(meta, handle, targetResolution)
 
         % Line simplification
         if numel(vx) > 2
-            area = featureArea(vx,vy);
-            x    = x(area>tol);
-            y    = y(area>tol);
+            mask = opheimSimplify(vx,vy,tol);
+            x    = x(mask);
+            y    = y(mask);
         end
 
         % Place eventually simplified lines segments on odd positions
@@ -453,171 +454,51 @@ function mask = pixelate(x, y, xToPix, yToPix)
     mask(pend)   = true;
 end
 % =========================================================================
-function a = featureArea(x,y)
-    % The function uses Visvalingam's line simplification algorithm to skip
-    % points on the path defined by X and Y, and returns the vector of
-    % areas A affected by each of these changes.
-    %
-    % Every time a point is removed from the path, the algorithm calculates
-    % the area of the triangle formed by the skipped point and its
-    % neighbors. The bigger the area, the stronger is the perceived change
-    % in the path.
-    % The algorithm builds the list of areas sequentially and the final
-    % simplification filters out only those points whose area is below a
-    % certain threshold such that the perceived change is negligible.
-    %
-    % For a graphical example see: http://bost.ocks.org/mike/simplify/
-    %
-    % Runtime is O(n log(n))
-    %
-    % Used by 'simplifyLine'.
+function mask = opheimSimplify(x,y,tol)
+    % Opheim path simplification algorithm
+    
+    mask = false(size(x));
+    mask(1) = true;
+    mask(end) = true;
 
-    % The algorithm simplifies the path in ascending order of the changed
-    % area. Every time a point is skipped, the two adjacent areas have to
-    % be recalculated and a new minimum has to be found. The implementation
-    % takes advantage of a min heap and a linked list of vertices (see
-    % http://en.wikipedia.org/wiki/Binary_heap)
+    N = numel(x);
 
-    n = numel(x);
-
-    % Index of next and previous elements in the linked list which defines
-    % the path
-    linkedList = [(0:n-1)',[(2:n)';0]];
-
-    % 'heap' stores the points in an (implicit) heap, referenced by their index.
-    % First and last points are assumed fixed and not added to the heap.
-    heap = (2:n-1)';
-    len = numel(heap);
-
-    % 'pos' stores the current position of each point in the heap array.
-    % Needed to lookup position of points when their neighbours are updated.
-    %
-    % pos(i) = 0 denotes that the elements are not in the heap.
-    pos = [0;(1:len)';0];
-
-    % Area of the triangle with verticies at index i, j and k in the line.
-    % See http://en.wikipedia.org/wiki/Triangle#Using_coordinates (Shoelace
-    % formula)
-    area = @(i,j,k) abs((y(j) - y(k)).*x(i) + (y(k)-y(i)).*x(j) + ...
-        (y(i)-y(j)).*x(k))/2;
-
-    % Endpoints are assigned infinte area so they can't be removed
-    a = [Inf;area((1:n-2)', (2:n-1)', (3:n)')';Inf];
-
-    % Keep track of the maximum area removed so far to ensure
-    % a given element will only be excluded after earlier elements
-    maxArea = 0;
-
-    % Heapify the 'heap' array based on the area, using Floyd's alg
-    root = bitshift(len,-1); %starting with the first parent node
-    while root >= 1
-        down(root);
-        root = root-1;
-    end
-
-    % Now iteratively remove the point associated with the minimum area from
-    % the path, and update it's neighbours
-    while len > 1
-        % Ensure the current element is excluded only after the elements
-        % which were removed earlier
-        if a(heap(1)) > maxArea
-            maxArea = a(heap(1));
-        else
-            a(heap(1)) = maxArea;
+    i = 1;
+    while i <= N-2
+        % Find the first point farther away than `tol`
+        j = i+1;
+        v = [x(j)-x(i); y(j)-y(i)];
+        while norm(v) <= tol 
+            j = j+1;
+            v = [x(j)-x(i); y(j)-y(i)];
         end
+        v = v/norm(v);
 
-        % Remove smallest element from heap
-        e = pop(1);
+        % Unit normal to the line between point i and point j
+        normal = [v(2);-v(1)];
 
-        % Remove same element from linked list
-        left = linkedList(e,1);
-        right = linkedList(e,2);
-        linkedList(left,2) = linkedList(e,2);
-        linkedList(right,1) = linkedList(e,1);
-
-        % Update area of neighbouring points (unless ends points)
-        if linkedList(left,1) > 0
-            a(left) = area(linkedList(left,1),left,linkedList(left,2));
-            pop(pos(left));
-            push();
-        end
-
-        if linkedList(right,2) > 0
-            a(right) = area(linkedList(right,1),right,linkedList(right,2));
-            pop(pos(right));
-            push();
-        end
-    end
-
-    % Update the last element on the heap
-    if numel(heap) >0 &&  a(heap(1)) < maxArea
-        a(heap(1)) = maxArea;
-    end
-
-    % Heap utility functions
-    function down(root)
-        % Move element at "root" down the heap, assuming the heap property
-        % is satisfied for the rest of the tree
-        while 2*root  <= len %while the root has a child
-            lchild = 2*root;
-            rchild = lchild+1;
-            % Find the minimum of the root and its children
-            minimum = root;
-            if a(heap(lchild)) < a(heap(minimum))
-                minimum = lchild;
-            end
-            if rchild <= len && (a(heap(rchild)) < a(heap(minimum)))
-                minimum = rchild;
-            end
-
-            if minimum == root
-                % if the root is the minimum, then we're done
-                break
-            else
-                % otherwise, swap the root and its minimum child and continue
-                pos(heap([root,minimum])) = [minimum,root];
-                heap([root,minimum]) = heap([minimum,root]);
-                root = minimum;
-            end
-        end
-    end
-
-    function up(child)
-        % Move element up the heap until it finds the correct position
-        while child > 1
-            parent = bitshift(n,-1);
-            if a(heap(child)) < a(heap(parent))
-                % If this element is less than its parent, swap them
-                pos(heap([parent,child])) = [child,parent];
-                heap([parent,child]) = heap([child,parent]);
-                child = parent;
-            else
-                % Otherwise the heap property is restored
+        % Find the last point which is within `tol` of this line,
+        % or the last point before a pi/2 direction change
+        j = j+1;
+        while j <= N 
+            % Calculate the perpendicular distance from the i->j line
+            v1 = [x(j)-x(i); y(j)-y(i)];
+            d = abs(normal'*v1);
+            if d > tol
                 break
             end
+
+            % Calculate the angle change from the i->j line
+            v2 = [x(j)-x(j-1); y(j)-y(j-1)];
+            d2 = norm(v2);
+            anglecosine = v'*v2;
+            if anglecosine <= 0;
+                break
+            end
+            j = j + 1;
         end
-    end
-
-    function e = pop(i)
-        % Remove element at position i off the heap and return its value
-
-        e = heap(i);
-
-        % Swap the first and the last
-        pos(heap([i,len])) = [len,i];
-        heap([i,len]) = heap([len,i]);
-
-        % Remove the last element from the heap
-        len = len-1;
-
-        % Move the new ith element down the heap until it finds the correct spot
-        down(i);
-    end
-
-    function push()
-        % Add the element at len+1 in the 'heap' array back into the heap
-        len = len+1;
-        up(len);
+        i = j-1;
+        mask(i) = true;
     end
 end
 % =========================================================================
