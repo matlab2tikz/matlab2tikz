@@ -3454,11 +3454,11 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     lineWidth = get(h, 'LineWidth');
     marker    = get(h, 'Marker');
 
-    if ((isNone(lineStyle) || lineWidth==0) && isNone(marker))
+    if (isNone(lineStyle) || lineWidth==0) && isNone(marker)
         return % nothing to plot!
     end
 
-    %% deal with draw options
+    % deal with draw options
     color = get(h, 'Color');
     [m2t, plotColor] = getColor(m2t, h, color, 'patch');
 
@@ -3470,10 +3470,13 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     drawOptions = opts_add(drawOptions, 'color', plotColor);
     drawOptions = opts_merge(drawOptions, lineOptions, markerOptions);
 
-    %% insert draw options
-    drawOpts =  opts_print(m2t, drawOptions, ',');
+    % Toggle legend entry
+    drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
 
-    %% plot the thing
+    % insert draw options
+    drawOpts = opts_print(m2t, drawOptions, ',');
+
+    % plot the thing
     xData = get(h, 'XData');
     yData = get(h, 'YData');
     [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
@@ -3523,6 +3526,10 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     else
         drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
     end
+
+    % Toggle legend entry
+    drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
+
     drawOpts = opts_print(m2t, drawOptions, ',');
 
     % plot the thing
@@ -3766,7 +3773,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
 
     filling = get(handle, 'FaceColor');
 
-    %% Has a filling?
+    % Has a filling?
     if isNone(filling)
         drawOptions = opts_add(drawOptions, xcolor);
         drawCommand = '\draw';

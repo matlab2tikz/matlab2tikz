@@ -4,7 +4,7 @@ annotationAll : 38e1f845b613f5e1b616df2d8e7fdc72
 annotationSubplots : 7f2b6c865ef1db561faed58714babbc2
 annotationText : 7d84c8fe322ac47f304f44f2c94db3e1
 annotationTextUnits : 21b9d79658c1afc18b0a7ad64836143e
-areaPlot : 2dd1a3abd3276f64cc62e3e35119b580
+areaPlot : eac896ed3c483be2747cf1432fb5879e
 axesColors : 07bba31089e5d3a41b4c188517b502c9
 axesLocation : f519f61ef3045d088e2ae0107273985e
 bars : e95705931907e154cc58f9ee2766850c
@@ -78,7 +78,7 @@ sine_with_markers : c7395ad70f98cec64c307e89392467cc
 spectro : aceff5ac5c6c49079a6fa80f2ea2483a
 spherePlot : b185d8d77ac586f84648a220d95df5ec
 stackedBarsWithOther : 4b40c7f871c204e02744e7dbf670e7f0
-stairsplot : 85aa9e5aebaca180a2d4f0ea69af8f41
+stairsplot : af0a4693e85345bd1fe3e8f3d1e37882
 stemplot : 7df754dc7dd381c105158054a9719a57
 stemplot2 : 2d8c2c0ad363b6dfdde2b63fbe810440
 subplot2x2b : af7dabaa6c7cc1c3bb8c29d76cc66ae3
