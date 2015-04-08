@@ -5030,7 +5030,7 @@ function out = extractValueUnit(str)
 
     % Regular expression to match '4.12cm', '\figurewidth', ...
     fp_regex = '[-+]?\d*\.?\d*(?:e[-+]?\d+)?';
-    pattern = strcat('(', fp_regex, ')?', '(\\?[a-z]+)');
+    pattern = strcat('(', fp_regex, ')?', '(\\?[a-zA-Z]+)');
 
     [dummy,dummy,dummy,dummy,t,dummy] = regexp(str, pattern, 'match'); %#ok
 
