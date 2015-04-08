@@ -468,7 +468,7 @@ function mask = opheimSimplify(x,y,tol)
         % Find the first point farther away than `tol`
         j = i+1;
         v = [x(j)-x(i); y(j)-y(i)];
-        while norm(v) <= tol 
+        while j < N && norm(v) <= tol 
             j = j+1;
             v = [x(j)-x(i); y(j)-y(i)];
         end
