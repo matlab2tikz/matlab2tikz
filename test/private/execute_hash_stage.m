@@ -23,6 +23,7 @@ end
 % ==============================================================================
 function hash = getReferenceHash(status, ipp)
     % retrieves a reference hash from a hash table
+    % WARNING: do not make `hashTable` persistent, since this is slower
 
     hashTable = loadHashTable(ipp.Results.testsuite);
     if isfield(hashTable.contents, status.function)
