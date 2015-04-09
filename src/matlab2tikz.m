@@ -722,12 +722,14 @@ switch getEnvironment
         % Octave does not store a reference to the legend entry in the
         % plotted objects. It references the plotted objects in reverse,
         % in the legend's 'deletefcn' property.
-        % The variable m2t.gcaHasLegend is set in drawAxes().
-        delfun           = get(m2t.gcaAssociatedLegend,'deletefcn');
-        legendEntryPeers = delfun{6};
-        hasLegend        = ismember(child, legendEntryPeers);
-        interpreter      = get(m2t.gcaAssociatedLegend, 'interpreter');
-        legendString     = getOrDefault(child,'displayname','');
+        % The variable m2t.gcaAssociatedLegend is set in drawAxes().
+        if ~isempty(m2t.gcaAssociatedLegend)
+            delfun           = get(m2t.gcaAssociatedLegend,'deletefcn');
+            legendEntryPeers = delfun{6}; % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m  
+            hasLegend        = ismember(child, legendEntryPeers);
+            interpreter      = get(m2t.gcaAssociatedLegend, 'interpreter');
+            legendString     = getOrDefault(child,'displayname','');
+        end
 
     otherwise
         errorUnknownEnvironment();
