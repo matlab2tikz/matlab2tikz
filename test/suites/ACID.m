@@ -648,8 +648,9 @@ end
 function [stat] = stairsplot()
   stat.description = 'A simple stairs plot.' ;
 
-  x = linspace(-2*pi,2*pi,40);
-  stairs(x,sin(x))
+  x = linspace(-2*pi,2*pi,40)';
+  h = stairs([sin(x), 0.2*cos(x)]);
+  legend(h(2),'second entry')
 end
 % =========================================================================
 function [stat] = quiverplot()
@@ -1883,8 +1884,8 @@ function [stat] = areaPlot()
 
   M = magic(5);
   M = M(1:3,2:4);
-  area(1:3, M);
-  legend('foo', 'bar', 'foobar');
+  h = area(1:3, M);
+  legend(h([1,3]),'foo', 'foobar');
 end
 % =========================================================================
 function [stat] = customLegend()
@@ -2317,37 +2318,38 @@ function [stat] = imageOrientation(imagesAsPng)
     stat.extraOptions = {'imagesAsPng', imagesAsPng};
 
     data = magic(3);
+    data = [[0,0,9]; data]; % ensure non-quadratic matrix
 
     subplot(3,2,1);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','normal');
     xlabel('XDir normal');
     set(gca,'YDir','normal');
     ylabel('YDir normal');
 
     subplot(3,2,2);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','reverse');
     xlabel('XDir reverse');
     set(gca,'YDir','normal');
     ylabel('YDir normal');
 
     subplot(3,2,3);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','normal');
     xlabel('XDir normal');
     set(gca,'YDir','reverse');
     ylabel('YDir reverse');
 
     subplot(3,2,4);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','reverse');
     xlabel('XDir reverse');
     set(gca,'YDir','reverse');
     ylabel('YDir reverse');
 
     subplot(3,2,5);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','normal');
     xlabel('XDir normal');
     set(gca,'YDir','reverse');
@@ -2356,7 +2358,7 @@ function [stat] = imageOrientation(imagesAsPng)
     title('like above, but axis off');
 
     subplot(3,2,6);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','reverse');
     xlabel('XDir reverse');
     set(gca,'YDir','reverse');
