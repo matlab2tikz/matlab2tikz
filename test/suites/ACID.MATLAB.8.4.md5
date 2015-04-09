@@ -4,7 +4,7 @@ annotationAll : 0d7d576162a5206151936ab6af33800f
 annotationSubplots : 8695a70240fe1ae9e91e0789b9ece965
 annotationText : 5dc44d67214acaf165805353857df185
 annotationTextUnits : 06cf11ed384c74367ac33af7bb39fd6c
-areaPlot : 1f41b17d25edd18e4b3a835cd9ff6224
+areaPlot : 1b4c4aff9b173534d2baefb8b7fe1cc7
 axesColors : 0e875454d391264baa133f34fd39db16
 axesLocation : a166517121d3405a7be66fbe19389606
 bars : a23bc34ad5753f4c26c8830bd4dd90c3
@@ -28,8 +28,8 @@ herrorbarPlot : 8513e5d0b77723bcafbbe14c7d63e915
 hgTransformPlot : ad047b1a350e7e3b4a54c5bc94981452
 hist3d : f1a84973d7ba1a978bd953280dda43b9
 histogramPlot : 186203076c189b60654bceeeb49bbfb7
-imageOrientation_PNG : af30b6242e211c411c2ef6337bf62f0a
-imageOrientation_inline : 0047a14cb23e6363442e278d3ff3cebc
+imageOrientation_PNG : 2e28f19e61d2ca5a0f9e27c498567d61
+imageOrientation_inline : d04f1888dccbcc882d27e1e82f065df3
 imagescplot : 4f5b7247d960d8bfa0d416cf37b3400e
 imagescplot2 : c6de1af0e0f8ec58349ef3489b581a8e
 latexInterpreter : 7f9957c8c30d46654053ff4b72a07801
@@ -42,7 +42,7 @@ logbaseline : 1d27e98aec92070dc70d38fcb22177cc
 logicalImage : f30f1709e7e387d994fe0b0ef84b369a
 logplot : b53044e62cc3f959a53574d878ea157f
 mandrillImage : 052a99d1b6de8ca1c3793202fcb5db33
-manualAlignment : 8f3496f0248c332a05c90288de69d831
+manualAlignment : 4998fd5fe4e1a040db3efe0798285730
 many_random_points : 031d657ad6f05ee397ef763b2bb3ade6
 markerSizes : e954b6d32546a71d26570df32be5d74f
 markerSizes2 : 9b357db95ac6d6b998b0007978805645
@@ -78,7 +78,7 @@ sine_with_markers : c76dea8318384b16d4586e90841ca3c6
 spectro : cf95ae48c29eeccbf62629314955a6c8
 spherePlot : 76491be7d27da686c2c3736bc9f1aa49
 stackedBarsWithOther : af92ecb46c9f99663e4719bde03ce457
-stairsplot : 8d97cc8c92f2b57b2fad249e642320e0
+stairsplot : 43d9656feca8884a57082f7183dc881f
 stemplot : 9d1b6a9707289c797cc59ee2005bf57c
 stemplot2 : a8f8ea1c09ae21257c37727ed4d7db1f
 subplot2x2b : ae1dad5878f79954215069f74ac3f6d2
@@ -93,6 +93,6 @@ textAlignment : 1ea1552e69585481bc15a2978100aaf2
 textext : b4ebecfdb4682909569306c7a642be4a
 xAxisReversed : a84a6a7449850a61a9befc3eef1c487c
 ylabels : dfdee9697ddb64e238387f27fc4bf7de
-zoom : b511019507d6c255a26b259e273beb99
-zplanePlot1 : 386a7ebc2fb4df98986bc2f201eea3a5
+zoom : a0ead294812f405402a8c85af4da4125
+zplanePlot1 : 2ab536f7964f9390ca9a8e3a1320d6ec
 zplanePlot2 : dea6dd06d6f4eff417569707a9c3693f
