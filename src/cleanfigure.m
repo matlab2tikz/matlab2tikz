@@ -452,13 +452,48 @@ end
 % =========================================================================
 function mask = opheimSimplify(x,y,tol)
     % Opheim path simplification algorithm
+    %
+    % Given a sequence of vertices `v` and a tolerance `tol`, the 
+    % algorithm progresses as:
+    %
+    % 1. Select first vertex as the `key` point. 
+    % 2. Find the first vertex after the key which is farther than `tol` away
+    % from the key, and construct a `line` between the key and this vertex.
+    % 3. Find the first vertex after the key which is farther than `tol` away
+    % from this `line`. The vertex previous to this is considered the last point
+    % on this `line`, and all points between the key and this last point are
+    % removed from the path.
+    % 4. Use the last point on the line as the new key and continue from step 2.
+    %
+    % The Opheim algorithm given above can produce unexpected results when the
+    % path changes direction while staying within `tol` of the line. This
+    % behaviour can be seen in an example given by Oleg Komarov:
+    % 
+    % With
+    %      x = [1,2,2,2,3], 
+    %      y = [1,1,2,1,1], 
+    %      tol < 1, 
+    %
+    % The simplification algorithm undesirably removes the second last point.
+    %
+    % To rectify this issues, this implementation modifies step 3 of above. As
+    % finishing a line when a point is farther than `tol` from it, this
+    % implementation ends a line at vertex `j` when the line segment
+    % `v(j)->v(j+1)` is at an angle larger than 90 degrees to the line in
+    % consideration.
+    %
+    %
+    %The modified rule 3 is then:
+    %
+    % 3*. Find the first vertex after the key which is farther than `tol` away
+    % from this `line`, or for which the line between this vertex and the 
+    % preceding creates an angle larger than 90 degrees to `line`. 
     
     mask = false(size(x));
     mask(1) = true;
     mask(end) = true;
 
     N = numel(x);
-
     i = 1;
     while i <= N-2
         % Find the first point farther away than `tol`
@@ -475,25 +510,25 @@ function mask = opheimSimplify(x,y,tol)
 
         % Find the last point which is within `tol` of this line,
         % or the last point before a pi/2 direction change
-        j = j+1;
-        while j <= N 
+        while j < N 
             % Calculate the perpendicular distance from the i->j line
-            v1 = [x(j)-x(i); y(j)-y(i)];
-            d = abs(normal'*v1);
+            v1 = [x(j+1)-x(i); y(j+1)-y(i)];
+            d = abs(normal.'*v1);
             if d > tol
                 break
             end
 
-            % Calculate the angle change from the i->j line
-            v2 = [x(j)-x(j-1); y(j)-y(j-1)];
-            d2 = norm(v2);
-            anglecosine = v'*v2;
+            % Calculate the angle between the line from the i->j and the
+            % line from j -> j+1. If 
+            v2 = [x(j+1)-x(j); y(j+1)-y(j)];
+            anglecosine = v.'*v2;
             if anglecosine <= 0;
                 break
             end
+            
             j = j + 1;
         end
-        i = j-1;
+        i = j;
         mask(i) = true;
     end
 end
