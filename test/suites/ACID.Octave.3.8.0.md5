@@ -3,7 +3,7 @@ alphaTest : 9d458c612443b2057184427c91bdd5ce
 areaPlot : 72a4df5efbd80d355dd7558521d9636f
 axesColors : cc0a6def293580e4f51790dfb477d632
 axesLocation : 5ba110beaee8adc0f969effd8ab68e4b
-bars : fee1a09f11d4dfe717e7ff955fe6f709
+bars : 55072bf6c059de13423d9bdf40db9c90
 besselImage : 35c26ed361d80b82c5f83837d6b7f4d2
 colorbarLabelTitle : 8b9d25fac41ea619c95b263e30abff07
 colorbarLogplot : 152fd5bdbd824d9a4207f7a4fc427f14
@@ -12,7 +12,7 @@ customLegend : 3e6a05052db192da02141c5f185b72f4
 decayingharmonic : a5dd73358c35855afae869b8c1b3997b
 double_axes : 615382aeda96510099251721d5665900
 double_axes2 : 153b427621b503e3c5f94191d5394f85
-errorBars : 51299b4a9a7bc8a5e9c5edfb2c878315
+errorBars : 7e2c307d818f3e8cca8a8ba7e8c36a10
 errorBars2 : 7404a93a8fd296c8e28cc5f4defd40a7
 herrorbarPlot : 7aacc86c806dc57ac703795ca15dc404
 imageOrientation_PNG : 26a169482b6411920b90c461e7802f5c
@@ -33,7 +33,7 @@ many_random_points : 374713dc2a9207ff84f5be02744a0221
 markerSizes : 1350d8a18bbda71b304f4aa33e098cee
 markerSizes2 : 80026712a82f5d7687660e9407c0c33c
 meshPlot : ff0b5974035b9c5072464b3171028064
-mixedBarLine : e5e418df71b0c53a842cbe47879b074b
+mixedBarLine : b585c15e76d35fd8126f41729d0118d9
 moreLegends : b26e9ba2f8b19babaf63e01aa8b728f2
 multiline_labels : 977ece9c724920cb35377241c79b5a52
 multipleAxes : 29c7614859af35f16c18cf0438e9a1db
@@ -58,7 +58,7 @@ scatterPlotRandom : 124508324ea957ce1880c2f7358af1a2
 sine_with_annotation : e5c5e6af1965d21556c589a4ceb73096
 sine_with_markers : 60a205fbfb299cf86891afb1751ba18b
 spherePlot : e1430fbae3687d38b092c5ed8d080283
-stackedBarsWithOther : 5234f0a0466c3b41bdf20f5c787b73ac
+stackedBarsWithOther : eecfc62b6570b71edc60325fdf305ee7
 stairsplot : f06b194a550ce5e7836c7a882bb1f65b
 stemplot : d5a5d808c1471b4b10f671d8dfb07d61
 stemplot2 : 9f819acf72671be9d8cc280d3fffa065
