@@ -154,6 +154,36 @@ function [status] = ACID(k)
 
 end
 % =========================================================================
+function data = ACID_data()
+  % Data to be used for various ACID tests
+  % This ensures the tests don't rely on functions that yield
+  % non-deterministic output, e.g. `rand` and `svd`.
+  data = [    11    11     9
+               7    13    11
+              14    17    20
+              11    13     9
+              43    51    69
+              38    46    76
+              61   132   186
+              75   135   180
+              38    88   115
+              28    36    55
+              12    12    14
+              18    27    30
+              18    19    29
+              17    15    18
+              19    36    48
+              32    47    10
+              42    65    92
+              57    66   151
+              44    55    90
+             114   145   257
+              35    58    68
+              11    12    15
+              13     9    15
+              10     9     7];
+end
+% =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
   stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
@@ -372,7 +402,6 @@ function [stat] = randomWithLines()
   t = 1:150;
   X = [sin(t); cos(beta * t)].';
 
-  %X = randn(150,2);
   X(:,1) = (X(:,1) * 90) + 75;
   plot(X(:,1),X(:,2),'o');
   hold on;
@@ -588,7 +617,6 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
-  stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -602,8 +630,8 @@ function [stat] = bars()
   end
 
   % dataset stacked
-  [data,dummy,dummy] = svd(magic(7)); %#ok
-  Y = round(abs(data(2:6,2:4))*10);
+  data = ACID_data;
+  Y = round(abs(data(2:6,1:3))/10);
 
   subplot(2,2,1);
   b1 = bar(bins,plotData,'grouped','BarWidth',1.5);
@@ -729,11 +757,10 @@ end
 % =========================================================================
 function [stat] = logicalImage()
   stat.description = 'An image plot of logical matrix values.' ;
-  stat.unreliable = isOctave; %FIXME: investigate
 
-
-  [plotData,dummy,dummy] = svd(magic(10)); %#ok
+  plotData = magic(10);
   imagesc(plotData > mean(plotData(:)));
+  colormap('hot');
 end
 % =========================================================================
 function [stat] = imagescplot()
@@ -829,44 +856,21 @@ function [stat] = subplotCustom ()
   plot(x,y);
 end
 % =========================================================================
-function [stat] = errorBars ()
+function [stat] = errorBars()
   stat.description = 'Generic error bar plot.';
 
+  data = ACID_data;
   plotData = 1:10;
-  [u,s,v] = svd(magic(11));
 
-  eH = abs(u(1:10,5));
-  eL = abs(v(1:10,9));
+  eH = abs(data(1:10,1))/10;
+  eL = abs(data(1:10,3))/50;
 
   errorbar(1:10, plotData, eL, eH, '.')
 end
 % =========================================================================
-function [stat] = errorBars2 ()
+function [stat] = errorBars2()
   stat.description = 'Another error bar example.';
-  data = [    11    11     9
-               7    13    11
-              14    17    20
-              11    13     9
-              43    51    69
-              38    46    76
-              61   132   186
-              75   135   180
-              38    88   115
-              28    36    55
-              12    12    14
-              18    27    30
-              18    19    29
-              17    15    18
-              19    36    48
-              32    47    10
-              42    65    92
-              57    66   151
-              44    55    90
-             114   145   257
-              35    58    68
-              11    12    15
-              13     9    15
-              10     9     7];
+  data = ACID_data;
   y = mean( data, 2 );
   e = std( data, 1, 2 );
   errorbar( y, e, 'xr' );
@@ -1338,10 +1342,9 @@ end
 % =========================================================================
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
-  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
-  [x,s,v] = svd(magic(33));
-  x = x(end:-1:end-1000);
+  data = ACID_data;
+  x = data(:);
   hist(x,10)
   y = ylim;
   hold on;
@@ -2383,8 +2386,8 @@ function [stat] = stackedBarsWithOther()
   stat.unreliable = isOctave || isMATLAB('>=', [8,4]); %Octave, R2014b and newer
 
   % dataset stacked
-  [data,dummy,summy] = svd(magic(7)); %#ok
-  Y = round(abs(data(2:6,2:4))*10);
+  data = ACID_data;
+  Y = round(abs(data(7:-1:3,1:3))/10);
   n = size(Y,1);
   xVals = (1:n).';
   yVals = min((xVals).^2, sum(Y,2));
