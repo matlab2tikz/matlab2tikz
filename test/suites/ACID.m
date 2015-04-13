@@ -757,6 +757,8 @@ end
 % =========================================================================
 function [stat] = logicalImage()
   stat.description = 'An image plot of logical matrix values.' ;
+  stat.unreliable = isOctave; %FIXME: investigate
+  % different `width`, see issue #552# (comment 76918634)
 
   plotData = magic(10);
   imagesc(plotData > mean(plotData(:)));
@@ -1342,6 +1344,8 @@ end
 % =========================================================================
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
+  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+  % unreliable, see issue #614 (comment 92263263)
 
   data = ACID_data;
   x = data(:);
