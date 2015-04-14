@@ -310,7 +310,7 @@
      - images,
      - quiver plots (thanks Robert for spotting this).
  * Improved options handling.
- * Allow for custom file encoding (thanks Donghua Wang for the   suggestion).
+ * Allow for custom file encoding (thanks Donghua Wang for the suggestion).
  * Numerous bugfixes (thanks Andreas Gäb).
 
 # 2009-03-08 Version 0.0.3 [Nico Schlömer](nico.schloemer@ua.ac.be)
