@@ -340,7 +340,6 @@
 	  - zplane plots
 	  - freqz plots
 
-
 2009-06-09  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
 	* Version 0.0.4.
@@ -381,7 +380,6 @@
 	  - aspect ratio handling
 	  - color handling
 	  - plot options handling
-
 
 2008-11-07  Nico Schlömer  <nico.schloemer@ua.ac.be>
 
