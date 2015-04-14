@@ -336,7 +336,7 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  stat.unreliable = isMATLAB(); % FIXME: see #590, #604
 
   if isOctave()
       fprintf( 'Octave can''t handle tight axes.\n\n' );
@@ -830,6 +830,7 @@ end
 % =========================================================================
 function [stat] = errorBars ()
   stat.description = 'Generic error bar plot.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer, see #590, #604
 
   plotData = 1:10;
   [u,s,v] = svd(magic(11));
@@ -2032,6 +2033,7 @@ end
 % =========================================================================
 function stat = annotationAll()
   stat.description = 'All possible annotations with edited properties';
+  stat.unreliable = isMATLAB('<', [8,4]); % R2014a and older: #604
 
   if isempty(which('annotation'))
       fprintf( 'annotation() not found. Skipping.\n\n' );
