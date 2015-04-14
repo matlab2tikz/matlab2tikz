@@ -52,9 +52,6 @@ function status = testMatlab2tikz(varargin)
 % POSSIBILITY OF SUCH DAMAGE.
 %
 % =========================================================================
-           
-  % Reinitialize hashes, as described in `getReferenceHash()`
-  clear getReferenceHash
 
   % In which environment are we?
   env = getEnvironment();
@@ -73,10 +70,18 @@ function status = testMatlab2tikz(varargin)
   ipp = sanitizeInputs(ipp);
 
   % -----------------------------------------------------------------------
-  if strcmpi(env, 'Octave') && ~ipp.Results.figureVisible
-      % Use the gnuplot backend to work around an fltk bug, see
-      % <http://savannah.gnu.org/bugs/?43429>.
-      graphics_toolkit gnuplot
+  if strcmpi(env, 'Octave')
+      if ~ipp.Results.figureVisible
+          % Use the gnuplot backend to work around an fltk bug, see
+          % <http://savannah.gnu.org/bugs/?43429>.
+          graphics_toolkit gnuplot
+      end
+
+      if ispc
+          % Prevent three digit exponent on Windows Octave
+          % See https://github.com/matlab2tikz/matlab2tikz/pull/602
+          setenv ('PRINTF_EXPONENT_DIGITS', '2')
+      end
   end
 
   % start overall timing

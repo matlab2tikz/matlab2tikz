@@ -648,8 +648,9 @@ end
 function [stat] = stairsplot()
   stat.description = 'A simple stairs plot.' ;
 
-  x = linspace(-2*pi,2*pi,40);
-  stairs(x,sin(x))
+  x = linspace(-2*pi,2*pi,40)';
+  h = stairs([sin(x), 0.2*cos(x)]);
+  legend(h(2),'second entry')
 end
 % =========================================================================
 function [stat] = quiverplot()
@@ -1882,8 +1883,8 @@ function [stat] = areaPlot()
 
   M = magic(5);
   M = M(1:3,2:4);
-  area(1:3, M);
-  legend('foo', 'bar', 'foobar');
+  h = area(1:3, M);
+  legend(h([1,3]),'foo', 'foobar');
 end
 % =========================================================================
 function [stat] = customLegend()
