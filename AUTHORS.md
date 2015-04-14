@@ -29,6 +29,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Carlos Russo
   * Johannes Schmitz
   * Michael Schoeberl
+  * Donghua Wang
   * Robert Whittlesey
   * Pooya Ziraksaz
   * Bastiaan Zuurendonk (The MathWorks)

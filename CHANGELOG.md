@@ -157,8 +157,8 @@
 	   - inner color bars
 	   - log-scaled color bars
 	* New command line options:
-	   - standalone (create compilable TeX file)
-	   - checkForUpdates
+	   - `standalone` (create compilable TeX file)
+	   - `checkForUpdates`
 	* `mlint` cleanups.
 	* Removed deprecated options.
 	* Bugfixes:
@@ -174,7 +174,7 @@
 	* Support for logical images.
 	* Support for multiple legends (legends in subplots).
 	* Fixed version check bug.
-	* Fix minumumPointsDistance.
+	* Fix `minimumPointsDistance`.
 
 # 2012-07-19 Version 0.2.2 [Nico Schlömer](nico.schloemer@gmail.com)
 
@@ -190,7 +190,7 @@
 	* Partial support for hist3 plots.
 	* Support for spectrogram plots.
 	* Support for rotated text.
-	* Native handling of `Inf`s/`NaN`s.
+	* Native handling of `Inf`s and `NaN`s.
 	* Better info text.
 	* matlab2tikz version checking.
 	* Line plotting code cleanup.
@@ -298,7 +298,7 @@
 	* Bugfixes for:
 	  - multiple axes
 	  - CMYK colors
-	  - legend text alignment (thanks Dragen Mitrevski)
+	  - legend text alignment (thanks Dragan Mitrevski)
 	  - transparent patches (thanks Carlos Russo)
 	* Added support for:
 	  - background color
