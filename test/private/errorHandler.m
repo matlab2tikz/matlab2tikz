@@ -33,15 +33,9 @@ end
 % ==============================================================================
 function disp_error_message(msg)
     stderr = 2;
-    % When displaying the error message in MATLAB, all backslashes
-    % have to be replaced by two backslashes. This must not, however,
-    % be applied constantly as the string that's saved to the LaTeX
-    % output must have only one backslash.
-    switch getEnvironment
-        case 'MATLAB'
-            fprintf(stderr, strrep(msg, '\', '\\'));
-        case 'Octave'
-            fprintf(stderr, msg);
-    end
+    % The error message should not contain any more escape sequences and
+    % hence can be output literally to stderr.
+
+    fprintf(stderr, '%s', msg);
 end
 % ==============================================================================
