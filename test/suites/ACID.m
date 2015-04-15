@@ -2391,7 +2391,8 @@ end
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
   stat.issues = 442;
-  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); %Octave, R2014b and newer
+  stat.unreliable = isOctave || isMATLAB(); % FIXME: #614
+  % details: https://github.com/matlab2tikz/matlab2tikz/pull/614#issuecomment-91844506
 
   % dataset stacked
   data = ACID_data;
