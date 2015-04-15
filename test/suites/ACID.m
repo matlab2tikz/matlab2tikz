@@ -321,7 +321,8 @@ end
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
   stat.unreliable = isMATLAB; % FIXME: inspect this
-
+  stat.issues = 582;
+  
   contourf(peaks(20), 10);
   colorbar();
   legend('my legend');
