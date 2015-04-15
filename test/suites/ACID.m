@@ -528,6 +528,7 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
+  stat.issues = 609;
 
   x = -pi:pi/20:pi;
   plot( x, cos(x),'-ro',...
