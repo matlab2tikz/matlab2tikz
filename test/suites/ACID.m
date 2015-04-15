@@ -336,7 +336,7 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  stat.unreliable = isMATLAB(); % FIXME: see #590, #604
 
   if isOctave()
       fprintf( 'Octave can''t handle tight axes.\n\n' );
@@ -483,7 +483,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
+  stat.unreliable = isMATLAB(); %FIXME: #590
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -588,7 +588,7 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
-  stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
+  stat.unreliable = isMATLAB || isOctave; % FIXME: #614
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -668,7 +668,7 @@ end
 % =========================================================================
 function [stat] = quiver3plot()
   stat.description = 'Three-dimensional quiver plot.' ;
-  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
+  stat.unreliable = isMATLAB(); %FIXME: #590
 
   vz = 10;            % Velocity
   a = -32;            % Acceleration
@@ -812,7 +812,7 @@ end
 % =========================================================================
 function [stat] = subplotCustom ()
   stat.description = 'Three customized aligned subplots.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  stat.unreliable = isMATLAB(); % FIXME: #590
 
   x = (1:5);
 
@@ -831,6 +831,7 @@ end
 % =========================================================================
 function [stat] = errorBars ()
   stat.description = 'Generic error bar plot.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer, see #590, #604
 
   plotData = 1:10;
   [u,s,v] = svd(magic(11));
@@ -1385,6 +1386,7 @@ function [stat] = textext()
   txstr(3) = { 'You can use LaTeX symbols like \pi \chi \Xi' };
   txstr(4) = { '\bfOr use bold \rm\itor italic font\rm' };
   txstr(5) = { '\fontname{courier}Or even change fonts' };
+  txstr(5) = { 'and use umlauts like äöüßÄÖÜ and accents éèêŐőŰűç' };
   plot( 0:6, sin(0:6) )
   text( 5.75, sin(2.5), txstr, 'HorizontalAlignment', 'right' )
 end
@@ -1856,6 +1858,7 @@ end
 % =========================================================================
 function [stat] = myBoxplot()
   stat.description = 'Boxplot.';
+  stat.unreliable = isMATLAB('<', [8,4]); % R2014a; #552 #414
 
   if ~exist('boxplot','builtin') && isempty(which('boxplot'))
       fprintf( 'Statistics toolbox not found. Skipping.\n\n' );
@@ -1889,7 +1892,7 @@ end
 % =========================================================================
 function [stat] = customLegend()
   stat.description = 'Custom legend.';
-  stat.unreliable = isOctave; %FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %FIXME: investigate
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -2032,6 +2035,7 @@ end
 % =========================================================================
 function stat = annotationAll()
   stat.description = 'All possible annotations with edited properties';
+  stat.unreliable = isMATLAB('<', [8,4]); % R2014a and older: #604
 
   if isempty(which('annotation'))
       fprintf( 'annotation() not found. Skipping.\n\n' );
