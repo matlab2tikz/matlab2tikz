@@ -7,7 +7,7 @@ annotationTextUnits : 5a874a814f93cd193ae2d521db22c106
 areaPlot : 0db98a03701ed1333acdfb0a52263234
 axesColors : 7909d2f2a3191099a53c96f276eb70d4
 axesLocation : a1b437d4064d30d6f13f919d5d45d30b
-bars : 4ec9811b3ba6e24bc10bddd655a56f40
+bars : 6d42046bde07609d6d5f9d1d5fce0d5f
 besselImage : 85cb8eb6b29f9d05cc6491e06d198d4f
 bodeplots : e7d6fd44a8d91eda3919d163fcce567d
 clownImage : b185ac23465c0f5822c9964fd582fe20
@@ -21,7 +21,7 @@ decayingharmonic : 675134e772c3df113c0dd33975e328a0
 double_axes : bef3303285944875e0ec0c3896a4ef06
 double_axes2 : 9c19809d5c011abc4dacc4f65536af8c
 double_colorbar : 8873cb127c10d0cb48ceb3c2bee6cee1
-errorBars : a3d86cea6574bda4bed141ed15514024
+errorBars : f759c8380eb0cbddf0396fadaa7f116e
 errorBars2 : 1db9c195c8c2ff9361af835b6829dbf0
 fill3plot : 6f95fe480fc9e90fefb9e92937817e9f
 freqResponsePlot : a6dea44359e9de74b487320f96aa5e7b
@@ -77,7 +77,7 @@ sine_with_annotation : a7af2d7566b0d46fe2aa682929981413
 sine_with_markers : 4e99ed58f7b411936c2bdb07b3e314e4
 spectro : 9e9c494a79f0e21433a0484b4db40fb6
 spherePlot : 48a0eaee326fee8e7c8cbcf128568032
-stackedBarsWithOther : 89b4cf60e86d84a3eef94dd4dd00532b
+stackedBarsWithOther : 35fd7e475c2b5cc4fec2d7ab5237c26e
 stairsplot : e16350f158939702e39a15c5a37a59c4
 stemplot : 82803430b39422060566d888f4f89931
 stemplot2 : 268903d910187d3d2384ab23cc54fc3a
