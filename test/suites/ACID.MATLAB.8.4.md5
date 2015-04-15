@@ -7,7 +7,7 @@ annotationTextUnits : 06cf11ed384c74367ac33af7bb39fd6c
 areaPlot : 1b4c4aff9b173534d2baefb8b7fe1cc7
 axesColors : 0e875454d391264baa133f34fd39db16
 axesLocation : a166517121d3405a7be66fbe19389606
-bars : a23bc34ad5753f4c26c8830bd4dd90c3
+bars : 220625dcabd71cd249375d3cdb25b58e
 besselImage : 69eb16d1e98ec24643934adb885bd7ac
 bodeplots : 469373c69e24ade8f80153f569e554c0
 clownImage : 24df2a3812aec0445f34c64eb1c0ef5a
@@ -20,7 +20,7 @@ decayingharmonic : 345e160904a09b4e9734a537af87e794
 double_axes : 863c9ac5757dfc7f1783d2a48300f336
 double_axes2 : 01e5881bbf4ce17214ae048f7d8408e4
 double_colorbar : eddb534807b0d947298c294ca8a69ba6
-errorBars : 94d66a27df67621e2c75e6041df46411
+errorBars : 326bbc73ad01baa4007e14c96f961756
 errorBars2 : c3c89d9d5aebd9fb31ea19be8c752842
 fill3plot : 724e27647615e5be1cf9793904d77e01
 freqResponsePlot : 7e6ef7bcbba0674ad3fd86cd617a07a8
