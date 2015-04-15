@@ -35,7 +35,7 @@ imagescplot2 : ddc1706c5e40eb44c10f9c56a093f9ea
 latexInterpreter : d02c8c0aee6a6ccd0f4a2c45e04627c7
 latexmath2 : 7e79bb09d408d1d6566990b0292fb74d
 legendplot : 6fdecb3905efa3227de5869e202702be
-legendplotBoxoff : 930a1ebbd97dba58b3452c4490f75ca2
+legendplotBoxoff : ee9011ec4828d27402bc33d9b9d246f3
 legendsubplots : 232fff5c9a789adf306e16f2bfa35d21
 linesWithOutliers : d1ccfa8fb66d36af7e314f4f0a7ac8ee
 logbaseline : 7db6dde5b8890c1b990551a5d7a89f64
