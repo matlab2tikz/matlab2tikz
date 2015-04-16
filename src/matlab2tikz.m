@@ -5936,7 +5936,7 @@ function str = formatDim(value, unit)
     if value == 1 && ~isempty(unit) && unit(1) == '\'
         str = unit; % just use the unit
     else
-        str = sprintf('%.6f', value);
+        str = sprintf('%.3f', value); % see #604
         str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
         str = regexprep(str, '\.$', ''); % remove trailing period
         str = [str unit];
