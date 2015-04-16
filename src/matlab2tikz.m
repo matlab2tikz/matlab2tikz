@@ -977,8 +977,8 @@ function m2t = retrievePositionOfAxes(m2t, handle)
 
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, 'at', ...
-                ['{(' formatDim(pos.x.value, pos.x.unit, m2t.ff) ','...
-                      formatDim(pos.y.value, pos.y.unit, m2t.ff) ')}']);
+                ['{(' formatDim(pos.x.value, pos.x.unit) ','...
+                      formatDim(pos.y.value, pos.y.unit) ')}']);
         % the following is general MATLAB behavior:
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
@@ -990,7 +990,7 @@ function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
 % sets the dimension "name" of the current axes to the struct "dim"
     m2t.axesContainers{end}.options = opts_add(...
             m2t.axesContainers{end}.options, widthOrHeight, ...
-            formatDim(dimension.value, dimension.unit, m2t.ff));
+            formatDim(dimension.value, dimension.unit));
 end
 % ==============================================================================
 function m2t = drawBackgroundOfAxes(m2t, handle)
@@ -2835,7 +2835,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
     end
     posString = cell(1,npos);
     for ii = 1:npos
-        posString{ii} = formatDim(pos(ii), fmtUnit, m2t.ff);
+        posString{ii} = formatDim(pos(ii), fmtUnit);
     end
 
     posString = sprintf('(%s%s)',type,join(m2t,posString,','));
@@ -3373,11 +3373,11 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
 
             % Bar width
             drawOptions = opts_add(drawOptions, 'bar width', ...
-                                 formatDim(barWidth, '', m2t.ff));
+                                 formatDim(barWidth, ''));
             % Bar shift
             if barShift ~= 0
                 drawOptions = opts_add(drawOptions, 'bar shift', ...
-                                 formatDim(barShift, '', m2t.ff));
+                                 formatDim(barShift, ''));
             end
 
         case 'stacked' % stacked plots
@@ -3388,7 +3388,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
                 barWidth = get(h, 'BarWidth');
                 m2t.axesContainers{end}.options = ...
                     opts_add(m2t.axesContainers{end}.options, ...
-                    'bar width', formatDim(barWidth, '', m2t.ff));
+                    'bar width', formatDim(barWidth,''));
                 m2t.axesContainers{end}.barAddedAxisOption = true;
             end
 
@@ -4435,8 +4435,7 @@ function [lStyle] = legendPosition(m2t, handle, lStyle)
     % set legend position
     %TODO: shouldn't this include units?
     lStyle = opts_add(lStyle, 'at',  sprintf('{(%s,%s)}', ...
-                        formatDim(position(1), [], m2t.ff), ...
-                        formatDim(position(2), [], m2t.ff)));
+                        formatDim(position(1)), formatDim(position(2))));
     lStyle = opts_add(lStyle, 'anchor', anchor);
 
 end
@@ -5927,7 +5926,7 @@ function bool = isVersionBelow(versionA, versionB)
     bool       = ~isempty(difference) && deltaAB(difference) < 0;
 end
 % ==============================================================================
-function str = formatDim(value, unit, formatSpec)
+function str = formatDim(value, unit)
 % format the value for use as a TeX dimension
     if ~exist('unit','var') || isempty(unit)
         unit = '';
@@ -5937,7 +5936,7 @@ function str = formatDim(value, unit, formatSpec)
     if value == 1 && ~isempty(unit) && unit(1) == '\'
         str = unit; % just use the unit
     else
-        str = sprintf(formatSpec, value);
+        str = sprintf('%.6f', value);
         str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
         str = regexprep(str, '\.$', ''); % remove trailing period
         str = [str unit];
