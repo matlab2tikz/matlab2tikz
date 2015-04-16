@@ -319,6 +319,7 @@ end
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
   stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
+  % see #604; contour() produces inconsistent output
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -334,6 +335,7 @@ end
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
   stat.unreliable = isMATLAB('>=',[8,4]);
+  % see #604; contour() produces inconsistent output
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -617,6 +619,7 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
+  stat.unreliable = isOctave || isMATLAB(); % FIXME: investigate
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -825,7 +828,7 @@ end
 % =========================================================================
 function [stat] = manualAlignment()
   stat.description = 'Manually aligned figures.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  stat.unreliable = isOctave || isMATLAB; % FIXME: investigate
 
   xrange = linspace(-3,4,2*1024);
 
@@ -1046,7 +1049,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot1()
   stat.description = 'Representation of the complex plane with zplane.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1063,7 +1066,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot2()
   stat.description = 'Representation of the complex plane with zplane.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: #604; only difference is `width`
   stat.closeall = true;
 
   % check of the signal processing toolbox is installed

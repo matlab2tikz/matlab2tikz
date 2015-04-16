@@ -3070,7 +3070,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             drawOptions = opts_add(drawOptions, 'mark options', ...
                                   ['{' opts_print(m2t, markOptions, ',') '}']);
             drawOptions = opts_add(drawOptions, 'mark size', ...
-                                   sprintf('%.4fpt', sData));
+                                   sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff`
             if hasFaceColor && hasEdgeColor
                 drawOptions = opts_add(drawOptions, 'draw', ecolor);
                 drawOptions = opts_add(drawOptions, 'fill', xcolor);
@@ -5039,7 +5039,7 @@ function out = extractValueUnit(str)
 
     % Regular expression to match '4.12cm', '\figurewidth', ...
     fp_regex = '[-+]?\d*\.?\d*(?:e[-+]?\d+)?';
-    pattern = strcat('(', fp_regex, ')?', '(\\?[a-z]+)');
+    pattern = strcat('(', fp_regex, ')?', '(\\?[a-zA-Z]+)');
 
     [dummy,dummy,dummy,dummy,t,dummy] = regexp(str, pattern, 'match'); %#ok
 
@@ -5936,7 +5936,7 @@ function str = formatDim(value, unit)
     if value == 1 && ~isempty(unit) && unit(1) == '\'
         str = unit; % just use the unit
     else
-        str = sprintf('%.6f', value);
+        str = sprintf('%.3f', value); % see #604
         str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
         str = regexprep(str, '\.$', ''); % remove trailing period
         str = [str unit];
