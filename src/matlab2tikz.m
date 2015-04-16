@@ -645,13 +645,10 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
-
-            case 'contour'
-                [m2t, str] = drawContour(m2t, child);
-
+            
             case {'hggroup', 'matlab.graphics.primitive.Group', ...
                   'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area', ...
-                  'quiver'}
+                  'quiver','contour'}
                 [m2t, str] = drawHggroup(m2t, child);
 
             case 'hgtransform'
@@ -2233,8 +2230,34 @@ function alpha = normalizedAlphaValues(m2t, alpha, handle)
 end
 % ==============================================================================
 function [m2t, str] = drawContour(m2t, h)
-  str = '';
+    if isHG2()
+        [m2t, str] = drawContourHG2(m2t, h);
+    else
+        % Save legend state for the contour group
+        hasLegend = m2t.currentHandleHasLegend;
 
+        % Plot children patches
+        children  = get(h,'children');
+        N         = numel(children);
+        str       = cell(N,1);
+        for ii = 1:N
+            % Plot in reverse order
+            child          = children(N-ii+1);
+            [m2t, str{ii}] = drawPatch(m2t,child);
+            % Only first child can be in the legend
+            m2t.currentHandleHasLegend = false; 
+        end
+        str = strcat(str,sprintf('\n'));
+        str = [str{:}];
+
+        % Restore group's legend state
+        m2t.currentHandleHasLegend = hasLegend;
+    end
+end
+% ==============================================================================
+function [m2t, str] = drawContourHG2(m2t, h)
+  str = '';
+  
   % Retrieve ContourMatrix
   contours = get(h,'ContourMatrix')';
   [istart, nrows] = findStartOfContourData(contours);
@@ -2428,8 +2451,11 @@ function [m2t, str] = drawHggroup(m2t, h)
         case {'specgraph.scattergroup','matlab.graphics.chart.primitive.Scatter'}
             % scatter plots
             [m2t,str] = drawScatterPlot(m2t, h);
-
-        case {'specgraph.contourgroup', 'hggroup', 'matlab.graphics.primitive.Group'}
+        
+        case {'specgraph.contourgroup', 'matlab.graphics.chart.primitive.Contour'}
+            [m2t,str] = drawContour(m2t, h);
+            
+        case {'hggroup', 'matlab.graphics.primitive.Group'}
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
 
