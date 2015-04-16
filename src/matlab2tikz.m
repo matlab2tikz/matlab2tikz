@@ -3070,7 +3070,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             drawOptions = opts_add(drawOptions, 'mark options', ...
                                   ['{' opts_print(m2t, markOptions, ',') '}']);
             drawOptions = opts_add(drawOptions, 'mark size', ...
-                                   sprintf('%.4fpt', sData));
+                                   sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff`
             if hasFaceColor && hasEdgeColor
                 drawOptions = opts_add(drawOptions, 'draw', ecolor);
                 drawOptions = opts_add(drawOptions, 'fill', xcolor);
