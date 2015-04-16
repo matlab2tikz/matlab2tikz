@@ -319,7 +319,7 @@ end
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
   stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
-  % see #604; contour() produces inconsistent output
+  % FIXME: see #604; contour() produces inconsistent output
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -335,7 +335,7 @@ end
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
   stat.unreliable = isMATLAB('>=',[8,4]);
-  % see #604; contour() produces inconsistent output
+  % FIXME: see #604; contour() produces inconsistent output
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
