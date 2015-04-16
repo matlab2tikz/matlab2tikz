@@ -5936,7 +5936,11 @@ function str = formatDim(value, unit)
     if value == 1 && ~isempty(unit) && unit(1) == '\'
         str = unit; % just use the unit
     else
-        str = sprintf('%.3f', value); % see #604
+        % LaTeX has support for single precision (about 6.5 decimal places),
+        % but such accuracy is overkill for positioning. We clip to three
+        % decimals to overcome numerical rounding issues that tend to be very
+        % platform and version dependent. See also #604.
+        str = sprintf('%.3f', value);
         str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
         str = regexprep(str, '\.$', ''); % remove trailing period
         str = [str unit];
