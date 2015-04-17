@@ -3068,83 +3068,14 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 
     drawOptions = opts_new();
     if length(cData) == 3
-        % No special treatment for the colors or markers are needed.
-        % All markers have the same color.
-        [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', cData);
-        [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', cData);
-
-        if constMarkerkSize
-            drawOptions = opts_add(drawOptions, 'only marks');
-            drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
-            drawOptions = opts_add(drawOptions, 'mark options', ...
-                                  ['{' opts_print(m2t, markOptions, ',') '}']);
-            drawOptions = opts_add(drawOptions, 'mark size', ...
-                                   sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff`
-            if hasFaceColor && hasEdgeColor
-                drawOptions = opts_add(drawOptions, 'draw', ecolor);
-                drawOptions = opts_add(drawOptions, 'fill', xcolor);
-            else
-                drawOptions = opts_add(drawOptions, 'color', xcolor);
-            end
-        else % if changing marker size but same color on all marks
-            markerOptions = opts_new();
-            markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
-            markerOptions = opts_add(markerOptions, 'mark options', ...
-                ['{' opts_print(m2t, markOptions, ',') '}']);
-            if hasEdgeColor
-                markerOptions = opts_add(markerOptions, 'draw', ecolor);
-            else
-                markerOptions = opts_add(markerOptions, 'draw', xcolor);
-            end
-            if hasFaceColor
-                markerOptions = opts_add(markerOptions, 'fill', xcolor);
-            end
-            % for changing marker size, the 'scatter' option has to be added
-
-            drawOptions = opts_add(drawOptions, 'scatter');
-            drawOptions = opts_add(drawOptions, 'only marks');
-            drawOptions = opts_add(drawOptions, 'color', xcolor);
-            drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
-            drawOptions = opts_add(drawOptions, 'mark options', ...
-                ['{' opts_print(m2t, markOptions, ',') '}']);
-
-            if ~hasFaceColor
-                drawOptions = opts_add(drawOptions, ...
-                    'scatter/use mapped color', xcolor);
-            else
-                drawOptions = opts_add(drawOptions, ...
-                    'scatter/use mapped color', ...
-                    ['{' opts_print(m2t, markerOptions,',') '}']);
-            end
-        end
+        [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
+                                                markOptions, tikzMarker, ...
+                                                cData, sData, constMarkerkSize);
     elseif size(cData,2) == 3
-        drawOptions = opts_add(drawOptions, 'only marks');
-        userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
-        % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
+        drawOptions = getScatterOptsRGB(m2t, drawOptions);
     else
-        markerOptions = opts_new();
-        markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
-        markerOptions = opts_add(markerOptions, 'mark options', ...
-                        ['{' opts_print(m2t, markOptions, ',') '}']);
-
-        if hasEdgeColor && hasFaceColor
-            [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
-            markerOptions = opts_add(markerOptions, 'draw', ecolor);
-        else
-            markerOptions = opts_add(markerOptions, 'draw', 'mapped color');
-        end
-        if hasFaceColor
-            markerOptions = opts_add(markerOptions, 'fill', 'mapped color');
-        end
-        drawOptions = opts_add(drawOptions, 'scatter');
-        drawOptions = opts_add(drawOptions, 'only marks');
-        drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
-        drawOptions = opts_add(drawOptions, 'scatter/use mapped color', ...
-                              ['{' opts_print(m2t, markerOptions, ',') '}']);
-        % Add color map.
-        m2t.axesContainers{end}.options = ...
-            opts_append(m2t.axesContainers{end}.options, ...
-            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+        [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
+                           markOptions, tikzMarker, hasEdgeColor, hasFaceColor);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
@@ -3168,6 +3099,94 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 
     str = sprintf('%s\\%s[%s] plot table[%s]{%s};\n', str, env, ...
         drawOpts, opts_print(m2t, tabOpts, ','), table);
+end
+% ==============================================================================
+function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
+                        markOptions, tikzMarker, cData, sData, constMarkerkSize)
+% gets options specific to scatter plots with a single color
+    % No special treatment for the colors or markers are needed.
+    % All markers have the same color.
+    [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', cData);
+    [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', cData);
+    
+    if constMarkerkSize
+        drawOptions = opts_add(drawOptions, 'only marks');
+        drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
+        drawOptions = opts_add(drawOptions, 'mark options', ...
+            ['{' opts_print(m2t, markOptions, ',') '}']);
+        drawOptions = opts_add(drawOptions, 'mark size', ...
+            sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff`
+        if hasFaceColor && hasEdgeColor
+            drawOptions = opts_add(drawOptions, 'draw', ecolor);
+            drawOptions = opts_add(drawOptions, 'fill', xcolor);
+        else
+            drawOptions = opts_add(drawOptions, 'color', xcolor);
+        end
+    else % if changing marker size but same color on all marks
+        markerOptions = opts_new();
+        markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
+        markerOptions = opts_add(markerOptions, 'mark options', ...
+            ['{' opts_print(m2t, markOptions, ',') '}']);
+        if hasEdgeColor
+            markerOptions = opts_add(markerOptions, 'draw', ecolor);
+        else
+            markerOptions = opts_add(markerOptions, 'draw', xcolor);
+        end
+        if hasFaceColor
+            markerOptions = opts_add(markerOptions, 'fill', xcolor);
+        end
+        % for changing marker size, the 'scatter' option has to be added
+        
+        drawOptions = opts_add(drawOptions, 'scatter');
+        drawOptions = opts_add(drawOptions, 'only marks');
+        drawOptions = opts_add(drawOptions, 'color', xcolor);
+        drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
+        drawOptions = opts_add(drawOptions, 'mark options', ...
+            ['{' opts_print(m2t, markOptions, ',') '}']);
+        
+        if ~hasFaceColor
+            drawOptions = opts_add(drawOptions, ...
+                'scatter/use mapped color', xcolor);
+        else
+            drawOptions = opts_add(drawOptions, ...
+                'scatter/use mapped color', ...
+                ['{' opts_print(m2t, markerOptions,',') '}']);
+        end
+    end
+end
+function drawOptions = getScatterOptsRGB(m2t, drawOptions)
+% scatter plots with each marker a different RGB color (not yet supported!)
+    drawOptions = opts_add(drawOptions, 'only marks');
+    userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
+    % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
+    % See e.g. http://tex.stackexchange.com/questions/197270
+end
+function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
+                            markOptions, tikzMarker, hasEdgeColor, hasFaceColor)
+% scatter plot where the colors are set using a color map
+    markerOptions = opts_new();
+    markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
+    markerOptions = opts_add(markerOptions, 'mark options', ...
+        ['{' opts_print(m2t, markOptions, ',') '}']);
+    
+    if hasEdgeColor && hasFaceColor
+        [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
+        markerOptions = opts_add(markerOptions, 'draw', ecolor);
+    else
+        markerOptions = opts_add(markerOptions, 'draw', 'mapped color');
+    end
+    if hasFaceColor
+        markerOptions = opts_add(markerOptions, 'fill', 'mapped color');
+    end
+    drawOptions = opts_add(drawOptions, 'scatter');
+    drawOptions = opts_add(drawOptions, 'only marks');
+    drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
+    drawOptions = opts_add(drawOptions, 'scatter/use mapped color', ...
+        ['{' opts_print(m2t, markerOptions, ',') '}']);
+    % Add color map.
+    m2t.axesContainers{end}.options = opts_append(...
+        m2t.axesContainers{end}.options, ...
+        matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
 end
 % ==============================================================================
 function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData)
