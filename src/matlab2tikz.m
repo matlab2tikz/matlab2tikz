@@ -3159,7 +3159,7 @@ function drawOptions = getScatterOptsRGB(m2t, drawOptions)
     drawOptions = opts_add(drawOptions, 'only marks');
     userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
     % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
-    % See e.g. http://tex.stackexchange.com/questions/197270
+    % See e.g. http://tex.stackexchange.com/questions/197270 and #433
 end
 function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
                             markOptions, tikzMarker, hasEdgeColor, hasFaceColor)
