@@ -1,3 +1,40 @@
+# 2015-04-27 Version 1.0.0 [Egon Geerardyn](egon.geerardyn@gmail.com)
+
+ * Added support for:
+      - Annotations (except arrows) in R2014b (#534)
+      - `Histogram` in R2014b (#525)
+      - Filled contour plots in R2014b (#379, #500)
+      - Contour plots with color maps in R2014b (#380, #500)
+      - Axes background color and overlap (#6, #509, #510)
+      - Horizontal/Vertical text alignment (#491)
+ * Extra requirements:
+      - Patch plots now require `\usepgfplotslibrary{patchplots}` (#386, #497)
+ * Bug fixes:
+      - Pgfplots 1.12 (`row sep=crcr`) in combination with `externalData==true` (#548)
+      - Updater has been fixed (#502)
+      - 3D plot sizing takes viewing angle into account (#560, #630, #631)
+      - Alpha channel (transparency) in images (#561)
+      - Colorbar labels in R2014b (#429, #488)
+      - Scaling of color data at axes level (#486)
+      - Text formatting (for `TeX` parser) is improved (#417)
+      - Support for `|` character in labels (#587, #589)
+      - Legends for `stairs` and `area` plots (#601, #602)
+      - `cleanfigure()` removes points outside of the axes for `stairs` plots (#226, #533)
+      - `cleanfigure()` removes points outside of the axes better (#392, #400, #547)
+      - Support `>` and `<` in text (#522)
+      - Better text positioning (#518)
+      - Text boxes on 3D graphs (#528)
+      - File closing is more robust (#496, #555)
+      - TikZ picture output, i.e.`imageAsPng==false`, improved (#581, #596)
+      - `standalone==true` sets the font and input encoding in LaTeX (#590)
+      - Misc. fixes: #426, #513, #520
+ * For developers:
+      - The testing framework has been revamped (see also `test/README.md`)
+      - A lot of the tests have been updated (#614, )
+      - Cyclomatic complexity of the code has been reduced (#391)
+      - Repository has been moved to [matlab2tikz/matlab2tikz](https://github.com/matlab2tikz/matlab2tikz)
+      - Extra files have been pruned (#616)
+
 # 2014-11-02 Version 0.6.0 [Nico Schlömer](nico.schloemer@gmail.com)
 
  * Annotation support in R2014a and earlier
@@ -10,7 +47,7 @@
  * Bug fixes:
      - Cycle paths only when needed (#317, #49, #404)
      - Don't use infinite xmin/max, etc. (#436)
-     - Warn about the noSize parameter (#431)
+     - Warn about the `noSize` parameter (#431)
      - Images aren't flipped anymore (#401)
      - No scientific notation in width/height (#396)
      - Axes with custom colors (#376)
