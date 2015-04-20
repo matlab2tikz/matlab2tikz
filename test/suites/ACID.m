@@ -131,8 +131,9 @@ function [status] = ACID(k)
                            @stackedBarsWithOther, ...
                            @colorbarLabelTitle  , ...
                            @textAlignment       , ...
-                           @overlappingPlots    ,...
-                           @histogramPlot
+                           @overlappingPlots    , ...
+                           @histogramPlot       , ...
+                           @alphaTest
                          };
 
 
@@ -151,6 +152,36 @@ function [status] = ACID(k)
             'Out of bounds (number of testfunctions=%d)', numFunctions);
   end
 
+end
+% =========================================================================
+function data = ACID_data()
+  % Data to be used for various ACID tests
+  % This ensures the tests don't rely on functions that yield
+  % non-deterministic output, e.g. `rand` and `svd`.
+  data = [    11    11     9
+               7    13    11
+              14    17    20
+              11    13     9
+              43    51    69
+              38    46    76
+              61   132   186
+              75   135   180
+              38    88   115
+              28    36    55
+              12    12    14
+              18    27    30
+              18    19    29
+              17    15    18
+              19    36    48
+              32    47    10
+              42    65    92
+              57    66   151
+              44    55    90
+             114   145   257
+              35    58    68
+              11    12    15
+              13     9    15
+              10     9     7];
 end
 % =========================================================================
 function [stat] = multiline_labels()
@@ -288,6 +319,7 @@ end
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
   stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
+  % FIXME: see #604; contour() produces inconsistent output
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -303,6 +335,7 @@ end
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
   stat.unreliable = isMATLAB('>=',[8,4]);
+  % FIXME: see #604; contour() produces inconsistent output
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -335,7 +368,7 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  stat.unreliable = isMATLAB(); % FIXME: see #590, #604
 
   if isOctave()
       fprintf( 'Octave can''t handle tight axes.\n\n' );
@@ -371,7 +404,6 @@ function [stat] = randomWithLines()
   t = 1:150;
   X = [sin(t); cos(beta * t)].';
 
-  %X = randn(150,2);
   X(:,1) = (X(:,1) * 90) + 75;
   plot(X(:,1),X(:,2),'o');
   hold on;
@@ -482,7 +514,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
+  stat.unreliable = isMATLAB(); %FIXME: #590
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -587,7 +619,7 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
-  stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
+  stat.unreliable = isOctave || isMATLAB(); % FIXME: investigate
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -601,8 +633,8 @@ function [stat] = bars()
   end
 
   % dataset stacked
-  [data,dummy,dummy] = svd(magic(7)); %#ok
-  Y = round(abs(data(2:6,2:4))*10);
+  data = ACID_data;
+  Y = round(abs(data(2:6,1:3))/10);
 
   subplot(2,2,1);
   b1 = bar(bins,plotData,'grouped','BarWidth',1.5);
@@ -647,8 +679,9 @@ end
 function [stat] = stairsplot()
   stat.description = 'A simple stairs plot.' ;
 
-  x = linspace(-2*pi,2*pi,40);
-  stairs(x,sin(x))
+  x = linspace(-2*pi,2*pi,40)';
+  h = stairs([sin(x), 0.2*cos(x)]);
+  legend(h(2),'second entry')
 end
 % =========================================================================
 function [stat] = quiverplot()
@@ -666,7 +699,7 @@ end
 % =========================================================================
 function [stat] = quiver3plot()
   stat.description = 'Three-dimensional quiver plot.' ;
-  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
+  stat.unreliable = isMATLAB(); %FIXME: #590
 
   vz = 10;            % Velocity
   a = -32;            % Acceleration
@@ -728,10 +761,11 @@ end
 function [stat] = logicalImage()
   stat.description = 'An image plot of logical matrix values.' ;
   stat.unreliable = isOctave; %FIXME: investigate
+  % different `width`, see issue #552# (comment 76918634)
 
-
-  [plotData,dummy,dummy] = svd(magic(10)); %#ok
+  plotData = magic(10);
   imagesc(plotData > mean(plotData(:)));
+  colormap('hot');
 end
 % =========================================================================
 function [stat] = imagescplot()
@@ -794,7 +828,7 @@ end
 % =========================================================================
 function [stat] = manualAlignment()
   stat.description = 'Manually aligned figures.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  stat.unreliable = isOctave || isMATLAB; % FIXME: investigate
 
   xrange = linspace(-3,4,2*1024);
 
@@ -810,7 +844,7 @@ end
 % =========================================================================
 function [stat] = subplotCustom ()
   stat.description = 'Three customized aligned subplots.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  stat.unreliable = isMATLAB(); % FIXME: #590
 
   x = (1:5);
 
@@ -827,44 +861,22 @@ function [stat] = subplotCustom ()
   plot(x,y);
 end
 % =========================================================================
-function [stat] = errorBars ()
+function [stat] = errorBars()
   stat.description = 'Generic error bar plot.';
+  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer, see #590, #604
 
+  data = ACID_data;
   plotData = 1:10;
-  [u,s,v] = svd(magic(11));
 
-  eH = abs(u(1:10,5));
-  eL = abs(v(1:10,9));
+  eH = abs(data(1:10,1))/10;
+  eL = abs(data(1:10,3))/50;
 
   errorbar(1:10, plotData, eL, eH, '.')
 end
 % =========================================================================
-function [stat] = errorBars2 ()
+function [stat] = errorBars2()
   stat.description = 'Another error bar example.';
-  data = [    11    11     9
-               7    13    11
-              14    17    20
-              11    13     9
-              43    51    69
-              38    46    76
-              61   132   186
-              75   135   180
-              38    88   115
-              28    36    55
-              12    12    14
-              18    27    30
-              18    19    29
-              17    15    18
-              19    36    48
-              32    47    10
-              42    65    92
-              57    66   151
-              44    55    90
-             114   145   257
-              35    58    68
-              11    12    15
-              13     9    15
-              10     9     7];
+  data = ACID_data;
   y = mean( data, 2 );
   e = std( data, 1, 2 );
   errorbar( y, e, 'xr' );
@@ -1037,7 +1049,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot1()
   stat.description = 'Representation of the complex plane with zplane.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1054,7 +1066,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot2()
   stat.description = 'Representation of the complex plane with zplane.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: #604; only difference is `width`
   stat.closeall = true;
 
   % check of the signal processing toolbox is installed
@@ -1337,9 +1349,10 @@ end
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
   stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+  % unreliable, see issue #614 (comment 92263263)
 
-  [x,s,v] = svd(magic(33));
-  x = x(end:-1:end-1000);
+  data = ACID_data;
+  x = data(:);
   hist(x,10)
   y = ylim;
   hold on;
@@ -1349,6 +1362,7 @@ end
 % =========================================================================
 function [stat] = decayingharmonic()
   stat.description = 'Decaying harmonic oscillation with \TeX{} title.';
+  stat.issue = 587;
 
   % Based on an example from
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
@@ -1360,7 +1374,7 @@ function [stat] = decayingharmonic()
   plot(t, y)
   title('{\itAe}^{-\alpha\itt}sin\beta{\itt}, \alpha<<\beta, \beta>>\alpha, \alpha<\beta, \beta>\alpha, b>a')
   xlabel('Time \musec.')
-  ylabel('Amplitude')
+  ylabel('Amplitude |X|')
 end
 % =========================================================================
 function [stat] = texcolor()
@@ -1382,6 +1396,7 @@ function [stat] = textext()
   txstr(3) = { 'You can use LaTeX symbols like \pi \chi \Xi' };
   txstr(4) = { '\bfOr use bold \rm\itor italic font\rm' };
   txstr(5) = { '\fontname{courier}Or even change fonts' };
+  txstr(5) = { 'and use umlauts like äöüßÄÖÜ and accents éèêŐőŰűç' };
   plot( 0:6, sin(0:6) )
   text( 5.75, sin(2.5), txstr, 'HorizontalAlignment', 'right' )
 end
@@ -1441,7 +1456,7 @@ function [stat] = texrandom()
       % \fontname{Times} etc. isn't included
       % \fontsize{12} etc. isn't included
 
-  switch getEnvironment()
+  switch getEnvironment
       case 'MATLAB'
           % MATLAB expects tilde and ampersand to be un-escaped and backslashes
           % to be escaped
@@ -1853,6 +1868,7 @@ end
 % =========================================================================
 function [stat] = myBoxplot()
   stat.description = 'Boxplot.';
+  stat.unreliable = isMATLAB('<', [8,4]); % R2014a; #552 #414
 
   if ~exist('boxplot','builtin') && isempty(which('boxplot'))
       fprintf( 'Statistics toolbox not found. Skipping.\n\n' );
@@ -1880,13 +1896,13 @@ function [stat] = areaPlot()
 
   M = magic(5);
   M = M(1:3,2:4);
-  area(1:3, M);
-  legend('foo', 'bar', 'foobar');
+  h = area(1:3, M);
+  legend(h([1,3]),'foo', 'foobar');
 end
 % =========================================================================
 function [stat] = customLegend()
   stat.description = 'Custom legend.';
-  stat.unreliable = isOctave; %FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %FIXME: investigate
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -2029,6 +2045,7 @@ end
 % =========================================================================
 function stat = annotationAll()
   stat.description = 'All possible annotations with edited properties';
+  stat.unreliable = isMATLAB('<', [8,4]); % R2014a and older: #604
 
   if isempty(which('annotation'))
       fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2314,37 +2331,38 @@ function [stat] = imageOrientation(imagesAsPng)
     stat.extraOptions = {'imagesAsPng', imagesAsPng};
 
     data = magic(3);
+    data = [[0,0,9]; data]; % ensure non-quadratic matrix
 
     subplot(3,2,1);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','normal');
     xlabel('XDir normal');
     set(gca,'YDir','normal');
     ylabel('YDir normal');
 
     subplot(3,2,2);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','reverse');
     xlabel('XDir reverse');
     set(gca,'YDir','normal');
     ylabel('YDir normal');
 
     subplot(3,2,3);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','normal');
     xlabel('XDir normal');
     set(gca,'YDir','reverse');
     ylabel('YDir reverse');
 
     subplot(3,2,4);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','reverse');
     xlabel('XDir reverse');
     set(gca,'YDir','reverse');
     ylabel('YDir reverse');
 
     subplot(3,2,5);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','normal');
     xlabel('XDir normal');
     set(gca,'YDir','reverse');
@@ -2353,7 +2371,7 @@ function [stat] = imageOrientation(imagesAsPng)
     title('like above, but axis off');
 
     subplot(3,2,6);
-    imagesc(data);
+    imagesc(data); colormap(hot);
     set(gca,'XDir','reverse');
     xlabel('XDir reverse');
     set(gca,'YDir','reverse');
@@ -2376,11 +2394,12 @@ end
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
   stat.issues = 442;
-  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); %Octave, R2014b and newer
+  stat.unreliable = isOctave || isMATLAB(); % FIXME: #614
+  % details: https://github.com/matlab2tikz/matlab2tikz/pull/614#issuecomment-91844506
 
   % dataset stacked
-  [data,dummy,summy] = svd(magic(7)); %#ok
-  Y = round(abs(data(2:6,2:4))*10);
+  data = ACID_data;
+  Y = round(abs(data(7:-1:3,1:3))/10);
   n = size(Y,1);
   xVals = (1:n).';
   yVals = min((xVals).^2, sum(Y,2));
@@ -2473,6 +2492,9 @@ end
 % =========================================================================
 function [stat] = overlappingPlots()
     stat.description = 'Overlapping plots with zoomed data and varying background.';
+    stat.unreliable = isMATLAB('>=', [8,4]);
+    % FIXME this test is unreliable because the x/y lims of `ax2` are not set
+    % explicitly. We should not set them explicitly, rather implement #591
     stat.issues = 6;
 
     % create pseudo random data and convert it from matrix to vector
@@ -2522,5 +2544,40 @@ function [stat] = histogramPlot()
   hold on
   h = histogram(y);
   set(h, 'orientation', 'horizontal');
+end
+% =========================================================================
+function [stat] = alphaTest()
+  stat.description = 'overlapping objects with transparency and other properties';
+  stat.issues      = 593;
+
+  contourf(peaks(5)); hold on;              % background
+
+  % rectangular patch with different properties
+  h = fill([2 2 4 4], [2 3 3 2], 'r');
+  set(h, 'FaceColor', 'r');
+  set(h, 'FaceAlpha', 0.2);
+  set(h, 'EdgeColor', 'g');
+  set(h, 'EdgeAlpha', 0.4);
+  set(h, 'LineStyle', ':');
+  set(h, 'LineWidth', 4);
+  set(h, 'Marker', 'x');
+  set(h, 'MarkerSize', 16);
+  set(h, 'MarkerEdgeColor', [1 0.5 0]);
+  set(h, 'MarkerFaceColor', [1 0 0]);       % has no visual effect
+
+  % line with different properties
+  h = line([3 3.5], [1.5 3.5]);
+  set(h, 'Color', [1 1 1]);
+  if isMATLAB('>=', [8,4])
+      % TODO: later replace by 'isHG2()'
+      fprintf('Note: RGBA (with alpha channel) only in HG2.\n' );
+      set(h, 'Color', [1 1 1 0.3]);
+  end
+  set(h, 'LineStyle', ':');
+  set(h, 'LineWidth', 6);
+  set(h, 'Marker', 'o');
+  set(h, 'MarkerSize', 14);
+  set(h, 'MarkerEdgeColor', [1 1 0]);
+  set(h, 'MarkerFaceColor', [1 0 0]);
 end
 % =========================================================================
