@@ -2234,6 +2234,9 @@ function [m2t,env] = drawSurface(m2t, handle)
     % data writing to one single sprintf() call.
     opts{end+1} = sprintf('mesh/rows=%d', numrows);
 
+    % Add mesh/ordering=y varies for specifying the ordering of the data
+    opts{end+1} = 'mesh/ordering=y varies';
+    
     opts = join(m2t, opts, ',\n');
     str = [str, sprintf(['\n\\addplot3[%%\n%s,\n', opts ,']'], plotType)];
 
