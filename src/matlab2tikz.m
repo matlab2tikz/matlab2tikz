@@ -184,11 +184,13 @@ m2t.content = struct('name',     '', ...
                      'options',  {opts_new()}, ...
                      'content',  {cell(0)}, ...
                      'children', {cell(0)});
-m2t.preamble = sprintf(['\\usepackage{pgfplots}\n', ...
+m2t.preamble = sprintf(['\\usepackage[T1]{fontenc}\n', ...
+                        '\\usepackage[utf8]{inputenc}\n', ...
+                        '\\usepackage{pgfplots}\n', ...
                         '\\usepackage{grffile}\n', ...
                         '\\pgfplotsset{compat=newest}\n', ...
                         '\\usetikzlibrary{plotmarks}\n', ...
-                        '\\usepgfplotslibrary{patchplots}\n',...
+                        '\\usepgfplotslibrary{patchplots}\n', ...
                         '\\usepackage{amsmath}\n']);
 
 %% scan the options
@@ -1854,15 +1856,9 @@ function [m2t, str] = drawPatch(m2t, handle)
                                          s.edgeColor);
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'fill', ...
                                          s.faceColor);
-
-        if opts_has(patchOptions, 'draw opacity')
-            drawOptions         = opts_add(drawOptions,'draw opacity', ...
-                                            sprintf(m2t.ff, s.edgeAlpha));
-        end
-        if opts_has(patchOptions, 'fill opacity')
-            drawOptions         = opts_add(drawOptions,'fill opacity', ...
-                                            sprintf(m2t.ff, s.faceAlpha));
-        end
+                                     
+        [drawOptions] = opts_copy(patchOptions, 'draw opacity', drawOptions);
+        [drawOptions] = opts_copy(patchOptions, 'fill opacity', drawOptions);
 
     else % Multiple patches
 
@@ -2981,6 +2977,7 @@ function [m2t, opts, s] = shaderOptsMesh(m2t, handle, opts, s)
 end
 % ==============================================================================
 function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
+% gets the shader options for surface patches
 
     % Set opacity if FaceAlpha < 1 in MATLAB
     s.faceAlpha = get(handle, 'FaceAlpha');
@@ -2994,60 +2991,74 @@ function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
         opts = opts_add(opts,'draw opacity',sprintf(m2t.ff,s.edgeAlpha));
     end
 
-    % Edge 'none'
-    if isNone(s.edgeColor)
-        s.hasOneEdgeColor = true; % consider void as true
-        if strcmpi(s.faceColor, 'flat')
-            opts = opts_add(opts,'shader','flat');
-        elseif strcmpi(s.faceColor, 'interp');
-            opts = opts_add(opts,'shader','interp');
-        else
-            s.hasOneFaceColor = true;
-            [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
-            opts              = opts_add(opts,'fill',xFaceColor);
-        end
+    if isNone(s.edgeColor) % Edge 'none'
+        [m2t, opts, s] = shaderOptsSurfPatchEdgeNone(m2t, handle, opts, s);
+        
+    elseif strcmpi(s.edgeColor, 'interp') % Edge 'interp'
+        [m2t, opts, s] = shaderOptsSurfPatchEdgeInterp(m2t, handle, opts, s);
 
-    % Edge 'interp'
-    elseif strcmpi(s.edgeColor, 'interp')
-        if strcmpi(s.faceColor, 'interp')
-            opts = opts_add(opts,'shader','interp');
-        elseif strcmpi(s.faceColor, 'flat')
-            opts = opts_add(opts,'shader','faceted');
-        else
-            s.hasOneFaceColor = true;
-            [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
-            opts              = opts_add(opts,'fill',xFaceColor);
-         end
+    elseif strcmpi(s.edgeColor, 'flat') % Edge 'flat'
+        [m2t, opts, s] = shaderOptsSurfPatchEdgeFlat(m2t, handle, opts, s);
 
-    % Edge 'flat'
-    elseif strcmpi(s.edgeColor, 'flat')
-        if strcmpi(s.faceColor, 'flat')
-            opts = opts_add(opts,'shader','flat corner');
-        elseif strcmpi(s.faceColor, 'interp')
-            opts = opts_add(opts,'shader','faceted interp');
-        else
-            s.hasOneFaceColor = true;
-            opts              = opts_add(opts,'shader','flat corner');
-            [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
-            opts              = opts_add(opts,'fill',xFaceColor);
-        end
-
-    % Edge RGB
+    else % Edge RGB
+        [m2t, opts, s] = shaderOptsSurfPatchEdgeRGB(m2t, handle, opts, s);
+    end
+end
+% ==============================================================================
+function [m2t, opts, s] = shaderOptsSurfPatchEdgeNone(m2t, handle, opts, s)
+% gets the shader options for surface patches without edges
+    s.hasOneEdgeColor = true; % consider void as true
+    if strcmpi(s.faceColor, 'flat')
+        opts = opts_add(opts,'shader','flat');
+    elseif strcmpi(s.faceColor, 'interp');
+        opts = opts_add(opts,'shader','interp');
     else
-        s.hasOneEdgeColor = true;
-        [m2t, xEdgeColor] = getColor(m2t, handle, s.edgeColor, 'patch');
-        if isnumeric(s.faceColor)
-            s.hasOneFaceColor = true;
-            [m2t, xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
-            opts              = opts_add(opts,'fill',xFaceColor);
-            opts              = opts_add(opts,'faceted color',xEdgeColor);
-        elseif strcmpi(s.faceColor,'interp')
-            opts = opts_add(opts,'shader','faceted interp');
-            opts = opts_add(opts,'faceted color',xEdgeColor);
-        else
-            opts = opts_add(opts,'shader','flat corner');
-            opts = opts_add(opts,'draw',xEdgeColor);
-        end
+        s.hasOneFaceColor = true;
+        [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
+        opts              = opts_add(opts,'fill',xFaceColor);
+    end
+end
+function [m2t, opts, s] = shaderOptsSurfPatchEdgeInterp(m2t, handle, opts, s)
+% gets the shader options for surface patches with interpolated edge colors  
+    if strcmpi(s.faceColor, 'interp')
+        opts = opts_add(opts,'shader','interp');
+    elseif strcmpi(s.faceColor, 'flat')
+        opts = opts_add(opts,'shader','faceted');
+    else
+        s.hasOneFaceColor = true;
+        [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
+        opts              = opts_add(opts,'fill',xFaceColor);
+    end
+end
+function [m2t, opts, s] = shaderOptsSurfPatchEdgeFlat(m2t, handle, opts, s)
+% gets the shader options for surface patches with flat edge colors, i.e. the
+% vertex color
+    if strcmpi(s.faceColor, 'flat')
+        opts = opts_add(opts,'shader','flat corner');
+    elseif strcmpi(s.faceColor, 'interp')
+        opts = opts_add(opts,'shader','faceted interp');
+    else
+        s.hasOneFaceColor = true;
+        opts              = opts_add(opts,'shader','flat corner');
+        [m2t,xFaceColor]  = getColor(m2t, handle, s.faceColor, 'patch');
+        opts              = opts_add(opts,'fill',xFaceColor);
+    end
+end
+function [m2t, opts, s] = shaderOptsSurfPatchEdgeRGB(m2t, handle, opts, s)
+% gets the shader options for surface patches with fixed (RGB) edge color
+    s.hasOneEdgeColor = true;
+    [m2t, xEdgeColor] = getColor(m2t, handle, s.edgeColor, 'patch');
+    if isnumeric(s.faceColor)
+        s.hasOneFaceColor = true;
+        [m2t, xFaceColor] = getColor(m2t, handle, s.faceColor, 'patch');
+        opts              = opts_add(opts,'fill',xFaceColor);
+        opts              = opts_add(opts,'faceted color',xEdgeColor);
+    elseif strcmpi(s.faceColor,'interp')
+        opts = opts_add(opts,'shader','faceted interp');
+        opts = opts_add(opts,'faceted color',xEdgeColor);
+    else
+        opts = opts_add(opts,'shader','flat corner');
+        opts = opts_add(opts,'draw',xEdgeColor);
     end
 end
 % ==============================================================================
@@ -3076,83 +3087,14 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 
     drawOptions = opts_new();
     if length(cData) == 3
-        % No special treatment for the colors or markers are needed.
-        % All markers have the same color.
-        [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', cData);
-        [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', cData);
-
-        if constMarkerkSize
-            drawOptions = opts_add(drawOptions, 'only marks');
-            drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
-            drawOptions = opts_add(drawOptions, 'mark options', ...
-                                  ['{' opts_print(m2t, markOptions, ',') '}']);
-            drawOptions = opts_add(drawOptions, 'mark size', ...
-                                   sprintf('%.4fpt', sData));
-            if hasFaceColor && hasEdgeColor
-                drawOptions = opts_add(drawOptions, 'draw', ecolor);
-                drawOptions = opts_add(drawOptions, 'fill', xcolor);
-            else
-                drawOptions = opts_add(drawOptions, 'color', xcolor);
-            end
-        else % if changing marker size but same color on all marks
-            markerOptions = opts_new();
-            markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
-            markerOptions = opts_add(markerOptions, 'mark options', ...
-                ['{' opts_print(m2t, markOptions, ',') '}']);
-            if hasEdgeColor
-                markerOptions = opts_add(markerOptions, 'draw', ecolor);
-            else
-                markerOptions = opts_add(markerOptions, 'draw', xcolor);
-            end
-            if hasFaceColor
-                markerOptions = opts_add(markerOptions, 'fill', xcolor);
-            end
-            % for changing marker size, the 'scatter' option has to be added
-
-            drawOptions = opts_add(drawOptions, 'scatter');
-            drawOptions = opts_add(drawOptions, 'only marks');
-            drawOptions = opts_add(drawOptions, 'color', xcolor);
-            drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
-            drawOptions = opts_add(drawOptions, 'mark options', ...
-                ['{' opts_print(m2t, markOptions, ',') '}']);
-
-            if ~hasFaceColor
-                drawOptions = opts_add(drawOptions, ...
-                    'scatter/use mapped color', xcolor);
-            else
-                drawOptions = opts_add(drawOptions, ...
-                    'scatter/use mapped color', ...
-                    ['{' opts_print(m2t, markerOptions,',') '}']);
-            end
-        end
+        [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
+                                                markOptions, tikzMarker, ...
+                                                cData, sData, constMarkerkSize);
     elseif size(cData,2) == 3
-        drawOptions = opts_add(drawOptions, 'only marks');
-        userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
-        % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
+        drawOptions = getScatterOptsRGB(m2t, drawOptions);
     else
-        markerOptions = opts_new();
-        markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
-        markerOptions = opts_add(markerOptions, 'mark options', ...
-                        ['{' opts_print(m2t, markOptions, ',') '}']);
-
-        if hasEdgeColor && hasFaceColor
-            [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
-            markerOptions = opts_add(markerOptions, 'draw', ecolor);
-        else
-            markerOptions = opts_add(markerOptions, 'draw', 'mapped color');
-        end
-        if hasFaceColor
-            markerOptions = opts_add(markerOptions, 'fill', 'mapped color');
-        end
-        drawOptions = opts_add(drawOptions, 'scatter');
-        drawOptions = opts_add(drawOptions, 'only marks');
-        drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
-        drawOptions = opts_add(drawOptions, 'scatter/use mapped color', ...
-                              ['{' opts_print(m2t, markerOptions, ',') '}']);
-        % Add color map.
-        m2t.axesContainers{end}.options = ...
-            opts_append(m2t.axesContainers{end}.options, ...
-            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+        [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
+                           markOptions, tikzMarker, hasEdgeColor, hasFaceColor);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
@@ -3176,6 +3118,94 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 
     str = sprintf('%s\\%s[%s] plot table[%s]{%s};\n', str, env, ...
         drawOpts, opts_print(m2t, tabOpts, ','), table);
+end
+% ==============================================================================
+function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
+                        markOptions, tikzMarker, cData, sData, constMarkerkSize)
+% gets options specific to scatter plots with a single color
+    % No special treatment for the colors or markers are needed.
+    % All markers have the same color.
+    [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', cData);
+    [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', cData);
+    
+    if constMarkerkSize
+        drawOptions = opts_add(drawOptions, 'only marks');
+        drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
+        drawOptions = opts_add(drawOptions, 'mark options', ...
+            ['{' opts_print(m2t, markOptions, ',') '}']);
+        drawOptions = opts_add(drawOptions, 'mark size', ...
+            sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff`
+        if hasFaceColor && hasEdgeColor
+            drawOptions = opts_add(drawOptions, 'draw', ecolor);
+            drawOptions = opts_add(drawOptions, 'fill', xcolor);
+        else
+            drawOptions = opts_add(drawOptions, 'color', xcolor);
+        end
+    else % if changing marker size but same color on all marks
+        markerOptions = opts_new();
+        markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
+        markerOptions = opts_add(markerOptions, 'mark options', ...
+            ['{' opts_print(m2t, markOptions, ',') '}']);
+        if hasEdgeColor
+            markerOptions = opts_add(markerOptions, 'draw', ecolor);
+        else
+            markerOptions = opts_add(markerOptions, 'draw', xcolor);
+        end
+        if hasFaceColor
+            markerOptions = opts_add(markerOptions, 'fill', xcolor);
+        end
+        % for changing marker size, the 'scatter' option has to be added
+        
+        drawOptions = opts_add(drawOptions, 'scatter');
+        drawOptions = opts_add(drawOptions, 'only marks');
+        drawOptions = opts_add(drawOptions, 'color', xcolor);
+        drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
+        drawOptions = opts_add(drawOptions, 'mark options', ...
+            ['{' opts_print(m2t, markOptions, ',') '}']);
+        
+        if ~hasFaceColor
+            drawOptions = opts_add(drawOptions, ...
+                'scatter/use mapped color', xcolor);
+        else
+            drawOptions = opts_add(drawOptions, ...
+                'scatter/use mapped color', ...
+                ['{' opts_print(m2t, markerOptions,',') '}']);
+        end
+    end
+end
+function drawOptions = getScatterOptsRGB(m2t, drawOptions)
+% scatter plots with each marker a different RGB color (not yet supported!)
+    drawOptions = opts_add(drawOptions, 'only marks');
+    userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
+    % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
+    % See e.g. http://tex.stackexchange.com/questions/197270 and #433
+end
+function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
+                            markOptions, tikzMarker, hasEdgeColor, hasFaceColor)
+% scatter plot where the colors are set using a color map
+    markerOptions = opts_new();
+    markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
+    markerOptions = opts_add(markerOptions, 'mark options', ...
+        ['{' opts_print(m2t, markOptions, ',') '}']);
+    
+    if hasEdgeColor && hasFaceColor
+        [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
+        markerOptions = opts_add(markerOptions, 'draw', ecolor);
+    else
+        markerOptions = opts_add(markerOptions, 'draw', 'mapped color');
+    end
+    if hasFaceColor
+        markerOptions = opts_add(markerOptions, 'fill', 'mapped color');
+    end
+    drawOptions = opts_add(drawOptions, 'scatter');
+    drawOptions = opts_add(drawOptions, 'only marks');
+    drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
+    drawOptions = opts_add(drawOptions, 'scatter/use mapped color', ...
+        ['{' opts_print(m2t, markerOptions, ',') '}']);
+    % Add color map.
+    m2t.axesContainers{end}.options = opts_append(...
+        m2t.axesContainers{end}.options, ...
+        matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
 end
 % ==============================================================================
 function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData)
@@ -5089,7 +5119,7 @@ function out = extractValueUnit(str)
 
     % Regular expression to match '4.12cm', '\figurewidth', ...
     fp_regex = '[-+]?\d*\.?\d*(?:e[-+]?\d+)?';
-    pattern = strcat('(', fp_regex, ')?', '(\\?[a-z]+)');
+    pattern = strcat('(', fp_regex, ')?', '(\\?[a-zA-Z]+)');
 
     [dummy,dummy,dummy,dummy,t,dummy] = regexp(str, pattern, 'match'); %#ok
 
@@ -5901,6 +5931,16 @@ function opts = opts_append_userdefined(opts, userDefined)
         end
     end
 end
+function opts = opts_copy(opts_from, name_from, opts, name_to)
+% copies an option (if it exists) from one option array to another one
+    if ~exist('name_to', 'var') || isempty(name_to)
+        name_to = name_from;
+    end
+    if opts_has(opts_from, name_from)
+        value = opts_get(opts_from, name_from);
+        opts = opts_append(opts, name_to, value);
+    end
+end
 function opts = opts_remove(opts, varargin)
 % remove some key-value pairs from an options array
     keysToDelete = varargin;
@@ -5988,7 +6028,11 @@ function str = formatDim(value, unit)
         if value(i) == 1 && ~isempty(unit) && unit(1) == '\'
             nextStr = unit; % just use the unit
         else
-            nextStr = sprintf('%.6f', value(i));
+            % LaTeX has support for single precision (about 6.5 decimal places),
+            % but such accuracy is overkill for positioning. We clip to three
+            % decimals to overcome numerical rounding issues that tend to be very
+            % platform and version dependent. See also #604.
+            nextStr = sprintf('%.3f', value(i));
             nextStr = regexprep(nextStr, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
             nextStr = regexprep(nextStr, '\.$', ''); % remove trailing period
             nextStr = [nextStr unit];
