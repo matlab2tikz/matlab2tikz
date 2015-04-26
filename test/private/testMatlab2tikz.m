@@ -52,9 +52,6 @@ function status = testMatlab2tikz(varargin)
 % POSSIBILITY OF SUCH DAMAGE.
 %
 % =========================================================================
-           
-  % Reinitialize hashes, as described in `getReferenceHash()`
-  clear getReferenceHash
 
   % In which environment are we?
   env = getEnvironment();
