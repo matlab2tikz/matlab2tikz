@@ -827,6 +827,8 @@ function m2t = drawAxes(m2t, handle)
 
     m2t = retrievePositionOfAxes(m2t, handle);
 
+    m2t = addAspectRatioOptionsOfAxes(m2t, handle);
+
     % Axis direction
     for axis = 'xyz'
         m2t.([axis 'AxisReversed']) = ...
@@ -984,24 +986,6 @@ function m2t = retrievePositionOfAxes(m2t, handle)
             opts_add(m2t.axesContainers{end}.options, ...
             'scale only axis', []);
     end
-
-    if ~isempty(pos.aspectRatio)
-        m2t.axesContainers{end}.options=opts_add(...
-            m2t.axesContainers{end}.options,'plot box ratio',...
-            formatDim(pos.aspectRatio));
-    end
-
-    %     NOT USED IN BARPLOTS ANYMORE (if re-introduced make it
-    %     m2t.axesContainer{end}.<field>)
-    %     % Add the physical dimension of one unit of length in the coordinate system.
-    %     % This is used later on to translate lengths to physical units where
-    %     % necessary (e.g., in bar plots).
-    %     m2t.unitlength.x.unit = pos.w.unit;
-    %     xLim = get(m2t.currentHandles.gca, 'XLim');
-    %     m2t.unitlength.x.value = pos.w.value / (xLim(2)-xLim(1));
-    %     m2t.unitlength.y.unit = pos.h.unit;
-    %     yLim = get(m2t.currentHandles.gca, 'YLim');
-    %     m2t.unitlength.y.value = pos.h.value / (yLim(2)-yLim(1));
 end
 % ==============================================================================
 function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
@@ -1009,6 +993,23 @@ function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
     m2t.axesContainers{end}.options = opts_add(...
             m2t.axesContainers{end}.options, widthOrHeight, ...
             formatDim(dimension.value, dimension.unit));
+end
+% ==============================================================================
+function m2t = addAspectRatioOptionsOfAxes(m2t, handle)
+% Set manual aspect ratio for current axes
+% TODO: deal with 'axis image', 'axis square', etc. (#540)
+    if strcmpi(get(handle, 'DataAspectRatioMode'), 'manual') ||...
+       strcmpi(get(handle, 'PlotBoxAspectRatioMode'), 'manual')
+        % we need to set the plot box aspect ratio
+        if m2t.axesContainers{end}.is3D
+            % Note: set 'plot box ratio' for 3D axes to avoid bug with
+            % 'scale mode = uniformly' (see #560)
+            aspectRatio = getPlotBoxAspectRatio(handle);
+            m2t.axesContainers{end}.options = opts_add(...
+            m2t.axesContainers{end}.options, 'plot box ratio', ...
+            formatDim(aspectRatio));
+        end
+    end
 end
 % ==============================================================================
 function m2t = drawBackgroundOfAxes(m2t, handle)
@@ -4948,14 +4949,6 @@ function position = getAxesPosition(m2t, handle, widthString, heightString, axes
     position.w.unit  = figDim.x.unit;
     position.h.value = relPos(4) * figDim.y.value;
     position.h.unit  = figDim.y.unit;
-    
-    if strcmpi(get(handle, 'DataAspectRatioMode'), 'manual') ||...
-       strcmpi(get(handle, 'PlotBoxAspectRatioMode'), 'manual')
-        % we need to set the plot box aspect ratio
-        position.aspectRatio = getPlotBoxAspectRatio(handle);
-    else
-        position.aspectRatio = [];
-    end
 end
 % ==============================================================================
 function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
