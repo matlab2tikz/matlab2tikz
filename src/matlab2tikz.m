@@ -1007,7 +1007,7 @@ function m2t = addAspectRatioOptionsOfAxes(m2t, handle)
             aspectRatio = getPlotBoxAspectRatio(handle);
             m2t.axesContainers{end}.options = opts_add(...
             m2t.axesContainers{end}.options, 'plot box ratio', ...
-            formatDim(aspectRatio));
+            formatAspectRatio(m2t, aspectRatio));
         end
     end
 end
@@ -6016,6 +6016,12 @@ function bool = isVersionBelow(versionA, versionB)
     bool       = ~isempty(difference) && deltaAB(difference) < 0;
 end
 % ==============================================================================
+function str = formatAspectRatio(m2t, values)
+% format the aspect ratio. Behind the scenes, formatDim is used
+    strs = arrayfun(@formatDim, values, 'UniformOutput', false);
+    str = join(m2t, strs, ' ');
+end
+% ==============================================================================
 function str = formatDim(value, unit)
 % format the value for use as a TeX dimension
     if ~exist('unit','var') || isempty(unit)
@@ -6023,23 +6029,17 @@ function str = formatDim(value, unit)
     end
     tolerance = 1e-7;
     value  = round(value/tolerance)*tolerance;
-    str = '';
     if value == 1 && ~isempty(unit) && unit(1) == '\'
-        nextStr = unit; % just use the unit
+        str = unit; % just use the unit
     else
         % LaTeX has support for single precision (about 6.5 decimal places),
         % but such accuracy is overkill for positioning. We clip to three
         % decimals to overcome numerical rounding issues that tend to be very
         % platform and version dependent. See also #604.
-        nextStr = sprintf('%.3f', value);
-        nextStr = regexprep(nextStr, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
-        nextStr = regexprep(nextStr, '\.$', ''); % remove trailing period
-        nextStr = [nextStr unit];
-    end
-    if isempty(str)
-        str = nextStr;
-    else
-        str = [str, ' ', nextStr];
+        str = sprintf('%.3f', value);
+        str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
+        str = regexprep(str, '\.$', ''); % remove trailing period
+        str = [str unit];
     end
 end
 % ==============================================================================
