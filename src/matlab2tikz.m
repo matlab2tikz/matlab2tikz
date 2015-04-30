@@ -4992,7 +4992,22 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             % project vertices of 3d plot box (this results in 2d coordinates in
             % an absolute coordinate system that is scaled proportionally by
             % Matlab to fit the axes position box)
-            projection = view(axesHandle);
+            switch getEnvironment()
+                case 'MATLAB'
+                    projection = view(axesHandle);
+
+                case 'Octave'
+                    % Unfortunately, Octave does not have the full `view` 
+                    % interface implemented, but the projection matrices are
+                    % available: http://octave.1599824.n4.nabble.com/Implementing-view-td3032041.html
+                    
+                    projection = get(axesHandle, 'x_viewtransform');
+
+                otherwise
+                    errorUnknownEnvironment();
+            end
+            
+                
             vertices = projection * [0, 1, 0, 0, 1, 1, 0, 1;
                                      0, 0, 1, 0, 1, 0, 1, 1;
                                      0, 0, 0, 1, 0, 1, 1, 1; 
