@@ -57,8 +57,8 @@ overlappingPlots : 18cf2acfd5edfd9466576a3a660bc3b6
 pColorPlot : 3af66108669a5d3cc6424e3e4159e6e6
 parameterCurve3d : 6021198f4a70f990720e302739b2df80
 parameterSurf : a9b32b0319c0ec1fabdbeb0ff1be165b
+peaks_contour : bc176f0f75404e8cd45fb90e50550bae
 peaks_contourf : c3da2e11ea8dab2a1090d308aeecc512
-peaks_contourf : 3f8d9cce8627265b55d17932c62c08bf
 pixelLegend : 8375db270b039bcea73f79ebae930ee2
 plain_cos : 654eaff6ca2fd5d5b77dca1cb440149d
 polarplot : 8499d786860e8ee2dac6502e8b6c635f
@@ -83,9 +83,9 @@ stemplot : e40d5dc2b86b171be92ea77d897d5b7b
 stemplot2 : 2474469021fcdb235f22623818c1599a
 subplot2x2b : 6881a3e0c3286a751a187b5abab6290d
 subplotCustom : 3c6405ffd12385ebeb14b736463f775f
+superkohle : a70211961087dc165f884f27da9d4036
 surfPlot : 31405ae9c165db43bbc3c3060e02f491
 surfPlot2 : a2f97d5c1856a881d33025e55be65cb5
-surfPlot2 : 3f1f31e72c5f92f20b847a191e55b5f1
 texInterpreter : cebfffa9581f101899bb40808fadd265
 texcolor : 14d8e8dc34142facd0f51e594c01584a
 texrandom : 603ed498ac3665b819a5c1cc3f0bf99b
