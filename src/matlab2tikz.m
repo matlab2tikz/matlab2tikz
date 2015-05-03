@@ -2239,7 +2239,13 @@ function [m2t, str] = drawContour(m2t, h)
         for ii = 1:N
             % Plot in reverse order
             child          = children(N-ii+1);
-            [m2t, str{ii}] = drawPatch(m2t,child);
+            isContourLabel = strcmpi(get(child,'type'),'text');
+            if isContourLabel
+                [m2t, str{ii}] = drawText(m2t,child);
+            else
+                [m2t, str{ii}] = drawPatch(m2t,child);
+            end
+
             % Only first child can be in the legend
             m2t.currentHandleHasLegend = false; 
         end
