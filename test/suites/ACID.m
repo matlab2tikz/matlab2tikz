@@ -334,7 +334,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.unreliable = isMATLAB('>=',[8,4]);
+  stat.unreliable  = isMATLAB();
   % FIXME: see #604; contour() produces inconsistent output
   stat.issues = [49 404];
 
@@ -1385,6 +1385,7 @@ end
 % =========================================================================
 function [stat] = textext()
   stat.description = 'Formatted text and special characters using \TeX{}.';
+  stat.unreliable  = isMATLAB();
 
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
