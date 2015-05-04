@@ -827,6 +827,8 @@ function m2t = drawAxes(m2t, handle)
 
     m2t = retrievePositionOfAxes(m2t, handle);
 
+    m2t = addAspectRatioOptionsOfAxes(m2t, handle);
+
     % Axis direction
     for axis = 'xyz'
         m2t.([axis 'AxisReversed']) = ...
@@ -991,6 +993,23 @@ function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
     m2t.axesContainers{end}.options = opts_add(...
             m2t.axesContainers{end}.options, widthOrHeight, ...
             formatDim(dimension.value, dimension.unit));
+end
+% ==============================================================================
+function m2t = addAspectRatioOptionsOfAxes(m2t, handle)
+% Set manual aspect ratio for current axes
+% TODO: deal with 'axis image', 'axis square', etc. (#540)
+    if strcmpi(get(handle, 'DataAspectRatioMode'), 'manual') ||...
+       strcmpi(get(handle, 'PlotBoxAspectRatioMode'), 'manual')
+        % we need to set the plot box aspect ratio
+        if m2t.axesContainers{end}.is3D
+            % Note: set 'plot box ratio' for 3D axes to avoid bug with
+            % 'scale mode = uniformly' (see #560)
+            aspectRatio = getPlotBoxAspectRatio(handle);
+            m2t.axesContainers{end}.options = opts_add(...
+            m2t.axesContainers{end}.options, 'plot box ratio', ...
+            formatAspectRatio(m2t, aspectRatio));
+        end
+    end
 end
 % ==============================================================================
 function m2t = drawBackgroundOfAxes(m2t, handle)
@@ -4962,22 +4981,56 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             position(i,:) = axesPos ./ [figureSize, figureSize];
 
         end
+        
+        if strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'manual') ...
+                || strcmpi(get(axesHandle, 'PlotBoxAspectRatioMode'), 'manual')
+                
+            if strcmpi(get(axesHandle,'Projection'),'Perspective')
+                userWarning(m2t,'Perspective projections are not currently supported')
+            end
+            
+            % project vertices of 3d plot box (this results in 2d coordinates in
+            % an absolute coordinate system that is scaled proportionally by
+            % Matlab to fit the axes position box)
+            switch getEnvironment()
+                case 'MATLAB'
+                    projection = view(axesHandle);
 
-        % Change size if DataAspectRatioMode is manual
-        if isequal(lower(get(axesHandle,'DataAspectRatioMode')),'manual')
-            % get limits
-            xLim = get(axesHandle, 'XLim');
-            yLim = get(axesHandle, 'YLim');
-            % Get Aspect Ratio between width and height
-            aspectRatio = get(axesHandle,'DataAspectRatio');
-            % And Adjust it to the figure dimensions
-            aspectRatio = aspectRatio(1) * figWidth * (yLim(2) - yLim(1)) ...
-                / (aspectRatio(2) * figHeight * (xLim(2)-xLim(1)));
-            % Recompute height
-            newHeight = position(i,3) * aspectRatio;
-            % shrink width if newHeight is too large
-            if newHeight > position(i,4)
-                % Recompute width
+                case 'Octave'
+                    % Unfortunately, Octave does not have the full `view` 
+                    % interface implemented, but the projection matrices are
+                    % available: http://octave.1599824.n4.nabble.com/Implementing-view-td3032041.html
+                    
+                    projection = get(axesHandle, 'x_viewtransform');
+
+                otherwise
+                    errorUnknownEnvironment();
+            end
+            
+                
+            vertices = projection * [0, 1, 0, 0, 1, 1, 0, 1;
+                                     0, 0, 1, 0, 1, 0, 1, 1;
+                                     0, 0, 0, 1, 0, 1, 1, 1; 
+                                     1, 1, 1, 1, 1, 1, 1, 1];
+                         
+            % each of the columns of vertices represents a vertex of the 3D axes
+            % but we only need their XY coordinates
+            verticesXY = vertices([1 2], :);
+                                
+            % the size of the projected plot box is limited by the long diagonals
+            % The matrix A determines the connectivity, e.g. the first diagonal runs from vertices(:,3) -> vertices(:,4)
+            A = [ 0,  0,  0, -1, +1,  0,  0,  0;
+                  0,  0, -1,  0,  0, +1,  0,  0;
+                  0, -1,  0,  0,  0,  0, +1,  0;
+                 -1,  0,  0,  0,  0,  0,  0, +1];
+            diagonals = verticesXY * A';
+            % each of the columns of this matrix contains a the X and Y distance of a diagonal
+            dimensions = max(abs(diagonals), [], 2);
+            
+            % find limiting dimension and adjust position
+            aspectRatio = dimensions(2) * figWidth / (dimensions(1) * figHeight);
+            axesAspectRatio = position(i,4) / position(i,3);
+            if aspectRatio > axesAspectRatio
                 newWidth = position(i,4) / aspectRatio;
                 % Center Axis
                 offset = (position(i,3) - newWidth) / 2;
@@ -4985,7 +5038,7 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                 % Store new width
                 position(i,3) = newWidth;
             else
-                % Center Axis
+                newHeight = position(i,3) * aspectRatio;
                 offset = (position(i,4) - newHeight) / 2;
                 position(i,2) = position(i,2) + offset;
                 % Store new height
@@ -5003,6 +5056,20 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
         % Recale
         position(:,[1 3]) = position(:,[1 3]) / max(axesBoundingBox([3 4]));
         position(:,[2 4]) = position(:,[2 4]) / max(axesBoundingBox([3 4]));
+    end
+end
+% ==============================================================================
+function aspectRatio = getPlotBoxAspectRatio(axesHandle)
+    limits = axis(axesHandle);
+    if any(isinf(limits))
+        aspectRatio = get(axesHandle,'PlotBoxAspectRatio');
+    else
+        % DataAspectRatio has priority
+        dataAspectRatio = get(axesHandle,'DataAspectRatio');
+        nlimits         = length(limits)/2;
+        limits          = reshape(limits, 2, nlimits);
+        aspectRatio     = abs(limits(2,:) - limits(1,:))./dataAspectRatio(1:nlimits);
+        aspectRatio     = aspectRatio/min(aspectRatio);
     end
 end
 % ==============================================================================
@@ -5962,6 +6029,12 @@ function bool = isVersionBelow(versionA, versionB)
     difference = find(deltaAB, 1, 'first');
     % Empty difference then same version
     bool       = ~isempty(difference) && deltaAB(difference) < 0;
+end
+% ==============================================================================
+function str = formatAspectRatio(m2t, values)
+% format the aspect ratio. Behind the scenes, formatDim is used
+    strs = arrayfun(@formatDim, values, 'UniformOutput', false);
+    str = join(m2t, strs, ' ');
 end
 % ==============================================================================
 function str = formatDim(value, unit)

@@ -1207,15 +1207,16 @@ function [stat] = scatter3Plot()
 end
 % =========================================================================
 function [stat] = spherePlot()
-  stat.description = 'Plot a sphere.';
+  stat.description = 'Stretched sphere with unequal axis limits.';
   stat.unreliable = isOctave || isMATLAB('<', [8,4]); %FIXME: investigate
+  stat.issue = 560;
 
   sphere(30);
   title('a sphere: x^2+y^2+z^2');
   xlabel('x');
   ylabel('y');
   zlabel('z');
-  axis equal;
+  set(gca,'DataAspectRatio',[1,1,.5],'xlim',[-1 2], 'zlim',[-1 0.8])
 end
 % =========================================================================
 function [stat] = surfPlot()
