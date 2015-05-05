@@ -9,7 +9,7 @@ axesColors : 62b8d24ae88ad1df29ed94ff50818f36
 axesLocation : e665762e22cc0cb64d3d23b5f1fcbd66
 bars : 7864982d62127f7cc2af076d0cde3395
 besselImage : ba676f198258acab7b2a29acf8696cf3
-bodeplots : 62c660e6398161dc0252683e0a02132a
+bodeplots : 3b54f7499d401a098189fa6371710795
 clownImage : 1b5d18fa51afaafe1912b41bc3883d42
 colorbarLabelTitle : 0a97c646f136466e84a9f6213a5012a9
 colorbarLogplot : 81e8346c37f4bd5d72a6a4a3e772b617
@@ -33,7 +33,7 @@ imageOrientation_inline : 95b55b00b4a78ce2048a14d0d5c62a4c
 imagescplot : a594a023a15fb1c138c31674e18b3683
 imagescplot2 : 4e0233c5501d7ceb40d3292fd70bbc66
 latexInterpreter : ec686ebe3ad0c580069cbcf074d8416c
-latexmath2 : 0901e645e5b9df5ca2b944a246016300
+latexmath2 : bc51844c5e542a82b9929440c09a3f4d
 legendplot : 34e0bbc9920037784540b3389e4c3a7c
 legendplotBoxoff : 3d96df6372346407ffce28a2ea76e4eb
 legendsubplots : aa821b26c5907ffa9a4f3d652a288157
@@ -49,7 +49,7 @@ markerSizes2 : 96e29fde18b4b5d72f1182bda1cc626f
 meshPlot : 8add69082c7a518e3a679ffa914d5887
 mixedBarLine : 7fd3492ff6942a79977940e4ca463778
 moreLegends : 6d33153548c28341e8cb8ddc73c64f7c
-multiline_labels : 89de7c812f91c1fa78a7fec08d502608
+multiline_labels : 4e5b7ddd8cb37926e57403dfc2601a16
 multipleAxes : 62ea3df8f3595e1ae3b900745f898fc1
 multiplePatches : 3fdceeb9e1aed6c4130988558ef6c863
 myBoxplot : 2b850d55681937c2c38a7a4c0a5ef2af
