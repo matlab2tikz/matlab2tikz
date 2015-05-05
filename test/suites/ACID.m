@@ -186,7 +186,7 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB(); %FIXME: `width` is inconsistent, see #552
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
