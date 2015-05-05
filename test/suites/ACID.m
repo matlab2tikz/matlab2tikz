@@ -1689,7 +1689,7 @@ end
 % =========================================================================
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.issue = 637;
 
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
@@ -1698,11 +1698,6 @@ function [stat] = latexmath2()
   set(gcf, 'position', [2 2 4 6.5])
   set(gca, 'visible', 'off')
 
-  % Note: Most likely due to a bug in matlab2tikz the pgfplots output will
-  %       appear empty even though the LaTeX strings are contained in the
-  %       output file. This is because the following (or something like it)
-  %       is missing from the axis environment properties:
-  %       xmin=0, xmax=4, ymin=-1, ymax=6
   % Note: The matrices in h(1) and h(2) cannot be compiled inside pgfplots.
   %       They are therefore disabled.
 % h(1) = text( 'units', 'inch', 'position', [.2 5],                    ...

@@ -129,6 +129,10 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
           axLim = [x_lim; y_lim; z_lim];
 
           pos = get(h, 'Position');
+          % If the axis is 2D, ignore the z component for the checks
+          if ~isAxis3D(meta.gca)
+              pos(3) = 0; 
+          end
           bPosInsideLim = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
 
           % In 2D plots the 'extent' of the textbox is available and also
@@ -580,5 +584,11 @@ function lambda = crossLines(X1, X2, X3, X4)
           -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
   lambda = invA * rhs;
 
+end
+% =========================================================================
+function bool = isAxis3D(axisHandle)
+% Check if elevation is not orthogonal to xy plane
+    axisView = get(axisHandle,'view');
+    bool     = ~ismember(axisView(2),[90,-90]);
 end
 % =========================================================================
