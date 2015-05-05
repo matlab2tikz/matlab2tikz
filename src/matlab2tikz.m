@@ -1380,12 +1380,6 @@ function bool = isAxisVisible(axisHandle)
     end
 end
 % ==============================================================================
-function bool = isAxis3D(axisHandle)
-% Check if elevation is not orthogonal to xy plane
-    axisView = get(axisHandle,'view');
-    bool     = ~ismember(axisView(2),[90,-90]);
-end
-% ==============================================================================
 function [m2t, str] = drawLine(m2t, h, yDeviation)
 % Returns the code for drawing a regular line and error bars.
 % This is an extremely common operation and takes place in most of the
