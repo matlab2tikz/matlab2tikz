@@ -129,6 +129,10 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
           axLim = [x_lim; y_lim; z_lim];
 
           pos = get(h, 'Position');
+          % If the axis is 2D, ignore the z component for the checks
+          if ~isAxis3D(meta.gca)
+              pos(3) = 0; 
+          end
           bPosInsideLim = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
 
           % In 2D plots the 'extent' of the textbox is available and also

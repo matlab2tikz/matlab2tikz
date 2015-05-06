@@ -186,7 +186,7 @@ end
 % =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB(); %FIXME: `width` is inconsistent, see #552
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
@@ -1689,7 +1689,8 @@ end
 % =========================================================================
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.issue = 637;
+  stat.unreliable = isMATLAB('<',[8,4]); %FIXME: `at` is inconsistent, see #552
 
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
@@ -1698,11 +1699,6 @@ function [stat] = latexmath2()
   set(gcf, 'position', [2 2 4 6.5])
   set(gca, 'visible', 'off')
 
-  % Note: Most likely due to a bug in matlab2tikz the pgfplots output will
-  %       appear empty even though the LaTeX strings are contained in the
-  %       output file. This is because the following (or something like it)
-  %       is missing from the axis environment properties:
-  %       xmin=0, xmax=4, ymin=-1, ymax=6
   % Note: The matrices in h(1) and h(2) cannot be compiled inside pgfplots.
   %       They are therefore disabled.
 % h(1) = text( 'units', 'inch', 'position', [.2 5],                    ...
@@ -1720,19 +1716,14 @@ function [stat] = latexmath2()
           'f(t)dt}$$'                                                  ]);
   h(4) = text( 'units', 'inches', 'position', [.2 2],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
-        '$$e = \sum_{k=0}^\infty {1 \over {k!} } $$'                   );
+        '$$e = \sum_{k=0}^\infty {\frac{1}{k!}} $$'                   );
   h(5) = text( 'units', 'inches', 'position', [.2 1],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
-        [ '$$m \ddot y = -m g + C_D \cdot {1 \over 2}'                 ...
+        [ '$$m \ddot y = -m g + C_D \cdot {\frac{1}{2}}'                 ...
           '\rho {\dot y}^2 \cdot A$$'                                  ]);
   h(6) = text( 'units', 'inches', 'position', [.2 0],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
         '$$\int_{0}^{\infty} x^2 e^{-x^2} dx = \frac{\sqrt{\pi}}{4}$$' );
-
-  % TODO: On processing the matlab2tikz_acidtest output, LaTeX complains
-  %       about the use of \over:
-  %         Package amsmath Warning: Foreign command \over;
-  %         (amsmath)                \frac or \genfrac should be used instead
 end
 % =========================================================================
 function [stat] = parameterCurve3d()
