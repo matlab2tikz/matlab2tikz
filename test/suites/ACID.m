@@ -1690,6 +1690,7 @@ end
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
   stat.issue = 637;
+  stat.unreliable = isMATLAB('<',[8,4]); %FIXME: `at` is inconsistent, see #552
 
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
