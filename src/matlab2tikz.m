@@ -2561,7 +2561,7 @@ function [m2t,str] = drawSurface(m2t, h)
     [dx, dy, dz, numrows] = getXYZDataFromSurface(h);
     m2t = jumpAtUnboundCoords(m2t, [dx(:); dy(:); dz(:)]);
 
-    opts = addZBufferOptions(m2t, h, opts);
+    [m2t, opts] = addZBufferOptions(m2t, h, opts);
 
     % Check if 3D
     is3D = m2t.axesContainers{end}.is3D;
@@ -2641,7 +2641,7 @@ function [m2t,str] = drawSurface(m2t, h)
     [m2t, str] = addLabel(m2t, str);
 end
 % ==============================================================================
-function opts = addZBufferOptions(m2t, h, opts)
+function [m2t, opts] = addZBufferOptions(m2t, h, opts)
     % Enforce 'z buffer=sort' if shader is flat and is a 3D plot. It is to
     % avoid overlapping e.g. sphere plots and to properly mimic Matlab's
     % coloring of faces.
@@ -2651,11 +2651,15 @@ function opts = addZBufferOptions(m2t, h, opts)
     %   dy are rank-1-matrices.
     % - hist3D plots should not be z-sorted or the highest bars will cover
     %   the shortest one even if positioned in the back
-    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
-    isHist3D     = strcmpi(get(h,'tag'),'hist3');
+    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'), 'interp'));
+    isHist3D     = strcmpi(get(h,'tag'), 'hist3');
     is3D         = m2t.axesContainers{end}.is3D;
     if is3D && isShaderFlat && ~isHist3D
-        opts = opts_add(opts, 'z buffer','sort');
+        opts = opts_add(opts, 'z buffer', 'sort');
+        % Pgfplots 1.12 contains a bug fix that fixes legend entries when
+        % 'z buffer=sort' has been set. So, it's  easier to always require that
+        % version anyway. See #504 for more information.
+        m2t = needsPgfplotsVersion(m2t, [1,12]);
     end
 end
 % ==============================================================================
