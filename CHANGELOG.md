@@ -30,7 +30,7 @@
       - Misc. fixes: #426, #513, #520
  * For developers:
       - The testing framework has been revamped (see also `test/README.md`)
-      - A lot of the tests have been updated (#614, )
+      - A lot of the tests have been updated (#604, #614, #638, ...)
       - Cyclomatic complexity of the code has been reduced (#391)
       - Repository has been moved to [matlab2tikz/matlab2tikz](https://github.com/matlab2tikz/matlab2tikz)
       - Extra files have been pruned (#616)
