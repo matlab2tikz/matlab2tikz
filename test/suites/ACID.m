@@ -334,7 +334,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.unreliable = isMATLAB('>=',[8,4]);
+  stat.unreliable  = isMATLAB();
   % FIXME: see #604; contour() produces inconsistent output
   stat.issues = [49 404];
 
@@ -353,17 +353,14 @@ end
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
   stat.unreliable = isMATLAB; % FIXME: inspect this
+  stat.issues = 582;
 
-  contourf(peaks(20), 10);
+  [trash, h] = contourf(peaks(20), 10);
+  hold on
+  plot(1:20)
   colorbar();
-  legend('my legend');
-%    colorbar('NorthOutside');
-%    colorbar('SouthOutside');
-%    colorbar('WestOutside');
-
-%  colormap([0:0.1:1; 1:-0.1:0; 0:0.1:1]')
+  legend(h, 'Contour');
   colormap hsv;
-
 end
 % =========================================================================
 function [stat] = double_colorbar()
@@ -1396,6 +1393,7 @@ end
 % =========================================================================
 function [stat] = textext()
   stat.description = 'Formatted text and special characters using \TeX{}.';
+  stat.unreliable  = isMATLAB();
 
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
