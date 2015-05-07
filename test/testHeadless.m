@@ -27,7 +27,7 @@ function [ status ] = testHeadless( varargin )
                    };
 
     cwd = initializeWorkingDirectory();
-    state = initializeGlobalState(); get(0,'defaultAxesColorOrder')
+    state = initializeGlobalState();
     status = testMatlab2tikz('extraOptions', extraOptions, ...
                              'actionsToExecute', @actionsToExecute, ...
                              varargin{:});

@@ -4,24 +4,8 @@ function restoreGlobalState(orig)
     fprintf('Restore global state...\n');
     
     % Restore relevant properties
-    switch getEnvironment
-        case 'MATLAB'
-            % --- ScreenPixelsPerInch: Known to influence `width` and `at`
-            set(0,'ScreenPixelsPerInch',orig.ScreenPixelsPerInch);
-
-            % --- defaultAxesColorOrder
-            set(0,'defaultAxesColorOrder',orig.defaultAxesColorOrder);
-
-        case 'Octave'
-            % --- ScreenPixelsPerInch: Known to influence `width` and `at`
-            % setting this property in Octave seems unsupported
-            %set(0,'screenpixelsperinch',orig.ScreenPixelsPerInch);
-
-            % --- defaultAxesColorOrder
-            set(0,'defaultAxesColorOrder',orig.defaultAxesColorOrder);
-
-        otherwise
-            error('matlab2tikz:UnknownEnvironment', ...
-                 'Unknown environment. Need MATLAB(R) or GNU Octave.')
+    state_fields = fieldnames(orig);
+    for i = 1:length(state_fields)
+        set(0, state_fields{i}, orig.(state_fields{i}).val);
     end
 end
