@@ -2,9 +2,6 @@ function orig = initializeGlobalState()
 % Initialize global state. Set various properties of the graphical root to ensure reliable output of the ACID testsuite.
 % See #542 and #552
     fprintf('Initialize global state...\n');
-    
-    %--- Obtain complete global state
-    state_complete = get(0);
 
     %--- Define desired global state properties
     % See http://undocumentedmatlab.com/blog/getundoc-get-undocumented-object-properties
