@@ -29,7 +29,7 @@ function status = testSurfshader(k)
       error('patchTests:outOfBounds', ...
             'Out of bounds (number of testfunctions=%d)', numFunctions);
   end
-  
+
 end
 
 % =========================================================================
@@ -56,8 +56,7 @@ end
 % =========================================================================
 function [stat] = surfShader4()
 stat.description = 'shader=faceted | Fc: RGB | Ec: interp';
-env = getEnvironment();
-if strcmpi(env, 'MATLAB') && isVersionBelow(env, 8, 4) %R2014a and older
+if isMATLAB('<', [8,4]); %R2014a and older
     warning('m2t:ACID:surfShader4',...
         'The MATLAB EPS export may behave strangely for this case');
 end
