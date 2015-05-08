@@ -647,13 +647,10 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
-
-            case 'contour'
-                [m2t, str] = drawContour(m2t, child);
-
+            
             case {'hggroup', 'matlab.graphics.primitive.Group', ...
                   'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area', ...
-                  'quiver'}
+                  'quiver','contour'}
                 [m2t, str] = drawHggroup(m2t, child);
 
             case 'hgtransform'
@@ -2242,8 +2239,40 @@ function alpha = normalizedAlphaValues(m2t, alpha, handle)
 end
 % ==============================================================================
 function [m2t, str] = drawContour(m2t, h)
-  str = '';
+    if isHG2()
+        [m2t, str] = drawContourHG2(m2t, h);
+    else
+        % Save legend state for the contour group
+        hasLegend = m2t.currentHandleHasLegend;
 
+        % Plot children patches
+        children  = get(h,'children');
+        N         = numel(children);
+        str       = cell(N,1);
+        for ii = 1:N
+            % Plot in reverse order
+            child          = children(N-ii+1);
+            isContourLabel = strcmpi(get(child,'type'),'text');
+            if isContourLabel
+                [m2t, str{ii}] = drawText(m2t,child);
+            else
+                [m2t, str{ii}] = drawPatch(m2t,child);
+            end
+
+            % Only first child can be in the legend
+            m2t.currentHandleHasLegend = false; 
+        end
+        str = strcat(str,sprintf('\n'));
+        str = [str{:}];
+
+        % Restore group's legend state
+        m2t.currentHandleHasLegend = hasLegend;
+    end
+end
+% ==============================================================================
+function [m2t, str] = drawContourHG2(m2t, h)
+  str = '';
+  
   % Retrieve ContourMatrix
   contours = get(h,'ContourMatrix')';
   [istart, nrows] = findStartOfContourData(contours);
@@ -2378,14 +2407,23 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     % Plot
     columnNames = {'x','y'};
     for ii = 1:ncont + 1
+        drawOpts = opts_new();
+
         % Get color
         zval          = cellcont{ii}(1,1);
         [m2t, xcolor] = getColor(m2t,h,zval,'image');
+        drawOpts      = opts_add(drawOpts,'fill',xcolor);
+
+        % Toggle legend entry
+        hasLegend = ii == 1 && m2t.currentHandleHasLegend;
+        drawOpts  = maybeShowInLegend(hasLegend, drawOpts);
+
         % Print table
         [m2t, table, tabOpts] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
+
         % Fillplot
-        str = sprintf('%s\\addplot[fill=%s] table[%s] {%%\n%s};\n', ...
-            str, xcolor{1}, opts_print(m2t, tabOpts, ','), table);
+        str = sprintf('%s\\addplot[%s] table[%s] {%%\n%s};\n', ...
+            str, opts_print(m2t,drawOpts,','), opts_print(m2t,tabOpts,','), table);
     end
 end
 % ==============================================================================
@@ -2428,8 +2466,11 @@ function [m2t, str] = drawHggroup(m2t, h)
         case {'specgraph.scattergroup','matlab.graphics.chart.primitive.Scatter'}
             % scatter plots
             [m2t,str] = drawScatterPlot(m2t, h);
-
-        case {'specgraph.contourgroup', 'hggroup', 'matlab.graphics.primitive.Group'}
+        
+        case {'specgraph.contourgroup', 'matlab.graphics.chart.primitive.Contour'}
+            [m2t,str] = drawContour(m2t, h);
+            
+        case {'hggroup', 'matlab.graphics.primitive.Group'}
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
 
@@ -2561,7 +2602,7 @@ function [m2t,str] = drawSurface(m2t, h)
     [dx, dy, dz, numrows] = getXYZDataFromSurface(h);
     m2t = jumpAtUnboundCoords(m2t, [dx(:); dy(:); dz(:)]);
 
-    opts = addZBufferOptions(m2t, h, opts);
+    [m2t, opts] = addZBufferOptions(m2t, h, opts);
 
     % Check if 3D
     is3D = m2t.axesContainers{end}.is3D;
@@ -2641,7 +2682,7 @@ function [m2t,str] = drawSurface(m2t, h)
     [m2t, str] = addLabel(m2t, str);
 end
 % ==============================================================================
-function opts = addZBufferOptions(m2t, h, opts)
+function [m2t, opts] = addZBufferOptions(m2t, h, opts)
     % Enforce 'z buffer=sort' if shader is flat and is a 3D plot. It is to
     % avoid overlapping e.g. sphere plots and to properly mimic Matlab's
     % coloring of faces.
@@ -2651,11 +2692,15 @@ function opts = addZBufferOptions(m2t, h, opts)
     %   dy are rank-1-matrices.
     % - hist3D plots should not be z-sorted or the highest bars will cover
     %   the shortest one even if positioned in the back
-    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'),'interp'));
-    isHist3D     = strcmpi(get(h,'tag'),'hist3');
+    isShaderFlat = isempty(strfind(opts_get(opts, 'shader'), 'interp'));
+    isHist3D     = strcmpi(get(h,'tag'), 'hist3');
     is3D         = m2t.axesContainers{end}.is3D;
     if is3D && isShaderFlat && ~isHist3D
-        opts = opts_add(opts, 'z buffer','sort');
+        opts = opts_add(opts, 'z buffer', 'sort');
+        % Pgfplots 1.12 contains a bug fix that fixes legend entries when
+        % 'z buffer=sort' has been set. So, it's  easier to always require that
+        % version anyway. See #504 for more information.
+        m2t = needsPgfplotsVersion(m2t, [1,12]);
     end
 end
 % ==============================================================================

@@ -334,7 +334,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.unreliable = isMATLAB('>=',[8,4]);
+  stat.unreliable  = isMATLAB();
   % FIXME: see #604; contour() produces inconsistent output
   stat.issues = [49 404];
 
@@ -353,17 +353,14 @@ end
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
   stat.unreliable = isMATLAB; % FIXME: inspect this
+  stat.issues = 582;
 
-  contourf(peaks(20), 10);
+  [trash, h] = contourf(peaks(20), 10);
+  hold on
+  plot(1:20)
   colorbar();
-  legend('my legend');
-%    colorbar('NorthOutside');
-%    colorbar('SouthOutside');
-%    colorbar('WestOutside');
-
-%  colormap([0:0.1:1; 1:-0.1:0; 0:0.1:1]')
+  legend(h, 'Contour');
   colormap hsv;
-
 end
 % =========================================================================
 function [stat] = double_colorbar()
@@ -976,6 +973,13 @@ function [stat] = bodeplots()
   grid on
 
   legend('Perfect LCL',' Real LCL','Location','SW')
+  % Work around a peculiarity in R2014a and older: when the figure is invisible,
+  % the XData/YData of all plots is NaN. It gets set to the proper values when
+  % the figure is actually displayed. To do so, we temporarily toggle this
+  % option. This triggers the call-back (and might flicker the figure).
+  isVisible = get(gcf,'visible');
+  set(gcf,'visible','on')
+  set(gcf,'visible',isVisible);
 end
 % =========================================================================
 function [stat] = rlocusPlot()
@@ -1389,6 +1393,7 @@ end
 % =========================================================================
 function [stat] = textext()
   stat.description = 'Formatted text and special characters using \TeX{}.';
+  stat.unreliable  = isMATLAB();
 
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
