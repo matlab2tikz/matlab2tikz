@@ -1946,7 +1946,7 @@ end
 % =========================================================================
 function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
-  stat.unreliable = isOctave || isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   ylim([-1 1]); xlim([-1 1]); hold on; % prevent error on octave
   n = 6;
