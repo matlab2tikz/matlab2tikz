@@ -1948,6 +1948,7 @@ function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
   stat.unreliable = isOctave || isMATLAB('<', [8,4]); % FIXME: investigate
 
+  ylim([-1 1]); xlim([-1 1]); hold on; % prevent error on octave
   n = 6;
   r = (0:n)'/n;
   theta = pi*(-n:n)/n;
@@ -1956,6 +1957,7 @@ function [stat] = pColorPlot()
   C = r*cos(2*theta);
   pcolor(X,Y,C)
   axis equal tight
+
 end
 % =========================================================================
 function [stat] = multiplePatches()
