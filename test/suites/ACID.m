@@ -1181,6 +1181,7 @@ function [stat] = scatterPlotMarkers()
   n = 1:10;
   d = 10;
   s = d^2 * n;
+  if isOctave(), s = s/25; end; % smaller size in octave
   e = d * ones(size(n));
   grid on;
   hold on;
@@ -1191,7 +1192,8 @@ function [stat] = scatterPlotMarkers()
 
   nStyles = numel(style);
   for ii = 1:nStyles
-      scatter(n, ii * e, s, style{ii});
+      curr = style{ii};
+      scatter(n, ii * e, s, curr(1), curr(2));
   end
   xlim([min(n)-1 max(n)+1]);
   ylim([0 d*(nStyles+1)]);
