@@ -154,9 +154,39 @@ function [status] = ACID(k)
 
 end
 % =========================================================================
+function data = ACID_data()
+  % Data to be used for various ACID tests
+  % This ensures the tests don't rely on functions that yield
+  % non-deterministic output, e.g. `rand` and `svd`.
+  data = [    11    11     9
+               7    13    11
+              14    17    20
+              11    13     9
+              43    51    69
+              38    46    76
+              61   132   186
+              75   135   180
+              38    88   115
+              28    36    55
+              12    12    14
+              18    27    30
+              18    19    29
+              17    15    18
+              19    36    48
+              32    47    10
+              42    65    92
+              57    66   151
+              44    55    90
+             114   145   257
+              35    58    68
+              11    12    15
+              13     9    15
+              10     9     7];
+end
+% =========================================================================
 function [stat] = multiline_labels()
   stat.description = 'Test multiline labels and plot some points.';
-  stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB(); %FIXME: `width` is inconsistent, see #552
 
   m = [0 1 1.5 1 -1];
   plot(m,'*-'); hold on;
@@ -289,6 +319,7 @@ end
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
   stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
+  % FIXME: see #604; contour() produces inconsistent output
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -303,7 +334,8 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.unreliable = isMATLAB('>=',[8,4]);
+  stat.unreliable  = isMATLAB();
+  % FIXME: see #604; contour() produces inconsistent output
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -321,17 +353,14 @@ end
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
   stat.unreliable = isMATLAB; % FIXME: inspect this
+  stat.issues = 582;
 
-  contourf(peaks(20), 10);
+  [trash, h] = contourf(peaks(20), 10);
+  hold on
+  plot(1:20)
   colorbar();
-  legend('my legend');
-%    colorbar('NorthOutside');
-%    colorbar('SouthOutside');
-%    colorbar('WestOutside');
-
-%  colormap([0:0.1:1; 1:-0.1:0; 0:0.1:1]')
+  legend(h, 'Contour');
   colormap hsv;
-
 end
 % =========================================================================
 function [stat] = double_colorbar()
@@ -372,7 +401,6 @@ function [stat] = randomWithLines()
   t = 1:150;
   X = [sin(t); cos(beta * t)].';
 
-  %X = randn(150,2);
   X(:,1) = (X(:,1) * 90) + 75;
   plot(X(:,1),X(:,2),'o');
   hold on;
@@ -528,6 +556,7 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
+  stat.issues = 609;
 
   x = -pi:pi/20:pi;
   l = plot(x, cos(x),'-ro',...
@@ -587,7 +616,7 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
-  stat.unreliable = isMATLAB || isOctave; % FIXME: #614
+  stat.unreliable = isOctave || isMATLAB(); % FIXME: investigate
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -601,8 +630,8 @@ function [stat] = bars()
   end
 
   % dataset stacked
-  [data,dummy,dummy] = svd(magic(7)); %#ok
-  Y = round(abs(data(2:6,2:4))*10);
+  data = ACID_data;
+  Y = round(abs(data(2:6,1:3))/10);
 
   subplot(2,2,1);
   b1 = bar(bins,plotData,'grouped','BarWidth',1.5);
@@ -729,10 +758,11 @@ end
 function [stat] = logicalImage()
   stat.description = 'An image plot of logical matrix values.' ;
   stat.unreliable = isOctave; %FIXME: investigate
+  % different `width`, see issue #552# (comment 76918634)
 
-
-  [plotData,dummy,dummy] = svd(magic(10)); %#ok
+  plotData = magic(10);
   imagesc(plotData > mean(plotData(:)));
+  colormap('hot');
 end
 % =========================================================================
 function [stat] = imagescplot()
@@ -795,7 +825,7 @@ end
 % =========================================================================
 function [stat] = manualAlignment()
   stat.description = 'Manually aligned figures.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
+  stat.unreliable = isOctave || isMATLAB; % FIXME: investigate
 
   xrange = linspace(-3,4,2*1024);
 
@@ -828,45 +858,22 @@ function [stat] = subplotCustom ()
   plot(x,y);
 end
 % =========================================================================
-function [stat] = errorBars ()
+function [stat] = errorBars()
   stat.description = 'Generic error bar plot.';
   stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer, see #590, #604
 
+  data = ACID_data;
   plotData = 1:10;
-  [u,s,v] = svd(magic(11));
 
-  eH = abs(u(1:10,5));
-  eL = abs(v(1:10,9));
+  eH = abs(data(1:10,1))/10;
+  eL = abs(data(1:10,3))/50;
 
   errorbar(1:10, plotData, eL, eH, '.')
 end
 % =========================================================================
-function [stat] = errorBars2 ()
+function [stat] = errorBars2()
   stat.description = 'Another error bar example.';
-  data = [    11    11     9
-               7    13    11
-              14    17    20
-              11    13     9
-              43    51    69
-              38    46    76
-              61   132   186
-              75   135   180
-              38    88   115
-              28    36    55
-              12    12    14
-              18    27    30
-              18    19    29
-              17    15    18
-              19    36    48
-              32    47    10
-              42    65    92
-              57    66   151
-              44    55    90
-             114   145   257
-              35    58    68
-              11    12    15
-              13     9    15
-              10     9     7];
+  data = ACID_data;
   y = mean( data, 2 );
   e = std( data, 1, 2 );
   errorbar( y, e, 'xr' );
@@ -876,6 +883,7 @@ function [stat] = legendsubplots()
   stat.description = [ 'Subplots with legends. ' , ...
     'Increase value of "length" in the code to stress-test your TeX installation.' ];
   stat.unreliable = isOctave; %FIXME: investigate
+  stat.issues = 609;
 
   % size of upper subplot
   rows = 4;
@@ -966,6 +974,13 @@ function [stat] = bodeplots()
   grid on
 
   legend('Perfect LCL',' Real LCL','Location','SW')
+  % Work around a peculiarity in R2014a and older: when the figure is invisible,
+  % the XData/YData of all plots is NaN. It gets set to the proper values when
+  % the figure is actually displayed. To do so, we temporarily toggle this
+  % option. This triggers the call-back (and might flicker the figure).
+  isVisible = get(gcf,'visible');
+  set(gcf,'visible','on')
+  set(gcf,'visible',isVisible);
 end
 % =========================================================================
 function [stat] = rlocusPlot()
@@ -1039,7 +1054,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot1()
   stat.description = 'Representation of the complex plane with zplane.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: investigate
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1056,7 +1071,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot2()
   stat.description = 'Representation of the complex plane with zplane.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB; % FIXME: #604; only difference is `width`
   stat.closeall = true;
 
   % check of the signal processing toolbox is installed
@@ -1197,15 +1212,16 @@ function [stat] = scatter3Plot()
 end
 % =========================================================================
 function [stat] = spherePlot()
-  stat.description = 'Plot a sphere.';
+  stat.description = 'Stretched sphere with unequal axis limits.';
   stat.unreliable = isOctave || isMATLAB('<', [8,4]); %FIXME: investigate
+  stat.issues = 560;
 
   sphere(30);
   title('a sphere: x^2+y^2+z^2');
   xlabel('x');
   ylabel('y');
   zlabel('z');
-  axis equal;
+  set(gca,'DataAspectRatio',[1,1,.5],'xlim',[-1 2], 'zlim',[-1 0.8])
 end
 % =========================================================================
 function [stat] = surfPlot()
@@ -1339,9 +1355,10 @@ end
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
   stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+  % unreliable, see issue #614 (comment 92263263)
 
-  [x,s,v] = svd(magic(33));
-  x = x(end:-1:end-1000);
+  data = ACID_data;
+  x = data(:);
   hist(x,10)
   y = ylim;
   hold on;
@@ -1351,7 +1368,7 @@ end
 % =========================================================================
 function [stat] = decayingharmonic()
   stat.description = 'Decaying harmonic oscillation with \TeX{} title.';
-  stat.issue = 587;
+  stat.issues = 587;
 
   % Based on an example from
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
@@ -1377,6 +1394,7 @@ end
 % =========================================================================
 function [stat] = textext()
   stat.description = 'Formatted text and special characters using \TeX{}.';
+  stat.unreliable  = isMATLAB();
 
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
@@ -1677,7 +1695,8 @@ end
 % =========================================================================
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.issues = 637;
+  stat.unreliable = isMATLAB('<',[8,4]); %FIXME: `at` is inconsistent, see #552
 
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
@@ -1686,11 +1705,6 @@ function [stat] = latexmath2()
   set(gcf, 'position', [2 2 4 6.5])
   set(gca, 'visible', 'off')
 
-  % Note: Most likely due to a bug in matlab2tikz the pgfplots output will
-  %       appear empty even though the LaTeX strings are contained in the
-  %       output file. This is because the following (or something like it)
-  %       is missing from the axis environment properties:
-  %       xmin=0, xmax=4, ymin=-1, ymax=6
   % Note: The matrices in h(1) and h(2) cannot be compiled inside pgfplots.
   %       They are therefore disabled.
 % h(1) = text( 'units', 'inch', 'position', [.2 5],                    ...
@@ -1708,19 +1722,14 @@ function [stat] = latexmath2()
           'f(t)dt}$$'                                                  ]);
   h(4) = text( 'units', 'inches', 'position', [.2 2],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
-        '$$e = \sum_{k=0}^\infty {1 \over {k!} } $$'                   );
+        '$$e = \sum_{k=0}^\infty {\frac{1}{k!}} $$'                   );
   h(5) = text( 'units', 'inches', 'position', [.2 1],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
-        [ '$$m \ddot y = -m g + C_D \cdot {1 \over 2}'                 ...
+        [ '$$m \ddot y = -m g + C_D \cdot {\frac{1}{2}}'                 ...
           '\rho {\dot y}^2 \cdot A$$'                                  ]);
   h(6) = text( 'units', 'inches', 'position', [.2 0],                    ...
         'fontsize', 14, 'interpreter', 'latex', 'string',              ...
         '$$\int_{0}^{\infty} x^2 e^{-x^2} dx = \frac{\sqrt{\pi}}{4}$$' );
-
-  % TODO: On processing the matlab2tikz_acidtest output, LaTeX complains
-  %       about the use of \over:
-  %         Package amsmath Warning: Foreign command \over;
-  %         (amsmath)                \frac or \genfrac should be used instead
 end
 % =========================================================================
 function [stat] = parameterCurve3d()
@@ -2383,11 +2392,12 @@ end
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
   stat.issues = 442;
-  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); %Octave, R2014b and newer
+  stat.unreliable = isOctave || isMATLAB(); % FIXME: #614
+  % details: https://github.com/matlab2tikz/matlab2tikz/pull/614#issuecomment-91844506
 
   % dataset stacked
-  [data,dummy,summy] = svd(magic(7)); %#ok
-  Y = round(abs(data(2:6,2:4))*10);
+  data = ACID_data;
+  Y = round(abs(data(7:-1:3,1:3))/10);
   n = size(Y,1);
   xVals = (1:n).';
   yVals = min((xVals).^2, sum(Y,2));
