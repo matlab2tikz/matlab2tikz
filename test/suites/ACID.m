@@ -1176,7 +1176,7 @@ end
 % =========================================================================
 function [stat] = scatterPlotMarkers()
   stat.description = 'Scatter plot with with different marker sizes and legend.';
-  stat.unreliable = isOctave;
+  stat.unreliable = isOctave; % FIXME: Output is empty?!
 
   n = 1:10;
   d = 10;
