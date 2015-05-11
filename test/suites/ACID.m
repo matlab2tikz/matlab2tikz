@@ -1215,7 +1215,7 @@ end
 function [stat] = spherePlot()
   stat.description = 'Stretched sphere with unequal axis limits.';
   stat.unreliable = isOctave || isMATLAB('<', [8,4]); %FIXME: investigate
-  stat.issue = 560;
+  stat.issues = 560;
 
   sphere(30);
   title('a sphere: x^2+y^2+z^2');
@@ -1369,7 +1369,7 @@ end
 % =========================================================================
 function [stat] = decayingharmonic()
   stat.description = 'Decaying harmonic oscillation with \TeX{} title.';
-  stat.issue = 587;
+  stat.issues = 587;
 
   % Based on an example from
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
@@ -1696,7 +1696,7 @@ end
 % =========================================================================
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
-  stat.issue = 637;
+  stat.issues = 637;
   stat.unreliable = isMATLAB('<',[8,4]); %FIXME: `at` is inconsistent, see #552
 
   % Adapted from an example at
