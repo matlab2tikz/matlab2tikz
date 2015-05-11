@@ -58,6 +58,7 @@ scatterPlotRandom : 6fadda0940c7c468a1aee0aef8203c4e
 sine_with_annotation : 966fbd52d16fb908384adb9ad3f8d98b
 sine_with_markers : 33e7e752de0d54a80fd95a70fa17a1ef
 spherePlot : 4f8881f1d81962a213aa0526566f976b
+stackedBarsWithOther : d13c6715e23a49c663aaa49ad0888f62
 stairsplot : 5931ac65db2987852592a774ddd7cdea
 stemplot : 6439b606433453f3713cdc222e3e1ce0
 stemplot2 : 7b0ac6d075193fc348b9d3d68a14530b
@@ -67,8 +68,9 @@ surfPlot : d49ce46819b288a1a95343ce7d5c44bf
 surfPlot2 : 7589de8232150eee443da0c891e2d78e
 texInterpreter : 0dadacc761202fb046cd43aec6725358
 texcolor : c64bd79b9f491230d1bbb9bb21e6b919
-texrandom : 12a8652867ed3a58f83bf53d890df787
+texrandom : 228ebbb71ef8437333bee37527f902fb
 textAlignment : c7469d72080ad304404125130b8afd36
 textext : a7d42c336b9453d01920743af865c04f
 xAxisReversed : 4fb5232751d05148c769be866e5349b1
 ylabels : c3b3370e58651301e942c768fa8f7dd3
+zoom : b59d5010ae2b13832a28d225e1bd5a61
