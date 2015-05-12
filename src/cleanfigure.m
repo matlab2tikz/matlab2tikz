@@ -466,9 +466,9 @@ function mask = opheimSimplify(x,y,tol)
     %      between the KEY and the LAST vertex;
     %   4. sets the KEY to the LAST vertex and restarts from step 2.
     %
-    % The Opheim algorithm can produce unexpected results if the path 
-    % returns back to a vertex that stays within TOL from the KEY. This
-    % behaviour can be seen in the following example:
+    % The Opheim algorithm can produce unexpected results if the path
+    % returns back on itself while remaining within TOL from the LINE.
+    % This behaviour can be seen in the following example:
     % 
     %   x   = [1,2,2,2,3];
     %   y   = [1,1,2,1,1];
