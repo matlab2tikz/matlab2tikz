@@ -1820,13 +1820,13 @@ function [stat] = herrorbarPlot()
   X = 1:10;
   Y = 1:10;
   err = repmat(0.2, 1, 10);
-  h1 = errorbar(X, Y, err, 'r');
+  h1 = errorbar(X, Y, err+X/30, 'r');
   h_vec = herrorbar(X, Y, err);
   for h=h_vec
       set(h, 'color', [1 0 0]);
   end
   h2 = errorbar(X, Y+1, err, 'g');
-  h_vec = herrorbar(X, Y+1, err);
+  h_vec = herrorbar(X, Y+1, err+Y/40);
   for h=h_vec
       set(h, 'color', [0 1 0]);
   end
