@@ -329,7 +329,7 @@ function simplifyLine(meta, handle, targetResolution)
     end
 
     % Retrieve target figure size in pixels
-    [W, H] = getWidthHeightInPixels(targetResolution);
+    [W, H] = getWidthHeightInPixels(targetResolution)
 
     % Extract the data from the current line handle.
     xData = get(handle, 'XData');
@@ -534,6 +534,8 @@ end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
     % Retrieves target figure width and height in pixels
+    get(gcf,'Units')
+    get(gcf,'Position')
 
     % targetResolution is PPI
     if isscalar(targetResolution)
