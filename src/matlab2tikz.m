@@ -2432,6 +2432,9 @@ function [m2t, str] = drawHggroup(m2t, h)
 % the nature of the plot anymore at this point.  Set to 'unknown' to force
 % fallback handling. This produces something for bar plots, for example.
 % #COMPLEX: big switch-case
+% TODO: Introduce function `guessOctaveType()` to infer plot type by trying
+% to read certain properties, that are specific to a plot type (for example
+% `udata` should be unique to errorbarseries). See #645 for more details.
     try
         cl = class(handle(h));
     catch %#ok
