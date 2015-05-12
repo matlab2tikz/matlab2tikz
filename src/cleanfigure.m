@@ -532,6 +532,11 @@ end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
     % Retrieves target figure width and height in pixels
+    % TODO: If targetResolution is a scalar, W and H are determined
+    % differently on different environments (octave, local vs. Travis).
+    % It is unclear why, as this even happens, if `Units` and `Position`
+    % are matching. Could it be that the `set(gcf,'Units','Inches')` is not
+    % taken into consideration for `Position`, directly after setting it?
 
     % targetResolution is PPI
     if isscalar(targetResolution)
