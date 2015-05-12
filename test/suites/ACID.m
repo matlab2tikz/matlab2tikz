@@ -1820,13 +1820,13 @@ function [stat] = herrorbarPlot()
   X = 1:10;
   Y = 1:10;
   err = repmat(0.2, 1, 10);
-  h1 = errorbar(X, Y, err, 'r');
+  h1 = errorbar(X, Y, err+X/30, 'r');
   h_vec = herrorbar(X, Y, err);
   for h=h_vec
       set(h, 'color', [1 0 0]);
   end
   h2 = errorbar(X, Y+1, err, 'g');
-  h_vec = herrorbar(X, Y+1, err);
+  h_vec = herrorbar(X, Y+1, err+Y/40);
   for h=h_vec
       set(h, 'color', [0 1 0]);
   end
@@ -2495,6 +2495,9 @@ function [stat] = overlappingPlots()
     % FIXME this test is unreliable because the x/y lims of `ax2` are not set
     % explicitly. We should not set them explicitly, rather implement #591
     stat.issues = 6;
+    stat.extraCleanfigureOptions = {'targetResolution', 100}; % FIXME: By
+    % explicitly setting targetResolution, the test should hopefully behave
+    % reliable. See #645 for discussion.
 
     % create pseudo random data and convert it from matrix to vector
     l = 256;
