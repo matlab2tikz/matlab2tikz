@@ -2495,7 +2495,7 @@ function [stat] = overlappingPlots()
     % FIXME this test is unreliable because the x/y lims of `ax2` are not set
     % explicitly. We should not set them explicitly, rather implement #591
     stat.issues = 6;
-    stat.extraCleanfigureOptions = {'targetResolution', [1000,500]}; % FIXME: By
+    stat.extraCleanfigureOptions = {'targetResolution', 100}; % FIXME: By
     % explicitly setting targetResolution, the test should hopefully behave
     % reliable. See #645 for discussion.
 
