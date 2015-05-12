@@ -647,7 +647,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
-            
+
             case {'hggroup', 'matlab.graphics.primitive.Group', ...
                   'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area', ...
                   'quiver','contour'}
@@ -1847,7 +1847,7 @@ function [m2t, str] = drawPatch(m2t, handle)
                                          s.edgeColor);
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'fill', ...
                                          s.faceColor);
-                                     
+
         [drawOptions] = opts_copy(patchOptions, 'draw opacity', drawOptions);
         [drawOptions] = opts_copy(patchOptions, 'fill opacity', drawOptions);
 
@@ -2260,7 +2260,7 @@ function [m2t, str] = drawContour(m2t, h)
             end
 
             % Only first child can be in the legend
-            m2t.currentHandleHasLegend = false; 
+            m2t.currentHandleHasLegend = false;
         end
         str = strcat(str,sprintf('\n'));
         str = [str{:}];
@@ -2272,7 +2272,7 @@ end
 % ==============================================================================
 function [m2t, str] = drawContourHG2(m2t, h)
   str = '';
-  
+
   % Retrieve ContourMatrix
   contours = get(h,'ContourMatrix')';
   [istart, nrows] = findStartOfContourData(contours);
@@ -2469,10 +2469,10 @@ function [m2t, str] = drawHggroup(m2t, h)
         case {'specgraph.scattergroup','matlab.graphics.chart.primitive.Scatter'}
             % scatter plots
             [m2t,str] = drawScatterPlot(m2t, h);
-        
+
         case {'specgraph.contourgroup', 'matlab.graphics.chart.primitive.Contour'}
             [m2t,str] = drawContour(m2t, h);
-            
+
         case {'hggroup', 'matlab.graphics.primitive.Group'}
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
@@ -3035,7 +3035,7 @@ function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
 
     if isNone(s.edgeColor) % Edge 'none'
         [m2t, opts, s] = shaderOptsSurfPatchEdgeNone(m2t, handle, opts, s);
-        
+
     elseif strcmpi(s.edgeColor, 'interp') % Edge 'interp'
         [m2t, opts, s] = shaderOptsSurfPatchEdgeInterp(m2t, handle, opts, s);
 
@@ -3061,7 +3061,7 @@ function [m2t, opts, s] = shaderOptsSurfPatchEdgeNone(m2t, handle, opts, s)
     end
 end
 function [m2t, opts, s] = shaderOptsSurfPatchEdgeInterp(m2t, handle, opts, s)
-% gets the shader options for surface patches with interpolated edge colors  
+% gets the shader options for surface patches with interpolated edge colors
     if strcmpi(s.faceColor, 'interp')
         opts = opts_add(opts,'shader','interp');
     elseif strcmpi(s.faceColor, 'flat')
@@ -3169,7 +3169,7 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
     % All markers have the same color.
     [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', cData);
     [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', cData);
-    
+
     if constMarkerkSize
         drawOptions = opts_add(drawOptions, 'only marks');
         drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
@@ -3197,14 +3197,13 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
             markerOptions = opts_add(markerOptions, 'fill', xcolor);
         end
         % for changing marker size, the 'scatter' option has to be added
-        
         drawOptions = opts_add(drawOptions, 'scatter');
         drawOptions = opts_add(drawOptions, 'only marks');
         drawOptions = opts_add(drawOptions, 'color', xcolor);
         drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
         drawOptions = opts_add(drawOptions, 'mark options', ...
             ['{' opts_print(m2t, markOptions, ',') '}']);
-        
+
         if ~hasFaceColor
             drawOptions = opts_add(drawOptions, ...
                 'scatter/use mapped color', xcolor);
@@ -3229,7 +3228,7 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
     markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
     markerOptions = opts_add(markerOptions, 'mark options', ...
         ['{' opts_print(m2t, markOptions, ',') '}']);
-    
+
     if hasEdgeColor && hasFaceColor
         [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
         markerOptions = opts_add(markerOptions, 'draw', ecolor);
@@ -3761,7 +3760,7 @@ function [m2t, str] = drawErrorBars(m2t, h)
     loDev = get(h, 'LData');
 
     yDeviations = [upDev(:), loDev(:)];
-    
+
     % Now run drawLine() with deviation information.
     [m2t, str] = drawLine(m2t, hData, yDeviations);
 end
@@ -4946,14 +4945,14 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             position(i,:) = axesPos ./ [figureSize, figureSize];
 
         end
-        
+
         if strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'manual') ...
                 || strcmpi(get(axesHandle, 'PlotBoxAspectRatioMode'), 'manual')
-                
+
             if strcmpi(get(axesHandle,'Projection'),'Perspective')
                 userWarning(m2t,'Perspective projections are not currently supported')
             end
-            
+
             % project vertices of 3d plot box (this results in 2d coordinates in
             % an absolute coordinate system that is scaled proportionally by
             % Matlab to fit the axes position box)
@@ -4962,26 +4961,26 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                     projection = view(axesHandle);
 
                 case 'Octave'
-                    % Unfortunately, Octave does not have the full `view` 
+                    % Unfortunately, Octave does not have the full `view`
                     % interface implemented, but the projection matrices are
                     % available: http://octave.1599824.n4.nabble.com/Implementing-view-td3032041.html
-                    
+
                     projection = get(axesHandle, 'x_viewtransform');
 
                 otherwise
                     errorUnknownEnvironment();
             end
-            
-                
+
+
             vertices = projection * [0, 1, 0, 0, 1, 1, 0, 1;
                                      0, 0, 1, 0, 1, 0, 1, 1;
-                                     0, 0, 0, 1, 0, 1, 1, 1; 
+                                     0, 0, 0, 1, 0, 1, 1, 1;
                                      1, 1, 1, 1, 1, 1, 1, 1];
-                         
+
             % each of the columns of vertices represents a vertex of the 3D axes
             % but we only need their XY coordinates
             verticesXY = vertices([1 2], :);
-                                
+
             % the size of the projected plot box is limited by the long diagonals
             % The matrix A determines the connectivity, e.g. the first diagonal runs from vertices(:,3) -> vertices(:,4)
             A = [ 0,  0,  0, -1, +1,  0,  0,  0;
@@ -4991,7 +4990,7 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             diagonals = verticesXY * A';
             % each of the columns of this matrix contains a the X and Y distance of a diagonal
             dimensions = max(abs(diagonals), [], 2);
-            
+
             % find limiting dimension and adjust position
             aspectRatio = dimensions(2) * figWidth / (dimensions(1) * figHeight);
             axesAspectRatio = position(i,4) / position(i,3);

@@ -6,14 +6,14 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
-%   CLEANFIGURE('targetResolution',PPI,...)  
+%   CLEANFIGURE('targetResolution',PPI,...)
 %   CLEANFIGURE('targetResolution',[W,H],...)
 %   Reduce the number of data points in line objects by applying
 %   unperceivable changes at the target resolution.
-%   The target resolution can be specificed as the number of Pixels Per 
-%   Inch (PPI), e.g. 300, or as the Width and Heigth of the figure in 
+%   The target resolution can be specificed as the number of Pixels Per
+%   Inch (PPI), e.g. 300, or as the Width and Heigth of the figure in
 %   pixels, e.g. [9000, 5400].
-%   Use targetResolution = Inf or 0 to disable line simplification. 
+%   Use targetResolution = Inf or 0 to disable line simplification.
 %   (default: 600)
 %
 %   Example
@@ -315,12 +315,12 @@ function simplifyLine(meta, handle, targetResolution)
     % Reduce the number of data points in the line 'handle'.
     %
     % Aplies a path-simplification algorithm if there are no markers or
-    % pixelization otherwise. Changes are visually negligible at the target 
+    % pixelization otherwise. Changes are visually negligible at the target
     % resolution.
     %
     % The target resolution is either specificed as the number of PPI or as
     % the [Width, Heigth] of the figure in pixels.
-    % A scalar value of INF or 0 disables path simplification. 
+    % A scalar value of INF or 0 disables path simplification.
     % (default = 600)
 
     % Do not simpify
@@ -383,7 +383,7 @@ function simplifyLine(meta, handle, targetResolution)
         % Pixelate data at the zoom multiplier
         mask   = pixelate(vxData, vyData, xToPix, yToPix);
         xData  = xData(mask);
-        yData  = yData(mask); 
+        yData  = yData(mask);
         set(handle, 'XData', xData);
         set(handle, 'YData', yData);
         return
@@ -421,7 +421,7 @@ function simplifyLine(meta, handle, targetResolution)
         linesx{ii*2-1} = x;
         linesy{ii*2-1} = y;
 
-        % Add nans back (if any) in between the line segments 
+        % Add nans back (if any) in between the line segments
         linesx{ii*2} = nan;
         linesy{ii*2} = nan;
     end
@@ -456,32 +456,31 @@ end
 function mask = opheimSimplify(x,y,tol)
     % Opheim path simplification algorithm
     %
-    % Given a path of vertices V and a tolerance TOL, the 
-    % algorithm:
-    %   1. selects the first vertex as the KEY; 
+    % Given a path of vertices V and a tolerance TOL, the algorithm:
+    %   1. selects the first vertex as the KEY;
     %   2. finds the first vertex farther than TOL from the KEY and links
     %      the two vertices with a LINE;
-    %   3. finds the last vertex from KEY which stays within TOL from the 
-    %      LINE and sets it to be the LAST vertex. Removes all points in 
+    %   3. finds the last vertex from KEY which stays within TOL from the
+    %      LINE and sets it to be the LAST vertex. Removes all points in
     %      between the KEY and the LAST vertex;
     %   4. sets the KEY to the LAST vertex and restarts from step 2.
     %
     % The Opheim algorithm can produce unexpected results if the path
     % returns back on itself while remaining within TOL from the LINE.
     % This behaviour can be seen in the following example:
-    % 
+    %
     %   x   = [1,2,2,2,3];
     %   y   = [1,1,2,1,1];
     %   tol < 1
     %
-    % The algorithm undesirably removes the second last point. See 
-    % https://github.com/matlab2tikz/matlab2tikz/pull/585#issuecomment-89397577 
+    % The algorithm undesirably removes the second last point. See
+    % https://github.com/matlab2tikz/matlab2tikz/pull/585#issuecomment-89397577
     % for additional details.
     %
     % To rectify this issues, step 3 is modified to find the LAST vertex as
     % follows:
-    %   3*. finds the last vertex from KEY which stays within TOL from the 
-    %       LINE, or the vertex that connected to its previous point forms 
+    %   3*. finds the last vertex from KEY which stays within TOL from the
+    %       LINE, or the vertex that connected to its previous point forms
     %       a segment which spans an angle with LINE larger than 90
     %       degrees.
 
@@ -495,7 +494,7 @@ function mask = opheimSimplify(x,y,tol)
         % Find first vertex farther than TOL from the KEY
         j = i+1;
         v = [x(j)-x(i); y(j)-y(i)];
-        while j < N && norm(v) <= tol 
+        while j < N && norm(v) <= tol
             j = j+1;
             v = [x(j)-x(i); y(j)-y(i)];
         end
@@ -504,12 +503,12 @@ function mask = opheimSimplify(x,y,tol)
         % Unit normal to the line between point i and point j
         normal = [v(2);-v(1)];
 
-        % Find the last point which stays within TOL from the line 
-        % connecting i to j, or the last point within a direction change 
-        % of pi/2. 
+        % Find the last point which stays within TOL from the line
+        % connecting i to j, or the last point within a direction change
+        % of pi/2.
         % Starts from the j+1 points, since all previous points are within
         % TOL by construction.
-        while j < N 
+        while j < N
             % Calculate the perpendicular distance from the i->j line
             v1 = [x(j+1)-x(i); y(j+1)-y(i)];
             d = abs(normal.'*v1);
@@ -518,13 +517,12 @@ function mask = opheimSimplify(x,y,tol)
             end
 
             % Calculate the angle between the line from the i->j and the
-            % line from j -> j+1. If 
+            % line from j -> j+1. If
             v2 = [x(j+1)-x(j); y(j+1)-y(j)];
             anglecosine = v.'*v2;
             if anglecosine <= 0;
                 break
             end
-            
             j = j + 1;
         end
         i = j;
