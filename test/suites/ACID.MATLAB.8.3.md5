@@ -25,6 +25,7 @@ errorBars : c426c8a73a5680311d9661bd3336e98f
 errorBars2 : df9d1c66fa9a72efc0785a07b292ce6e
 fill3plot : 57aa8c4eba5070a5b3a960ebaadace93
 freqResponsePlot : 0705ee5d17e950ec0b659e780187af50
+herrorbarPlot : 3eb29e308f16815441ef0f0c788fdde6
 hgTransformPlot : f57d93fab8b9d3534965a277d144ac07
 hist3d : 030888bc27c04c0cca04b591576b78c3
 imageOrientation_PNG : 22063338c9eca0429f5beb56ff1af712
@@ -57,7 +58,7 @@ pColorPlot : 3af66108669a5d3cc6424e3e4159e6e6
 parameterCurve3d : 6021198f4a70f990720e302739b2df80
 parameterSurf : de95db7d22901b3717ea8e0fba7cf4be
 peaks_contour : 6b8a04c3f1c0becbeb6386bfbc397c5a
-peaks_contourf : 3f8d9cce8627265b55d17932c62c08bf
+peaks_contourf : 2369323fa1cff1c767059a0fcd8deae6
 pixelLegend : 62773d4833099f0e3bdd3e8935965d1c
 plain_cos : ad87eaf992cd910d48a92fb6a6a56d86
 polarplot : 8499d786860e8ee2dac6502e8b6c635f
