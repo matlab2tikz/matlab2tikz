@@ -277,7 +277,6 @@ end
 function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
     % in p and determine whether the line between the pair crosses the box.
-
     n = size(data, 1);
     out = false(n-1, 1);
     for k = 1:n-1
@@ -420,6 +419,7 @@ function movePointsCloser(meta, handle)
   % Loop through all points which are to be included in the plot yet do not
   % fit into the extended box, and gather the points by which they are to be
   % replaced.
+
   replaceIndices = find(~dataIsInLargeBox)';
   m = length(replaceIndices);
   r = cell(m, 1);
@@ -585,11 +585,16 @@ function lambda = crossLines(X1, X2, X3, X4)
   % for lambda and mu.
 
   rhs = X3(:) - X1(:);
-  % Divide by det even if it's 0: Infs are returned.
+  % Don't divide by det(erminant), if it is zero. Directly return 'inf'.
+  % Otherwise this yields "warning: division by zero" in octave. See #664.
   % A = [X2-X1, -(X4-X3)];
   detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1));
-  invA = [-(X4(2)-X3(2)), X4(1)-X3(1);...
-          -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
+  if detA == 0
+    invA = inf;
+  else
+    invA = [-(X4(2)-X3(2)), X4(1)-X3(1);...
+            -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
+  end
   lambda = invA * rhs;
 
 end
