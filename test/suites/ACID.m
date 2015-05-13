@@ -582,7 +582,8 @@ function [stat] = zoom()
     stat.description = ['Test function \texttt{pruneOutsideBox()} ', ...
                         'and \texttt{movePointsCloser()} ', ...
                         'of \texttt{cleanfigure()}.'];
-    stat.issues = [226,392,400,664];
+    stat.unreliable = isOctave; %FIXME: investigate
+    stat.issues = [226,392,400];
 
     % Setup
     subplot(311)
