@@ -281,16 +281,24 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     n = size(data, 1);
     out = false(n-1, 1);
     for k = 1:n-1
-        out(k) =  (dataIsInBox(k) && all(isfinite(data(k+1,:)))) ... % one of the neighbors is inside the box
-               || (dataIsInBox(k+1) && all(isfinite(data(k,:)))) ... % and the other is finite
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(1)], [xLim(1);yLim(2)]) ... % left border
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(1)], [xLim(2);yLim(1)]) ... % bottom border
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(2);yLim(1)], [xLim(2);yLim(2)]) ... % right border
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(2)], [xLim(2);yLim(2)]); % top border
+        % one of the neighbors is inside the box
+        c1 = (dataIsInBox(k) && all(isfinite(data(k+1,:))));
+        % and the other is finite
+        c2 = (dataIsInBox(k+1) && all(isfinite(data(k,:))));
+        % left border
+        c3 = segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(1);yLim(1)], [xLim(1);yLim(2)]);
+        % bottom border
+        c4 = segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(1);yLim(1)], [xLim(2);yLim(1)]);
+        % right border
+        c5 = segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(2);yLim(1)], [xLim(2);yLim(2)]);
+        % top border
+        c6 = segmentsIntersect(data(k,:), data(k+1,:), ...
+                                    [xLim(1);yLim(2)], [xLim(2);yLim(2)]);
+        % combine
+        out(k) = c1 || c2 || c3 || c4 || c5 || c6;
     end
 
 end
