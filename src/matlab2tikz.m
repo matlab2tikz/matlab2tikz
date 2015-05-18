@@ -2434,17 +2434,16 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
 end
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
-% Octave doesn't have the handle() function, so there's no way to determine
-% the nature of the plot anymore at this point.  Set to 'unknown' to force
-% fallback handling. This produces something for bar plots, for example.
+% Continue according according to the plot type. Since the function `handle` is
+% not available in Octave, the plot type will be guessed or the fallback type
+% 'unknown' used.
 % #COMPLEX: big switch-case
-% TODO: Introduce function `guessOctaveType()` to infer plot type by trying
-% to read certain properties, that are specific to a plot type (for example
-% `udata` should be unique to errorbarseries). See #645 for more details.
-    try
+    if strcmpi(getEnvironment, 'MATLAB')
         cl = class(handle(h));
-    catch %#ok
-        cl = 'unknown';
+    elseif strcmpi(getEnvironment, 'octave')
+        % Function `handle` is not yet implemented in Octave
+        % Consequently the plot type needs to be guessed. See #645.
+        cl = guessOctavePlotType(h);
     end
 
     switch(cl)
@@ -2484,7 +2483,9 @@ function [m2t, str] = drawHggroup(m2t, h)
             [m2t, str] = handleAllChildren(m2t, h);
 
         case 'unknown'
-            % Weird spurious class from Octave.
+            % Octave only: plot type could not be determined
+            % Fall back to basic plotting
+            properties = get(h)
             [m2t, str] = handleAllChildren(m2t, h);
 
         otherwise
@@ -2496,6 +2497,28 @@ function [m2t, str] = drawHggroup(m2t, h)
                 userWarning(m2t, 'Default handling for ''%s'' failed. Continuing as if it did not occur. \n Original Message:\n %s', cl, getReport(ME));
                 [m2t, str] = deal(m2tBackup, ''); % roll-back
             end
+    end
+end
+% ==============================================================================
+% Function `handle` is not yet implemented in Octave.
+% Consequently the plot type needs to be guessed. See #645.
+% If the type can not be determined reliably, 'unknown' will be set.
+function cl = guessOctavePlotType(h)
+    properties = get(h);
+    % scatter plots
+    if isfield(properties,'marker') && ...
+        isfield(properties,'sizedata') && ...
+        isfield(properties,'cdata')
+        cl = 'specgraph.scattergroup';
+    % % error bars
+    % elseif isfield(properties,'udata')
+    %     % FIXME: legend is not handled
+    %     cl = 'specgraph.errorbarseries';
+    % unknown plot type
+    else
+        cl = 'unknown';
+        fieldnames(properties)
+        warning('unknown plot type')
     end
 end
 % ==============================================================================
