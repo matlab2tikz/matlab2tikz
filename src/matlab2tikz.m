@@ -2479,7 +2479,6 @@ function [m2t, str] = drawHggroup(m2t, h)
         case 'unknown'
             % Octave only: plot type could not be determined
             % Fall back to basic plotting
-            properties = get(h)
             [m2t, str] = handleAllChildren(m2t, h);
 
         otherwise
@@ -2511,8 +2510,6 @@ function cl = guessOctavePlotType(h)
     % unknown plot type
     else
         cl = 'unknown';
-        fieldnames(properties)
-        warning('unknown plot type')
     end
 end
 % ==============================================================================
