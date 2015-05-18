@@ -4469,11 +4469,11 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
             switch lower(textpos)
                 case 'left'
                     % pictogram right of flush right text
-                    textalign = 'left';
+                    textalign = 'right';
                     pictalign = 'right';
                 case 'right'
                     % pictogram left of flush left text (default)
-                    textalign = 'right';
+                    textalign = 'left';
                     pictalign = 'left';
                 otherwise
                     userWarning(m2t, ...
