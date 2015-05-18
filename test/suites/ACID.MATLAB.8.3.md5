@@ -9,7 +9,7 @@ axesColors : 62b8d24ae88ad1df29ed94ff50818f36
 axesLocation : e665762e22cc0cb64d3d23b5f1fcbd66
 bars : 548d03a2eb2214eb6d61af4a5d4533db
 besselImage : 524f559e7344525d628b4caca6a08ce3
-bodeplots : 93e30e9661fb4316ac7730b6e599cf44
+bodeplots : 4a04e681d20d57d3469fe46df0f6e3aa
 clownImage : 1b5d18fa51afaafe1912b41bc3883d42
 colorbarLabelTitle : 7df4a3ca4a410b13791daf8985870d2f
 colorbarLogplot : 49a3a756b9983cef4bb45edaec154c8e
@@ -77,7 +77,7 @@ sine_with_annotation : 12e3ca49e703468009afbbf69ec2f81a
 sine_with_markers : e896ebe97102325c66e6d6382d096f0e
 spectro : af1820b55e9da0dbbfae66e2dc356f0a
 spherePlot : 45023e71fe4e74560fd2ba2bdaddb97a
-stackedBarsWithOther : 7adf14a89282e6c2a4a55f824875512f
+stackedBarsWithOther : 8cc96e1b5c0dbd005d9a98060d02f77a
 stairsplot : e7ac11b99558c8c49ceaeb339fddc011
 stemplot : e40d5dc2b86b171be92ea77d897d5b7b
 stemplot2 : 2474469021fcdb235f22623818c1599a
@@ -91,7 +91,7 @@ texcolor : 14d8e8dc34142facd0f51e594c01584a
 texrandom : 603ed498ac3665b819a5c1cc3f0bf99b
 textAlignment : 23292f1cfd8d00f6579fc51eb5fcea66
 textext : 722452f2ae6c6f56ec9434a244d036e4
-xAxisReversed : cfa0c1247a9db064bdae74c090068c23
+xAxisReversed : 556d72bc774bb4ceaf6ce061728df01e
 ylabels : f8428fec166f867354dd176f47898646
 zoom : f2c21f8fdc9e3a6db456a7419cc86c9b
 zplanePlot1 : e09a3fc83111a04c1c127427006709c3
