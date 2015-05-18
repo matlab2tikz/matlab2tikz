@@ -768,8 +768,8 @@ function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, chil
             % Legend entry found. Add it to the plot.
             hasLegend = true;
             interpreter = get(legendHandle, 'Interpreter');
-            if ~isempty(ud) && isfield(ud,'strings')
-                legendString = ud.lstrings(k);
+            if ~isempty(ud) && isfield(ud, 'lstrings')
+                legendString = ud.lstrings{k};
             else
                 legendString = get(child, 'DisplayName');
             end
