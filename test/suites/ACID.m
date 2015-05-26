@@ -556,15 +556,14 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
-  stat.issues = 609;
+  stat.issues = [607,609];
 
   x = -pi:pi/20:pi;
-  plot( x, cos(x),'-ro',...
-        x, sin(x),'-.b' ...
-      );
-  h = legend( 'cos_x', 'one pretty long legend sin_x', 2 );
-  set( h, 'Interpreter', 'none' );
-  legend boxoff;
+  l = plot(x, cos(x),'-ro',...
+           x, sin(x),'-.b');
+  h = legend(l(2), 'one pretty long legend sin_x (dash-dot)', 'Location', 'northeast');
+  set(h, 'Interpreter', 'none');
+  legend boxoff
 end
 % =========================================================================
 function [stat] = moreLegends()
@@ -582,37 +581,35 @@ function [stat] = zoom()
     stat.description = ['Test function \texttt{pruneOutsideBox()} ', ...
                         'and \texttt{movePointsCloser()} ', ...
                         'of \texttt{cleanfigure()}.'];
-    stat.unreliable = isOctave; %FIXME: investigate
-    %FIXME: this generates many "division by zero" in Octave
-    stat.issues = [226,392,400];
+    stat.issues = [226,392,400,664];
 
     % Setup
     subplot(311)
-    title setup
-    hold on
     plot(1:10,10:-1:1,'-r*',1:15,repmat(9,1,15),'-g*',[5.5,5.5],[1,9],'-b*')
-    stairs(1:10,'-m*')
-    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
-    legend('cross with points','no cross','cross no points','stairs','zoom area')
+    hold on;
+    stairs(1:10,'-m*');
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k');
+    title('setup');
+    legend('cross with points','no cross','cross no points','stairs','zoom area');
 
     % Last comes before simple zoomin due to cleanfigure
     subplot(313)
-    title 'zoom in, cleanfigure, zoom out'
-    hold on
-    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
-    stairs(1:10,'-m*')
-    xlim([2, 8.5]), ylim([2,7.5])
-    cleanfigure()
-    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
-    xlim([0, 15]), ylim([0,10])
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*');
+    hold on;
+    stairs(1:10,'-m*');
+    xlim([2, 8.5]), ylim([2,7.5]);
+    cleanfigure(); % FIXME: this generates many "division by zero" in Octave
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k');
+    xlim([0, 15]), ylim([0,10]);
+    title('zoom in, cleanfigure, zoom out');
 
     % Simple zoom in
     subplot(312)
-    title 'zoom in'
-    hold on
-    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
-    stairs(1:10,'-m*')
-    xlim([2, 8.5]), ylim([2,7.5])
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*');
+    hold on;
+    stairs(1:10,'-m*');
+    xlim([2, 8.5]), ylim([2,7.5]);
+    title('zoom in');
 end
 % =========================================================================
 function [stat] = bars()
@@ -1176,11 +1173,12 @@ end
 % =========================================================================
 function [stat] = scatterPlotMarkers()
   stat.description = 'Scatter plot with with different marker sizes and legend.';
-  stat.unreliable = isOctave;
+  stat.unreliable = isOctave; % FIXME: Output is empty?!
 
   n = 1:10;
   d = 10;
   s = d^2 * n;
+  if isOctave(), s = s/25; end; % smaller size in octave
   e = d * ones(size(n));
   grid on;
   hold on;
@@ -1191,7 +1189,8 @@ function [stat] = scatterPlotMarkers()
 
   nStyles = numel(style);
   for ii = 1:nStyles
-      scatter(n, ii * e, s, style{ii});
+      curr = style{ii};
+      scatter(n, ii * e, s, curr(1), curr(2));
   end
   xlim([min(n)-1 max(n)+1]);
   ylim([0 d*(nStyles+1)]);
@@ -1820,13 +1819,13 @@ function [stat] = herrorbarPlot()
   X = 1:10;
   Y = 1:10;
   err = repmat(0.2, 1, 10);
-  h1 = errorbar(X, Y, err, 'r');
+  h1 = errorbar(X, Y, err+X/30, 'r');
   h_vec = herrorbar(X, Y, err);
   for h=h_vec
       set(h, 'color', [1 0 0]);
   end
   h2 = errorbar(X, Y+1, err, 'g');
-  h_vec = herrorbar(X, Y+1, err);
+  h_vec = herrorbar(X, Y+1, err+Y/40);
   for h=h_vec
       set(h, 'color', [0 1 0]);
   end
@@ -1946,8 +1945,9 @@ end
 % =========================================================================
 function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
-  stat.unreliable = isOctave || isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
+  ylim([-1 1]); xlim([-1 1]); hold on; % prevent error on octave
   n = 6;
   r = (0:n)'/n;
   theta = pi*(-n:n)/n;
@@ -1956,6 +1956,7 @@ function [stat] = pColorPlot()
   C = r*cos(2*theta);
   pcolor(X,Y,C)
   axis equal tight
+
 end
 % =========================================================================
 function [stat] = multiplePatches()
@@ -2032,7 +2033,7 @@ function [stat] = alphaImage()
   set(h_imsc, 'AlphaDataMapping', 'scaled');
   set(gca, 'ALim', [-1,1]);
   title('');
-  
+
   subplot(2,1,2);
   title('Integer Alpha Data');
   N = 2;
@@ -2392,9 +2393,7 @@ end
 % =========================================================================
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
-  stat.issues = 442;
-  stat.unreliable = isOctave || isMATLAB(); % FIXME: #614
-  % details: https://github.com/matlab2tikz/matlab2tikz/pull/614#issuecomment-91844506
+  stat.issues = [442,648];
 
   % dataset stacked
   data = ACID_data;
@@ -2484,7 +2483,7 @@ function [stat] = textAlignment()
     text(-0.2,0.7, {'text overlapping', 'axis limits'});
     text(0.9,0.0, {'text overlapping', 'axis limits'});
     h_t = text(0.9,2.0, {'text overlapping', 'axis limits'});
-    
+
     % Set different units to test if they are properly handled
     set(h_t, 'Units', 'centimeters');
 end

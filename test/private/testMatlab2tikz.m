@@ -71,11 +71,9 @@ function status = testMatlab2tikz(varargin)
 
   % -----------------------------------------------------------------------
   if strcmpi(env, 'Octave')
-      if ~ipp.Results.figureVisible
-          % Use the gnuplot backend to work around an fltk bug, see
-          % <http://savannah.gnu.org/bugs/?43429>.
-          graphics_toolkit gnuplot
-      end
+      % Use the gnuplot backend to work around an fltk bug, see
+      % <http://savannah.gnu.org/bugs/?43429>.
+      graphics_toolkit gnuplot
 
       if ispc
           % Prevent three digit exponent on Windows Octave
