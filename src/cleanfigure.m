@@ -545,6 +545,8 @@ function xNew = moveToBox(x, xRef, xLim, yLim)
   % sits on the boundary.
   minAlpha = inf;
   [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+  %TODO: clean up duplicate code below, possibly store lambda in matrix
+
   % left boundary:
   lambda = crossLines(x, xRef, bottomLeft, topLeft);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
@@ -595,11 +597,14 @@ function lambda = crossLines(X1, X2, X3, X4)
   %
   % for lambda and mu.
 
+  %TODO: why don't we use `\` instead of Cramer's rule?
+
   rhs = X3(:) - X1(:);
   % Don't divide by det(erminant), if it is zero. Directly return 'inf'.
   % Otherwise this yields "warning: division by zero" in octave. See #664.
   % A = [X2-X1, -(X4-X3)];
   detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1));
+
   if detA == 0
     invA = inf;
   else
