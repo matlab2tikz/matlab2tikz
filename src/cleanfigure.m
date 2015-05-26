@@ -279,34 +279,40 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     % in p and determine whether the line between the pair crosses the box.
     n = size(data, 1);
     out = false(n-1, 1);
-    for k = 1:n-1
-        % one of the neighbors is inside the box
-        c1 = (dataIsInBox(k) && all(isfinite(data(k+1,:))));
-        % and the other is finite
-        c2 = (dataIsInBox(k+1) && all(isfinite(data(k,:))));
-        % left border
-        c3 = segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(1)], [xLim(1);yLim(2)]);
-        % bottom border
-        c4 = segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(1)], [xLim(2);yLim(1)]);
-        % right border
-        c5 = segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(2);yLim(1)], [xLim(2);yLim(2)]);
-        % top border
-        c6 = segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(2)], [xLim(2);yLim(2)]);
-        % combine
-        out(k) = c1 || c2 || c3 || c4 || c5 || c6;
-    end
 
+    % Determine the corners of the axes
+    bottomLeft  = [xLim(1); yLim(1)];
+    topLeft     = [xLim(1); yLim(2)];
+    bottomRight = [xLim(2); yLim(1)];
+    topRight    = [xLim(2); yLim(2)];
+
+    for k = 1:n-1
+        this = data(k  , :);
+        next = data(k+1, :);
+
+        % One of the neighbors is inside the box and the other is finite
+        nextVisible = (dataIsInBox(k+1) && all(isfinite(this)));
+        thisVisible = (dataIsInBox(k)   && all(isfinite(next)));
+
+        % Check whether the line connecting this point and the next one
+        % intersects with any of the borders of the drawn axis
+        left   = segmentsIntersect(this, next, bottomLeft , topLeft);
+        right  = segmentsIntersect(this, next, bottomRight, topRight);
+        bottom = segmentsIntersect(this, next, bottomLeft , bottomRight);
+        top    = segmentsIntersect(this, next, topLeft    , topRight);
+
+        % The segment is visible when any of the following hold:
+        %  - this point is visible in the axis and the next is finite
+        %  - this point is finite and the next is visible in the axis
+        %  - the segment connecting this and the next point crosses a border
+        out(k) = thisVisible || nextVisible || left || right || top || bottom;
+    end
 end
 % =========================================================================
 function out = segmentsIntersect(X1, X2, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect.
   lambda = crossLines(X1, X2, X3, X4);
   out = all(lambda > 0.0) && all(lambda < 1.0);
-  return
 end
 % =========================================================================
 function coarsenLine(meta, handle, minimumPointsDistance)
