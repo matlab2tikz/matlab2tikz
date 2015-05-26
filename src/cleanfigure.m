@@ -273,6 +273,14 @@ function pruneOutsideBox(meta, handle)
 
   return;
 end
+% ==========================================================================
+function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+    % Determine the corners of the axes as defined by xLim and yLim
+    bottomLeft  = [xLim(1); yLim(1)];
+    topLeft     = [xLim(1); yLim(2)];
+    bottomRight = [xLim(2); yLim(1)];
+    topRight    = [xLim(2); yLim(2)];
+end
 % =========================================================================
 function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
@@ -280,11 +288,7 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     n = size(data, 1);
     out = false(n-1, 1);
 
-    % Determine the corners of the axes
-    bottomLeft  = [xLim(1); yLim(1)];
-    topLeft     = [xLim(1); yLim(2)];
-    bottomRight = [xLim(2); yLim(1)];
-    topRight    = [xLim(2); yLim(2)];
+    [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
 
     for k = 1:n-1
         this = data(k  , :);
@@ -529,7 +533,7 @@ function movePointsCloser(meta, handle)
   return;
 end
 % =========================================================================
-function xNew = moveToBox(x, xRef, xlim, ylim)
+function xNew = moveToBox(x, xRef, xLim, yLim)
   % Takes a box defined by xlim, ylim, one point x and a reference point
   % xRef.
   % Returns the point xNew that sits on the line segment between x and xRef
@@ -540,26 +544,27 @@ function xNew = moveToBox(x, xRef, xlim, ylim)
   % the smallest parameter alpha such that x + alpha*(xRef-x)
   % sits on the boundary.
   minAlpha = inf;
+  [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
   % left boundary:
-  lambda = crossLines(x, xRef, [xlim(1);ylim(1)], [xlim(1);ylim(2)]);
+  lambda = crossLines(x, xRef, bottomLeft, topLeft);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
 
   % bottom boundary:
-  lambda = crossLines(x, xRef, [xlim(1);ylim(1)], [xlim(2);ylim(1)]);
+  lambda = crossLines(x, xRef, bottomLeft, bottomRight);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
 
   % right boundary:
-  lambda = crossLines(x, xRef, [xlim(2);ylim(1)], [xlim(2);ylim(2)]);
+  lambda = crossLines(x, xRef, bottomRight, topRight);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
 
   % top boundary:
-  lambda = crossLines(x, xRef, [xlim(1);ylim(2)], [xlim(2);ylim(2)]);
+  lambda = crossLines(x, xRef, topLeft, topRight);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
