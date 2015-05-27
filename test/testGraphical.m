@@ -16,6 +16,8 @@ function [ status ] = testGraphical( varargin )
 
     cwd = initializeWorkingDirectory();
     state = initializeGlobalState();
+    onCleanup(@() restoreGlobalState(state));
+
     status = testMatlab2tikz('actionsToExecute', @actionsToExecute, ...
                              varargin{:});
 
@@ -23,7 +25,6 @@ function [ status ] = testGraphical( varargin )
         makeLatexReport(status);
     end
 
-    restoreGlobalState(state);
     cd(cwd);    % return to previous working directory
 end
 % ==============================================================================

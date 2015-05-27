@@ -28,6 +28,8 @@ function [ status ] = testHeadless( varargin )
 
     cwd = initializeWorkingDirectory();
     state = initializeGlobalState();
+    onCleanup(@() restoreGlobalState(state));
+
     status = testMatlab2tikz('extraOptions', extraOptions, ...
                              'actionsToExecute', @actionsToExecute, ...
                              varargin{:});
@@ -36,7 +38,6 @@ function [ status ] = testHeadless( varargin )
         makeTravisReport(status);
     end
 
-    restoreGlobalState(state);
     cd(cwd);    % return to previous working directory
 end
 % ==============================================================================
