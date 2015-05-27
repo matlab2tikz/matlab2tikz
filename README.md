@@ -16,7 +16,8 @@ Place the `matlab2tikz` functions (contents of `src/` folder) somewhere where MA
 Make sure that your LaTeX installation is up-to-date and includes:
 
 * [TikZ/PGF](http://www.ctan.org/pkg/pgf) version 3.0 or higher
-* [Pgfplots](http://www.ctan.org/pkg/pgfplots) version 1.11 or higher
+* [Pgfplots](http://www.ctan.org/pkg/pgfplots) version 1.12.1 or higher
+* [Amsmath](https://www.ctan.org/pkg/amsmath) version 2.14 or higher
 * [Standalone](http://www.ctan.org/pkg/standalone) (optional)
 
 It is recommended to use the latest stable version of these packages.

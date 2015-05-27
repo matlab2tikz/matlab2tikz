@@ -582,36 +582,35 @@ function [stat] = zoom()
                         'and \texttt{movePointsCloser()} ', ...
                         'of \texttt{cleanfigure()}.'];
     stat.unreliable = isOctave; %FIXME: investigate
-    %FIXME: this generates many "division by zero" in Octave
     stat.issues = [226,392,400];
 
     % Setup
     subplot(311)
-    title setup
-    hold on
     plot(1:10,10:-1:1,'-r*',1:15,repmat(9,1,15),'-g*',[5.5,5.5],[1,9],'-b*')
-    stairs(1:10,'-m*')
-    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
-    legend('cross with points','no cross','cross no points','stairs','zoom area')
+    hold on;
+    stairs(1:10,'-m*');
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k');
+    title('setup');
+    legend('cross with points','no cross','cross no points','stairs','zoom area');
 
     % Last comes before simple zoomin due to cleanfigure
     subplot(313)
-    title 'zoom in, cleanfigure, zoom out'
-    hold on
-    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
-    stairs(1:10,'-m*')
-    xlim([2, 8.5]), ylim([2,7.5])
-    cleanfigure()
-    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
-    xlim([0, 15]), ylim([0,10])
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*');
+    hold on;
+    stairs(1:10,'-m*');
+    xlim([2, 8.5]), ylim([2,7.5]);
+    cleanfigure(); % FIXME: this generates many "division by zero" in Octave
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k');
+    xlim([0, 15]), ylim([0,10]);
+    title('zoom in, cleanfigure, zoom out');
 
     % Simple zoom in
     subplot(312)
-    title 'zoom in'
-    hold on
-    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
-    stairs(1:10,'-m*')
-    xlim([2, 8.5]), ylim([2,7.5])
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*');
+    hold on;
+    stairs(1:10,'-m*');
+    xlim([2, 8.5]), ylim([2,7.5]);
+    title('zoom in');
 end
 % =========================================================================
 function [stat] = bars()
@@ -1945,8 +1944,9 @@ end
 % =========================================================================
 function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
-  stat.unreliable = isOctave || isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
+  ylim([-1 1]); xlim([-1 1]); hold on; % prevent error on octave
   n = 6;
   r = (0:n)'/n;
   theta = pi*(-n:n)/n;
@@ -1955,6 +1955,7 @@ function [stat] = pColorPlot()
   C = r*cos(2*theta);
   pcolor(X,Y,C)
   axis equal tight
+
 end
 % =========================================================================
 function [stat] = multiplePatches()
