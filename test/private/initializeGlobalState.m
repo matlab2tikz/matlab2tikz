@@ -1,7 +1,11 @@
-function orig = initializeGlobalState()
-% Initialize global state. Set various properties of the graphical root to ensure reliable output of the ACID testsuite.
+function [orig,cwd] = initializeGlobalState()
+% Initialize global state. Set working directory and various properties of
+% the graphical root to ensure reliable output of the ACID testsuite.
 % See #542 and #552
     fprintf('Initialize global state...\n');
+
+    %--- Initialize working directory
+    cwd = initializeWorkingDirectory();
 
     %--- Define desired global state properties
     new.defaultFigurePosition.val   = [300,200,560,420];

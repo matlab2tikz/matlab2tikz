@@ -14,9 +14,8 @@ function [ status ] = testGraphical( varargin )
 %
 % See also: testMatlab2tikz, testHeadless, makeLatexReport
 
-    cwd = initializeWorkingDirectory();
-    state = initializeGlobalState();
-    onCleanup(@() restoreGlobalState(state));
+    [state,cwd] = initializeGlobalState();
+    onCleanup(@() restoreGlobalState(state,cwd));
 
     status = testMatlab2tikz('actionsToExecute', @actionsToExecute, ...
                              varargin{:});
@@ -24,8 +23,6 @@ function [ status ] = testGraphical( varargin )
     if nargout == 0
         makeLatexReport(status);
     end
-
-    cd(cwd);    % return to previous working directory
 end
 % ==============================================================================
 function status = actionsToExecute(status, ipp)
