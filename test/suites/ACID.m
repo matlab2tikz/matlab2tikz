@@ -334,7 +334,7 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.unreliable = isMATLAB('>=',[8,4]);
+  stat.unreliable  = isMATLAB();
   % FIXME: see #604; contour() produces inconsistent output
   stat.issues = [49 404];
 
@@ -353,17 +353,14 @@ end
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
   stat.unreliable = isMATLAB; % FIXME: inspect this
+  stat.issues = 582;
 
-  contourf(peaks(20), 10);
+  [trash, h] = contourf(peaks(20), 10);
+  hold on
+  plot(1:20)
   colorbar();
-  legend('my legend');
-%    colorbar('NorthOutside');
-%    colorbar('SouthOutside');
-%    colorbar('WestOutside');
-
-%  colormap([0:0.1:1; 1:-0.1:0; 0:0.1:1]')
+  legend(h, 'Contour');
   colormap hsv;
-
 end
 % =========================================================================
 function [stat] = double_colorbar()
@@ -559,6 +556,7 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
+  stat.issues = 609;
 
   x = -pi:pi/20:pi;
   plot( x, cos(x),'-ro',...
@@ -585,36 +583,35 @@ function [stat] = zoom()
                         'and \texttt{movePointsCloser()} ', ...
                         'of \texttt{cleanfigure()}.'];
     stat.unreliable = isOctave; %FIXME: investigate
-    %FIXME: this generates many "division by zero" in Octave
     stat.issues = [226,392,400];
 
     % Setup
     subplot(311)
-    title setup
-    hold on
     plot(1:10,10:-1:1,'-r*',1:15,repmat(9,1,15),'-g*',[5.5,5.5],[1,9],'-b*')
-    stairs(1:10,'-m*')
-    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
-    legend('cross with points','no cross','cross no points','stairs','zoom area')
+    hold on;
+    stairs(1:10,'-m*');
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k');
+    title('setup');
+    legend('cross with points','no cross','cross no points','stairs','zoom area');
 
     % Last comes before simple zoomin due to cleanfigure
     subplot(313)
-    title 'zoom in, cleanfigure, zoom out'
-    hold on
-    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
-    stairs(1:10,'-m*')
-    xlim([2, 8.5]), ylim([2,7.5])
-    cleanfigure()
-    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k')
-    xlim([0, 15]), ylim([0,10])
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*');
+    hold on;
+    stairs(1:10,'-m*');
+    xlim([2, 8.5]), ylim([2,7.5]);
+    cleanfigure(); % FIXME: this generates many "division by zero" in Octave
+    plot([2,8.5,8.5,2,2],[2,2,7.5,7.5,2],'--k');
+    xlim([0, 15]), ylim([0,10]);
+    title('zoom in, cleanfigure, zoom out');
 
     % Simple zoom in
     subplot(312)
-    title 'zoom in'
-    hold on
-    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*')
-    stairs(1:10,'-m*')
-    xlim([2, 8.5]), ylim([2,7.5])
+    plot(1:10,10:-1:1,'-r*',1:10,repmat(9,1,10),'-g*',[5.5,5.5],[1,9],'-b*');
+    hold on;
+    stairs(1:10,'-m*');
+    xlim([2, 8.5]), ylim([2,7.5]);
+    title('zoom in');
 end
 % =========================================================================
 function [stat] = bars()
@@ -886,6 +883,7 @@ function [stat] = legendsubplots()
   stat.description = [ 'Subplots with legends. ' , ...
     'Increase value of "length" in the code to stress-test your TeX installation.' ];
   stat.unreliable = isOctave; %FIXME: investigate
+  stat.issues = 609;
 
   % size of upper subplot
   rows = 4;
@@ -1216,7 +1214,7 @@ end
 function [stat] = spherePlot()
   stat.description = 'Stretched sphere with unequal axis limits.';
   stat.unreliable = isOctave || isMATLAB('<', [8,4]); %FIXME: investigate
-  stat.issue = 560;
+  stat.issues = 560;
 
   sphere(30);
   title('a sphere: x^2+y^2+z^2');
@@ -1370,7 +1368,7 @@ end
 % =========================================================================
 function [stat] = decayingharmonic()
   stat.description = 'Decaying harmonic oscillation with \TeX{} title.';
-  stat.issue = 587;
+  stat.issues = 587;
 
   % Based on an example from
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28104
@@ -1396,6 +1394,7 @@ end
 % =========================================================================
 function [stat] = textext()
   stat.description = 'Formatted text and special characters using \TeX{}.';
+  stat.unreliable  = isMATLAB();
 
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
@@ -1696,7 +1695,7 @@ end
 % =========================================================================
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
-  stat.issue = 637;
+  stat.issues = 637;
   stat.unreliable = isMATLAB('<',[8,4]); %FIXME: `at` is inconsistent, see #552
 
   % Adapted from an example at
@@ -1946,8 +1945,9 @@ end
 % =========================================================================
 function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
-  stat.unreliable = isOctave || isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
+  ylim([-1 1]); xlim([-1 1]); hold on; % prevent error on octave
   n = 6;
   r = (0:n)'/n;
   theta = pi*(-n:n)/n;
@@ -1956,6 +1956,7 @@ function [stat] = pColorPlot()
   C = r*cos(2*theta);
   pcolor(X,Y,C)
   axis equal tight
+
 end
 % =========================================================================
 function [stat] = multiplePatches()
