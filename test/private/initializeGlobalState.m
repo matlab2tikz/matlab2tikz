@@ -4,15 +4,6 @@ function orig = initializeGlobalState()
     fprintf('Initialize global state...\n');
 
     %--- Define desired global state properties
-    % See http://undocumentedmatlab.com/blog/getundoc-get-undocumented-object-properties
-    new.defaultAxesColorOrder.val   =               ...
-        [0,0,1;0,0.500,0;1,0,0;0,0.750,0.750;   ...
-        0.750,0,0.750;0.750,0.750,0;0.250,0.250,0.250;];
-    new.defaultAxesColorOrder.ignore= 0;
-
-    new.defaultFigureColor.val      = [1,1,1];
-    new.defaultFigureColor.ignore   = 0;
-
     new.defaultFigurePosition.val   = [300,200,560,420];
     new.defaultFigurePosition.ignore= 0;
 
