@@ -6,7 +6,8 @@ function [orig,cwd] = initializeGlobalState()
 % 1. Working directory
 % 2. Bring get(0,'Default') in line with get(0,'Factory')
 % 3. Set specific properties, required by matlab2tikz
-    fprintf('Initialize global state...\n'); 
+    fprintf('Initialize global state...\n');
+    orig = struct();
 
     %--- Initialize working directory
     cwd = initializeWorkingDirectory();
