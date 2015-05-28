@@ -42,12 +42,8 @@ function [orig,cwd] = initializeGlobalState()
     new.defaultFigurePosition.val   = [300,200,560,420];
     new.defaultFigurePosition.ignore= 0;
 
-    % screenDepth: TODO: determine, if necessary
-    % not possible in octave
-    new.screenDepth.val             = 24;
-    new.screenDepth.ignore          = strcmpi(getEnvironment,'octave');
-
     % ScreenPixelsPerInch: TODO: determine, if necessary
+    % (probably needed for new line simplification algorithm)
     % not possible in octave
     new.ScreenPixelsPerInch.val     = 96;
     new.ScreenPixelsPerInch.ignore  = strcmpi(getEnvironment,'octave');
