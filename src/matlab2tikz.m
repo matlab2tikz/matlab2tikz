@@ -718,11 +718,17 @@ switch getEnvironment
         [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child);
 
     case 'Octave'
-        % Octave associates legends with axes, not with (line) plot.
-        % The variable m2t.gcaHasLegend is set in drawAxes().
-        hasLegend = ~isempty(m2t.gcaAssociatedLegend);
-        interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
-        legendString = getOrDefault(child,'displayname','');
+        % Octave does not store a reference to the legend entry in the
+        % plotted objects. It references the plotted objects in reverse,
+        % in the legend's 'deletefcn' property.
+        % The variable m2t.gcaAssociatedLegend is set in drawAxes().
+        if ~isempty(m2t.gcaAssociatedLegend)
+            delfun           = get(m2t.gcaAssociatedLegend,'deletefcn');
+            legendEntryPeers = delfun{6}; % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m  
+            hasLegend        = ismember(child, legendEntryPeers);
+            interpreter      = get(m2t.gcaAssociatedLegend, 'interpreter');
+            legendString     = getOrDefault(child,'displayname','');
+        end
 
     otherwise
         errorUnknownEnvironment();
@@ -950,7 +956,7 @@ function legendhandle = getAssociatedLegend(m2t, handle)
             % Make sure that m2t.legendHandles is a row vector.
             for lhandle = m2t.legendHandles(:)'
                 ud = get(lhandle, 'UserData');
-                if isVisible(lhandle) && any(handle == ud.handle)
+                if isVisibleContainer(lhandle) && any(handle == ud.handle)
                     legendhandle = lhandle;
                     break;
                 end
@@ -1360,7 +1366,7 @@ function options = setAxisLimits(m2t, handle, axis, options)
     end
 end
 % ==============================================================================
-function bool = isAxisVisible(axisHandle)
+function bool = isVisibleContainer(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
         % immediately bail out here.
@@ -5270,7 +5276,7 @@ function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
     N   = numel(axesHandles);
     idx = false(N,1);
     for ii = 1:N
-       idx(ii) = isAxisVisible(axesHandles(ii));
+       idx(ii) = isVisibleContainer(axesHandles(ii));
     end
     % Store the relevant axes in m2t to simplify querying e.g. positions
     % of subplots
