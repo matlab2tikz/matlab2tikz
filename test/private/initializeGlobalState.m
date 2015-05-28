@@ -26,6 +26,17 @@ function [orig,cwd] = initializeGlobalState()
     clear default factory_property_name factory_property_value
 
     %--- Define desired global state properties
+    % defaultAxesColorOrder: on HG1 'default' and 'factory' differ and
+    % HG1 differs from HG2. Consequently use HG2 colors (the new standard).
+    new.defaultAxesColorOrder.val = [0.000 0.447 0.741; ...
+                                0.850 0.325 0.098; ...
+                                0.929 0.694 0.125; ...
+                                0.494 0.184 0.556; ...
+                                0.466 0.674 0.188; ...
+                                0.301 0.745 0.933; ...
+                                0.635 0.0780 0.184];
+    new.defaultAxesColorOrder.ignore= 0;
+
     % defaultFigurePosition: width and height influence cleanfigure() and
     % the number/location of axis ticks
     new.defaultFigurePosition.val   = [300,200,560,420];
@@ -34,12 +45,12 @@ function [orig,cwd] = initializeGlobalState()
     % screenDepth: TODO: determine, if necessary
     % not possible in octave
     new.screenDepth.val             = 24;
-    new.screenDepth.ignore          = strcmpi(getEnvironment,'octave'); 
+    new.screenDepth.ignore          = strcmpi(getEnvironment,'octave');
 
     % ScreenPixelsPerInch: TODO: determine, if necessary
     % not possible in octave
     new.ScreenPixelsPerInch.val     = 96;
-    new.ScreenPixelsPerInch.ignore  = strcmpi(getEnvironment,'octave'); 
+    new.ScreenPixelsPerInch.ignore  = strcmpi(getEnvironment,'octave');
 
     %--- Extract relevant properties and set desired state
     f = fieldnames(new);    % fields of new state
