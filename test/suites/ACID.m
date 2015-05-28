@@ -937,6 +937,8 @@ end
 % =========================================================================
 function [stat] = bodeplots()
   stat.description = 'Bode plots with legends.';
+  stat.unreliable = isMATLAB(); % FIXME: inconsistent axis limits and
+  % tick positions; see #641 (issuecomment-106241711)
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Skipping.\n\n' );
