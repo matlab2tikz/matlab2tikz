@@ -27,7 +27,10 @@
       - File closing is more robust (#496, #555)
       - TikZ picture output, i.e.`imageAsPng==false`, improved (#581, #596)
       - `standalone==true` sets the font and input encoding in LaTeX (#590)
-      - Misc. fixes: #426, #513, #520
+      - Legend text alignment in Octave (#668)
+      - Improved Octave legend if not all lines have an entry (#607, #619, #653)
+      - Legend without a drawn box in R2014b+ (#652)
+      - Misc. fixes: #426, #513, #520, #665
  * For developers:
       - The testing framework has been revamped (see also `test/README.md`)
       - A lot of the tests have been updated (#604, #614, #638, ...)
