@@ -556,15 +556,14 @@ end
 % =========================================================================
 function [stat] = legendplotBoxoff ()
   stat.description = 'Test inserting of legends.';
-  stat.issues = 609;
+  stat.issues = [607,609];
 
   x = -pi:pi/20:pi;
-  plot( x, cos(x),'-ro',...
-        x, sin(x),'-.b' ...
-      );
-  h = legend( 'cos_x', 'one pretty long legend sin_x', 2 );
-  set( h, 'Interpreter', 'none' );
-  legend boxoff;
+  l = plot(x, cos(x),'-ro',...
+           x, sin(x),'-.b');
+  h = legend(l(2), 'one pretty long legend sin_x (dash-dot)', 'Location', 'northeast');
+  set(h, 'Interpreter', 'none');
+  legend boxoff
 end
 % =========================================================================
 function [stat] = moreLegends()
