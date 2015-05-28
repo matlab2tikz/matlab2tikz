@@ -25,15 +25,19 @@ function [orig,cwd] = initializeGlobalState()
     clear default factory_property_name factory_property_value
 
     %--- Define desired global state properties
+    % defaultFigurePosition: width and height influence cleanfigure() and
+    % the number/location of axis ticks
     new.defaultFigurePosition.val   = [300,200,560,420];
     new.defaultFigurePosition.ignore= 0;
 
+    % screenDepth: TODO: determine, if necessary
+    % not possible in octave
     new.screenDepth.val             = 24;
-    % not possible in octave; didn't want to duplicate private functions for now
     new.screenDepth.ignore          = strcmpi(getEnvironment,'octave'); 
 
+    % ScreenPixelsPerInch: TODO: determine, if necessary
+    % not possible in octave
     new.ScreenPixelsPerInch.val     = 96;
-    % not possible in octave; didn't want to duplicate private functions for now
     new.ScreenPixelsPerInch.ignore  = strcmpi(getEnvironment,'octave'); 
 
     %--- Extract relevant properties and set desired state
@@ -41,7 +45,12 @@ function [orig,cwd] = initializeGlobalState()
     for i = 1:length(f)
         % ignore property on specified environments
         if ~new.(f{i}).ignore
-            orig.(f{i}).val = swap_property_state(0, f{i}, new.(f{i}).val);
+            val = swap_property_state(0, f{i}, new.(f{i}).val);
+
+            % store original value only, if not set by user's defaults
+            if ~isfield(orig,f{i})
+                orig.(f{i}).val = val;
+            end 
         end
     end
 end
