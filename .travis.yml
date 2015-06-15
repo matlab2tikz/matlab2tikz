@@ -5,4 +5,6 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install octave
 script:
-  - cd test && ./runtests
+  - cd test && /usr/bin/octave -q --eval runMatlab2TikzTests.m
+notifications:
+  hipchat: f4c2c5f87adc85025545e5b59b3fbe@Matlab2tikz

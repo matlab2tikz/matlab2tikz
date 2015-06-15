@@ -92,11 +92,11 @@ end
 u = abs(u);
 l = abs(l);
 
-if ischar(x) | ischar(y) | ischar(u) | ischar(l)
+if ischar(x) || ischar(y) || ischar(u) || ischar(l)
     error('Arguments must be numeric.')
 end
 
-if ~isequal(size(x),size(y)) | ~isequal(size(x),size(l)) | ~isequal(size(x),size(u)),
+if ~isequal(size(x),size(y)) || ~isequal(size(x),size(l)) || ~isequal(size(x),size(u)),
     error('The sizes of X, Y, L and U must be the same.');
 end
 
@@ -143,9 +143,10 @@ yb(9:9:end,:) = NaN;
 [ls,col,mark,msg] = colstyle(symbol); if ~isempty(msg), error(msg); end
 symbol = [ls mark col]; % Use marker only on data part
 esymbol = ['-' col]; % Make sure bars are solid
-
-h = plot(xb,yb,esymbol); hold on
-h = [h;plot(x,y,symbol)];
+if ~isempty(strfind(symbol,'none')), symbol = 'none'; end
+if ~isempty(strfind(esymbol,'none')), esymbol = 'none'; end
+h = plot(xb,yb,'LineStyle',esymbol); hold on
+h = [h;plot(x,y,'LineStyle',symbol)];
 
 if ~hold_state, hold off; end
 
