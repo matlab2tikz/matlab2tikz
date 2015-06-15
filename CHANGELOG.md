@@ -1,4 +1,4 @@
-# 2015-04-27 Version 1.0.0 [Egon Geerardyn](egon.geerardyn@gmail.com)
+# 2015-06-15 Version 1.0.0 [Egon Geerardyn](egon.geerardyn@gmail.com)
 
  * Added support for:
       - Annotations (except arrows) in R2014b (#534)
