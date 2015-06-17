@@ -323,18 +323,6 @@ userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2
 
 userInfo(m2t, '\nThis is %s %s.\n', m2t.about.name, m2t.about.versionFull)
 
-%% Check for a new matlab2tikz version outside version control
-if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
-  isUpdateInstalled = m2tUpdater(...
-    m2t.about, ...
-    m2t.cmdOpts.Results.showInfo, ...
-    getEnvironment...
-    );
-    % Terminate conversion if update was successful (the user is notified
-    % by the updater)
-    if isUpdateInstalled, return, end
-end
-
 %% print some version info to the screen
 versionInfo = ['The latest updates can be retrieved from\n' ,...
                ' %s\n' ,...
@@ -348,6 +336,12 @@ userInfo(m2t, versionInfo, m2t.about.website, m2t.about.name);
 
 %% Save the figure as TikZ to file
 saveToFile(m2t, fid, fileWasOpen);
+
+%% Check for a new matlab2tikz version outside version control
+if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
+    m2tUpdater(m2t.about, m2t.cmdOpts.Results.showInfo, getEnvironment);
+end
+
 end
 % ==============================================================================
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
