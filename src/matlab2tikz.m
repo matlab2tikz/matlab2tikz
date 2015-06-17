@@ -158,14 +158,14 @@ m2t.currentHandles = [];
 
 m2t.transform = []; % For hgtransform groups
 m2t.pgfplotsVersion = [1,3];
-m2t.name = 'matlab2tikz';
-m2t.version = '1.0.0';
-m2t.author = 'Nico Schlömer';
-m2t.authorEmail = 'nico.schloemer@gmail.com';
-m2t.years = '2008--2015';
-m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
+m2t.about.name = 'matlab2tikz';
+m2t.about.version = '1.0.0';
+m2t.about.author = 'Nico Schlömer';
+m2t.about.authorEmail = 'nico.schloemer@gmail.com';
+m2t.about.years = '2008--2015';
+m2t.about.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
 VCID = VersionControlIdentifier();
-m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
+m2t.about.versionFull = strtrim(sprintf('v%s %s', m2t.about.version, VCID));
 
 m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
@@ -321,14 +321,12 @@ end
 userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2tikz.)\n', ...
     '(For all other options, type ''help matlab2tikz''.)\n']);
 
-userInfo(m2t, '\nThis is %s %s.\n', m2t.name, m2t.versionFull)
+userInfo(m2t, '\nThis is %s %s.\n', m2t.about.name, m2t.about.versionFull)
 
 %% Check for a new matlab2tikz version outside version control
 if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
   isUpdateInstalled = m2tUpdater(...
-    m2t.name, ...
-    m2t.website, ...
-    m2t.version, ...
+    m2t.about, ...
     m2t.cmdOpts.Results.showInfo, ...
     getEnvironment...
     );
@@ -346,7 +344,7 @@ versionInfo = ['The latest updates can be retrieved from\n' ,...
                '   https://github.com/matlab2tikz/matlab2tikz,\n'       ,...
                '   https://github.com/matlab2tikz/matlab2tikz/wiki,\n'  ,...
                '   https://github.com/matlab2tikz/matlab2tikz/issues.\n'];
-userInfo(m2t, versionInfo, m2t.website, m2t.name);
+userInfo(m2t, versionInfo, m2t.about.website, m2t.about.name);
 
 %% Save the figure as TikZ to file
 saveToFile(m2t, fid, fileWasOpen);
@@ -468,7 +466,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % actually print the stuff
     minimalPgfplotsVersion = formatPgfplotsVersion(m2t.pgfplotsVersion);
 
-    m2t.content.comment = sprintf('This file was created by %s.\n', m2t.name);
+    m2t.content.comment = sprintf('This file was created by %s.\n', m2t.about.name);
 
     if m2t.cmdOpts.Results.showInfo
         % disable this info if showInfo=false
@@ -477,7 +475,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
             'The latest updates can be retrieved from\n', ...
             '  %s\n', ...
             'where you can also make suggestions and rate %s.\n'], ...
-            m2t.website, m2t.name ) ...
+            m2t.about.website, m2t.about.name ) ...
             ];
     end
 

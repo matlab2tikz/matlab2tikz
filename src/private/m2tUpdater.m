@@ -1,4 +1,4 @@
-function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, env)
+function upgradeSuccess = m2tUpdater(about, verbose, env)
 %UPDATER   Auto-update matlab2tikz.
 %   Only for internal usage.
 
@@ -27,7 +27,10 @@ function upgradeSuccess = m2tUpdater(name, fileExchangeUrl, version, verbose, en
 %   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %   POSSIBILITY OF SUCH DAMAGE.
 % =========================================================================
-  
+  name = about.name;
+  fileExchangeUrl = about.website;
+  version = about.version;
+
   % Read in the Github releases page
   url = 'https://github.com/matlab2tikz/matlab2tikz/releases/';
   try
