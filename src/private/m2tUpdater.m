@@ -98,12 +98,7 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
           targetPath = fullfile(pathstr, '..', '..');
 
           % Let the user know where the .zip is downloaded to
-          if ispc
-              printPath = strrep(targetPath,'\','\\');
-          else
-              printPath = targetPath;
-          end
-          userInfo(verbose, ['Downloading and unzipping to ''', printPath, ''' ...']);
+          userInfo(verbose, 'Downloading and unzipping to ''%s'' ...\n', targetPath);
 
           % Try upgrading
           try
