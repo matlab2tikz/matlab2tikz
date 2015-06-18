@@ -1,4 +1,4 @@
-function upgradeSuccess = m2tUpdater(about, verbose, env)
+function upgradeSuccess = m2tUpdater(about, verbose)
 %UPDATER   Auto-update matlab2tikz.
 %   Only for internal usage.
 
@@ -31,7 +31,7 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
   fileExchangeUrl = about.website;
   version = about.version;
 
-  mostRecentVersion = determineLatestRelease(env, version);
+  mostRecentVersion = determineLatestRelease(version);
 
   upgradeSuccess = false;
   if ~isempty(mostRecentVersion)
@@ -116,8 +116,8 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
       userInfo(verbose, '');
   end
 end
-% ======================
-function mostRecentVersion = determineLatestRelease(env, version)
+% ==============================================================================
+function mostRecentVersion = determineLatestRelease(version)
   % Read in the Github releases page
   url = 'https://github.com/matlab2tikz/matlab2tikz/releases/';
   try
@@ -136,7 +136,7 @@ function mostRecentVersion = determineLatestRelease(env, version)
   % Keep only new releases
   inew = false(ntags,1);
   for ii = 1:ntags
-      inew(ii) = isVersionBelow(env, version, tags{ii});
+      inew(ii) = isVersionBelow(version, tags{ii});
   end
   nnew = nnz(inew);
 
@@ -148,7 +148,7 @@ function mostRecentVersion = determineLatestRelease(env, version)
       tags   = tags(inew);
       tagnum = zeros(nnew,1);
       for ii = 1:nnew
-          tagnum(ii) = [10000,100,1] * versionArray(env, tags{ii});
+          tagnum(ii) = [10000,100,1] * versionArray(tags{ii});
       end
       [~, imax]         = max(tagnum);
       mostRecentVersion = tags{imax};
@@ -157,13 +157,13 @@ function mostRecentVersion = determineLatestRelease(env, version)
       mostRecentVersion = '';
   end
 end
-% =========================================================================
-function isBelow = isVersionBelow(env, versionA, versionB)
+% ==============================================================================
+function isBelow = isVersionBelow(versionA, versionB)
   % Checks if version string or vector versionA is smaller than
   % version string or vector versionB.
-
-  vA = versionArray(env, versionA);
-  vB = versionArray(env, versionB);
+  env = getEnvironment;
+  vA = versionArray(versionA);
+  vB = versionArray(versionB);
 
   isBelow = false;
   for i = 1:min(length(vA), length(vB))
@@ -178,14 +178,14 @@ function isBelow = isVersionBelow(env, versionA, versionB)
 
 end
 % =========================================================================
-function arr = versionArray(env, str)
+function arr = versionArray(str)
   % Converts a version string to an array, e.g.,
   % '2.62.8.1' to [2, 62, 8, 1].
-
   if ischar(str)
-    if strcmpi(env, 'MATLAB')
+    switch getEnvironment
+      case 'MATLAB'
         split = regexp(str, '\.', 'split');
-    elseif strcmpi(env, 'Octave')
+      case 'Octave'
         split = strsplit(str, '.');
     end
     arr = str2num(char(split)); %#ok
@@ -194,7 +194,7 @@ function arr = versionArray(env, str)
   end
 
 end
-% =========================================================================
+% ==============================================================================
 function userInfo(verbose, message, varargin)
   % Display usage information.
 
