@@ -39,20 +39,20 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
       % Couldn't load the URL -- never mind.
       html = '';
   end
-  
+
   % Parse tag names which are the version number in the format ##.##.##
   % It assumes that releases will always be tagged with the version number
   expression = '(?<=matlab2tikz\/matlab2tikz\/releases\/tag\/)\d+\.\d+\.\d+';
   tags       = regexp(html, expression, 'match');
   ntags      = numel(tags);
-  
+
   % Keep only new releases
   inew = false(ntags,1);
   for ii = 1:ntags
       inew(ii) = isVersionBelow(env, version, tags{ii});
   end
   nnew = nnz(inew);
-  
+
   % One new release
   if nnew == 1
       mostRecentVersion = tags{inew};
@@ -65,17 +65,17 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
       end
       [~, imax]         = max(tagnum);
       mostRecentVersion = tags{imax};
-  % No new 
+  % No new
   else
       mostRecentVersion = '';
   end
-  
+
   upgradeSuccess = false;
   if ~isempty(mostRecentVersion)
       userInfo(verbose, '**********************************************\n');
       userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion);
       userInfo(verbose, '**********************************************\n');
-      
+
       userInfo(verbose, 'By upgrading you may lose any custom changes.\n');
       reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
       if strcmpi(reply, 'y')
@@ -96,7 +96,7 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
           % and that matlab2tikz.m is not symlinked from some other place.
           pathstr    = fileparts(mfilename('fullpath'));
           targetPath = fullfile(pathstr, '..', '..');
-          
+
           % Let the user know where the .zip is downloaded to
           if ispc
               printPath = strrep(targetPath,'\','\\');
@@ -104,12 +104,12 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
               printPath = targetPath;
           end
           userInfo(verbose, ['Downloading and unzipping to ''', printPath, ''' ...']);
-          
+
           % Try upgrading
           try
               % List current folder structure. Will use last for cleanup
               currentFolderFiles = rdirfiles(targetPath);
-              
+
               % The FEX now forwards the download request to Github.
               % Go through the forwarding to update the download count and
               % unzip
@@ -117,15 +117,15 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
               expression    = '(?<=\<a href=")[\w\-\/:\.]+(?=">redirected)';
               url           = regexp(html, expression,'match','once');
               unzippedFiles = unzip(url, targetPath);
-              
-              % The folder structure is additionally packed into the 
-              % 'MATLAB Search Path' folder defined in FEX. Retrieve the 
+
+              % The folder structure is additionally packed into the
+              % 'MATLAB Search Path' folder defined in FEX. Retrieve the
               % top folder name
               tmp          = strrep(unzippedFiles,[targetPath, filesep],'');
               tmp          = regexp(tmp, filesep,'split','once');
               tmp          = cat(1,tmp{:});
               topZipFolder = unique(tmp(:,1));
-              
+
               % If packed into the top folder, overwrite files into m2t
               % main directory
               if numel(topZipFolder) == 1
@@ -136,7 +136,7 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
                   % Add topZipFolder to current folder structure
                   currentFolderFiles = [currentFolderFiles; fullfile(targetPath, topZipFolder{1})];
               end
-              
+
               % Cleanup
               newFolderStructure = [getFolders(unzippedFilesTarget);  unzippedFilesTarget];
               deleteFolderFiles  = setdiff(currentFolderFiles, newFolderStructure);
@@ -148,7 +148,7 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
                       rmdir(x,'s');
                   end
               end
-              
+
               upgradeSuccess = true; %~isempty(unzippedFiles);
               userInfo(verbose, 'UPDATED: the current conversion will be terminated. Please, re-run it.');
           catch
@@ -215,26 +215,26 @@ function list = rdirfiles(rootdir)
   % Recursive files listing
   s    = dir(rootdir);
   list = {s.name}';
-  
+
   % Exclude .git, .svn, . and ..
   [list, idx] = setdiff(list, {'.git','.svn','.','..'});
-  
+
   % Add root
   list = fullfile(rootdir, list);
-  
+
   % Loop for sub-directories
   pdir = find([s(idx).isdir]);
   for ii = pdir
       list = [list; rdirfiles(list{ii})]; %#ok<AGROW>
   end
-  
+
   % Drop directories
   list(pdir) = [];
 end
 % =========================================================================
-function list = getFolders(list) 
+function list = getFolders(list)
   % Extract the folder structure from a list of files and folders
-  
+
   for ii = 1:numel(list)
       if exist(list{ii},'file') == 2
           list{ii} = fileparts(list{ii});
