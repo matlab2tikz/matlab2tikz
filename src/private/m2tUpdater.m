@@ -31,44 +31,7 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
   fileExchangeUrl = about.website;
   version = about.version;
 
-  % Read in the Github releases page
-  url = 'https://github.com/matlab2tikz/matlab2tikz/releases/';
-  try
-      html = urlread(url);
-  catch %#ok
-      % Couldn't load the URL -- never mind.
-      html = '';
-  end
-
-  % Parse tag names which are the version number in the format ##.##.##
-  % It assumes that releases will always be tagged with the version number
-  expression = '(?<=matlab2tikz\/matlab2tikz\/releases\/tag\/)\d+\.\d+\.\d+';
-  tags       = regexp(html, expression, 'match');
-  ntags      = numel(tags);
-
-  % Keep only new releases
-  inew = false(ntags,1);
-  for ii = 1:ntags
-      inew(ii) = isVersionBelow(env, version, tags{ii});
-  end
-  nnew = nnz(inew);
-
-  % One new release
-  if nnew == 1
-      mostRecentVersion = tags{inew};
-  % Several new release, pick latest
-  elseif nnew > 1
-      tags   = tags(inew);
-      tagnum = zeros(nnew,1);
-      for ii = 1:nnew
-          tagnum(ii) = [10000,100,1] * versionArray(env, tags{ii});
-      end
-      [~, imax]         = max(tagnum);
-      mostRecentVersion = tags{imax};
-  % No new
-  else
-      mostRecentVersion = '';
-  end
+  mostRecentVersion = determineLatestRelease(env, version);
 
   upgradeSuccess = false;
   if ~isempty(mostRecentVersion)
@@ -98,7 +61,7 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
           targetPath = fullfile(pathstr, '..', '..');
 
           % Let the user know where the .zip is downloaded to
-          userInfo(verbose, 'Downloading and unzipping to ''%s'' ...\n', targetPath);
+          userInfo(verbose, 'Downloading and unzipping to ''%s'' ...', targetPath);
 
           % Try upgrading
           try
@@ -151,6 +114,47 @@ function upgradeSuccess = m2tUpdater(about, verbose, env)
           end
       end
       userInfo(verbose, '');
+  end
+end
+% ======================
+function mostRecentVersion = determineLatestRelease(env, version)
+  % Read in the Github releases page
+  url = 'https://github.com/matlab2tikz/matlab2tikz/releases/';
+  try
+      html = urlread(url);
+  catch %#ok
+      % Couldn't load the URL -- never mind.
+      html = '';
+  end
+
+  % Parse tag names which are the version number in the format ##.##.##
+  % It assumes that releases will always be tagged with the version number
+  expression = '(?<=matlab2tikz\/matlab2tikz\/releases\/tag\/)\d+\.\d+\.\d+';
+  tags       = regexp(html, expression, 'match');
+  ntags      = numel(tags);
+
+  % Keep only new releases
+  inew = false(ntags,1);
+  for ii = 1:ntags
+      inew(ii) = isVersionBelow(env, version, tags{ii});
+  end
+  nnew = nnz(inew);
+
+  % One new release
+  if nnew == 1
+      mostRecentVersion = tags{inew};
+  % Several new release, pick latest
+  elseif nnew > 1
+      tags   = tags(inew);
+      tagnum = zeros(nnew,1);
+      for ii = 1:nnew
+          tagnum(ii) = [10000,100,1] * versionArray(env, tags{ii});
+      end
+      [~, imax]         = max(tagnum);
+      mostRecentVersion = tags{imax};
+  % No new
+  else
+      mostRecentVersion = '';
   end
 end
 % =========================================================================
