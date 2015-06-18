@@ -1,4 +1,4 @@
-function upgradeSuccess = m2tUpdater(about, verbose)
+function m2tUpdater(about, verbose)
 %UPDATER   Auto-update matlab2tikz.
 %   Only for internal usage.
 
@@ -32,8 +32,14 @@ function upgradeSuccess = m2tUpdater(about, verbose)
   version = about.version;
 
   mostRecentVersion = determineLatestRelease(version);
-
-  upgradeSuccess = false;
+  if askToUpgrade(mostRecentVersion, version, verbose)
+    tryToUpgrade(name, fileExchangeUrl, verbose);
+    userInfo(verbose, '');
+  end
+end
+% ==============================================================================
+function shouldUpgrade = askToUpgrade(mostRecentVersion, version, verbose)
+  shouldUpgrade = false;
   if ~isempty(mostRecentVersion)
       userInfo(verbose, '**********************************************\n');
       userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion);
@@ -41,79 +47,79 @@ function upgradeSuccess = m2tUpdater(about, verbose)
 
       userInfo(verbose, 'By upgrading you may lose any custom changes.\n');
       reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
-      if strcmpi(reply, 'y')
-          % Download the files and unzip its contents into two folders
-          % above the folder that contains the current script.
-          % This assumes that the file structure is something like
-          %
-          %   src/matlab2tikz.m
-          %   src/[...]
-          %   src/private/m2tUpdater
-          %   src/private/[...]
-          %   AUTHORS
-          %   ChangeLog
-          %   [...]
-          %
-          % on the hard drive and the zip file. In particular, this assumes
-          % that the folder on the hard drive is writable by the user
-          % and that matlab2tikz.m is not symlinked from some other place.
-          pathstr    = fileparts(mfilename('fullpath'));
-          targetPath = fullfile(pathstr, '..', '..');
+      shouldUpgrade = strcmpi(reply(1),'y');
+  end
+end
+% ==============================================================================
+function tryToUpgrade(name, fileExchangeUrl, verbose)
+  % Download the files and unzip its contents into two folders
+  % above the folder that contains the current script.
+  % This assumes that the file structure is something like
+  %
+  %   src/matlab2tikz.m
+  %   src/[...]
+  %   src/private/m2tUpdater
+  %   src/private/[...]
+  %   AUTHORS
+  %   ChangeLog
+  %   [...]
+  %
+  % on the hard drive and the zip file. In particular, this assumes
+  % that the folder on the hard drive is writable by the user
+  % and that matlab2tikz.m is not symlinked from some other place.
+  pathstr    = fileparts(mfilename('fullpath'));
+  targetPath = fullfile(pathstr, '..', '..');
 
-          % Let the user know where the .zip is downloaded to
-          userInfo(verbose, 'Downloading and unzipping to ''%s'' ...', targetPath);
+  % Let the user know where the .zip is downloaded to
+  userInfo(verbose, 'Downloading and unzipping to ''%s'' ...', targetPath);
 
-          % Try upgrading
-          try
-              % List current folder structure. Will use last for cleanup
-              currentFolderFiles = rdirfiles(targetPath);
+  % Try upgrading
+  try
+      % List current folder structure. Will use last for cleanup
+      currentFolderFiles = rdirfiles(targetPath);
 
-              % The FEX now forwards the download request to Github.
-              % Go through the forwarding to update the download count and
-              % unzip
-              html          = urlread([fileExchangeUrl, '?download=true']);
-              expression    = '(?<=\<a href=")[\w\-\/:\.]+(?=">redirected)';
-              url           = regexp(html, expression,'match','once');
-              unzippedFiles = unzip(url, targetPath);
+      % The FEX now forwards the download request to Github.
+      % Go through the forwarding to update the download count and
+      % unzip
+      html          = urlread([fileExchangeUrl, '?download=true']);
+      expression    = '(?<=\<a href=")[\w\-\/:\.]+(?=">redirected)';
+      url           = regexp(html, expression,'match','once');
+      unzippedFiles = unzip(url, targetPath);
 
-              % The folder structure is additionally packed into the
-              % 'MATLAB Search Path' folder defined in FEX. Retrieve the
-              % top folder name
-              tmp          = strrep(unzippedFiles,[targetPath, filesep],'');
-              tmp          = regexp(tmp, filesep,'split','once');
-              tmp          = cat(1,tmp{:});
-              topZipFolder = unique(tmp(:,1));
+      % The folder structure is additionally packed into the
+      % 'MATLAB Search Path' folder defined in FEX. Retrieve the
+      % top folder name
+      tmp          = strrep(unzippedFiles,[targetPath, filesep],'');
+      tmp          = regexp(tmp, filesep,'split','once');
+      tmp          = cat(1,tmp{:});
+      topZipFolder = unique(tmp(:,1));
 
-              % If packed into the top folder, overwrite files into m2t
-              % main directory
-              if numel(topZipFolder) == 1
-                  unzippedFilesTarget = fullfile(targetPath, tmp(:,2));
-                  for ii = 1:numel(unzippedFiles)
-                      movefile(unzippedFiles{ii}, unzippedFilesTarget{ii})
-                  end
-                  % Add topZipFolder to current folder structure
-                  currentFolderFiles = [currentFolderFiles; fullfile(targetPath, topZipFolder{1})];
-              end
+      % If packed into the top folder, overwrite files into m2t
+      % main directory
+      if numel(topZipFolder) == 1
+          unzippedFilesTarget = fullfile(targetPath, tmp(:,2));
+          for ii = 1:numel(unzippedFiles)
+              movefile(unzippedFiles{ii}, unzippedFilesTarget{ii})
+          end
+          % Add topZipFolder to current folder structure
+          currentFolderFiles = [currentFolderFiles; fullfile(targetPath, topZipFolder{1})];
+      end
 
-              % Cleanup
-              newFolderStructure = [getFolders(unzippedFilesTarget);  unzippedFilesTarget];
-              deleteFolderFiles  = setdiff(currentFolderFiles, newFolderStructure);
-              for ii = 1:numel(deleteFolderFiles)
-                  x = deleteFolderFiles{ii};
-                  if exist(x, 'file')
-                      delete(x);
-                  elseif exist(x, 'dir')
-                      rmdir(x,'s');
-                  end
-              end
-
-              upgradeSuccess = true; %~isempty(unzippedFiles);
-              userInfo(verbose, 'UPDATED: the current conversion will be terminated. Please, re-run it.');
-          catch
-              userInfo(verbose, ['FAILED: continuing with the' name ' conversion.']);
+      % Cleanup
+      newFolderStructure = [getFolders(unzippedFilesTarget);  unzippedFilesTarget];
+      deleteFolderFiles  = setdiff(currentFolderFiles, newFolderStructure);
+      for ii = 1:numel(deleteFolderFiles)
+          x = deleteFolderFiles{ii};
+          if exist(x, 'file')
+              delete(x);
+          elseif exist(x, 'dir')
+              rmdir(x,'s');
           end
       end
-      userInfo(verbose, '');
+
+      userInfo(verbose, 'UPDATED: the current conversion will be terminated. Please, re-run it.');
+  catch
+      userInfo(verbose, ['FAILED: continuing with the' name ' conversion.']);
   end
 end
 % ==============================================================================
