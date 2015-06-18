@@ -33,8 +33,8 @@ function m2tUpdater(about, verbose)
 
   mostRecentVersion = determineLatestRelease(version);
   if askToUpgrade(mostRecentVersion, version, verbose)
-    tryToUpgrade(name, fileExchangeUrl, verbose);
-    userInfo(verbose, '');
+      tryToUpgrade(name, fileExchangeUrl, verbose);
+      userInfo(verbose, '');
   end
 end
 % ==============================================================================
@@ -170,23 +170,22 @@ function mostRecentVersion = determineLatestRelease(version)
 end
 % ==============================================================================
 function isBelow = isVersionBelow(versionA, versionB)
-  % Checks if version string or vector versionA is smaller than
-  % version string or vector versionB.
-  env = getEnvironment;
-  vA = versionArray(versionA);
-  vB = versionArray(versionB);
+% Checks if version string or vector versionA is smaller than
+% version string or vector versionB.
+    env = getEnvironment;
+    vA = versionArray(versionA);
+    vB = versionArray(versionB);
 
-  isBelow = false;
-  for i = 1:min(length(vA), length(vB))
-    if vA(i) > vB(i)
-      isBelow = false;
-      break;
-    elseif vA(i) < vB(i)
-      isBelow = true;
-      break
+    isBelow = false;
+    for i = 1:min(length(vA), length(vB))
+        if vA(i) > vB(i)
+            isBelow = false;
+            break;
+        elseif vA(i) < vB(i)
+            isBelow = true;
+            break
+        end
     end
-  end
-
 end
 % =========================================================================
 function arr = versionArray(str)
@@ -203,22 +202,17 @@ function arr = versionArray(str)
   else
     arr = str;
   end
-
 end
 % ==============================================================================
 function userInfo(verbose, message, varargin)
   % Display usage information.
+  if verbose
+      mess = sprintf(message, varargin{:});
 
-  if ~verbose
-      return
+      % Replace '\n' by '\n *** ' and print.
+      mess = strrep( mess, sprintf('\n'), sprintf('\n *** ') );
+      fprintf( ' *** %s\n', mess );
   end
-
-  mess = sprintf(message, varargin{:});
-
-  % Replace '\n' by '\n *** ' and print.
-  mess = strrep( mess, sprintf('\n'), sprintf('\n *** ') );
-  fprintf( ' *** %s\n', mess );
-
 end
 % =========================================================================
 function list = rdirfiles(rootdir)
