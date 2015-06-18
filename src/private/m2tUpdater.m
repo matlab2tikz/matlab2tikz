@@ -105,22 +105,27 @@ function tryToUpgrade(name, fileExchangeUrl, verbose)
           currentFolderFiles = [currentFolderFiles; fullfile(targetPath, topZipFolder{1})];
       end
 
-      % Cleanup
-      newFolderStructure = [getFolders(unzippedFilesTarget);  unzippedFilesTarget];
-      deleteFolderFiles  = setdiff(currentFolderFiles, newFolderStructure);
-      for ii = 1:numel(deleteFolderFiles)
-          x = deleteFolderFiles{ii};
-          if exist(x, 'file')
-              delete(x);
-          elseif exist(x, 'dir')
-              rmdir(x,'s');
-          end
-      end
+      cleanupOldFiles(currentFolderFiles, unzippedFilesTarget);
 
       userInfo(verbose, 'UPDATED: the current conversion will be terminated. Please, re-run it.');
   catch
       userInfo(verbose, ['FAILED: continuing with the' name ' conversion.']);
   end
+end
+% ==============================================================================
+function cleanupOldFiles(currentFolderFiles, unzippedFilesTarget)
+% Delete files that were there in the old folder, but that are no longer
+% present in the new release.
+    newFolderStructure = [getFolders(unzippedFilesTarget);  unzippedFilesTarget];
+    deleteFolderFiles  = setdiff(currentFolderFiles, newFolderStructure);
+    for ii = 1:numel(deleteFolderFiles)
+        x = deleteFolderFiles{ii};
+        if exist(x, 'file')
+            delete(x);
+        elseif exist(x, 'dir')
+            rmdir(x,'s');
+        end
+    end
 end
 % ==============================================================================
 function mostRecentVersion = determineLatestRelease(version)
