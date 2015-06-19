@@ -190,6 +190,7 @@ m2t.preamble = sprintf(['\\usepackage[T1]{fontenc}\n', ...
                         '\\usepackage{grffile}\n', ...
                         '\\pgfplotsset{compat=newest}\n', ...
                         '\\usetikzlibrary{plotmarks}\n', ...
+                        '\\usetikzlibrary{arrows.meta}\n', ...
                         '\\usepgfplotslibrary{patchplots}\n', ...
                         '\\usepackage{amsmath}\n']);
 
@@ -3648,22 +3649,20 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     % prepare output
     if is3D
         name = 'addplot3';
-        format = [m2t.ff,',',m2t.ff,',',m2t.ff];
     else % 2D plotting
         name   = 'addplot';
-        format = [m2t.ff,',',m2t.ff];
     end
 
-    data = NaN(6,numel(x));
-    data(1,:) = x;
-    data(2,:) = y;
-    data(3,:) = z;
-    data(4,:) = x + u;
-    data(5,:) = y + v;
-    data(6,:) = z + w;
+    data = NaN(numel(x),6);
+    data(:,1) = x;
+    data(:,2) = y;
+    data(:,3) = z;
+    data(:,4) = u;
+    data(:,5) = v;
+    data(:,6) = w;
 
     if ~is3D
-        data([3 6],:) = []; % remove Z-direction
+        data(:,[3 6]) = []; % remove Z-direction
     end
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3678,11 +3677,14 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     arrowOpts = opts_new();
     if showArrowHead
-        arrowOpts = opts_add(arrowOpts, '->');
+        arrowOpts = opts_add(arrowOpts, '-Straight Barb');
     else
         arrowOpts = opts_add(arrowOpts, '-');
     end
 
+    % Append the arrow style to the TikZ options themselves.
+    % TODO: Look into replacing this by something more 'local',
+    % (see \pgfplotset{}).
     color = get(h, 'Color');
     lineOpts = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
@@ -3692,19 +3694,20 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     % define arrow style
     arrowOptions = opts_print(m2t, arrowOpts, ',');
 
-    % Append the arrow style to the TikZ options themselves.
-    % TODO: Look into replacing this by something more 'local',
-    % (see \pgfplotset{}).
     m2t.content.options = opts_add(m2t.content.options,...
         sprintf('arrow%d/.style', m2t.quiverId), ...
         ['{', arrowOptions, '}']);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % return the vector field code
-    str = [str, ...
-        sprintf(['\\',name,' [arrow',num2str(m2t.quiverId), '] ', ...
-        'coordinates{(',format,') (',format,')};\n'],...
-        data)];
-    %FIXME: external
+    
+    tabOpts = 'row sep=crcr';
+    [m2t, table] = makeTable(m2t, repmat({''}, size(data,2)), data);
+    str = sprintf(['\\%s[%%\npoint meta={sqrt((\\thisrow{u})^2+(\\thisrow{v})^2)},\n'...
+                   'quiver={u=\\thisrow{u},v=\\thisrow{v},\n'...
+                   'every arrow/.append style={'...
+                   '-{Straight Barb[scale length={max(0.01,\\pgfplotspointmetatransformed/1000)},'...
+                   'scale width={0.5*max(0.01,\\pgfplotspointmetatransformed/1000)}]}}},\n'...
+                   'arrow',num2str(m2t.quiverId),...
+                   '\n]%s\ntable[%s]{\nx y u v\n%s};\n'],...
+          name, str, tabOpts, table);
 end
 % ==============================================================================
 function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)
