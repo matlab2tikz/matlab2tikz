@@ -3697,18 +3697,17 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     m2t.content.options = opts_add(m2t.content.options,...
         sprintf('arrow%d/.style', m2t.quiverId), ...
         ['{', arrowOptions, '}']);
-    
-    tabOpts = 'row sep=crcr';
-    
+
     variables = {''};
     if is3D
         variables = {'x','y','z','u','v','w'}; % 3D
     else
         variables = {'x','y','u','v'}; % for 2D
     end
-    
-    [m2t, table] = makeTable(m2t, variables, data);
-    
+
+    [m2t, table, tableOptions] = makeTable(m2t, variables, data);
+    tabOpts = opts_print(m2t, tableOptions, ',');
+
     if is3D
         str = sprintf(['\\%s[%%\npoint meta={sqrt((\\thisrow{u})^2+(\\thisrow{v})^2+(\\thisrow{w})^2)},\n'...
                        'quiver={u=\\thisrow{u},v=\\thisrow{v},w=\\thisrow{w},\n'...
