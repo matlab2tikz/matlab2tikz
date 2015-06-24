@@ -3650,9 +3650,10 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     if is3D
         name = 'addplot3';
     else % 2D plotting
-        name   = 'addplot';
+        name = 'addplot';
     end
 
+    variables = {'x', 'y', 'z', 'u', 'v', 'w'};
     data = NaN(numel(x),6);
     data(:,1) = x;
     data(:,2) = y;
@@ -3663,6 +3664,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     if ~is3D
         data(:,[3 6]) = []; % remove Z-direction
+        variables([3 6]) = [];
     end
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3698,13 +3700,6 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     m2t.content.options = opts_add(m2t.content.options,...
         sprintf('arrow%d/.style', m2t.quiverId), ...
         ['{', arrowOptions, '}']);
-
-    variables = {''};
-    if is3D
-        variables = {'x','y','z','u','v','w'}; % 3D
-    else
-        variables = {'x','y','u','v'}; % for 2D
-    end
 
     [m2t, table, tableOptions] = makeTable(m2t, variables, data);
     tabOpts = opts_print(m2t, tableOptions, ',');
