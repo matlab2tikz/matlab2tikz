@@ -3633,6 +3633,7 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
     str = sprintf('%s\\addplot[%s] plot table[%s]{%s}\n\\closedcycle;\n',...
         str, drawOpts, opts_print(m2t, tabOpts, ','), table);
+    %TODO: shouldn't this be "\addplot[] table[] {}" instead?
 end
 % ==============================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
@@ -3677,52 +3678,56 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         return
     end
 
-    arrowOpts = opts_new();
+    plotOpts = opts_new();
     if showArrowHead
-        arrowOpts = opts_add(arrowOpts, '-Straight Barb');
+        plotOpts = opts_add(plotOpts, '-Straight Barb');
         signalDependency(m2t, 'tikzlibrary', 'arrows.meta');
     else
-        arrowOpts = opts_add(arrowOpts, '-');
+        plotOpts = opts_add(plotOpts, '-');
     end
 
     % Append the arrow style to the TikZ options themselves.
-    % TODO: Look into replacing this by something more 'local',
-    % (see \pgfplotset{}).
     color = get(h, 'Color');
     lineOpts = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
-    arrowOpts = opts_add(arrowOpts, 'color', arrowcolor);
-    arrowOpts = opts_merge(arrowOpts, lineOpts);
+    plotOpts = opts_add(plotOpts, 'color', arrowcolor);
+    plotOpts = opts_merge(plotOpts, lineOpts);
 
-    % define arrow style
-    arrowOptions = opts_print(m2t, arrowOpts, ',');
-
-    m2t.content.options = opts_add(m2t.content.options,...
-        sprintf('arrow%d/.style', m2t.quiverId), ...
-        ['{', arrowOptions, '}']);
-
-    [m2t, table, tableOptions] = makeTable(m2t, variables, data);
-    tabOpts = opts_print(m2t, tableOptions, ',');
-
+    % Define the quiver settings
+    quiverOpts = opts_new();
+    quiverOpts = opts_add(quiverOpts, 'u', '\thisrow{u}');
+    quiverOpts = opts_add(quiverOpts, 'v', '\thisrow{v}');
     if is3D
-        str = sprintf(['\\%s[%%\npoint meta={sqrt((\\thisrow{u})^2+(\\thisrow{v})^2+(\\thisrow{w})^2)},\n'...
-                       'quiver={u=\\thisrow{u},v=\\thisrow{v},w=\\thisrow{w},\n'...
-                       'every arrow/.append style={'...
-                       '-{Straight Barb[scale length={max(0.01,\\pgfplotspointmetatransformed/1000)},'...
-                       'scale width={0.5*max(0.01,\\pgfplotspointmetatransformed/1000)}]}}},\n'...
-                       'arrow',num2str(m2t.quiverId),...
-                       '\n]%s\ntable[%s]{\n%s};\n'],...
-              name, str, tabOpts, table);
+        quiverOpts = opts_add(quiverOpts, 'w', '\thisrow{w}');
+        arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2+(\thisrow{w})^2)}';
     else
-        str = sprintf(['\\%s[%%\npoint meta={sqrt((\\thisrow{u})^2+(\\thisrow{v})^2)},\n'...
-                       'quiver={u=\\thisrow{u},v=\\thisrow{v},\n'...
-                       'every arrow/.append style={'...
-                       '-{Straight Barb[scale length={max(0.01,\\pgfplotspointmetatransformed/1000)},'...
-                       'scale width={0.5*max(0.01,\\pgfplotspointmetatransformed/1000)}]}}},\n'...
-                       'arrow',num2str(m2t.quiverId),...
-                       '\n]%s\ntable[%s]{\n%s};\n'],...
-              name, str, tabOpts, table);
+        arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2)}';
     end
+    plotOpts = opts_add(plotOpts, 'point meta', arrowLength);
+
+    if showArrowHead
+        %TODO: scale the arrows more rigorously to match MATLAB behavior
+        %There is a "MaxHeadSize" property (at least in R2014b) that plays a
+        %role in determining the quiver size.
+        arrowHeadOpts = opts_new();
+        arrowHeadOpts = opts_add(arrowHeadOpts, 'scale length', ...
+                                 '{max(0.01,\pgfplotspointmetatransformed/1000)}');
+        arrowHeadOpts = opts_add(arrowHeadOpts, 'scale width', ...
+                                 '{0.5*max(0.01,\pgfplotspointmetatransformed/1000)}');
+        headStyle = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
+        quiverOpts = opts_add(quiverOpts, 'every arrow/.append style', ...
+                              ['{' headStyle '}']);
+    else
+        %TODO: check what we can do for scaling non-barbed arrows
+    end
+    plotOpts = opts_add(plotOpts,'quiver', ['{' opts_print(m2t, quiverOpts, ',') '}']);
+    plotOptions = opts_print(m2t, plotOpts, ',');
+
+    [m2t, table, tabOpts] = makeTable(m2t, variables, data);
+    tableOptions = opts_print(m2t, tabOpts, ',');
+
+    str = sprintf('%s\\%s[%s]\n table[%s] {%s};\n', ...
+                  str, name, plotOptions, tableOptions, table);
 end
 % ==============================================================================
 function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)

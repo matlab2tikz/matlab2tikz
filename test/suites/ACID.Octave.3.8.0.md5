@@ -41,7 +41,7 @@ multiplePatches : ca327c9da7e37d550d282fe816e3bed3
 overlappingPlots : f0c5fe555cfa66188300b939efbcaf1b
 pColorPlot : 666090267cad4c6bc5845d121d1c45bb
 parameterCurve3d : 0963d5d9f36d1adcacd9bf9a8319d031
-peaks_contour : b831a86c3d68785ab2936c0190cc1544
+peaks_contour : 10f2b9bc1b7f88583a5ec6dac1954d79
 peaks_contourf : 420f2e76f0b001a4af41fe3690530b95
 pixelLegend : 4be23131d454dbf0247ccb6c0b891d8c
 plain_cos : 61703d7cc62d483a3126766466fa5aca
@@ -68,8 +68,8 @@ surfPlot : 320bd897dc379aed143e22fae4cf4012
 surfPlot2 : 4cdf6e4ede9b004f3e018fff254bba97
 texInterpreter : 3b2a0db9fd0560151ac349c34cc7650c
 texcolor : 99d828ebc560c48182bcf29b97f8c9c7
-texrandom : e27f0c9054d59a14427c4817863ebe3a
-textAlignment : 9d3fa2a695ae0a9f65f842cf68976e2b
+texrandom : fb8841dc638c6d86335f214c9417abf7
+textAlignment : 000b946a520c4fd0fd0feef6e54427e1
 textext : 2b37ba54d3f04cde0ab57c50f2b84e45
 xAxisReversed : fc0af7c4b97893e5a1a3af9466ec8c6c
 ylabels : 2914738ccc989d290fae6ee2893bfe19
