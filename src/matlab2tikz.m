@@ -647,7 +647,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'image'
                 [m2t, str] = drawImage(m2t, child);
-            
+
             case {'hggroup', 'matlab.graphics.primitive.Group', ...
                   'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area', ...
                   'quiver','contour'}
@@ -680,6 +680,10 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                     'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
                 % don't to anything for these handles and its children
                 str = '';
+
+            case 'light'
+                % These objects are not supported and should not/cannot be
+                % supported by matlab2tikz or pgfplots.
 
             case ''
                 warning('matlab2tikz:NoChildren',...
