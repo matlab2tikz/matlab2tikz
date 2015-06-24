@@ -1744,7 +1744,7 @@ function [tikzMarker, markOptions] = ...
             tikzMarker = 'x';
         otherwise  % the following markers are only available with PGF's
             % plotmarks library
-            userInfo(m2t, '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n');
+            signalDependency(m2t, 'tikzlibrary', 'plotmarks');
             hasFilledVariant = true;
             switch (matlabMarker)
 
@@ -3678,6 +3678,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     arrowOpts = opts_new();
     if showArrowHead
         arrowOpts = opts_add(arrowOpts, '-Straight Barb');
+        signalDependency(m2t, 'tikzlibrary', 'arrows.meta');
     else
         arrowOpts = opts_add(arrowOpts, '-');
     end
@@ -5337,6 +5338,17 @@ function userWarning(m2t, message, varargin)
     if m2t.cmdOpts.Results.showWarnings
         warning('matlab2tikz:userWarning', message, varargin{:});
     end
+end
+% ==============================================================================
+function signalDependency(m2t, dependencyType, name);
+% Signals an (optional) dependency to the user
+    switch lower(dependencyType)
+        case 'tikzlibrary'
+            message = 'Make sure to add "\\usetikzlibrary{%s}" to the preamble.';
+        otherwise
+            message = 'Please make sure to load the "%s" dependency';
+    end
+    userInfo(m2t, message, name);
 end
 % ==============================================================================
 function warnAboutParameter(m2t, parameter, isActive, message)
