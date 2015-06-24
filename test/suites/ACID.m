@@ -718,6 +718,11 @@ end
 % =========================================================================
 function [stat] = quiveroverlap ()
   stat.description = 'Quiver plot with avoided overlap.';
+  stat.issues = [679];
+  % TODO: As indicated in #679, the native quiver scaling algorithm still isn't 
+  % perfect. As such, in MATLAB the arrow heads may appear extremely tiny.
+  % In Octave, they look fine though. Once the scaling has been done decently,
+  % this reminder can be removed.
 
   x = [0 1];
   y = [0 0];
