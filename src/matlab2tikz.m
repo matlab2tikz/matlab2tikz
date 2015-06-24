@@ -170,7 +170,6 @@ m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
 m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
-m2t.quiverId     = 0; % identification flag for quiver plot styles
 m2t.automaticLabelIndex = 0;
 
 % definition of color depth
@@ -3638,10 +3637,6 @@ end
 % ==============================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
 % Takes care of MATLAB's quiver plots.
-
-    % used for arrow styles, in case there are more than one quiver fields
-    m2t.quiverId = m2t.quiverId + 1;
-
     str = '';
 
     [x,y,z,u,v,w] = getAndRescaleQuivers(m2t,h);
