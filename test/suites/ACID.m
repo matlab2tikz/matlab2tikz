@@ -983,7 +983,8 @@ function [stat] = bodeplots()
   grid on
 
   legend('Perfect LCL',' Real LCL','Location','SW')
-  % Work around a peculiarity in R2014a and older: when the figure is invisible,
+
+  % Work around a peculiarity in MATLAB: when the figure is invisible,
   % the XData/YData of all plots is NaN. It gets set to the proper values when
   % the figure is actually displayed. To do so, we temporarily toggle this
   % option. This triggers the call-back (and might flicker the figure).
@@ -994,7 +995,6 @@ end
 % =========================================================================
 function [stat] = rlocusPlot()
   stat.description = 'rlocus plot.';
-  % FIXME: Output is empty on HG1 and HG2 (no datapoints)! Also see #641 
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Skipping.\n\n' );
@@ -1010,6 +1010,14 @@ function [stat] = rlocusPlot()
   end
 
   rlocus(tf([1 1],[4 3 1]))
+
+  % Work around a peculiarity in MATLAB: when the figure is invisible,
+  % the XData/YData of all plots is NaN. It gets set to the proper values when
+  % the figure is actually displayed. To do so, we temporarily toggle this
+  % option. This triggers the call-back (and might flicker the figure).
+  isVisible = get(gcf,'visible');
+  set(gcf,'visible','on')
+  set(gcf,'visible',isVisible);
 end
 % =========================================================================
 function [stat] = mandrillImage()
