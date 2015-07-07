@@ -170,7 +170,6 @@ m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
 m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
 m2t.dataFileNo   = 0;
-m2t.quiverId     = 0; % identification flag for quiver plot styles
 m2t.automaticLabelIndex = 0;
 
 % definition of color depth
@@ -190,6 +189,7 @@ m2t.preamble = sprintf(['\\usepackage[T1]{fontenc}\n', ...
                         '\\usepackage{grffile}\n', ...
                         '\\pgfplotsset{compat=newest}\n', ...
                         '\\usetikzlibrary{plotmarks}\n', ...
+                        '\\usetikzlibrary{arrows.meta}\n', ...
                         '\\usepgfplotslibrary{patchplots}\n', ...
                         '\\usepackage{amsmath}\n']);
 
@@ -1747,7 +1747,7 @@ function [tikzMarker, markOptions] = ...
             tikzMarker = 'x';
         otherwise  % the following markers are only available with PGF's
             % plotmarks library
-            userInfo(m2t, '\nMake sure to load \\usetikzlibrary{plotmarks} in the preamble.\n');
+            signalDependency(m2t, 'tikzlibrary', 'plotmarks');
             hasFilledVariant = true;
             switch (matlabMarker)
 
@@ -3636,14 +3636,11 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
     str = sprintf('%s\\addplot[%s] plot table[%s]{%s}\n\\closedcycle;\n',...
         str, drawOpts, opts_print(m2t, tabOpts, ','), table);
+    %TODO: shouldn't this be "\addplot[] table[] {}" instead?
 end
 % ==============================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
 % Takes care of MATLAB's quiver plots.
-
-    % used for arrow styles, in case there are more than one quiver fields
-    m2t.quiverId = m2t.quiverId + 1;
-
     str = '';
 
     [x,y,z,u,v,w] = getAndRescaleQuivers(m2t,h);
@@ -3652,22 +3649,22 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     % prepare output
     if is3D
         name = 'addplot3';
-        format = [m2t.ff,',',m2t.ff,',',m2t.ff];
     else % 2D plotting
-        name   = 'addplot';
-        format = [m2t.ff,',',m2t.ff];
+        name = 'addplot';
     end
 
-    data = NaN(6,numel(x));
-    data(1,:) = x;
-    data(2,:) = y;
-    data(3,:) = z;
-    data(4,:) = x + u;
-    data(5,:) = y + v;
-    data(6,:) = z + w;
+    variables = {'x', 'y', 'z', 'u', 'v', 'w'};
+    data = NaN(numel(x),6);
+    data(:,1) = x;
+    data(:,2) = y;
+    data(:,3) = z;
+    data(:,4) = u;
+    data(:,5) = v;
+    data(:,6) = w;
 
     if ~is3D
-        data([3 6],:) = []; % remove Z-direction
+        data(:,[3 6]) = []; % remove Z-direction
+        variables([3 6]) = [];
     end
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3680,35 +3677,54 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         return
     end
 
-    arrowOpts = opts_new();
+    plotOpts = opts_new();
     if showArrowHead
-        arrowOpts = opts_add(arrowOpts, '->');
+        plotOpts = opts_add(plotOpts, '-Straight Barb');
+        signalDependency(m2t, 'tikzlibrary', 'arrows.meta');
     else
-        arrowOpts = opts_add(arrowOpts, '-');
+        plotOpts = opts_add(plotOpts, '-');
     end
 
+    % Append the arrow style to the TikZ options themselves.
     color = get(h, 'Color');
     lineOpts = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
-    arrowOpts = opts_add(arrowOpts, 'color', arrowcolor);
-    arrowOpts = opts_merge(arrowOpts, lineOpts);
+    plotOpts = opts_add(plotOpts, 'color', arrowcolor);
+    plotOpts = opts_merge(plotOpts, lineOpts);
 
-    % define arrow style
-    arrowOptions = opts_print(m2t, arrowOpts, ',');
+    % Define the quiver settings
+    quiverOpts = opts_new();
+    quiverOpts = opts_add(quiverOpts, 'u', '\thisrow{u}');
+    quiverOpts = opts_add(quiverOpts, 'v', '\thisrow{v}');
+    if is3D
+        quiverOpts = opts_add(quiverOpts, 'w', '\thisrow{w}');
+        arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2+(\thisrow{w})^2)}';
+    else
+        arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2)}';
+    end
+    plotOpts = opts_add(plotOpts, 'point meta', arrowLength);
 
-    % Append the arrow style to the TikZ options themselves.
-    % TODO: Look into replacing this by something more 'local',
-    % (see \pgfplotset{}).
-    m2t.content.options = opts_add(m2t.content.options,...
-        sprintf('arrow%d/.style', m2t.quiverId), ...
-        ['{', arrowOptions, '}']);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % return the vector field code
-    str = [str, ...
-        sprintf(['\\',name,' [arrow',num2str(m2t.quiverId), '] ', ...
-        'coordinates{(',format,') (',format,')};\n'],...
-        data)];
-    %FIXME: external
+    if showArrowHead
+        %TODO: scale the arrows more rigorously to match MATLAB behavior
+        %There is a "MaxHeadSize" property (at least in R2014b) that plays a
+        %role in determining the quiver size.
+        arrowHeadOpts = opts_new();
+        arrowHeadOpts = opts_add(arrowHeadOpts, 'scale length', ...
+                                 '{max(0.01,\pgfplotspointmetatransformed/1000)}');
+        arrowHeadOpts = opts_add(arrowHeadOpts, 'scale width', ...
+                                 '{0.5*max(0.01,\pgfplotspointmetatransformed/1000)}');
+        headStyle = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
+        quiverOpts = opts_add(quiverOpts, 'every arrow/.append style', ...
+                              ['{' headStyle '}']);
+    end
+    plotOpts = opts_add(plotOpts,'quiver', ['{' opts_print(m2t, quiverOpts, ',') '}']);
+    plotOptions = opts_print(m2t, plotOpts, ',');
+
+    [m2t, table, tabOpts] = makeTable(m2t, variables, data);
+    tableOptions = opts_print(m2t, tabOpts, ',');
+
+    str = sprintf('%s\\%s[%s]\n table[%s] {%s};\n', ...
+                  str, name, plotOptions, tableOptions, table);
 end
 % ==============================================================================
 function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)
@@ -5333,6 +5349,17 @@ function userWarning(m2t, message, varargin)
     if m2t.cmdOpts.Results.showWarnings
         warning('matlab2tikz:userWarning', message, varargin{:});
     end
+end
+% ==============================================================================
+function signalDependency(m2t, dependencyType, name);
+% Signals an (optional) dependency to the user
+    switch lower(dependencyType)
+        case 'tikzlibrary'
+            message = 'Make sure to add "\\usetikzlibrary{%s}" to the preamble.';
+        otherwise
+            message = 'Please make sure to load the "%s" dependency';
+    end
+    userInfo(m2t, message, name);
 end
 % ==============================================================================
 function warnAboutParameter(m2t, parameter, isActive, message)
