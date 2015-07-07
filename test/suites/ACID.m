@@ -994,7 +994,7 @@ end
 % =========================================================================
 function [stat] = rlocusPlot()
   stat.description = 'rlocus plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: Output is empty?! See #641 
+  % FIXME: Output is empty on HG1 and HG2 (no datapoints)! Also see #641 
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Skipping.\n\n' );
