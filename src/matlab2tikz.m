@@ -1857,7 +1857,7 @@ function [m2t, str] = drawPatch(m2t, handle)
                                          s.edgeColor);
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'fill', ...
                                          s.faceColor);
-                                     
+
         [drawOptions] = opts_copy(patchOptions, 'draw opacity', drawOptions);
         [drawOptions] = opts_copy(patchOptions, 'fill opacity', drawOptions);
 
@@ -2270,7 +2270,7 @@ function [m2t, str] = drawContour(m2t, h)
             end
 
             % Only first child can be in the legend
-            m2t.currentHandleHasLegend = false; 
+            m2t.currentHandleHasLegend = false;
         end
         str = strcat(str,sprintf('\n'));
         str = [str{:}];
@@ -2282,7 +2282,7 @@ end
 % ==============================================================================
 function [m2t, str] = drawContourHG2(m2t, h)
   str = '';
-  
+
   % Retrieve ContourMatrix
   contours = get(h,'ContourMatrix')';
   [istart, nrows] = findStartOfContourData(contours);
@@ -2442,6 +2442,9 @@ function [m2t, str] = drawHggroup(m2t, h)
 % the nature of the plot anymore at this point.  Set to 'unknown' to force
 % fallback handling. This produces something for bar plots, for example.
 % #COMPLEX: big switch-case
+% TODO: Introduce function `guessOctaveType()` to infer plot type by trying
+% to read certain properties, that are specific to a plot type (for example
+% `udata` should be unique to errorbarseries). See #645 for more details.
     try
         cl = class(handle(h));
     catch %#ok
@@ -2476,10 +2479,10 @@ function [m2t, str] = drawHggroup(m2t, h)
         case {'specgraph.scattergroup','matlab.graphics.chart.primitive.Scatter'}
             % scatter plots
             [m2t,str] = drawScatterPlot(m2t, h);
-        
+
         case {'specgraph.contourgroup', 'matlab.graphics.chart.primitive.Contour'}
             [m2t,str] = drawContour(m2t, h);
-            
+
         case {'hggroup', 'matlab.graphics.primitive.Group'}
             % handle all those the usual way
             [m2t, str] = handleAllChildren(m2t, h);
@@ -3042,7 +3045,7 @@ function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
 
     if isNone(s.edgeColor) % Edge 'none'
         [m2t, opts, s] = shaderOptsSurfPatchEdgeNone(m2t, handle, opts, s);
-        
+
     elseif strcmpi(s.edgeColor, 'interp') % Edge 'interp'
         [m2t, opts, s] = shaderOptsSurfPatchEdgeInterp(m2t, handle, opts, s);
 
@@ -3068,7 +3071,7 @@ function [m2t, opts, s] = shaderOptsSurfPatchEdgeNone(m2t, handle, opts, s)
     end
 end
 function [m2t, opts, s] = shaderOptsSurfPatchEdgeInterp(m2t, handle, opts, s)
-% gets the shader options for surface patches with interpolated edge colors  
+% gets the shader options for surface patches with interpolated edge colors
     if strcmpi(s.faceColor, 'interp')
         opts = opts_add(opts,'shader','interp');
     elseif strcmpi(s.faceColor, 'flat')
@@ -3176,7 +3179,7 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
     % All markers have the same color.
     [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', cData);
     [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', cData);
-    
+
     if constMarkerkSize
         drawOptions = opts_add(drawOptions, 'only marks');
         drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
@@ -3204,14 +3207,13 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
             markerOptions = opts_add(markerOptions, 'fill', xcolor);
         end
         % for changing marker size, the 'scatter' option has to be added
-        
         drawOptions = opts_add(drawOptions, 'scatter');
         drawOptions = opts_add(drawOptions, 'only marks');
         drawOptions = opts_add(drawOptions, 'color', xcolor);
         drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
         drawOptions = opts_add(drawOptions, 'mark options', ...
             ['{' opts_print(m2t, markOptions, ',') '}']);
-        
+
         if ~hasFaceColor
             drawOptions = opts_add(drawOptions, ...
                 'scatter/use mapped color', xcolor);
@@ -3236,7 +3238,7 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
     markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
     markerOptions = opts_add(markerOptions, 'mark options', ...
         ['{' opts_print(m2t, markOptions, ',') '}']);
-    
+
     if hasEdgeColor && hasFaceColor
         [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
         markerOptions = opts_add(markerOptions, 'draw', ecolor);
@@ -3776,92 +3778,15 @@ end
 % ==============================================================================
 function [m2t, str] = drawErrorBars(m2t, h)
 % Takes care of MATLAB's error bar plots.
-    if isa(h,'matlab.graphics.chart.primitive.ErrorBar') % MATLAB R2014b+
-        hData = h;
-        upDev = get(h, 'UData');
-        loDev = get(h, 'LData');
+% Octave is not handled, since error bar plots can not be natively recognized as
+% such. See function `drawHggroup()` and #645 for more details.
 
-        yDeviations = [upDev(:), loDev(:)];
+    hData = h;
+    upDev = get(h, 'UData');
+    loDev = get(h, 'LData');
 
-    else % Legacy Handling (Octave and MATLAB R2014a and older):
-        % 'errorseries' plots have two line-plot children, one of which contains
-        % the information about the center points; 'XData' and 'YData' components
-        % are both of length n.
-        % The other contains the information about the deviations (errors), more
-        % more precisely: the lines to be drawn. Those are
-        %        ___
-        %         |
-        %         |
-        %         X  <-- (x0,y0)
-        %         |
-        %        _|_
-        %
-        %    X: x0,     x0,     x0-eps, x0+eps, x0-eps, x0+eps;
-        %    Y: y0-dev, y0+dev, y0-dev, y0-dev, y0+dev, y0+dev.
-        %
-        % Hence, 'XData' and 'YData' are of length 6*n and contain redundant info.
-        % Some versions of MATLAB(R) insert more columns with NaNs (to be able to
-        % pass the entire X, Y arrays into plot()) such that the data is laid out as
-        %
-        %    X: x0,     x0,     NaN, x0-eps, x0+eps, NaN, x0-eps, x0+eps;
-        %    Y: y0-dev, y0+dev, NaN, y0-dev, y0-dev, NaN, y0+dev, y0+dev,
-        %
-        % or with another columns of NaNs added at the end.
-        c = get(h, 'Children');
+    yDeviations = [upDev(:), loDev(:)];
 
-        % Find out which contains the data and which the deviations.
-        %TODO: this can be simplified using sort
-        n1 = length(get(c(1),'XData'));
-        n2 = length(get(c(2),'XData'));
-        if n2 == 6*n1
-            % 1 contains centerpoint info
-            dataIdx  = 1;
-            errorIdx = 2;
-            numDevData = 6;
-        elseif n1 == 6*n2
-            % 2 contains centerpoint info
-            dataIdx  = 2;
-            errorIdx = 1;
-            numDevData = 6;
-        elseif n2 == 9*n1-1 || n2 == 9*n1
-            % 1 contains centerpoint info
-            dataIdx  = 1;
-            errorIdx = 2;
-            numDevData = 9;
-        elseif n1 == 9*n2-1 || n1 == 9*n2
-            % 2 contains centerpoint info
-            dataIdx  = 2;
-            errorIdx = 1;
-            numDevData = 9;
-        else
-            error('drawErrorBars:errorMatch', ...
-                'Sizes of and error data not matching (6*%d ~= %d and 6*%d ~= %d, 9*%d-1 ~= %d, 9*%d-1 ~= %d).', ...
-                n1, n2, n2, n1, n1, n2, n2, n1);
-        end
-        hData  = c(dataIdx);
-        hError = c(errorIdx);
-
-        % prepare error array (that is, gather the y-deviations)
-        yValues = get(hData , 'YData');
-        yErrors = get(hError, 'YData');
-
-        n = length(yValues);
-
-        yDeviations = zeros(n, 2);
-
-        %TODO: this can be vectorized
-        for k = 1:n
-            % upper deviation
-            kk = numDevData*(k-1) + 1;
-            upDev = abs(yValues(k) - yErrors(kk));
-
-            % lower deviation
-            kk = numDevData*(k-1) + 2;
-            loDev = abs(yValues(k) - yErrors(kk));
-
-            yDeviations(k,:) = [upDev loDev];
-        end
-    end
     % Now run drawLine() with deviation information.
     [m2t, str] = drawLine(m2t, hData, yDeviations);
 end
@@ -5046,14 +4971,14 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             position(i,:) = axesPos ./ [figureSize, figureSize];
 
         end
-        
+
         if strcmpi(get(axesHandle, 'DataAspectRatioMode'), 'manual') ...
                 || strcmpi(get(axesHandle, 'PlotBoxAspectRatioMode'), 'manual')
-                
+
             if strcmpi(get(axesHandle,'Projection'),'Perspective')
                 userWarning(m2t,'Perspective projections are not currently supported')
             end
-            
+
             % project vertices of 3d plot box (this results in 2d coordinates in
             % an absolute coordinate system that is scaled proportionally by
             % Matlab to fit the axes position box)
@@ -5062,26 +4987,26 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                     projection = view(axesHandle);
 
                 case 'Octave'
-                    % Unfortunately, Octave does not have the full `view` 
+                    % Unfortunately, Octave does not have the full `view`
                     % interface implemented, but the projection matrices are
                     % available: http://octave.1599824.n4.nabble.com/Implementing-view-td3032041.html
-                    
+
                     projection = get(axesHandle, 'x_viewtransform');
 
                 otherwise
                     errorUnknownEnvironment();
             end
-            
-                
+
+
             vertices = projection * [0, 1, 0, 0, 1, 1, 0, 1;
                                      0, 0, 1, 0, 1, 0, 1, 1;
-                                     0, 0, 0, 1, 0, 1, 1, 1; 
+                                     0, 0, 0, 1, 0, 1, 1, 1;
                                      1, 1, 1, 1, 1, 1, 1, 1];
-                         
+
             % each of the columns of vertices represents a vertex of the 3D axes
             % but we only need their XY coordinates
             verticesXY = vertices([1 2], :);
-                                
+
             % the size of the projected plot box is limited by the long diagonals
             % The matrix A determines the connectivity, e.g. the first diagonal runs from vertices(:,3) -> vertices(:,4)
             A = [ 0,  0,  0, -1, +1,  0,  0,  0;
@@ -5091,7 +5016,7 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             diagonals = verticesXY * A';
             % each of the columns of this matrix contains a the X and Y distance of a diagonal
             dimensions = max(abs(diagonals), [], 2);
-            
+
             % find limiting dimension and adjust position
             aspectRatio = dimensions(2) * figWidth / (dimensions(1) * figHeight);
             axesAspectRatio = position(i,4) / position(i,3);

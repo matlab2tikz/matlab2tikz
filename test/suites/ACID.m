@@ -203,8 +203,10 @@ function [stat] = multiline_labels()
 end
 % =========================================================================
 function [stat] = plain_cos()
-  stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
-  stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
+  stat.description = 'Plain cosine function.';
+  stat.unreliable = isOctave || isMATLAB(); %FIXME: cleanfigure() removes
+  % points dependent on environment. #641 might resolve this by ensuring
+  % that e.g. always the same DPI is used. Also see TODO in `emptyStatus.m`.
 
   fplot( @cos, [0,2*pi] );
 
@@ -1824,13 +1826,13 @@ function [stat] = herrorbarPlot()
   X = 1:10;
   Y = 1:10;
   err = repmat(0.2, 1, 10);
-  h1 = errorbar(X, Y, err, 'r');
+  h1 = errorbar(X, Y, err+X/30, 'r');
   h_vec = herrorbar(X, Y, err);
   for h=h_vec
       set(h, 'color', [1 0 0]);
   end
   h2 = errorbar(X, Y+1, err, 'g');
-  h_vec = herrorbar(X, Y+1, err);
+  h_vec = herrorbar(X, Y+1, err+Y/40);
   for h=h_vec
       set(h, 'color', [0 1 0]);
   end
@@ -2038,7 +2040,7 @@ function [stat] = alphaImage()
   set(h_imsc, 'AlphaDataMapping', 'scaled');
   set(gca, 'ALim', [-1,1]);
   title('');
-  
+
   subplot(2,1,2);
   title('Integer Alpha Data');
   N = 2;
@@ -2490,7 +2492,7 @@ function [stat] = textAlignment()
     text(-0.2,0.7, {'text overlapping', 'axis limits'});
     text(0.9,0.0, {'text overlapping', 'axis limits'});
     h_t = text(0.9,2.0, {'text overlapping', 'axis limits'});
-    
+
     % Set different units to test if they are properly handled
     set(h_t, 'Units', 'centimeters');
 end
