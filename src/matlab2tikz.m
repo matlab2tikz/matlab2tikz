@@ -119,7 +119,7 @@ function matlab2tikz(varargin)
 %      matlab2tikz('myfile.tex');
 %
 
-%   Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
+%   Copyright (c) 2008--2015, Nico Schlömer <nico.schloemer@gmail.com>
 %   All rights reserved.
 %
 %   Redistribution and use in source and binary forms, with or without
@@ -159,10 +159,10 @@ m2t.currentHandles = [];
 m2t.transform = []; % For hgtransform groups
 m2t.pgfplotsVersion = [1,3];
 m2t.name = 'matlab2tikz';
-m2t.version = '0.6.0';
+m2t.version = '1.0.0';
 m2t.author = 'Nico Schlömer';
 m2t.authorEmail = 'nico.schloemer@gmail.com';
-m2t.years = '2008--2014';
+m2t.years = '2008--2015';
 m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
 VCID = VersionControlIdentifier();
 m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
@@ -681,6 +681,10 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                 % don't to anything for these handles and its children
                 str = '';
 
+            case 'light'
+                % These objects are not supported and should not/cannot be
+                % supported by matlab2tikz or pgfplots.
+
             case ''
                 warning('matlab2tikz:NoChildren',...
                         ['No children found for handle %d. ',...
@@ -718,11 +722,17 @@ switch getEnvironment
         [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child);
 
     case 'Octave'
-        % Octave associates legends with axes, not with (line) plot.
-        % The variable m2t.gcaHasLegend is set in drawAxes().
-        hasLegend = ~isempty(m2t.gcaAssociatedLegend);
-        interpreter = get(m2t.gcaAssociatedLegend, 'interpreter');
-        legendString = getOrDefault(child,'displayname','');
+        % Octave does not store a reference to the legend entry in the
+        % plotted objects. It references the plotted objects in reverse,
+        % in the legend's 'deletefcn' property.
+        % The variable m2t.gcaAssociatedLegend is set in drawAxes().
+        if ~isempty(m2t.gcaAssociatedLegend)
+            delfun           = get(m2t.gcaAssociatedLegend,'deletefcn');
+            legendEntryPeers = delfun{6}; % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m  
+            hasLegend        = ismember(child, legendEntryPeers);
+            interpreter      = get(m2t.gcaAssociatedLegend, 'interpreter');
+            legendString     = getOrDefault(child,'displayname','');
+        end
 
     otherwise
         errorUnknownEnvironment();
@@ -950,7 +960,7 @@ function legendhandle = getAssociatedLegend(m2t, handle)
             % Make sure that m2t.legendHandles is a row vector.
             for lhandle = m2t.legendHandles(:)'
                 ud = get(lhandle, 'UserData');
-                if isVisible(lhandle) && any(handle == ud.handle)
+                if isVisibleContainer(lhandle) && any(handle == ud.handle)
                     legendhandle = lhandle;
                     break;
                 end
@@ -1360,7 +1370,7 @@ function options = setAxisLimits(m2t, handle, axis, options)
     end
 end
 % ==============================================================================
-function bool = isAxisVisible(axisHandle)
+function bool = isVisibleContainer(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
         % immediately bail out here.
@@ -4463,11 +4473,11 @@ function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
             switch lower(textpos)
                 case 'left'
                     % pictogram right of flush right text
-                    textalign = 'left';
+                    textalign = 'right';
                     pictalign = 'right';
                 case 'right'
                     % pictogram left of flush left text (default)
-                    textalign = 'right';
+                    textalign = 'left';
                     pictalign = 'left';
                 otherwise
                     userWarning(m2t, ...
@@ -5195,7 +5205,7 @@ function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
     N   = numel(axesHandles);
     idx = false(N,1);
     for ii = 1:N
-       idx(ii) = isAxisVisible(axesHandles(ii));
+       idx(ii) = isVisibleContainer(axesHandles(ii));
     end
     % Store the relevant axes in m2t to simplify querying e.g. positions
     % of subplots

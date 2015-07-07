@@ -282,33 +282,50 @@ function pruneOutsideBox(meta, handle)
 
   return;
 end
+% ==========================================================================
+function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+    % Determine the corners of the axes as defined by xLim and yLim
+    bottomLeft  = [xLim(1); yLim(1)];
+    topLeft     = [xLim(1); yLim(2)];
+    bottomRight = [xLim(2); yLim(1)];
+    topRight    = [xLim(2); yLim(2)];
+end
 % =========================================================================
 function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
     % in p and determine whether the line between the pair crosses the box.
-
     n = size(data, 1);
     out = false(n-1, 1);
-    for k = 1:n-1
-        out(k) =  (dataIsInBox(k) && all(isfinite(data(k+1,:)))) ... % one of the neighbors is inside the box
-               || (dataIsInBox(k+1) && all(isfinite(data(k,:)))) ... % and the other is finite
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(1)], [xLim(1);yLim(2)]) ... % left border
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(1)], [xLim(2);yLim(1)]) ... % bottom border
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(2);yLim(1)], [xLim(2);yLim(2)]) ... % right border
-               || segmentsIntersect(data(k,:), data(k+1,:), ...
-                                    [xLim(1);yLim(2)], [xLim(2);yLim(2)]); % top border
-    end
 
+    [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+
+    for k = 1:n-1
+        this = data(k  , :);
+        next = data(k+1, :);
+
+        % One of the neighbors is inside the box and the other is finite
+        nextVisible = (dataIsInBox(k+1) && all(isfinite(this)));
+        thisVisible = (dataIsInBox(k)   && all(isfinite(next)));
+
+        % Check whether the line connecting this point and the next one
+        % intersects with any of the borders of the drawn axis
+        left   = segmentsIntersect(this, next, bottomLeft , topLeft);
+        right  = segmentsIntersect(this, next, bottomRight, topRight);
+        bottom = segmentsIntersect(this, next, bottomLeft , bottomRight);
+        top    = segmentsIntersect(this, next, topLeft    , topRight);
+
+        % The segment is visible when any of the following hold:
+        %  - this point is visible in the axis and the next is finite
+        %  - this point is finite and the next is visible in the axis
+        %  - the segment connecting this and the next point crosses a border
+        out(k) = thisVisible || nextVisible || left || right || top || bottom;
+    end
 end
 % =========================================================================
 function out = segmentsIntersect(X1, X2, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect.
   lambda = crossLines(X1, X2, X3, X4);
   out = all(lambda > 0.0) && all(lambda < 1.0);
-  return
 end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
@@ -596,6 +613,7 @@ function movePointsCloser(meta, handle)
   % Loop through all points which are to be included in the plot yet do not
   % fit into the extended box, and gather the points by which they are to be
   % replaced.
+
   replaceIndices = find(~dataIsInLargeBox)';
   m = length(replaceIndices);
   r = cell(m, 1);
@@ -699,7 +717,7 @@ function movePointsCloser(meta, handle)
   return;
 end
 % =========================================================================
-function xNew = moveToBox(x, xRef, xlim, ylim)
+function xNew = moveToBox(x, xRef, xLim, yLim)
   % Takes a box defined by xlim, ylim, one point x and a reference point
   % xRef.
   % Returns the point xNew that sits on the line segment between x and xRef
@@ -710,26 +728,29 @@ function xNew = moveToBox(x, xRef, xlim, ylim)
   % the smallest parameter alpha such that x + alpha*(xRef-x)
   % sits on the boundary.
   minAlpha = inf;
+  [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+  %TODO: clean up duplicate code below, possibly store lambda in matrix
+
   % left boundary:
-  lambda = crossLines(x, xRef, [xlim(1);ylim(1)], [xlim(1);ylim(2)]);
+  lambda = crossLines(x, xRef, bottomLeft, topLeft);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
 
   % bottom boundary:
-  lambda = crossLines(x, xRef, [xlim(1);ylim(1)], [xlim(2);ylim(1)]);
+  lambda = crossLines(x, xRef, bottomLeft, bottomRight);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
 
   % right boundary:
-  lambda = crossLines(x, xRef, [xlim(2);ylim(1)], [xlim(2);ylim(2)]);
+  lambda = crossLines(x, xRef, bottomRight, topRight);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
 
   % top boundary:
-  lambda = crossLines(x, xRef, [xlim(1);ylim(2)], [xlim(2);ylim(2)]);
+  lambda = crossLines(x, xRef, topLeft, topRight);
   if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
       minAlpha = lambda(1);
   end
@@ -760,12 +781,20 @@ function lambda = crossLines(X1, X2, X3, X4)
   %
   % for lambda and mu.
 
+  %TODO: why don't we use `\` instead of Cramer's rule?
+
   rhs = X3(:) - X1(:);
-  % Divide by det even if it's 0: Infs are returned.
+  % Don't divide by det(erminant), if it is zero. Directly return 'inf'.
+  % Otherwise this yields "warning: division by zero" in octave. See #664.
   % A = [X2-X1, -(X4-X3)];
   detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1));
-  invA = [-(X4(2)-X3(2)), X4(1)-X3(1);...
-          -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
+
+  if detA == 0
+    invA = inf;
+  else
+    invA = [-(X4(2)-X3(2)), X4(1)-X3(1);...
+            -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
+  end
   lambda = invA * rhs;
 
 end
