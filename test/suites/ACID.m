@@ -994,7 +994,7 @@ end
 % =========================================================================
 function [stat] = rlocusPlot()
   stat.description = 'rlocus plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: Output is empty?! See #641 
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Skipping.\n\n' );
@@ -1002,7 +1002,13 @@ function [stat] = rlocusPlot()
       return
   end
 
-  s=tf('s');
+  if isMATLAB('<', [8,4])
+      % in MATLAB R2014a and below, `rlocus` plots with no background color
+      % are not supported. So, force that color to white to work around
+      % that bug. Newer versions don't suffer from this.
+      set(gca, 'Color', 'w');
+  end
+
   rlocus(tf([1 1],[4 3 1]))
 end
 % =========================================================================
