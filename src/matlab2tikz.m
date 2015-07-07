@@ -3748,7 +3748,7 @@ function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)
     else
         maxLength = 1;
     end
-    if getOrDefault(h, 'AutoScale', true)
+    if isOn(getOrDefault(h, 'AutoScale', 'on'))
         scaleFactor = getOrDefault(h,'AutoScaleFactor', 0.9) / maxLength;
     else
         scaleFactor = 1;
@@ -5218,6 +5218,11 @@ end
 function bool = isNone(value)
 % Checks whether a value is 'none'
     bool = strcmpi(value, 'none');
+end
+% ==============================================================================
+function bool = isOn(value)
+% Checks whether a value is 'on' or true
+    bool = strcmpi(value, 'on');
 end
 % ==============================================================================
 function val = getOrDefault(handle, key, default)
