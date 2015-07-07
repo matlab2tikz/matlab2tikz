@@ -2315,7 +2315,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
       plotoptions = opts_add(plotoptions,'contour prepared format','matlab');
 
       % Labels
-      if strcmpi(get(h,'ShowText'),'off')
+      if isOff(get(h,'ShowText'))
           plotoptions = opts_add(plotoptions,'contour/labels','false');
       end
 
@@ -2748,8 +2748,8 @@ function [m2t, str] = drawVisibleText(m2t, handle)
     % descriptions therein.  Also, Matlab treats text objects with a NaN in the
     % position as invisible.
     if any(isnan(get(handle, 'Position')) | isnan(get(handle, 'Rotation'))) ...
-            || strcmpi(get(handle, 'Visible'), 'off') ...
-            || (strcmpi(get(handle, 'HandleVisibility'), 'off') && ...
+            || isOff(get(handle, 'Visible')) ...
+            || (isOff(get(handle, 'HandleVisibility')) && ...
                 ~m2t.cmdOpts.Results.showHiddenStrings)
 
         str = '';
@@ -2929,7 +2929,7 @@ function [m2t, str] = drawRectangle(m2t, h)
     % there may be some text objects floating around a Matlab figure which
     % are handled by other subfunctions (labels etc.) or don't need to be
     % handled at all
-    if ~isVisible(h) || strcmpi(get(h, 'HandleVisibility'), 'off')
+    if ~isVisible(h) || isOff(get(h, 'HandleVisibility'))
         return;
     end
 
@@ -4395,7 +4395,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
 
     % If the plot has 'legend boxoff', we have the 'not visible'
     % property, so turn off line and background fill.
-    if ~isVisible(handle) || strcmpi(get(handle,'box'),'off')
+    if ~isVisible(handle) || isOff(get(handle,'box'))
         lStyle = opts_add(lStyle, 'fill', 'none');
         lStyle = opts_add(lStyle, 'draw', 'none');
     else
@@ -5221,8 +5221,17 @@ function bool = isNone(value)
 end
 % ==============================================================================
 function bool = isOn(value)
-% Checks whether a value is 'on' or true
+% Checks whether a value is 'on'
     bool = strcmpi(value, 'on');
+end
+% ==============================================================================
+function bool = isOff(value)
+% Checks whether a value is 'off'.
+% Note that some options are not be solely an on/off boolean, such that `isOn` 
+% and isOff don't always return the complement of each other and such that we
+% need both functions to check the value.
+% E.g. `set(0, 'HandleVisibility')` allows the value 'callback'.
+    bool = strcmpi(value, 'off');
 end
 % ==============================================================================
 function val = getOrDefault(handle, key, default)
