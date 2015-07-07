@@ -689,6 +689,7 @@ function [stat] = quiverplot()
   contour(X,Y,Z);
   hold on
   quiver(X,Y,DX,DY);
+  %TODO: also show a `quiver(X,Y,DX,DY,0);` to test without scaling
   colormap hsv;
   hold off
 end
@@ -718,6 +719,11 @@ end
 % =========================================================================
 function [stat] = quiveroverlap ()
   stat.description = 'Quiver plot with avoided overlap.';
+  stat.issues = [679];
+  % TODO: As indicated in #679, the native quiver scaling algorithm still isn't 
+  % perfect. As such, in MATLAB the arrow heads may appear extremely tiny.
+  % In Octave, they look fine though. Once the scaling has been done decently,
+  % this reminder can be removed.
 
   x = [0 1];
   y = [0 0];
