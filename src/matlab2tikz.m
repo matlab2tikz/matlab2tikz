@@ -1075,7 +1075,7 @@ end
 % ==============================================================================
 function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
 % draw the box and axis line location of an axes object
-    isBoxOn       = strcmpi(get(h, 'box'), 'on');
+    isBoxOn       = isOn(get(h, 'box'));
     xLoc          = get(h, 'XAxisLocation');
     yLoc          = get(h, 'YAxisLocation');
     isXaxisBottom = strcmpi(xLoc,'bottom');
@@ -1214,7 +1214,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
                                               [upper(axis),'Color'], [ 0 0 0 ]);
     if ~isDfltColor || m2t.cmdOpts.Results.strict
         [m2t, col] = getColor(m2t, handle, color, 'patch');
-        if strcmpi(get(handle, 'box'), 'on')
+        if isOn(get(handle, 'box'))
             % If the axes are arranged as a box, make sure that the individual
             % axes are drawn as four separate paths. This makes the alignment
             % at the box corners somewhat less nice, but allows for different
@@ -1253,10 +1253,10 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     [m2t, options] = getAxisLabel(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get grids
-    if strcmpi(getOrDefault(handle, [upper(axis),'Grid'], 'off'), 'on');
+    if isOn(getOrDefault(handle, [upper(axis),'Grid'], 'off'));
         options = opts_add(options, [axis, 'majorgrids'], []);
     end
-    if strcmpi(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'), 'on');
+    if isOn(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'));
         options = opts_add(options, [axis, 'minorgrids'], []);
     end
 end
@@ -1298,7 +1298,7 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     end
 
     keywordMinorTick = [upper(axis), 'MinorTick'];
-    hasMinorTicks = strcmpi(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
+    hasMinorTicks = isOn(getOrDefault(handle, keywordMinorTick, 'off'));
     tickDirection = getOrDefault(handle, 'TickDir', 'in');
 
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
@@ -2298,7 +2298,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
   end
 
   % Draw a contour group (MATLAB R2014b and newer only)
-  isFilled = strcmpi(get(h,'Fill'),'on');
+  isFilled = isOn(get(h,'Fill'));
   if isFilled
       [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows);
 
@@ -2315,7 +2315,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
       plotoptions = opts_add(plotoptions,'contour prepared format','matlab');
 
       % Labels
-      if strcmpi(get(h,'ShowText'),'off')
+      if isOff(get(h,'ShowText'))
           plotoptions = opts_add(plotoptions,'contour/labels','false');
       end
 
@@ -2748,8 +2748,8 @@ function [m2t, str] = drawVisibleText(m2t, handle)
     % descriptions therein.  Also, Matlab treats text objects with a NaN in the
     % position as invisible.
     if any(isnan(get(handle, 'Position')) | isnan(get(handle, 'Rotation'))) ...
-            || strcmpi(get(handle, 'Visible'), 'off') ...
-            || (strcmpi(get(handle, 'HandleVisibility'), 'off') && ...
+            || isOff(get(handle, 'Visible')) ...
+            || (isOff(get(handle, 'HandleVisibility')) && ...
                 ~m2t.cmdOpts.Results.showHiddenStrings)
 
         str = '';
@@ -2929,7 +2929,7 @@ function [m2t, str] = drawRectangle(m2t, h)
     % there may be some text objects floating around a Matlab figure which
     % are handled by other subfunctions (labels etc.) or don't need to be
     % handled at all
-    if ~isVisible(h) || strcmpi(get(h, 'HandleVisibility'), 'off')
+    if ~isVisible(h) || isOff(get(h, 'HandleVisibility'))
         return;
     end
 
@@ -3420,7 +3420,7 @@ end
 % ==============================================================================
 function [barType, isHorizontal] = getOrientationOfBarSeries(h)
 % determines the orientation (horizontal/vertical) of a BarSeries object
-    isHorizontal = strcmpi(get(h, 'Horizontal'), 'on');
+    isHorizontal = isOn(get(h, 'Horizontal'));
     if isHorizontal
         barType = 'xbar';
     else
@@ -3748,7 +3748,7 @@ function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)
     else
         maxLength = 1;
     end
-    if getOrDefault(h, 'AutoScale', true)
+    if isOn(getOrDefault(h, 'AutoScale', 'on'))
         scaleFactor = getOrDefault(h,'AutoScaleFactor', 0.9) / maxLength;
     else
         scaleFactor = 1;
@@ -4395,7 +4395,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
 
     % If the plot has 'legend boxoff', we have the 'not visible'
     % property, so turn off line and background fill.
-    if ~isVisible(handle) || strcmpi(get(handle,'box'),'off')
+    if ~isVisible(handle) || isOff(get(handle,'box'))
         lStyle = opts_add(lStyle, 'fill', 'none');
         lStyle = opts_add(lStyle, 'draw', 'none');
     else
@@ -5220,6 +5220,20 @@ function bool = isNone(value)
     bool = strcmpi(value, 'none');
 end
 % ==============================================================================
+function bool = isOn(value)
+% Checks whether a value is 'on'
+    bool = strcmpi(value, 'on');
+end
+% ==============================================================================
+function bool = isOff(value)
+% Checks whether a value is 'off'.
+% Note that some options are not be solely an on/off boolean, such that `isOn` 
+% and isOff don't always return the complement of each other and such that we
+% need both functions to check the value.
+% E.g. `set(0, 'HandleVisibility')` allows the value 'callback'.
+    bool = strcmpi(value, 'off');
+end
+% ==============================================================================
 function val = getOrDefault(handle, key, default)
 % gets the value or returns the default value if no such property exists
     if all(isprop(handle, key))
@@ -5260,7 +5274,7 @@ end
 % ==============================================================================
 function bool = isVisible(handles)
 % Determines whether an object is actually visible or not.
-    bool = strcmpi(get(handles,'Visible'), 'on');
+    bool = isOn(get(handles,'Visible'));
     % There's another handle property, 'HandleVisibility', which may or may not
     % determine the visibility of the object. Empirically, it seems to be 'off'
     % whenever we're dealing with an object that's not user-created, such as
