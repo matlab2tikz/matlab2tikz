@@ -689,6 +689,7 @@ function [stat] = quiverplot()
   contour(X,Y,Z);
   hold on
   quiver(X,Y,DX,DY);
+  %TODO: also show a `quiver(X,Y,DX,DY,0);` to test without scaling
   colormap hsv;
   hold off
 end
