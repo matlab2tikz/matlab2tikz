@@ -813,8 +813,13 @@ end
 % =========================================================================
 function [stat] = subplot2x2b ()
   stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
-  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); % R2014b and newer
-
+  stat.unreliable = isOctave || isMATLAB();
+  % FIXME: this test is unreliable because the automatic axis limits
+  % differ on different test platforms. Reckon this by creating the figure
+  % using `ACID(97)` and then manually slightly modify the window size.
+  % We should not set the axis limits explicitly rather find a better way.
+  % #591
+  
   x = (1:5);
 
   subplot(2,2,1);
@@ -2515,9 +2520,13 @@ end
 % =========================================================================
 function [stat] = overlappingPlots()
     stat.description = 'Overlapping plots with zoomed data and varying background.';
-    stat.unreliable = isMATLAB('>=', [8,4]);
-    % FIXME this test is unreliable because the x/y lims of `ax2` are not set
-    % explicitly. We should not set them explicitly, rather implement #591
+    stat.unreliable = isMATLAB();
+    % FIXME: this test is unreliable because the automatic axis limits of `ax2`
+    % differ on different test platforms. Reckon this by creating the figure
+    % using `ACID(97)` and then manually slightly modify the window size.
+    % We should not set the axis limits explicitly rather find a better way.
+    % Workaround: Slightly adapt width and height of `ax2`.
+    % #591, #641 (issuecomment-106241711)
     stat.issues = 6;
 
     % create pseudo random data and convert it from matrix to vector
