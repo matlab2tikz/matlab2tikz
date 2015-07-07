@@ -18,5 +18,7 @@ function defaultStatus = emptyStatus(testsuite, testNumber)
       );
 
     % for reliable tests explicitly define width and height, see #659
+    % TODO: Remove explicitly setting this option.
+    %       After #641 is merged, this might be not needed anyhow.
     defaultStatus.extraCleanfigureOptions = {'targetResolution', [1000,500]};
 end
