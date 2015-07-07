@@ -3712,8 +3712,6 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         headStyle = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
         quiverOpts = opts_add(quiverOpts, 'every arrow/.append style', ...
                               ['{' headStyle '}']);
-    else
-        %TODO: check what we can do for scaling non-barbed arrows
     end
     plotOpts = opts_add(plotOpts,'quiver', ['{' opts_print(m2t, quiverOpts, ',') '}']);
     plotOptions = opts_print(m2t, plotOpts, ',');
