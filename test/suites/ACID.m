@@ -203,8 +203,10 @@ function [stat] = multiline_labels()
 end
 % =========================================================================
 function [stat] = plain_cos()
-  stat.description = 'Plain cosine function with minimumPointsDistance of $0.5$.';
-  stat.extraCleanfigureOptions = {'minimumPointsDistance', 0.5};
+  stat.description = 'Plain cosine function.';
+  stat.unreliable = isOctave || isMATLAB(); %FIXME: cleanfigure() removes
+  % points dependent on environment. #641 might resolve this by ensuring
+  % that e.g. always the same DPI is used. Also see TODO in `emptyStatus.m`.
 
   fplot( @cos, [0,2*pi] );
 
