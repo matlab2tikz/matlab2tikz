@@ -1075,7 +1075,7 @@ end
 % ==============================================================================
 function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
 % draw the box and axis line location of an axes object
-    isBoxOn       = strcmpi(get(h, 'box'), 'on');
+    isBoxOn       = isOn(get(h, 'box'));
     xLoc          = get(h, 'XAxisLocation');
     yLoc          = get(h, 'YAxisLocation');
     isXaxisBottom = strcmpi(xLoc,'bottom');
@@ -1214,7 +1214,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
                                               [upper(axis),'Color'], [ 0 0 0 ]);
     if ~isDfltColor || m2t.cmdOpts.Results.strict
         [m2t, col] = getColor(m2t, handle, color, 'patch');
-        if strcmpi(get(handle, 'box'), 'on')
+        if isOn(get(handle, 'box'))
             % If the axes are arranged as a box, make sure that the individual
             % axes are drawn as four separate paths. This makes the alignment
             % at the box corners somewhat less nice, but allows for different
@@ -1253,10 +1253,10 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     [m2t, options] = getAxisLabel(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get grids
-    if strcmpi(getOrDefault(handle, [upper(axis),'Grid'], 'off'), 'on');
+    if isOn(getOrDefault(handle, [upper(axis),'Grid'], 'off'));
         options = opts_add(options, [axis, 'majorgrids'], []);
     end
-    if strcmpi(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'), 'on');
+    if isOn(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'));
         options = opts_add(options, [axis, 'minorgrids'], []);
     end
 end
@@ -1298,7 +1298,7 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     end
 
     keywordMinorTick = [upper(axis), 'MinorTick'];
-    hasMinorTicks = strcmpi(getOrDefault(handle, keywordMinorTick, 'off'), 'on');
+    hasMinorTicks = isOn(getOrDefault(handle, keywordMinorTick, 'off'));
     tickDirection = getOrDefault(handle, 'TickDir', 'in');
 
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
@@ -2298,7 +2298,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
   end
 
   % Draw a contour group (MATLAB R2014b and newer only)
-  isFilled = strcmpi(get(h,'Fill'),'on');
+  isFilled = isOn(get(h,'Fill'));
   if isFilled
       [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows);
 
@@ -3420,7 +3420,7 @@ end
 % ==============================================================================
 function [barType, isHorizontal] = getOrientationOfBarSeries(h)
 % determines the orientation (horizontal/vertical) of a BarSeries object
-    isHorizontal = strcmpi(get(h, 'Horizontal'), 'on');
+    isHorizontal = isOn(get(h, 'Horizontal'));
     if isHorizontal
         barType = 'xbar';
     else
@@ -5265,7 +5265,7 @@ end
 % ==============================================================================
 function bool = isVisible(handles)
 % Determines whether an object is actually visible or not.
-    bool = strcmpi(get(handles,'Visible'), 'on');
+    bool = isOn(get(handles,'Visible'));
     % There's another handle property, 'HandleVisibility', which may or may not
     % determine the visibility of the object. Empirically, it seems to be 'off'
     % whenever we're dealing with an object that's not user-created, such as
