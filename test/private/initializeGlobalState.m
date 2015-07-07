@@ -21,9 +21,8 @@ function [orig,cwd] = initializeGlobalState()
         factory_property_name = strrep(f{i},'default','factory');
         factory_property_value = factory.(factory_property_name);
         orig.(f{i}).val = ...
-            swap_property_state(0, f{i}, factory_property_value);
+            swapPropertyState(0, f{i}, factory_property_value);
     end
-    clear default factory_property_name factory_property_value
 
     %--- Define desired global state properties
     % defaultAxesColorOrder: on HG1 'default' and 'factory' differ and
@@ -35,12 +34,12 @@ function [orig,cwd] = initializeGlobalState()
                                 0.466 0.674 0.188; ...
                                 0.301 0.745 0.933; ...
                                 0.635 0.0780 0.184];
-    new.defaultAxesColorOrder.ignore= 0;
+    new.defaultAxesColorOrder.ignore= false;
 
     % defaultFigurePosition: width and height influence cleanfigure() and
     % the number/location of axis ticks
     new.defaultFigurePosition.val   = [300,200,560,420];
-    new.defaultFigurePosition.ignore= 0;
+    new.defaultFigurePosition.ignore= false;
 
     % ScreenPixelsPerInch: TODO: determine, if necessary
     % (probably needed for new line simplification algorithm)
@@ -53,7 +52,7 @@ function [orig,cwd] = initializeGlobalState()
     for i = 1:length(f)
         % ignore property on specified environments
         if ~new.(f{i}).ignore
-            val = swap_property_state(0, f{i}, new.(f{i}).val);
+            val = swapPropertyState(0, f{i}, new.(f{i}).val);
 
             % store original value only, if not set by user's defaults
             if ~isfield(orig,f{i})
@@ -63,7 +62,7 @@ function [orig,cwd] = initializeGlobalState()
     end
 end
 % =========================================================================
-function old = swap_property_state(h, property, new)
+function old = swapPropertyState(h, property, new)
     % read current property of graphical object
     % set new value, if not empty
     if nargin < 3, new = []; end
