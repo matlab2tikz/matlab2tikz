@@ -364,7 +364,6 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
-  stat.unreliable = isMATLAB(); % FIXME: see #590, #604
 
   if isOctave()
       fprintf( 'Octave can''t handle tight axes.\n\n' );
@@ -1041,7 +1040,6 @@ end
 % =========================================================================
 function [stat] = besselImage()
   stat.description = 'Bessel function.';
-  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1251,7 +1249,6 @@ end
 % =========================================================================
 function [stat] = surfPlot()
   stat.description = 'Surface plot.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
 
   [X,Y,Z] = peaks(30);
   surf(X,Y,Z)
@@ -1379,7 +1376,7 @@ end
 % =========================================================================
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
-  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+  stat.unreliable = isOctave; %FIXME: investigate (octave of egon)
   % unreliable, see issue #614 (comment 92263263)
 
   data = ACID_data;
@@ -1419,7 +1416,6 @@ end
 % =========================================================================
 function [stat] = textext()
   stat.description = 'Formatted text and special characters using \TeX{}.';
-  stat.unreliable  = isMATLAB();
 
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
@@ -1435,7 +1431,7 @@ end
 % =========================================================================
 function [stat] = texrandom()
   stat.description = 'Random TeX symbols';
-  stat.unreliable = true; % due to randomness
+  stat.unreliable = isOctave(); % due to `rng` being unavailable in octave
 
   try
       rng(42); %fix seed
@@ -2443,7 +2439,7 @@ end
 % =========================================================================
 function [stat] = colorbarLabelTitle()
     stat.description = 'colorbar with label and title';
-    stat.unreliable = isMATLAB || isOctave; %FIXME: investigate
+    stat.unreliable = isOctave; %FIXME: investigate
     stat.issues = 429;
 
     % R2014b handles colorbars smart:  `XLabel` and `YLabel` merged into `Label`
@@ -2474,7 +2470,7 @@ end
 function [stat] = textAlignment()
     stat.description = 'alignment of text boxes and position relative to axis';
     stat.issues = 378;
-    stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+    stat.unreliable = isOctave; %FIXME: investigate
 
     plot([0.0 2.0], [1.0 1.0],'k'); hold on;
     plot([0.0 2.0], [0.5 0.5],'k');
