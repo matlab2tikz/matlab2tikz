@@ -333,8 +333,8 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.unreliable  = isMATLAB();
-  % FIXME: see #604; contour() produces inconsistent output
+  stat.unreliable  = isMATLAB('<', [8,4]);
+  % FIXME: see #604; contour() produces inconsistent output (mac of PeterPablo)
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -566,7 +566,6 @@ end
 % =========================================================================
 function [stat] = moreLegends()
   stat.description = 'More legends.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = 0:.1:7;
   y1 = sin(x);
@@ -867,7 +866,6 @@ end
 % =========================================================================
 function [stat] = errorBars()
   stat.description = 'Generic error bar plot.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer, see #590, #604
 
   data = ACID_data;
   plotData = 1:10;
@@ -1078,7 +1076,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot1()
   stat.description = 'Representation of the complex plane with zplane.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1114,7 +1112,7 @@ function [stat] = freqResponsePlot()
   stat.description = 'Frequency response plot.';
   stat.closeall = true;
   stat.issues = [409];
-  stat.unreliable = isMATLAB;
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1148,7 +1146,6 @@ end
 % =========================================================================
 function [stat] = multipleAxes()
   stat.description = 'Multiple axes.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x1 = 0:.1:40;
   y1 = 4.*cos(x1)./(x1+2);
@@ -1344,7 +1341,6 @@ end
 % =========================================================================
 function [stat] = ylabels()
   stat.description = 'Separate y-labels.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = 0:.01:2*pi;
   H = plotyy(x,sin(x),x,3*cos(x));
@@ -1699,7 +1695,6 @@ end
 function [stat] = latexInterpreter()
     stat.description = '\LaTeX{} interpreter test (display math not working)';
     stat.issues = 448;
-    stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
     plot(magic(3),'-x');
 
@@ -1823,7 +1818,6 @@ end
 % =========================================================================
 function [stat] = rectanglePlot()
   stat.description = 'Rectangle handle.';
-  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
   rectangle('Position', [0.59,0.35,3.75,1.37],...
             'Curvature', [0.8,0.4],...
@@ -2110,7 +2104,7 @@ end
 % =========================================================================
 function [stat] = annotationSubplots()
   stat.description = 'Annotated and unaligned subplots';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if isempty(which('annotation'))
     fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2243,7 +2237,7 @@ end
 % =========================================================================
 function [stat] = annotationTextUnits()
   stat.description = 'Text with changed Units';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if ~exist('annotation')
     fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2337,12 +2331,12 @@ end
 function [stat] = imageOrientation_inline()
 % Run test and save pictures as inline TikZ code
     [stat] = imageOrientation(false);
-    stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
+    stat.unreliable = isOctave; % FIXME
 end
 function [stat] = imageOrientation_PNG()
 % Run test and save pictures as external PNGs
     [stat] = imageOrientation(true);
-    stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
+    stat.unreliable = isOctave; % FIXME
 end
 function [stat] = imageOrientation(imagesAsPng)
 % Parameter 'imagesAsPng' is boolean
