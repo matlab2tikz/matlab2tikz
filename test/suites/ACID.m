@@ -204,9 +204,6 @@ end
 % =========================================================================
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function.';
-  stat.unreliable = isMATLAB(); %FIXME: cleanfigure() removes
-  % points dependent on environment. #641 might resolve this by ensuring
-  % that e.g. always the same DPI is used. Also see TODO in `emptyStatus.m`.
 
   fplot( @cos, [0,2*pi] );
 
@@ -837,7 +834,6 @@ end
 % =========================================================================
 function [stat] = manualAlignment()
   stat.description = 'Manually aligned figures.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
 
   xrange = linspace(-3,4,2*1024);
 
@@ -1243,7 +1239,6 @@ end
 % =========================================================================
 function [stat] = spherePlot()
   stat.description = 'Stretched sphere with unequal axis limits.';
-  stat.unreliable = isMATLAB('<', [8,4]); %FIXME: investigate
   stat.issues = 560;
 
   sphere(30);
