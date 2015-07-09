@@ -351,7 +351,7 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
-  stat.unreliable = isMATLAB; % FIXME: inspect this
+  stat.unreliable = isMATLAB('>=', [8,4]); % FIXME: inspect this
   stat.issues = 582;
 
   [trash, h] = contourf(peaks(20), 10);
@@ -509,7 +509,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.unreliable = isMATLAB(); %FIXME: #590
+  stat.unreliable = isMATLAB('>=', [8,4]); %FIXME: #590
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -733,7 +733,6 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
@@ -742,7 +741,6 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -751,7 +749,6 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
@@ -1327,7 +1324,6 @@ end
 % =========================================================================
 function [stat] = meshPlot()
   stat.description = 'Mesh plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   [X,Y,Z] = peaks(30);
   mesh(X,Y,Z)
@@ -1712,7 +1708,6 @@ end
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
   stat.issues = 637;
-  stat.unreliable = isMATLAB('<',[8,4]); %FIXME: `at` is inconsistent, see #552
 
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
@@ -1750,7 +1745,6 @@ end
 % =========================================================================
 function [stat] = parameterCurve3d()
   stat.description = 'Parameter curve in 3D with text boxes in-/outise axis.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
   stat.issues = 378;
 
   ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
@@ -1849,7 +1843,6 @@ end
 % =========================================================================
 function [stat] = hist3d()
   stat.description = '3D histogram plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if ~exist('hist3','builtin') && isempty(which('hist3'))
       fprintf( 'Statistics toolbox not found. Skipping.\n\n' );
@@ -1960,7 +1953,6 @@ end
 % =========================================================================
 function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   ylim([-1 1]); xlim([-1 1]); hold on; % prevent error on octave
   n = 6;
@@ -1971,7 +1963,6 @@ function [stat] = pColorPlot()
   C = r*cos(2*theta);
   pcolor(X,Y,C)
   axis equal tight
-
 end
 % =========================================================================
 function [stat] = multiplePatches()
@@ -1993,7 +1984,6 @@ end
 % =========================================================================
 function [stat] = hgTransformPlot()
   stat.description = 'hgtransform() plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if isOctave
       % Octave (3.8.0) has no implementation of `hgtransform`
