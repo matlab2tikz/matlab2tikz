@@ -1000,6 +1000,8 @@ end
 % =========================================================================
 function [stat] = rlocusPlot()
   stat.description = 'rlocus plot.';
+  stat.unreliable = isMATLAB(); % FIXME: radial grid is not present on all
+                                % environments (see #641)
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Skipping.\n\n' );
