@@ -1035,6 +1035,7 @@ end
 % =========================================================================
 function [stat] = besselImage()
   stat.description = 'Bessel function.';
+  stat.unreliable = isOctave(); % FIXME
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1044,9 +1045,9 @@ function [stat] = besselImage()
   trace = zeros(m,n);
   for i=1:length(beta);
       for j=1:length(nu)
-              if (floor(nu(j))==nu(j))
-                  trace(i,j)=abs(besselj(nu(j),beta(i)));
-              end
+          if (floor(nu(j))==nu(j))
+              trace(i,j)=abs(besselj(nu(j),beta(i)));
+          end
       end
   end
 
