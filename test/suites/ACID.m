@@ -334,7 +334,7 @@ end
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
   stat.unreliable  = isMATLAB('<', [8,4]);
-  % FIXME: see #604; contour() produces inconsistent output (mac of PeterPablo)
+  % FIXME: see #604; contour() produces inconsistent output (mac/windows of PeterPablo)
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -518,7 +518,8 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
-  stat.unreliable = isOctave; % FIXME: investigate
+  stat.unreliable = isOctave; % FIXME: investigate (Travis differs from Linux/Mac octave)
+  % https://github.com/matlab2tikz/matlab2tikz/pull/641#issuecomment-120481564
 
   imagesc([1 10 100]);
   try
@@ -757,7 +758,7 @@ end
 function [stat] = logicalImage()
   stat.description = 'An image plot of logical matrix values.' ;
   stat.unreliable = isOctave; %FIXME: investigate
-  % different `width`, see issue #552# (comment 76918634)
+  % different `width`, see issue #552# (comment 76918634); (Travis differs from Linux/Mac octave)
 
   plotData = magic(10);
   imagesc(plotData > mean(plotData(:)));
@@ -766,7 +767,7 @@ end
 % =========================================================================
 function [stat] = imagescplot()
   stat.description = 'An imagesc plot of $\sin(x)\cos(y)$.';
-  stat.unreliable = isOctave; %FIXME: investigate
+  stat.unreliable = isOctave; %FIXME: investigate (Travis differs from Linux/Mac octave)
 
   pointsX = 10;
   pointsY = 20;
@@ -778,7 +779,7 @@ end
 % =========================================================================
 function [stat] = imagescplot2()
   stat.description = 'A trimmed imagesc plot.';
-  stat.unreliable = isOctave; %FIXME: investigate
+  stat.unreliable = isOctave; %FIXME: investigate (Travis differs from Linux/Mac octave)
 
   a=magic(10);
   x=-5:1:4;
@@ -1035,7 +1036,7 @@ end
 % =========================================================================
 function [stat] = besselImage()
   stat.description = 'Bessel function.';
-  stat.unreliable = isOctave(); % FIXME
+  stat.unreliable = isOctave(); % FIXME (Travis differs from Linux/Mac octave)
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1909,7 +1910,7 @@ end
 % =========================================================================
 function [stat] = customLegend()
   stat.description = 'Custom legend.';
-  stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %FIXME: investigate (Travis differs from Linux/Mac octave)
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
