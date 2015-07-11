@@ -204,9 +204,6 @@ end
 % =========================================================================
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function.';
-  stat.unreliable = isOctave || isMATLAB(); %FIXME: cleanfigure() removes
-  % points dependent on environment. #641 might resolve this by ensuring
-  % that e.g. always the same DPI is used. Also see TODO in `emptyStatus.m`.
 
   fplot( @cos, [0,2*pi] );
 
@@ -336,8 +333,8 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.unreliable  = isMATLAB();
-  % FIXME: see #604; contour() produces inconsistent output
+  stat.unreliable  = isMATLAB('<', [8,4]);
+  % FIXME: see #604; contour() produces inconsistent output (mac/windows of PeterPablo)
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -354,7 +351,7 @@ end
 % =========================================================================
 function [stat] = peaks_contourf ()
   stat.description = 'Test the contourfill plots.';
-  stat.unreliable = isMATLAB; % FIXME: inspect this
+  stat.unreliable = isMATLAB('>=', [8,4]); % FIXME: inspect this
   stat.issues = 582;
 
   [trash, h] = contourf(peaks(20), 10);
@@ -367,7 +364,6 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
-  stat.unreliable = isMATLAB(); % FIXME: see #590, #604
 
   if isOctave()
       fprintf( 'Octave can''t handle tight axes.\n\n' );
@@ -513,7 +509,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.unreliable = isMATLAB(); %FIXME: #590
+  stat.unreliable = isMATLAB('>=', [8,4]); %FIXME: #590
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -522,7 +518,8 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
-  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+  stat.unreliable = isOctave; % FIXME: investigate (Travis differs from Linux/Mac octave)
+  % https://github.com/matlab2tikz/matlab2tikz/pull/641#issuecomment-120481564
 
   imagesc([1 10 100]);
   try
@@ -570,7 +567,6 @@ end
 % =========================================================================
 function [stat] = moreLegends()
   stat.description = 'More legends.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = 0:.1:7;
   y1 = sin(x);
@@ -617,7 +613,7 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
-  stat.unreliable = isOctave || isMATLAB(); % FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); % FIXME: investigate
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -738,7 +734,6 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
@@ -747,7 +742,6 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -756,7 +750,6 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
@@ -765,7 +758,7 @@ end
 function [stat] = logicalImage()
   stat.description = 'An image plot of logical matrix values.' ;
   stat.unreliable = isOctave; %FIXME: investigate
-  % different `width`, see issue #552# (comment 76918634)
+  % different `width`, see issue #552# (comment 76918634); (Travis differs from Linux/Mac octave)
 
   plotData = magic(10);
   imagesc(plotData > mean(plotData(:)));
@@ -774,7 +767,7 @@ end
 % =========================================================================
 function [stat] = imagescplot()
   stat.description = 'An imagesc plot of $\sin(x)\cos(y)$.';
-  stat.unreliable = isOctave; %FIXME: investigate
+  stat.unreliable = isOctave; %FIXME: investigate (Travis differs from Linux/Mac octave)
 
   pointsX = 10;
   pointsY = 20;
@@ -786,7 +779,7 @@ end
 % =========================================================================
 function [stat] = imagescplot2()
   stat.description = 'A trimmed imagesc plot.';
-  stat.unreliable = isOctave; %FIXME: investigate
+  stat.unreliable = isOctave; %FIXME: investigate (Travis differs from Linux/Mac octave)
 
   a=magic(10);
   x=-5:1:4;
@@ -813,8 +806,13 @@ end
 % =========================================================================
 function [stat] = subplot2x2b ()
   stat.description = 'Three aligned subplots on a $2\times 2$ subplot grid.' ;
-  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); % R2014b and newer
-
+  stat.unreliable = isOctave || isMATLAB();
+  % FIXME: this test is unreliable because the automatic axis limits
+  % differ on different test platforms. Reckon this by creating the figure
+  % using `ACID(97)` and then manually slightly modify the window size.
+  % We should not set the axis limits explicitly rather find a better way.
+  % #591
+  
   x = (1:5);
 
   subplot(2,2,1);
@@ -832,7 +830,6 @@ end
 % =========================================================================
 function [stat] = manualAlignment()
   stat.description = 'Manually aligned figures.';
-  stat.unreliable = isOctave || isMATLAB; % FIXME: investigate
 
   xrange = linspace(-3,4,2*1024);
 
@@ -867,7 +864,6 @@ end
 % =========================================================================
 function [stat] = errorBars()
   stat.description = 'Generic error bar plot.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer, see #590, #604
 
   data = ACID_data;
   plotData = 1:10;
@@ -945,6 +941,8 @@ end
 % =========================================================================
 function [stat] = bodeplots()
   stat.description = 'Bode plots with legends.';
+  stat.unreliable = isMATLAB(); % FIXME: inconsistent axis limits and
+  % tick positions; see #641 (issuecomment-106241711)
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Skipping.\n\n' );
@@ -981,7 +979,8 @@ function [stat] = bodeplots()
   grid on
 
   legend('Perfect LCL',' Real LCL','Location','SW')
-  % Work around a peculiarity in R2014a and older: when the figure is invisible,
+
+  % Work around a peculiarity in MATLAB: when the figure is invisible,
   % the XData/YData of all plots is NaN. It gets set to the proper values when
   % the figure is actually displayed. To do so, we temporarily toggle this
   % option. This triggers the call-back (and might flicker the figure).
@@ -992,7 +991,8 @@ end
 % =========================================================================
 function [stat] = rlocusPlot()
   stat.description = 'rlocus plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB(); % FIXME: radial grid is not present on all
+                                % environments (see #641)
 
   if isempty(which('tf'))
       fprintf( 'function "tf" not found. Skipping.\n\n' );
@@ -1000,8 +1000,22 @@ function [stat] = rlocusPlot()
       return
   end
 
-  s=tf('s');
+  if isMATLAB('<', [8,4])
+      % in MATLAB R2014a and below, `rlocus` plots with no background color
+      % are not supported. So, force that color to white to work around
+      % that bug. Newer versions don't suffer from this.
+      set(gca, 'Color', 'w');
+  end
+
   rlocus(tf([1 1],[4 3 1]))
+
+  % Work around a peculiarity in MATLAB: when the figure is invisible,
+  % the XData/YData of all plots is NaN. It gets set to the proper values when
+  % the figure is actually displayed. To do so, we temporarily toggle this
+  % option. This triggers the call-back (and might flicker the figure).
+  isVisible = get(gcf,'visible');
+  set(gcf,'visible','on')
+  set(gcf,'visible',isVisible);
 end
 % =========================================================================
 function [stat] = mandrillImage()
@@ -1022,7 +1036,7 @@ end
 % =========================================================================
 function [stat] = besselImage()
   stat.description = 'Bessel function.';
-  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+  stat.unreliable = isOctave(); % FIXME (Travis differs from Linux/Mac octave)
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1032,9 +1046,9 @@ function [stat] = besselImage()
   trace = zeros(m,n);
   for i=1:length(beta);
       for j=1:length(nu)
-              if (floor(nu(j))==nu(j))
-                  trace(i,j)=abs(besselj(nu(j),beta(i)));
-              end
+          if (floor(nu(j))==nu(j))
+              trace(i,j)=abs(besselj(nu(j),beta(i)));
+          end
       end
   end
 
@@ -1061,7 +1075,7 @@ end
 % =========================================================================
 function [stat] = zplanePlot1()
   stat.description = 'Representation of the complex plane with zplane.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1097,7 +1111,7 @@ function [stat] = freqResponsePlot()
   stat.description = 'Frequency response plot.';
   stat.closeall = true;
   stat.issues = [409];
-  stat.unreliable = isMATLAB;
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % check of the signal processing toolbox is installed
   if length(ver('signal')) ~= 1
@@ -1131,7 +1145,6 @@ end
 % =========================================================================
 function [stat] = multipleAxes()
   stat.description = 'Multiple axes.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x1 = 0:.1:40;
   y1 = 4.*cos(x1)./(x1+2);
@@ -1220,7 +1233,6 @@ end
 % =========================================================================
 function [stat] = spherePlot()
   stat.description = 'Stretched sphere with unequal axis limits.';
-  stat.unreliable = isOctave || isMATLAB('<', [8,4]); %FIXME: investigate
   stat.issues = 560;
 
   sphere(30);
@@ -1233,7 +1245,6 @@ end
 % =========================================================================
 function [stat] = surfPlot()
   stat.description = 'Surface plot.';
-  stat.unreliable = isMATLAB; % FIXME: investigate
 
   [X,Y,Z] = peaks(30);
   surf(X,Y,Z)
@@ -1315,7 +1326,6 @@ end
 % =========================================================================
 function [stat] = meshPlot()
   stat.description = 'Mesh plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   [X,Y,Z] = peaks(30);
   mesh(X,Y,Z)
@@ -1329,7 +1339,6 @@ end
 % =========================================================================
 function [stat] = ylabels()
   stat.description = 'Separate y-labels.';
-  stat.unreliable = isMATLAB('>=', [8,4]); % R2014b and newer
 
   x = 0:.01:2*pi;
   H = plotyy(x,sin(x),x,3*cos(x));
@@ -1361,7 +1370,7 @@ end
 % =========================================================================
 function [stat] = mixedBarLine()
   stat.description = 'Mixed bar/line plot.';
-  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+  stat.unreliable = isOctave; %FIXME: investigate (octave of egon)
   % unreliable, see issue #614 (comment 92263263)
 
   data = ACID_data;
@@ -1401,7 +1410,6 @@ end
 % =========================================================================
 function [stat] = textext()
   stat.description = 'Formatted text and special characters using \TeX{}.';
-  stat.unreliable  = isMATLAB();
 
   % Taken from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#f0-28303
@@ -1417,7 +1425,7 @@ end
 % =========================================================================
 function [stat] = texrandom()
   stat.description = 'Random TeX symbols';
-  stat.unreliable = true; % due to randomness
+  stat.unreliable = isOctave(); % due to `rng` being unavailable in octave
 
   try
       rng(42); %fix seed
@@ -1685,7 +1693,6 @@ end
 function [stat] = latexInterpreter()
     stat.description = '\LaTeX{} interpreter test (display math not working)';
     stat.issues = 448;
-    stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
     plot(magic(3),'-x');
 
@@ -1703,7 +1710,6 @@ end
 function [stat] = latexmath2()
   stat.description = 'Some nice-looking formulas typeset using the \LaTeX{} interpreter.';
   stat.issues = 637;
-  stat.unreliable = isMATLAB('<',[8,4]); %FIXME: `at` is inconsistent, see #552
 
   % Adapted from an example at
   % http://www.mathworks.com/help/techdoc/creating_plots/f0-4741.html#bq558_t
@@ -1741,7 +1747,6 @@ end
 % =========================================================================
 function [stat] = parameterCurve3d()
   stat.description = 'Parameter curve in 3D with text boxes in-/outise axis.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
   stat.issues = 378;
 
   ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
@@ -1809,7 +1814,6 @@ end
 % =========================================================================
 function [stat] = rectanglePlot()
   stat.description = 'Rectangle handle.';
-  stat.unreliable = isMATLAB('>=',[8,4]); %FIXME: investigate
 
   rectangle('Position', [0.59,0.35,3.75,1.37],...
             'Curvature', [0.8,0.4],...
@@ -1841,7 +1845,6 @@ end
 % =========================================================================
 function [stat] = hist3d()
   stat.description = '3D histogram plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if ~exist('hist3','builtin') && isempty(which('hist3'))
       fprintf( 'Statistics toolbox not found. Skipping.\n\n' );
@@ -1907,7 +1910,7 @@ end
 % =========================================================================
 function [stat] = customLegend()
   stat.description = 'Custom legend.';
-  stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %FIXME: investigate (Travis differs from Linux/Mac octave)
 
   x = -pi:pi/10:pi;
   y = tan(sin(x)) - sin(tan(x));
@@ -1952,7 +1955,6 @@ end
 % =========================================================================
 function [stat] = pColorPlot()
   stat.description = 'pcolor() plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   ylim([-1 1]); xlim([-1 1]); hold on; % prevent error on octave
   n = 6;
@@ -1963,7 +1965,6 @@ function [stat] = pColorPlot()
   C = r*cos(2*theta);
   pcolor(X,Y,C)
   axis equal tight
-
 end
 % =========================================================================
 function [stat] = multiplePatches()
@@ -1985,7 +1986,6 @@ end
 % =========================================================================
 function [stat] = hgTransformPlot()
   stat.description = 'hgtransform() plot.';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if isOctave
       % Octave (3.8.0) has no implementation of `hgtransform`
@@ -2096,7 +2096,6 @@ end
 % =========================================================================
 function [stat] = annotationSubplots()
   stat.description = 'Annotated and unaligned subplots';
-  stat.unreliable = isMATLAB; % FIXME: investigate
 
   if isempty(which('annotation'))
     fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2229,7 +2228,7 @@ end
 % =========================================================================
 function [stat] = annotationTextUnits()
   stat.description = 'Text with changed Units';
-  stat.unreliable = isMATLAB; % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if ~exist('annotation')
     fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2323,12 +2322,12 @@ end
 function [stat] = imageOrientation_inline()
 % Run test and save pictures as inline TikZ code
     [stat] = imageOrientation(false);
-    stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
+    stat.unreliable = isOctave; % FIXME
 end
 function [stat] = imageOrientation_PNG()
 % Run test and save pictures as external PNGs
     [stat] = imageOrientation(true);
-    stat.unreliable = isMATLAB('>=', [8,4]) || isOctave; % R2014b and newer
+    stat.unreliable = isOctave; % FIXME
 end
 function [stat] = imageOrientation(imagesAsPng)
 % Parameter 'imagesAsPng' is boolean
@@ -2425,7 +2424,7 @@ end
 % =========================================================================
 function [stat] = colorbarLabelTitle()
     stat.description = 'colorbar with label and title';
-    stat.unreliable = isMATLAB || isOctave; %FIXME: investigate
+    stat.unreliable = isOctave; %FIXME: investigate
     stat.issues = 429;
 
     % R2014b handles colorbars smart:  `XLabel` and `YLabel` merged into `Label`
@@ -2456,7 +2455,7 @@ end
 function [stat] = textAlignment()
     stat.description = 'alignment of text boxes and position relative to axis';
     stat.issues = 378;
-    stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+    stat.unreliable = isOctave; %FIXME: investigate
 
     plot([0.0 2.0], [1.0 1.0],'k'); hold on;
     plot([0.0 2.0], [0.5 0.5],'k');
@@ -2499,9 +2498,13 @@ end
 % =========================================================================
 function [stat] = overlappingPlots()
     stat.description = 'Overlapping plots with zoomed data and varying background.';
-    stat.unreliable = isMATLAB('>=', [8,4]);
-    % FIXME this test is unreliable because the x/y lims of `ax2` are not set
-    % explicitly. We should not set them explicitly, rather implement #591
+    stat.unreliable = isMATLAB();
+    % FIXME: this test is unreliable because the automatic axis limits of `ax2`
+    % differ on different test platforms. Reckon this by creating the figure
+    % using `ACID(97)` and then manually slightly modify the window size.
+    % We should not set the axis limits explicitly rather find a better way.
+    % Workaround: Slightly adapt width and height of `ax2`.
+    % #591, #641 (issuecomment-106241711)
     stat.issues = 6;
 
     % create pseudo random data and convert it from matrix to vector
