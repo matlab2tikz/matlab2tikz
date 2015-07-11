@@ -3800,8 +3800,7 @@ end
 % ==============================================================================
 function [m2t, str] = drawErrorBars(m2t, h)
 % Takes care of MATLAB's error bar plots.
-% Octave is not handled, since error bar plots can not be natively recognized as
-% such. See function `drawHggroup()` and #645 for more details.
+% Octave's error bar plots are handled as well.
 
     hData = h;
     upDev = get(h, 'UData');
