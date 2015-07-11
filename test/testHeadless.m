@@ -26,7 +26,9 @@ function [ status ] = testHeadless( varargin )
                         '\newlength\figureWidth \setlength{\figureWidth}{10cm}'}
                    };
 
-    cwd = initializeWorkingDirectory();
+    [state,cwd] = initializeGlobalState();
+    onCleanup(@() restoreGlobalState(state,cwd));
+
     status = testMatlab2tikz('extraOptions', extraOptions, ...
                              'actionsToExecute', @actionsToExecute, ...
                              varargin{:});
@@ -34,8 +36,6 @@ function [ status ] = testHeadless( varargin )
     if nargout == 0
         makeTravisReport(status);
     end
-
-    cd(cwd);    % return to previous working directory
 end
 % ==============================================================================
 function status = actionsToExecute(status, ipp)
