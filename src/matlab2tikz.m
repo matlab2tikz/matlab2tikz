@@ -2513,10 +2513,12 @@ function cl = guessOctavePlotType(h)
         isfield(properties,'sizedata') && ...
         isfield(properties,'cdata')
         cl = 'specgraph.scattergroup';
-    % % error bars
-    % elseif isfield(properties,'udata')
-    %     % FIXME: legend is not handled
-    %     cl = 'specgraph.errorbarseries';
+    % error bars
+    elseif isfield(properties,'udata') && ...
+        isfield(properties,'ldata')
+        cl = 'specgraph.errorbarseries';
+    % quiver plots
+        % TODO: maybe check for existence of `udata` and absence of `ldata`
     % unknown plot type
     else
         cl = 'unknown';

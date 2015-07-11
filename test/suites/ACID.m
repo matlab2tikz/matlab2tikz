@@ -1825,6 +1825,7 @@ end
 % =========================================================================
 function [stat] = herrorbarPlot()
   stat.description = 'herrorbar plot.';
+  % FIXME: octave is missing the legend 
 
   hold on;
   X = 1:10;
