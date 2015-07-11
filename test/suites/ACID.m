@@ -518,7 +518,7 @@ end
 % =========================================================================
 function [stat] = colorbarLogplot()
   stat.description = 'Logscaled colorbar.';
-  stat.unreliable = isOctave || isMATLAB; %FIXME: investigate
+  stat.unreliable = isOctave; % FIXME: investigate
 
   imagesc([1 10 100]);
   try
@@ -612,7 +612,7 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
-  stat.unreliable = isOctave || isMATLAB(); % FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); % FIXME: investigate
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -2095,7 +2095,6 @@ end
 % =========================================================================
 function [stat] = annotationSubplots()
   stat.description = 'Annotated and unaligned subplots';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   if isempty(which('annotation'))
     fprintf( 'annotation() not found. Skipping.\n\n' );
