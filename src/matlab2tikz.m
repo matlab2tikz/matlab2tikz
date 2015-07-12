@@ -2507,22 +2507,30 @@ end
 % Consequently the plot type needs to be guessed. See #645.
 % If the type can not be determined reliably, 'unknown' will be set.
 function cl = guessOctavePlotType(h)
-    properties = get(h);
     % scatter plots
-    if isfield(properties,'marker') && ...
-        isfield(properties,'sizedata') && ...
-        isfield(properties,'cdata')
+    if hasProperties(h, {'marker','sizedata','cdata'})
         cl = 'specgraph.scattergroup';
+
     % error bars
-    elseif isfield(properties,'udata') && ...
-        isfield(properties,'ldata')
+    elseif hasProperties(h, {'udata','ldata'})
         cl = 'specgraph.errorbarseries';
+
     % quiver plots
         % TODO: maybe check for existence of `udata` and absence of `ldata`
+
     % unknown plot type
     else
         cl = 'unknown';
     end
+end
+% ==============================================================================
+function bool = hasProperties(h, propertiesList)
+% Check if object has all of the given properties (case-sensitive).
+% h                 handle to object (e.g. `gcf` or `gca`)
+% propertiesList    cell array of strings with property names
+    properties = get(h);
+
+    bool = all(isfield(properties, propertiesList));
 end
 % ==============================================================================
 function m2t = drawAnnotations(m2t)
