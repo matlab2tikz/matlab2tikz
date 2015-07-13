@@ -47,6 +47,33 @@ function [orig,cwd] = initializeGlobalState()
     new.ScreenPixelsPerInch.val     = 96;
     new.ScreenPixelsPerInch.ignore  = strcmpi(getEnvironment,'octave');
 
+    % MATLAB's factory values differ from their default values of a clean
+    % MATLAB installation (observed on R2014a, Linux)
+    new.defaultAxesColor.val            = [1 1 1];
+    new.defaultAxesColor.ignore         = false;
+    new.defaultLineColor.val            = [0 0 0];
+    new.defaultLineColor.ignore         = false;
+    new.defaultTextColor.val            = [0 0 0];
+    new.defaultTextColor.ignore         = false;
+    new.defaultAxesXColor.val           = [0 0 0];
+    new.defaultAxesXColor.ignore        = false;
+    new.defaultAxesYColor.val           = [0 0 0];
+    new.defaultAxesYColor.ignore        = false;
+    new.defaultAxesZColor.val           = [0 0 0];
+    new.defaultAxesZColor.ignore        = false;
+    new.defaultFigureColor.val          = [0.8 0.8 0.8];
+    new.defaultFigureColor.ignore       = false;
+    new.defaultPatchEdgeColor.val       = [0 0 0];
+    new.defaultPatchEdgeColor.ignore    = false;
+    new.defaultPatchFaceColor.val       = [0 0 0];
+    new.defaultPatchFaceColor.ignore    = false;
+    new.defaultFigurePaperType.val      = 'A4';
+    new.defaultFigurePaperType.ignore   = false;
+    new.defaultFigurePaperSize.val      = [20.9840 29.6774];
+    new.defaultFigurePaperSize.ignore   = false;
+    new.defaultFigurePaperUnits.val     = 'centimeters';
+    new.defaultFigurePaperUnits.ignore  = false;
+
     %--- Extract relevant properties and set desired state
     f = fieldnames(new);    % fields of new state
     for i = 1:length(f)

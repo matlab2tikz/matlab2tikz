@@ -53,7 +53,7 @@ randomWithLines : 8095aa52dd58fae39a8d5718eebe55d5
 rectanglePlot : f63538597348033398ef9cc37dcf57cd
 roseplot : 10c269e1ff65975791d794b489ebbed9
 scatter3Plot : d6fb8bb5e7684ba7379da7ffdf05d94e
-scatterPlotMarkers : 69ffd4629b622629e88fe759a483bab7
+scatterPlotMarkers : 9beb62f4a04abfcfe8dc7b43f73c0b51
 scatterPlotRandom : 173f735d58f521684ac1f8355711a662
 sine_with_annotation : 92e9da02d8ff8cfd7d851ddf29c73123
 sine_with_markers : 8616b987547d14d6a2d8df18bd66785d
@@ -68,7 +68,7 @@ surfPlot : 320bd897dc379aed143e22fae4cf4012
 surfPlot2 : 9e9f49e3f6e08837538ab6e05ec43e90
 texInterpreter : 3b2a0db9fd0560151ac349c34cc7650c
 texcolor : 99d828ebc560c48182bcf29b97f8c9c7
-texrandom : d3be1866d7ec69725c713c35b45a0d34
+texrandom : 8dfd2c55150ac57a9e9cdbf32d94c969
 textAlignment : ab67c21b9a17cb4fc55cf2b112977581
 textext : 9997e18352f9fdc62152d725b88bae1c
 xAxisReversed : 705791f60903c9d90206f124f9da8c7e
