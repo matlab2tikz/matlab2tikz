@@ -2508,11 +2508,11 @@ end
 % If the type can not be determined reliably, 'unknown' will be set.
 function cl = guessOctavePlotType(h)
     % scatter plots
-    if hasProperties(h, {'marker','sizedata','cdata'})
+    if hasProperties(h, {'marker','sizedata','cdata'}, {})
         cl = 'specgraph.scattergroup';
 
     % error bars
-    elseif hasProperties(h, {'udata','ldata'})
+    elseif hasProperties(h, {'udata','ldata'}, {})
         cl = 'specgraph.errorbarseries';
 
     % quiver plots
@@ -2524,13 +2524,15 @@ function cl = guessOctavePlotType(h)
     end
 end
 % ==============================================================================
-function bool = hasProperties(h, propertiesList)
-% Check if object has all of the given properties (case-sensitive).
-% h                 handle to object (e.g. `gcf` or `gca`)
-% propertiesList    cell array of strings with property names
-    properties = get(h);
-
-    bool = all(isfield(properties, propertiesList));
+function bool = hasProperties(h, fieldsExpectedPresent, fieldsExpectedAbsent)
+% Check if object has all of the given properties (case-insensitive).
+% h                     handle to object (e.g. `gcf` or `gca`)
+% fieldsExpectedPresent cell array of strings with property names to be present
+% fieldsExpectedPresent cell array of strings with property names to be absent
+    fields = lower(fieldnames(get(h)));
+    expected = all(ismember(lower(fieldsExpectedPresent), fields));
+    absent = ~any(ismember(lower(fieldsExpectedAbsent), fields));
+    bool = expected && absent;
 end
 % ==============================================================================
 function m2t = drawAnnotations(m2t)
