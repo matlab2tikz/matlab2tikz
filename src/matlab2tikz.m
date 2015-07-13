@@ -2530,9 +2530,9 @@ function bool = hasProperties(h, fieldsExpectedPresent, fieldsExpectedAbsent)
 % fieldsExpectedPresent cell array of strings with property names to be present
 % fieldsExpectedPresent cell array of strings with property names to be absent
     fields = lower(fieldnames(get(h)));
-    expected = all(ismember(lower(fieldsExpectedPresent), fields));
+    present = all(ismember(lower(fieldsExpectedPresent), fields));
     absent = ~any(ismember(lower(fieldsExpectedAbsent), fields));
-    bool = expected && absent;
+    bool = present && absent;
 end
 % ==============================================================================
 function m2t = drawAnnotations(m2t)
