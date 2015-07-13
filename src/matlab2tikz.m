@@ -548,7 +548,7 @@ function str = generateColorDefinitions(names, specs, colorFormat)
             % make sure to append with '%' to avoid spacing woes
             str = [str, ...
                 sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
-                names{k}', specs{k})];
+                names{k}, specs{k})];
         end
         str = [str sprintf('%%\n')];
     end
