@@ -1199,15 +1199,20 @@ function [stat] = scatterPlotMarkers()
 
   n = 1:10;
   d = 10;
-  s = d^2 * n; % scatter size
+  e = d * ones(size(n));
+
   % MATLAB: Use the default area of 36 points squared. The units for the
   %         marker area is points squared.
   % octave: If s is not given, [...] a default value of 8 points is used.
   % Try obtain similar behavior and thus apply square root: sqrt(36) vs. 8
-  s_orig = s;
-  if isOctave(), s = sqrt(s); end;
+  sArea = d^2 * n; % scatter size in unit points squared
+  sRadius = sqrt(sArea);
+  if isMATLAB()
+    s = sArea;    % unit: points squared
+  elseif isOctave()
+    s = sRadius;  % unit: points
+  end
 
-  e = d * ones(size(n));
   grid on;
   hold on;
 
@@ -1222,8 +1227,7 @@ function [stat] = scatterPlotMarkers()
   end
   xlim([min(n)-1 max(n)+1]);
   ylim([0 d*(nStyles+1)]);
-  set(gca,'XTick',n,'XTickLabel',s_orig,'XTickLabelMode','manual');
-
+  set(gca,'XTick',n,'XTickLabel',sArea,'XTickLabelMode','manual');
 end
 % =========================================================================
 function [stat] = scatter3Plot()
