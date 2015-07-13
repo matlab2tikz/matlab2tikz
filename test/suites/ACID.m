@@ -1195,12 +1195,18 @@ end
 % =========================================================================
 function [stat] = scatterPlotMarkers()
   stat.description = 'Scatter plot with with different marker sizes and legend.';
-  % FIXME: octave: Output is empty?!
+  % FIXME: octave: Output is empty?! Potentially fixed by #669
 
   n = 1:10;
   d = 10;
-  s = d^2 * n;
-  if isOctave(), s = s/25; end; % smaller size in octave
+  s = d^2 * n; % scatter size
+  % MATLAB: Use the default area of 36 points squared. The units for the
+  %         marker area is points squared.
+  % octave: If s is not given, [...] a default value of 8 points is used.
+  % Try obtain similar behavior and thus apply square root: sqrt(36) vs. 8
+  s_orig = s;
+  if isOctave(), s = sqrt(s); end;
+
   e = d * ones(size(n));
   grid on;
   hold on;
@@ -1216,7 +1222,7 @@ function [stat] = scatterPlotMarkers()
   end
   xlim([min(n)-1 max(n)+1]);
   ylim([0 d*(nStyles+1)]);
-  set(gca,'XTick',n,'XTickLabel',s,'XTickLabelMode','manual');
+  set(gca,'XTick',n,'XTickLabel',s_orig,'XTickLabelMode','manual');
 
 end
 % =========================================================================
