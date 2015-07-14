@@ -173,23 +173,30 @@ end
 function askToShowChangelog(currentVersion)
 % Asks whether the user wants to see the changelog and then shows it.
     reply = input(' *** Would you like to see the changelog? y/n [y]:' ,'s');
-    shouldShow = ~strcmpi(reply(1),'n');
+    shouldShow =  isempty(reply) || ~strcmpi(reply(1),'n') ;
     if shouldShow
-        fprintf(1, changelogUntilVersion(currentVersion));
+        fprintf(1, '\n%s\n', changelogUntilVersion(currentVersion));
     end
 end
 % ==============================================================================
-function str = changelogUntilVersion(currentVersion)
+function changelog = changelogUntilVersion(currentVersion)
 % This function retrieves the chunk of the changelog until the current version.
     URL = 'https://github.com/matlab2tikz/matlab2tikz/raw/master/CHANGELOG.md';
     changelog = urlread(URL);
     currentVersion = versionString(currentVersion);
+    
     % Header is "# YYYY-MM-DD Version major.minor.patch [Manager](email)"
-    % Just match for the part until the version number.
-    pattern = ['# (\d-)+ Version ' currentVersion];
-    idxVersion = regexp(changelog, pattern);
-    % return everything before the current version
-    str = changelog(1:idxVersion-1);
+    % Just match for the part until the version number. Here, we're actually
+    % matching a tiny bit too broad due to the periods in the version number
+    % but the outcome should be the same if we keep the changelog format
+    % identical.
+    pattern = ['\#\s*[\d-]+\s*Version\s*' currentVersion];
+    idxVersion = regexpi(changelog, pattern);
+    if ~isempty(idxVersion)
+        changelog = changelog(1:idxVersion-1);
+    else
+        % Just show the whole changelog if we don't find the old version.
+    end
 end
 % ==============================================================================
 function warnAboutUpgradeImplications(currentVersion, latestVersion, verbose)
@@ -256,7 +263,7 @@ function str = versionString(arr)
   if ischar(arr)
       str = arr;
   elseif isnumeric(arr)
-      str = sprintf('\d.', arr);
+      str = sprintf('%d.', arr);
       str = str(1:end-1); % remove final period
   end
 end
