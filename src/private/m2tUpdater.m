@@ -45,7 +45,8 @@ function shouldUpgrade = askToUpgrade(mostRecentVersion, version, verbose)
       userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion);
       userInfo(verbose, '**********************************************\n');
 
-      userInfo(verbose, 'By upgrading you may lose any custom changes.\n');
+      warnAboutUpgradeImplications(version, mostRecentVersion, verbose);
+      askToShowChangelof(version, mostRecentVersion);
       reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
       shouldUpgrade = strcmpi(reply(1),'y');
   end
@@ -167,6 +168,59 @@ function mostRecentVersion = determineLatestRelease(version)
   else
       mostRecentVersion = '';
   end
+end
+% ==============================================================================
+function askToShowChangelog(currentVersion, latestVersion)
+% Prints out the changelog
+    URL = 'https://github.com/matlab2tikz/matlab2tikz/raw/master/CHANGELOG.md';
+    reply = input([' *** Would you like to see the changelog? y/n [n]:'],'s');
+    shouldShow = strcmpi(reply(1),'y');
+    if shouldShow
+        changelog = urlread(URL);
+        %TODO only show the relevant part of the changelog
+        fprintf('Changelog:\n\n%s\n', changelog);
+    end
+end
+% ==============================================================================
+function warnAboutUpgradeImplications(currentVersion, latestVersion, verbose)
+% This warns the user about the implications of upgrading as dictated by
+% Semantic Versionning.
+    switch upgradeSize(currentVersion, latestVersion);
+        case 'major'
+          % The API might have changed in a backwards incompatible way.
+          userInfo(verbose, 'This is a MAJOR upgrade!\n');
+          userInfo(verbose, ' - New features may have been introduced.\n');
+          userInfo(verbose, ' - Some old code/options may no longer work!\n');
+
+        case 'minor'
+          % The API may NOT have changed in a backwards incompatible way.
+          userInfo(verbose, 'This is a MINOR upgrade.\n');
+          userInfo(verbose, ' - New features may have been introduced.\n');
+          userInfo(verbose, ' - Some options may have been deprecated.\n');
+          userInfo(verbose, ' - Old code should continue to work but might produce warnings.\n');
+
+        case 'patch'
+          % No new functionality is introduced
+          userInfo(verbose, 'This is a PATCH.\n');
+          userInfo(verbose, ' - Only bug fixes are included in this upgrade.\n');
+          userInfo(verbose, ' - Old code should continue to work as before.\n')
+    end
+    userInfo(verbose, 'Please check the changelog for detailed information.\n');
+    userInfo(verbose, 'By upgrading you may lose any custom changes.\n');
+end
+% ==============================================================================
+function cls = upgradeSize(currentVersion, latestVersion)
+% Determines whether the upgrade is major, minor or a patch.
+    currentVersion = versionArray(currentVersion);
+    latestVersion = versionArray(latestVersion);
+    description = {'major', 'minor', 'patch'};
+    for ii = 1:numel(description)
+        if latestVersion(ii) > currentVersion(ii)
+            cls = description{ii};
+            return
+        end
+    end
+    cls = 'unknown';
 end
 % ==============================================================================
 function isBelow = isVersionBelow(versionA, versionB)
