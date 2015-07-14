@@ -4907,6 +4907,8 @@ function newstr = join(m2t, cellstr, delimiter)
 %
 % Example of usage:
 %              join(m2t, cellstr, ',')
+%
+% TODO: Unify the inline `join` and pivate `m2tstrjoin` function!
     if isempty(cellstr)
         newstr = '';
         return
@@ -4929,7 +4931,8 @@ function newstr = join(m2t, cellstr, delimiter)
     % inspired by strjoin of recent versions of MATLAB
     newstr = cell(2,nElem);
     newstr(1,:)         = reshape(cellstr, 1, nElem);
-    newstr(2,1:nElem-1) = {delimiter}; % put delimiters in-between the elements
+    newstr(2,1:nElem-1) = {delimiter};  % put delimiters in-between the elements
+    newstr(2,nElem) = {''};             % put empty string in last cell
     newstr = [newstr{:}];
 end
 % ==============================================================================
