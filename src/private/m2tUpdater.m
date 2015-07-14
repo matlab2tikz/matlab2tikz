@@ -171,15 +171,25 @@ function mostRecentVersion = determineLatestRelease(version)
 end
 % ==============================================================================
 function askToShowChangelog(currentVersion, latestVersion)
-% Prints out the changelog
-    URL = 'https://github.com/matlab2tikz/matlab2tikz/raw/master/CHANGELOG.md';
+% Asks whether the user wants to see the changelog and then shows it.
     reply = input([' *** Would you like to see the changelog? y/n [n]:'],'s');
     shouldShow = strcmpi(reply(1),'y');
     if shouldShow
-        changelog = urlread(URL);
-        %TODO only show the relevant part of the changelog
-        fprintf('Changelog:\n\n%s\n', changelog);
+        fprintf(1, changelogUntilVersion(currentVersion));
     end
+end
+% ==============================================================================
+function str = changelogUntilVersion(currentVersion)
+% This function retrieves the chunk of the changelog until the current version.
+    URL = 'https://github.com/matlab2tikz/matlab2tikz/raw/master/CHANGELOG.md';
+    changelog = urlread(URL);
+    currentVersion = versionString(currentVersion);
+    % Header is "# YYYY-MM-DD Version major.minor.patch [Manager](email)"
+    % Just match for the part until the version number.
+    pattern = ['# (\d-)+ Version ' currentVersion];
+    idxVersion = regexp(changelog, pattern);
+    % return everything before the current version
+    str = changelog(1:idxVersion-1);
 end
 % ==============================================================================
 function warnAboutUpgradeImplications(currentVersion, latestVersion, verbose)
@@ -241,7 +251,17 @@ function isBelow = isVersionBelow(versionA, versionB)
         end
     end
 end
-% =========================================================================
+% ==============================================================================
+function str = versionString(arr)
+% Converts a version array to string
+  if ischar(arr)
+      str = arr;
+  elseif isnumeric(arr)
+      str = sprintf('\d.', arr);
+      str = str(1:end-1); % remove final period
+  end
+end
+% ==============================================================================
 function arr = versionArray(str)
   % Converts a version string to an array, e.g.,
   % '2.62.8.1' to [2, 62, 8, 1].
