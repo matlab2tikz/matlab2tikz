@@ -42,12 +42,12 @@ function shouldUpgrade = askToUpgrade(mostRecentVersion, version, verbose)
   shouldUpgrade = false;
   if ~isempty(mostRecentVersion)
       userInfo(verbose, '**********************************************\n');
-      userInfo(verbose, 'New version available! (%s)\n', mostRecentVersion);
+      userInfo(verbose, 'New version (%s) available!\n', mostRecentVersion);
       userInfo(verbose, '**********************************************\n');
 
       warnAboutUpgradeImplications(version, mostRecentVersion, verbose);
-      askToShowChangelof(version, mostRecentVersion);
-      reply = input([' *** Would you like ', name, ' to self-upgrade? y/n [n]:'],'s');
+      askToShowChangelog(version);
+      reply = input(' *** Would you like to upgrade? y/n [n]:','s');
       shouldUpgrade = strcmpi(reply(1),'y');
   end
 end
@@ -170,10 +170,10 @@ function mostRecentVersion = determineLatestRelease(version)
   end
 end
 % ==============================================================================
-function askToShowChangelog(currentVersion, latestVersion)
+function askToShowChangelog(currentVersion)
 % Asks whether the user wants to see the changelog and then shows it.
-    reply = input([' *** Would you like to see the changelog? y/n [n]:'],'s');
-    shouldShow = strcmpi(reply(1),'y');
+    reply = input(' *** Would you like to see the changelog? y/n [y]:' ,'s');
+    shouldShow = ~strcmpi(reply(1),'n');
     if shouldShow
         fprintf(1, changelogUntilVersion(currentVersion));
     end
@@ -199,21 +199,21 @@ function warnAboutUpgradeImplications(currentVersion, latestVersion, verbose)
         case 'major'
           % The API might have changed in a backwards incompatible way.
           userInfo(verbose, 'This is a MAJOR upgrade!\n');
-          userInfo(verbose, ' - New features may have been introduced.\n');
+          userInfo(verbose, ' - New features may have been introduced.');
           userInfo(verbose, ' - Some old code/options may no longer work!\n');
 
         case 'minor'
           % The API may NOT have changed in a backwards incompatible way.
           userInfo(verbose, 'This is a MINOR upgrade.\n');
-          userInfo(verbose, ' - New features may have been introduced.\n');
-          userInfo(verbose, ' - Some options may have been deprecated.\n');
+          userInfo(verbose, ' - New features may have been introduced.');
+          userInfo(verbose, ' - Some options may have been deprecated.');
           userInfo(verbose, ' - Old code should continue to work but might produce warnings.\n');
 
         case 'patch'
           % No new functionality is introduced
           userInfo(verbose, 'This is a PATCH.\n');
-          userInfo(verbose, ' - Only bug fixes are included in this upgrade.\n');
-          userInfo(verbose, ' - Old code should continue to work as before.\n')
+          userInfo(verbose, ' - Only bug fixes are included in this upgrade.');
+          userInfo(verbose, ' - Old code should continue to work as before.')
     end
     userInfo(verbose, 'Please check the changelog for detailed information.\n');
     userInfo(verbose, 'By upgrading you may lose any custom changes.\n');
@@ -236,7 +236,6 @@ end
 function isBelow = isVersionBelow(versionA, versionB)
 % Checks if version string or vector versionA is smaller than
 % version string or vector versionB.
-    env = getEnvironment;
     vA = versionArray(versionA);
     vB = versionArray(versionB);
 
