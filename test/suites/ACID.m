@@ -1091,7 +1091,8 @@ function [stat] = zplanePlot1()
   stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % check of the signal processing toolbox is installed
-  if length(ver('signal')) ~= 1
+  verInfo = ver('signal');
+  if isempty(verInfo) || isempty(verInfo.Name)
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
       stat.skip = true;
 
@@ -1109,7 +1110,8 @@ function [stat] = zplanePlot2()
   stat.closeall = true;
 
   % check of the signal processing toolbox is installed
-  if length(ver('signal')) ~= 1
+  verInfo = ver('signal');
+  if isempty(verInfo) || isempty(verInfo.Name)
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
       stat.skip = true;
       return
@@ -1127,7 +1129,8 @@ function [stat] = freqResponsePlot()
   stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % check of the signal processing toolbox is installed
-  if length(ver('signal')) ~= 1
+  verInfo = ver('signal');
+  if isempty(verInfo) || isempty(verInfo.Name)
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
       stat.skip = true;
       return
