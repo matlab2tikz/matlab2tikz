@@ -49,6 +49,10 @@ function shouldUpgrade = askToUpgrade(mostRecentVersion, version, verbose)
       askToShowChangelog(version);
       reply = input(' *** Would you like to upgrade? y/n [n]:','s');
       shouldUpgrade = strcmpi(reply(1),'y');
+      if ~shouldUpgrade
+        userInfo(verbose, ['To disable the self-updater in the future, add ' ...
+                           '"''checkForUpdates'',false" to the parameters.'] );
+      end
   end
 end
 % ==============================================================================
