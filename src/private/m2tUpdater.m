@@ -195,7 +195,7 @@ function changelog = changelogUntilVersion(currentVersion)
     URL = 'https://github.com/matlab2tikz/matlab2tikz/raw/master/CHANGELOG.md';
     changelog = urlread(URL);
     currentVersion = versionString(currentVersion);
-    
+
     % Header is "# YYYY-MM-DD Version major.minor.patch [Manager](email)"
     % Just match for the part until the version number. Here, we're actually
     % matching a tiny bit too broad due to the periods in the version number
