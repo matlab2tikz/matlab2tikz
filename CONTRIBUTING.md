@@ -1,6 +1,7 @@
 # Contributing to matlab2tikz
 
 You can contribute in many ways to `matlab2tikz`:
+
  - report bugs,
  - suggest new features,
  - write documentation,
@@ -29,6 +30,7 @@ If your feature is something new and graphical, please also have a look at the [
 In some cases it is more constructive to request the feature for `pgfplots` in [their bug tracker](https://sourceforge.net/p/pgfplots/bugs/).
 
 Please submit you feature request as any [bug report](https://github.com/matlab2tikz/matlab2tikz/labels/feature%20request) and make sure that you include enough details in your post, e.g.:
+
  - What are you trying to do?
  - What should it look like or how should it work?
  - Is there a relevant section in the `pgfplots` or `MATLAB` documentation?
@@ -38,8 +40,8 @@ Before you start working on a bug or new feature, you might want to check that n
 To avoid wasted hours, please just indicate your interest to tackle the issue.
 
 ### Recommended workflow
-[Our wiki](https://github.com/matlab2tikz/matlab2tikz/wiki/Recommended-git-workflow) contains more elaborate details on this process.
-Here is the gist:
+[Our wiki](https://github.com/matlab2tikz/matlab2tikz/wiki/Recommended-git-workflow) contains more elaborate details on this process. Here is the gist:
+
  - It is highly recommended to start a feature branch for your work.
  - Once you are finished with the work, please try to run the test suite and report on the outcome in your PR (see below).
  - Make sure that you file your pull request against the `develop` branch and *not* the `master` branch!
