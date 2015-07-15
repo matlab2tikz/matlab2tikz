@@ -1,7 +1,6 @@
 This test module is part of matlab2tikz.
 
-Its use is mainly of interest to the matlab2tikz developers to assert that 
-the produced output is good.
+Its use is mainly of interest to the matlab2tikz developers to assert that the produced output is good.
 Ideally, the tests should be run on every supported environment, i.e.:
 
  * MATLAB R2014a/8.3 (or an older version)
@@ -43,8 +42,14 @@ a reference output. The actual checking is done by hashing the file and the
 corresponding hashes are stored in `.md5` files next to the test suites.
 For each environment, different reference hashes can be stored.
 
-The headless tests can be invoked using `testHeadless;`, or, equivalently,
-`makeTravisReport(testHeadless)`.
+The headless tests can be invoked using
+```matlab
+testHeadless;
+```
+, or, equivalently,
+```matlab
+makeTravisReport(testHeadless)
+```
 
 There are some caveats for this method of testing:
 
@@ -61,26 +66,33 @@ These tests allow easy comparison of a native PDF `print` output and the
 output produced by `matlab2tikz`. For the large amount of cases, however,
 this comparison has become somewhat unwieldy.
 
-You can execute the tests using `testGraphical;` or, equivalently, 
-`makeLatexReport(testGraphical)`.
+You can execute the tests using
+```matlab
+testGraphical;
+```
+or, equivalently,
+```matlab
+makeLatexReport(testGraphical)
+```
 This generates a LaTeX report in `test/tex/acid.tex` which can then be compiled.
 Compilation of this file can be done using the Makefile `test/tex/Makefile` 
 if you are on a Unix-like system (or have cygwin installed on Windows).
 
 If all goes well, the result will be the file `test/tex/acid.pdf` that contains
-a list of the test figures, exported as PDF and right next to it the matlab2tikz
-generated plot.
+a list of the test figures, exported as PDF and right next to it the matlab2tikz generated plot.
 
 Advanced Use
 ------------
 
-Both `testHeadless` and `testGraphical` can take multiple arguments, 
-those are documented in the raw test runner `testMatlab2tikz` that is used 
-behind the scenes. Note that this file sits in a private directory, so you 
-`help testMatlab2tikz` will not work!
+Both `testHeadless` and `testGraphical` can take multiple arguments, those are documented in the raw test runner `testMatlab2tikz` that is used behind the scenes. Note that this file sits in a private directory, so `help testMatlab2tikz` will not work!
 
 Also, both can be called with a single output argument, for programmatical
-access to the test results.
+access to the test results as
+```matlab
+status = testHeadless()
+```
+These test results in `status` can be passed to `saveHashTable` for updating the hash tables.
+Obviously, this should be done with the due diligence!
 
 Automated Tests
 ===============
