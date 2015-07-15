@@ -27,13 +27,12 @@ function m2tUpdater(about, verbose)
 %   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %   POSSIBILITY OF SUCH DAMAGE.
 % =========================================================================
-  name = about.name;
   fileExchangeUrl = about.website;
   version = about.version;
 
-  mostRecentVersion = determineLatestRelease(version);
+  mostRecentVersion = determineLatestRelease(version, fileExchangeUrl);
   if askToUpgrade(mostRecentVersion, version, verbose)
-      tryToUpgrade(name, fileExchangeUrl, verbose);
+      tryToUpgrade(fileExchangeUrl, verbose);
       userInfo(verbose, '');
   end
 end
@@ -56,7 +55,7 @@ function shouldUpgrade = askToUpgrade(mostRecentVersion, version, verbose)
   end
 end
 % ==============================================================================
-function tryToUpgrade(name, fileExchangeUrl, verbose)
+function tryToUpgrade(fileExchangeUrl, verbose)
   % Download the files and unzip its contents into two folders
   % above the folder that contains the current script.
   % This assumes that the file structure is something like
@@ -114,7 +113,7 @@ function tryToUpgrade(name, fileExchangeUrl, verbose)
 
       userInfo(verbose, 'Upgrade has completed successfully.');
   catch
-      userInfo(verbose,
+      userInfo(verbose, ...
                ['Upgrade has failed.\n', ...
                 'Please install the latest version manually from %s !'], ...
                 fileExchangeUrl);
@@ -136,7 +135,7 @@ function cleanupOldFiles(currentFolderFiles, unzippedFilesTarget)
     end
 end
 % ==============================================================================
-function mostRecentVersion = determineLatestRelease(version)
+function mostRecentVersion = determineLatestRelease(version, fileExchangeUrl)
   % Read in the Github releases page
   url = 'https://github.com/matlab2tikz/matlab2tikz/releases/';
   try
@@ -144,6 +143,11 @@ function mostRecentVersion = determineLatestRelease(version)
   catch %#ok
       % Couldn't load the URL -- never mind.
       html = '';
+      warning('m2tUpdate:siteNotFound', ...
+              ['Cannot determine the latest version.\n', ...
+               'Either your internet is down or something went wrong.\n', ...
+               'You might want to check for updates by hand at %s.\n'], ...
+               fileExchangeUrl);
   end
 
   % Parse tag names which are the version number in the format ##.##.##
