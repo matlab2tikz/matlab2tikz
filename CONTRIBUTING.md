@@ -37,8 +37,17 @@ Please submit you feature request as any [bug report](https://github.com/matlab2
 Before you start working on a bug or new feature, you might want to check that nobody else has been assigned to the relevant issue report.
 To avoid wasted hours, please just indicate your interest to tackle the issue.
 
-
 ### Recommended workflow
+[Our wiki](https://github.com/matlab2tikz/matlab2tikz/wiki/Recommended-git-workflow) contains more elaborate details on this process.
+Here is the gist:
+ - It is highly recommended to start a feature branch for your work.
+ - Once you are finished with the work, please try to run the test suite and report on the outcome in your PR (see below).
+ - Make sure that you file your pull request against the `develop` branch and *not* the `master` branch!
+ - Once you have filed your PR, the review process starts. Everybody is free to join this discussion.
+ - Before a PR is pulled into `develop`, at least one other developer should review the code and signal their approval (often using a thumbs-up `:+1:` ).
+ - After all comments have been addressed, a developer will merge your code into the `develop` branch.
+
+If you still feel uncomfortable with `git`, please have a look at [this page](https://github.com/matlab2tikz/matlab2tikz/wiki/Learning-git) for a quick start.
 
 ### Running the test suite
 We know that at first the test suite can seem a bit intimidating, so we tend to be very lenient during your first few PRs.
@@ -53,4 +62,4 @@ This group comes with *no* responsibility whatsoever and merely serves to make i
 Once you have gained some experience (with `git`/GitHub, our codebase, ...) and have contributed your fair share of great material, you will get invited to join the [Developers](https://github.com/orgs/matlab2tikz/teams/developers) team.
 This status gives you push access to our repository and hence comes with the responsibility to not abuse your push access.
 
-
+If you feel you should have gotten an invite for a team, feel free to contact one of the [owners](https://github.com/orgs/matlab2tikz/teams/owners).
