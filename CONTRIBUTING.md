@@ -6,13 +6,13 @@ You can contribute in many ways to `matlab2tikz`:
  - write documentation,
  - fix some of our bugs and implement new features.
 
-The first part of this document is geared more towards "users" of matlab2tikz.
+The first part of this document is geared more towards users of `matlab2tikz`.
 The latter part is relevant if you want to write some code for `matlab2tikz`.
 
 ## How to report a bug or ask for help
 
  1. Make sure you are using the [latest release](https://github.com/matlab2tikz/matlab2tikz/releases/latest) or even the [development version](https://github.com/matlab2tikz/matlab2tikz/tree/develop) of `matlab2tikz` and check that the problem still exists.
- 2. Also make sure you are using a recent version of the required LaTeX packages (especially `pgfplots` and the `TikZ` libraries)
+ 2. Also make sure you are using a recent version of the required LaTeX packages (especially [`pgfplots`](http://ctan.org/pkg/pgfplots) and the [`TikZ`](http://ctan.org/pkg/pgf) libraries)
  3. You can submit your bug report or question to our [issue tracker](https://github.com/matlab2tikz/matlab2tikz/issues).
     Please, have a look at "[How to Ask Questions the Smart Way](http://www.catb.org/esr/faqs/smart-questions.html)" and "[Writing Better Bug Reports](http://martiancraft.com/blog/2014/07/good-bug-reports/)" for generic guidelines. Make sure you include the following things:
     - The version of MATLAB/Octave, the operating system, `matlab2tikz`, `pgfplots` and which `LaTeX` compiler you are using.
