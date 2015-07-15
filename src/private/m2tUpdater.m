@@ -112,9 +112,12 @@ function tryToUpgrade(name, fileExchangeUrl, verbose)
 
       cleanupOldFiles(currentFolderFiles, unzippedFilesTarget);
 
-      userInfo(verbose, 'UPDATED: the current conversion will be terminated. Please, re-run it.');
+      userInfo(verbose, 'Upgrade has completed successfully.');
   catch
-      userInfo(verbose, ['FAILED: continuing with the' name ' conversion.']);
+      userInfo(verbose,
+               ['Upgrade has failed.\n', ...
+                'Please install the latest version manually from %s !'], ...
+                fileExchangeUrl);
   end
 end
 % ==============================================================================
