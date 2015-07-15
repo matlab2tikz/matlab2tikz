@@ -110,7 +110,7 @@ function matlab2tikz(varargin)
 %   taking a peek at what the figure will look like. (default: false)
 %
 %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
-%   check for updates of matlab2tikz. (default: true)
+%   check for updates of matlab2tikz. (default: true (if not using git))
 %
 %   Example
 %      x = -pi:pi/10:pi;
@@ -205,7 +205,7 @@ ipp = ipp.addParamValue(ipp, 'strict', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'strictFontSize', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'showInfo', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
-ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
+ipp = ipp.addParamValue(ipp, 'checkForUpdates', isempty(VCID), @islogical);
 
 ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
 ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
@@ -338,7 +338,7 @@ userInfo(m2t, versionInfo, m2t.about.website, m2t.about.name);
 saveToFile(m2t, fid, fileWasOpen);
 
 %% Check for a new matlab2tikz version outside version control
-if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
+if m2t.cmdOpts.Results.checkForUpdates
     m2tUpdater(m2t.about, m2t.cmdOpts.Results.showInfo);
 end
 
