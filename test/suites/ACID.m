@@ -206,6 +206,19 @@ function [stat] = plain_cos()
   stat.description = 'Plain cosine function.';
 
   fplot( @cos, [0,2*pi] );
+  hold on;
+  
+  % also add some patches to test their border color reproduction
+  h(1) = fill(pi*[1/4 1/4 1/2 1/2]   ,  [-2 1 1 -2], 'y');
+  h(2) = fill(pi*[1/4 1/4 1/2 1/2]+pi, -[-2 1 1 -2], 'y');
+
+  set(h(1), 'EdgeColor', 'none', 'FaceColor', 0.8*[1 1 1]);
+  set(h(2), 'EdgeColor', 'k', 'FaceColor', 0.5*[1 1 1]);
+
+  if isMATLAB
+      uistack(h, 'bottom'); % patches below the line plot
+      % this is not supported in Octave
+  end
 
   % add some minor ticks
   set(gca, 'XMinorTick', 'on');
