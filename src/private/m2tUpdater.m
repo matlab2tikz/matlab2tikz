@@ -251,50 +251,6 @@ function cls = upgradeSize(currentVersion, latestVersion)
     cls = 'unknown';
 end
 % ==============================================================================
-function isBelow = isVersionBelow(versionA, versionB)
-% Checks if version string or vector versionA is smaller than
-% version string or vector versionB.
-    vA = versionArray(versionA);
-    vB = versionArray(versionB);
-
-    isBelow = false;
-    for i = 1:min(length(vA), length(vB))
-        if vA(i) > vB(i)
-            isBelow = false;
-            break;
-        elseif vA(i) < vB(i)
-            isBelow = true;
-            break
-        end
-    end
-end
-% ==============================================================================
-function str = versionString(arr)
-% Converts a version array to string
-  if ischar(arr)
-      str = arr;
-  elseif isnumeric(arr)
-      str = sprintf('%d.', arr);
-      str = str(1:end-1); % remove final period
-  end
-end
-% ==============================================================================
-function arr = versionArray(str)
-  % Converts a version string to an array, e.g.,
-  % '2.62.8.1' to [2, 62, 8, 1].
-  if ischar(str)
-    switch getEnvironment
-      case 'MATLAB'
-        split = regexp(str, '\.', 'split');
-      case 'Octave'
-        split = strsplit(str, '.');
-    end
-    arr = str2num(char(split)); %#ok
-  else
-    arr = str;
-  end
-end
-% ==============================================================================
 function userInfo(verbose, message, varargin)
   % Display usage information.
   if verbose
