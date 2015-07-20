@@ -47,10 +47,10 @@ function shouldUpgrade = askToUpgrade(mostRecentVersion, version, verbose)
       warnAboutUpgradeImplications(version, mostRecentVersion, verbose);
       askToShowChangelog(version);
       reply = input(' *** Would you like to upgrade? y/n [n]:','s');
-      shouldUpgrade = strcmpi(reply(1),'y');
+      shouldUpgrade = ~isempty(reply) && strcmpi(reply(1),'y');
       if ~shouldUpgrade
-        userInfo(verbose, ['To disable the self-updater in the future, add ' ...
-                           '"''checkForUpdates'',false" to the parameters.'] );
+        userInfo(verbose, ['\nTo disable the self-updater in the future, add ' ...
+                           '"''checkForUpdates'',false" to the parameters.\n'] );
       end
   end
 end
@@ -212,7 +212,7 @@ end
 % ==============================================================================
 function warnAboutUpgradeImplications(currentVersion, latestVersion, verbose)
 % This warns the user about the implications of upgrading as dictated by
-% Semantic Versionning.
+% Semantic Versioning.
     switch upgradeSize(currentVersion, latestVersion);
         case 'major'
           % The API might have changed in a backwards incompatible way.
