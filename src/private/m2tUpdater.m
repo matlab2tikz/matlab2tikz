@@ -129,11 +129,11 @@ function cleanupOldFiles(currentFolderFiles, unzippedFilesTarget)
     deleteFolderFiles  = setdiff(currentFolderFiles, newFolderStructure);
     for ii = 1:numel(deleteFolderFiles)
         x = deleteFolderFiles{ii};
-        if exist(x, 'dir')
+        if exist(x, 'dir') == 7
             % First check for directories since
             % `exist(x, 'file')` also checks for directories!
             rmdir(x,'s');
-        elseif exist(x, 'file')
+        elseif exist(x, 'file') == 2
             delete(x);
         end
     end
@@ -238,7 +238,7 @@ function warnAboutUpgradeImplications(currentVersion, latestVersion, verbose)
           userInfo(verbose, ' - Old code should continue to work as before.')
     end
     userInfo(verbose, 'Please check the changelog for detailed information.\n');
-    userInfo(verbose, 'By upgrading you may lose any custom changes.\n');
+    userWarn(verbose, '\n!! By upgrading you will lose any custom changes !!\n');
 end
 % ==============================================================================
 function cls = upgradeSize(currentVersion, latestVersion)
@@ -256,14 +256,24 @@ function cls = upgradeSize(currentVersion, latestVersion)
 end
 % ==============================================================================
 function userInfo(verbose, message, varargin)
-  % Display usage information.
-  if verbose
-      mess = sprintf(message, varargin{:});
-
-      % Replace '\n' by '\n *** ' and print.
-      mess = strrep( mess, sprintf('\n'), sprintf('\n *** ') );
-      fprintf( ' *** %s\n', mess );
-  end
+    % Display information (i.e. to stdout)
+    if verbose
+        userPrint(1, message, varargin{:});
+    end
+end
+function userWarn(verbose, message, varargin)
+    % Display warnings (i.e. to stderr)
+    if verbose
+        userPrint(2, message, varargin{:});
+    end
+end
+function userPrint(fid, message, varargin)
+    % Print messages (info/warnings) to a stream/file.
+    mess = sprintf(message, varargin{:});
+    
+    % Replace '\n' by '\n *** ' and print.
+    mess = strrep( mess, sprintf('\n'), sprintf('\n *** ') );
+    fprintf(fid, ' *** %s\n', mess );
 end
 % =========================================================================
 function list = rdirfiles(rootdir)
