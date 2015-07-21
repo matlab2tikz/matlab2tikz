@@ -110,7 +110,7 @@ function matlab2tikz(varargin)
 %   taking a peek at what the figure will look like. (default: false)
 %
 %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
-%   check for updates of matlab2tikz. (default: true)
+%   check for updates of matlab2tikz. (default: true (if not using git))
 %
 %   Example
 %      x = -pi:pi/10:pi;
@@ -158,14 +158,14 @@ m2t.currentHandles = [];
 
 m2t.transform = []; % For hgtransform groups
 m2t.pgfplotsVersion = [1,3];
-m2t.name = 'matlab2tikz';
-m2t.version = '1.0.0';
-m2t.author = 'Nico Schlömer';
-m2t.authorEmail = 'nico.schloemer@gmail.com';
-m2t.years = '2008--2015';
-m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
+m2t.about.name = 'matlab2tikz';
+m2t.about.version = '1.0.0';
+m2t.about.author = 'Nico Schlömer';
+m2t.about.authorEmail = 'nico.schloemer@gmail.com';
+m2t.about.years = '2008--2015';
+m2t.about.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
 VCID = VersionControlIdentifier();
-m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
+m2t.about.versionFull = strtrim(sprintf('v%s %s', m2t.about.version, VCID));
 
 m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
@@ -205,7 +205,7 @@ ipp = ipp.addParamValue(ipp, 'strict', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'strictFontSize', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'showInfo', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
-ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
+ipp = ipp.addParamValue(ipp, 'checkForUpdates', isempty(VCID), @islogical);
 
 ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
 ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
@@ -321,21 +321,7 @@ end
 userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2tikz.)\n', ...
     '(For all other options, type ''help matlab2tikz''.)\n']);
 
-userInfo(m2t, '\nThis is %s %s.\n', m2t.name, m2t.versionFull)
-
-%% Check for a new matlab2tikz version outside version control
-if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
-  isUpdateInstalled = m2tUpdater(...
-    m2t.name, ...
-    m2t.website, ...
-    m2t.version, ...
-    m2t.cmdOpts.Results.showInfo, ...
-    getEnvironment...
-    );
-    % Terminate conversion if update was successful (the user is notified
-    % by the updater)
-    if isUpdateInstalled, return, end
-end
+userInfo(m2t, '\nThis is %s %s.\n', m2t.about.name, m2t.about.versionFull)
 
 %% print some version info to the screen
 versionInfo = ['The latest updates can be retrieved from\n' ,...
@@ -346,10 +332,16 @@ versionInfo = ['The latest updates can be retrieved from\n' ,...
                '   https://github.com/matlab2tikz/matlab2tikz,\n'       ,...
                '   https://github.com/matlab2tikz/matlab2tikz/wiki,\n'  ,...
                '   https://github.com/matlab2tikz/matlab2tikz/issues.\n'];
-userInfo(m2t, versionInfo, m2t.website, m2t.name);
+userInfo(m2t, versionInfo, m2t.about.website, m2t.about.name);
 
 %% Save the figure as TikZ to file
 saveToFile(m2t, fid, fileWasOpen);
+
+%% Check for a new matlab2tikz version outside version control
+if m2t.cmdOpts.Results.checkForUpdates
+    m2tUpdater(m2t.about, m2t.cmdOpts.Results.showInfo);
+end
+
 end
 % ==============================================================================
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
@@ -468,7 +460,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % actually print the stuff
     minimalPgfplotsVersion = formatPgfplotsVersion(m2t.pgfplotsVersion);
 
-    m2t.content.comment = sprintf('This file was created by %s.\n', m2t.name);
+    m2t.content.comment = sprintf('This file was created by %s.\n', m2t.about.name);
 
     if m2t.cmdOpts.Results.showInfo
         % disable this info if showInfo=false
@@ -477,7 +469,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
             'The latest updates can be retrieved from\n', ...
             '  %s\n', ...
             'where you can also make suggestions and rate %s.\n'], ...
-            m2t.website, m2t.name ) ...
+            m2t.about.website, m2t.about.name ) ...
             ];
     end
 
@@ -6031,32 +6023,6 @@ function str  = opts_print(m2t, opts, sep)
     str = join(m2t, c, sep);
 end
 % ==============================================================================
-function [env, versionString] = getEnvironment()
-% Checks if we are in MATLAB or Octave.
-    persistent cache
-
-    alternatives = {'MATLAB', 'Octave'};
-    if isempty(cache)
-        for iCase = 1:numel(alternatives)
-            env   = alternatives{iCase};
-            vData = ver(env);
-            if ~isempty(vData) % found the right environment
-                versionString = vData.Version;
-                % store in cache
-                cache.env = env;
-                cache.versionString = versionString;
-                return;
-            end
-        end
-        % fall-back values
-        env = '';
-        versionString = '';
-    else
-        env = cache.env;
-        versionString = cache.versionString;
-    end
-end
-% ==============================================================================
 function bool = isHG2()
 % Checks if graphics system is HG2 (true) or HG1 (false).
 % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
@@ -6064,17 +6030,6 @@ function bool = isHG2()
     [env, envVersion] = getEnvironment();
     bool = strcmpi(env,'MATLAB') && ...
            ~isVersionBelow(envVersion, [8,4]);
-end
-% ==============================================================================
-function bool = isVersionBelow(versionA, versionB)
-% Checks if versionA is smaller than versionB
-    vA         = versionArray(versionA);
-    vB         = versionArray(versionB);
-    n          = min(length(vA), length(vB));
-    deltaAB    = vA(1:n) - vB(1:n);
-    difference = find(deltaAB, 1, 'first');
-    % Empty difference then same version
-    bool       = ~isempty(difference) && deltaAB(difference) < 0;
 end
 % ==============================================================================
 function str = formatAspectRatio(m2t, values)
@@ -6102,25 +6057,6 @@ function str = formatDim(value, unit)
         str = regexprep(str, '\.$', ''); % remove trailing period
         str = [str unit];
     end
-end
-% ==============================================================================
-function arr = versionArray(str)
-% Converts a version string to an array.
-    if ischar(str)
-        % Translate version string from '2.62.8.1' to [2; 62; 8; 1].
-        switch getEnvironment
-            case 'MATLAB'
-                split = regexp(str, '\.', 'split'); % compatibility MATLAB < R2013a
-            case  'Octave'
-                split = strsplit(str, '.');
-            otherwise
-                errorUnknownEnvironment();
-        end
-        arr = str2num(char(split)); %#ok
-    else
-        arr = str;
-    end
-    arr = arr(:)';
 end
 % ==============================================================================
 function [retval] = switchMatOct(matlabValue, octaveValue)
@@ -6156,11 +6092,6 @@ function checkDeprecatedEnvironment(minimalVersions)
     else
         errorUnknownEnvironment();
     end
-end
-% ==============================================================================
-function errorUnknownEnvironment()
-    error('matlab2tikz:unknownEnvironment',...
-          'Unknown environment "%s". Need MATLAB(R) or Octave.', getEnvironment);
 end
 % ==============================================================================
 function m2t = needsPgfplotsVersion(m2t, minVersion)
