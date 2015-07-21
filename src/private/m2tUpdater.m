@@ -127,10 +127,12 @@ function cleanupOldFiles(currentFolderFiles, unzippedFilesTarget)
     deleteFolderFiles  = setdiff(currentFolderFiles, newFolderStructure);
     for ii = 1:numel(deleteFolderFiles)
         x = deleteFolderFiles{ii};
-        if exist(x, 'file')
-            delete(x);
-        elseif exist(x, 'dir')
+        if exist(x, 'dir')
+            % First check for directories since
+            % `exist(x, 'file')` also checks for directories!
             rmdir(x,'s');
+        elseif exist(x, 'file')
+            delete(x);
         end
     end
 end
