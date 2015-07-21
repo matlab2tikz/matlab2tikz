@@ -113,10 +113,12 @@ function tryToUpgrade(fileExchangeUrl, verbose)
 
       userInfo(verbose, 'Upgrade has completed successfully.');
   catch
+      err = lasterror(); %#ok needed for Octave
+      
       userInfo(verbose, ...
-               ['Upgrade has failed.\n', ...
+               ['Upgrade has failed with error message "%s".\n', ...
                 'Please install the latest version manually from %s !'], ...
-                fileExchangeUrl);
+                err.message, fileExchangeUrl);
   end
 end
 % ==============================================================================
