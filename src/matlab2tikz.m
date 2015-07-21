@@ -1854,7 +1854,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         cycle  = conditionallyCyclePath(Vertices);
 
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'draw', ...
-                                         s.edgeColor);
+                                         s.edgeColor, 'none');
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'fill', ...
                                          s.faceColor);
 
