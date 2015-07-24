@@ -5,3 +5,4 @@ test*-converted*
 !.gitignore
 # git cannot presently store empty directories, so committing the
 # .gitignore file makes sure the directory isn't actually empty
+*.sublime-workspace
