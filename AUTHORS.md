@@ -1,43 +1,55 @@
 # Maintainer
-  * Egon Geerardyn is the current maintainer.
-  * Nico Schlömer designed and implemented the intial version and was the first maintainer.
+  * [Egon Geerardyn](https://github.com/egeerardyn) is the current maintainer.
+  * [Nico Schlömer](https://github.com/nschloe) designed and implemented the intial version and was the first maintainer.
 
 # Contributors
 Thanks for patches, suggestions, and other contributions go to:
 
+  * [Ben Abbott](https://github.com/bpabbott)
   * Martijn Aben (The MathWorks)
-  * Ben Abbott
+  * [Nicolas Alt](https://github.com/nalt)
+  * [Eshwar Andhavarapu](https://github.com/gontadu)
+  * Matt Bauman
   * Eike Blechschmidt
-  * Klaus Broelemann
-  * Katherine Elkington
+  * [Klaus Broelemann](https://github.com/Broele)
+  * [Katherine Elkington](https://github.com/kelkington)
   * Andreas Gäb
-  * Egon Geerardyn
+  * [Egon Geerardyn](https://github.com/egeerardyn)
   * Roman Gesenhues
   * Michael Glasser (The MathWorks)
-  * David Haberthür
-  * Patrick Häcker
-  * David Horsley
-  * Burkart Lingner
-  * Oleg Komarov
+  * [David Haberthür](https://github.com/habi)
+  * [Patrick Häcker](https://github.com/MagicMuscleMan)
+  * [David Horsley](https://github.com/widdma)
+  * Kári Hreinsson
+  * [Lucas Jeub](https://github.com/LJeub)
+  * Martin Kiefel
+  * [Andreas Kloeckner](https://github.com/akloeckner)
+  * [Oleg Komarov](https://github.com/okomarov)
   * Mykel Kochenderfer
   * Henk Kortier
+  * [Tom Lankhorst](https://github.com/tomlankhorst)
+  * [Burkart Lingner](https://github.com/burkart)
   * Theo Markettos
-  * Dragan Mitrevski
+  * [Dragan Mitrevski](https://github.com/nidrosianDeath)
+  * [Jason Monschke](https://github.com/jam4375)
   * Francesco Montorsi
-  * Peter Pablo
   * Ricardo Santiago Mozos
+  * [Peter Pablo](https://github.com/PeterPablo)
   * Johannes Mueller-Roemer
+  * [Ali Ozdagli](https://github.com/aliirmak)
   * Julien Ridoux
-  * Christoph Rüdiger
+  * [Christoph Rüdiger](https://github.com/mredd)
   * Carlos Russo
-  * Nico Schlömer
+  * [Nico Schlömer](https://github.com/nschloe)
   * Johannes Schmitz
   * Michael Schoeberl
+  * [José Vallet](https://github.com/josombio)
+  * [Thomas Wagner](https://github.com/Aikhjarto)
   * Donghua Wang
   * Robert Whittlesey
   * Pooya Ziraksaz
   * Bastiaan Zuurendonk (The MathWorks)
-  * _and many more!_
+  * GitHub users: [theswitch](https://github.com/theswitch)
 
 # Acknowledgements
 Matlab2tikz has once greatly profited from its ancestor:
