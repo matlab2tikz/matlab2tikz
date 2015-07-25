@@ -1,5 +1,8 @@
-Nico Schlömer designed and implemented the intial version and is the current maintainer.
+# Maintainer
+  * Egon Geerardyn is the current maintainer.
+  * Nico Schlömer designed and implemented the intial version and was the first maintainer.
 
+# Contributors
 Thanks for patches, suggestions, and other contributions go to:
 
   * Martijn Aben (The MathWorks)
@@ -27,6 +30,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Julien Ridoux
   * Christoph Rüdiger
   * Carlos Russo
+  * Nico Schlömer
   * Johannes Schmitz
   * Michael Schoeberl
   * Donghua Wang
@@ -35,6 +39,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Bastiaan Zuurendonk (The MathWorks)
   * _and many more!_
 
+# Acknowledgements
 Matlab2tikz has once greatly profited from its ancestor:
 
   * [Matfig2PGF](http://www.mathworks.com/matlabcentral/fileexchange/12962) written by Paul Wagenaars.
