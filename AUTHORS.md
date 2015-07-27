@@ -1,6 +1,6 @@
 # Maintainer
-  * [Egon Geerardyn](https://github.com/egeerardyn) is the current maintainer.
-  * [Nico Schlömer](https://github.com/nschloe) designed and implemented the intial version and was the first maintainer.
+  * [Egon Geerardyn](https://github.com/egeerardyn) is the current maintainer (2015 - now).
+  * [Nico Schlömer](https://github.com/nschloe) designed and implemented the intial version and was the first maintainer (2008 - 2015).
 
 # Contributors
 Thanks for patches, suggestions, and other contributions go to:
