@@ -52,8 +52,6 @@ Thanks for patches, suggestions, and other contributions go to:
   * GitHub users: [theswitch](https://github.com/theswitch)
 
 # Acknowledgements
-Matlab2tikz has once greatly profited from its ancestor:
+Matlab2tikz has once greatly profited from its ancestor: [Matfig2PGF](http://www.mathworks.com/matlabcentral/fileexchange/12962) written by Paul Wagenaars.
 
-  * [Matfig2PGF](http://www.mathworks.com/matlabcentral/fileexchange/12962) written by Paul Wagenaars.
-
-Also, the authors would like to thank Christian Feuersänger for the [Pgfplots](http://pgfplots.sourceforge.net) package which forms the basis for the matlab2tikz output on the LaTeX side.
+Also, the authors would like to thank [Christian Feuersänger](https://github.com/cfeuersaenger) for the [Pgfplots](http://pgfplots.sourceforge.net) package which forms the basis for the matlab2tikz output on the LaTeX side.
