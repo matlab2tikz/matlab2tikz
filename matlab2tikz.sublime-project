@@ -10,8 +10,9 @@
         {
             "name": "CI tests (Octave)",
             "env": {"CONTINUOUS_INTEGRATION":"true"},
-            "working_dir": "${project_path}/test",
-            "cmd":  ["octave","-q","--eval","runMatlab2TikzTests.m"]
+            "working_dir": "${project_path}/test", // this might get overwritten by startup scripts
+            "cmd":  ["octave","-q",
+                     "--eval","cd('${project_path}/test'); runMatlab2TikzTests()"]
         },
         {
             "name": "CI tests (MATLAB)",
