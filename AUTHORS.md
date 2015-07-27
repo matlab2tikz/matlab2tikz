@@ -24,8 +24,8 @@ Thanks for patches, suggestions, and other contributions go to:
   * [Lucas Jeub](https://github.com/LJeub)
   * Martin Kiefel
   * [Andreas Kloeckner](https://github.com/akloeckner)
-  * [Oleg Komarov](https://github.com/okomarov)
   * Mykel Kochenderfer
+  * [Oleg Komarov](https://github.com/okomarov)
   * Henk Kortier
   * [Tom Lankhorst](https://github.com/tomlankhorst)
   * [Burkart Lingner](https://github.com/burkart)
@@ -34,9 +34,9 @@ Thanks for patches, suggestions, and other contributions go to:
   * [Jason Monschke](https://github.com/jam4375)
   * Francesco Montorsi
   * Ricardo Santiago Mozos
-  * [Peter Pablo](https://github.com/PeterPablo)
   * Johannes Mueller-Roemer
   * [Ali Ozdagli](https://github.com/aliirmak)
+  * [Peter Pablo](https://github.com/PeterPablo)
   * Julien Ridoux
   * [Christoph Rüdiger](https://github.com/mredd)
   * Carlos Russo
