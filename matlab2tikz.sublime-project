@@ -44,5 +44,9 @@
             "working_dir": "${project_path}/test/tex",
             "cmd":  ["make","distclean"]
         }
-    ]
+    ],
+    "settings":
+    {
+        "FuzzyFilePath":{}
+    }
 }
