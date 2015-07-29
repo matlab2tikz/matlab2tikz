@@ -7,14 +7,17 @@ function nErrors = makeTravisReport(status)
     if ~isempty(unreliableTests)
         fprintf(stdout, gfmHeader('Unreliable tests',2));
         fprintf(stdout, 'These do not cause the build to fail.\n\n');
-        displaySummaryTable(stdout, unreliableTests);
+        displayTestResults(stdout, unreliableTests);
     end
     
     fprintf(stdout, gfmHeader('Reliable tests',2));
     fprintf(stdout, 'Only the following tests determine the build outcome.\n\n');
-    displaySummaryTable(stdout, reliableTests);
+    [passed,failed,skipped] = splitPassFailSkippedTests(reliableTests); %#ok
+    displayTestResults(stdout, [failed;skipped]);
+    
+    displayTestSummary(stdout, status);
 
-    if nargout >= 1
+    if nargout == 0
         nErrors = countNumberOfErrors(reliableTests);
     end
 end
@@ -128,8 +131,8 @@ function str = gfmHeader(str, level)
     str = sprintf('\n%s %s\n', repmat('#', 1, level), str);
 end
 % ==============================================================================
-function displaySummaryTable(stream, status)
-    % display a summary table of all tests
+function displayTestResults(stream, status)
+    % display a table of specific test outcomes
     headers = {'Testcase', 'Name', 'OK', 'Status'};
     data = cell(numel(status), numel(headers));
     for iTest = 1:numel(status)
@@ -137,12 +140,41 @@ function displaySummaryTable(stream, status)
     end
     str = gfmTable(data, headers, 'llcl');
     fprintf(stream, '%s', str);
-
-    nErrors = countNumberOfErrors(status);
-    if nErrors > 0
-        fprintf(stream,'\n%3d of %3d tests failed. :-( \n', nErrors, numel(status));
+end
+% ==============================================================================
+function displayTestSummary(stream, status)
+    % display a table of # of failed/passed/skipped tests vs (un)reliable
+    
+    % split statuses
+    [reliable, unreliable] = splitUnreliableTests(status);
+    [passR, failR, skipR] = splitPassFailSkippedTests(  reliable);
+    [passU, failU, skipU] = splitPassFailSkippedTests(unreliable);
+    
+    % compute number of cases per category
+    reliableSummary   = cellfun(@numel, {passR, failR, skipR});
+    unreliableSummary = cellfun(@numel, {passU, failU, skipU});
+    
+    % make summary table + calculate totals
+    summary = [  reliableSummary                 numel(reliable);
+               unreliableSummary                 numel(unreliable);
+               reliableSummary+unreliableSummary numel(status)];
+           
+    % put results into cell array with proper layout
+    summary = arrayfun(@(v) sprintf('%d',v), summary, 'UniformOutput', false);
+    table = repmat({''}, 3, 5);
+    header = {'','Pass','Fail','Skip','Total'};
+    table(:,1) = {'Reliable','Unreliable','Total'};
+    table(:,2:end) = summary;
+    
+    % print table
+    fprintf(stream, '%s\n', gfmHeader('Test summary', 2));
+    fprintf(stream, gfmTable(table, header, 'lrrrr'));
+    
+    % print overall outcome
+    if numel(failR) == 0
+        fprintf(stream, '\nBuild passes. :heavy_check_mark:\n');
     else
-        fprintf(stream,'\nAll tests were successful. :-) \n');
+        fprintf(stream, '\nBuild fails with %d errors. :heavy_exclamation_mark:\n', nErrors);
     end
 end
 % ==============================================================================
