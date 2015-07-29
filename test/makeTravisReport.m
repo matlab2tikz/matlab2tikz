@@ -34,17 +34,8 @@ function [nErrors] = makeTravisReport(status, varargin)
 
     %% build report
     fprintf(arg.stream, gfmHeader(describeEnvironment));
-    if ~isempty(S.unreliable)
-        fprintf(arg.stream, gfmHeader('Unreliable tests',2));
-        fprintf(arg.stream, 'These do not cause the build to fail.\n\n');
-        displayTestResults(arg.stream, S.unreliable);
-    end
-    
-    fprintf(arg.stream, gfmHeader('Reliable tests',2));
-    fprintf(arg.stream, 'Only the reliable tests determine the build outcome.\n');
-    fprintf(arg.stream, 'Passing tests are not shown (only failed and skipped tests).\n\n');
-    displayTestResults(arg.stream, [S.failR; S.skipR]);
-    
+    reportUnreliableTests(arg, S);
+    reportReliableTests(arg, S);
     displayTestSummary(arg.stream, S);
 
     %% set output arguments if needed
@@ -61,7 +52,7 @@ function bool = islength(val)
     % validates the report length
     bool = ismember(lower(val), {'default','short','long'});
 end
-% ==============================================================================
+% == GITHUB-FLAVORED MARKDOWN FUNCTIONS ========================================
 function str = gfmTable(data, header, alignment)
     % Construct a Github-flavored Markdown table
     %
@@ -174,60 +165,6 @@ function str = gfmHeader(str, level)
     str = sprintf('\n%s %s\n', repmat('#', 1, level), str);
 end
 % ==============================================================================
-function [short, long] = describeEnvironment()
-    % describes the environment in a short and long format
-    [env, ver] = getEnvironment;
-    [dummy, VCID] = VersionControlIdentifier(); %#ok
-    if ~isempty(VCID)
-        VCID = [' commit ' VCID(1:10)];
-    end
-    short = sprintf('%s %s (%s)', env, ver, getOS, VCID);
-    long  = sprintf('Test results for m2t%s running with %s %s on %s.', ...
-                    VCID, env, ver, getOS);
-    % maybe we need a bit more in the long format?
-end
-% ==============================================================================
-function code = generateCode(S)
-    % generates some MATLAB code to easily replicate the results
-    code = sprintf('%s = %s;\n', ...
-                   'suite', ['@' func2str(S.all{1}.testsuite)], ...
-                   'alltests', testNumbers(S.all), ...
-                   'reliable', testNumbers(S.reliable), ...
-                   'unreliable', testNumbers(S.unreliable), ...
-                   'failReliable', testNumbers(S.failR), ...
-                   'passUnreliable', testNumbers(S.passU), ...
-                   'skipped', testNumbers([S.skipR S.skipU]));
-    function str = testNumbers(status)
-        str = intelligentVector( cellfun(@(s) s.index, status) );
-    end
-end
-function str = intelligentVector(numbers)
-    % Produce a string that is an intelligent vector notation of its arguments
-    % e.g. when numbers = [ 1 2 3 4 6 7 8 9 ], it should return '[ 1:4 6:9 ]'
-    % The order in the vector is not retained!
-    
-    if isempty(numbers)
-        str = '[]';
-    else
-        numbers = sort(numbers(:).');
-        delta  = diff([numbers(1)-1 numbers]);
-        % place virtual bounds at the first element and beyond the last one
-        bounds = [1 find(delta~=1) numel(numbers)+1];
-        idx   = 1:(numel(bounds)-1); % start index of each segment
-        start = numbers(bounds(idx  )  );
-        stop  = numbers(bounds(idx+1)-1);
-        parts = arrayfun(@formatRange, start, stop, 'UniformOutput', false);
-        str = sprintf('[%s]', strtrim(sprintf('%s ', parts{:})));
-    end
-    function str = formatRange(start, stop)
-        if start==stop
-            str = sprintf('%d',start);
-        else
-            str = sprintf('%d:%d',start, stop);
-        end
-    end
-end
-% ==============================================================================
 function S = splitStatusses(status)
     % splits a cell array of statusses into a struct of cell arrays
     % of statusses according to their value of "skip", "reliable" and whether
@@ -240,52 +177,70 @@ function S = splitStatusses(status)
     [S.passU, S.failU, S.skipU] = splitPassFailSkippedTests(S.unreliable);
 end
 % ==============================================================================
+function [short, long] = describeEnvironment()
+    % describes the environment in a short and long format
+    [env, ver] = getEnvironment;
+    [dummy, VCID] = VersionControlIdentifier(); %#ok
+    if ~isempty(VCID)
+        VCID = [' commit ' VCID(1:10)];
+    end
+    short = sprintf('%s %s (%s)', env, ver, getOS, VCID);
+    long  = sprintf('Test results for m2t%s running with %s %s on %s.', ...
+                    VCID, env, ver, getOS);
+    % maybe we need a bit more in the long format?
+end
+function OS = getOS
+    % Quick and dirty way to determine the OS
+    % Probably this will be wrong on Solaris (if somebody still uses that)
+    if ismac
+        OS = 'Mac';
+    elseif isunix
+        OS = 'Linux';
+    elseif ispc
+        OS = 'Windows';
+    else
+        OS = 'Unknown';
+    end 
+end
+% ==============================================================================
+function reportUnreliableTests(arg, S)
+    % report on the unreliable tests
+    if ~isempty(S.unreliable) && ~strcmpi(arg.length, 'short')
+        fprintf(arg.stream, gfmHeader('Unreliable tests',2));
+        fprintf(arg.stream, 'These do not cause the build to fail.\n\n');
+        displayTestResults(arg.stream, S.unreliable);
+    end
+end
+function reportReliableTests(arg, S)
+    % report on the reliable tests
+    switch arg.length
+        case 'long'
+            tests = S.reliable;
+            message = '';
+        case 'default'
+            tests = [S.failR S.skipR];
+            message = 'Passing tests are not shown (only failed and skipped tests).\n\n';
+        case 'short'
+            return; % don't show this part
+    end
+            
+    fprintf(arg.stream, gfmHeader('Reliable tests',2));
+    fprintf(arg.stream, 'Only the reliable tests determine the build outcome.\n');
+    fprintf(arg.stream, message);
+    displayTestResults(arg.stream, tests);
+end
+% ==============================================================================
 function displayTestResults(stream, status)
     % display a table of specific test outcomes
     headers = {'Testcase', 'Name', 'OK', 'Status'};
     data = cell(numel(status), numel(headers));
     for iTest = 1:numel(status)
-        data(iTest,:) = fillTestOutcomeRow(status{iTest});
+        data(iTest,:) = fillTestResultRow(status{iTest});
     end
     str = gfmTable(data, headers, 'llcl');
     fprintf(stream, '%s', str);
 end
-% ==============================================================================
-function displayTestSummary(stream, S)
-    % display a table of # of failed/passed/skipped tests vs (un)reliable
-    
-    % compute number of cases per category
-    reliableSummary   = cellfun(@numel, {S.passR, S.failR, S.skipR});
-    unreliableSummary = cellfun(@numel, {S.passU, S.failU, S.skipU});
-    
-    % make summary table + calculate totals
-    summary = [  reliableSummary                 numel(S.reliable);
-               unreliableSummary                 numel(S.unreliable);
-               reliableSummary+unreliableSummary numel(S.all)];
-           
-    % put results into cell array with proper layout
-    summary = arrayfun(@(v) sprintf('%d',v), summary, 'UniformOutput', false);
-    table = repmat({''}, 3, 5);
-    header = {'','Pass','Fail','Skip','Total'};
-    table(:,1) = {'Reliable','Unreliable','Total'};
-    table(:,2:end) = summary;
-    
-    % print table
-    [envShort, envDescription] = describeEnvironment(); %#ok
-    fprintf(stream, gfmHeader('Test summary', 2));
-    fprintf(stream, '%s\n', envDescription);
-    fprintf(stream, '%s\n', gfmCode(generateCode(S),false,'matlab'));
-    fprintf(stream, gfmTable(table, header, 'lrrrr'));
-    
-    % print overall outcome
-    if numel(S.failR) == 0
-        fprintf(stream, '\nBuild passes. :heavy_check_mark:\n');
-    else
-        fprintf(stream, '\nBuild fails with %d errors. :heavy_exclamation_mark:\n', nErrors);
-    end
-end
-% ==============================================================================
-function row = fillTestOutcomeRow(oneStatus)
+function row = fillTestResultRow(oneStatus)
     % format the status of a single test for the summary table
     testNumber = oneStatus.index;
     testSuite  = func2str(oneStatus.testsuite);
@@ -326,17 +281,77 @@ function row = fillTestOutcomeRow(oneStatus)
             summary};
 end
 % ==============================================================================
-function OS = getOS
-    % Quick and dirty way to determine the OS
-    % Probably this will be wrong on Solaris (if somebody still uses that)
-    if ismac
-        OS = 'Mac';
-    elseif isunix
-        OS = 'Linux';
-    elseif ispc
-        OS = 'Windows';
+function displayTestSummary(stream, S)
+    % display a table of # of failed/passed/skipped tests vs (un)reliable
+    
+    % compute number of cases per category
+    reliableSummary   = cellfun(@numel, {S.passR, S.failR, S.skipR});
+    unreliableSummary = cellfun(@numel, {S.passU, S.failU, S.skipU});
+    
+    % make summary table + calculate totals
+    summary = [  reliableSummary                 numel(S.reliable);
+               unreliableSummary                 numel(S.unreliable);
+               reliableSummary+unreliableSummary numel(S.all)];
+           
+    % put results into cell array with proper layout
+    summary = arrayfun(@(v) sprintf('%d',v), summary, 'UniformOutput', false);
+    table = repmat({''}, 3, 5);
+    header = {'','Pass','Fail','Skip','Total'};
+    table(:,1) = {'Reliable','Unreliable','Total'};
+    table(:,2:end) = summary;
+    
+    % print table
+    [envShort, envDescription] = describeEnvironment(); %#ok
+    fprintf(stream, gfmHeader('Test summary', 2));
+    fprintf(stream, '%s\n', envDescription);
+    fprintf(stream, '%s\n', gfmCode(generateCode(S),false,'matlab'));
+    fprintf(stream, gfmTable(table, header, 'lrrrr'));
+    
+    % print overall outcome
+    if numel(S.failR) == 0
+        fprintf(stream, '\nBuild passes. :heavy_check_mark:\n');
     else
-        OS = 'Unknown';
-    end 
+        fprintf(stream, '\nBuild fails with %d errors. :heavy_exclamation_mark:\n', nErrors);
+    end
+end
+function code = generateCode(S)
+    % generates some MATLAB code to easily replicate the results
+    code = sprintf('%s = %s;\n', ...
+                   'suite', ['@' func2str(S.all{1}.testsuite)], ...
+                   'alltests', testNumbers(S.all), ...
+                   'reliable', testNumbers(S.reliable), ...
+                   'unreliable', testNumbers(S.unreliable), ...
+                   'failReliable', testNumbers(S.failR), ...
+                   'passUnreliable', testNumbers(S.passU), ...
+                   'skipped', testNumbers([S.skipR S.skipU]));
+    function str = testNumbers(status)
+        str = intelligentVector( cellfun(@(s) s.index, status) );
+    end
+    function str = intelligentVector(numbers)
+        % Produce a string that is an intelligent vector notation of its arguments
+        % e.g. when numbers = [ 1 2 3 4 6 7 8 9 ], it should return '[ 1:4 6:9 ]'
+        % The order in the vector is not retained!
+        
+        if isempty(numbers)
+            str = '[]';
+        else
+            numbers = sort(numbers(:).');
+            delta  = diff([numbers(1)-1 numbers]);
+            % place virtual bounds at the first element and beyond the last one
+            bounds = [1 find(delta~=1) numel(numbers)+1];
+            idx   = 1:(numel(bounds)-1); % start index of each segment
+            start = numbers(bounds(idx  )  );
+            stop  = numbers(bounds(idx+1)-1);
+            parts = arrayfun(@formatRange, start, stop, 'UniformOutput', false);
+            str = sprintf('[%s]', strtrim(sprintf('%s ', parts{:})));
+        end
+        function str = formatRange(start, stop)
+            if start==stop
+                str = sprintf('%d',start);
+            else
+                str = sprintf('%d:%d',start, stop);
+            end
+        end
+    end
 end
 % ==============================================================================
