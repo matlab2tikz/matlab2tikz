@@ -40,7 +40,7 @@ function [nErrors] = makeTravisReport(status, varargin)
 
     %% set output arguments if needed
     if nargout >= 1
-        nErrors = countNumberOfErrors(reliableTests);
+        nErrors = countNumberOfErrors(S.reliable);
     end
 end
 % == INPUT VALIDATOR FUNCTIONS =================================================
