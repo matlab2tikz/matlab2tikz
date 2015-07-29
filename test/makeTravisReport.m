@@ -88,6 +88,39 @@ function str = gfmTable(data, header, alignment)
         end
     end
 end
+function str = gfmCode(str, inline, language)
+    % Constructs a GFM code fragment
+    %
+    % Arguments:
+    %   - str: code to be displayed
+    %   - inline:  - true  -> formats inline
+    %              - false -> formats as code block
+    %              - []    -> automatic mode (default): picks one of the above
+    %   - language: which language the code is (enforces a code block)
+    % 
+    % Output: GFM formatted string
+    if ~exist('inline','var')
+        inline = [];
+    end
+    if ~exist('language','var') || isempty(language)
+        language = '';
+    else
+        inline = false; % highlighting is not supported for inline code
+    end
+    if isempty(inline)
+        inline = isempty(strfind(str, sprintf('\n')));
+    end
+    
+    if inline
+        prefix = '`';
+        postfix = '`';
+    else
+        prefix = sprintf('\n```%s\n', language);
+        postfix = sprintf('\n```\n');
+    end
+    
+    str = sprintf('%s%s%s', prefix, str, postfix);
+end
 % ==============================================================================
 function displaySummaryTable(stream, status)
     % display a summary table of all tests
@@ -142,8 +175,8 @@ function row = fillSummaryRow(oneStatus)
         end
         summary = strtrim(summary);
     end
-    row = { sprintf('`%s(%d)`', testSuite, testNumber), ...
-            sprintf('`%s`', oneStatus.function), ...
+    row = { gfmCode(sprintf('%s(%d)', testSuite, testNumber)), ...
+            gfmCode(oneStatus.function), ...
             passOrFail, ...
             summary};
 end
