@@ -13,7 +13,8 @@ function nErrors = makeTravisReport(status)
     end
     
     fprintf(stdout, gfmHeader('Reliable tests',2));
-    fprintf(stdout, 'Only the following tests determine the build outcome.\n\n');
+    fprintf(stdout, 'Only the reliable tests determine the build outcome.\n');
+    fprintf(stdout, 'Passing tests are not shown (only failed and skipped tests).\n\n');
     displayTestResults(stdout, [S.failR; S.skipR]);
     
     displayTestSummary(stdout, S);
