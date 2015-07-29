@@ -3,22 +3,25 @@ function nErrors = makeTravisReport(status)
     stdout = 1;
 
     [env, ver] = getEnvironment;
-    fprintf(stdout,gfmHeader(sprintf('%s %s (%s)', env, ver, getOS)));
+    [dummy, VCID] = VersionControlIdentifier();
+    if ~isempty(VCID)
+        VCID = [' at ' VCID(1:10)];
+    end
+    fprintf(stdout,gfmHeader(sprintf('%s %s (%s)', env, ver, getOS, VCID)));
     
-    [reliableTests, unreliableTests] = splitUnreliableTests(status);
-    
-    if ~isempty(unreliableTests)
+    S = splitStatusses(status);
+        
+    if ~isempty(S.reliable)
         fprintf(stdout, gfmHeader('Unreliable tests',2));
         fprintf(stdout, 'These do not cause the build to fail.\n\n');
-        displayTestResults(stdout, unreliableTests);
+        displayTestResults(stdout, S.reliable);
     end
     
     fprintf(stdout, gfmHeader('Reliable tests',2));
     fprintf(stdout, 'Only the following tests determine the build outcome.\n\n');
-    [passed,failed,skipped] = splitPassFailSkippedTests(reliableTests); %#ok
-    displayTestResults(stdout, [failed;skipped]);
+    displayTestResults(stdout, [S.failR; S.skipR]);
     
-    displayTestSummary(stdout, status);
+    displayTestSummary(stdout, S);
 
     if nargout >= 1
         nErrors = countNumberOfErrors(reliableTests);
@@ -123,6 +126,9 @@ function str = gfmCode(str, inline, language)
     else
         prefix = sprintf('\n```%s\n', language);
         postfix = sprintf('\n```\n');
+        if str(end) == sprintf('\n')
+            postfix = postfix(2:end); % remove extra endline
+        end
     end
     
     str = sprintf('%s%s%s', prefix, str, postfix);
@@ -134,8 +140,18 @@ function str = gfmHeader(str, level)
     str = sprintf('\n%s %s\n', repmat('#', 1, level), str);
 end
 % ==============================================================================
-function str = makeReproducible(status)
-    %TODO
+function code = generateCode(S)
+    code = sprintf('%s = %s;\n', ...
+                   'suite', ['@' func2str(S.all{1}.testsuite)], ...
+                   'alltests', testNumbers(S.all), ...
+                   'reliable', testNumbers(S.reliable), ...
+                   'unreliable', testNumbers(S.unreliable), ...
+                   'failReliable', testNumbers(S.failR), ...
+                   'passReliable', testNumbers(S.passR), ...
+                   'skipped', testNumbers([S.skipR S.skipU]));
+    function str = testNumbers(status)
+        str = intelligentVector( cellfun(@(s) s.index, status) );
+    end
 end
 function str = intelligentVector(numbers)
     % Produce a string that is an intelligent vector notation of its arguments
@@ -145,7 +161,7 @@ function str = intelligentVector(numbers)
     if isempty(numbers)
         str = '[]';
     else
-        numbers = sort(numbers);
+        numbers = sort(numbers(:).');
         delta  = diff([numbers(1)-1 numbers]);
         % place virtual bounds at the first element and beyond the last one
         bounds = [1 find(delta~=1) numel(numbers)+1];
@@ -160,9 +176,20 @@ function str = intelligentVector(numbers)
             str = sprintf('%d',start);
         else
             str = sprintf('%d:%d',start, stop);
-            
         end
     end
+end
+% ==============================================================================
+function S = splitStatusses(status)
+    % splits a cell array of statusses into a struct of cell arrays
+    % of statusses according to their value of "skip", "reliable" and whether
+    % an error has occured.
+    % See also: splitUnreliableTests, splitPassFailSkippedTests
+    S = struct('all', {status}); % beware of cell array assignment to structs!
+    
+    [S.reliable, S.unreliable]  = splitUnreliableTests(status);
+    [S.passR, S.failR, S.skipR] = splitPassFailSkippedTests(S.reliable);
+    [S.passU, S.failU, S.skipU] = splitPassFailSkippedTests(S.unreliable);
 end
 % ==============================================================================
 function displayTestResults(stream, status)
@@ -176,22 +203,17 @@ function displayTestResults(stream, status)
     fprintf(stream, '%s', str);
 end
 % ==============================================================================
-function displayTestSummary(stream, status)
+function displayTestSummary(stream, S)
     % display a table of # of failed/passed/skipped tests vs (un)reliable
     
-    % split statuses
-    [reliable, unreliable] = splitUnreliableTests(status);
-    [passR, failR, skipR] = splitPassFailSkippedTests(  reliable);
-    [passU, failU, skipU] = splitPassFailSkippedTests(unreliable);
-    
     % compute number of cases per category
-    reliableSummary   = cellfun(@numel, {passR, failR, skipR});
-    unreliableSummary = cellfun(@numel, {passU, failU, skipU});
+    reliableSummary   = cellfun(@numel, {S.passR, S.failR, S.skipR});
+    unreliableSummary = cellfun(@numel, {S.passU, S.failU, S.skipU});
     
     % make summary table + calculate totals
-    summary = [  reliableSummary                 numel(reliable);
-               unreliableSummary                 numel(unreliable);
-               reliableSummary+unreliableSummary numel(status)];
+    summary = [  reliableSummary                 numel(S.reliable);
+               unreliableSummary                 numel(S.unreliable);
+               reliableSummary+unreliableSummary numel(S.all)];
            
     % put results into cell array with proper layout
     summary = arrayfun(@(v) sprintf('%d',v), summary, 'UniformOutput', false);
@@ -202,10 +224,11 @@ function displayTestSummary(stream, status)
     
     % print table
     fprintf(stream, '%s\n', gfmHeader('Test summary', 2));
-    fprintf(stream, gfmTable(table, header, 'lrrrr'));
+    fprintf(stream, '%s\n', gfmCode(generateCode(S),false,'matlab'));
+    fprintf(stream, '%s\n', gfmTable(table, header, 'lrrrr'));
     
     % print overall outcome
-    if numel(failR) == 0
+    if numel(S.failR) == 0
         fprintf(stream, '\nBuild passes. :heavy_check_mark:\n');
     else
         fprintf(stream, '\nBuild fails with %d errors. :heavy_exclamation_mark:\n', nErrors);
