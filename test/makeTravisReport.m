@@ -1,27 +1,65 @@
-function nErrors = makeTravisReport(status)
-% make a readable Travis report
-    stdout = 1;
+function [nErrors] = makeTravisReport(status, varargin)
+% Makes a readable report for Travis/Github of test results
+%
+% This function produces a testing report of HEADLESS tests for
+% display on GitHub and Travis.
+%
+% MAKETRAVISREPORT(status) produces the report from the `status` output of
+% `testHeadless`.
+%
+% MAKETRAVISREPORT(status, 'stream', FID, ...) changes the filestream to use
+%  to output the report to. (Default: 1 (stdout)).
+%
+% MAKETRAVISREPORT(status, 'length', CHAR, ...) changes the report length.
+%  A few values are possible that cover different aspects in less/more detail.
+%    - 'default': all unreliable tests, failed & skipped tests and summary
+%    - 'short'  : only show the brief summary
+%    - 'verbose': all tests + summary
+%
+% See also: testHeadless, makeLatexReport
+
+    %% Parse input arguments
+    ipp = m2tInputParser;
+
+    ipp = ipp.addRequired(ipp, 'status', @iscell);
+    ipp = ipp.addParamValue(ipp, 'stream', 1,  @isstream);
+    ipp = ipp.addParamValue(ipp, 'length', 'default', @islength);
     
-    fprintf(stdout, gfmHeader(describeEnvironment));
+    ipp = ipp.parse(ipp, status, varargin{:});
+    arg = ipp.Results;
+    arg.length = lower(arg.length);
     
+    %% transform status data into groups
     S = splitStatusses(status);
 
+    %% build report
+    fprintf(arg.stream, gfmHeader(describeEnvironment));
     if ~isempty(S.unreliable)
-        fprintf(stdout, gfmHeader('Unreliable tests',2));
-        fprintf(stdout, 'These do not cause the build to fail.\n\n');
-        displayTestResults(stdout, S.unreliable);
+        fprintf(arg.stream, gfmHeader('Unreliable tests',2));
+        fprintf(arg.stream, 'These do not cause the build to fail.\n\n');
+        displayTestResults(arg.stream, S.unreliable);
     end
     
-    fprintf(stdout, gfmHeader('Reliable tests',2));
-    fprintf(stdout, 'Only the reliable tests determine the build outcome.\n');
-    fprintf(stdout, 'Passing tests are not shown (only failed and skipped tests).\n\n');
-    displayTestResults(stdout, [S.failR; S.skipR]);
+    fprintf(arg.stream, gfmHeader('Reliable tests',2));
+    fprintf(arg.stream, 'Only the reliable tests determine the build outcome.\n');
+    fprintf(arg.stream, 'Passing tests are not shown (only failed and skipped tests).\n\n');
+    displayTestResults(arg.stream, [S.failR; S.skipR]);
     
-    displayTestSummary(stdout, S);
+    displayTestSummary(arg.stream, S);
 
+    %% set output arguments if needed
     if nargout >= 1
         nErrors = countNumberOfErrors(reliableTests);
     end
+end
+% == INPUT VALIDATOR FUNCTIONS =================================================
+function bool = isstream(val)
+    % returns true if it is a valid (file) stream or stdout/stderr stream
+    bool = isnumeric(val);
+end
+function bool = islength(val)
+    % validates the report length
+    bool = ismember(lower(val), {'default','short','long'});
 end
 % ==============================================================================
 function str = gfmTable(data, header, alignment)
