@@ -164,6 +164,12 @@ function str = gfmHeader(str, level)
     end
     str = sprintf('\n%s %s\n', repmat('#', 1, level), str);
 end
+function symbols = githubEmoji()
+    % defines the emojis to signal the test result
+    symbols = struct('pass', ':heavy_check_mark:', ...
+                     'fail', ':heavy_exclamation_mark:', ...
+                     'skip', ':grey_question:');
+end
 % ==============================================================================
 function S = splitStatusses(status)
     % splits a cell array of statusses into a struct of cell arrays
@@ -234,20 +240,21 @@ function displayTestResults(stream, status)
     % display a table of specific test outcomes
     headers = {'Testcase', 'Name', 'OK', 'Status'};
     data = cell(numel(status), numel(headers));
+    symbols = githubEmoji;
     for iTest = 1:numel(status)
-        data(iTest,:) = fillTestResultRow(status{iTest});
+        data(iTest,:) = fillTestResultRow(status{iTest}, symbols);
     end
     str = gfmTable(data, headers, 'llcl');
     fprintf(stream, '%s', str);
 end
-function row = fillTestResultRow(oneStatus)
+function row = fillTestResultRow(oneStatus, symbol)
     % format the status of a single test for the summary table
     testNumber = oneStatus.index;
     testSuite  = func2str(oneStatus.testsuite);
     summary = '';
     if oneStatus.skip
         summary = 'SKIPPED';
-        passOrFail = ':grey_question:';
+        passOrFail = symbol.skip;
     else
         stages = getStagesFromStatus(oneStatus);
         for jStage = 1:numel(stages)
@@ -269,9 +276,9 @@ function row = fillTestResultRow(oneStatus)
             end
         end
         if isempty(summary)
-            passOrFail = ':heavy_check_mark:';
+            passOrFail = symbol.pass;
         else
-            passOrFail = ':heavy_exclamation_mark:';
+            passOrFail = symbol.fail;
         end
         summary = strtrim(summary);
     end
@@ -308,10 +315,11 @@ function displayTestSummary(stream, S)
     fprintf(stream, gfmTable(table, header, 'lrrrr'));
     
     % print overall outcome
+    symbol = githubEmoji;
     if numel(S.failR) == 0
-        fprintf(stream, '\nBuild passes. :heavy_check_mark:\n');
+        fprintf(stream, '\nBuild passes. %s\n', symbol.pass);
     else
-        fprintf(stream, '\nBuild fails with %d errors. :heavy_exclamation_mark:\n', nErrors);
+        fprintf(stream, '\nBuild fails with %d errors. %s\n', nErrors, symbol.fail);
     end
 end
 function code = generateCode(S)
