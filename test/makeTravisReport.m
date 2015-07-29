@@ -10,7 +10,7 @@ function nErrors = makeTravisReport(status)
                  'They, however, do not cause the build to fail.\n\n']);
         displaySummaryTable(stdout, unreliableTests);
         fprintf(stdout, ...
-                '\n\nOnly the following tests determine the build outcome:\n');
+                '\n\nOnly the following tests determine the build outcome:\n\n');
     end
     displaySummaryTable(stdout, reliableTests);
 
