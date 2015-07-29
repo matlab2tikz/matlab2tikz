@@ -1,16 +1,11 @@
 function nErrors = makeTravisReport(status)
 % make a readable Travis report
     stdout = 1;
-
-    [env, ver] = getEnvironment;
-    [dummy, VCID] = VersionControlIdentifier();
-    if ~isempty(VCID)
-        VCID = [' at ' VCID(1:10)];
-    end
-    fprintf(stdout,gfmHeader(sprintf('%s %s (%s)', env, ver, getOS, VCID)));
+    
+    fprintf(stdout, gfmHeader(describeEnvironment));
     
     S = splitStatusses(status);
-        
+
     if ~isempty(S.unreliable)
         fprintf(stdout, gfmHeader('Unreliable tests',2));
         fprintf(stdout, 'These do not cause the build to fail.\n\n');
@@ -140,7 +135,21 @@ function str = gfmHeader(str, level)
     str = sprintf('\n%s %s\n', repmat('#', 1, level), str);
 end
 % ==============================================================================
+function [short, long] = describeEnvironment()
+    % describes the environment in a short and long format
+    [env, ver] = getEnvironment;
+    [dummy, VCID] = VersionControlIdentifier(); %#ok
+    if ~isempty(VCID)
+        VCID = [' commit ' VCID(1:10)];
+    end
+    short = sprintf('%s %s (%s)', env, ver, getOS, VCID);
+    long  = sprintf('Test results for m2t%s running with %s %s on %s.', ...
+                    VCID, env, ver, getOS);
+    % maybe we need a bit more in the long format?
+end
+% ==============================================================================
 function code = generateCode(S)
+    % generates some MATLAB code to easily replicate the results
     code = sprintf('%s = %s;\n', ...
                    'suite', ['@' func2str(S.all{1}.testsuite)], ...
                    'alltests', testNumbers(S.all), ...
@@ -223,9 +232,11 @@ function displayTestSummary(stream, S)
     table(:,2:end) = summary;
     
     % print table
-    fprintf(stream, '%s\n', gfmHeader('Test summary', 2));
+    [envShort, envDescription] = describeEnvironment(); %#ok
+    fprintf(stream, gfmHeader('Test summary', 2));
+    fprintf(stream, '%s\n', envDescription);
     fprintf(stream, '%s\n', gfmCode(generateCode(S),false,'matlab'));
-    fprintf(stream, '%s\n', gfmTable(table, header, 'lrrrr'));
+    fprintf(stream, gfmTable(table, header, 'lrrrr'));
     
     % print overall outcome
     if numel(S.failR) == 0
