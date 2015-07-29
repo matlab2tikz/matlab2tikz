@@ -134,6 +134,37 @@ function str = gfmHeader(str, level)
     str = sprintf('\n%s %s\n', repmat('#', 1, level), str);
 end
 % ==============================================================================
+function str = makeReproducible(status)
+    %TODO
+end
+function str = intelligentVector(numbers)
+    % Produce a string that is an intelligent vector notation of its arguments
+    % e.g. when numbers = [ 1 2 3 4 6 7 8 9 ], it should return '[ 1:4 6:9 ]'
+    % The order in the vector is not retained!
+    
+    if isempty(numbers)
+        str = '[]';
+    else
+        numbers = sort(numbers);
+        delta  = diff([numbers(1)-1 numbers]);
+        % place virtual bounds at the first element and beyond the last one
+        bounds = [1 find(delta~=1) numel(numbers)+1];
+        idx   = 1:(numel(bounds)-1); % start index of each segment
+        start = numbers(bounds(idx  )  );
+        stop  = numbers(bounds(idx+1)-1);
+        parts = arrayfun(@formatRange, start, stop, 'UniformOutput', false);
+        str = sprintf('[%s]', strtrim(sprintf('%s ', parts{:})));
+    end
+    function str = formatRange(start, stop)
+        if start==stop
+            str = sprintf('%d',start);
+        else
+            str = sprintf('%d:%d',start, stop);
+            
+        end
+    end
+end
+% ==============================================================================
 function displayTestResults(stream, status)
     % display a table of specific test outcomes
     headers = {'Testcase', 'Name', 'OK', 'Status'};
@@ -235,3 +266,4 @@ function OS = getOS
         OS = 'Unknown';
     end 
 end
+% ==============================================================================
