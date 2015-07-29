@@ -37,7 +37,7 @@ function str = gfmTable(data, header, alignment)
     % See https://help.github.com/articles/github-flavored-markdown/#tables
 
     % input argument validation and normalization
-    [nRows, nCols] = size(data);
+    nCols = size(data, 2);
     if ~exist('alignment','var') || isempty(alignment)
         alignment = 'l';
     end
@@ -91,9 +91,13 @@ end
 % ==============================================================================
 function displaySummaryTable(stream, status)
     % display a summary table of all tests
+    headers = {'Testcase', 'Name', 'OK', 'Status'};
+    data = cell(numel(status), numel(headers));
     for iTest = 1:numel(status)
-        fprintf(stream, '%s\n', formatSummaryRow(status{iTest}));
+        data(iTest,:) = fillSummaryRow(status{iTest});
     end
+    str = gfmTable(data, headers, 'llcl');
+    fprintf(stream, '%s', str);
 
     nErrors = countNumberOfErrors(status);
     if nErrors > 0
@@ -103,13 +107,14 @@ function displaySummaryTable(stream, status)
     end
 end
 % ==============================================================================
-function str = formatSummaryRow(oneStatus)
+function row = fillSummaryRow(oneStatus)
     % format the status of a single test for the summary table
     testNumber = oneStatus.index;
     testSuite  = func2str(oneStatus.testsuite);
     summary = '';
     if oneStatus.skip
         summary = 'SKIPPED';
+        passOrFail = ':grey_question:';
     else
         stages = getStagesFromStatus(oneStatus);
         for jStage = 1:numel(stages)
@@ -131,13 +136,15 @@ function str = formatSummaryRow(oneStatus)
             end
         end
         if isempty(summary)
-            summary = 'OK';
+            passOrFail = ':heavy_check_mark:';
+        else
+            passOrFail = ':heavy_exclamation_mark:';
         end
         summary = strtrim(summary);
     end
-    functionName = strjust(sprintf('%25s', oneStatus.function), 'left');
-
-    str = sprintf('%15s(%3d) %s: %s', ...
-          testSuite, testNumber, functionName, summary);
+    row = { sprintf('`%s(%d)`', testSuite, testNumber), ...
+            sprintf('`%s`', oneStatus.function), ...
+            passOrFail, ...
+            summary};
 end
 % ==============================================================================
