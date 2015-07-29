@@ -2,8 +2,11 @@ function nErrors = makeTravisReport(status)
 % make a readable Travis report
     stdout = 1;
 
+    [env, ver] = getEnvironment;
+    fprintf(stdout,gfmHeader(sprintf('%s %s (%s)', env, ver, getOS)));
+    
     [reliableTests, unreliableTests] = splitUnreliableTests(status);
-
+    
     if ~isempty(unreliableTests)
         fprintf(stdout, gfmHeader('Unreliable tests',2));
         fprintf(stdout, 'These do not cause the build to fail.\n\n');
@@ -219,3 +222,16 @@ function row = fillTestOutcomeRow(oneStatus)
             summary};
 end
 % ==============================================================================
+function OS = getOS
+    % Quick and dirty way to determine the OS
+    % Probably this will be wrong on Solaris (if somebody still uses that)
+    if ismac
+        OS = 'Mac';
+    elseif isunix
+        OS = 'Linux';
+    elseif ispc
+        OS = 'Windows';
+    else
+        OS = 'Unknown';
+    end 
+end
