@@ -20,7 +20,7 @@ function nErrors = makeTravisReport(status)
     
     displayTestSummary(stdout, status);
 
-    if nargout == 0
+    if nargout >= 1
         nErrors = countNumberOfErrors(reliableTests);
     end
 end
