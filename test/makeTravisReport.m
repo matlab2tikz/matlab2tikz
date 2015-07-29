@@ -5,13 +5,13 @@ function nErrors = makeTravisReport(status)
     [reliableTests, unreliableTests] = splitUnreliableTests(status);
 
     if ~isempty(unreliableTests)
-        fprintf(stdout, ...
-                ['\nThe following tests are known to be unreliable. ' ...
-                 'They, however, do not cause the build to fail.\n\n']);
+        fprintf(stdout, gfmHeader('Unreliable tests',2));
+        fprintf(stdout, 'These do not cause the build to fail.\n\n');
         displaySummaryTable(stdout, unreliableTests);
-        fprintf(stdout, ...
-                '\n\nOnly the following tests determine the build outcome:\n\n');
     end
+    
+    fprintf(stdout, gfmHeader('Reliable tests',2));
+    fprintf(stdout, 'Only the following tests determine the build outcome.\n\n');
     displaySummaryTable(stdout, reliableTests);
 
     if nargout >= 1
@@ -120,6 +120,12 @@ function str = gfmCode(str, inline, language)
     end
     
     str = sprintf('%s%s%s', prefix, str, postfix);
+end
+function str = gfmHeader(str, level)
+    if ~exist('level','var')
+        level = 1;
+    end
+    str = sprintf('\n%s %s\n', repmat('#', 1, level), str);
 end
 % ==============================================================================
 function displaySummaryTable(stream, status)
