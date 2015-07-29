@@ -11,7 +11,7 @@ function nErrors = makeTravisReport(status)
     
     S = splitStatusses(status);
         
-    if ~isempty(S.reliable)
+    if ~isempty(S.unreliable)
         fprintf(stdout, gfmHeader('Unreliable tests',2));
         fprintf(stdout, 'These do not cause the build to fail.\n\n');
         displayTestResults(stdout, S.reliable);
