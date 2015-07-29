@@ -136,7 +136,7 @@ function displayTestResults(stream, status)
     headers = {'Testcase', 'Name', 'OK', 'Status'};
     data = cell(numel(status), numel(headers));
     for iTest = 1:numel(status)
-        data(iTest,:) = fillSummaryRow(status{iTest});
+        data(iTest,:) = fillTestOutcomeRow(status{iTest});
     end
     str = gfmTable(data, headers, 'llcl');
     fprintf(stream, '%s', str);
@@ -178,7 +178,7 @@ function displayTestSummary(stream, status)
     end
 end
 % ==============================================================================
-function row = fillSummaryRow(oneStatus)
+function row = fillTestOutcomeRow(oneStatus)
     % format the status of a single test for the summary table
     testNumber = oneStatus.index;
     testSuite  = func2str(oneStatus.testsuite);
