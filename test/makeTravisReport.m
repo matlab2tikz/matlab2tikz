@@ -290,15 +290,15 @@ function displayTestSummary(stream, S)
     unreliableSummary = cellfun(@numel, {S.passU, S.failU, S.skipU});
 
     % make summary table + calculate totals
-    summary = [  reliableSummary                 numel(S.reliable);
-               unreliableSummary                 numel(S.unreliable);
+    summary = [unreliableSummary                 numel(S.unreliable);
+                 reliableSummary                 numel(S.reliable);
                reliableSummary+unreliableSummary numel(S.all)];
 
     % put results into cell array with proper layout
     summary = arrayfun(@(v) sprintf('%d',v), summary, 'UniformOutput', false);
     table = repmat({''}, 3, 5);
     header = {'','Pass','Fail','Skip','Total'};
-    table(:,1) = {'Reliable','Unreliable','Total'};
+    table(:,1) = {'Unreliable','Reliable','Total'};
     table(:,2:end) = summary;
 
     % print table
