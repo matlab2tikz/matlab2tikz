@@ -1,6 +1,6 @@
 function bool = hasTestFailed(status)
     % returns true when the test has failed
-    
+
     if iscell(status) % allow for vectorization of the call
         bool = cellfun(@hasTestFailed, status, 'UniformOutput', true);
     else
