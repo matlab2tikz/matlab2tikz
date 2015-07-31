@@ -102,6 +102,8 @@ function str = gfmTable(data, header, alignment)
 
     %---------------------------------------------------------------------------
     function alignRow = formatAlignment(alignment, columnWidth)
+        % Construct a row of dashes to specify the alignment of each column
+        % See https://help.github.com/articles/github-flavored-markdown/#tables
         DASH = '-'; COLON = ':';
         N = numel(columnWidth);
         alignRow = arrayfun(@(w) repmat(DASH, 1, w), columnWidth, ...
@@ -125,7 +127,7 @@ function str = gfmTable(data, header, alignment)
     end
 end
 function str = gfmCode(str, inline, language)
-    % Constructs a GFM code fragment
+    % Construct a GFM code fragment
     %
     % Arguments:
     %   - str: code to be displayed
@@ -135,6 +137,8 @@ function str = gfmCode(str, inline, language)
     %   - language: which language the code is (enforces a code block)
     %
     % Output: GFM formatted string
+    %
+    % See https://help.github.com/articles/github-flavored-markdown
     if ~exist('inline','var')
         inline = [];
     end
@@ -161,6 +165,7 @@ function str = gfmCode(str, inline, language)
     str = sprintf('%s%s%s', prefix, str, postfix);
 end
 function str = gfmHeader(str, level)
+    % Constructs a GFM/Markdown header
     if ~exist('level','var')
         level = 1;
     end
@@ -346,7 +351,7 @@ function str = intelligentVector(numbers)
     end
 end
 function str = formatRange(start, stop)
-    % format a range [start,stop] of integers in MATLAB syntax
+    % format a range [start:stop] of integers in MATLAB syntax
     if start==stop
         str = sprintf('%d',start);
     else
