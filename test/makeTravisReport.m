@@ -30,7 +30,7 @@ function [nErrors] = makeTravisReport(status, varargin)
     arg.length = lower(arg.length);
 
     %% transform status data into groups
-    S = splitStatusses(status);
+    S = splitStatuses(status);
 
     %% build report
     fprintf(arg.stream, gfmHeader(describeEnvironment));
@@ -76,7 +76,7 @@ function str = gfmTable(data, header, alignment)
         alignment = 'l';
     end
     if numel(alignment) < nCols
-        % repeat the alignment specifications to along the columns
+        % repeat the alignment specifications along the columns
         alignment = repmat(alignment, 1, nCols);
         alignment = alignment(1:nCols);
     end
@@ -173,9 +173,9 @@ function symbols = githubEmoji()
                      'skip', ':grey_question:');
 end
 % ==============================================================================
-function S = splitStatusses(status)
-    % splits a cell array of statusses into a struct of cell arrays
-    % of statusses according to their value of "skip", "reliable" and whether
+function S = splitStatuses(status)
+    % splits a cell array of statuses into a struct of cell arrays
+    % of statuses according to their value of "skip", "reliable" and whether
     % an error has occured.
     % See also: splitUnreliableTests, splitPassFailSkippedTests
     S = struct('all', {status}); % beware of cell array assignment to structs!
@@ -195,9 +195,8 @@ function [short, long] = describeEnvironment()
     short = sprintf('%s %s (%s)', env, ver, getOS, VCID);
     long  = sprintf('Test results for m2t%s running with %s %s on %s.', ...
                     VCID, env, ver, getOS);
-    % maybe we need a bit more in the long format?
 end
-function OS = getOS
+function OS = getOS()
     % Quick and dirty way to determine the OS
     % Probably this will be wrong on Solaris (if somebody still uses that)
     if ismac
