@@ -192,22 +192,10 @@ function [short, long] = describeEnvironment()
     if ~isempty(VCID)
         VCID = [' commit ' VCID(1:10)];
     end
-    short = sprintf('%s %s (%s)', env, ver, getOS, VCID);
+    OS = OSVersion;
+    short = sprintf('%s %s (%s)', env, ver, OS, VCID);
     long  = sprintf('Test results for m2t%s running with %s %s on %s.', ...
-                    VCID, env, ver, getOS);
-end
-function OS = getOS()
-    % Quick and dirty way to determine the OS
-    % Probably this will be wrong on Solaris (if somebody still uses that)
-    if ismac
-        OS = 'Mac';
-    elseif isunix
-        OS = 'Linux';
-    elseif ispc
-        OS = 'Windows';
-    else
-        OS = 'Unknown';
-    end
+                    VCID, env, ver, OS);
 end
 % ==============================================================================
 function reportUnreliableTests(arg, S)
