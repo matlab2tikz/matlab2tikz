@@ -99,6 +99,8 @@ function str = gfmTable(data, header, alignment)
         strs{iRow} = sprintf(rowformat, thisRow{:});
     end
     str = [strs{:}];
+
+    %---------------------------------------------------------------------------
     function alignRow = formatAlignment(alignment, columnWidth)
         DASH = '-'; COLON = ':';
         N = numel(columnWidth);
@@ -332,6 +334,7 @@ function code = generateCode(S)
                    'failReliable', testNumbers(S.failR), ...
                    'passUnreliable', testNumbers(S.passU), ...
                    'skipped', testNumbers([S.skipR S.skipU]));
+    % --------------------------------------------------------------------------
     function str = testNumbers(status)
         str = intelligentVector( cellfun(@(s) s.index, status) );
     end
