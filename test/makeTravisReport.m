@@ -14,7 +14,7 @@ function [nErrors] = makeTravisReport(status, varargin)
 %  A few values are possible that cover different aspects in less/more detail.
 %    - 'default': all unreliable tests, failed & skipped tests and summary
 %    - 'short'  : only show the brief summary
-%    - 'verbose': all tests + summary
+%    - 'long'   : all tests + summary
 %
 % See also: testHeadless, makeLatexReport
 
@@ -218,7 +218,7 @@ function reportReliableTests(arg, S)
             tests = S.reliable;
             message = '';
         case 'default'
-            tests = [S.failR S.skipR];
+            tests = [S.failR; S.skipR];
             message = 'Passing tests are not shown (only failed and skipped tests).\n\n';
         case 'short'
             return; % don't show this part
@@ -325,7 +325,7 @@ function code = generateCode(S)
                    'unreliable', testNumbers(S.unreliable), ...
                    'failReliable', testNumbers(S.failR), ...
                    'passUnreliable', testNumbers(S.passU), ...
-                   'skipped', testNumbers([S.skipR S.skipU]));
+                   'skipped', testNumbers([S.skipR; S.skipU]));
     % --------------------------------------------------------------------------
     function str = testNumbers(status)
         str = intelligentVector( cellfun(@(s) s.index, status) );
