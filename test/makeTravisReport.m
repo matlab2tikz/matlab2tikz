@@ -22,13 +22,13 @@ function [nErrors] = makeTravisReport(status, varargin)
     ipp = m2tInputParser;
 
     ipp = ipp.addRequired(ipp, 'status', @iscell);
-    ipp = ipp.addParamValue(ipp, 'stream', 1,  @isstream);
-    ipp = ipp.addParamValue(ipp, 'length', 'default', @islength);
-    
+    ipp = ipp.addParamValue(ipp, 'stream', 1,  @isStream);
+    ipp = ipp.addParamValue(ipp, 'length', 'default', @isReportLength);
+
     ipp = ipp.parse(ipp, status, varargin{:});
     arg = ipp.Results;
     arg.length = lower(arg.length);
-    
+
     %% transform status data into groups
     S = splitStatusses(status);
 
@@ -44,11 +44,11 @@ function [nErrors] = makeTravisReport(status, varargin)
     end
 end
 % == INPUT VALIDATOR FUNCTIONS =================================================
-function bool = isstream(val)
+function bool = isStream(val)
     % returns true if it is a valid (file) stream or stdout/stderr stream
     bool = isnumeric(val);
 end
-function bool = islength(val)
+function bool = isReportLength(val)
     % validates the report length
     bool = ismember(lower(val), {'default','short','long'});
 end
@@ -131,7 +131,7 @@ function str = gfmCode(str, inline, language)
     %              - false -> formats as code block
     %              - []    -> automatic mode (default): picks one of the above
     %   - language: which language the code is (enforces a code block)
-    % 
+    %
     % Output: GFM formatted string
     if ~exist('inline','var')
         inline = [];
@@ -144,7 +144,7 @@ function str = gfmCode(str, inline, language)
     if isempty(inline)
         inline = isempty(strfind(str, sprintf('\n')));
     end
-    
+
     if inline
         prefix = '`';
         postfix = '`';
@@ -155,7 +155,7 @@ function str = gfmCode(str, inline, language)
             postfix = postfix(2:end); % remove extra endline
         end
     end
-    
+
     str = sprintf('%s%s%s', prefix, str, postfix);
 end
 function str = gfmHeader(str, level)
@@ -177,7 +177,7 @@ function S = splitStatusses(status)
     % an error has occured.
     % See also: splitUnreliableTests, splitPassFailSkippedTests
     S = struct('all', {status}); % beware of cell array assignment to structs!
-    
+
     [S.reliable, S.unreliable]  = splitUnreliableTests(status);
     [S.passR, S.failR, S.skipR] = splitPassFailSkippedTests(S.reliable);
     [S.passU, S.failU, S.skipU] = splitPassFailSkippedTests(S.unreliable);
@@ -206,7 +206,7 @@ function OS = getOS
         OS = 'Windows';
     else
         OS = 'Unknown';
-    end 
+    end
 end
 % ==============================================================================
 function reportUnreliableTests(arg, S)
@@ -229,7 +229,7 @@ function reportReliableTests(arg, S)
         case 'short'
             return; % don't show this part
     end
-            
+
     fprintf(arg.stream, gfmHeader('Reliable tests',2));
     fprintf(arg.stream, 'Only the reliable tests determine the build outcome.\n');
     fprintf(arg.stream, message);
@@ -290,30 +290,30 @@ end
 % ==============================================================================
 function displayTestSummary(stream, S)
     % display a table of # of failed/passed/skipped tests vs (un)reliable
-    
+
     % compute number of cases per category
     reliableSummary   = cellfun(@numel, {S.passR, S.failR, S.skipR});
     unreliableSummary = cellfun(@numel, {S.passU, S.failU, S.skipU});
-    
+
     % make summary table + calculate totals
     summary = [  reliableSummary                 numel(S.reliable);
                unreliableSummary                 numel(S.unreliable);
                reliableSummary+unreliableSummary numel(S.all)];
-           
+
     % put results into cell array with proper layout
     summary = arrayfun(@(v) sprintf('%d',v), summary, 'UniformOutput', false);
     table = repmat({''}, 3, 5);
     header = {'','Pass','Fail','Skip','Total'};
     table(:,1) = {'Reliable','Unreliable','Total'};
     table(:,2:end) = summary;
-    
+
     % print table
     [envShort, envDescription] = describeEnvironment(); %#ok
     fprintf(stream, gfmHeader('Test summary', 2));
     fprintf(stream, '%s\n', envDescription);
     fprintf(stream, '%s\n', gfmCode(generateCode(S),false,'matlab'));
     fprintf(stream, gfmTable(table, header, 'lrrrr'));
-    
+
     % print overall outcome
     symbol = githubEmoji;
     if numel(S.failR) == 0
