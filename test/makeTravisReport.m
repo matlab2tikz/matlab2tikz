@@ -310,7 +310,8 @@ function displayTestSummary(stream, S)
 
     % print overall outcome
     symbol = githubEmoji;
-    if numel(S.failR) == 0
+    nErrors = numel(S.failR);
+    if nErrors == 0
         fprintf(stream, '\nBuild passes. %s\n', symbol.pass);
     else
         fprintf(stream, '\nBuild fails with %d errors. %s\n', nErrors, symbol.fail);
