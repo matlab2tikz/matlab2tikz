@@ -1278,11 +1278,14 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
 
     keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
     tickLabelMode = get(handle, keywordTickLabelMode);
-    keywordTickLabel = [upper(axis), 'TickLabel'];
-    tickLabels = cellstr(get(handle, keywordTickLabel));
     if strcmpi(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict
         pgfTickLabels = [];
     else % strcmpi(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
+        keywordTickLabel = [upper(axis), 'TickLabel'];
+        interpreter = 'none'; % MATLAB only supports 'none'
+        tickLabels = cellstr(get(handle, keywordTickLabel))
+        tickLabels = prettyPrint(m2t, tickLabels, interpreter)
+
         keywordScale = [upper(axis), 'Scale'];
         isAxisLog = strcmpi(getOrDefault(handle,keywordScale, 'lin'), 'log');
         [pgfTicks, pgfTickLabels] = ...
