@@ -1283,8 +1283,8 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     else % strcmpi(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
         keywordTickLabel = [upper(axis), 'TickLabel'];
         interpreter = 'none'; % MATLAB only supports 'none'
-        tickLabels = cellstr(get(handle, keywordTickLabel))
-        tickLabels = prettyPrint(m2t, tickLabels, interpreter)
+        tickLabels = cellstr(get(handle, keywordTickLabel));
+        tickLabels = prettyPrint(m2t, tickLabels, interpreter);
 
         keywordScale = [upper(axis), 'Scale'];
         isAxisLog = strcmpi(getOrDefault(handle,keywordScale, 'lin'), 'log');
