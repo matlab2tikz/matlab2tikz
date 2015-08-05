@@ -3129,17 +3129,17 @@ function warnFacetedInterp(m2t)
         ['A 3D plot with "shader = faceted interp" is being produced.\n', ...
         'This may produce big and sluggish PDF files.\n', ...
         'See %s and Section 4.6.6 of the pgfplots manual for workarounds.'], ...
-        issueUrl(693, true));
+        issueUrl(m2t, 693, true));
 end
 % ==============================================================================
-function url = issueUrl(number, forOutput)
+function url = issueUrl(m2t, number, forOutput)
 % Produces the URL for an issue report in the GitHub repository.
 % When the `forOutput` flag is set, this format the URL for printing to the
 % MATLAB terminal.
     if ~exist('forOutput','var') || isempty(forOutput)
         forOutput = false;
     end
-    url = sprintf('https://github.com/matlab2tikz/matlab2tikz/issues/%d', number);
+    url = sprintf('%s/%d', m2t.about.issues, number);
     if forOutput
         url = clickableUrl(url, sprintf('#%d', number));
     end
