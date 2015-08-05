@@ -3132,14 +3132,23 @@ function url = issueUrl(number, forOutput)
     end
     url = sprintf('https://github.com/matlab2tikz/matlab2tikz/issues/%d', number);
     if forOutput
-        switch getEnvironment
-            case 'MATLAB'
-                url = sprintf('<a href="%s">#%d</a>', url, number);
-            case 'Octave'
-                % just use the url since HTML is not supported in Octave
-            otherwise
-                errorUnknownEnvironment();
-        end
+        url = clickableUrl(url, sprintf('#%d', number));
+    end
+end
+% ==============================================================================
+function url = clickableUrl(url, title)
+% Produce a clickable URL for outputting to the MATLAB terminal
+    if ~exist('title','var') || isempty(title)
+        title = url;
+    end
+    switch getEnvironment()
+        case 'MATLAB'
+            url = sprintf('<a href="%s">%s</a>', url, title);
+        case 'Octave'
+            % just use the URL and discard the title since Octave doesn't
+            % support HTML tags in its output.
+        otherwise
+            errorUnknownEnvironment();
     end
 end
 % ==============================================================================
