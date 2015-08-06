@@ -2211,7 +2211,7 @@ function [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaD
         colorData = colorData(:, end:-1:1, :);
         alphaData = alphaData(:, end:-1:1);
     end
-    if ~m2t.yAxisReversed % y-axis direction is revesed normally for images, flip otherwise
+    if ~m2t.yAxisReversed % y-axis direction is reversed normally for images, flip otherwise
         colorData = colorData(end:-1:1, :, :);
         alphaData = alphaData(end:-1:1, :);
     end
