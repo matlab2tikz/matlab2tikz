@@ -2158,31 +2158,11 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
         cData = cData(end:-1:1,:);
     end
 
-
     % Generate uniformly distributed X, Y, although xData and yData may be
     % non-uniform.
     % This is MATLAB(R) behavior.
-    switch length(xData)
-        case 2 % only the limits given; common for generic image plots
-            hX = 1;
-        case size(cData,2) % specific x-data is given
-            hX = (xData(end)-xData(1)) / (length(xData)-1);
-        otherwise
-            error('drawImage:arrayLengthMismatch', ...
-                'Array lengths not matching (%d = size(cdata,2) ~= length(xData) = %d).', size(cData,1), length(xData));
-    end
-    X = xData(1):hX:xData(end);
-
-    switch length(yData)
-        case 2 % only the limits given; common for generic image plots
-            hY = 1;
-        case size(cData,1) % specific y-data is given
-            hY = (yData(end)-yData(1)) / (length(yData)-1);
-        otherwise
-            error('drawImage:arrayLengthMismatch', ...
-                'Array lengths not matching (%d = size(cData,1) ~= length(yData) = %d).', size(cData,2), length(yData));
-    end
-    Y = yData(1):hY:yData(end);
+    [X, hX] = constructUniformXYDataForImage(xData, size(cData, 2));
+    [Y, hY] = constructUniformXYDataForImage(yData, size(cData, 1));
     [m2t, xcolor] = getColor(m2t, handle, cData, 'image');
 
     % The following section takes pretty long to execute, although in
@@ -2208,6 +2188,21 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
                     )];
         end
     end
+end
+function [XY, delta] = constructUniformXYDataForImage(XYData, expectedLength)
+    % Generate uniformly distributed X, Y, although xData/yData may be
+    % non-uniform. Dimension indicates the corresponding dimension in the cData matrix.
+    switch length(XYData)
+        case 2 % only the limits given; common for generic image plots
+            delta = 1;
+        case expectedLength % specific x/y-data is given
+            delta = (XYData(end)-XYData(1)) / (length(XYData)-1);
+        otherwise
+            error('drawImage:arrayLengthMismatch', ...
+                  'CData length (%d) does not match X/YData length (%d).', ...
+                  expectedLength, length(XYData));
+    end
+    XY = XYData(1):delta:XYData(end);
 end
 % ==============================================================================
 function [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaData)
