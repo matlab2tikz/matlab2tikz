@@ -686,8 +686,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                 % supported by matlab2tikz or pgfplots.
 
             case ''
-                % No children found for handle.
-                % Carrying on as if nothing happened
+                % No children found for handle. (It has only a title and/or
+                % labels). Carrying on as if nothing happened
 
             otherwise
                 error('matlab2tikz:handleAllChildren',                 ...
@@ -1372,22 +1372,26 @@ end
 function bool = isVisibleContainer(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
-        % immediately bail out here.
-        children = get(axisHandle, 'Children');
+        % immediately bail out here. Also it *can* have a visible title or 
+        % labels
         bool = false;
-        for child = children(:)'
-            if isVisible(child)
-                bool = true;
-                return;
+        for prop = {'Children', 'Title', 'XLabel', 'YLabel', 'ZLabel'}
+            % Check if the property exists
+            if(~isprop(axisHandle, prop{:}))
+                continue;
+            end
+            children = get(axisHandle, prop{:});
+            for child = children(:)'
+                if isVisible(child)
+                    bool = true;
+                    return;
+                end
             end
         end
+        
     else
         bool = true;
     end
-end
-% ==============================================================================
-function bool = hasTitle(axisHandle)
-    bool = isprop(axisHandle,'title') && ~isempty(axisHandle.Title.String);
 end
 % ==============================================================================
 function [m2t, str] = drawLine(m2t, h, yDeviation)
@@ -5269,7 +5273,7 @@ function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
     N   = numel(axesHandles);
     idx = false(N,1);
     for ii = 1:N
-       idx(ii) = isVisibleContainer(axesHandles(ii)) || hasTitle(axesHandles(ii));
+       idx(ii) = isVisibleContainer(axesHandles(ii));
     end
     % Store the relevant axes in m2t to simplify querying e.g. positions
     % of subplots
