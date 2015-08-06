@@ -686,9 +686,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                 % supported by matlab2tikz or pgfplots.
 
             case ''
-                warning('matlab2tikz:NoChildren',...
-                        ['No children found for handle %d. ',...
-                         'Carrying on as if nothing happened'], double(h));
+                % No children found for handle.
+                % Carrying on as if nothing happened
 
             otherwise
                 error('matlab2tikz:handleAllChildren',                 ...
@@ -1385,6 +1384,10 @@ function bool = isVisibleContainer(axisHandle)
     else
         bool = true;
     end
+end
+% ==============================================================================
+function bool = hasTitle(axisHandle)
+    bool = isprop(axisHandle,'title') && ~isempty(axisHandle.Title.String);
 end
 % ==============================================================================
 function [m2t, str] = drawLine(m2t, h, yDeviation)
@@ -5266,7 +5269,7 @@ function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
     N   = numel(axesHandles);
     idx = false(N,1);
     for ii = 1:N
-       idx(ii) = isVisibleContainer(axesHandles(ii));
+       idx(ii) = isVisibleContainer(axesHandles(ii)) || hasTitle(axesHandles(ii));
     end
     % Store the relevant axes in m2t to simplify querying e.g. positions
     % of subplots
