@@ -2165,22 +2165,22 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     switch length(xData)
         case 2 % only the limits given; common for generic image plots
             hX = 1;
-        case size(cData,1) % specific x-data is given
+        case size(cData,2) % specific x-data is given
             hX = (xData(end)-xData(1)) / (length(xData)-1);
         otherwise
             error('drawImage:arrayLengthMismatch', ...
-                'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', size(cData,1), length(xData));
+                'Array lengths not matching (%d = size(cdata,2) ~= length(xData) = %d).', size(cData,1), length(xData));
     end
     X = xData(1):hX:xData(end);
 
     switch length(yData)
         case 2 % only the limits given; common for generic image plots
             hY = 1;
-        case size(cData,2) % specific y-data is given
+        case size(cData,1) % specific y-data is given
             hY = (yData(end)-yData(1)) / (length(yData)-1);
         otherwise
             error('drawImage:arrayLengthMismatch', ...
-                'Array lengths not matching (%d = size(cData,2) ~= length(yData) = %d).', size(cData,2), length(yData));
+                'Array lengths not matching (%d = size(cData,1) ~= length(yData) = %d).', size(cData,2), length(yData));
     end
     Y = yData(1):hY:yData(end);
     [m2t, xcolor] = getColor(m2t, handle, cData, 'image');
