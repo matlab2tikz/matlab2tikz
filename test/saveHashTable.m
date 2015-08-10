@@ -107,7 +107,8 @@ function saveHashTable(status, varargin)
             elseif strcmpi(answer(1), 'R')
                 action = 'remove';
             else
-                action = 'ask';
+                action = 'ask again';
+                % just keep asking until we get a reasonable answer
             end
         end
     end
