@@ -417,12 +417,6 @@ end
 function m2t = saveToFile(m2t, fid, fileWasOpen)
 % Save the figure as TikZ to a file. All other routines are called from here.
 
-    % It is important to turn hidden handles on, as visible lines (such as the
-    % axes in polar plots, for example), are otherwise hidden from their
-    % parental handles (and can hence not be discovered by matlab2tikz).
-    % With ShowHiddenHandles 'on', there is no escape. :)
-    set(0, 'ShowHiddenHandles', 'on');
-
     % get all axes handles
     [m2t, axesHandles] = findPlotAxes(m2t, m2t.currentHandles.gcf);
 
@@ -455,7 +449,6 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
         m2t.content = addChildren(m2t.content, axesContainer);
     end
 
-    set(0, 'ShowHiddenHandles', 'off');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % actually print the stuff
     minimalPgfplotsVersion = formatPgfplotsVersion(m2t.pgfplotsVersion);
@@ -548,14 +541,14 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
 % find axes handles that are not legends/colorbars
 % store detected legends and colorbars in 'm2t'
 % fh            figure handle
-    axesHandles = findobj(fh, 'type', 'axes');
+    axesHandles = findall(fh, 'type', 'axes');
 
     % Remove all legend handles, as they are treated separately.
     if ~isempty(axesHandles)
         % TODO fix for octave
         tagKeyword = switchMatOct('Tag', 'tag');
         % Find all legend handles. This is MATLAB-only.
-        m2t.legendHandles = findobj(fh, tagKeyword, 'legend');
+        m2t.legendHandles = findall(fh, tagKeyword, 'legend');
         m2t.legendHandles = m2t.legendHandles(:)';
         idx               = ~ismember(axesHandles, m2t.legendHandles);
         axesHandles       = axesHandles(idx);
@@ -565,7 +558,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     if ~isempty(axesHandles)
         colorbarKeyword = switchMatOct('Colorbar', 'colorbar');
         % Find all colorbar handles. This is MATLAB-only.
-        cbarHandles = findobj(fh, tagKeyword, colorbarKeyword);
+        cbarHandles = findall(fh, tagKeyword, colorbarKeyword);
         % Octave also finds text handles here; no idea why. Filter.
         m2t.cbarHandles = [];
         for h = cbarHandles(:)'
@@ -581,7 +574,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     end
 
     % Remove scribe layer holding annotations (MATLAB < R2014b)
-    m2t.scribeLayer = findobj(axesHandles, 'Tag','scribeOverlay');
+    m2t.scribeLayer = findall(axesHandles, 'Tag','scribeOverlay');
     idx             = ~ismember(axesHandles, m2t.scribeLayer);
     axesHandles     = axesHandles(idx);
 end
@@ -616,7 +609,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 % Draw all children of a graphics object (if they need to be drawn).
 % #COMPLEX: mainly a switch-case
     str = '';
-    children = get(h, 'Children');
+    children = allchild(h);
 
     % prepare cell array of pgfEnvironments
     pgfEnvironments = cell(0);
@@ -868,7 +861,7 @@ function m2t = drawAxes(m2t, handle)
             opts_add(m2t.axesContainers{end}.options, 'hide axis', []);
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
-        %    children = get(handle, 'Children');
+        %    children = allchild(handle);
         %    for child = children(:)'
         %        if isVisible(child)
         %            % If the axes contain something that's visible, add an invisible
@@ -1127,7 +1120,7 @@ function m2t = drawLegendOptionsOfAxes(m2t, handle)
             % TODO: How to uniquely connect a legend with a pair of axes in Octave?
             axisDims = pos2dims(get(handle,'Position')); %#ok
             % siblings of this handle:
-            siblings = get(get(handle,'Parent'), 'Children');
+            siblings = allchild(get(handle,'Parent'));
             % "siblings" always(?) is a column vector. Iterating over the column
             % with the for statement below wouldn't return the individual vector
             % elements but the same column vector, resulting in no legends exported.
@@ -1372,7 +1365,7 @@ function bool = isVisibleContainer(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
         % immediately bail out here.
-        children = get(axisHandle, 'Children');
+        children = allchild(axisHandle);
         bool = false;
         for child = children(:)'
             if isVisible(child)
@@ -2254,7 +2247,7 @@ function [m2t, str] = drawContour(m2t, h)
         hasLegend = m2t.currentHandleHasLegend;
 
         % Plot children patches
-        children  = get(h,'children');
+        children  = allchild(h);
         N         = numel(children);
         str       = cell(N,1);
         for ii = 1:N
@@ -2516,10 +2509,10 @@ function m2t = drawAnnotations(m2t)
 
     % Get annotation handles
     if isHG2
-        annotPanes   = findobj(m2t.currentHandles.gcf,'Tag','scribeOverlay');
-        annotHandles = findobj(get(annotPanes,'Children'),'Visible','on');
+        annotPanes   = findall(m2t.currentHandles.gcf,'Tag','scribeOverlay');
+        annotHandles = findall(allchild(annotPanes),'Visible','on');
     else
-        annotHandles = findobj(m2t.scribeLayer,'-depth',1,'Visible','on');
+        annotHandles = findall(m2t.scribeLayer,'-depth',1,'Visible','on');
     end
 
     % There are no anotations
@@ -3559,10 +3552,10 @@ end
 % ==============================================================================
 function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
 % retrieve the FaceColor of a barseries object
-    if ~isempty(get(h,'Children'))
+    if ~isempty(allchild(h))
         % quite oddly, before MATLAB R2014b this value is stored in a child
         % patch and not in the object itself
-        obj = get(h, 'Children');
+        obj = allchild(h);
     else % R2014b and newer
         obj = h;
     end
@@ -3637,10 +3630,10 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % define face color;
-    if ~isempty(get(h,'Children'))
+    if ~isempty(allchild(h))
         % quite oddly, before MATLAB R2014b this value is stored in a child
         % patch and not in the object itself
-        obj = get(h, 'Children');
+        obj = allchild(h);
     else % R2014b and newer
         obj = h;
     end
@@ -3824,7 +3817,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
 % Takes care of MATLAB's ellipse annotations.
 %
 
-%     c = get(h, 'Children');
+%     c = allchild(h);
 
     drawOptions = opts_new();
 
@@ -3868,7 +3861,7 @@ function [m2t, str] = drawTextarrow(m2t, handle)
 
     % handleAllChildren ignores the text, unless hidden strings are shown
     if ~m2t.cmdOpts.Results.showHiddenStrings
-        child = findobj(handle, 'type', 'text');
+        child = findall(handle, 'type', 'text');
         [m2t, str{end+1}] = drawText(m2t, child);
     end
 end
@@ -4295,12 +4288,12 @@ function cdata = getCDataWithFallbacks(patchhandle)
     cdata = getOrDefault(patchhandle, 'CData', []);
 
     if isempty(cdata) || ~isnumeric(cdata)
-        child = get(patchhandle, 'Children');
+        child = allchild(patchhandle);
         cdata = get(child, 'CData');
     end
     if isempty(cdata) || ~isnumeric(cdata)
         % R2014b+: CData is implicit by the ordering of the siblings
-        siblings = get(get(patchhandle, 'Parent'), 'Children');
+        siblings = allchild(get(patchhandle, 'Parent'));
         cdata = find(siblings(end:-1:1)==patchhandle);
     end
 end
@@ -4352,7 +4345,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
 % Need to check that there's nothing inside visible before we
 % abandon this legend -- an invisible property of the parent just
 % means the legend has no box.
-    children = get(handle, 'Children');
+    children = allchild(handle);
     if ~isVisible(handle) && ~any(isVisible(children))
         return
     end
