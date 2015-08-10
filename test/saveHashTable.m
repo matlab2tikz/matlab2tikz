@@ -130,7 +130,7 @@ function saveHashTable(status, varargin)
     end
     function hashes = readHashesFromFile(filename)
         % read hashes from a file
-        if exist(filename','file')
+        if exist(filename,'file')
             fid = fopen(filename, 'r');
             closeFileAfterwards = onCleanup(@() fclose(fid));
 
