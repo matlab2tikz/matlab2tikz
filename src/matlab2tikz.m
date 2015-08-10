@@ -164,6 +164,9 @@ m2t.about.author = 'Nico Schlömer';
 m2t.about.authorEmail = 'nico.schloemer@gmail.com';
 m2t.about.years = '2008--2015';
 m2t.about.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
+m2t.about.github = 'https://github.com/matlab2tikz/matlab2tikz';
+m2t.about.wiki = [m2t.about.github '/wiki'];
+m2t.about.issues = [m2t.about.github '/issues'];
 VCID = VersionControlIdentifier();
 m2t.about.versionFull = strtrim(sprintf('v%s %s', m2t.about.version, VCID));
 
@@ -324,15 +327,21 @@ userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2
 userInfo(m2t, '\nThis is %s %s.\n', m2t.about.name, m2t.about.versionFull)
 
 %% print some version info to the screen
-versionInfo = ['The latest updates can be retrieved from\n' ,...
-               ' %s\n' ,...
-               'where you can also make suggestions and rate %s.\n' ,...
-               'For usage instructions, bug reports, the latest '   ,...
-               'development versions and more, see\n'               ,...
-               '   https://github.com/matlab2tikz/matlab2tikz,\n'       ,...
-               '   https://github.com/matlab2tikz/matlab2tikz/wiki,\n'  ,...
-               '   https://github.com/matlab2tikz/matlab2tikz/issues.\n'];
-userInfo(m2t, versionInfo, m2t.about.website, m2t.about.name);
+% In Octave, put a new line and some spaces in between the URLs for clarity.
+% In MATLAB this is not necessary, since the URLs get (shorter) descriptions.
+sep = switchMatOct('', sprintf('\n  '));
+versionInfo = ['The latest stable updates can be retrieved from\n' ,...
+               '   %s\n' ,...
+               'where you can also rate %s.\n' ,...
+               'For usage instructions, bug reports, feature requests,\n'   ,...
+               'the latest development versions and more, see\n' ,...
+               '   %s,%s %s and%s %s.\n'];
+userInfo(m2t, versionInfo, ...
+         clickableUrl(m2t.about.website, 'The MathWorks FileExchange'), ...
+         m2t.about.name, ...
+         clickableUrl(m2t.about.github, 'our GitHub page'), sep, ...
+         clickableUrl(m2t.about.issues, 'bug tracker'), sep,...
+         clickableUrl(m2t.about.wiki, 'wiki'));
 
 %% Save the figure as TikZ to file
 saveToFile(m2t, fid, fileWasOpen);
@@ -3108,26 +3117,35 @@ function warnFacetedInterp(m2t)
         ['A 3D plot with "shader = faceted interp" is being produced.\n', ...
         'This may produce big and sluggish PDF files.\n', ...
         'See %s and Section 4.6.6 of the pgfplots manual for workarounds.'], ...
-        issueUrl(693, true));
+        issueUrl(m2t, 693, true));
 end
 % ==============================================================================
-function url = issueUrl(number, forOutput)
+function url = issueUrl(m2t, number, forOutput)
 % Produces the URL for an issue report in the GitHub repository.
 % When the `forOutput` flag is set, this format the URL for printing to the
 % MATLAB terminal.
     if ~exist('forOutput','var') || isempty(forOutput)
         forOutput = false;
     end
-    url = sprintf('https://github.com/matlab2tikz/matlab2tikz/issues/%d', number);
+    url = sprintf('%s/%d', m2t.about.issues, number);
     if forOutput
-        switch getEnvironment
-            case 'MATLAB'
-                url = sprintf('<a href="%s">#%d</a>', url, number);
-            case 'Octave'
-                % just use the url since HTML is not supported in Octave
-            otherwise
-                errorUnknownEnvironment();
-        end
+        url = clickableUrl(url, sprintf('#%d', number));
+    end
+end
+% ==============================================================================
+function url = clickableUrl(url, title)
+% Produce a clickable URL for outputting to the MATLAB terminal
+    if ~exist('title','var') || isempty(title)
+        title = url;
+    end
+    switch getEnvironment()
+        case 'MATLAB'
+            url = sprintf('<a href="%s">%s</a>', url, title);
+        case 'Octave'
+            % just use the URL and discard the title since Octave doesn't
+            % support HTML tags in its output.
+        otherwise
+            errorUnknownEnvironment();
     end
 end
 % ==============================================================================
