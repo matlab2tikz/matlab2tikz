@@ -98,15 +98,14 @@ function saveHashTable(status, varargin)
     function action = askActionToPerformOnRemovedTest(testName)
         % ask which action to carry out on a removed test
         action = lower(ipp.Results.removedTests);
-        validActions = {'remove', 'keep'};
-        while ~ismember(action, validActions)
-            query = sprintf('Remove or keep "%s"? [Rk]:', testName);
+        while ~isActualAction(action)
+            query = sprintf('Keep or remove "%s"? [Kr]:', testName);
             answer = strtrim(input(query,'s'));
 
-            if isempty(answer) || strcmpi(answer(1), 'R')
-                action = 'remove';
-            elseif strcmpi(answer(1), 'K')
+            if isempty(answer) || strcmpi(answer(1), 'K')
                 action = 'keep';
+            elseif strcmpi(answer(1), 'R')
+                action = 'remove';
             else
                 action = 'ask';
             end
@@ -132,7 +131,7 @@ function saveHashTable(status, varargin)
         % read hashes from a file
         if exist(filename,'file')
             fid = fopen(filename, 'r');
-            closeFileAfterwards = onCleanup(@() fclose(fid));
+            finally_fclose_fid = onCleanup(@() fclose(fid));
 
             data = textscan(fid, FILEFORMAT);
             % data is now a cell array with 2 elements, each a (row) cell array
@@ -153,7 +152,11 @@ function saveHashTable(status, varargin)
 end
 % ==============================================================================
 function bool = isValidAction(str)
-    % returns true for valid actions on "removedTests"
+    % returns true for valid actions (keep/remove/ask) on "removedTests":
     bool = ismember(lower(str), {'keep','remove','ask'});
+end
+function bool = isActualAction(str)
+    % returns true for actual actions (keep/remove) on "removedTests"
+    bool = ismember(lower(str), {'keep','remove'});
 end
 % ==============================================================================
