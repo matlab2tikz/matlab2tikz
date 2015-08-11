@@ -2433,7 +2433,7 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
 end
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
-% Continue according according to the plot type. Since the function `handle` is
+% Continue according to the plot type. Since the function `handle` is
 % not available in Octave, the plot type will be guessed or the fallback type
 % 'unknown' used.
 % #COMPLEX: big switch-case
