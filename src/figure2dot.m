@@ -74,6 +74,7 @@ function figure2dot(filename, varargin)
             catch
                 % don't do anything
             end
+            label = addProperty(label, 'Handle', sprintf('%g', double(h)));
             label = addHGProperty(label, h, 'Title', '');
             label = addHGProperty(label, h, 'String', '');
             label = addHGProperty(label, h, 'Tag', '');
