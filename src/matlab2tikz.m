@@ -2415,12 +2415,20 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     for ii = 1:ncont + 1
         drawOpts = opts_new();
 
-        % Get color
+        % Get fill color
         zval          = cellcont{ii}(1,1);
         [m2t, xcolor] = getColor(m2t,h,zval,'image');
         drawOpts      = opts_add(drawOpts,'fill',xcolor);
+
+        % Get line properties
+        lineStyle = get(h, 'LineStyle');
         lineColor = get(h, 'LineColor');
+        lineWidth = get(h, 'LineWidth');
+
         [m2t, drawOpts] = setColor(m2t, h, drawOpts, 'draw', lineColor, 'none');
+
+        lineOpts = getLineOptions(m2t, lineStyle, lineWidth);
+        drawOpts = opts_merge(drawOpts, lineOpts);
 
         % Toggle legend entry
         hasLegend = ii == 1 && m2t.currentHandleHasLegend;
