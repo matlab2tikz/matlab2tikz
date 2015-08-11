@@ -36,7 +36,7 @@ function figure2dot(filename, varargin)
     ipp = ipp.parse(ipp, filename, varargin{:});
     args = ipp.Results;
     %TODO: improve documentation of parameters of figure2dot
-    
+
     filehandle = fopen(args.filename, 'w');
     finally_fclose_filehandle = onCleanup(@() fclose(filehandle));
 
@@ -61,9 +61,9 @@ function figure2dot(filename, varargin)
     function plot_children(fh, h, parent_node)
 
         children = allchild(h);
-        children = children(~shouldSkip(children));
 
         for h = children(:)'
+            if shouldSkip(h), continue, end;
             node_number = node_number + 1;
 
             label = {};
@@ -74,6 +74,8 @@ function figure2dot(filename, varargin)
             catch
                 % don't do anything
             end
+            label = addHGProperty(label, h, 'Title', '');
+            label = addHGProperty(label, h, 'String', '');
             label = addHGProperty(label, h, 'Tag', '');
             label = addHGProperty(label, h, 'DisplayName', '');
             label = addHGProperty(label, h, 'Visible', 'on');
@@ -93,27 +95,30 @@ end
 % ==============================================================================
 function bool = shouldSkip(h)
     %  returns TRUE for objects that can be skipped
-    if numel(h) > 1
-        bool = arrayfun(@shouldSkip, h);
-    else
-        objType = get(h, 'Type');
-        bool = ismember(lower(objType), {'uimenu', 'uitoolbar', 'uicontextmenu'});
-        %FIXME: maybe integrate this in matlab2tikz?
-    end
+    objType = get(h, 'Type');
+    bool = ismember(lower(objType), {'uimenu', 'uitoolbar', 'uicontextmenu'});
+    %FIXME: maybe integrate this in matlab2tikz?
 end
 % ==============================================================================
 function label = addHGProperty(label, h, propName, default)
     % get a HG property and assign it to a GraphViz node label
     if ~exist('default','var') || isempty(default)
-        default = @isempty;
+        shouldOmit = @isempty;
+    elseif isa(default, 'function_handle')
+        shouldOmit = default;
+    else
+        shouldOmit = @(v) isequal(v,default);
     end
+
     if isprop(h, propName)
         propValue = get(h, propName);
-        if isa(default, 'function_handle')
-            shouldOmit = default;
-        else
-            shouldOmit = @(v) isequal(v,default);
+        if ishghandle(propValue) && isprop(propValue, 'String')
+            % dereference Titles, labels, ...
+            propValue = get(propValue, 'String');
+        elseif iscellstr(propValue)
+            propValue = ['{' collapse(propValue,',') '}'];
         end
+
         if ~shouldOmit(propValue)
             label = addProperty(label, propName, propValue);
         end
