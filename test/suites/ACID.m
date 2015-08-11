@@ -1450,13 +1450,12 @@ end
 % =========================================================================
 function [stat] = texrandom()
   stat.description = 'Random TeX symbols';
-  stat.unreliable = isOctave(); % due to `rng` being unavailable in octave
 
   try
       rng(42); %fix seed
       %TODO: fully test tex conversion instead of a random subsample!
   catch
-      warning('testfuncs:texrandom','Cannot fix seed for random generator!');
+      rand('seed', 42); %#ok (this is deprecated in MATLAB)
   end
 
   num = 20; % number of symbols per line
