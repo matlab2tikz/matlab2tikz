@@ -29,101 +29,95 @@ function figure2dot(filename)
 %   POSSIBILITY OF SUCH DAMAGE.
 %
 % =========================================================================
-  global node_number
+    filehandle = fopen(filename, 'w');
+    finally_fclose_filehandle = onCleanup(@() fclose(filehandle));
 
-  % also show hidden handles
-  set(0, 'ShowHiddenHandles', 'on');
+    % start printing
+    fprintf(filehandle, 'digraph simple_hierarchy {\n\n');
+    fprintf(filehandle, 'node[shape=box];\n\n');
 
-  filehandle = fopen(filename, 'w');
-  finally_fclose_filehandle = onCleanup(@() fclose(filehandle));
+    % define the root node
+    node_number = 0;
+    p = get(gcf, 'Parent');
+    % define root element
+    type = get(p, 'Type');
+    fprintf(filehandle, 'N%d [label="%s"]\n\n', node_number, type);
 
-  % start printing
-  fprintf(filehandle, 'digraph simple_hierarchy {\n\n');
+    % start recursion
+    plot_children(filehandle, p, node_number);
 
-  fprintf(filehandle, 'node[shape=box];\n\n');
+    % finish off
+    fprintf(filehandle, '}');
 
-  % define the root node
-  node_number = 0;
-  p = get(gcf, 'Parent');
-  % define root element
-  type = get(p, 'Type');
-  fprintf(filehandle, 'N%d [label="%s"]\n\n', node_number, type);
+    % ----------------------------------------------------------------------------
+    function plot_children(fh, h, parent_node)
 
-  % start recursion
-  plot_children(filehandle, p, node_number);
+        children = allchild(h);
 
-  % finish off
-  fprintf(filehandle, '}');
-  set(0, 'ShowHiddenHandles', 'off');
+        for h = children(:)'
 
+            node_number = node_number + 1;
+            if shouldSkip(h)
+                continue;
+            end
+
+            label = {};
+            label = addHGProperty(label, h, 'Type', '');
+            try
+                hClass = class(handle(child));
+                label = addProperty(label, 'Class', hClass);
+            catch
+                % don't do anything
+            end
+            label = addHGProperty(label, h, 'Tag', '');
+            label = addHGProperty(label, h, 'DisplayName', '');
+            label = addHGProperty(label, h, 'Visible', 'on');
+            label = addHGProperty(label, h, 'HandleVisibility', 'on');
+
+            % print node
+            fprintf(fh, 'N%d [label="%s"]\n', node_number, collapse(label, '\n'));
+
+            % connect to the child
+            fprintf(fh, 'N%d -> N%d;\n\n', parent_node, node_number);
+
+            % recurse
+            plot_children(fh, h, node_number);
+        end
+    end
 end
-% =========================================================================
-function plot_children(fh, h, id)
-
-  global node_number
-
-  % get the children
-  children = get(h, 'Children');
-
-  % -----------------------------------------------------------------------
-  % loop through the children
-  for child = children(:)'
-      % define child number
-      node_number = node_number + 1;
-      type = get(child, 'Type');
-      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      % skip certain entries
-      if  strcmp(type, 'uimenu'       ) || ...
-          strcmp(type, 'uitoolbar'    ) || ...
-          strcmp(type, 'uicontextmenu')
-          continue;
-      end
-      % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      label = cell(0);
-      label = [label, sprintf('Type: %s', type)];
-
-      hClass = class(handle(child));
-      label  = [label, sprintf('Class: %s', hClass)];
-
-      tag = get(child, 'Tag');
-      if ~isempty(tag)
-          label = [label, sprintf('Tag: %s', tag)];
-      end
-
-      visibility = get(child, 'Visible');
-      color = []; % set default value
-      if ~strcmp(visibility, 'on')
-          label = [label, sprintf('Visible: %s', visibility)];
-          color = 'gray';
-      end
-
-      handlevisibility = get(child, 'HandleVisibility');
-      if ~strcmp(handlevisibility, 'on')
-          label = [label, sprintf('HandleVisibility: %s', handlevisibility)];
-      end
-
-      % gather options
-      options = cell(0);
-      if ~isempty(label)
-          options = [options, ['label=', collapse(label,'\n')]];
-      end
-      if ~isempty(color)
-          options = [options, ['color=', color]];
-      end
-
-      % print node
-      fprintf(fh, 'N%d [label="%s"]\n', node_number, collapse(label, '\n'));
-
-      % connect to the child
-      fprintf(fh, 'N%d -> N%d;\n\n', id, node_number);
-
-      % recurse
-      plot_children(fh, child, node_number);
-  end
-  % -----------------------------------------------------------------------
-
+% ==============================================================================
+function bool = shouldSkip(h)
+    %  returns TRUE for objects that can be skipped
+    objType = get(h, 'Type');
+    bool = ismember(lower(objType), {'uimenu', 'uitoolbar', 'uicontextmenu'});
+    %FIXME: maybe interate this in matlab2tikz?
 end
-% =========================================================================
+% ==============================================================================
+function label = addHGProperty(label, h, propName, default)
+    % get a HG property and assign it to a GraphViz node label
+    if ~exist('default','var') || isempty(default)
+        default = @isempty;
+    end
+    if isprop(h, propName)
+        propValue = get(h, propName);
+        if isa(default, 'function_handle')
+            shouldOmit = default;
+        else
+            shouldOmit = @(v) isequal(v,default);
+        end
+        if ~shouldOmit(propValue)
+            label = addProperty(label, propName, propValue);
+        end
+    end
+end
+function label = addProperty(label, propName, propValue)
+    % add a property to a GraphViz node label
+    if isnumeric(propValue)
+        propValue = num2str(propValue);
+    end
+    label = [label, sprintf('%s: %s', propName, propValue)];
+end
+% ==============================================================================
 function newstr = collapse(cellstr, delimiter)
   % This function collapses a cell of strings to a single string (with a
   % given delimiter inbetween two strings, if desired).
@@ -136,20 +130,10 @@ function newstr = collapse(cellstr, delimiter)
      return
   end
 
-  if isnumeric(cellstr{1})
-      newstr = my_num2str(cellstr{1});
-  else
-      newstr = cellstr{1};
-  end
+  newstr = cellstr{1};
 
   for k = 2:length(cellstr)
-      if isnumeric(cellstr{k})
-          str = my_num2str(cellstr{k});
-      else
-          str = cellstr{k};
-      end
-      newstr = [newstr, delimiter, str];
+      newstr = [newstr, delimiter, cellstr{k}];
   end
-
 end
-% =========================================================================
+% ==============================================================================
