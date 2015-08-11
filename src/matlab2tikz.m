@@ -2358,6 +2358,8 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     % group will be a peak. Otherwise, the group will be a valley, and
     % the contours will have to be plotted in reverse order, i.e. from
     % highest (largest) to lowest (narrowest).
+
+    %FIXME: close the contours over the border of the domain, see #723.
     order = NaN(ncont,1);
     ifree = true(ncont,1);
     from  = 1;
@@ -2402,11 +2404,13 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     % Add zero level fill
     xdata = get(h,'XData');
     ydata = get(h,'YData');
+    %FIXME: determine the contour at the zero level not just its bounding box
+    % See also: #721
     zerolevel = [0,          4;
-                 min(xdata), min(ydata);
-                 min(xdata), max(ydata);
-                 max(xdata), max(ydata);
-                 max(xdata), min(ydata)];
+                 min(xdata(:)), min(ydata(:));
+                 min(xdata(:)), max(ydata(:));
+                 max(xdata(:)), max(ydata(:));
+                 max(xdata(:)), min(ydata(:))];
     cellcont = [zerolevel; cellcont];
 
     % Plot
@@ -2414,10 +2418,20 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     for ii = 1:ncont + 1
         drawOpts = opts_new();
 
-        % Get color
+        % Get fill color
         zval          = cellcont{ii}(1,1);
         [m2t, xcolor] = getColor(m2t,h,zval,'image');
         drawOpts      = opts_add(drawOpts,'fill',xcolor);
+
+        % Get line properties
+        lineStyle = get(h, 'LineStyle');
+        lineColor = get(h, 'LineColor');
+        lineWidth = get(h, 'LineWidth');
+
+        [m2t, drawOpts] = setColor(m2t, h, drawOpts, 'draw', lineColor, 'none');
+
+        lineOpts = getLineOptions(m2t, lineStyle, lineWidth);
+        drawOpts = opts_merge(drawOpts, lineOpts);
 
         % Toggle legend entry
         hasLegend = ii == 1 && m2t.currentHandleHasLegend;
