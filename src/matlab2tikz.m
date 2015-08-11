@@ -2358,6 +2358,8 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     % group will be a peak. Otherwise, the group will be a valley, and
     % the contours will have to be plotted in reverse order, i.e. from
     % highest (largest) to lowest (narrowest).
+
+    %FIXME: close the contours over the border of the domain, see #723.
     order = NaN(ncont,1);
     ifree = true(ncont,1);
     from  = 1;
@@ -2403,6 +2405,7 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     xdata = get(h,'XData');
     ydata = get(h,'YData');
     %FIXME: determine the contour at the zero level not just its bounding box
+    % See also: #721
     zerolevel = [0,          4;
                  min(xdata(:)), min(ydata(:));
                  min(xdata(:)), max(ydata(:));
