@@ -1,4 +1,4 @@
-function figure2dot(filename)
+function figure2dot(filename, varargin)
 %FIGURE2DOT    Save figure in Graphviz (.dot) file.
 %   FIGURE2DOT() saves the current figure as dot-file.
 %
@@ -29,7 +29,15 @@ function figure2dot(filename)
 %   POSSIBILITY OF SUCH DAMAGE.
 %
 % =========================================================================
-    filehandle = fopen(filename, 'w');
+
+    ipp = m2tInputParser();
+    ipp = ipp.addRequired(ipp, 'filename', @ischar);
+    ipp = ipp.addParamValue(ipp, 'object', gcf, @ishghandle);
+    ipp = ipp.parse(ipp, filename, varargin{:});
+    args = ipp.Results;
+    %TODO: improve documentation of parameters of figure2dot
+    
+    filehandle = fopen(args.filename, 'w');
     finally_fclose_filehandle = onCleanup(@() fclose(filehandle));
 
     % start printing
@@ -38,7 +46,7 @@ function figure2dot(filename)
 
     % define the root node
     node_number = 0;
-    p = get(gcf, 'Parent');
+    p = get(args.object, 'Parent');
     % define root element
     type = get(p, 'Type');
     fprintf(filehandle, 'N%d [label="%s"]\n\n', node_number, type);
@@ -53,13 +61,10 @@ function figure2dot(filename)
     function plot_children(fh, h, parent_node)
 
         children = allchild(h);
+        children = children(~shouldSkip(children));
 
         for h = children(:)'
-
             node_number = node_number + 1;
-            if shouldSkip(h)
-                continue;
-            end
 
             label = {};
             label = addHGProperty(label, h, 'Type', '');
@@ -88,9 +93,13 @@ end
 % ==============================================================================
 function bool = shouldSkip(h)
     %  returns TRUE for objects that can be skipped
-    objType = get(h, 'Type');
-    bool = ismember(lower(objType), {'uimenu', 'uitoolbar', 'uicontextmenu'});
-    %FIXME: maybe interate this in matlab2tikz?
+    if numel(h) > 1
+        bool = arrayfun(@shouldSkip, h);
+    else
+        objType = get(h, 'Type');
+        bool = ismember(lower(objType), {'uimenu', 'uitoolbar', 'uicontextmenu'});
+        %FIXME: maybe integrate this in matlab2tikz?
+    end
 end
 % ==============================================================================
 function label = addHGProperty(label, h, propName, default)
