@@ -52,9 +52,9 @@ quiverplot : 0cc7aef48dddc2c9075a079eaf580700
 randomWithLines : 8095aa52dd58fae39a8d5718eebe55d5
 rectanglePlot : f63538597348033398ef9cc37dcf57cd
 roseplot : 10c269e1ff65975791d794b489ebbed9
-scatter3Plot : d6fb8bb5e7684ba7379da7ffdf05d94e
-scatterPlotMarkers : 9beb62f4a04abfcfe8dc7b43f73c0b51
-scatterPlotRandom : 173f735d58f521684ac1f8355711a662
+scatter3Plot : 96bd87d3f46beb1a8057f7929df7a254
+scatterPlotMarkers : b46648fe15cd942df897d7f7547c6b32
+scatterPlotRandom : f43dd304532dc4288e46ec5c63ed8b18
 sine_with_annotation : 92e9da02d8ff8cfd7d851ddf29c73123
 sine_with_markers : 8616b987547d14d6a2d8df18bd66785d
 spherePlot : c8f65d6e589eac12e4e7cf93a57e1e48

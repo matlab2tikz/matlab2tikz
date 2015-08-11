@@ -1188,9 +1188,22 @@ end
 % =========================================================================
 function [stat] = scatterPlotRandom()
   stat.description = 'Generic scatter plot.';
-
+  
   n = 1:100;
-  scatter(n, n, 1000*(1+cos(n.^1.5)), n.^8);
+
+  % MATLAB: Use the default area of 36 points squared. The units for the
+  %         marker area is points squared.
+  % octave: If s is not given, [...] a default value of 8 points is used.
+  % Try obtain similar behavior and thus apply square root: sqrt(36) vs. 8
+  sArea = 1000*(1+cos(n.^1.5)); % scatter size in unit points squared
+  sRadius = sqrt(sArea*pi);
+  if isMATLAB()
+    s = sArea;    % unit: points squared
+  elseif isOctave()
+    s = sRadius;  % unit: points
+  end
+
+  scatter(n, n, s, n.^8);
   colormap autumn;
 end
 % =========================================================================

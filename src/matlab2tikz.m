@@ -3189,6 +3189,10 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     zData = get(h, 'ZData');
     cData = get(h, 'CData');
     sData = get(h, 'SizeData');
+    
+    if isempty(cData) && strcmpi(getEnvironment(), 'Octave')
+        cData = get(h, 'MarkerEdgeColor');
+    end
 
     matlabMarker = get(h, 'Marker');
     markerFaceColor = get(h, 'MarkerFaceColor');
@@ -3202,6 +3206,10 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     constMarkerkSize = length(sData) == 1; % constant marker size
 
     % Rescale marker size (not definitive, follow discussion in #316)
+    % Prescale marker size for octave
+    if strcmpi(getEnvironment(), 'Octave')
+        sData = sData.^2/2;
+    end
     sData = translateMarkerSize(m2t, matlabMarker, sqrt(sData)/2);
 
     drawOptions = opts_new();
