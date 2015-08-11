@@ -110,7 +110,7 @@ function matlab2tikz(varargin)
 %   taking a peek at what the figure will look like. (default: false)
 %
 %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
-%   check for updates of matlab2tikz. (default: true)
+%   check for updates of matlab2tikz. (default: true (if not using git))
 %
 %   Example
 %      x = -pi:pi/10:pi;
@@ -158,14 +158,17 @@ m2t.currentHandles = [];
 
 m2t.transform = []; % For hgtransform groups
 m2t.pgfplotsVersion = [1,3];
-m2t.name = 'matlab2tikz';
-m2t.version = '1.0.0';
-m2t.author = 'Nico Schlömer';
-m2t.authorEmail = 'nico.schloemer@gmail.com';
-m2t.years = '2008--2015';
-m2t.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
+m2t.about.name = 'matlab2tikz';
+m2t.about.version = '1.0.0';
+m2t.about.author = 'Nico Schlömer';
+m2t.about.authorEmail = 'nico.schloemer@gmail.com';
+m2t.about.years = '2008--2015';
+m2t.about.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
+m2t.about.github = 'https://github.com/matlab2tikz/matlab2tikz';
+m2t.about.wiki = [m2t.about.github '/wiki'];
+m2t.about.issues = [m2t.about.github '/issues'];
 VCID = VersionControlIdentifier();
-m2t.versionFull = strtrim(sprintf('v%s %s', m2t.version, VCID));
+m2t.about.versionFull = strtrim(sprintf('v%s %s', m2t.about.version, VCID));
 
 m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
 m2t.imageAsPngNo = 0;
@@ -205,7 +208,7 @@ ipp = ipp.addParamValue(ipp, 'strict', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'strictFontSize', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'showInfo', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
-ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
+ipp = ipp.addParamValue(ipp, 'checkForUpdates', isempty(VCID), @islogical);
 
 ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
 ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
@@ -321,35 +324,33 @@ end
 userInfo(m2t, ['(To disable info messages, pass [''showInfo'', false] to matlab2tikz.)\n', ...
     '(For all other options, type ''help matlab2tikz''.)\n']);
 
-userInfo(m2t, '\nThis is %s %s.\n', m2t.name, m2t.versionFull)
-
-%% Check for a new matlab2tikz version outside version control
-if m2t.cmdOpts.Results.checkForUpdates && isempty(VCID)
-  isUpdateInstalled = m2tUpdater(...
-    m2t.name, ...
-    m2t.website, ...
-    m2t.version, ...
-    m2t.cmdOpts.Results.showInfo, ...
-    getEnvironment...
-    );
-    % Terminate conversion if update was successful (the user is notified
-    % by the updater)
-    if isUpdateInstalled, return, end
-end
+userInfo(m2t, '\nThis is %s %s.\n', m2t.about.name, m2t.about.versionFull)
 
 %% print some version info to the screen
-versionInfo = ['The latest updates can be retrieved from\n' ,...
-               ' %s\n' ,...
-               'where you can also make suggestions and rate %s.\n' ,...
-               'For usage instructions, bug reports, the latest '   ,...
-               'development versions and more, see\n'               ,...
-               '   https://github.com/matlab2tikz/matlab2tikz,\n'       ,...
-               '   https://github.com/matlab2tikz/matlab2tikz/wiki,\n'  ,...
-               '   https://github.com/matlab2tikz/matlab2tikz/issues.\n'];
-userInfo(m2t, versionInfo, m2t.website, m2t.name);
+% In Octave, put a new line and some spaces in between the URLs for clarity.
+% In MATLAB this is not necessary, since the URLs get (shorter) descriptions.
+sep = switchMatOct('', sprintf('\n  '));
+versionInfo = ['The latest stable updates can be retrieved from\n' ,...
+               '   %s\n' ,...
+               'where you can also rate %s.\n' ,...
+               'For usage instructions, bug reports, feature requests,\n'   ,...
+               'the latest development versions and more, see\n' ,...
+               '   %s,%s %s and%s %s.\n'];
+userInfo(m2t, versionInfo, ...
+         clickableUrl(m2t.about.website, 'The MathWorks FileExchange'), ...
+         m2t.about.name, ...
+         clickableUrl(m2t.about.github, 'our GitHub page'), sep, ...
+         clickableUrl(m2t.about.issues, 'bug tracker'), sep,...
+         clickableUrl(m2t.about.wiki, 'wiki'));
 
 %% Save the figure as TikZ to file
 saveToFile(m2t, fid, fileWasOpen);
+
+%% Check for a new matlab2tikz version outside version control
+if m2t.cmdOpts.Results.checkForUpdates
+    m2tUpdater(m2t.about, m2t.cmdOpts.Results.showInfo);
+end
+
 end
 % ==============================================================================
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
@@ -425,12 +426,6 @@ end
 function m2t = saveToFile(m2t, fid, fileWasOpen)
 % Save the figure as TikZ to a file. All other routines are called from here.
 
-    % It is important to turn hidden handles on, as visible lines (such as the
-    % axes in polar plots, for example), are otherwise hidden from their
-    % parental handles (and can hence not be discovered by matlab2tikz).
-    % With ShowHiddenHandles 'on', there is no escape. :)
-    set(0, 'ShowHiddenHandles', 'on');
-
     % get all axes handles
     [m2t, axesHandles] = findPlotAxes(m2t, m2t.currentHandles.gcf);
 
@@ -463,12 +458,11 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
         m2t.content = addChildren(m2t.content, axesContainer);
     end
 
-    set(0, 'ShowHiddenHandles', 'off');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % actually print the stuff
     minimalPgfplotsVersion = formatPgfplotsVersion(m2t.pgfplotsVersion);
 
-    m2t.content.comment = sprintf('This file was created by %s.\n', m2t.name);
+    m2t.content.comment = sprintf('This file was created by %s.\n', m2t.about.name);
 
     if m2t.cmdOpts.Results.showInfo
         % disable this info if showInfo=false
@@ -477,7 +471,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
             'The latest updates can be retrieved from\n', ...
             '  %s\n', ...
             'where you can also make suggestions and rate %s.\n'], ...
-            m2t.website, m2t.name ) ...
+            m2t.about.website, m2t.about.name ) ...
             ];
     end
 
@@ -556,14 +550,14 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
 % find axes handles that are not legends/colorbars
 % store detected legends and colorbars in 'm2t'
 % fh            figure handle
-    axesHandles = findobj(fh, 'type', 'axes');
+    axesHandles = findall(fh, 'type', 'axes');
 
     % Remove all legend handles, as they are treated separately.
     if ~isempty(axesHandles)
         % TODO fix for octave
         tagKeyword = switchMatOct('Tag', 'tag');
         % Find all legend handles. This is MATLAB-only.
-        m2t.legendHandles = findobj(fh, tagKeyword, 'legend');
+        m2t.legendHandles = findall(fh, tagKeyword, 'legend');
         m2t.legendHandles = m2t.legendHandles(:)';
         idx               = ~ismember(axesHandles, m2t.legendHandles);
         axesHandles       = axesHandles(idx);
@@ -573,7 +567,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     if ~isempty(axesHandles)
         colorbarKeyword = switchMatOct('Colorbar', 'colorbar');
         % Find all colorbar handles. This is MATLAB-only.
-        cbarHandles = findobj(fh, tagKeyword, colorbarKeyword);
+        cbarHandles = findall(fh, tagKeyword, colorbarKeyword);
         % Octave also finds text handles here; no idea why. Filter.
         m2t.cbarHandles = [];
         for h = cbarHandles(:)'
@@ -589,7 +583,7 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     end
 
     % Remove scribe layer holding annotations (MATLAB < R2014b)
-    m2t.scribeLayer = findobj(axesHandles, 'Tag','scribeOverlay');
+    m2t.scribeLayer = findall(axesHandles, 'Tag','scribeOverlay');
     idx             = ~ismember(axesHandles, m2t.scribeLayer);
     axesHandles     = axesHandles(idx);
 end
@@ -624,7 +618,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 % Draw all children of a graphics object (if they need to be drawn).
 % #COMPLEX: mainly a switch-case
     str = '';
-    children = get(h, 'Children');
+    children = allchild(h);
 
     % prepare cell array of pgfEnvironments
     pgfEnvironments = cell(0);
@@ -772,8 +766,8 @@ function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, chil
             % Legend entry found. Add it to the plot.
             hasLegend = true;
             interpreter = get(legendHandle, 'Interpreter');
-            if ~isempty(ud) && isfield(ud,'strings')
-                legendString = ud.lstrings(k);
+            if ~isempty(ud) && isfield(ud, 'lstrings')
+                legendString = ud.lstrings{k};
             else
                 legendString = get(child, 'DisplayName');
             end
@@ -876,7 +870,7 @@ function m2t = drawAxes(m2t, handle)
             opts_add(m2t.axesContainers{end}.options, 'hide axis', []);
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
-        %    children = get(handle, 'Children');
+        %    children = allchild(handle);
         %    for child = children(:)'
         %        if isVisible(child)
         %            % If the axes contain something that's visible, add an invisible
@@ -1135,7 +1129,7 @@ function m2t = drawLegendOptionsOfAxes(m2t, handle)
             % TODO: How to uniquely connect a legend with a pair of axes in Octave?
             axisDims = pos2dims(get(handle,'Position')); %#ok
             % siblings of this handle:
-            siblings = get(get(handle,'Parent'), 'Children');
+            siblings = allchild(get(handle,'Parent'));
             % "siblings" always(?) is a column vector. Iterating over the column
             % with the for statement below wouldn't return the individual vector
             % elements but the same column vector, resulting in no legends exported.
@@ -1286,11 +1280,17 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
 
     keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
     tickLabelMode = get(handle, keywordTickLabelMode);
-    keywordTickLabel = [upper(axis), 'TickLabel'];
-    tickLabels = cellstr(get(handle, keywordTickLabel));
     if strcmpi(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict
         pgfTickLabels = [];
     else % strcmpi(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
+        % HG2 allows to set 'TickLabelInterpreter'.
+        % HG1 tacitly uses the interpreter 'none'.
+        % See http://www.mathworks.com/matlabcentral/answers/102053#comment_300079
+        interpreter = getOrDefault(handle, 'TickLabelInterpreter', 'none');
+        keywordTickLabel = [upper(axis), 'TickLabel'];
+        tickLabels = cellstr(get(handle, keywordTickLabel));
+        tickLabels = prettyPrint(m2t, tickLabels, interpreter);
+
         keywordScale = [upper(axis), 'Scale'];
         isAxisLog = strcmpi(getOrDefault(handle,keywordScale, 'lin'), 'log');
         [pgfTicks, pgfTickLabels] = ...
@@ -1374,7 +1374,7 @@ function bool = isVisibleContainer(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
         % immediately bail out here.
-        children = get(axisHandle, 'Children');
+        children = allchild(axisHandle);
         bool = false;
         for child = children(:)'
             if isVisible(child)
@@ -1854,7 +1854,7 @@ function [m2t, str] = drawPatch(m2t, handle)
         cycle  = conditionallyCyclePath(Vertices);
 
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'draw', ...
-                                         s.edgeColor);
+                                         s.edgeColor, 'none');
         [m2t, drawOptions] = setColor(m2t, handle, drawOptions, 'fill', ...
                                          s.faceColor);
 
@@ -2160,31 +2160,11 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
         cData = cData(end:-1:1,:);
     end
 
-
     % Generate uniformly distributed X, Y, although xData and yData may be
     % non-uniform.
     % This is MATLAB(R) behavior.
-    switch length(xData)
-        case 2 % only the limits given; common for generic image plots
-            hX = 1;
-        case size(cData,1) % specific x-data is given
-            hX = (xData(end)-xData(1)) / (length(xData)-1);
-        otherwise
-            error('drawImage:arrayLengthMismatch', ...
-                'Array lengths not matching (%d = size(cdata,1) ~= length(xData) = %d).', size(cData,1), length(xData));
-    end
-    X = xData(1):hX:xData(end);
-
-    switch length(yData)
-        case 2 % only the limits given; common for generic image plots
-            hY = 1;
-        case size(cData,2) % specific y-data is given
-            hY = (yData(end)-yData(1)) / (length(yData)-1);
-        otherwise
-            error('drawImage:arrayLengthMismatch', ...
-                'Array lengths not matching (%d = size(cData,2) ~= length(yData) = %d).', size(cData,2), length(yData));
-    end
-    Y = yData(1):hY:yData(end);
+    [X, hX] = constructUniformXYDataForImage(xData, size(cData, 2));
+    [Y, hY] = constructUniformXYDataForImage(yData, size(cData, 1));
     [m2t, xcolor] = getColor(m2t, handle, cData, 'image');
 
     % The following section takes pretty long to execute, although in
@@ -2211,6 +2191,21 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
         end
     end
 end
+function [XY, delta] = constructUniformXYDataForImage(XYData, expectedLength)
+    % Generate uniformly distributed X, Y, although xData/yData may be
+    % non-uniform. Dimension indicates the corresponding dimension in the cData matrix.
+    switch length(XYData)
+        case 2 % only the limits given; common for generic image plots
+            delta = 1;
+        case expectedLength % specific x/y-data is given
+            delta = (XYData(end)-XYData(1)) / (length(XYData)-1);
+        otherwise
+            error('drawImage:arrayLengthMismatch', ...
+                  'CData length (%d) does not match X/YData length (%d).', ...
+                  expectedLength, length(XYData));
+    end
+    XY = XYData(1):delta:XYData(end);
+end
 % ==============================================================================
 function [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaData)
 % flip the image if reversed
@@ -2218,7 +2213,7 @@ function [colorData, alphaData] = flipImageIfAxesReversed(m2t, colorData, alphaD
         colorData = colorData(:, end:-1:1, :);
         alphaData = alphaData(:, end:-1:1);
     end
-    if ~m2t.yAxisReversed % y-axis direction is revesed normally for images, flip otherwise
+    if ~m2t.yAxisReversed % y-axis direction is reversed normally for images, flip otherwise
         colorData = colorData(end:-1:1, :, :);
         alphaData = alphaData(end:-1:1, :);
     end
@@ -2256,7 +2251,7 @@ function [m2t, str] = drawContour(m2t, h)
         hasLegend = m2t.currentHandleHasLegend;
 
         % Plot children patches
-        children  = get(h,'children');
+        children  = allchild(h);
         N         = numel(children);
         str       = cell(N,1);
         for ii = 1:N
@@ -2550,10 +2545,10 @@ function m2t = drawAnnotations(m2t)
 
     % Get annotation handles
     if isHG2
-        annotPanes   = findobj(m2t.currentHandles.gcf,'Tag','scribeOverlay');
-        annotHandles = findobj(get(annotPanes,'Children'),'Visible','on');
+        annotPanes   = findall(m2t.currentHandles.gcf,'Tag','scribeOverlay');
+        annotHandles = findall(allchild(annotPanes),'Visible','on');
     else
-        annotHandles = findobj(m2t.scribeLayer,'-depth',1,'Visible','on');
+        annotHandles = findall(m2t.scribeLayer,'-depth',1,'Visible','on');
     end
 
     % There are no anotations
@@ -3120,6 +3115,7 @@ function [m2t, opts, s] = shaderOptsSurfPatchEdgeFlat(m2t, handle, opts, s)
     if strcmpi(s.faceColor, 'flat')
         opts = opts_add(opts,'shader','flat corner');
     elseif strcmpi(s.faceColor, 'interp')
+        warnFacetedInterp(m2t);
         opts = opts_add(opts,'shader','faceted interp');
     else
         s.hasOneFaceColor = true;
@@ -3138,11 +3134,50 @@ function [m2t, opts, s] = shaderOptsSurfPatchEdgeRGB(m2t, handle, opts, s)
         opts              = opts_add(opts,'fill',xFaceColor);
         opts              = opts_add(opts,'faceted color',xEdgeColor);
     elseif strcmpi(s.faceColor,'interp')
+        warnFacetedInterp(m2t);
         opts = opts_add(opts,'shader','faceted interp');
         opts = opts_add(opts,'faceted color',xEdgeColor);
     else
         opts = opts_add(opts,'shader','flat corner');
         opts = opts_add(opts,'draw',xEdgeColor);
+    end
+end
+% ==============================================================================
+function warnFacetedInterp(m2t)
+% warn the user about the space implications of "shader=faceted interp"
+    userWarning(m2t, ...
+        ['A 3D plot with "shader = faceted interp" is being produced.\n', ...
+        'This may produce big and sluggish PDF files.\n', ...
+        'See %s and Section 4.6.6 of the pgfplots manual for workarounds.'], ...
+        issueUrl(m2t, 693, true));
+end
+% ==============================================================================
+function url = issueUrl(m2t, number, forOutput)
+% Produces the URL for an issue report in the GitHub repository.
+% When the `forOutput` flag is set, this format the URL for printing to the
+% MATLAB terminal.
+    if ~exist('forOutput','var') || isempty(forOutput)
+        forOutput = false;
+    end
+    url = sprintf('%s/%d', m2t.about.issues, number);
+    if forOutput
+        url = clickableUrl(url, sprintf('#%d', number));
+    end
+end
+% ==============================================================================
+function url = clickableUrl(url, title)
+% Produce a clickable URL for outputting to the MATLAB terminal
+    if ~exist('title','var') || isempty(title)
+        title = url;
+    end
+    switch getEnvironment()
+        case 'MATLAB'
+            url = sprintf('<a href="%s">%s</a>', url, title);
+        case 'Octave'
+            % just use the URL and discard the title since Octave doesn't
+            % support HTML tags in its output.
+        otherwise
+            errorUnknownEnvironment();
     end
 end
 % ==============================================================================
@@ -3562,10 +3597,10 @@ end
 % ==============================================================================
 function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
 % retrieve the FaceColor of a barseries object
-    if ~isempty(get(h,'Children'))
+    if ~isempty(allchild(h))
         % quite oddly, before MATLAB R2014b this value is stored in a child
         % patch and not in the object itself
-        obj = get(h, 'Children');
+        obj = allchild(h);
     else % R2014b and newer
         obj = h;
     end
@@ -3640,10 +3675,10 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % define face color;
-    if ~isempty(get(h,'Children'))
+    if ~isempty(allchild(h))
         % quite oddly, before MATLAB R2014b this value is stored in a child
         % patch and not in the object itself
-        obj = get(h, 'Children');
+        obj = allchild(h);
     else % R2014b and newer
         obj = h;
     end
@@ -3826,7 +3861,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
 % Takes care of MATLAB's ellipse annotations.
 %
 
-%     c = get(h, 'Children');
+%     c = allchild(h);
 
     drawOptions = opts_new();
 
@@ -3870,7 +3905,7 @@ function [m2t, str] = drawTextarrow(m2t, handle)
 
     % handleAllChildren ignores the text, unless hidden strings are shown
     if ~m2t.cmdOpts.Results.showHiddenStrings
-        child = findobj(handle, 'type', 'text');
+        child = findall(handle, 'type', 'text');
         [m2t, str{end+1}] = drawText(m2t, child);
     end
 end
@@ -4297,12 +4332,12 @@ function cdata = getCDataWithFallbacks(patchhandle)
     cdata = getOrDefault(patchhandle, 'CData', []);
 
     if isempty(cdata) || ~isnumeric(cdata)
-        child = get(patchhandle, 'Children');
+        child = allchild(patchhandle);
         cdata = get(child, 'CData');
     end
     if isempty(cdata) || ~isnumeric(cdata)
         % R2014b+: CData is implicit by the ordering of the siblings
-        siblings = get(get(patchhandle, 'Parent'), 'Children');
+        siblings = allchild(get(patchhandle, 'Parent'));
         cdata = find(siblings(end:-1:1)==patchhandle);
     end
 end
@@ -4354,7 +4389,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
 % Need to check that there's nothing inside visible before we
 % abandon this legend -- an invisible property of the parent just
 % means the legend has no box.
-    children = get(handle, 'Children');
+    children = allchild(handle);
     if ~isVisible(handle) && ~any(isVisible(children))
         return
     end
@@ -6031,32 +6066,6 @@ function str  = opts_print(m2t, opts, sep)
     str = join(m2t, c, sep);
 end
 % ==============================================================================
-function [env, versionString] = getEnvironment()
-% Checks if we are in MATLAB or Octave.
-    persistent cache
-
-    alternatives = {'MATLAB', 'Octave'};
-    if isempty(cache)
-        for iCase = 1:numel(alternatives)
-            env   = alternatives{iCase};
-            vData = ver(env);
-            if ~isempty(vData) % found the right environment
-                versionString = vData.Version;
-                % store in cache
-                cache.env = env;
-                cache.versionString = versionString;
-                return;
-            end
-        end
-        % fall-back values
-        env = '';
-        versionString = '';
-    else
-        env = cache.env;
-        versionString = cache.versionString;
-    end
-end
-% ==============================================================================
 function bool = isHG2()
 % Checks if graphics system is HG2 (true) or HG1 (false).
 % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
@@ -6064,17 +6073,6 @@ function bool = isHG2()
     [env, envVersion] = getEnvironment();
     bool = strcmpi(env,'MATLAB') && ...
            ~isVersionBelow(envVersion, [8,4]);
-end
-% ==============================================================================
-function bool = isVersionBelow(versionA, versionB)
-% Checks if versionA is smaller than versionB
-    vA         = versionArray(versionA);
-    vB         = versionArray(versionB);
-    n          = min(length(vA), length(vB));
-    deltaAB    = vA(1:n) - vB(1:n);
-    difference = find(deltaAB, 1, 'first');
-    % Empty difference then same version
-    bool       = ~isempty(difference) && deltaAB(difference) < 0;
 end
 % ==============================================================================
 function str = formatAspectRatio(m2t, values)
@@ -6102,25 +6100,6 @@ function str = formatDim(value, unit)
         str = regexprep(str, '\.$', ''); % remove trailing period
         str = [str unit];
     end
-end
-% ==============================================================================
-function arr = versionArray(str)
-% Converts a version string to an array.
-    if ischar(str)
-        % Translate version string from '2.62.8.1' to [2; 62; 8; 1].
-        switch getEnvironment
-            case 'MATLAB'
-                split = regexp(str, '\.', 'split'); % compatibility MATLAB < R2013a
-            case  'Octave'
-                split = strsplit(str, '.');
-            otherwise
-                errorUnknownEnvironment();
-        end
-        arr = str2num(char(split)); %#ok
-    else
-        arr = str;
-    end
-    arr = arr(:)';
 end
 % ==============================================================================
 function [retval] = switchMatOct(matlabValue, octaveValue)
@@ -6156,11 +6135,6 @@ function checkDeprecatedEnvironment(minimalVersions)
     else
         errorUnknownEnvironment();
     end
-end
-% ==============================================================================
-function errorUnknownEnvironment()
-    error('matlab2tikz:unknownEnvironment',...
-          'Unknown environment "%s". Need MATLAB(R) or Octave.', getEnvironment);
 end
 % ==============================================================================
 function m2t = needsPgfplotsVersion(m2t, minVersion)

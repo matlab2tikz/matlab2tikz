@@ -206,6 +206,19 @@ function [stat] = plain_cos()
   stat.description = 'Plain cosine function.';
 
   fplot( @cos, [0,2*pi] );
+  hold on;
+  
+  % also add some patches to test their border color reproduction
+  h(1) = fill(pi*[1/4 1/4 1/2 1/2]   ,  [-2 1 1 -2], 'y');
+  h(2) = fill(pi*[1/4 1/4 1/2 1/2]+pi, -[-2 1 1 -2], 'y');
+
+  set(h(1), 'EdgeColor', 'none', 'FaceColor', 0.8*[1 1 1]);
+  set(h(2), 'EdgeColor', 'k', 'FaceColor', 0.5*[1 1 1]);
+
+  if isMATLAB
+      uistack(h, 'bottom'); % patches below the line plot
+      % this is not supported in Octave
+  end
 
   % add some minor ticks
   set(gca, 'XMinorTick', 'on');
@@ -2412,7 +2425,7 @@ end
 % =========================================================================
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
-  stat.issues = 442;
+  stat.issues = [442,648];
   stat.unreliable = isOctave || isMATLAB(); % FIXME: #614
   % details: https://github.com/matlab2tikz/matlab2tikz/pull/614#issuecomment-91844506
 
