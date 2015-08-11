@@ -2402,11 +2402,12 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     % Add zero level fill
     xdata = get(h,'XData');
     ydata = get(h,'YData');
+    %FIXME: determine the contour at the zero level not just its bounding box
     zerolevel = [0,          4;
-                 min(xdata), min(ydata);
-                 min(xdata), max(ydata);
-                 max(xdata), max(ydata);
-                 max(xdata), min(ydata)];
+                 min(xdata(:)), min(ydata(:));
+                 min(xdata(:)), max(ydata(:));
+                 max(xdata(:)), max(ydata(:));
+                 max(xdata(:)), min(ydata(:))];
     cellcont = [zerolevel; cellcont];
 
     % Plot
