@@ -1188,7 +1188,7 @@ end
 % =========================================================================
 function [stat] = scatterPlotRandom()
   stat.description = 'Generic scatter plot.';
-  
+
   n = 1:100;
 
   % MATLAB: Use the default area of 36 points squared. The units for the
