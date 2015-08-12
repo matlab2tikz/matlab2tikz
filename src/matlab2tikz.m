@@ -745,6 +745,7 @@ function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, chil
     legendString = '';
     interpreter  = '';
     hasLegend = false;
+    legendRefersToParent = false;
     %FIXME: this part (e.g. fall back objects) should be restructured.
     for legendHandle = m2t.legendHandles(:)'
         ud = get(legendHandle, 'UserData');
@@ -761,6 +762,7 @@ function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, chil
             % legends refer to the specgraph.errorbarseries
             % handle which is 'Parent' to the line handle.
             k = find(get(child,'Parent') == plotChildren);
+            legendRefersToParent = ~isempty(k);
         end
         if ~isempty(k)
             % Legend entry found. Add it to the plot.
@@ -769,7 +771,12 @@ function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, chil
             if ~isempty(ud) && isfield(ud, 'lstrings')
                 legendString = ud.lstrings{k};
             else
-                legendString = get(child, 'DisplayName');
+                if legendRefersToParent
+                    parent       = get(child,'Parent');
+                    legendString = get(parent, 'DisplayName');
+                else
+                    legendString = get(child, 'DisplayName');
+                end
             end
         end
     end
