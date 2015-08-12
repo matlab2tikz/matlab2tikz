@@ -83,7 +83,8 @@ function figure2dot(filename, varargin)
             label = addHGProperty(label, h, 'HandleVisibility', 'on');
 
             % print node
-            fprintf(fh, 'N%d [label="%s"]\n', node_number, collapse(label, '\n'));
+            fprintf(fh, 'N%d [label="%s"]\n', ...
+                    node_number, m2tstrjoin(label, '\n'));
 
             % connect to the child
             fprintf(fh, 'N%d -> N%d;\n\n', parent_node, node_number);
@@ -117,7 +118,7 @@ function label = addHGProperty(label, h, propName, default)
             % dereference Titles, labels, ...
             propValue = get(propValue, 'String');
         elseif iscellstr(propValue)
-            propValue = ['{' collapse(propValue,',') '}'];
+            propValue = ['{' m2tstrjoin(propValue,',') '}'];
         end
 
         if ~shouldOmit(propValue)
@@ -131,24 +132,5 @@ function label = addProperty(label, propName, propValue)
         propValue = num2str(propValue);
     end
     label = [label, sprintf('%s: %s', propName, propValue)];
-end
-% ==============================================================================
-function newstr = collapse(cellstr, delimiter)
-  % This function collapses a cell of strings to a single string (with a
-  % given delimiter inbetween two strings, if desired).
-  %
-  % Example of usage:
-  %              collapse(cellstr, ',')
-
-  if length(cellstr)<1
-     newstr = [];
-     return
-  end
-
-  newstr = cellstr{1};
-
-  for k = 2:length(cellstr)
-      newstr = [newstr, delimiter, cellstr{k}];
-  end
 end
 % ==============================================================================
