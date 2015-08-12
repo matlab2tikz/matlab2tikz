@@ -3424,6 +3424,18 @@ function [barType, isHorizontal] = getOrientationOfBarSeries(h)
     end
 end
 % ==============================================================================
+function BarWidth=getCorrectBarWidth(h)
+XData_bar=get(h,'XData');
+length_bar = length(XData_bar);
+BarWidth= get(h, 'BarWidth');
+if length_bar > 1
+    max_bar= max(XData_bar);
+    min_bar =min(XData_bar);
+    BarWidth = (max_bar - min_bar) /(length_bar-1)*BarWidth*2;
+end
+
+end
+% ==============================================================================
 function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions)
 % sets the options specific to a bar layour (grouped vs stacked)
     barlayout = get(h, 'BarLayout');
@@ -3458,7 +3470,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             % you do not specify X, the bars within a group have a slight
             % separation. If width is 1, the bars within a group touch one
             % another. The value of width must be a scalar.
-            barWidth = get(h, 'BarWidth') * assumedBarWidth;
+            barWidth = getCorrectBarWidth(h) * assumedBarWidth;
 
             % Bar type
             drawOptions = opts_add(drawOptions, barType);
@@ -3477,7 +3489,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             % Make sure this happens exactly *once*.
 
             if ~m2t.axesContainers{end}.barAddedAxisOption;
-                barWidth = get(h, 'BarWidth');
+                barWidth = getCorrectBarWidth(h);
                 m2t.axesContainers{end}.options = ...
                     opts_add(m2t.axesContainers{end}.options, ...
                     'bar width', formatDim(barWidth,''));
