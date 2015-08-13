@@ -3429,9 +3429,7 @@ XData_bar=get(h,'XData');
 length_bar = length(XData_bar);
 BarWidth= get(h, 'BarWidth');
 if length_bar > 1
-    max_bar= max(XData_bar);
-    min_bar =min(XData_bar);
-    BarWidth = (max_bar - min_bar) /(length_bar-1)*BarWidth*2;
+    BarWidth = min(diff(XData_bar))*BarWidth;
 end
 
 end
