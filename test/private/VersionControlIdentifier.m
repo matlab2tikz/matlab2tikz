@@ -43,4 +43,5 @@ function [formatted,treeish] = VersionControlIdentifier()
     if ~isempty(treeish)
         formatted = ['  Commit & ' treeish ' \\\\ \n'];
     end
+    %TODO: do the formatting somewhere else!
 end
