@@ -4,8 +4,15 @@ test_data =[15     0; 20     0;   25     2;    30    14;    35    34;    40    5
 % Create figure
 figure1 = figure('Color',[1 1 1]);
 
-% Create axes
-axes1 = axes('Parent',figure1);
+subplot(1,2,1)
+
+
+hb=barh(test_data(:,1),test_data(:,2),'DisplayName','Test Data');
+
+ylabel('parameter [units]');
+xlabel('#');
+legend('show','Location','northwest');
+subplot(1,2,2)
 
 
 hb=bar(test_data(:,1),test_data(:,2),'DisplayName','Test Data');
