@@ -3424,15 +3424,13 @@ function [barType, isHorizontal] = getOrientationOfBarSeries(h)
     end
 end
 % ==============================================================================
-function BarWidth=getBarWidthInAbsolutUnits(h)
-% astimates the width of a bar plot 
-XData_bar=get(h,'XData');
-length_bar = length(XData_bar);
-BarWidth= get(h, 'BarWidth');
-if length_bar > 1
-    BarWidth = min(diff(XData_bar))*BarWidth;
-end
-
+function BarWidth = getBarWidthInAbsolutUnits(h)
+% determines the width of a bar in a bar plot
+    XData = get(h,'XData');
+    BarWidth = get(h, 'BarWidth');
+    if length(XData) > 1
+        BarWidth = min(diff(XData)) * BarWidth;
+    end
 end
 % ==============================================================================
 function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions)
