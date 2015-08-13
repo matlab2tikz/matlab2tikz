@@ -2539,7 +2539,7 @@ function m2t = drawAnnotations(m2t)
         if all(cellfun(@isempty,children))
             annotHandles = {};
         else
-            annotHandles = findall(allchild(annotPanes),'Visible','on');
+            annotHandles = findall(children,'Visible','on');
         end
     else
         annotHandles = findall(m2t.scribeLayer,'-depth',1,'Visible','on');
