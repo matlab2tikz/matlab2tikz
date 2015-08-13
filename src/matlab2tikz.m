@@ -3425,6 +3425,7 @@ function [barType, isHorizontal] = getOrientationOfBarSeries(h)
 end
 % ==============================================================================
 function BarWidth=getVerticalBarWidth(h)
+% astimates the width of a vertical bar plot 
 XData_bar=get(h,'XData');
 length_bar = length(XData_bar);
 BarWidth= get(h, 'BarWidth');
