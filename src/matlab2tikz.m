@@ -2536,11 +2536,10 @@ function m2t = drawAnnotations(m2t)
     if isHG2
         annotPanes   = findall(m2t.currentHandles.gcf,'Tag','scribeOverlay');
         children = allchild(annotPanes);
-        if all(cellfun(@isempty,children))
-            annotHandles = {};
-        else
-            annotHandles = findall(children,'Visible','on');
+        if iscell(children)
+          children = [children{:}]
         end
+        annotHandles = findall(children,'Visible','on');
     else
         annotHandles = findall(m2t.scribeLayer,'-depth',1,'Visible','on');
     end
