@@ -36,10 +36,12 @@ Thanks for patches, suggestions, and other contributions go to:
   * Ricardo Santiago Mozos
   * Johannes Mueller-Roemer
   * [Ali Ozdagli](https://github.com/aliirmak)
+  * [Richard Peschke](https://github.com/RPeschke)
   * [Peter Ploß](https://github.com/PeterPablo)
   * Julien Ridoux
   * [Christoph Rüdiger](https://github.com/mredd)
   * Carlos Russo
+  * [Manuel Schiller](https://github.com/dachziegel)
   * [Nico Schlömer](https://github.com/nschloe)
   * Johannes Schmitz
   * Michael Schoeberl
