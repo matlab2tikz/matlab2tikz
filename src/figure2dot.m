@@ -69,7 +69,7 @@ function figure2dot(filename, varargin)
             label = {};
             label = addHGProperty(label, h, 'Type', '');
             try
-                hClass = class(handle(child));
+                hClass = class(handle(h));
                 label = addProperty(label, 'Class', hClass);
             catch
                 % don't do anything
