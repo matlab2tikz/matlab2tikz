@@ -334,6 +334,7 @@ function coarsenLine(meta, handle, minimumPointsDistance)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   zData = get(handle, 'ZData');
+  
   if ~isempty(zData)
     % Don't do funny stuff when zData is present.
     return;
@@ -347,43 +348,49 @@ function coarsenLine(meta, handle, minimumPointsDistance)
 
   % Generate a mask which is true for the first point, and all
   % subsequent points which have a greater norm2-distance from
-  % the previous point than 'threshold'.
-  n = size(data, 1);
-
+  % the previous point than 'minimumPointsDistance'.
+  mask      = false(size(data,1), 1);
+  mask(1)   = true;
+  
   % Get info about log scaling.
   isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
   isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
 
-  mask = false(n, 1);
+  % To eliminate false positives for consecutive finds, recursively remove 
+  % the first close data points and iterate as long as there are some
+  while(~isempty(find(mask==0, 1))) 
 
-  XRef = data(1,:);
-  mask(1) = true;
-  for kk = 2:n
-      % Compute the visible distance of those points,
-      % incorporating possible log-scaling of the axes.
-      visDiff = XRef - data(kk,:);
-      if isXlog
-          % visDiff(1) = log10(XRef(1)) - log10(data(kk,1));
-          visDiff(1) = log10(visDiff(1));
-      end
-      if isYlog
-          visDiff(2) = log10(visDiff(2));
-      end
-      % Check if it's larger than the threshold and
-      % update the reference point in that case.
-      if norm(visDiff) > minimumPointsDistance
-          XRef = data(kk,:);
-          mask(kk) = true;
-      end
+    % Compute the distance of between the points,
+	% incorporating possible log-scaling of the axes.
+	visDiff = [0.0, 0.0;diff(data)];  
+	if isXlog
+      visDiff(:,1) = log10(visDiff(:,1));
+    end
+	if isYlog
+      visDiff(:,2) = log10(visDiff(:,2));
+    end
+  
+    % Compute the norm of the distance 
+    visDiff =sqrt(sum(abs(visDiff).^2,2));
+
+    % Find data points to eliminate
+    mask(visDiff>minimumPointsDistance)=true;
+
+    % Respect NaNs
+    mask = mask | any(isnan(data)')';
+    
+    % Find all those data points that are close to the previous point,
+    % while ignoring those, where the previous point would be removed too
+    remove_idx=(find([0;0;diff(mask,3);0]>=2));
+    
+    % Cut the data points
+    data(remove_idx,:) = [];
+    mask(remove_idx,:) = [];
   end
-  mask(end) = true;
-
-  % Make sure to keep NaNs.
-  mask = mask | any(isnan(data)')';
-
+  
   % Set the new (masked) data.
-  set(handle, 'XData', data(mask, 1));
-  set(handle, 'YData', data(mask, 2));
+  set(handle, 'XData', data(:, 1));
+  set(handle, 'YData', data(:, 2));
 
   return;
 end
