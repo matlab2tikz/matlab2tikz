@@ -297,15 +297,15 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     n = size(data, 1);
     out = false(n-1, 1);
 
+    % One of the neighbors is inside the box and the other is finite
+    nextVisible = (dataIsInBox(2:end)   & all(isfinite(data(1:end-1)),2));
+    thisVisible = (dataIsInBox(1:end-1) & all(isfinite(data(2:end)),2));
+
     [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
 
     for k = 1:n-1
         this = data(k  , :);
         next = data(k+1, :);
-
-        % One of the neighbors is inside the box and the other is finite
-        nextVisible = (dataIsInBox(k+1) && all(isfinite(this)));
-        thisVisible = (dataIsInBox(k)   && all(isfinite(next)));
 
         % Check whether the line connecting this point and the next one
         % intersects with any of the borders of the drawn axis
@@ -318,7 +318,7 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
         %  - this point is visible in the axis and the next is finite
         %  - this point is finite and the next is visible in the axis
         %  - the segment connecting this and the next point crosses a border
-        out(k) = thisVisible || nextVisible || left || right || top || bottom;
+        out(k) = thisVisible(k) || nextVisible(k) || left || right || top || bottom;
     end
 end
 % =========================================================================
