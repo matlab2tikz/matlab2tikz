@@ -296,36 +296,93 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     % in p and determine whether the line between the pair crosses the box.
     n = size(data, 1);
     out = false(n-1, 1);
-
-    [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
-
-    for k = 1:n-1
-        this = data(k  , :);
-        next = data(k+1, :);
-
+    % Only check if there is more than 1 point    
+    if n>1
         % One of the neighbors is inside the box and the other is finite
-        nextVisible = (dataIsInBox(k+1) && all(isfinite(this)));
-        thisVisible = (dataIsInBox(k)   && all(isfinite(next)));
+        nextVisible = (dataIsInBox(2:end)   & all(isfinite(data(1:end-1)),2));
+        thisVisible = (dataIsInBox(1:end-1) & all(isfinite(data(2:end)),2));
 
-        % Check whether the line connecting this point and the next one
-        % intersects with any of the borders of the drawn axis
-        left   = segmentsIntersect(this, next, bottomLeft , topLeft);
-        right  = segmentsIntersect(this, next, bottomRight, topRight);
-        bottom = segmentsIntersect(this, next, bottomLeft , bottomRight);
-        top    = segmentsIntersect(this, next, topLeft    , topRight);
+        % Get the corner coordinates
+        [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
 
-        % The segment is visible when any of the following hold:
-        %  - this point is visible in the axis and the next is finite
-        %  - this point is finite and the next is visible in the axis
-        %  - the segment connecting this and the next point crosses a border
-        out(k) = thisVisible || nextVisible || left || right || top || bottom;
+        % Calculate the difference between two consequtive points
+        dataDiff = diff(data);
+
+        left   = segmentsIntersect(data, dataDiff, bottomLeft , topLeft);
+        right  = segmentsIntersect(data, dataDiff, bottomRight, topRight);
+        bottom = segmentsIntersect(data, dataDiff, bottomLeft , bottomRight);
+        top    = segmentsIntersect(data, dataDiff, topLeft    , topRight);
+
+        % Check the result
+        out = any([thisVisible, nextVisible, left, right, top, bottom],2);
     end
 end
 % =========================================================================
-function out = segmentsIntersect(X1, X2, X3, X4)
+function out = segmentsIntersect(data, dataDiff, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect.
-  lambda = crossLines(X1, X2, X3, X4);
-  out = all(lambda > 0.0) && all(lambda < 1.0);
+  % Given four points X_k=(x_k,y_k), k\in{1,2,3,4}, and the two lines defined
+  % by those,
+  %
+  %  L1(lambda) = X1 + lambda (X2 - X1)
+  %  L2(lambda) = X3 + lambda (X4 - X3)
+  %
+  % returns the lambda for which they intersect (and Inf if they are parallel).
+  % Technically, one needs to solve the 2x2 equation system
+  %
+  %   x1 + lambda1 (x2-x1)  =  x3 + lambda2 (x4-x3)
+  %   y1 + lambda1 (y2-y1)  =  y3 + lambda2 (y4-y3)
+  %
+  % for lambda1 and lambda2.
+
+  %TODO: why don't we use `\` instead of Cramer's rule?
+
+  n   = size(dataDiff,1);
+  out = false(n,1);
+
+  % Rotational matrix with sign flip 
+  Rotate    = [0, -1; 1, 0 ];   
+  
+  % Calculate the determinant of A = [X2-X1, -(X4-X3)];
+  % detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1))
+  % NOTE: Vectorized this is equivalent to the matrix multiplication
+  % [nx2] * [2x2] * [2x1] = [nx1]
+  detA   = dataDiff * Rotate * (X4-X3);  
+  
+  % Get the indexes for nonzero elements
+  id_detA = detA~=0;
+  
+  if any(id_detA)
+      % rhs = X3(:) - X1(:)
+      % NOTE: Originaly this was a [2x1] vector. However as we vectorize the 
+      % calculation it is beneficial to treat it as an [nx2] matrix rather than a [2xn]
+      rhs = bsxfun(@minus, X3', data(1:end-1,:));
+      
+      % Calculate the inverse of A and lambda
+      % invA=[-(X4(2)-X3(2)), X4(1)-X3(1);...
+      %       -(X2(2)-X1(2)), X2(1)-X1(1)] / detA 
+      % lambda = invA * rhs
+
+      % Rather than calculating invA first and then multiply with rhs to obtain 
+      % lambda, directly calculate the respective terms
+
+      % The upper half of the 2x2 matrix is always the same and is given by:
+      % [-(X4(2)-X3(2)), X4(1)-X3(1)] / detA * rhs
+      % This is a matrix multiplication of the form [1x2] * [2x1] = [1x1]
+      % As we have transposed rhs we can write this as:
+      % rhs * Rotate * (X4-X3) => [nx2] * [2x2] * [2x1] = [nx1]
+      lambda1 = (rhs(id_detA, :) * Rotate * (X4-X3))./detA(id_detA);
+
+      % The lower half is dependent on (X2-X1) which is a matrix of size [nx2]
+      % [-(X2(2)-X1(2)), X2(1)-X1(1)] / detA * rhs 
+      % As both (X2-X1) and rhs are matrices of size [nx2] there is no simple 
+      % matrix multiplication leading to a [nx1] vector. Therefore, use the
+      % elementwise multiplication and sum over it
+      % sum( [nx2] * [2x2] .* [nx2], 2) = sum([nx2],2) = [nx1] 
+      lambda2 = sum(-dataDiff(id_detA,:) * Rotate .* rhs(id_detA,:), 2)./detA(id_detA);
+
+      % Check whether lambda is in bound
+      out(id_detA) = all([lambda1, lambda2] > 0.0, 2) & all([lambda1, lambda2] < 1.0, 2);
+  end
 end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
