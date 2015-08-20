@@ -203,7 +203,6 @@ function [h] = myHistogram(data, varargin)
         h = bar(bins, counts, 1);
         
         % transfer properties as well
-        set(allchild(h),'FaceAlpha', 0.75); % this should look somewhat similar
         names = fieldnames(options);
         for iName = 1:numel(names)
             option = names{iName};
@@ -211,6 +210,8 @@ function [h] = myHistogram(data, varargin)
                 set(h, option, options.(option));
             end
         end
+        set(allchild(h),'FaceAlpha', 0.75); % only supported with OpenGL renderer
+        % but this should look a bit similar with matlab2tikz then...
     end
 end
 
