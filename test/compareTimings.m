@@ -1,13 +1,40 @@
 function compareTimings(statusBefore, statusAfter)
-    
+% COMPARETIMINGS compare timing of matlab2tikz test suite runs
+%
+% This function plots some analysis plots of the timings of different test
+% cases. When the test suite is run repeatedly, the median statistics are
+% reported as well as the individual runs.
+%
+% Usage:
+%  COMPARETIMINGS(statusBefore, statusAfter)
+%
+% Parameters:
+%  - statusBefore and statusAfter are expected to be
+%    N x R cell arrays, each cell contains a status of a test case
+%    where there are N test cases, repeated R times each.
+%
+% A way to build such cells is:
+% 
+% suite = @ACID
+% N = numel(suite(0));
+% R = 10;
+% statusBefore = cell(N, R);
+% for r = 1:R
+%     statusBefore(:, r) = testHeadless;
+% end
+% % now check out the after commit
+% statusAfter = cell(N, R);
+% for r = 1:R
+%     statusAfter(;, r) = testHeadless;
+% end
+% compareTimings(statusBefore, statusAfter)
+%
+% See also: testHeadless
+
+%% Extract timing information
 time_cf  = extract(statusBefore, statusAfter, @(s) s.tikzStage.cleanfigure_time);
 time_m2t = extract(statusBefore, statusAfter, @(s) s.tikzStage.m2t_time);
-
-colors.matlab2tikz = [161  19  46]/255;
-colors.cleanfigure = [  0 113 188]/255;
-colors.before      = [236 176  31]/255;
-colors.after       = [118 171  47]/255;
-
+%% Construct plots
 hax(1) = subplot(3,2,1);
 histograms(time_cf, 'cleanfigure');
 legend('show')
@@ -36,7 +63,25 @@ legend('show');
 linkaxes(hax([4 5 6]), 'x');
 
 % ------------------------------------------------------------------------------
+
+% ------------------------------------------------------------------------------
+end
+%% Data processing
+function timing = extract(statusBefore, statusAfter, func)
+    otherwiseNaN = {'ErrorHandler', @(varargin) NaN};
+    
+    timing.before = cellfun(func, statusBefore, otherwiseNaN{:});
+    timing.after  = cellfun(func, statusAfter, otherwiseNaN{:});
+end
+function [names,timings] = splitNameTiming(vararginAsCell)
+    names  = vararginAsCell(1:2:end-1);
+    timings = vararginAsCell(2:2:end);
+end
+
+%% Plot subfunctions
 function [h] = histograms(timing, name)
+    % plot histogram of time measurements
+    colors = colorscheme;
     histostyle = {'DisplayStyle', 'bar',...
                   'Normalization','pdf',...
                   'EdgeColor','none',...
@@ -54,6 +99,7 @@ function [h] = histograms(timing, name)
     ylabel('Empirical PDF');
 end
 function [h] = histogramSpeedup(varargin)
+    % plot histogram of observed speedup
     histostyle = {'DisplayStyle', 'bar',...
                   'Normalization','pdf',...
                   'BinMethod', 'fd', ...
@@ -77,8 +123,9 @@ function [h] = histogramSpeedup(varargin)
     ylabel('Empirical PDF');
     set(gca,'XScale','log', 'XLim', [min(alldata) max(alldata)].*[0.9 1.1]);
 end
-% ------------------------------------------------------------------------------
 function [h] = plotByTestCase(timing, name)
+    % plot all time measurements per test case
+    colors = colorscheme;
     hold on;
     if size(timing.before, 2) > 1
         h{3} = plot(timing.before, '.',...
@@ -99,7 +146,7 @@ function [h] = plotByTestCase(timing, name)
     set(gca,'YScale','log')
 end
 function [h] = plotSpeedup(varargin)
-    
+    % plot speed up per test case
     [names, timings] = splitNameTiming(varargin);
     
     nDatasets = numel(names);
@@ -130,26 +177,25 @@ function [h] = plotSpeedup(varargin)
     xlabel('Test case');
     ylabel('Speed-up (t_{before}/t_{after})');
 end
-% ------------------------------------------------------------------------------
+
+%% Color scheme
+function colors = colorscheme()
+% defines the color scheme
+    colors.matlab2tikz = [161  19  46]/255;
+    colors.cleanfigure = [  0 113 188]/255;
+    colors.before      = [236 176  31]/255;
+    colors.after       = [118 171  47]/255; 
+end
 function color = colorOptionsOfName(name, keyword)
+% returns a cell array with a keyword (default: 'Color') and a named color
+% if it exists in the colorscheme
     if ~exist('keyword','var') || isempty(keyword)
         keyword = 'Color';
     end
+    colors = colorscheme;
     if isfield(colors,name)
         color = {keyword, colors.(name)};
     else
         color = {};
     end
 end        
-end
-
-function timing = extract(statusBefore, statusAfter, func)
-    otherwiseNaN = {'ErrorHandler', @(varargin) NaN};
-    
-    timing.before = cellfun(func, statusBefore, otherwiseNaN{:});
-    timing.after  = cellfun(func, statusAfter, otherwiseNaN{:});
-end
-function [names,timings] = splitNameTiming(vararginAsCell)
-    names  = vararginAsCell(1:2:end-1);
-    timings = vararginAsCell(2:2:end);
-end
