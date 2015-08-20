@@ -88,10 +88,10 @@ function [h] = histograms(timing, name)
                   'BinWidth',0.025};
 
     hold on;
-    h(1) = histogram(timing.before, histostyle{:}, ...
+    h{1} = myHistogram(timing.before, histostyle{:}, ...
                      'FaceColor', colors.before, ...
                      'DisplayName', 'Before');
-    h(2) = histogram(timing.after , histostyle{:}, ...
+    h{2} = myHistogram(timing.after , histostyle{:}, ...
                      'FaceColor', colors.after,...
                      'DisplayName', 'After');
           
@@ -102,7 +102,6 @@ function [h] = histogramSpeedup(varargin)
     % plot histogram of observed speedup
     histostyle = {'DisplayStyle', 'bar',...
                   'Normalization','pdf',...
-                  'BinMethod', 'fd', ...
                   'EdgeColor','none'};
 
     [names,timings] = splitNameTiming(varargin);
@@ -116,7 +115,8 @@ function [h] = histogramSpeedup(varargin)
         speedup = timing.before ./ timing.after;
         color = colorOptionsOfName(name, 'FaceColor');
         
-        h(iData) = histogram(speedup, histostyle{:}, color{:}, 'DisplayName', name);
+        h{iData} = myHistogram(speedup, histostyle{:}, color{:},...
+                               'DisplayName', name);
         alldata = [alldata;speedup(:)];
     end
     xlabel('Speedup')
@@ -176,6 +176,42 @@ function [h] = plotSpeedup(varargin)
         'XLim', [0 nTests+1])
     xlabel('Test case');
     ylabel('Speed-up (t_{before}/t_{after})');
+end
+
+%% Histogram wrapper
+function [h] = myHistogram(data, varargin)
+% this is a very crude wrapper that mimics Histogram in R2014a and older
+    if ~isempty(which('histogram'))
+        h = histogram(data, varargin{:});
+    else % no "histogram" available
+        options = struct(varargin{:});
+        
+        minData = min(data(:));
+        maxData = max(data(:));
+        if isfield(options, 'BinWidth')
+            numBins = ceil((maxData-minData)/options.BinWidth);
+        elseif isfield(options, 'NumBins')
+            numBins = options.NumBins;
+        else
+            numBins = 10;
+        end
+        [counts, bins] = hist(data(:), numBins);
+        if isfield(options,'Normalization') && strcmp(options.Normalization,'pdf')
+            binWidth = mean(diff(bins));
+            counts = counts./sum(counts)/binWidth;
+        end
+        h = bar(bins, counts, 1);
+        
+        % transfer properties as well
+        set(allchild(h),'FaceAlpha', 0.75); % this should look somewhat similar
+        names = fieldnames(options);
+        for iName = 1:numel(names)
+            option = names{iName};
+            if isprop(h, option)
+                set(h, option, options.(option));
+            end
+        end
+    end
 end
 
 %% Color scheme
