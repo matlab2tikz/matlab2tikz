@@ -300,8 +300,8 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     % Only check if there is more than 1 point    
     if n>1
         % One of the neighbors is inside the box and the other is finite
-        nextVisible = (dataIsInBox(2:end)   & all(isfinite(data(1:end-1)),2));
-        thisVisible = (dataIsInBox(1:end-1) & all(isfinite(data(2:end)),2));
+        nextVisible = (dataIsInBox(2:end)   & all(isfinite(data(1:end-1)), 2));
+        thisVisible = (dataIsInBox(1:end-1) & all(isfinite(data(2:end)), 2));
 
         % Get the corner coordinates
         [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
@@ -339,12 +339,13 @@ function out = segmentsIntersect(data, dataDiff, X3, X4)
   % NOTE: We could vectorize this function. Now data is a matrix containing
   % all points X1 and dataDiff is a matrix containing the differences
   % X2-X1 for all points X1 and X2
-  n   = size(dataDiff,1);
-  out = false(n,1);
+  % n is the number of segments (not points in the plot!)
+  n   = size(dataDiff, 1);
+  out = false(n, 1);
   
   % Rotational matrix with sign flip. It transforms a given vector [a,b] by 
   % Rotate * [a,b] = [-b,a] as required for calculation of invA and detA  
-  Rotate = [0, -1; 1, 0 ];   
+  Rotate = [0, -1; 1, 0];   
   
   % Calculate the determinant of A = [X2-X1, -(X4-X3)];
   % detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1))
@@ -359,7 +360,7 @@ function out = segmentsIntersect(data, dataDiff, X3, X4)
       % rhs = X3(:) - X1(:)
       % NOTE: Originaly this was a [2x1] vector. However as we vectorize the 
       % calculation it is beneficial to treat it as an [nx2] matrix rather than a [2xn]
-      rhs = bsxfun(@minus, X3', data(1:end-1,:));
+      rhs = bsxfun(@minus, X3', data(1:end-1, :));
       
       % Calculate the inverse of A and lambda
       % invA=[-(X4(2)-X3(2)), X4(1)-X3(1);...
@@ -382,10 +383,10 @@ function out = segmentsIntersect(data, dataDiff, X3, X4)
       % matrix multiplication leading to a [nx1] vector. Therefore, use the
       % elementwise multiplication and sum over it
       % sum( [nx2] * [2x2] .* [nx2], 2) = sum([nx2],2) = [nx1] 
-      lambda2 = sum(-dataDiff(id_detA,:) * Rotate .* rhs(id_detA,:), 2)./detA(id_detA);
+      lambda2 = sum(-dataDiff(id_detA, :) * Rotate .* rhs(id_detA, :), 2)./detA(id_detA);
 
       % Check whether lambda is in bound
-      out(id_detA) = lambda1 > 0.0 & lambda1 < 0.0 & lambda2 > 0.0 & lambda2 < 1.0;
+      out(id_detA) = 0.0 < lambda1 & lambda1 < 1.0 & 0.0 < lambda2 & lambda2 < 1.0;
   end
 end
 % =========================================================================
