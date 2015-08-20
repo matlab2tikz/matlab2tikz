@@ -81,12 +81,19 @@ end
 % ------------------------------------------------------------------------------
 function [h] = plotByTestCase(timing, name)
     hold on;
-    h(1) = plot(timing.before, ...
-                'Color', colors.before, ...
-                'DisplayName', 'Before');
-    h(2) = plot(timing.after, ...
+    if size(timing.before, 2) > 1
+        h{3} = plot(timing.before, '.',...
+                    'Color', colors.before, 'HandleVisibility','off');
+        h{4} = plot(timing.after, '.',...
+                    'Color', colors.after, 'HandleVisibility','off');
+    end
+    h{1} = plot(median(timing.before, 2), '-',...
+                    'Color', colors.before, ...
+                    'DisplayName', 'Before');
+    h{2} = plot(median(timing.after, 2), '-',...
                 'Color', colors.after,...
                 'DisplayName', 'After');
+    
     
     ylabel(sprintf('%s runtime [s]', name));
     set(gca,'YScale','log')
@@ -105,8 +112,11 @@ function [h] = plotSpeedup(varargin)
 
         hold on
         speedup = timing.before ./ timing.after;
-        
-        plot(speedup, color{:}, 'DisplayName', name);
+        medSpeedup = median(timing.before,2) ./ median(timing.after,2);
+        if size(speedup, 2) > 1
+            plot(speedup, '.', color{:}, 'HandleVisibility','off');
+        end
+        h{iData} = plot(medSpeedup, color{:}, 'DisplayName', name);
         
         alldata = [alldata; speedup(:)];
     end
@@ -116,7 +126,6 @@ function [h] = plotSpeedup(varargin)
     xlabel('Test case');
     ylabel('Speed-up (t_{before}/t_{after})');
 end
-
     function [names,timings] = splitNameTiming(vararginAsCell)
         names  = vararginAsCell(1:2:end-1);
         timings = vararginAsCell(2:2:end);
@@ -130,8 +139,7 @@ end
         else
             color = {};
         end
-    end
-            
+    end        
 end
 
 
