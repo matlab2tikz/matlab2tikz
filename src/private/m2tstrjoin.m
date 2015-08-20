@@ -30,5 +30,6 @@ function newstr = m2tstrjoin(cellstr, delimiter, floatFormat)
     newstr = cell(2,nElem);
     newstr(1,:)         = reshape(cellstr, 1, nElem);
     newstr(2,1:nElem-1) = {delimiter}; % put delimiters in-between the elements
+    newstr(2,end)       = {''}; % for Octave 4 compatibility
     newstr = [newstr{:}];
 end
