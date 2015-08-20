@@ -296,6 +296,7 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     % in p and determine whether the line between the pair crosses the box.
     n = size(data, 1);
     out = false(n-1, 1);
+    
     % Only check if there is more than 1 point    
     if n>1
         % One of the neighbors is inside the box and the other is finite
@@ -305,16 +306,17 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
         % Get the corner coordinates
         [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
 
-        % Calculate the difference between two consequtive points
+        % Calculate the difference between two consecutive points
         dataDiff = diff(data);
 
+        % Check if data points intersect with the borders of the plot
         left   = segmentsIntersect(data, dataDiff, bottomLeft , topLeft);
         right  = segmentsIntersect(data, dataDiff, bottomRight, topRight);
         bottom = segmentsIntersect(data, dataDiff, bottomLeft , bottomRight);
         top    = segmentsIntersect(data, dataDiff, topLeft    , topRight);
 
         % Check the result
-        out = any([thisVisible, nextVisible, left, right, top, bottom],2);
+        out = thisVisible | nextVisible | left | right | top | bottom;
     end
 end
 % =========================================================================
@@ -334,19 +336,21 @@ function out = segmentsIntersect(data, dataDiff, X3, X4)
   %
   % for lambda1 and lambda2.
 
-  %TODO: why don't we use `\` instead of Cramer's rule?
-
+  % NOTE: We could vectorize this function. Now data is a matrix containing
+  % all points X1 and dataDiff is a matrix containing the differences
+  % X2-X1 for all points X1 and X2
   n   = size(dataDiff,1);
   out = false(n,1);
-
-  % Rotational matrix with sign flip 
-  Rotate    = [0, -1; 1, 0 ];   
+  
+  % Rotational matrix with sign flip. It transforms a given vector [a,b] by 
+  % Rotate * [a,b] = [-b,a] as required for calculation of invA and detA  
+  Rotate = [0, -1; 1, 0 ];   
   
   % Calculate the determinant of A = [X2-X1, -(X4-X3)];
   % detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1))
   % NOTE: Vectorized this is equivalent to the matrix multiplication
   % [nx2] * [2x2] * [2x1] = [nx1]
-  detA   = dataDiff * Rotate * (X4-X3);  
+  detA = dataDiff * Rotate * (X4-X3);  
   
   % Get the indexes for nonzero elements
   id_detA = detA~=0;
@@ -381,7 +385,7 @@ function out = segmentsIntersect(data, dataDiff, X3, X4)
       lambda2 = sum(-dataDiff(id_detA,:) * Rotate .* rhs(id_detA,:), 2)./detA(id_detA);
 
       % Check whether lambda is in bound
-      out(id_detA) = all([lambda1, lambda2] > 0.0, 2) & all([lambda1, lambda2] < 1.0, 2);
+      out(id_detA) = lambda1 > 0.0 & lambda1 < 0.0 & lambda2 > 0.0 & lambda2 < 1.0;
   end
 end
 % =========================================================================
