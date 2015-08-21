@@ -1,5 +1,8 @@
 alphaImage : cbb2cf8ab5ccd1c4d27bb40cf8617214
 alphaTest : 93ad050f365faee18ae25a4f8ec067bc
+annotationSubplots : ade91307f28a9454f8aee10e651c62d4
+annotationText : 5b8562e0f9abd0407f19ca818ba9cd8c
+annotationTextUnits : 3533cf9b077689ab9b3c2a365882609c
 areaPlot : 6c70f6b2908ee95ec8d3e65280e8b86a
 axesColors : 21d1871d2f0b2a389ea6ffbbac43172e
 axesLocation : d1c194e852fd96c1db95ba5b23684860
@@ -8,6 +11,7 @@ besselImage : 0ffc3e10adb87029b44cbeb4bc435e07
 colorbarLabelTitle : d3c0aa0e9481c5ace5d64eeb50932e38
 colorbarLogplot : cb326bbb54e486a40d387acfe82f1b72
 compassplot : 76471346722595e1b113f3af59a6c91b
+contourPenny : e4af017e07881bc878b075f4b413d367
 customLegend : 3ce7c2ab5bc34f9825cb8eb91e282170
 decayingharmonic : e750cbafc69a0077b3fffe7cd077c3f0
 double_axes : fcbe776c394dec6dade8a6885cbaa0ac

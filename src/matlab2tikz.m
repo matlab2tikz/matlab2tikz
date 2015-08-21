@@ -408,9 +408,17 @@ function bool = isColorDefinitions(colors)
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
-    encoding = switchMatOct({'native', m2t.cmdOpts.Results.encoding}, {});
+    % Set the encoding of the output file.
+    % Currently only MATLAB supports different encodings.
+    fid = -1;
 
-    fid      = fopen(filename, 'w', encoding{:});
+    if strcmpi(getEnvironment, 'MATLAB')
+        encoding = {'native', m2t.cmdOpts.Results.encoding};
+        fid      = fopen(filename, 'w', encoding{:});
+    elseif strcmpi(getEnvironment, 'Octave')
+        fid      = fopen(filename, 'w');
+    end       
+
     if fid == -1
         error('matlab2tikz:fileOpenError', ...
             'Unable to open file ''%s'' for writing.', filename);
@@ -540,7 +548,7 @@ function str = generateColorDefinitions(names, specs, colorFormat)
             % make sure to append with '%' to avoid spacing woes
             str = [str, ...
                 sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
-                names{k}', specs{k})];
+                names{k}, specs{k})];
         end
         str = [str sprintf('%%\n')];
     end
@@ -4899,6 +4907,8 @@ function newstr = join(m2t, cellstr, delimiter)
 %
 % Example of usage:
 %              join(m2t, cellstr, ',')
+%
+% TODO: Unify the inline `join` and pivate `m2tstrjoin` function!
     if isempty(cellstr)
         newstr = '';
         return
@@ -4921,7 +4931,8 @@ function newstr = join(m2t, cellstr, delimiter)
     % inspired by strjoin of recent versions of MATLAB
     newstr = cell(2,nElem);
     newstr(1,:)         = reshape(cellstr, 1, nElem);
-    newstr(2,1:nElem-1) = {delimiter}; % put delimiters in-between the elements
+    newstr(2,1:nElem-1) = {delimiter};  % put delimiters in-between the elements
+    newstr(2,nElem) = {''};             % put empty string in last cell
     newstr = [newstr{:}];
 end
 % ==============================================================================
