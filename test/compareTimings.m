@@ -14,7 +14,7 @@ function compareTimings(statusBefore, statusAfter)
 %    where there are N test cases, repeated R times each.
 %
 % A way to build such cells is:
-% 
+%
 % suite = @ACID
 % N = numel(suite(0));
 % R = 10;
@@ -25,7 +25,7 @@ function compareTimings(statusBefore, statusAfter)
 % % now check out the after commit
 % statusAfter = cell(N, R);
 % for r = 1:R
-%     statusAfter(;, r) = testHeadless;
+%     statusAfter(:, r) = testHeadless;
 % end
 % compareTimings(statusBefore, statusAfter)
 %
@@ -69,7 +69,7 @@ end
 %% Data processing
 function timing = extract(statusBefore, statusAfter, func)
     otherwiseNaN = {'ErrorHandler', @(varargin) NaN};
-    
+
     timing.before = cellfun(func, statusBefore, otherwiseNaN{:});
     timing.after  = cellfun(func, statusAfter, otherwiseNaN{:});
 end
@@ -94,7 +94,7 @@ function [h] = histograms(timing, name)
     h{2} = myHistogram(timing.after , histostyle{:}, ...
                      'FaceColor', colors.after,...
                      'DisplayName', 'After');
-          
+
     xlabel(sprintf('%s runtime [s]',name))
     ylabel('Empirical PDF');
 end
@@ -110,11 +110,11 @@ function [h] = histogramSpeedup(varargin)
     for iData = 1:nData
         name = names{iData};
         timing = timings{iData};
-        
+
         hold on;
         speedup = timing.before ./ timing.after;
         color = colorOptionsOfName(name, 'FaceColor');
-        
+
         h{iData} = myHistogram(speedup, histostyle{:}, color{:},...
                                'DisplayName', name);
         alldata = [alldata;speedup(:)];
@@ -141,14 +141,14 @@ function [h] = plotByTestCase(timing, name)
                 'LineWidth', 2, ...
                 'Color', colors.after,...
                 'DisplayName', 'After');
-    
+
     ylabel(sprintf('%s runtime [s]', name));
     set(gca,'YScale','log')
 end
 function [h] = plotSpeedup(varargin)
     % plot speed up per test case
     [names, timings] = splitNameTiming(varargin);
-    
+
     nDatasets = numel(names);
     alldata = [];
     for iData = 1:nDatasets
@@ -164,13 +164,13 @@ function [h] = plotSpeedup(varargin)
         end
         h{iData} = plot(medSpeedup, color{:}, 'DisplayName', name, ...
                         'LineWidth', 2);
-        
+
         alldata = [alldata; speedup(:)];
     end
-    
+
     nTests = size(speedup, 1);
     plot([-nTests nTests*2], ones(2,1), 'k','HandleVisibility','off');
-    
+
     legend('show', 'Location','NorthWest')
     set(gca,'YScale','log','YLim',[min(alldata), max(alldata)].*[0.9 1.1], ...
         'XLim', [0 nTests+1])
@@ -185,7 +185,7 @@ function [h] = myHistogram(data, varargin)
         h = histogram(data, varargin{:});
     else % no "histogram" available
         options = struct(varargin{:});
-        
+
         minData = min(data(:));
         maxData = max(data(:));
         if isfield(options, 'BinWidth')
@@ -201,7 +201,7 @@ function [h] = myHistogram(data, varargin)
             counts = counts./sum(counts)/binWidth;
         end
         h = bar(bins, counts, 1);
-        
+
         % transfer properties as well
         names = fieldnames(options);
         for iName = 1:numel(names)
@@ -221,7 +221,7 @@ function colors = colorscheme()
     colors.matlab2tikz = [161  19  46]/255;
     colors.cleanfigure = [  0 113 188]/255;
     colors.before      = [236 176  31]/255;
-    colors.after       = [118 171  47]/255; 
+    colors.after       = [118 171  47]/255;
 end
 function color = colorOptionsOfName(name, keyword)
 % returns a cell array with a keyword (default: 'Color') and a named color
@@ -235,4 +235,4 @@ function color = colorOptionsOfName(name, keyword)
     else
         color = {};
     end
-end        
+end
