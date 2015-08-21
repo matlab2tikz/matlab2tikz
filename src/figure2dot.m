@@ -1,6 +1,15 @@
 function figure2dot(filename, varargin)
 %FIGURE2DOT    Save figure in Graphviz (.dot) file.
-%   FIGURE2DOT() saves the current figure as dot-file.
+%  FIGURE2DOT(filename) saves the current figure as dot-file.
+%
+%  FIGURE2DOT(filename, 'object', HGOBJECT) constructs the graph representation
+%  of the specified object (default: gcf)
+%
+%  You can visualize the constructed DOT file using:
+%    - [GraphViz](http://www.graphviz.org) on your computer
+%    - [WebGraphViz](http://www.webgraphviz.com) online
+%    - [Gravizo](http://www.gravizo.com) for your markdown files
+%    - and a lot of other software such as OmniGraffle
 %
 
 %   Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
@@ -35,7 +44,6 @@ function figure2dot(filename, varargin)
     ipp = ipp.addParamValue(ipp, 'object', gcf, @ishghandle);
     ipp = ipp.parse(ipp, filename, varargin{:});
     args = ipp.Results;
-    %TODO: improve documentation of parameters of figure2dot
 
     filehandle = fopen(args.filename, 'w');
     finally_fclose_filehandle = onCleanup(@() fclose(filehandle));
