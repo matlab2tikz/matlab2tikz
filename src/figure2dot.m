@@ -125,7 +125,7 @@ function label = addHGProperty(label, h, propName, default)
         if numel(propValue) == 1 && ishghandle(propValue) && isprop(propValue, 'String')
             % dereference Titles, labels, ...
             propValue = get(propValue, 'String');
-        elseif iscellstr(propValue)
+        elseif iscell(propValue)
             propValue = ['{' m2tstrjoin(propValue,',') '}'];
         end
 
@@ -138,6 +138,8 @@ function label = addProperty(label, propName, propValue)
     % add a property to a GraphViz node label
     if isnumeric(propValue)
         propValue = num2str(propValue);
+    elseif iscell(propValue)
+        propValue = m2tstrjoin(propValue,sprintf('\n'));
     end
     label = [label, sprintf('%s: %s', propName, propValue)];
 end
