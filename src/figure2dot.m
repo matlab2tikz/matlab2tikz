@@ -114,7 +114,7 @@ function label = addHGProperty(label, h, propName, default)
 
     if isprop(h, propName)
         propValue = get(h, propName);
-        if ishghandle(propValue) && isprop(propValue, 'String')
+        if numel(propValue) == 1 && ishghandle(propValue) && isprop(propValue, 'String')
             % dereference Titles, labels, ...
             propValue = get(propValue, 'String');
         elseif iscellstr(propValue)
