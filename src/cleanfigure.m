@@ -335,10 +335,13 @@ function out = segmentsIntersect(X1, diffX2X1, X3, X4)
   %   y1 + lambda1 (y2-y1)  =  y3 + lambda2 (y4-y3)
   %
   % for lambda1 and lambda2.
-
-  % NOTE: We could vectorize this function. Now X1 is a matrix containing
-  % all points X1 and diffX2X1 is a matrix containing the differences
-  % X2-X1 for all points X1 and X2
+  % See https://en.wikipedia.org/wiki/Line-line_intersection for reference.
+  
+  % NOTE: As X2 is only used in the difference (X2-X1), we directly pass
+  % that difference instead of X2 individually.
+  % Now X1 is a matrix containing all data points X1 and diffX2X1 is a
+  % matrix containing the differences X2-X1 between all consecutive data
+  % points X1 and X2
   % n is the number of segments (not points in the plot!)
   n   = size(diffX2X1, 1);
   out = false(n, 1);
