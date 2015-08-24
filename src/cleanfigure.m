@@ -238,32 +238,36 @@ function pruneOutsideBox(meta, handle)
       % To avoid this, add a row of NaNs wherever a block of actual data is
       % removed.
 
-      % Get the indices of points that should not be plotted
-      id_remove = find(shouldPlot==0);
+      % Get the indices of points that should be removed
+      id_remove = find(~shouldPlot);
 
-      % Find consecutive blocks of data points. For those
-      % diff(id_remove)==1. So only replace the first one with a NaN. Those
-      % indices alwas have diff(id_remove)>=2 as there is at least one
-      % datapoint between this and the next one
-      id_replace = id_remove([2; diff(id_remove)]>=2);
-      
-      % Get the indices for all data points to be removed
-      id_remove  = id_remove([2; diff(id_remove)]==1);
-
-      % Make sure that the first data point is NOT replaced by a NaN
-      if(id_replace(1)==1)
-          id_replace=id_replace(2:end);
-      end
+      % If there are consecutive data points to be removed, only replace 
+      % the first one by a NaN. Consecutive data points have 
+      % diff(id_remove)==1, so replace diff(id_remove)>1 by NaN and remove
+      % the rest
+      idx        = [true; diff(id_remove) >1];
+      id_replace = id_remove(idx);
+      id_remove  = id_remove(~idx);
       
       % Replace the data points
       data(id_replace,:) = NaN(length(id_replace), size(data,2));
-      data(id_remove,:) = [];
       
-      % If last point would be NaN remove it too
-      if (isnan(data(end,:)))
-          data(end,:)=[];
-      end
+      % Remove the other non visible data points
+      data(id_remove,:) = [];
   end
+  
+  % Make sure that there are no NaNs at the beginning of the data since
+  % this would be interpreted as column names by Pgfplots.
+  id_first = find(~any(isnan(data),2),1,'first');
+  if(id_first)>1;
+    data = data(id_first:end,:);
+  end  
+  
+  % Drop all NaNs at the end of the data too
+  id_last  = find(~any(isnan(data),2),1,'last');
+  if(id_last)<size(data,1);
+    data = data(1:id_last,:);
+  end  
 
   % Override with the new data.
   set(handle, 'XData', data(:, 1));
@@ -275,7 +279,7 @@ function pruneOutsideBox(meta, handle)
   return;
 end
 % ==========================================================================
-function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
     % Determine the corners of the axes as defined by xLim and yLim
     bottomLeft  = [xLim(1); yLim(1)];
     topLeft     = [xLim(1); yLim(2)];
