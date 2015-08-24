@@ -2,7 +2,9 @@ language: c++
 # command to install dependencies
 before_install:
   - wget http://security.ubuntu.com/ubuntu/pool/universe/o/octave/octave_3.8.2-4_amd64.deb
+  - sudo apt-get update -qq
   - sudo dpkg -i octave_3.8.2-4_amd64.deb
+  - sudo apt-get -f install
 script:
   - cd test && /usr/bin/octave --eval runMatlab2TikzTests.m
 notifications:
