@@ -3,8 +3,10 @@ language: c++
 before_install:
   - wget http://security.ubuntu.com/ubuntu/pool/universe/o/octave/octave-common_3.8.1-1ubuntu1_all.deb
   - wget http://security.ubuntu.com/ubuntu/pool/universe/o/octave/octave_3.8.1-1ubuntu1_amd64.deb
+  - wget http://security.ubuntu.com/ubuntu/pool/universe/o/octave/liboctave2_3.8.1-1ubuntu1_amd64.deb
   - sudo apt-get update -qq
-  - sudo dpkg -i octave-common_3.8.1-1ubuntu1_all.deb || sudo apt-get -f install
+  - sudo dpkg -i octave-common_3.8.1-1ubuntu1_all.deb
+  - sudo dpkg -i liboctave2_3.8.1-1ubuntu1_amd64.deb
   - sudo dpkg -i octave_3.8.1-1ubuntu1_amd64.deb || sudo apt-get -f install
 script:
   - cd test && /usr/bin/octave --eval runMatlab2TikzTests.m
