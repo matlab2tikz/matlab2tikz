@@ -4,6 +4,6 @@ before_install:
   - wget http://security.ubuntu.com/ubuntu/pool/universe/o/octave/octave_3.8.2-4_amd64.deb
   - sudo dpkg -i octave_3.8.2-4_amd64.deb
 script:
-  - cd test && /usr/bin/octave -q --eval runMatlab2TikzTests.m
+  - cd test && /usr/bin/octave --eval runMatlab2TikzTests.m
 notifications:
   hipchat: f4c2c5f87adc85025545e5b59b3fbe@Matlab2tikz

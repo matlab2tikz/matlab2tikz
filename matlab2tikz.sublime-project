@@ -12,7 +12,7 @@
             "env": {"CONTINUOUS_INTEGRATION":"true"},
             "selector": "source.matlab",
             "working_dir": "${project_path}/test", // this might get overwritten by startup scripts
-            "cmd":  ["octave","-q",
+            "cmd":  ["octave",
                      "--eval","cd('${project_path}/test'); runMatlab2TikzTests()"]
         },
         {
