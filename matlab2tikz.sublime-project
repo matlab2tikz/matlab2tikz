@@ -1,0 +1,57 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],
+    "build_systems":
+     [
+        {
+            "name": "CI tests (Octave)",
+            "env": {"CONTINUOUS_INTEGRATION":"true"},
+            "selector": "source.matlab",
+            "working_dir": "${project_path}/test", // this might get overwritten by startup scripts
+            "cmd":  ["octave","-q",
+                     "--eval","cd('${project_path}/test'); runMatlab2TikzTests()"]
+        },
+        {
+            "name": "CI tests (MATLAB)",
+            "env": {"CONTINUOUS_INTEGRATION":"true"},
+            "selector": "source.matlab",
+            "working_dir": "${project_path}/test", // this is not respected by MATLAB R2015a depending on the user settings!
+            "cmd":  ["matlab", "-nosplash",
+                     "-r","cd('${project_path}/test'); runMatlab2TikzTests()"]
+        },
+        {
+            "name": "CI tests (MATLAB HG1)",
+            "env": {"CONTINUOUS_INTEGRATION":"true"},
+            "selector": "source.matlab",
+            "working_dir": "${project_path}/test", // this is not respected by MATLAB R2015a depending on the user settings!
+            "cmd":  ["matlab-hg1", "-nosplash",
+                     "-r","cd('${project_path}/test'); runMatlab2TikzTests()"]
+        },
+        {
+            "name": "CI tests (MATLAB HG2)",
+            "env": {"CONTINUOUS_INTEGRATION":"true"},
+            "selector": "source.matlab",
+            "working_dir": "${project_path}/test", // this is not respected by MATLAB R2015a depending on the user settings!
+            "cmd":  ["matlab-hg2", "-nosplash",
+                     "-r","cd('${project_path}/test'); runMatlab2TikzTests()"]
+        },
+        {
+            "name": "ACID: make",
+            "working_dir": "${project_path}/test/tex",
+            "cmd":  ["make","-j8"]
+        },
+        {
+            "name": "ACID: distclean",
+            "working_dir": "${project_path}/test/tex",
+            "cmd":  ["make","distclean"]
+        }
+    ],
+    "settings":
+    {
+        "FuzzyFilePath":{}
+    }
+}

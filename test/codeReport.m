@@ -174,6 +174,7 @@ function str = makeTable(data, fields, header)
     if nData == 0
         return; % empty input
     end
+    %TODO: use gfmTable from makeTravisReport instead to do the formatting
 
     % determine column sizes
     nFields = numel(fields);
