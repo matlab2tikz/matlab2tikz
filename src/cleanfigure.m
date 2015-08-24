@@ -6,8 +6,15 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
-%   CLEANFIGURE('minimumPointsDistance',DOUBLE,...) explicitly specified the
-%   minimum distance between two points. (default: 1.0e-10)
+%   CLEANFIGURE('targetResolution',PPI,...)
+%   CLEANFIGURE('targetResolution',[W,H],...)
+%   Reduce the number of data points in line objects by applying
+%   unperceivable changes at the target resolution.
+%   The target resolution can be specificed as the number of Pixels Per
+%   Inch (PPI), e.g. 300, or as the Width and Heigth of the figure in
+%   pixels, e.g. [9000, 5400].
+%   Use targetResolution = Inf or 0 to disable line simplification.
+%   (default: 600)
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -50,15 +57,18 @@ function cleanfigure(varargin)
 
   % Set up command line options.
   m2t.cmdOpts = m2tInputParser;
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', 600, @isValidTargetResolution);
+
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
 
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
   % Recurse down the tree of plot objects and clean up the leaves.
   for h = m2t.cmdOpts.Results.handle(:)'
-    recursiveCleanup(meta, h, m2t.cmdOpts.Results.minimumPointsDistance, 0);
+    recursiveCleanup(meta, h, m2t.cmdOpts.Results.targetResolution, 0);
   end
 
   % Reset to initial state.
@@ -67,7 +77,7 @@ function cleanfigure(varargin)
   return;
 end
 % =========================================================================
-function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
+function indent = recursiveCleanup(meta, h, targetResolution, indent)
 
   type = get(h, 'Type');
 
@@ -93,13 +103,13 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
   if ~isempty(children)
       for child = children(:)'
           indent = indent + 4;
-          indent = recursiveCleanup(meta, child, minimumPointsDistance, indent);
+          indent = recursiveCleanup(meta, child, targetResolution, indent);
           indent = indent - 4;
       end
   else
       % We're in a leaf, so apply all the fancy simplications.
 
-      %% Skip invisible objects.
+      % Skip invisible objects.
       %if ~strcmp(get(h, 'Visible'), 'on')
       %    display(sprintf([repmat(' ',1,indent), '  invisible']))
       %    return;
@@ -108,12 +118,11 @@ function indent = recursiveCleanup(meta, h, minimumPointsDistance, indent)
       %display(sprintf([repmat(' ',1,indent), '  handle this']))
 
       if strcmp(type, 'line')
+          simplifyLine(meta, h, targetResolution);
           pruneOutsideBox(meta, h);
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
-          % Don't be too precise.
-          coarsenLine(meta, h, minimumPointsDistance);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
       elseif strcmp(type, 'text')
@@ -228,39 +237,31 @@ function pruneOutsideBox(meta, handle)
       % 'loose' ends may now appear in the figure.
       % To avoid this, add a row of NaNs wherever a block of actual data is
       % removed.
-      chunkIndices = [];
-      k = 1;
-      while k <= numPoints
-          % fast forward to shouldPlot==True
-          while k<=numPoints && ~shouldPlot(k)
-              k = k+1;
-          end
-          kStart = k;
-          % fast forward to shouldPlot==False
-          while k<=numPoints && shouldPlot(k)
-              k = k+1;
-          end
-          kEnd = k-1;
-
-          if kStart <= kEnd
-              chunkIndices = [chunkIndices; ...
-                              [kStart, kEnd]];
-          end
+      
+      % Get the indices of points that should not be plotted
+      id_remove = find(shouldPlot==0);
+            
+      % Find consecutive blocks of data points. For those
+      % diff(id_remove)==1. So only replace the first one with a NaN. Those
+      % indices alwas have diff(id_remove)>=2 as there is at least one
+      % datapoint between this and the next one
+      id_replace = id_remove([2; diff(id_remove)]>=2); 
+      
+      % Get the indices for all data points to be removed
+      id_remove  = id_remove([2; diff(id_remove)]==1); 
+      
+      % Make sure that the first data point is NOT replaced by a NaN
+      if(id_replace(1)==1)
+          id_replace=id_replace(2:end);
       end
-
-      % Create masked data with NaN padding.
-      % Make sure that there are no NaNs at the beginning of the data since
-      % this would be interpreted as column names by Pgfplots.
-      if size(chunkIndices, 1) > 0
-          ci = chunkIndices(1,:);
-          newData = data(ci(1):ci(2), :);
-          n = size(data, 2);
-          for ci = chunkIndices(2:end,:)'
-               newData = [newData; ...
-                          NaN(1, n); ...
-                          data(ci(1):ci(2), :)];
-          end
-          data = newData;
+      
+      % Replace the data points      
+      data(id_replace,:) = NaN(length(id_replace), size(data,2));
+      data(id_remove,:) = [];
+      
+      % If last point would be NaN remove it too 
+      if (isnan(data(end,:)))
+          data(end,:)=[];
       end
   end
 
@@ -287,105 +288,342 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     % in p and determine whether the line between the pair crosses the box.
     n = size(data, 1);
     out = false(n-1, 1);
-
-    [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
-
-    for k = 1:n-1
-        this = data(k  , :);
-        next = data(k+1, :);
-
+    
+    % Only check if there is more than 1 point    
+    if n>1
         % One of the neighbors is inside the box and the other is finite
-        nextVisible = (dataIsInBox(k+1) && all(isfinite(this)));
-        thisVisible = (dataIsInBox(k)   && all(isfinite(next)));
+        nextVisible = (dataIsInBox(2:end)   & all(isfinite(data(1:end-1)), 2));
+        thisVisible = (dataIsInBox(1:end-1) & all(isfinite(data(2:end)), 2));
 
-        % Check whether the line connecting this point and the next one
-        % intersects with any of the borders of the drawn axis
-        left   = segmentsIntersect(this, next, bottomLeft , topLeft);
-        right  = segmentsIntersect(this, next, bottomRight, topRight);
-        bottom = segmentsIntersect(this, next, bottomLeft , bottomRight);
-        top    = segmentsIntersect(this, next, topLeft    , topRight);
+        % Get the corner coordinates
+        [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
 
-        % The segment is visible when any of the following hold:
-        %  - this point is visible in the axis and the next is finite
-        %  - this point is finite and the next is visible in the axis
-        %  - the segment connecting this and the next point crosses a border
-        out(k) = thisVisible || nextVisible || left || right || top || bottom;
+        % Calculate the difference between two consecutive points
+        dataDiff = diff(data);
+
+        % Check if data points intersect with the borders of the plot
+        left   = segmentsIntersect(data, dataDiff, bottomLeft , topLeft);
+        right  = segmentsIntersect(data, dataDiff, bottomRight, topRight);
+        bottom = segmentsIntersect(data, dataDiff, bottomLeft , bottomRight);
+        top    = segmentsIntersect(data, dataDiff, topLeft    , topRight);
+
+        % Check the result
+        out = thisVisible | nextVisible | left | right | top | bottom;
     end
 end
 % =========================================================================
-function out = segmentsIntersect(X1, X2, X3, X4)
+function out = segmentsIntersect(X1, diffX2X1, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect.
-  lambda = crossLines(X1, X2, X3, X4);
-  out = all(lambda > 0.0) && all(lambda < 1.0);
+  % Given four points X_k=(x_k,y_k), k\in{1,2,3,4}, and the two lines defined
+  % by those,
+  %
+  %  L1(lambda) = X1 + lambda (X2 - X1)
+  %  L2(lambda) = X3 + lambda (X4 - X3)
+  %
+  % returns the lambda for which they intersect (and Inf if they are parallel).
+  % Technically, one needs to solve the 2x2 equation system
+  %
+  %   x1 + lambda1 (x2-x1)  =  x3 + lambda2 (x4-x3)
+  %   y1 + lambda1 (y2-y1)  =  y3 + lambda2 (y4-y3)
+  %
+  % for lambda1 and lambda2.
+
+  % NOTE: We could vectorize this function. Now X1 is a matrix containing
+  % all points X1 and diffX2X1 is a matrix containing the differences
+  % X2-X1 for all points X1 and X2
+  % n is the number of segments (not points in the plot!)
+  n   = size(diffX2X1, 1);
+  out = false(n, 1);
+  
+  % Calculate the determinant of A = [X2-X1, -(X4-X3)];
+  % detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1))
+  % NOTE: Vectorized this is equivalent to the matrix multiplication
+  % [nx2] * [2x2] * [2x1] = [nx1]
+  detA = -diffX2X1(:,1) .* (X4(2)-X3(2)) + diffX2X1(:,2) .* (X4(1)-X3(1));  
+  
+  % Get the indexes for nonzero elements
+  id_detA = detA~=0;
+  
+  if any(id_detA)
+      % rhs = X3(:) - X1(:)
+      % NOTE: Originaly this was a [2x1] vector. However as we vectorize the 
+      % calculation it is beneficial to treat it as an [nx2] matrix rather than a [2xn]
+      rhs = bsxfun(@minus, X3', X1(1:end-1, :));
+      
+      % Calculate the inverse of A and lambda
+      % invA=[-(X4(2)-X3(2)), X4(1)-X3(1);...
+      %       -(X2(2)-X1(2)), X2(1)-X1(1)] / detA 
+      % lambda = invA * rhs
+  
+      % Rotational matrix with sign flip. It transforms a given vector [a,b] by 
+      % Rotate * [a,b] = [-b,a] as required for calculation of invA  
+      Rotate = [0, -1; 1, 0];   
+
+
+      % Rather than calculating invA first and then multiply with rhs to obtain 
+      % lambda, directly calculate the respective termsq
+      % The upper half of the 2x2 matrix is always the same and is given by:
+      % [-(X4(2)-X3(2)), X4(1)-X3(1)] / detA * rhs
+      % This is a matrix multiplication of the form [1x2] * [2x1] = [1x1]
+      % As we have transposed rhs we can write this as:
+      % rhs * Rotate * (X4-X3) => [nx2] * [2x2] * [2x1] = [nx1]
+      lambda1 = (rhs(id_detA, :) * Rotate * (X4-X3))./detA(id_detA);
+
+      % The lower half is dependent on (X2-X1) which is a matrix of size [nx2]
+      % [-(X2(2)-X1(2)), X2(1)-X1(1)] / detA * rhs 
+      % As both (X2-X1) and rhs are matrices of size [nx2] there is no simple 
+      % matrix multiplication leading to a [nx1] vector. Therefore, use the
+      % elementwise multiplication and sum over it
+      % sum( [nx2] * [2x2] .* [nx2], 2) = sum([nx2],2) = [nx1] 
+      lambda2 = sum(-diffX2X1(id_detA, :) * Rotate .* rhs(id_detA, :), 2)./detA(id_detA);
+
+      % Check whether lambda is in bound
+      out(id_detA) = 0.0 < lambda1 & lambda1 < 1.0 & 0.0 < lambda2 & lambda2 < 1.0;
+  end
 end
 % =========================================================================
-function coarsenLine(meta, handle, minimumPointsDistance)
-  % Reduce the number of data points in the line handle.
-  % Given a minimum distance at which two nodes are considered different,
-  % this can help with plots that contain a large amount of data points not
-  % all of which need to be plotted.
-  %
-  if ( abs(minimumPointsDistance) < 1.0e-15 )
-      % bail out early
-      return
-  end
+function simplifyLine(meta, handle, targetResolution)
+    % Reduce the number of data points in the line 'handle'.
+    %
+    % Aplies a path-simplification algorithm if there are no markers or
+    % pixelization otherwise. Changes are visually negligible at the target
+    % resolution.
+    %
+    % The target resolution is either specificed as the number of PPI or as
+    % the [Width, Heigth] of the figure in pixels.
+    % A scalar value of INF or 0 disables path simplification.
+    % (default = 600)
 
-  % Extract the data from the current line handle.
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
-  if ~isempty(zData)
-    % Don't do funny stuff when zData is present.
-    return;
-  end
+    % Do not simpify
+    if any(isinf(targetResolution) | targetResolution == 0)
+        return
+    end
 
-  data = [xData(:), yData(:)];
+    % Retrieve target figure size in pixels
+    [W, H] = getWidthHeightInPixels(targetResolution);
 
-  if isempty(data)
-      return;
-  end
+    % Extract the data from the current line handle.
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+    zData = get(handle, 'ZData');
 
-  % Generate a mask which is true for the first point, and all
-  % subsequent points which have a greater norm2-distance from
-  % the previous point than 'threshold'.
-  n = size(data, 1);
+    if ~isempty(zData)
+        % TODO: 3d simplificattion of frontal 2d projection
+        return;
+    end
+    if isempty(xData) || isempty(yData)
+        return;
+    end
+    if numel(xData) <= 2
+        return;
+    end
 
-  % Get info about log scaling.
-  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    % Get info about log scaling
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    vxData = xData;
+    if isXlog
+        vxData = log10(xData);
+    end
 
-  mask = false(n, 1);
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    vyData = yData;
+    if isYlog
+        vyData = log10(yData);
+    end
 
-  XRef = data(1,:);
-  mask(1) = true;
-  for kk = 2:n
-      % Compute the visible distance of those points,
-      % incorporating possible log-scaling of the axes.
-      visDiff = XRef - data(kk,:);
-      if isXlog
-          % visDiff(1) = log10(XRef(1)) - log10(data(kk,1));
-          visDiff(1) = log10(visDiff(1));
-      end
-      if isYlog
-          visDiff(2) = log10(visDiff(2));
-      end
-      % Check if it's larger than the threshold and
-      % update the reference point in that case.
-      if norm(visDiff) > minimumPointsDistance
-          XRef = data(kk,:);
-          mask(kk) = true;
-      end
-  end
-  mask(end) = true;
+    % Automatically guess a tol based on the area of the figure and
+    % the area and resolution of the output
+    xLim = xlim(meta.gca);
+    if isXlog
+        xLim = log10(xLim);
+    end
+    xrange = xLim(2)-xLim(1);
+    yLim   = ylim(meta.gca);
+    if isYlog
+        yLim = log10(yLim);
+    end
+    yrange = yLim(2)-yLim(1);
 
-  % Make sure to keep NaNs.
-  mask = mask | any(isnan(data)')';
+    % Conversion factors of data units into pixels
+    xToPix = W/xrange;
+    yToPix = H/yrange;
 
-  % Set the new (masked) data.
-  set(handle, 'XData', data(mask, 1));
-  set(handle, 'YData', data(mask, 2));
+    % If the path has markers, perform pixelation instead of simplification
+    hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
+    if hasMarkers
+        % Pixelate data at the zoom multiplier
+        mask   = pixelate(vxData, vyData, xToPix, yToPix);
+        xData  = xData(mask);
+        yData  = yData(mask);
+        set(handle, 'XData', xData);
+        set(handle, 'YData', yData);
+        return
+    end
 
-  return;
+    xPixelWidth = 1/xToPix;
+    yPixelWidth = 1/yToPix;
+    tol = min(xPixelWidth,yPixelWidth);
+
+    % Split up lines which are seperated by NaNs
+    inan   = isnan(vxData) | isnan(vyData);
+    df     = diff([false, ~inan, false]);
+    pstart = find(df == 1);
+    pend   = find(df == -1)-1;
+    nlines = numel(pstart);
+
+    [linesx, linesy] = deal(cell(1,nlines*2));
+    for ii = 1:nlines
+        % Visual data used for simplifications
+        vx = vxData(pstart(ii):pend(ii));
+        vy = vyData(pstart(ii):pend(ii));
+
+        % Actual data that inherits the simplifications
+        x = xData(pstart(ii):pend(ii));
+        y = yData(pstart(ii):pend(ii));
+
+        % Line simplification
+        if numel(vx) > 2
+            mask = opheimSimplify(vx,vy,tol);
+            x    = x(mask);
+            y    = y(mask);
+        end
+
+        % Place eventually simplified lines segments on odd positions
+        linesx{ii*2-1} = x;
+        linesy{ii*2-1} = y;
+
+        % Add nans back (if any) in between the line segments
+        linesx{ii*2} = nan;
+        linesy{ii*2} = nan;
+    end
+    xData = [linesx{1:end-1}];
+    yData = [linesy{1:end-1}];
+
+    % Update with the new (masked) data
+    set(handle, 'XData', xData);
+    set(handle, 'YData', yData);
+end
+% =========================================================================
+function mask = pixelate(x, y, xToPix, yToPix)
+    % Rough reduction of data points at a multiple of the target resolution
+
+    % The resolution is lost only beyond the multiplier magnification
+    mult = 2;
+
+    % Convert data to pixel units, magnify and mark only the first
+    % point that occupies a given position
+    mask = [true, diff(round(x * xToPix * mult))~=0];
+    mask = [true, diff(round(y * yToPix * mult))~=0] | mask;
+
+    % Keep end points or it might truncate whole pixels
+    inan         = isnan(x) | isnan(y);
+    df           = diff([false, inan, false]);
+    istart       = df == 1;
+    pend         = find(df == -1)-1;
+    mask(istart) = true;
+    mask(pend)   = true;
+end
+% =========================================================================
+function mask = opheimSimplify(x,y,tol)
+    % Opheim path simplification algorithm
+    %
+    % Given a path of vertices V and a tolerance TOL, the algorithm:
+    %   1. selects the first vertex as the KEY;
+    %   2. finds the first vertex farther than TOL from the KEY and links
+    %      the two vertices with a LINE;
+    %   3. finds the last vertex from KEY which stays within TOL from the
+    %      LINE and sets it to be the LAST vertex. Removes all points in
+    %      between the KEY and the LAST vertex;
+    %   4. sets the KEY to the LAST vertex and restarts from step 2.
+    %
+    % The Opheim algorithm can produce unexpected results if the path
+    % returns back on itself while remaining within TOL from the LINE.
+    % This behaviour can be seen in the following example:
+    %
+    %   x   = [1,2,2,2,3];
+    %   y   = [1,1,2,1,1];
+    %   tol < 1
+    %
+    % The algorithm undesirably removes the second last point. See
+    % https://github.com/matlab2tikz/matlab2tikz/pull/585#issuecomment-89397577
+    % for additional details.
+    %
+    % To rectify this issues, step 3 is modified to find the LAST vertex as
+    % follows:
+    %   3*. finds the last vertex from KEY which stays within TOL from the
+    %       LINE, or the vertex that connected to its previous point forms
+    %       a segment which spans an angle with LINE larger than 90
+    %       degrees.
+
+    mask = false(size(x));
+    mask(1) = true;
+    mask(end) = true;
+
+    N = numel(x);
+    i = 1;
+    while i <= N-2
+        % Find first vertex farther than TOL from the KEY
+        j = i+1;
+        v = [x(j)-x(i); y(j)-y(i)];
+        while j < N && norm(v) <= tol
+            j = j+1;
+            v = [x(j)-x(i); y(j)-y(i)];
+        end
+        v = v/norm(v);
+
+        % Unit normal to the line between point i and point j
+        normal = [v(2);-v(1)];
+
+        % Find the last point which stays within TOL from the line
+        % connecting i to j, or the last point within a direction change
+        % of pi/2.
+        % Starts from the j+1 points, since all previous points are within
+        % TOL by construction.
+        while j < N
+            % Calculate the perpendicular distance from the i->j line
+            v1 = [x(j+1)-x(i); y(j+1)-y(i)];
+            d = abs(normal.'*v1);
+            if d > tol
+                break
+            end
+
+            % Calculate the angle between the line from the i->j and the
+            % line from j -> j+1. If
+            v2 = [x(j+1)-x(j); y(j+1)-y(j)];
+            anglecosine = v.'*v2;
+            if anglecosine <= 0;
+                break
+            end
+            j = j + 1;
+        end
+        i = j;
+        mask(i) = true;
+    end
+end
+% =========================================================================
+function [W, H] = getWidthHeightInPixels(targetResolution)
+    % Retrieves target figure width and height in pixels
+    % TODO: If targetResolution is a scalar, W and H are determined
+    % differently on different environments (octave, local vs. Travis).
+    % It is unclear why, as this even happens, if `Units` and `Position`
+    % are matching. Could it be that the `set(gcf,'Units','Inches')` is not
+    % taken into consideration for `Position`, directly after setting it?
+
+    % targetResolution is PPI
+    if isscalar(targetResolution)
+        % Query figure size in inches and convert W and H to target pixels
+        oldunits  = get(gcf,'Units');
+        set(gcf,'Units','Inches');
+        figSizeIn = get(gcf,'Position');
+        W         = figSizeIn(3) * targetResolution;
+        H         = figSizeIn(4) * targetResolution;
+        set(gcf,'Units', oldunits) % restore original unit
+
+    % It is already in the format we want
+    else
+        W = targetResolution(1);
+        H = targetResolution(2);
+    end
 end
 % =========================================================================
 function movePointsCloser(meta, handle)
@@ -613,5 +851,9 @@ function lambda = crossLines(X1, X2, X3, X4)
   end
   lambda = invA * rhs;
 
+end
+% =========================================================================
+function bool = isValidTargetResolution(val)
+    bool = isnumeric(val) && ~any(isnan(val)) && (isscalar(val) || numel(val) == 2);
 end
 % =========================================================================
