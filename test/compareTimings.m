@@ -63,8 +63,6 @@ legend('show');
 linkaxes(hax([4 5 6]), 'x');
 
 % ------------------------------------------------------------------------------
-
-% ------------------------------------------------------------------------------
 end
 %% Data processing
 function timing = extract(statusBefore, statusAfter, func)
@@ -106,22 +104,24 @@ function [h] = histogramSpeedup(varargin)
 
     [names,timings] = splitNameTiming(varargin);
     nData = numel(timings);
-    alldata = [];
+    h = cell(nData, 1);
+    minTime = NaN; maxTime = NaN;
     for iData = 1:nData
         name = names{iData};
         timing = timings{iData};
 
         hold on;
-        speedup = timing.before ./ timing.after;
+        speedup = computeSpeedup(timing);
         color = colorOptionsOfName(name, 'FaceColor');
 
         h{iData} = myHistogram(speedup, histostyle{:}, color{:},...
                                'DisplayName', name);
-        alldata = [alldata;speedup(:)];
+
+        [minTime, maxTime] = minAndMax(speedup, minTime, maxTime);
     end
     xlabel('Speedup')
     ylabel('Empirical PDF');
-    set(gca,'XScale','log', 'XLim', [min(alldata) max(alldata)].*[0.9 1.1]);
+    set(gca,'XScale','log', 'XLim', [minTime, maxTime].*[0.9 1.1]);
 end
 function [h] = plotByTestCase(timing, name)
     % plot all time measurements per test case
@@ -150,29 +150,30 @@ function [h] = plotSpeedup(varargin)
     [names, timings] = splitNameTiming(varargin);
 
     nDatasets = numel(names);
-    alldata = [];
+    minTime = NaN;
+    maxTime = NaN;
+    h = cell(nDatasets, 1);
     for iData = 1:nDatasets
         name = names{iData};
         timing = timings{iData};
         color = colorOptionsOfName(name);
 
         hold on
-        speedup = timing.before ./ timing.after;
-        medSpeedup = median(timing.before,2) ./ median(timing.after,2);
+        [speedup, medSpeedup] = computeSpeedup(timing);
         if size(speedup, 2) > 1
             plot(speedup, '.', color{:}, 'HandleVisibility','off');
         end
         h{iData} = plot(medSpeedup, color{:}, 'DisplayName', name, ...
                         'LineWidth', 2);
 
-        alldata = [alldata; speedup(:)];
+        [minTime, maxTime] = minAndMax(speedup, minTime, maxTime);
     end
 
     nTests = size(speedup, 1);
     plot([-nTests nTests*2], ones(2,1), 'k','HandleVisibility','off');
 
     legend('show', 'Location','NorthWest')
-    set(gca,'YScale','log','YLim',[min(alldata), max(alldata)].*[0.9 1.1], ...
+    set(gca,'YScale','log','YLim', [minTime, maxTime].*[0.9 1.1], ...
         'XLim', [0 nTests+1])
     xlabel('Test case');
     ylabel('Speed-up (t_{before}/t_{after})');
@@ -215,6 +216,19 @@ function [h] = myHistogram(data, varargin)
     end
 end
 
+%% Calculations
+function [speedup, medSpeedup] = computeSpeedup(timing)
+    % computes the timing speedup (and median speedup)
+    dRep = 2; % dimension containing the repeated tests
+    speedup = timing.before ./ timing.after;
+    medSpeedup = median(timing.before, dRep) ./ median(timing.after, dRep);
+end
+function [minTime, maxTime] = minAndMax(speedup, minTime, maxTime)
+    % calculates the minimum/maximum time in an array and peviously
+    % computed min/max times
+    minTime = min([minTime; speedup(:)]);
+    maxTime = min([maxTime; speedup(:)]);
+end
 %% Color scheme
 function colors = colorscheme()
 % defines the color scheme
