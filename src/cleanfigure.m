@@ -258,16 +258,11 @@ function pruneOutsideBox(meta, handle)
   
   % Make sure that there are no NaNs at the beginning of the data since
   % this would be interpreted as column names by Pgfplots.
-  id_first = find(~any(isnan(data),2),1,'first');
-  if(id_first)>1;
-    data = data(id_first:end,:);
-  end  
-  
-  % Drop all NaNs at the end of the data too
-  id_last  = find(~any(isnan(data),2),1,'last');
-  if(id_last)<size(data,1);
-    data = data(1:id_last,:);
-  end  
+  % Also drop all NaNs at the end of the data
+  notnan   = any(~isnan(data),2);
+  id_first = find(notnan,1,'first');
+  id_last  = find(notnan,1,'last');
+  data     = data(id_first:id_last,:);
 
   % Override with the new data.
   set(handle, 'XData', data(:, 1));
