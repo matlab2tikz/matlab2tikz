@@ -237,39 +237,31 @@ function pruneOutsideBox(meta, handle)
       % 'loose' ends may now appear in the figure.
       % To avoid this, add a row of NaNs wherever a block of actual data is
       % removed.
-      chunkIndices = [];
-      k = 1;
-      while k <= numPoints
-          % fast forward to shouldPlot==True
-          while k<=numPoints && ~shouldPlot(k)
-              k = k+1;
-          end
-          kStart = k;
-          % fast forward to shouldPlot==False
-          while k<=numPoints && shouldPlot(k)
-              k = k+1;
-          end
-          kEnd = k-1;
 
-          if kStart <= kEnd
-              chunkIndices = [chunkIndices; ...
-                              [kStart, kEnd]];
-          end
+      % Get the indices of points that should not be plotted
+      id_remove = find(shouldPlot==0);
+
+      % Find consecutive blocks of data points. For those
+      % diff(id_remove)==1. So only replace the first one with a NaN. Those
+      % indices alwas have diff(id_remove)>=2 as there is at least one
+      % datapoint between this and the next one
+      id_replace = id_remove([2; diff(id_remove)]>=2);
+      
+      % Get the indices for all data points to be removed
+      id_remove  = id_remove([2; diff(id_remove)]==1);
+
+      % Make sure that the first data point is NOT replaced by a NaN
+      if(id_replace(1)==1)
+          id_replace=id_replace(2:end);
       end
-
-      % Create masked data with NaN padding.
-      % Make sure that there are no NaNs at the beginning of the data since
-      % this would be interpreted as column names by Pgfplots.
-      if size(chunkIndices, 1) > 0
-          ci = chunkIndices(1,:);
-          newData = data(ci(1):ci(2), :);
-          n = size(data, 2);
-          for ci = chunkIndices(2:end,:)'
-               newData = [newData; ...
-                          NaN(1, n); ...
-                          data(ci(1):ci(2), :)];
-          end
-          data = newData;
+      
+      % Replace the data points
+      data(id_replace,:) = NaN(length(id_replace), size(data,2));
+      data(id_remove,:) = [];
+      
+      % If last point would be NaN remove it too
+      if (isnan(data(end,:)))
+          data(end,:)=[];
       end
   end
 
