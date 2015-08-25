@@ -65,14 +65,16 @@ function printTAPReport(stream, status)
         result = 'ok';
     end
 
-    if status.unreliable
-        directive = '# TODO unreliable';
-    elseif status.skip
-        directive = '# SKIP skipped';
-    end
+    directive = addDirective(status.skip, directive, '# SKIP skipped');
+    directive = addDirective(status.unreliable, directive, '# TODO unreliable');
 
     fprintf(stream, '%s %d %s %s\n', result, testNum, message, directive);
 
     %TODO: we can provide more information on the failure using YAML syntax
+end
+function directive = addDirective(condition, directive, addition)
+    if condition
+        directive = strtrim([directive ' ' addition]);
+    end
 end
 % ==============================================================================
