@@ -306,21 +306,22 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
         % Get the corner coordinates
         [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
 
-        % Calculate the difference between two consecutive points
-        dataDiff = diff(data);
+        % Define the vectors of data points
+        X1 = data(1:end-1,:);
+        X2 = data(2:end,:);
 
         % Check if data points intersect with the borders of the plot
-        left   = segmentsIntersect(data, dataDiff, bottomLeft , topLeft);
-        right  = segmentsIntersect(data, dataDiff, bottomRight, topRight);
-        bottom = segmentsIntersect(data, dataDiff, bottomLeft , bottomRight);
-        top    = segmentsIntersect(data, dataDiff, topLeft    , topRight);
+        left   = segmentsIntersect(X1, X2, bottomLeft , topLeft);
+        right  = segmentsIntersect(X1, X2, bottomRight, topRight);
+        bottom = segmentsIntersect(X1, X2, bottomLeft , bottomRight);
+        top    = segmentsIntersect(X1, X2, topLeft    , topRight);
 
         % Check the result
         out = thisVisible | nextVisible | left | right | top | bottom;
     end
 end
 % =========================================================================
-function out = segmentsIntersect(X1, diffX2X1, X3, X4)
+function out = segmentsIntersect(X1, X2, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect.
   % Given four points X_k=(x_k,y_k), k\in{1,2,3,4}, and the two lines defined
   % by those,
@@ -343,14 +344,15 @@ function out = segmentsIntersect(X1, diffX2X1, X3, X4)
   % matrix containing the differences X2-X1 between all consecutive data
   % points X1 and X2
   % n is the number of segments (not points in the plot!)
-  n   = size(diffX2X1, 1);
-  out = false(n, 1);
+  n      = size(X2, 1);
+  lambda = zeros(n, 2);
+  out    = false(n, 1);
   
   % Calculate the determinant of A = [X2-X1, -(X4-X3)];
   % detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1))
   % NOTE: Vectorized this is equivalent to the matrix multiplication
   % [nx2] * [2x2] * [2x1] = [nx1]
-  detA = -diffX2X1(:,1) .* (X4(2)-X3(2)) + diffX2X1(:,2) .* (X4(1)-X3(1));  
+  detA = -(X2(:,1)-X1(:,1)) .* (X4(2)-X3(2)) + (X2(:,2)-X1(:,2)) .* (X4(1)-X3(1));  
   
   % Get the indexes for nonzero elements
   id_detA = detA~=0;
@@ -359,7 +361,7 @@ function out = segmentsIntersect(X1, diffX2X1, X3, X4)
       % rhs = X3(:) - X1(:)
       % NOTE: Originaly this was a [2x1] vector. However as we vectorize the 
       % calculation it is beneficial to treat it as an [nx2] matrix rather than a [2xn]
-      rhs = bsxfun(@minus, X3', X1(1:end-1, :));
+      rhs = bsxfun(@minus, X3', X1);
       
       % Calculate the inverse of A and lambda
       % invA=[-(X4(2)-X3(2)), X4(1)-X3(1);...
@@ -378,7 +380,7 @@ function out = segmentsIntersect(X1, diffX2X1, X3, X4)
       % This is a matrix multiplication of the form [1x2] * [2x1] = [1x1]
       % As we have transposed rhs we can write this as:
       % rhs * Rotate * (X4-X3) => [nx2] * [2x2] * [2x1] = [nx1]
-      lambda1 = (rhs(id_detA, :) * Rotate * (X4-X3))./detA(id_detA);
+      lambda(id_detA,1) = (rhs(id_detA, :) * Rotate * (X4-X3))./detA(id_detA);
 
       % The lower half is dependent on (X2-X1) which is a matrix of size [nx2]
       % [-(X2(2)-X1(2)), X2(1)-X1(1)] / detA * rhs 
@@ -386,11 +388,12 @@ function out = segmentsIntersect(X1, diffX2X1, X3, X4)
       % matrix multiplication leading to a [nx1] vector. Therefore, use the
       % elementwise multiplication and sum over it
       % sum( [nx2] * [2x2] .* [nx2], 2) = sum([nx2],2) = [nx1] 
-      lambda2 = sum(-diffX2X1(id_detA, :) * Rotate .* rhs(id_detA, :), 2)./detA(id_detA);
-
-      % Check whether lambda is in bound
-      out(id_detA) = 0.0 < lambda1 & lambda1 < 1.0 & 0.0 < lambda2 & lambda2 < 1.0;
+      lambda(id_detA,2) = sum(-(X2(id_detA,:)-X1(id_detA,:)) * Rotate .* rhs(id_detA, :), 2)./detA(id_detA);
   end
+  
+  % Check whether lambda is in bound
+  out(id_detA) = 0.0 < lambda(id_detA,1) & lambda(id_detA,1) < 1.0 &...
+                 0.0 < lambda(id_detA,2) & lambda(id_detA,2) < 1.0;
 end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
