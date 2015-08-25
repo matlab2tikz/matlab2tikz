@@ -4,6 +4,7 @@ function statusAll = runMatlab2TikzTests(varargin)
 % also be used on a development machine.
 
 CI_MODE = strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true');
+isJenkins = ~isempty(getenv('JENKINS_URL'));
 
 %% Set path
 addpath(fullfile(pwd,'..','src'));
@@ -23,8 +24,11 @@ end
 %% Run tests
 status = testHeadless('testFunctionIndices', allTests,...
                      'testsuite',           suite, varargin{:});
-
-nErrors = makeTravisReport(status);
+if isJenkins
+    nErrors = makeTapReport(status);
+else
+    nErrors = makeTravisReport(status);
+end
 
 %% Calculate exit code
 if CI_MODE
