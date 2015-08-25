@@ -56,18 +56,19 @@ end
 function printTAPReport(stream, status)
     % prints a TAP test case report
     directive = '';
-    result = 'not ok';
     message = status.function;
     testNum = status.index;
 
-    if status.unreliable
+    if hasTestFailed(status)
+        result = 'not ok';
+    else
         result = 'ok';
+    end
+
+    if status.unreliable
         directive = '# TODO unreliable';
     elseif status.skip
-        result = 'ok';
         directive = '# SKIP skipped';
-    elseif countNumberOfErrors(status) == 0
-        result = 'ok';
     end
 
     fprintf(stream, '%s %d %s %s\n', result, testNum, message, directive);
