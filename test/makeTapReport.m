@@ -26,6 +26,7 @@ function makeTapReport(status, varargin)
     %% open/close file if needed
     if ischar(arg.stream)
         arg.filename = arg.stream;
+        fprintf('\nSaving TAP report in %s\n', arg.filename);
         arg.stream = fopen(arg.filename, 'w');
         arg.finallyCloseFile = onCleanup(@() fclose(arg.stream));
     end
