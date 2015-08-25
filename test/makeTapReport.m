@@ -48,7 +48,7 @@ function printTAPVersion(stream)
     fprintf(stream,'TAP version 13\n');
 end
 function printTAPPlan(stream, statuses)
-    % prints the TAP version
+    % prints the TAP test plan
     firstTest = 1;
     lastTest = numel(statuses); % just assume we are testing everything
     fprintf(stream,'%d..%d\n', firstTest, lastTest);
