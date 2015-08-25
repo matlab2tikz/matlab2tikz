@@ -1,4 +1,4 @@
-function [nErrors] = makeTapReport(status, varargin)
+function makeTapReport(status, varargin)
 % Makes a Test Anything Protocol report
 %
 % This function produces a testing report of HEADLESS tests for
@@ -23,23 +23,24 @@ function [nErrors] = makeTapReport(status, varargin)
     ipp = ipp.parse(ipp, status, varargin{:});
     arg = ipp.Results;
 
+    %% open/close file if needed
+    if ischar(arg.stream)
+        arg.filename = arg.stream;
+        arg.stream = fopen(arg.filename, 'w');
+        arg.finallyCloseFile = onCleanup(@() fclose(arg.stream));
+    end
+
     %% build report
     printTAPVersion(arg.stream);
     printTAPPlan(arg.stream, status);
     for iStatus = 1:numel(status)
         printTAPReport(arg.stream, status{iStatus});
     end
-    printTAPReport(arg.stream, status);
-
-    %% set output arguments if needed
-    if nargout >= 1
-        nErrors = countNumberOfErrors(S.reliable);
-    end
 end
 % == INPUT VALIDATOR FUNCTIONS =================================================
 function bool = isStream(val)
     % returns true if it is a valid (file) stream or stdout/stderr stream
-    bool = isnumeric(val);
+    bool = isnumeric(val) || ischar(val);
 end
 % ==============================================================================
 function printTAPVersion(stream)

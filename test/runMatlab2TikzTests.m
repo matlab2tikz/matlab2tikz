@@ -24,11 +24,12 @@ end
 %% Run tests
 status = testHeadless('testFunctionIndices', allTests,...
                      'testsuite',           suite, varargin{:});
+
 if isJenkins
-    nErrors = makeTapReport(status);
-else
-    nErrors = makeTravisReport(status);
+    makeTapReport(status, 'stream', 'testresults.tap');
 end
+
+nErrors = makeTravisReport(status);
 
 %% Calculate exit code
 if CI_MODE
