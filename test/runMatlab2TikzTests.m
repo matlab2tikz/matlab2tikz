@@ -4,7 +4,8 @@ function statusAll = runMatlab2TikzTests(varargin)
 % also be used on a development machine.
 
 CI_MODE = strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true');
-isJenkins = ~isempty(getenv('JENKINS_URL'));
+JENKINS_URL = getenv('JENKINS_URL')
+isJenkins = ~isempty(JENKINS_URL);
 
 %% Set path
 addpath(fullfile(pwd,'..','src'));
