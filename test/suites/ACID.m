@@ -523,6 +523,7 @@ end
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
   stat.unreliable = isMATLAB('>=', [8,4]); %FIXME: #590
+  stat.unreliable = stat.unreliable || isMATLAB('<=', [8,3]); %FIXME: #749 (Jenkins)
 
   x = logspace(-1,2);
   loglog(x,exp(x),'-s')
@@ -627,6 +628,7 @@ end
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
   stat.unreliable = isOctave || isMATLAB('>=', [8,4]); % FIXME: investigate
+  stat.unreliable = stat.unreliable || isMATLAB('<=', [8,3]); %FIXME: #749 (Jenkins)
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -1837,6 +1839,7 @@ function [stat] = fill3plot()
 end
 % =========================================================================
 function [stat] = rectanglePlot()
+  stat.unreliable = isMATLAB('<=', [8,3]); %FIXME: #749 (Jenkins)
   stat.description = 'Rectangle handle.';
 
   rectangle('Position', [0.59,0.35,3.75,1.37],...
