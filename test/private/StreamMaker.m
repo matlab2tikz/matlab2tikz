@@ -66,6 +66,12 @@ function Stream = constructStream(streamSpecifier, varargin)
         else
             Stream.name = streamSpecifier;
             Stream.fid = fopen(streamSpecifier, varargin{:});
+
+            if Stream.fid == -1
+                error('Stream:InvalidStream', ...
+                      'Unable to create stream named "%s"!', ...
+                      streamSpecifier);
+            end
         end
     end
 

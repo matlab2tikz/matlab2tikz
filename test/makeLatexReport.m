@@ -5,7 +5,6 @@ function makeLatexReport(status)
     SM = StreamMaker();
     stream = SM.make('tex/acid.tex', 'w');
 
-    assert(stream.fid ~= -1, 'Could not open TeX file ''%s'' for writing.', stream.name);
     texfile_init(stream);
 
     for k = 1:length(status)
