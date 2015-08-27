@@ -50,6 +50,9 @@ function printSummaryTable(stream, status)
         stat = status{k};
         testNumber = stat.index;
         % Break table up into pieces if it gets too long for one page
+        %TODO: use booktabs instead
+        %TODO: maybe just write a function to construct the table at once
+        % from a cell array (see makeTravisReport for GFM counterpart)
         if ~mod(k,35)
             texfile_tab_completion_finish(stream);
             texfile_tab_completion_init(stream);
