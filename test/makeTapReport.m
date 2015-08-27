@@ -15,20 +15,18 @@ function makeTapReport(status, varargin)
 % See also: testHeadless, makeTravisReport, makeLatexReport
 
     %% Parse input arguments
+    SM = StreamMaker;
     ipp = m2tInputParser;
 
     ipp = ipp.addRequired(ipp, 'status', @iscell);
-    ipp = ipp.addParamValue(ipp, 'stream', 1,  @isStream);
+    ipp = ipp.addParamValue(ipp, 'stream', 1,  SM.isStream);
 
     ipp = ipp.parse(ipp, status, varargin{:});
     arg = ipp.Results;
 
-    %% open/close file if needed
-    if ischar(arg.stream)
-        arg.filename = arg.stream;
-        arg.stream = fopen(arg.filename, 'w');
-        arg.finallyCloseFile = onCleanup(@() fclose(arg.stream));
-    end
+    %% Construct stream
+    Stream = SM.make(arg.stream, 'w');
+    arg.stream = Stream.fid;
 
     %% build report
     printTAPVersion(arg.stream);
@@ -36,11 +34,6 @@ function makeTapReport(status, varargin)
     for iStatus = 1:numel(status)
         printTAPReport(arg.stream, status{iStatus});
     end
-end
-% == INPUT VALIDATOR FUNCTIONS =================================================
-function bool = isStream(val)
-    % returns true if it is a valid (file) stream or stdout/stderr stream
-    bool = isnumeric(val) || ischar(val);
 end
 % ==============================================================================
 function printTAPVersion(stream)
