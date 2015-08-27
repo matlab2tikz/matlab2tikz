@@ -25,32 +25,30 @@ function makeTapReport(status, varargin)
     arg = ipp.Results;
 
     %% Construct stream
-    Stream = SM.make(arg.stream, 'w');
-    fid = Stream.fid;
+    stream = SM.make(arg.stream, 'w');
 
     %% build report
-    printTAPVersion(fid);
-    printTAPPlan(fid, status);
+    printTAPVersion(stream);
+    printTAPPlan(stream, status);
     for iStatus = 1:numel(status)
-        printTAPReport(fid, status{iStatus});
+        printTAPReport(stream, status{iStatus}, iStatus);
     end
 end
 % ==============================================================================
-function printTAPVersion(fid)
+function printTAPVersion(stream)
     % prints the TAP version
-    fprintf(fid, 'TAP version 13\n');
+    stream.print('TAP version 13\n');
 end
-function printTAPPlan(fid, statuses)
+function printTAPPlan(stream, statuses)
     % prints the TAP test plan
     firstTest = 1;
-    lastTest = numel(statuses); % just assume we are testing everything
-    fprintf(fid, '%d..%d\n', firstTest, lastTest);
+    lastTest = numel(statuses);
+    stream.print('%d..%d\n', firstTest, lastTest);
 end
-function printTAPReport(fid, status)
+function printTAPReport(stream, status, testNum)
     % prints a TAP test case report
     directive = '';
     message = status.function;
-    testNum = status.index;
 
     if hasTestFailed(status)
         result = 'not ok';
@@ -61,7 +59,7 @@ function printTAPReport(fid, status)
     directive = addDirective(status.skip, directive, '# SKIP skipped');
     directive = addDirective(status.unreliable, directive, '# TODO unreliable');
 
-    fprintf(fid, '%s %d %s %s\n', result, testNum, message, directive);
+    stream.print('%s %d %s %s\n', result, testNum, message, directive);
 
     %TODO: we can provide more information on the failure using YAML syntax
 end
