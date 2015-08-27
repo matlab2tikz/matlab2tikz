@@ -64,6 +64,7 @@ function printTAPReport(stream, status, testNum)
     %TODO: we can provide more information on the failure using YAML syntax
 end
 function directive = addDirective(condition, directive, addition)
+    % add TAP directive (a todo or skip) to the test directives
     if condition
         directive = strtrim([directive ' ' addition]);
     end
