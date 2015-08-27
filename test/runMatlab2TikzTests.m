@@ -3,7 +3,7 @@ function statusAll = runMatlab2TikzTests(varargin)
 % It is mainly used for testing on a continuous integration server, but it can
 % also be used on a development machine.
 
-CI_MODE = strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true');
+CI_MODE = strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true') || strcmp(getenv('CI'),'true');
 isJenkins = ~isempty(getenv('JENKINS_URL'));
 
 %% Set path
