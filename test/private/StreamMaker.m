@@ -18,12 +18,12 @@ function SM = StreamMaker()
 %   - fid: handle (fid) of the stream
 %
 % and methods:
-%   - close: closes the stream
+%   - print: prints to the stream, i.e. fprintf
+%   - close: closes the stream, i.e. fclose
 %
 % It may also contain a field to automatically close the Stream when it goes
 % out of scope.
 %
-    SM = struct('Type', 'StreamMaker');
     SM = PseudoObject('StreamMaker', ...
                       'isStream',  @isStream, ...
                       'make', @constructStream);
@@ -36,6 +36,11 @@ end
 
 function bool = isStream(value)
     bool = ischar(value) || ismember(value, [1,2,fopen('all')]);
+    %TODO: allow others kinds of streams
+    %     Stream -> clipboard (write on close)
+    %     Stream -> string variable
+    % e.g. a quick-and-dirty way would be to write the file to `tempname`
+    % putting a flag to read that file back upon completion.
 end
 
 function Stream = constructStream(streamSpecifier, varargin)
@@ -46,10 +51,10 @@ function Stream = constructStream(streamSpecifier, varargin)
     end
 
     Stream = PseudoObject('Stream');
-    closeAfterUse = true;
+    closeAfterUse = false;
     if ischar(streamSpecifier)
         Stream.name = streamSpecifier;
-        Stream.fid = fopen(Stream.filename, varargin{:});
+        Stream.fid = fopen(Stream.name, varargin{:});
         closeAfterUse = true;
 
     elseif isnumeric(streamSpecifier)
@@ -59,10 +64,12 @@ function Stream = constructStream(streamSpecifier, varargin)
         elseif streamSpecifier == 2
             Stream.name = 'stderr';
         else
-            Stream.name = fopen(streamSpecifier, varargin{:});
+            Stream.name = streamSpecifier;
+            Stream.fid = fopen(streamSpecifier, varargin{:});
         end
     end
 
+    Stream.print = @(varargin) fprintf(Stream.fid, varargin{:});
     Stream.close = @() fclose(Stream.fid);
     if closeAfterUse
         Stream.closeAfterUse = onCleanup(Stream.close);
