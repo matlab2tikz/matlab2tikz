@@ -26,12 +26,8 @@ status = testHeadless('testFunctionIndices', allTests,...
                      'testsuite',           suite, varargin{:});
 
 if isJenkins
-    TAPFile = 'testresults.tap';
-    MDFile = 'results.test.md';
-    HTMLFile = 'results.test.html';
-    makeTapReport(status, 'stream', TAPFile);
-    makeTravisReport(status, 'stream', MDFile);
-    system(sprintf('pandoc -f markdown -t html %s -o %s', MDFile, HTMLFile));
+    makeTapReport(status, 'stream', 'results.test.tap');
+    makeTravisReport(status, 'stream', 'results.test.md');
 end
 
 nErrors = makeTravisReport(status);
