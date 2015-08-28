@@ -18,9 +18,9 @@ function [nErrors] = makeTravisReport(status, varargin)
 %
 % See also: testHeadless, makeLatexReport
 
-    SM = StreamMaker;
+    SM = StreamMaker();
     %% Parse input arguments
-    ipp = m2tInputParser;
+    ipp = m2tInputParser();
 
     ipp = ipp.addRequired(ipp, 'status', @iscell);
     ipp = ipp.addParamValue(ipp, 'stream', 1,  SM.isStream);

@@ -15,8 +15,8 @@ function makeTapReport(status, varargin)
 % See also: testHeadless, makeTravisReport, makeLatexReport
 
     %% Parse input arguments
-    SM = StreamMaker;
-    ipp = m2tInputParser;
+    SM = StreamMaker();
+    ipp = m2tInputParser();
 
     ipp = ipp.addRequired(ipp, 'status', @iscell);
     ipp = ipp.addParamValue(ipp, 'stream', 1,  SM.isStream);
@@ -55,7 +55,6 @@ function printTAPReport(stream, status, testNum)
     else
         result = 'ok';
     end
-
     directive = addDirective(status.skip, directive, '# SKIP skipped');
     directive = addDirective(status.unreliable, directive, '# TODO unreliable');
 
