@@ -28,5 +28,9 @@ function [formatted, OSType, OSVersion] = OSVersion()
 
     end
 
+    EOL = sprintf('\n');
+    OSType = strrep(OSType, EOL, '');
+    OSVersion = strrep(OSVersion, EOL, '');
+
     formatted = strtrim([OSType ' ' OSVersion]);
 end

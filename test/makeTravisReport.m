@@ -18,25 +18,27 @@ function [nErrors] = makeTravisReport(status, varargin)
 %
 % See also: testHeadless, makeLatexReport
 
+    SM = StreamMaker();
     %% Parse input arguments
-    ipp = m2tInputParser;
+    ipp = m2tInputParser();
 
     ipp = ipp.addRequired(ipp, 'status', @iscell);
-    ipp = ipp.addParamValue(ipp, 'stream', 1,  @isStream);
+    ipp = ipp.addParamValue(ipp, 'stream', 1,  SM.isStream);
     ipp = ipp.addParamValue(ipp, 'length', 'default', @isReportLength);
 
     ipp = ipp.parse(ipp, status, varargin{:});
     arg = ipp.Results;
     arg.length = lower(arg.length);
+    stream = SM.make(arg.stream, 'w');
 
     %% transform status data into groups
     S = splitStatuses(status);
 
     %% build report
-    fprintf(arg.stream, gfmHeader(describeEnvironment));
-    reportUnreliableTests(arg, S);
-    reportReliableTests(arg, S);
-    displayTestSummary(arg.stream, S);
+    stream.print(gfmHeader(describeEnvironment));
+    reportUnreliableTests(stream, arg, S);
+    reportReliableTests(stream, arg, S);
+    displayTestSummary(stream, S);
 
     %% set output arguments if needed
     if nargout >= 1
@@ -44,10 +46,6 @@ function [nErrors] = makeTravisReport(status, varargin)
     end
 end
 % == INPUT VALIDATOR FUNCTIONS =================================================
-function bool = isStream(val)
-    % returns true if it is a valid (file) stream or stdout/stderr stream
-    bool = isnumeric(val);
-end
 function bool = isReportLength(val)
     % validates the report length
     bool = ismember(lower(val), {'default','short','long'});
@@ -203,15 +201,15 @@ function [short, long] = describeEnvironment()
                     VCID, env, ver, OS);
 end
 % ==============================================================================
-function reportUnreliableTests(arg, S)
+function reportUnreliableTests(stream, arg, S)
     % report on the unreliable tests
     if ~isempty(S.unreliable) && ~strcmpi(arg.length, 'short')
-        fprintf(arg.stream, gfmHeader('Unreliable tests',2));
-        fprintf(arg.stream, 'These do not cause the build to fail.\n\n');
-        displayTestResults(arg.stream, S.unreliable);
+        stream.print(gfmHeader('Unreliable tests',2));
+        stream.print('These do not cause the build to fail.\n\n');
+        displayTestResults(stream, S.unreliable);
     end
 end
-function reportReliableTests(arg, S)
+function reportReliableTests(stream, arg, S)
     % report on the reliable tests
     switch arg.length
         case 'long'
@@ -224,10 +222,10 @@ function reportReliableTests(arg, S)
             return; % don't show this part
     end
 
-    fprintf(arg.stream, gfmHeader('Reliable tests',2));
-    fprintf(arg.stream, 'Only the reliable tests determine the build outcome.\n');
-    fprintf(arg.stream, message);
-    displayTestResults(arg.stream, tests);
+    stream.print(gfmHeader('Reliable tests',2));
+    stream.print('Only the reliable tests determine the build outcome.\n');
+    stream.print(message);
+    displayTestResults(stream, tests);
 end
 % ==============================================================================
 function displayTestResults(stream, status)
@@ -239,7 +237,7 @@ function displayTestResults(stream, status)
         data(iTest,:) = fillTestResultRow(status{iTest}, symbols);
     end
     str = gfmTable(data, headers, 'llcl');
-    fprintf(stream, '%s', str);
+    stream.print('%s', str);
 end
 function row = fillTestResultRow(oneStatus, symbol)
     % format the status of a single test for the summary table
@@ -303,18 +301,18 @@ function displayTestSummary(stream, S)
 
     % print table
     [envShort, envDescription] = describeEnvironment(); %#ok
-    fprintf(stream, gfmHeader('Test summary', 2));
-    fprintf(stream, '%s\n', envDescription);
-    fprintf(stream, '%s\n', gfmCode(generateCode(S),false,'matlab'));
-    fprintf(stream, gfmTable(table, header, 'lrrrr'));
+    stream.print(gfmHeader('Test summary', 2));
+    stream.print('%s\n', envDescription);
+    stream.print('%s\n', gfmCode(generateCode(S),false,'matlab'));
+    stream.print(gfmTable(table, header, 'lrrrr'));
 
     % print overall outcome
     symbol = githubEmoji;
     nErrors = numel(S.failR);
     if nErrors == 0
-        fprintf(stream, '\nBuild passes. %s\n', symbol.pass);
+        stream.print('\nBuild passes. %s\n', symbol.pass);
     else
-        fprintf(stream, '\nBuild fails with %d errors. %s\n', nErrors, symbol.fail);
+        stream.print('\nBuild fails with %d errors. %s\n', nErrors, symbol.fail);
     end
 end
 function code = generateCode(S)
