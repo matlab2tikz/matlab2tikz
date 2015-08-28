@@ -56,23 +56,14 @@ function Stream = constructStream(streamSpecifier, varargin)
         Stream.name = streamSpecifier;
         Stream.fid = fopen(Stream.name, varargin{:});
         closeAfterUse = true;
-
     elseif isnumeric(streamSpecifier)
-        Stream.fid = streamSpecifier;
-        if streamSpecifier == 1
-            Stream.name = 'stdout';
-        elseif streamSpecifier == 2
-            Stream.name = 'stderr';
-        else
-            Stream.name = streamSpecifier;
-            Stream.fid = fopen(streamSpecifier, varargin{:});
+        Stream.fid  = streamSpecifier;
+        Stream.name = fopen(Stream.fid);
+    end
 
-            if Stream.fid == -1
-                error('Stream:InvalidStream', ...
-                      'Unable to create stream named "%s"!', ...
-                      streamSpecifier);
-            end
-        end
+    if Stream.fid == -1
+        error('Stream:InvalidStream', ...
+              'Unable to create stream "%s"!', streamSpecifier);
     end
 
     Stream.print = @(varargin) fprintf(Stream.fid, varargin{:});
