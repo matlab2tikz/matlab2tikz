@@ -5,6 +5,7 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install octave
   - apt-cache depends octave
+  - sudo apt-get remove libatlas3gf-base
 script:
   - cd test && /usr/bin/octave -q --eval runMatlab2TikzTests.m
 notifications:
