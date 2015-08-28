@@ -27,7 +27,7 @@ function [ status ] = testHeadless( varargin )
                    };
 
     [state,cwd] = initializeGlobalState();
-    onCleanup(@() restoreGlobalState(state,cwd));
+    finally_restore_state = onCleanup(@() restoreGlobalState(state,cwd));
 
     status = testMatlab2tikz('extraOptions', extraOptions, ...
                              'actionsToExecute', @actionsToExecute, ...

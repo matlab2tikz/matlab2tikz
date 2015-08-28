@@ -6,7 +6,13 @@ function [ newstr ] = m2tstrjoin( cellstr, delimiter )
 %
 % See also: strjoin
 
+    %FIXME: differs from src/private/m2tstrjoin in functionality !!!
+
     nElem = numel(cellstr);
+    if nElem == 0
+        newstr = '';
+        return % m2tstrjoin({}, ...) -> ''
+    end
 
     newstr = cell(2,nElem);
     newstr(1,:)         = reshape(cellstr, 1, nElem);

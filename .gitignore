@@ -1,1 +1,3 @@
 *.sublime-workspace
+*.tap
+test/*.test.*
