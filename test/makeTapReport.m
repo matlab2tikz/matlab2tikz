@@ -47,7 +47,6 @@ function printTAPPlan(stream, statuses)
 end
 function printTAPReport(stream, status, testNum)
     % prints a TAP test case report
-    directive = '';
     message = status.function;
 
     if hasTestFailed(status)
@@ -55,17 +54,21 @@ function printTAPReport(stream, status, testNum)
     else
         result = 'ok';
     end
-    directive = addDirective(status.skip, directive, '# SKIP skipped');
-    directive = addDirective(status.unreliable, directive, '# TODO unreliable');
+    directives = getTAPDirectives(status);
 
-    stream.print('%s %d %s %s\n', result, testNum, message, directive);
+    stream.print('%s %d %s %s\n', result, testNum, message, directives);
 
     %TODO: we can provide more information on the failure using YAML syntax
 end
-function directive = addDirective(condition, directive, addition)
+function directives = getTAPDirectives(status)
     % add TAP directive (a todo or skip) to the test directives
-    if condition
-        directive = strtrim([directive ' ' addition]);
+    directives = {};
+    if status.skip
+        directives{end+1} = '# SKIP skipped';
     end
+    if status.unreliable
+        directives{end+1} = '# TODO unreliable';
+    end
+    directives = strtrim(m2tstrjoin(directives, ' '));
 end
 % ==============================================================================
