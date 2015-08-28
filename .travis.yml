@@ -8,6 +8,6 @@ before_install:
   - sudo apt-get install libatlas3gf-base
   - sudo apt-get install libblas3gf 
 script:
-  - cd test && /usr/bin/octave -q --eval --echo-commands runMatlab2TikzTests.m
+  - cd test && /usr/bin/octave -q --echo-commands --eval runMatlab2TikzTests.m
 notifications:
   hipchat: f4c2c5f87adc85025545e5b59b3fbe@Matlab2tikz
