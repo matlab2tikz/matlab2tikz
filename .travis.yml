@@ -5,7 +5,20 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install octave
   - apt-cache depends octave
-  - sudo apt-get remove libatlas3gf-base
+  - apt-cache policy libatlas3gf-base
+  - apt-cache policy libc6
+  - apt-cache policy libgcc1
+  - apt-cache policy libgl1-mesa-glx
+  - apt-cache policy libglu1-mesa
+  - apt-cache policy libgl1-mesa-glide3
+  - apt-cache policy libqt4-network
+  - apt-cache policy libqt4-opengl
+  - apt-cache policy libqtcore4
+  - apt-cache policy libqtgui4
+  - apt-cache policy libsndfile1
+  - apt-cache policy libstdc++6
+  - apt-cache policy libx11-6
+
 script:
   - cd test && /usr/bin/octave -q --eval runMatlab2TikzTests.m
 notifications:
