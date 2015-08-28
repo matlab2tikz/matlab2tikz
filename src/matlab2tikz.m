@@ -4324,9 +4324,9 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                 [m2t, xcolor] = rgb2colorliteral(m2t, color);
 
             case 'none'
-                error('matlab2tikz:anycolor2rgb:ColorModelNoneNotAllowed',...
-                    ['Color model ''none'' not allowed here. ',...
-                    'Make sure this case gets intercepted before.']);
+                % Before, we used to throw an error here. However, probably this
+                % is not necessary and actually harmful (#739).
+                xcolor = 'none';
 
             otherwise
                     error('matlab2tikz:anycolor2rgb:UnknownColorModel',...
