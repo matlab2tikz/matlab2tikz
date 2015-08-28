@@ -6,7 +6,6 @@ before_install:
   - sudo apt-get install octave
   - apt-cache depends octave
   - sudo apt-get install libatlas3gf-base
-  - sudo apt-get install libgl1-mesa-glide3
 
 script:
   - cd test && /usr/bin/octave -q --eval runMatlab2TikzTests.m
