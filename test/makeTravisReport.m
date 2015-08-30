@@ -261,7 +261,7 @@ function row = fillTestResultRow(oneStatus, symbol)
                 case 'tikz'
                     summary = sprintf('%s m2t failed', summary);
                 case 'hash'
-                    summary = sprintf('hash %32s != (%32s) %s', ...
+                    summary = sprintf('new hash %32s != expected (%32s) %s', ...
                         thisStage.found, thisStage.expected, summary);
                 otherwise
                     summary = sprintf('%s %s FAILED', summary, thisStage);
