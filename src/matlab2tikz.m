@@ -680,9 +680,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                 % supported by matlab2tikz or pgfplots.
 
             case ''
-                warning('matlab2tikz:NoChildren',...
-                        ['No children found for handle %d. ',...
-                         'Carrying on as if nothing happened'], double(h));
+                % No children found for handle. (It has only a title and/or
+                % labels). Carrying on as if nothing happened
 
             otherwise
                 error('matlab2tikz:handleAllChildren',                 ...
@@ -1380,15 +1379,27 @@ end
 function bool = isVisibleContainer(axisHandle)
     if ~isVisible(axisHandle)
         % An invisible axes container *can* have visible children, so don't
-        % immediately bail out here.
-        children = allchild(axisHandle);
+        % immediately bail out here. Also it *can* have a visible title,
+        % labels or children
+
         bool = false;
-        for child = children(:)'
-            if isVisible(child)
-                bool = true;
-                return;
+        for prop = {'Children', 'Title', 'XLabel', 'YLabel', 'ZLabel'}
+            property = prop{1};
+            if strcmpi(property, 'Children')
+                children = allchild(axisHandle);
+            elseif isprop(axisHandle, property)
+                children = get(axisHandle, property);
+            else
+                continue; % don't check non-existent properties
+            end
+            for child = children(:)'
+                if isVisible(child)
+                    bool = true;
+                    return;
+                end
             end
         end
+
     else
         bool = true;
     end
