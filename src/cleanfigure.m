@@ -237,41 +237,32 @@ function pruneOutsideBox(meta, handle)
       % 'loose' ends may now appear in the figure.
       % To avoid this, add a row of NaNs wherever a block of actual data is
       % removed.
-      chunkIndices = [];
-      k = 1;
-      while k <= numPoints
-          % fast forward to shouldPlot==True
-          while k<=numPoints && ~shouldPlot(k)
-              k = k+1;
-          end
-          kStart = k;
-          % fast forward to shouldPlot==False
-          while k<=numPoints && shouldPlot(k)
-              k = k+1;
-          end
-          kEnd = k-1;
 
-          if kStart <= kEnd
-              chunkIndices = [chunkIndices; ...
-                              [kStart, kEnd]];
-          end
-      end
+      % Get the indices of points that should be removed
+      id_remove = find(~shouldPlot);
 
-      % Create masked data with NaN padding.
-      % Make sure that there are no NaNs at the beginning of the data since
-      % this would be interpreted as column names by Pgfplots.
-      if size(chunkIndices, 1) > 0
-          ci = chunkIndices(1,:);
-          newData = data(ci(1):ci(2), :);
-          n = size(data, 2);
-          for ci = chunkIndices(2:end,:)'
-               newData = [newData; ...
-                          NaN(1, n); ...
-                          data(ci(1):ci(2), :)];
-          end
-          data = newData;
-      end
+      % If there are consecutive data points to be removed, only replace 
+      % the first one by a NaN. Consecutive data points have 
+      % diff(id_remove)==1, so replace diff(id_remove)>1 by NaN and remove
+      % the rest
+      idx        = [true; diff(id_remove) >1];
+      id_replace = id_remove(idx);
+      id_remove  = id_remove(~idx);
+      
+      % Replace the data points
+      data(id_replace,:) = NaN(length(id_replace), size(data,2));
+      
+      % Remove the other non visible data points
+      data(id_remove,:) = [];
   end
+  
+  % Make sure that there are no NaNs at the beginning of the data since
+  % this would be interpreted as column names by Pgfplots.
+  % Also drop all NaNs at the end of the data
+  notnan   = any(~isnan(data),2);
+  id_first = find(notnan,1,'first');
+  id_last  = find(notnan,1,'last');
+  data     = data(id_first:id_last,:);
 
   % Override with the new data.
   set(handle, 'XData', data(:, 1));
@@ -283,7 +274,7 @@ function pruneOutsideBox(meta, handle)
   return;
 end
 % ==========================================================================
-function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
     % Determine the corners of the axes as defined by xLim and yLim
     bottomLeft  = [xLim(1); yLim(1)];
     topLeft     = [xLim(1); yLim(2)];
