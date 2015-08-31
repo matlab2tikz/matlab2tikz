@@ -75,8 +75,7 @@ or, equivalently,
 makeLatexReport(testGraphical)
 ```
 This generates a LaTeX report in `test/tex/acid.tex` which can then be compiled.
-Compilation of this file can be done using the Makefile `test/tex/Makefile` 
-if you are on a Unix-like system (or have cygwin installed on Windows).
+Compilation of this file can be done using the Makefile `test/tex/Makefile` if you are on a Unix-like system (or have cygwin installed on Windows).
 
 If all goes well, the result will be the file `test/tex/acid.pdf` that contains
 a list of the test figures, exported as PDF and right next to it the matlab2tikz generated plot.
@@ -97,7 +96,6 @@ Obviously, this should be done with the due diligence!
 Automated Tests
 ===============
 
-The automated tests run using [Travis-CI](https://travis-ci.org).
-These are effectively the "headless" tests.
-The script used is `runMatlab2TikzTests` that is interpreted using Octave.
-You are of course free to run this script on a development machine.
+The automated tests run on [Travis-CI](https://travis-ci.org) for Octave and on a [personal Jenkins server](https://github.com/matlab2tikz/matlab2tikz/wiki/Jenkins) for MATLAB.
+These are effectively the "headless" tests that get called by the  `runMatlab2TikzTests` function.
+Without verification of those automated tests, a pull request is unlikely to get merged.
