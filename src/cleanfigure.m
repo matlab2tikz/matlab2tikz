@@ -619,18 +619,18 @@ function movePointsCloser(meta, handle)
   replaceIndices = find(~dataIsInLargeBox);  
     
   % Get the indices of those segments where the left point might be moved
-  id_left  = replaceIndices(replaceIndices > 1);
+  id_left = replaceIndices(replaceIndices<size(data, 1));
   id_left  = id_left(all(isfinite(data(id_left,:)), 2));
   
   % Get the indices of those segments, where the right point might be moved
-  id_right = replaceIndices(replaceIndices<size(data, 1));
+  id_right  = replaceIndices(replaceIndices > 1);
   id_right = id_right(all(isfinite(data(id_right,:)), 2));
   
   % Define the vectors of data points for the segments X1--X2
   X1_left  = data(id_left,    :);
-  X2_left  = data(id_left-1,  :);
+  X2_left  = data(id_left+1,  :);
   X1_right = data(id_right,   :);
-  X2_right = data(id_right+1, :);
+  X2_right = data(id_right-1, :);
   
   % Move the points closer to the large box along the segment 
   newPoint_left = moveToBox(X1_left,  X2_left,  largeXLim, largeYLim);
