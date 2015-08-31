@@ -617,15 +617,15 @@ function movePointsCloser(meta, handle)
   % into the extended box, and gather the points by which they are to be
   % replaced.
   replaceIndices = find(~dataIsInLargeBox);  
-    
-  % Get the indices of those segments where the left point might be moved
-  id_left = replaceIndices(replaceIndices<size(data, 1));
-  id_left  = id_left(all(isfinite(data(id_left,:)), 2));
-  
+
   % Get the indices of those segments, where the right point might be moved
   id_right  = replaceIndices(replaceIndices > 1);
   id_right = id_right(all(isfinite(data(id_right,:)), 2));
   
+  % Get the indices of those segments where the left point might be moved
+  id_left = replaceIndices(replaceIndices < size(data, 1));
+  id_left = id_left(all(isfinite(data(id_left,:)), 2));
+ 
   % Define the vectors of data points for the segments X1--X2
   X1_left  = data(id_left,    :);
   X2_left  = data(id_left+1,  :);
@@ -633,50 +633,76 @@ function movePointsCloser(meta, handle)
   X2_right = data(id_right-1, :);
   
   % Move the points closer to the large box along the segment 
-  newPoint_left = moveToBox(X1_left,  X2_left,  largeXLim, largeYLim);
-  newPoint_right= moveToBox(X1_right, X2_right, largeXLim, largeYLim);
+  newData_left = moveToBox(X1_left,  X2_left,  largeXLim, largeYLim);
+  newData_right= moveToBox(X1_right, X2_right, largeXLim, largeYLim);
   
-  % Only replace the data if the new point is finite
-  id_isfinite   = all(isfinite(newPoint_left), 2);
+  % Only replace the data if newData_left is finite
+  id_isfinite   = all(isfinite(newData_left), 2);
   id_left       = id_left(id_isfinite);
-  newData_left  = newPoint_left(id_isfinite,:);
+  newData_left  = newData_left(id_isfinite,:);
   
-  % Only replace the data if the new point is finite
-  id_isfinite   = all(isfinite(newPoint_right), 2);
+  % Only replace the data if newData_right is finite
+  id_isfinite   = all(isfinite(newData_right), 2);
   id_right      = id_right(id_isfinite);
-  newData_right = newPoint_right(id_isfinite, :);  
+  newData_right = newData_right(id_isfinite, :);
   
-  % Replace the data points
-  data(id_left, :)  = newData_left;
-  data(id_right, :) = newData_right;
+  % Search for conflicts, where a point would be replaced twice
+  % id_conflict marks those data points that should be replaced twice
+  % id_conflictLeft marks their index in id_left
+  [id_conflict, id_conflictLeft, ~] = intersect(id_left, id_right);
   
-  % Check if 2 consecutive points would have been replaced.
-  % NOTE: It is possible that id_replace ~= replaceIndices, so we have to 
-  % use those points that were actually repalced 
-  id_replaced = sort([id_left; id_right]);
+  % Find those newData_left points that have no conflict
+  id_noConflict = id_left;
+  id_noConflict(id_conflictLeft) = [];
   
-  % Search for those points, where two consecutive points were replaced
-  id_replaced = id_replaced(diff(id_replaced) == 1);
+  % Get the indices of id_left without conflicts
+  id_noConflictLeft = 1:size(newData_left,1);
+  id_noConflictLeft(id_conflictLeft) = [];
+    
+  % Replace all newData_right points and the newData_left points without conflict
+  data(id_right, :)      = newData_right;
+  data(id_noConflict, :) = newData_left(id_noConflictLeft,:);
   
-  % Insert NaNs only when needed
-  if (~isempty(id_replaced))
-      % The data matrix gets cut into length(id_replace)+2 segments. 
+  % To avoid conflicts, insert a [NaN, NaN] point between the conflicting 
+  % points. In addition to direct conflicts, find those data points, where 
+  % consecutive points would have been replaced and insert a [NaN, NaN]
+  id_insert = sort([id_left; id_right]);
+  
+  % Search for those points, where two consecutive points were replaced (==1) 
+  % or there are conflicts (==0)
+  id_insert = id_insert(diff(id_insert) <= 1);
+   
+  % Insert NaNs and conflicting newData_left points
+  if (~isempty(id_insert))
+      % The data matrix gets cut into length(id_insert)+1 segments. 
       % Calculate their length
-      legth_segments = [id_replaced(1); 
-                        diff(id_replaced); 
-                        size(data, 1)-id_replaced(end)];
+      length_segments = [id_insert(1); 
+                        diff(id_insert); 
+                        size(data, 1)-id_insert(end)];
 
       % Cut the data into segments
-      dataCell = mat2cell(data, legth_segments, 2);
+      dataCell   = mat2cell(data, length_segments, 2);
+      
+      % Create a cell array of [NaN, NaN] data points for every segment
+      dataInsert = mat2cell(NaN(length(id_insert)+1, 2), ones(length(id_insert)+1,1), 2);
+      
+      % Find those data points, with conflicts 
+      [~,~, id_InsertPoints] = intersect(id_conflict, id_insert);
+      
+      % Cut conflicting newData_left into a cell array
+      dataInsertNew = mat2cell(newData_left(id_conflictLeft,:), ones(length(id_conflictLeft),1), 2);
+      
+      % Add the new data points to the dataInsert cell array
+      dataInsert(id_InsertPoints) = cellfun(@(x, y) vertcat(x, y), dataInsert(id_InsertPoints), dataInsertNew, 'UniformOutput', false);
 
-      % Add NaN to the bottom of every segment
-      dataCell = cellfun(@(x) vertcat(x, [NaN,NaN]), dataCell, 'UniformOutput', false);
+      % Add dataInsert to the bottom of every segment
+      dataCell = cellfun(@(x, y) vertcat(x, y), dataCell, dataInsert, 'UniformOutput', false);
 
-      % Put the matrix back together
+      % Put the data matrix back together
       data     = cell2mat(dataCell);
 
       % Remove the NaN at the end of the last segment
-      data     = data(1:end-1, :);
+      data     = data(1:end-1, :);      
   end
 
   % Set the new (masked) data.
