@@ -299,16 +299,17 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
     
     % Only check if there is more than 1 point    
     if n>1
+        % Define the vectors of data points for the segments X1--X2
+        idx= 1:n-1;
+        X1 = data(idx,   :);
+        X2 = data(idx+1, :);
+        
         % One of the neighbors is inside the box and the other is finite
-        nextVisible = (dataIsInBox(2:end)   & all(isfinite(data(1:end-1)), 2));
-        thisVisible = (dataIsInBox(1:end-1) & all(isfinite(data(2:end)), 2));
+        thisVisible = (dataIsInBox(idx)     & all(isfinite(X2), 2));
+        nextVisible = (dataIsInBox(idx+1)   & all(isfinite(X1), 2));
 
         % Get the corner coordinates
         [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
-
-        % Define the vectors of data points for the segments X1--X2
-        X1 = data(1:end-1, :);
-        X2 = data(2:end, :);
 
         % Check if data points intersect with the borders of the plot
         left   = segmentsIntersect(X1, X2, bottomLeft , topLeft);
@@ -626,9 +627,9 @@ function movePointsCloser(meta, handle)
   id_right = id_right(all(isfinite(data(id_right,:)), 2));
   
   % Define the vectors of data points for the segments X1--X2
-  X1_left  = data(id_left, :);
-  X2_left  = data(id_left-1, :);
-  X1_right = data(id_right, :);
+  X1_left  = data(id_left,    :);
+  X2_left  = data(id_left-1,  :);
+  X1_right = data(id_right,   :);
   X2_right = data(id_right+1, :);
   
   % Move the points closer to the large box along the segment 
@@ -675,7 +676,7 @@ function movePointsCloser(meta, handle)
       data     = cell2mat(dataCell);
 
       % Remove the NaN at the end of the last segment
-      data     = data(1:end-1,:);
+      data     = data(1:end-1, :);
   end
 
   % Set the new (masked) data.
