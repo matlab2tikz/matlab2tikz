@@ -17,4 +17,4 @@ notifications:
 
 after_failure:
 - COREFILE=$(find . -maxdepth 1 -name "core*" | head -n 1) # find core file
-- if [[ -f "$COREFILE" ]]; then gdb --args /usr/bin/octave --persist -q --eval "plot([0 1 1.5 1 -1])" -c "$COREFILE"; fi
+- if [[ -f "$COREFILE" ]]; then gdb --args /usr/bin/octave-cli --persist --eval "plot([0 1 1.5 1 -1])"
