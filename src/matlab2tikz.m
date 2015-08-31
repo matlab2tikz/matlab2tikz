@@ -408,9 +408,17 @@ function bool = isColorDefinitions(colors)
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
-    encoding = switchMatOct({'native', m2t.cmdOpts.Results.encoding}, {});
+    % Set the encoding of the output file.
+    % Currently only MATLAB supports different encodings.
+    fid = -1;
 
-    fid      = fopen(filename, 'w', encoding{:});
+    if strcmpi(getEnvironment, 'MATLAB')
+        encoding = {'native', m2t.cmdOpts.Results.encoding};
+        fid      = fopen(filename, 'w', encoding{:});
+    elseif strcmpi(getEnvironment, 'Octave')
+        fid      = fopen(filename, 'w');
+    end       
+
     if fid == -1
         error('matlab2tikz:fileOpenError', ...
             'Unable to open file ''%s'' for writing.', filename);
@@ -540,7 +548,7 @@ function str = generateColorDefinitions(names, specs, colorFormat)
             % make sure to append with '%' to avoid spacing woes
             str = [str, ...
                 sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
-                names{k}', specs{k})];
+                names{k}, specs{k})];
         end
         str = [str sprintf('%%\n')];
     end
