@@ -13,21 +13,25 @@ function compareTimings(statusBefore, statusAfter)
 %    N x R cell arrays, each cell contains a status of a test case
 %    where there are N test cases, repeated R times each.
 %
-% A way to build such cells is:
+% You can build such cells, e.g. with the following snippet.
 %
-% suite = @ACID
-% N = numel(suite(0));
-% R = 10;
-% statusBefore = cell(N, R);
-% for r = 1:R
-%     statusBefore(:, r) = testHeadless;
-% end
-% % now check out the after commit
-% statusAfter = cell(N, R);
-% for r = 1:R
-%     statusAfter(:, r) = testHeadless;
-% end
-% compareTimings(statusBefore, statusAfter)
+%     suite = @ACID
+%     N = numel(suite(0)); % number of test cases
+%     R = 10; % number of repetitions of each test case
+%
+%     statusBefore = cell(N, R);
+%     for r = 1:R
+%         statusBefore(:, r) = testHeadless;
+%     end
+%
+%     % now check out the after commit
+%
+%     statusAfter = cell(N, R);
+%     for r = 1:R
+%         statusAfter(:, r) = testHeadless;
+%     end
+%
+%     compareTimings(statusBefore, statusAfter)
 %
 % See also: testHeadless
 
