@@ -11,10 +11,10 @@ before_script:
 - ulimit -c unlimited -S       # enable core dumps
 
 script:
-  - cd test && /usr/bin/octave -q --echo-commands --eval 'plot([0 1 1.5 1 -1])'
+  - cd test && /usr/bin/octave -q --eval 'plot([0 1 1.5 1 -1])'
 notifications:
   hipchat: f4c2c5f87adc85025545e5b59b3fbe@Matlab2tikz
 
 after_failure:
 - COREFILE=$(find . -maxdepth 1 -name "core*" | head -n 1) # find core file
-- if [[ -f "$COREFILE" ]]; then gdb -c "$COREFILE" /usr/bin/octave -ex "thread apply all bt" -ex "set pagination 0" -batch; fi
+- if [[ -f "$COREFILE" ]]; then gdb /usr/bin/octave-cli -c "$COREFILE"; fi
