@@ -687,14 +687,15 @@ function movePointsCloser(meta, handle)
         dataInsert_right = [cell(1); dataInsert_right];
       end
 
-      % Add the new data for right points first, then the possible NaN and then
-      % the new left point
-      dataCell = cellfun(@(x, y) vertcat(x, y), dataCell, dataInsert_right, 'UniformOutput', false);
-      dataCell = cellfun(@(x, y) vertcat(x, y), dataCell, dataInsert_NaN,   'UniformOutput', false);
-      dataCell = cellfun(@(x, y) vertcat(x, y), dataCell, dataInsert_left,  'UniformOutput', false);
+      % Put the cells together, right points first, then the possible NaN
+      % and then the left points
+      dataCell = [dataCell';
+                  dataInsert_right';
+                  dataInsert_NaN';
+                  dataInsert_left'];
 
-      % Put the data matrix back together
-      data     = cell2mat(dataCell);
+      % Merge the cells back together
+      data     = cat(1, dataCell{:});
   end
 
   % Remove consecutive NaNs
@@ -720,11 +721,11 @@ function xNew = moveToBox(x, xRef, xLim, yLim)
   % Returns the vector of points xNew that sits on the line segment between 
   % x and xRef *and* on the box. If several such points exist, take the 
   % closest one to x.
+  n = size(x, 1);
 
   % Find out with which border the line x---xRef intersects, and determine
   % the smallest parameter alpha such that x + alpha*(xRef-x)
-  % sits on the boundary.
-  n = size(x, 1);
+  % sits on the boundary. Otherwise set Alpha to inf.
   minAlpha = inf(n, 1);
   
   % Get the corner points
@@ -753,9 +754,10 @@ function minAlpha = updateAlpha(X1, X2, X3, X4, minAlpha)
   % Check if lambda is in bounds and lambda1 large enough
   id_Alpha           = 0.0 < lambda(:,2) & lambda(:,2) < 1.0 ...
                      & abs(minAlpha) > abs(lambda(:,1));
+
+  % Update alpha when applicable
   minAlpha(id_Alpha) = lambda(id_Alpha,1);
 end
-% =========================================================================
 % =========================================================================
 function out = isInBox(data, xLim, yLim)
 
