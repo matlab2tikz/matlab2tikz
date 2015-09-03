@@ -283,23 +283,24 @@ function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
 end
 % =========================================================================
 function out = segmentVisible(data, dataIsInBox, xLim, yLim)
-    % Given a bounding box {x,y}Lim, loop through all pairs of subsequent nodes
-    % in p and determine whether the line between the pair crosses the box.
+    % Given a bounding box {x,y}Lim, determine whether the line between all 
+    % pairs of subsequent data points crosses the box.
     n = size(data, 1);
     out = false(n-1, 1);
     
     % Only check if there is more than 1 point    
     if n>1
+        % Define the vectors of data points for the segments X1--X2
+        idx= 1:n-1;
+        X1 = data(idx,   :);
+        X2 = data(idx+1, :);
+        
         % One of the neighbors is inside the box and the other is finite
-        nextVisible = (dataIsInBox(2:end)   & all(isfinite(data(1:end-1)), 2));
-        thisVisible = (dataIsInBox(1:end-1) & all(isfinite(data(2:end)), 2));
+        thisVisible = (dataIsInBox(idx)     & all(isfinite(X2), 2));
+        nextVisible = (dataIsInBox(idx+1)   & all(isfinite(X1), 2));
 
         % Get the corner coordinates
         [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
-
-        % Define the vectors of data points
-        X1 = data(1:end-1,:);
-        X2 = data(2:end,:);
 
         % Check if data points intersect with the borders of the plot
         left   = segmentsIntersect(X1, X2, bottomLeft , topLeft);
@@ -313,78 +314,12 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
 end
 % =========================================================================
 function out = segmentsIntersect(X1, X2, X3, X4)
-  % Checks whether the segments X1--X2 and X3--X4 intersect.
-  % Given four points X_k=(x_k,y_k), k\in{1,2,3,4}, and the two lines defined
-  % by those,
-  %
-  %  L1(lambda) = X1 + lambda (X2 - X1)
-  %  L2(lambda) = X3 + lambda (X4 - X3)
-  %
-  % returns the lambda for which they intersect (and Inf if they are parallel).
-  % Technically, one needs to solve the 2x2 equation system
-  %
-  %   x1 + lambda1 (x2-x1)  =  x3 + lambda2 (x4-x3)
-  %   y1 + lambda1 (y2-y1)  =  y3 + lambda2 (y4-y3)
-  %
-  % for lambda1 and lambda2.
-  % See https://en.wikipedia.org/wiki/Line-line_intersection for reference.
-  
-  % NOTE: As X2 is only used in the difference (X2-X1), we directly pass
-  % that difference instead of X2 individually.
-  % Now X1 is a matrix containing all data points X1 and diffX2X1 is a
-  % matrix containing the differences X2-X1 between all consecutive data
-  % points X1 and X2
-  % n is the number of segments (not points in the plot!)
-  n      = size(X2, 1);
-  lambda = zeros(n, 2);
-  out    = false(n, 1);
-  
-  % Calculate the determinant of A = [X2-X1, -(X4-X3)];
-  % detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1))
-  % NOTE: Vectorized this is equivalent to the matrix multiplication
-  % [nx2] * [2x2] * [2x1] = [nx1]
-  detA = -(X2(:,1)-X1(:,1)) .* (X4(2)-X3(2)) + (X2(:,2)-X1(:,2)) .* (X4(1)-X3(1));  
-  
-  % Get the indexes for nonzero elements
-  id_detA = detA~=0;
-  
-  if any(id_detA)
-      % rhs = X3(:) - X1(:)
-      % NOTE: Originaly this was a [2x1] vector. However as we vectorize the 
-      % calculation it is beneficial to treat it as an [nx2] matrix rather than a [2xn]
-      rhs = bsxfun(@minus, X3', X1);
-      
-      % Calculate the inverse of A and lambda
-      % invA=[-(X4(2)-X3(2)), X4(1)-X3(1);...
-      %       -(X2(2)-X1(2)), X2(1)-X1(1)] / detA 
-      % lambda = invA * rhs
-  
-      % Rotational matrix with sign flip. It transforms a given vector [a,b] by 
-      % Rotate * [a,b] = [-b,a] as required for calculation of invA  
-      Rotate = [0, -1; 1, 0];   
-
-
-      % Rather than calculating invA first and then multiply with rhs to obtain 
-      % lambda, directly calculate the respective termsq
-      % The upper half of the 2x2 matrix is always the same and is given by:
-      % [-(X4(2)-X3(2)), X4(1)-X3(1)] / detA * rhs
-      % This is a matrix multiplication of the form [1x2] * [2x1] = [1x1]
-      % As we have transposed rhs we can write this as:
-      % rhs * Rotate * (X4-X3) => [nx2] * [2x2] * [2x1] = [nx1]
-      lambda(id_detA,1) = (rhs(id_detA, :) * Rotate * (X4-X3))./detA(id_detA);
-
-      % The lower half is dependent on (X2-X1) which is a matrix of size [nx2]
-      % [-(X2(2)-X1(2)), X2(1)-X1(1)] / detA * rhs 
-      % As both (X2-X1) and rhs are matrices of size [nx2] there is no simple 
-      % matrix multiplication leading to a [nx1] vector. Therefore, use the
-      % elementwise multiplication and sum over it
-      % sum( [nx2] * [2x2] .* [nx2], 2) = sum([nx2],2) = [nx1] 
-      lambda(id_detA,2) = sum(-(X2(id_detA,:)-X1(id_detA,:)) * Rotate .* rhs(id_detA, :), 2)./detA(id_detA);
-  end
+  % Checks whether the segments X1--X2 and X3--X4 intersect. 
+  lambda = crossLines(X1, X2, X3, X4);
   
   % Check whether lambda is in bound
-  out(id_detA) = 0.0 < lambda(id_detA,1) & lambda(id_detA,1) < 1.0 &...
-                 0.0 < lambda(id_detA,2) & lambda(id_detA,2) < 1.0;
+  out = 0.0 < lambda(:, 1) & lambda(:, 1) < 1.0 &...
+        0.0 < lambda(:, 2) & lambda(:, 2) < 1.0;
 end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
@@ -646,15 +581,16 @@ function movePointsCloser(meta, handle)
     % Don't do funny stuff with varying zData.
     return;
   end
-
-  numberOfPoints = length(xData);
+  
   data = [xData(:), yData(:)];
 
   xlim = get(meta.gca, 'XLim');
   ylim = get(meta.gca, 'YLim');
 
+  % Calculate the extension of the extended box  
   xWidth = xlim(2) - xlim(1);
   yWidth = ylim(2) - ylim(1);
+  
   % Don't choose the larger box too large to make sure that the values inside
   % it can still be treated by TeX.
   extendFactor = 0.1;
@@ -663,113 +599,109 @@ function movePointsCloser(meta, handle)
 
   % Get which points are in an extended box (the limits of which
   % don't exceed TeX's memory).
-  dataIsInLargeBox = isInBox(data(:,1:2), ...
-                             largeXLim, largeYLim);
+  dataIsInLargeBox = isInBox(data(:, 1:2), largeXLim, largeYLim);
 
   % Count the NaNs as being inside the box.
-  dataIsInLargeBox = dataIsInLargeBox | any(isnan(data)')';
+  dataIsInLargeBox = dataIsInLargeBox | any(isnan(data), 2);
 
-  % Loop through all points which are to be included in the plot yet do not
-  % fit into the extended box, and gather the points by which they are to be
-  % replaced.
+  % Find all points which are to be included in the plot yet do not fit
+  % into the extended box
+  replaceIndices = find(~dataIsInLargeBox);  
+  
+  % Only try to replace points if there are some to replace
+  if (~isempty(replaceIndices))
+      % Check whether the points are finite.
+      DataIsFinite = all(isfinite(data(replaceIndices,:)), 2);
 
-  replaceIndices = find(~dataIsInLargeBox)';
-  m = length(replaceIndices);
-  r = cell(m, 1);
-  for k = 1:m
-      i = replaceIndices(k);
-      r{k} = [];
-      if i > 1 && all(isfinite(data(i-1,:)))
-          newPoint = moveToBox(data(i,:), data(i-1,:), largeXLim, largeYLim);
-          % Don't bother if the point is inf:
-          % There's no intersection with the large box, so even the
-          % connection between the two after they have been moved
-          % won't be probably be visible.
-          if all(isfinite(newPoint))
-              r{k} = [r{k}; newPoint];
-          end
+      % Get the indices of those points, that are the first point in a
+      % segment
+      id_first  = replaceIndices(replaceIndices < size(data, 1) & DataIsFinite);
+
+      % Get the indices of those points, that are the second point in a
+      % segment
+      id_second = replaceIndices(replaceIndices > 1  & DataIsFinite);
+
+      % Define the vectors of data points for the segments X1--X2
+      X1_first  = data(id_first,    :);
+      X2_first  = data(id_first+1,  :);
+      X1_second = data(id_second,   :);
+      X2_second = data(id_second-1, :);
+
+      % Move the points closer to the large box along the segment
+      newData_first = moveToBox(X1_first,  X2_first,  largeXLim, largeYLim);
+      newData_second= moveToBox(X1_second, X2_second, largeXLim, largeYLim);
+
+      % If newData_* is infinite, the segment was not visible. However, as we
+      % move the point closer, it would become visible. So insert a NaN.
+      isInfinite_first  = any(~isfinite(newData_first),  2);
+      isInfinite_second = any(~isfinite(newData_second), 2);
+
+      newData_first(isInfinite_first,  :) = NaN(sum(isInfinite_first),  2);
+      newData_second(isInfinite_second,:) = NaN(sum(isInfinite_second), 2);
+
+      % If a point is part of two segments, that cross the border, we need to
+      % insert a NaN to prevent an additional line segment
+      [~, ~, id_conflict] = intersect(id_first (~isInfinite_first), ...
+                                      id_second(~isInfinite_second));
+
+      % Cut the data into length(replaceIndices)+1 segments.
+      % Calculate the length of the segments
+      length_segments = [replaceIndices(1);
+                         diff(replaceIndices);
+                         size(data, 1)-replaceIndices(end)];
+
+      % Cut the data into segments
+      dataCell = mat2cell(data, length_segments, 2);
+
+      % Remove the last point of every segment except the last one as they
+      % will be replaced
+      dataCell(1:end-1) = cellfun(@(x) x(1:end-1,:), dataCell(1:end-1), 'UniformOutput', false);
+
+      % Create an empty cell array for inserting NaNs and fill it at the
+      % conflict sites
+      dataInsert_NaN   = cell(length(length_segments),1);
+      dataInsert_NaN(id_conflict) = mat2cell(NaN(length(id_conflict), 2),...
+                                             ones(size(id_conflict)), 2);
+
+      % Create a cell array for the moved points
+      dataInsert_first  = mat2cell(newData_first,  ones(size(id_first)),  2);
+      dataInsert_second = mat2cell(newData_second, ones(size(id_second)), 2);
+
+      % Add an empty cell at the end of the last segment
+      dataInsert_first  = [dataInsert_first;  cell(1)];
+      dataInsert_second = [dataInsert_second; cell(1)];
+
+      % If the first or the last point would have been replaced add an empty
+      % cell at the beginning/end
+      if(replaceIndices(end) == size(data, 1))
+        dataInsert_first  = [dataInsert_first; cell(1)];
       end
-      if i < size(data,1) && all(isfinite(data(i+1,:)))
-          newPoint = moveToBox(data(i,:), data(i+1,:), largeXLim, largeYLim);
-          % Don't bother if the point is inf:
-          % There's no intersection with the large box, so even the
-          % connection between the two after they have been moved
-          % won't be probably be visible.
-          if all(isfinite(newPoint))
-              r{k} = [r{k}; newPoint];
-          end
+      if(replaceIndices(1) == 1)
+        dataInsert_second = [cell(1); dataInsert_second];
       end
+
+      % Put the cells together, right points first, then the possible NaN
+      % and then the left points
+      dataCell = [dataCell';
+                  dataInsert_second';
+                  dataInsert_NaN';
+                  dataInsert_first'];
+
+      % Merge the cells back together
+      data     = cat(1, dataCell{:});
   end
 
-  % Insert all r{k}{:} at replaceIndices[k].
-  dataNew = [];
-  lastReplIndex = 0;
-  lastEntryIsReplacement = false;
-  for k = 1:m
-     % Make sure that two subsequent moved points are separated by a NaN entry.
-     % This is to make sure that there is no visible line between two moved
-     % points that wasn't there before.
-     d = data(lastReplIndex+1:replaceIndices(k)-1,:);
-     if size(r{k}, 1) == 2
-         % Two replacement entries -- pad them with a NaN.
-         rep = [r{k}(1, :); ...
-                NaN(1, size(r{k}, 2)); ...
-                r{k}(2, :)];
-     else
-         rep = r{k};
-     end
-
-     % Don't draw line, if connecting line would be completely outside axis.
-     % We can check this using a line clipping algorithm.
-     % Illustration of the problem:
-     % http://www.cc.gatech.edu/grads/h/Hao-wei.Hsieh/Haowei.Hsieh/sec1_example.html
-     % This boils down to a line intersects line test, where all four lines of
-     % the axis rectangle need to be considered.
-     %
-     % First consider two easy cases:
-     % 1. This can't be the case, if last point was not replaced, because it is
-     %    inside the axis limits ('lastEntryIsReplacement == 0').
-     % 2. This can't be the case, if the current point will not be replace,
-     %    because it is inside the axis limits.
-     %    ( (isempty(d) && ~isempty(rep) == 0 ).
-     if lastEntryIsReplacement && (isempty(d) && ~isempty(rep))
-         % Now check if the connecting line goes through the axis rectangle.
-         % OR: Only do this, if the original segment was not visible either
-         bLineOutsideAxis = ~segmentVisible(...
-             data([lastReplIndex,replaceIndices(k)],:), ...
-             [false;false], xlim, ylim);
-
-         % If line is completly outside the axis, don't draw the line. This is
-         % achieved by adding a NaN and necessary, because the two points are
-         % moved close to the axis limits and thus would afterwards show a
-         % connecting line in the axis.
-         if bLineOutsideAxis
-             rep = [NaN(1, size(r{k}, 2)); rep];
-         end
-     end
-
-     % Add the data, depending if it is a valid point or a replacement
-     if ~isempty(d)     % Add current point from valid point 'd'
-         dataNew = [dataNew; d];
-         lastEntryIsReplacement = false;
-     end
-     if ~isempty(rep)   % Add current point from replacement point 'rep'
-         dataNew = [dataNew; rep];
-         lastEntryIsReplacement = true;
-     end
-
-     % Store last replacement index
-     lastReplIndex = replaceIndices(k);
-  end
-  dataNew = [dataNew; ...
-             data(lastReplIndex+1:end,:)];
+  % Remove consecutive NaNs
+  id_NaN = find(isnan(data(:, 1)));
+  id_NaN = id_NaN(diff(id_NaN) == 1);
+  data(id_NaN, :) = [];
 
   % Set the new (masked) data.
-  set(handle, 'XData', dataNew(:,1));
-  set(handle, 'YData', dataNew(:,2));
+  set(handle, 'XData', data(:, 1));
+  set(handle, 'YData', data(:, 2));
   if ~isempty(zData)
     % As per precondition, all zData entries are equal.
-    zDataNew = zData(1) * ones(size(dataNew,1), 1);
+    zDataNew = zData(1) * ones(size(data, 1), 1);
     set(handle, 'zData', zDataNew);
   end
 
@@ -777,57 +709,60 @@ function movePointsCloser(meta, handle)
 end
 % =========================================================================
 function xNew = moveToBox(x, xRef, xLim, yLim)
-  % Takes a box defined by xlim, ylim, one point x and a reference point
-  % xRef.
-  % Returns the point xNew that sits on the line segment between x and xRef
-  % *and* on the box. If several such points exist, take the closest one
-  % to x.
+  % Takes a box defined by xlim, ylim, a vector of points x and a vector of 
+  % reference points xRef.
+  % Returns the vector of points xNew that sits on the line segment between 
+  % x and xRef *and* on the box. If several such points exist, take the 
+  % closest one to x.
+  n = size(x, 1);
 
   % Find out with which border the line x---xRef intersects, and determine
   % the smallest parameter alpha such that x + alpha*(xRef-x)
-  % sits on the boundary.
-  minAlpha = inf;
+  % sits on the boundary. Otherwise set Alpha to inf.
+  minAlpha = inf(n, 1);
+  
+  % Get the corner points
   [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
-  %TODO: clean up duplicate code below, possibly store lambda in matrix
 
   % left boundary:
-  lambda = crossLines(x, xRef, bottomLeft, topLeft);
-  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
-      minAlpha = lambda(1);
-  end
+  minAlpha = updateAlpha(x, xRef, bottomLeft, topLeft, minAlpha);
 
   % bottom boundary:
-  lambda = crossLines(x, xRef, bottomLeft, bottomRight);
-  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
-      minAlpha = lambda(1);
-  end
+  minAlpha = updateAlpha(x, xRef, bottomLeft, bottomRight, minAlpha);
 
   % right boundary:
-  lambda = crossLines(x, xRef, bottomRight, topRight);
-  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
-      minAlpha = lambda(1);
-  end
-
+  minAlpha = updateAlpha(x, xRef, bottomRight, topRight, minAlpha);
+  
   % top boundary:
-  lambda = crossLines(x, xRef, topLeft, topRight);
-  if 0.0 < lambda(2) && lambda(2) < 1.0 && abs(minAlpha) > abs(lambda(1))
-      minAlpha = lambda(1);
-  end
+  minAlpha = updateAlpha(x, xRef, topLeft, topRight, minAlpha);
 
-  % create the new point
-  xNew = x + minAlpha*(xRef-x);
+  % Create the new point
+  xNew = x + bsxfun(@times ,minAlpha, (xRef-x));
+end
+% =========================================================================
+function minAlpha = updateAlpha(X1, X2, X3, X4, minAlpha)
+  % Checks whether the segments X1--X2 and X3--X4 intersect. 
+  lambda = crossLines(X1, X2, X3, X4);
+  
+  % Check if lambda is in bounds and lambda1 large enough
+  id_Alpha           = 0.0 < lambda(:,2) & lambda(:,2) < 1.0 ...
+                     & abs(minAlpha) > abs(lambda(:,1));
+
+  % Update alpha when applicable
+  minAlpha(id_Alpha) = lambda(id_Alpha,1);
 end
 % =========================================================================
 function out = isInBox(data, xLim, yLim)
 
   out = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
       & data(:,2) > yLim(1) & data(:,2) < yLim(2);
-
 end
 % =========================================================================
 function lambda = crossLines(X1, X2, X3, X4)
-  % Given four points X_k=(x_k,y_k), k\in{1,2,3,4}, and the two lines defined
-  % by those,
+  % Checks whether the segments X1--X2 and X3--X4 intersect.
+  % See https://en.wikipedia.org/wiki/Line-line_intersection for reference.
+  % Given four points X_k=(x_k,y_k), k\in{1,2,3,4}, and the two lines 
+  % defined by those,
   %
   %  L1(lambda) = X1 + lambda (X2 - X1)
   %  L2(lambda) = X3 + lambda (X4 - X3)
@@ -838,24 +773,56 @@ function lambda = crossLines(X1, X2, X3, X4)
   %   x1 + lambda1 (x2-x1)  =  x3 + lambda2 (x4-x3)
   %   y1 + lambda1 (y2-y1)  =  y3 + lambda2 (y4-y3)
   %
-  % for lambda and mu.
+  % for lambda1 and lambda2.
 
-  %TODO: why don't we use `\` instead of Cramer's rule?
+  % Now X1 is a vector of all data points X1 and X2 is a vector of all
+  % consecutive data points X2
+  % n is the number of segments (not points in the plot!)
+  n      = size(X2, 1);
+  lambda = zeros(n, 2);
+  
+  % Calculate the determinant of A = [X2-X1, -(X4-X3)];
+  % detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1))
+  % NOTE: Vectorized this is equivalent to the matrix multiplication
+  % [nx2] * [2x2] * [2x1] = [nx1]
+  detA = -(X2(:, 1)-X1(:, 1)) .* (X4(2)-X3(2)) + (X2(:, 2)-X1(:, 2)) .* (X4(1)-X3(1));  
+  
+  % Get the indices for nonzero elements
+  id_detA = detA~=0;
+  
+  if any(id_detA)
+      % rhs = X3(:) - X1(:)
+      % NOTE: Originaly this was a [2x1] vector. However as we vectorize the 
+      % calculation it is beneficial to treat it as an [nx2] matrix rather than a [2xn]
+      rhs = bsxfun(@minus, X3', X1);
+      
+      % Calculate the inverse of A and lambda
+      % invA=[-(X4(2)-X3(2)), X4(1)-X3(1);...
+      %       -(X2(2)-X1(2)), X2(1)-X1(1)] / detA 
+      % lambda = invA * rhs
+  
+      % Rotational matrix with sign flip. It transforms a given vector [a,b] by 
+      % Rotate * [a,b] = [-b,a] as required for calculation of invA  
+      Rotate = [0, -1; 1, 0];   
 
-  rhs = X3(:) - X1(:);
-  % Don't divide by det(erminant), if it is zero. Directly return 'inf'.
-  % Otherwise this yields "warning: division by zero" in octave. See #664.
-  % A = [X2-X1, -(X4-X3)];
-  detA = -(X2(1)-X1(1))*(X4(2)-X3(2)) + (X2(2)-X1(2))*(X4(1)-X3(1));
 
-  if detA == 0
-    invA = inf;
-  else
-    invA = [-(X4(2)-X3(2)), X4(1)-X3(1);...
-            -(X2(2)-X1(2)), X2(1)-X1(1)] / detA;
+      % Rather than calculating invA first and then multiply with rhs to obtain 
+      % lambda, directly calculate the respective terms
+      % The upper half of the 2x2 matrix is always the same and is given by:
+      % [-(X4(2)-X3(2)), X4(1)-X3(1)] / detA * rhs
+      % This is a matrix multiplication of the form [1x2] * [2x1] = [1x1]
+      % As we have transposed rhs we can write this as:
+      % rhs * Rotate * (X4-X3) => [nx2] * [2x2] * [2x1] = [nx1]
+      lambda(id_detA, 1) = (rhs(id_detA, :) * Rotate * (X4-X3))./detA(id_detA);
+
+      % The lower half is dependent on (X2-X1) which is a matrix of size [nx2]
+      % [-(X2(2)-X1(2)), X2(1)-X1(1)] / detA * rhs 
+      % As both (X2-X1) and rhs are matrices of size [nx2] there is no simple 
+      % matrix multiplication leading to a [nx1] vector. Therefore, use the
+      % elementwise multiplication and sum over it
+      % sum( [nx2] * [2x2] .* [nx2], 2) = sum([nx2],2) = [nx1] 
+      lambda(id_detA, 2) = sum(-(X2(id_detA, :)-X1(id_detA, :)) * Rotate .* rhs(id_detA, :), 2)./detA(id_detA);
   end
-  lambda = invA * rhs;
-
 end
 % =========================================================================
 function bool = isValidTargetResolution(val)
