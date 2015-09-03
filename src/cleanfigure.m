@@ -118,12 +118,14 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
       %display(sprintf([repmat(' ',1,indent), '  handle this']))
 
       if strcmp(type, 'line')
+          setDataPrecision(meta, h);
           simplifyLine(meta, h, targetResolution);
           pruneOutsideBox(meta, h);
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
       elseif strcmpi(type, 'stair')
+          setDataPrecision(meta, h);
           pruneOutsideBox(meta, h);
       elseif strcmp(type, 'text')
           % Ensure units of type 'data' (default) and restore the setting later
@@ -170,6 +172,63 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
               set(h, 'Visible', 'off');
           end
       end
+  end
+
+  return;
+end
+% =========================================================================
+function setDataPrecision(meta, handle)
+  % Make sure, data is within presicion bounds
+  
+  % Retrieve data
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  
+  % Obtain zData, if available
+  if isprop(handle, 'ZData')
+    zData = get(handle, 'ZData');
+  else
+    zData = [];
+  end
+
+  if isempty(zData)
+    data = [xData(:), yData(:)];
+  else
+    data = [xData(:), yData(:), zData(:)];
+  end
+
+  if isempty(data)
+      return;
+  end
+  
+  % Get the data range for every axis  
+  xLim = get(meta.gca, 'XLim');
+  yLim = get(meta.gca, 'YLim');
+  
+  if ~isempty(zData)
+      zLim = get(meta.gca, 'ZLim');
+  end
+    
+  if isempty(zData)
+    range = [diff(xLim), diff(yLim)];
+  else     
+    range = [diff(xLim), diff(yLim), diff(zLim)]; 
+  end
+  
+  % Get the maximal precision for the data range
+  eps_range = eps(range);
+  
+  % Scale the data wrt the range
+  data  = bsxfun(@rdivide, data, eps_range);
+  
+  % Round to precision and scale back
+  data  = bsxfun(@times, round(data), eps_range);
+  
+  % Override with the new data
+  set(handle, 'XData', data(:, 1));
+  set(handle, 'YData', data(:, 2));
+  if ~isempty(zData)
+    set(handle, 'ZData', data(:, 3));
   end
 
   return;
