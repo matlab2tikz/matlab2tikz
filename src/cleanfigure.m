@@ -614,42 +614,44 @@ function movePointsCloser(meta, handle)
   dataIsInLargeBox = dataIsInLargeBox | any(isnan(data), 2);
 
   % Find all points which are to be included in the plot yet do not fit
-  % into the extended box, and gather the points by which they are to be
-  % replaced.
+  % into the extended box
   replaceIndices = find(~dataIsInLargeBox);  
   
-  % Only replace Indices of there are some to replace
+  % Only try to replace points if there are some to replace
   if (~isempty(replaceIndices))
-      % Get the indices of those segments, where the right point might be moved
-      id_right = replaceIndices(replaceIndices > 1);
-      id_right = id_right(all(isfinite(data(id_right,:)), 2));
+      % Check whether the points are finite.
+      DataIsFinite = all(isfinite(data(replaceIndices,:)), 2);
 
-      % Get the indices of those segments where the left point might be moved
-      id_left  = replaceIndices(replaceIndices < size(data, 1));
-      id_left  = id_left(all(isfinite(data(id_left,:)), 2));
+      % Get the indices of those points, that are the first point in a
+      % segment
+      id_first  = replaceIndices(replaceIndices < size(data, 1) & DataIsFinite);
+
+      % Get the indices of those points, that are the second point in a
+      % segment
+      id_second = replaceIndices(replaceIndices > 1  & DataIsFinite);
 
       % Define the vectors of data points for the segments X1--X2
-      X1_left  = data(id_left,    :);
-      X2_left  = data(id_left+1,  :);
-      X1_right = data(id_right,   :);
-      X2_right = data(id_right-1, :);
+      X1_first  = data(id_first,    :);
+      X2_first  = data(id_first+1,  :);
+      X1_second = data(id_second,   :);
+      X2_second = data(id_second-1, :);
 
       % Move the points closer to the large box along the segment
-      newData_left = moveToBox(X1_left,  X2_left,  largeXLim, largeYLim);
-      newData_right= moveToBox(X1_right, X2_right, largeXLim, largeYLim);
+      newData_first = moveToBox(X1_first,  X2_first,  largeXLim, largeYLim);
+      newData_second= moveToBox(X1_second, X2_second, largeXLim, largeYLim);
 
       % If newData_* is infinite, the segment was not visible. However, as we
       % move the point closer, it would become visible. So insert a NaN.
-      isInfinite_left  = any(~isfinite(newData_left),  2);
-      isInfinite_right = any(~isfinite(newData_right), 2);
+      isInfinite_first  = any(~isfinite(newData_first),  2);
+      isInfinite_second = any(~isfinite(newData_second), 2);
 
-      newData_left(isInfinite_left,  :) = NaN(sum(isInfinite_left),  2);
-      newData_right(isInfinite_right,:) = NaN(sum(isInfinite_right), 2);
+      newData_first(isInfinite_first,  :) = NaN(sum(isInfinite_first),  2);
+      newData_second(isInfinite_second,:) = NaN(sum(isInfinite_second), 2);
 
       % If a point is part of two segments, that cross the border, we need to
       % insert a NaN to prevent an additional line segment
-      [~, ~, id_conflict] = intersect(id_left (~isInfinite_left), ...
-                                      id_right(~isInfinite_right));
+      [~, ~, id_conflict] = intersect(id_first (~isInfinite_first), ...
+                                      id_second(~isInfinite_second));
 
       % Cut the data into length(replaceIndices)+1 segments.
       % Calculate the length of the segments
@@ -671,28 +673,28 @@ function movePointsCloser(meta, handle)
                                              ones(size(id_conflict)), 2);
 
       % Create a cell array for the moved points
-      dataInsert_left  = mat2cell(newData_left,  ones(size(id_left)),  2);
-      dataInsert_right = mat2cell(newData_right, ones(size(id_right)), 2);
+      dataInsert_first  = mat2cell(newData_first,  ones(size(id_first)),  2);
+      dataInsert_second = mat2cell(newData_second, ones(size(id_second)), 2);
 
       % Add an empty cell at the end of the last segment
-      dataInsert_left  = [dataInsert_left;  cell(1)];
-      dataInsert_right = [dataInsert_right; cell(1)];
+      dataInsert_first  = [dataInsert_first;  cell(1)];
+      dataInsert_second = [dataInsert_second; cell(1)];
 
       % If the first or the last point would have been replaced add an empty
       % cell at the beginning/end
       if(replaceIndices(end) == size(data, 1))
-        dataInsert_left  = [dataInsert_left; cell(1)];
+        dataInsert_first  = [dataInsert_first; cell(1)];
       end
       if(replaceIndices(1) == 1)
-        dataInsert_right = [cell(1); dataInsert_right];
+        dataInsert_second = [cell(1); dataInsert_second];
       end
 
       % Put the cells together, right points first, then the possible NaN
       % and then the left points
       dataCell = [dataCell';
-                  dataInsert_right';
+                  dataInsert_second';
                   dataInsert_NaN';
-                  dataInsert_left'];
+                  dataInsert_first'];
 
       % Merge the cells back together
       data     = cat(1, dataCell{:});
@@ -783,7 +785,7 @@ function lambda = crossLines(X1, X2, X3, X4)
   % for lambda1 and lambda2.
 
   % Now X1 is a vector of all data points X1 and X2 is a vector of all
-  % onsecutive data points X2
+  % consecutive data points X2
   % n is the number of segments (not points in the plot!)
   n      = size(X2, 1);
   lambda = zeros(n, 2);
@@ -814,7 +816,7 @@ function lambda = crossLines(X1, X2, X3, X4)
 
 
       % Rather than calculating invA first and then multiply with rhs to obtain 
-      % lambda, directly calculate the respective termsq
+      % lambda, directly calculate the respective terms
       % The upper half of the 2x2 matrix is always the same and is given by:
       % [-(X4(2)-X3(2)), X4(1)-X3(1)] / detA * rhs
       % This is a matrix multiplication of the form [1x2] * [2x1] = [1x1]
