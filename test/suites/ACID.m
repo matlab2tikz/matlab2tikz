@@ -823,7 +823,14 @@ function [stat] = xAxisReversed ()
   plot(x,y);
   set(gca,'XDir','reverse');
   set(gca,'YDir','reverse');
-  legend( 'Location', 'SouthWest' );
+  if isOctave('<=', [3,8])
+      % TODO: see whether we can unify this syntax for all environments
+      % at the moment, the generic syntax doesn't seem to work for Octave
+      % 3.8 (it doesn't even show a legend in gnuplut).
+      legend( 'data1', 'Location', 'SouthWest' );
+  else
+      legend( 'Location', 'SouthWest' );
+  end
 end
 % =========================================================================
 function [stat] = subplot2x2b ()
