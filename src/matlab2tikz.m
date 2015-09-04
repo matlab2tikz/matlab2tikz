@@ -4918,30 +4918,7 @@ function newstr = join(m2t, cellstr, delimiter)
 %
 % Example of usage:
 %              join(m2t, cellstr, ',')
-    if isempty(cellstr)
-        newstr = '';
-        return
-    end
-
-    % convert all values to strings first
-    nElem = numel(cellstr);
-    for k = 1:nElem
-        if isnumeric(cellstr{k})
-            cellstr{k} = sprintf(m2t.ff, cellstr{k});
-        elseif iscell(cellstr{k})
-            cellstr{k} = join(m2t, cellstr{k}, delimiter);
-            % this will fail for heavily nested cells
-        elseif ~ischar(cellstr{k})
-            error('matlab2tikz:join:NotCellstrOrNumeric',...
-                'Expected cellstr or numeric.');
-        end
-    end
-
-    % inspired by strjoin of recent versions of MATLAB
-    newstr = cell(2,nElem);
-    newstr(1,:)         = reshape(cellstr, 1, nElem);
-    newstr(2,1:nElem-1) = {delimiter}; % put delimiters in-between the elements
-    newstr = [newstr{:}];
+    newstr = m2tstrjoin(cellstr, delimiter, m2t.ff);
 end
 % ==============================================================================
 function [width, height, unit] = getNaturalFigureDimension(m2t)
