@@ -1376,7 +1376,7 @@ function [stat] = ylabels()
   ylabel(H(1),'sin(x)');
   ylabel(H(2),'3cos(x)');
 
-  xlabel(gca,'time')
+  xlabel(H(1),'time');
 end
 % =========================================================================
 function [stat] = spectro()
