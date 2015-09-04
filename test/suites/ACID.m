@@ -678,7 +678,7 @@ function [stat] = stemplot()
   % Let's mimick this behavior everywhere else.
   baselines = findall(gca, 'Type', 'line', 'Color', [0 0 0]);
   if numel(baselines) > 1
-      delete(baselines(2:end));
+      delete(baselines(1:end-1));
   end
 end
 % =========================================================================
