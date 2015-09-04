@@ -671,8 +671,15 @@ function [stat] = stemplot()
        exp(.05*x).*cos(x)]';
   h = stem(x, y);
   legend( 'exp(-.07x)*cos(x)', 'exp(.05*x)*cos(x)', 'Location', 'NorthWest');
-  set(h(1),'MarkerFaceColor','blue')
-  set(h(2),'MarkerFaceColor','red','Marker','square')
+  set(h(1),'MarkerFaceColor','blue');
+  set(h(2),'MarkerFaceColor','red','Marker','square');
+
+  % Octave 4 has some smart behavior: it only prints a single baseline.
+  % Let's mimick this behavior everywhere else.
+  baselines = findall(gca, 'Type', 'line', 'Color', [0 0 0]);
+  if numel(baselines) > 1
+      delete(baselines(2:end));
+  end
 end
 % =========================================================================
 function [stat] = stemplot2()
