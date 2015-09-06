@@ -690,7 +690,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                     get(child, 'Type'));
 
         end
-
+        
+        m2t = hasLegend(m2t,child);
         str = addLegendInformation(m2t, str, child);
 
         % append the environment
@@ -787,15 +788,11 @@ if ~m2t.currentHandleHasLegend, return, end
     
 interpreter  = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
 legendString = getLegendString(m2t,h);
-% Add legend after the plot data.
-% The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
-% the output might not necessarily be a string, but a cellstr.
-if ischar(str) && ~isempty(str) && m2t.currentHandleHasLegend
-    c = prettyPrint(m2t, legendString, interpreter);
-    % We also need a legend alignment option to make multiline
-    % legend entries work. This is added by default in getLegendOpts().
-    str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
-end
+
+c = prettyPrint(m2t, legendString, interpreter);
+% We also need a legend alignment option to make multiline
+% legend entries work. This is added by default in getLegendOpts().
+str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
 end
 % ==============================================================================
 function data = applyHgTransform(m2t, data)
