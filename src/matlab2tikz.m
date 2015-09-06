@@ -627,8 +627,9 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     % how MATLAB does it, too. Significant for patch (contour) plots,
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
+        m2t = hasLegend(m2t,child);
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        [m2t, legendString, interpreter] = findLegendInformation(m2t, child);
+%         [m2t, legendString, interpreter] = findLegendInformation(m2t, child);
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         switch char(get(child, 'Type'))
             % 'axes' environments are treated separately.
@@ -690,7 +691,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
         end
 
-        str = addLegendInformation(m2t, str, legendString, interpreter);
+        str = addLegendInformation(m2t, str, child);
 
         % append the environment
         pgfEnvironments{end+1} = str;
@@ -781,16 +782,20 @@ function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, chil
     end
 end
 % ==============================================================================
-function str = addLegendInformation(m2t, str, legendString, interpreter)
+function str = addLegendInformation(m2t, str, h)
+if ~m2t.currentHandleHasLegend, return, end
+    
+interpreter  = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
+legendString = getLegendString(m2t,h);
 % Add legend after the plot data.
 % The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
 % the output might not necessarily be a string, but a cellstr.
-    if ischar(str) && ~isempty(str) && m2t.currentHandleHasLegend
-        c = prettyPrint(m2t, legendString, interpreter);
-        % We also need a legend alignment option to make multiline
-        % legend entries work. This is added by default in getLegendOpts().
-        str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
-    end
+if ischar(str) && ~isempty(str) && m2t.currentHandleHasLegend
+    c = prettyPrint(m2t, legendString, interpreter);
+    % We also need a legend alignment option to make multiline
+    % legend entries work. This is added by default in getLegendOpts().
+    str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
+end
 end
 % ==============================================================================
 function data = applyHgTransform(m2t, data)
@@ -829,9 +834,11 @@ function m2t = drawAxes(m2t, handle)
 
     % Flag if axis contains barplot
     m2t.axesContainers{end}.barAddedAxisOption = false;
-
-    m2t.gcaAssociatedLegend = getAssociatedLegend(m2t, handle);
-
+    
+    % Get legend entries
+    m2t.axesContainers{end}.LegendHandle  = getAssociatedLegend(m2t,handle);
+    m2t.axesContainers{end}.LegendEntries = getLegendEntries(m2t);
+    
     m2t = retrievePositionOfAxes(m2t, handle);
 
     m2t = addAspectRatioOptionsOfAxes(m2t, handle);
@@ -953,23 +960,52 @@ function m2t = add3DOptionsOfAxes(m2t, handle)
 end
 % ==============================================================================
 function legendhandle = getAssociatedLegend(m2t, handle)
-% Check if the axis is referenced by a legend (only necessary for Octave)
-    legendhandle = [];
-    switch getEnvironment
-        case 'Octave'
-            % Make sure that m2t.legendHandles is a row vector.
-            for lhandle = m2t.legendHandles(:)'
-                ud = get(lhandle, 'UserData');
-                if isVisibleContainer(lhandle) && any(handle == ud.handle)
-                    legendhandle = lhandle;
-                    break;
-                end
+legendhandle = [];
+switch getEnvironment
+    case 'Octave'
+        % Make sure that m2t.legendHandles is a row vector.
+        for lhandle = m2t.legendHandles(:)'
+            ud = get(lhandle, 'UserData');
+            if isVisibleContainer(lhandle) && any(handle == ud.handle)
+                legendhandle = lhandle;
+                break;
             end
-        case 'MATLAB'
-            % no action needed
-        otherwise
-            errorUnknownEnvironment();
-    end
+        end
+    case 'MATLAB'
+        legendhandle = legend(handle);
+end
+end
+% ==============================================================================
+function entries = getLegendEntries(m2t)
+entries = [];
+legendHandle = m2t.axesContainers{end}.LegendHandle;
+
+if isempty(legendHandle), return, end
+
+switch getEnvironment
+    case 'Octave'
+        % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m
+        delfun  = get(legendHandle,'deletefcn');
+        entries = delfun{6};
+    case 'MATLAB'
+        % Undocumented property (exists at least since 2008a)
+        entries = double(get(legendHandle,'PlotChildren'));
+end
+end
+% ==============================================================================
+function string = getLegendString(m2t, h)
+entries = m2t.axesContainers{end}.LegendEntries;
+idx     = ismember(entries, h);
+string  = getOrDefault(entries(idx), 'displayname', '');
+
+% split string to cell, if newline character '\n' (ASCII 10) is present
+delimeter = sprintf('\n');
+string    = regexp(string, delimeter, 'split');
+end
+% ==============================================================================
+function [m2t, bool] = hasLegend(m2t, h)
+bool = any(ismember(h, m2t.axesContainers{end}.LegendEntries));
+m2t.currentHandleHasLegend = bool;
 end
 % ==============================================================================
 function m2t = retrievePositionOfAxes(m2t, handle)
