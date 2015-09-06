@@ -628,9 +628,6 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
         m2t = hasLegend(m2t,child);
-        % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%         [m2t, legendString, interpreter] = findLegendInformation(m2t, child);
-        % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         switch char(get(child, 'Type'))
             % 'axes' environments are treated separately.
 
@@ -691,95 +688,12 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
         end
         
+        % Restore legend status and add string
         m2t = hasLegend(m2t,child);
         str = addLegendInformation(m2t, str, child);
 
         % append the environment
         pgfEnvironments{end+1} = str;
-    end
-end
-% ==============================================================================
-function [m2t, legendString, interpreter] = findLegendInformation(m2t, child)
-% Check if 'child' is referenced in a legend.
-% If yes, some plot types may want to add stuff (e.g. 'forget plot').
-% Add '\addlegendentry{...}' then after the plot.
-legendString = '';
-interpreter  = '';
-hasLegend = false;
-
-if isempty(child)
-    return; % an empty (i.e. non-existent) child cannot have a legend entry
-end
-
-% Check if current handle is referenced in a legend.
-switch getEnvironment
-    case 'MATLAB'
-        [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child);
-
-    case 'Octave'
-        % Octave does not store a reference to the legend entry in the
-        % plotted objects. It references the plotted objects in reverse,
-        % in the legend's 'deletefcn' property.
-        % The variable m2t.gcaAssociatedLegend is set in drawAxes().
-        if ~isempty(m2t.gcaAssociatedLegend)
-            delfun           = get(m2t.gcaAssociatedLegend,'deletefcn');
-            legendEntryPeers = delfun{6}; % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m  
-            hasLegend        = ismember(child, legendEntryPeers);
-            interpreter      = get(m2t.gcaAssociatedLegend, 'interpreter');
-            legendString     = getOrDefault(child,'displayname','');
-        end
-
-    otherwise
-        errorUnknownEnvironment();
-end
-
-% split string to cell, if newline character '\n' (ASCII 10) is present
-delimeter = sprintf('\n');
-legendString = regexp(legendString,delimeter,'split');
-
-m2t.currentHandleHasLegend = hasLegend && ~isempty(legendString);
-end
-% ==============================================================================
-function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child)
-% finds the legend info in MATLAB (only!). Eventually this could be merged back
-% into `findLegendInformation`
-    legendString = '';
-    interpreter  = '';
-    hasLegend = false;
-    legendRefersToParent = false;
-    %FIXME: this part (e.g. fall back objects) should be restructured.
-    for legendHandle = m2t.legendHandles(:)'
-        ud = get(legendHandle, 'UserData');
-        if isfield(ud, 'handles')
-            plotChildren = ud.handles;
-        else
-            plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
-        end
-        k = find(child == plotChildren);
-        if isempty(k)
-            % Lines of error bar plots are not referenced
-            % directly in legends as an error bars plot contains
-            % two "lines": the data and the deviations. Here, the
-            % legends refer to the specgraph.errorbarseries
-            % handle which is 'Parent' to the line handle.
-            k = find(get(child,'Parent') == plotChildren);
-            legendRefersToParent = ~isempty(k);
-        end
-        if ~isempty(k)
-            % Legend entry found. Add it to the plot.
-            hasLegend = true;
-            interpreter = get(legendHandle, 'Interpreter');
-            if ~isempty(ud) && isfield(ud, 'lstrings')
-                legendString = ud.lstrings{k};
-            else
-                if legendRefersToParent
-                    parent       = get(child,'Parent');
-                    legendString = get(parent, 'DisplayName');
-                else
-                    legendString = get(child, 'DisplayName');
-                end
-            end
-        end
     end
 end
 % ==============================================================================
@@ -6230,6 +6144,93 @@ function [formatted,treeish] = VersionControlIdentifier()
     end
     if ~isempty(treeish)
         formatted = sprintf('(commit %s)',treeish);
+    end
+end
+% ==============================================================================
+
+% TO DEPRECATE
+% ==============================================================================
+function [m2t, legendString, interpreter] = findLegendInformation(m2t, child)
+% Check if 'child' is referenced in a legend.
+% If yes, some plot types may want to add stuff (e.g. 'forget plot').
+% Add '\addlegendentry{...}' then after the plot.
+legendString = '';
+interpreter  = '';
+hasLegend = false;
+
+if isempty(child)
+    return; % an empty (i.e. non-existent) child cannot have a legend entry
+end
+
+% Check if current handle is referenced in a legend.
+switch getEnvironment
+    case 'MATLAB'
+        [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child);
+
+    case 'Octave'
+        % Octave does not store a reference to the legend entry in the
+        % plotted objects. It references the plotted objects in reverse,
+        % in the legend's 'deletefcn' property.
+        % The variable m2t.gcaAssociatedLegend is set in drawAxes().
+        if ~isempty(m2t.gcaAssociatedLegend)
+            delfun           = get(m2t.gcaAssociatedLegend,'deletefcn');
+            legendEntryPeers = delfun{6}; % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m  
+            hasLegend        = ismember(child, legendEntryPeers);
+            interpreter      = get(m2t.gcaAssociatedLegend, 'interpreter');
+            legendString     = getOrDefault(child,'displayname','');
+        end
+
+    otherwise
+        errorUnknownEnvironment();
+end
+
+% split string to cell, if newline character '\n' (ASCII 10) is present
+delimeter = sprintf('\n');
+legendString = regexp(legendString,delimeter,'split');
+
+m2t.currentHandleHasLegend = hasLegend && ~isempty(legendString);
+end
+% ==============================================================================
+function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child)
+% finds the legend info in MATLAB (only!). Eventually this could be merged back
+% into `findLegendInformation`
+    legendString = '';
+    interpreter  = '';
+    hasLegend = false;
+    legendRefersToParent = false;
+    %FIXME: this part (e.g. fall back objects) should be restructured.
+    for legendHandle = m2t.legendHandles(:)'
+        ud = get(legendHandle, 'UserData');
+        if isfield(ud, 'handles')
+            plotChildren = ud.handles;
+        else
+            plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
+        end
+        k = find(child == plotChildren);
+        if isempty(k)
+            % Lines of error bar plots are not referenced
+            % directly in legends as an error bars plot contains
+            % two "lines": the data and the deviations. Here, the
+            % legends refer to the specgraph.errorbarseries
+            % handle which is 'Parent' to the line handle.
+            k = find(get(child,'Parent') == plotChildren);
+            legendRefersToParent = ~isempty(k);
+        end
+        if ~isempty(k)
+            % Legend entry found. Add it to the plot.
+            hasLegend = true;
+            interpreter = get(legendHandle, 'Interpreter');
+            if ~isempty(ud) && isfield(ud, 'lstrings')
+                legendString = ud.lstrings{k};
+            else
+                if legendRefersToParent
+                    parent       = get(child,'Parent');
+                    legendString = get(parent, 'DisplayName');
+                else
+                    legendString = get(child, 'DisplayName');
+                end
+            end
+        end
     end
 end
 % ==============================================================================
