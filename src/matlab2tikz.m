@@ -984,6 +984,15 @@ switch getEnvironment
         % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m
         delfun  = get(legendHandle,'deletefcn');
         entries = delfun{6};
+%         for ii = 1:numel(entries)
+%             anc = ancestor(entries(ii),'hggroup');
+%             if ~isempty(anc)
+%                 legendString = get(entries(ii),'displayname');
+%                 set(anc,'displayname',legendString);
+%                 entries(ii) = anc;
+%             end
+%         end
+        
     case 'MATLAB'
         % Undocumented property (exists at least since 2008a)
         entries = double(get(legendHandle,'PlotChildren'));
