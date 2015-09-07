@@ -526,7 +526,10 @@ function [stat] = logplot()
                     isMATLAB('<=', [8,3]); %FIXME: #749 (Jenkins)
 
   x = logspace(-1,2);
-  loglog(x,exp(x),'-s')
+  y = exp(x);
+  loglog(x, y, '-s')
+
+  ylim([1 1e45]);
   grid on;
 end
 % =========================================================================
