@@ -2102,7 +2102,7 @@ end
 % =========================================================================
 function stat = annotationAll()
   stat.description = 'All possible annotations with edited properties';
-  stat.unreliable = isMATLAB('<', [8,4]); % R2014a and older: #604
+  stat.unreliable = isMATLAB('<', [8,4]); % TODO: R2014a and older: #604
 
   if isempty(which('annotation'))
       fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2119,8 +2119,14 @@ function stat = annotationAll()
              'LineWidth',4, 'LineStyle',':');
 
   % Create arrow
+  if isOctave('>=', 4)
+      headStyle = 'vback3'; %Octave does not support cback2 yet (2015-09)
+  else
+      headStyle = 'cback2';
+  end
+
   annotation('arrow',[0.25 0.22], [0.96 0.05], 'LineStyle','-.',...
-             'HeadStyle','cback2');
+             'HeadStyle', headStyle);
 
   % Create textarrow
   annotation('textarrow',[0.46 0.35], [0.41 0.50],...
