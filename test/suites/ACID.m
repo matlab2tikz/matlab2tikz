@@ -522,8 +522,7 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.unreliable = isMATLAB('>=', [8,4]) || ...  %FIXME: #590
-                    isMATLAB('<=', [8,3]); %FIXME: #749 (Jenkins)
+  % This was once unreliable (and linked to #590). Mac and Linux seem fine.
 
   x = logspace(-1,2);
   y = exp(x);
