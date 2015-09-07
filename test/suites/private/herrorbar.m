@@ -140,14 +140,28 @@ yb(9:9:end,:) = NaN;
 % end change
 
 
-[ls,col,mark,msg] = colstyle(symbol); if ~isempty(msg), error(msg); end
+[ls,col,mark,msg] = colstyle(symbol);
+if ~isempty(msg)
+    error(msg);
+end
+if isempty(col)
+    col = '';
+end
 symbol = [ls mark col]; % Use marker only on data part
 esymbol = ['-' col]; % Make sure bars are solid
-if ~isempty(strfind(symbol,'none')), symbol = 'none'; end
-if ~isempty(strfind(esymbol,'none')), esymbol = 'none'; end
+if ~isempty(strfind(symbol,'none'))
+    symbol = 'none';
+end
+if ~isempty(strfind(esymbol,'none'))
+    esymbol = 'none';
+end
 h = plot(xb,yb,'LineStyle',esymbol); hold on
 h = [h;plot(x,y,'LineStyle',symbol)];
 
-if ~hold_state, hold off; end
+if ~hold_state
+    hold off;
+end
 
-if nargout>0, hh = h; end
+if nargout>0
+    hh = h;
+end
