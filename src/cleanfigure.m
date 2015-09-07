@@ -610,16 +610,13 @@ function movePointsCloser(meta, handle)
   
   % Only try to replace points if there are some to replace
   if (~isempty(replaceIndices))
-      % Check whether the points are finite.
-      DataIsFinite = all(isfinite(data(replaceIndices,:)), 2);
-
       % Get the indices of those points, that are the first point in a
       % segment
-      id_first  = replaceIndices(replaceIndices < size(data, 1) & DataIsFinite);
+      id_first  = replaceIndices(replaceIndices < size(data, 1));
 
       % Get the indices of those points, that are the second point in a
       % segment
-      id_second = replaceIndices(replaceIndices > 1  & DataIsFinite);
+      id_second = replaceIndices(replaceIndices > 1);
 
       % Define the vectors of data points for the segments X1--X2
       X1_first  = data(id_first,    :);
