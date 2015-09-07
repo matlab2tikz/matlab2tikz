@@ -996,6 +996,19 @@ switch getEnvironment
     case 'MATLAB'
         % Undocumented property (exists at least since 2008a)
         entries = double(get(legendHandle,'PlotChildren'));
+        
+        % Take the first child from hggroup
+        for ii = 1:numel(entries)
+            entry     = entries(ii);
+            isHggroup = any(strcmpi(get(entry,'Type'),{'hggroup', 'matlab.graphics.primitive.Group'}));
+            if isHggroup
+                children    = get(entry, 'Children');
+                firstChild  = children(1);
+                % Inherits DisplayName from parent hggroup
+                set(firstChild, 'DisplayName', get(entry, 'DisplayName'));
+                entries(ii) = firstChild;
+            end
+        end
 end
 end
 % ==============================================================================
