@@ -686,6 +686,7 @@ end
 % =========================================================================
 function [stat] = stemplot2()
   stat.description = 'Another simple stem plot.';
+  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
 
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
@@ -758,6 +759,7 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
 
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
@@ -766,6 +768,7 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -774,6 +777,7 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
 
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
