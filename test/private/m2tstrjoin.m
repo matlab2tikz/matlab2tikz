@@ -5,9 +5,8 @@ function [ newstr ] = m2tstrjoin( cellstr, delimiter )
 % one is not available before R2013a.
 %
 % See also: strjoin
-%
-% TODO: Unify the inline `join` and pivate `m2tstrjoin` function!
 
+    %TODO: Unify the private `m2tstrjoin` functions
     %FIXME: differs from src/private/m2tstrjoin in functionality !!!
 
     nElem = numel(cellstr);

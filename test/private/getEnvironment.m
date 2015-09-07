@@ -1,6 +1,6 @@
 function [env, versionString] = getEnvironment()
 % Determine environment (Octave, MATLAB) and version string
-% TODO: Unify the inline and the two pivate functions!
+% TODO: Unify private `getEnvironment` functions
     persistent cache
 
     if isempty(cache)
