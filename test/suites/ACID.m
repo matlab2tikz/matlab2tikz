@@ -2142,8 +2142,14 @@ function stat = annotationAll()
              'FitBoxToText','off');
 
   % Create ellipse
-  annotation('ellipse',  [0.70 0.44 0.15 0.51], 'Color',[0.63 0.07 0.18],...
-            'LineWidth',3, 'FaceColor',[0.80 0.87 0.96]);
+  if isOctave(4)
+      colorSpec = 'EdgeColor';
+  else
+      colorSpec = 'Color';
+  end
+  annotation('ellipse',  [0.70 0.44 0.15 0.51], ...
+            colorSpec, [0.63 0.07 0.18],...
+            'LineWidth', 3, 'FaceColor',[0.80 0.87 0.96]);
 
   % Create rectangle
   annotation('rectangle', [0.3 0.26 0.53 0.58], 'LineWidth',8,...
