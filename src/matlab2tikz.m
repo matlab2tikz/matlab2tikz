@@ -412,12 +412,15 @@ function fid = fileOpenForWrite(m2t, filename)
     % Currently only MATLAB supports different encodings.
     fid = -1;
 
-    if strcmpi(getEnvironment, 'MATLAB')
-        encoding = {'native', m2t.cmdOpts.Results.encoding};
-        fid      = fopen(filename, 'w', encoding{:});
-    elseif strcmpi(getEnvironment, 'Octave')
-        fid      = fopen(filename, 'w');
-    end       
+    switch getEnvironment()
+        case 'MATLAB'
+            fid = fopen(filename, 'w', ...
+                        'native', m2t.cmdOpts.Results.encoding);
+        case 'Octave'
+            fid = fopen(filename, 'w');
+        otherwise
+            errorUnknownEnvironment();
+    end
 
     if fid == -1
         error('matlab2tikz:fileOpenError', ...
