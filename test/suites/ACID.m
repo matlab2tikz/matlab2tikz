@@ -1148,7 +1148,9 @@ function [stat] = freqResponsePlot()
   stat.description = 'Frequency response plot.';
   stat.closeall = true;
   stat.issues = [409];
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB(); % FIXME: investigate
+  % See also: https://github.com/matlab2tikz/matlab2tikz/pull/759#issuecomment-138477207
+  % and https://gist.github.com/PeterPablo/b01cbe8572a9e5989037 (R2014b)
 
   % check of the signal processing toolbox is installed
   verInfo = ver('signal');
