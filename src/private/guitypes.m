@@ -4,7 +4,7 @@ function types = guitypes()
 % Syntax
 %   types = guitypes()
 %
-% These types are not ignored by matlab2tikz and figure2dot.
+% These types are ignored by matlab2tikz and figure2dot.
 %
 % See also: matlab2tikz, figure2dot
 
