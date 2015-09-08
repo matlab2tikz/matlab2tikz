@@ -10,9 +10,8 @@ before_script:
   - ulimit -c unlimited -S                # enable core dumps for Octave crash debugging
   - locale -a	# debug only (TODO: remove)
   - locale		# debug only (TODO: remove)
-  - export LANG=en_US.utf8
 script:
-  - cd test && /usr/bin/octave -q --eval runMatlab2TikzTests.m
+  - cd test && LANG=en_US.utf8 LANGUAGE=en_US.utf8 /usr/bin/octave -q --eval runMatlab2TikzTests.m
 notifications:
   hipchat: f4c2c5f87adc85025545e5b59b3fbe@Matlab2tikz
 after_failure:

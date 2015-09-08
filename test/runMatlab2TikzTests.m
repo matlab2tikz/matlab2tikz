@@ -6,6 +6,9 @@ function statusAll = runMatlab2TikzTests(varargin)
 CI_MODE = strcmpi(getenv('CONTINUOUS_INTEGRATION'),'true') || strcmp(getenv('CI'),'true');
 isJenkins = ~isempty(getenv('JENKINS_URL'));
 
+getenv('LANG')		% debug only (TODO: remove)
+getenv('LANGUAGE')	% debug only (TODO: remove)
+
 %% Set path
 addpath(fullfile(pwd,'..','src'));
 addpath(fullfile(pwd,'suites'));
