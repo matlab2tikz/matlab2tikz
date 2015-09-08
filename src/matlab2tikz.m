@@ -681,9 +681,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
             case 'histogram'
                 [m2t, str] = drawHistogram(m2t, child);
 
-            case {'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
-                    'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
-                % don't to anything for these handles and its children
+            case guitypes()
+                % don't do anything for GUI objects and their children
                 str = '';
 
             case 'light'
