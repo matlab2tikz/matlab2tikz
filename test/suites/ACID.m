@@ -206,6 +206,19 @@ function [stat] = plain_cos()
   stat.description = 'Plain cosine function.';
 
   fplot( @cos, [0,2*pi] );
+  hold on;
+  
+  % also add some patches to test their border color reproduction
+  h(1) = fill(pi*[1/4 1/4 1/2 1/2]   ,  [-2 1 1 -2], 'y');
+  h(2) = fill(pi*[1/4 1/4 1/2 1/2]+pi, -[-2 1 1 -2], 'y');
+
+  set(h(1), 'EdgeColor', 'none', 'FaceColor', 0.8*[1 1 1]);
+  set(h(2), 'EdgeColor', 'k', 'FaceColor', 0.5*[1 1 1]);
+
+  if isMATLAB
+      uistack(h, 'bottom'); % patches below the line plot
+      % this is not supported in Octave
+  end
 
   % add some minor ticks
   set(gca, 'XMinorTick', 'on');
@@ -509,10 +522,13 @@ end
 % =========================================================================
 function [stat] = logplot()
   stat.description = 'Test logscaled axes.';
-  stat.unreliable = isMATLAB('>=', [8,4]); %FIXME: #590
+  % This was once unreliable (and linked to #590). Mac and Linux seem fine.
 
   x = logspace(-1,2);
-  loglog(x,exp(x),'-s')
+  y = exp(x);
+  loglog(x, y, '-s')
+
+  ylim([1 1e45]);
   grid on;
 end
 % =========================================================================
@@ -613,7 +629,8 @@ end
 % =========================================================================
 function [stat] = bars()
   stat.description = '2x2 Subplot with different bars';
-  stat.unreliable = isOctave || isMATLAB('>=', [8,4]); % FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB('>=', [8,4]) || ... % FIXME: investigate
+                    isMATLAB('<=', [8,3]); %FIXME: #749 (Jenkins)
 
   % dataset grouped
   bins = 10 * (-0.5:0.1:0.5);
@@ -656,12 +673,22 @@ function [stat] = stemplot()
        exp(.05*x).*cos(x)]';
   h = stem(x, y);
   legend( 'exp(-.07x)*cos(x)', 'exp(.05*x)*cos(x)', 'Location', 'NorthWest');
-  set(h(1),'MarkerFaceColor','blue')
-  set(h(2),'MarkerFaceColor','red','Marker','square')
+  set(h(1),'MarkerFaceColor','blue');
+  set(h(2),'MarkerFaceColor','red','Marker','square');
+
+  % Octave 4 has some smart behavior: it only prints a single baseline.
+  % Let's mimick this behavior everywhere else.
+  baselines = findall(gca, 'Type', 'line', 'Color', [0 0 0]);
+  if numel(baselines) > 1
+      % We only need the last line in Octave 3.8, as that is where
+      % Octave 4.0 places the baseline
+      delete(baselines(1:end-1));
+  end
 end
 % =========================================================================
 function [stat] = stemplot2()
   stat.description = 'Another simple stem plot.';
+  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
 
   x = 0:25;
   y = [exp(-.07*x).*cos(x);
@@ -734,6 +761,7 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
 
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
@@ -742,6 +770,7 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -750,6 +779,7 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
+  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
 
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
@@ -801,7 +831,14 @@ function [stat] = xAxisReversed ()
   plot(x,y);
   set(gca,'XDir','reverse');
   set(gca,'YDir','reverse');
-  legend( 'Location', 'SouthWest' );
+  if isOctave('<=', [3,8])
+      % TODO: see whether we can unify this syntax for all environments
+      % at the moment, the generic syntax doesn't seem to work for Octave
+      % 3.8 (it doesn't even show a legend in gnuplut).
+      legend( 'data1', 'Location', 'SouthWest' );
+  else
+      legend( 'Location', 'SouthWest' );
+  end
 end
 % =========================================================================
 function [stat] = subplot2x2b ()
@@ -1078,7 +1115,8 @@ function [stat] = zplanePlot1()
   stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
 
   % check of the signal processing toolbox is installed
-  if length(ver('signal')) ~= 1
+  verInfo = ver('signal');
+  if isempty(verInfo) || isempty(verInfo.Name)
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
       stat.skip = true;
 
@@ -1096,7 +1134,8 @@ function [stat] = zplanePlot2()
   stat.closeall = true;
 
   % check of the signal processing toolbox is installed
-  if length(ver('signal')) ~= 1
+  verInfo = ver('signal');
+  if isempty(verInfo) || isempty(verInfo.Name)
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
       stat.skip = true;
       return
@@ -1111,10 +1150,13 @@ function [stat] = freqResponsePlot()
   stat.description = 'Frequency response plot.';
   stat.closeall = true;
   stat.issues = [409];
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB(); % FIXME: investigate
+  % See also: https://github.com/matlab2tikz/matlab2tikz/pull/759#issuecomment-138477207
+  % and https://gist.github.com/PeterPablo/b01cbe8572a9e5989037 (R2014b)
 
   % check of the signal processing toolbox is installed
-  if length(ver('signal')) ~= 1
+  verInfo = ver('signal');
+  if isempty(verInfo) || isempty(verInfo.Name)
       fprintf( 'Signal toolbox not found. Skip.\n\n' );
       stat.skip = true;
       return
@@ -1358,7 +1400,7 @@ function [stat] = ylabels()
   ylabel(H(1),'sin(x)');
   ylabel(H(2),'3cos(x)');
 
-  xlabel(gca,'time')
+  xlabel(H(1),'time');
 end
 % =========================================================================
 function [stat] = spectro()
@@ -1437,13 +1479,12 @@ end
 % =========================================================================
 function [stat] = texrandom()
   stat.description = 'Random TeX symbols';
-  stat.unreliable = isOctave(); % due to `rng` being unavailable in octave
 
   try
       rng(42); %fix seed
       %TODO: fully test tex conversion instead of a random subsample!
   catch
-      warning('testfuncs:texrandom','Cannot fix seed for random generator!');
+      rand('seed', 42); %#ok (this is deprecated in MATLAB)
   end
 
   num = 20; % number of symbols per line
@@ -1825,6 +1866,7 @@ function [stat] = fill3plot()
 end
 % =========================================================================
 function [stat] = rectanglePlot()
+  stat.unreliable = isMATLAB('<=', [8,3]); %FIXME: #749 (Jenkins)
   stat.description = 'Rectangle handle.';
 
   rectangle('Position', [0.59,0.35,3.75,1.37],...
@@ -2065,7 +2107,7 @@ end
 % =========================================================================
 function stat = annotationAll()
   stat.description = 'All possible annotations with edited properties';
-  stat.unreliable = isMATLAB('<', [8,4]); % R2014a and older: #604
+  stat.unreliable = isMATLAB('<', [8,4]); % TODO: R2014a and older: #604
 
   if isempty(which('annotation'))
       fprintf( 'annotation() not found. Skipping.\n\n' );
@@ -2082,8 +2124,14 @@ function stat = annotationAll()
              'LineWidth',4, 'LineStyle',':');
 
   % Create arrow
+  if isOctave('>=', 4)
+      headStyle = 'vback3'; %Octave does not support cback2 yet (2015-09)
+  else
+      headStyle = 'cback2';
+  end
+
   annotation('arrow',[0.25 0.22], [0.96 0.05], 'LineStyle','-.',...
-             'HeadStyle','cback2');
+             'HeadStyle', headStyle);
 
   % Create textarrow
   annotation('textarrow',[0.46 0.35], [0.41 0.50],...
@@ -2099,8 +2147,14 @@ function stat = annotationAll()
              'FitBoxToText','off');
 
   % Create ellipse
-  annotation('ellipse',  [0.70 0.44 0.15 0.51], 'Color',[0.63 0.07 0.18],...
-            'LineWidth',3, 'FaceColor',[0.80 0.87 0.96]);
+  if isOctave(4)
+      colorSpec = 'EdgeColor';
+  else
+      colorSpec = 'Color';
+  end
+  annotation('ellipse',  [0.70 0.44 0.15 0.51], ...
+            colorSpec, [0.63 0.07 0.18],...
+            'LineWidth', 3, 'FaceColor',[0.80 0.87 0.96]);
 
   % Create rectangle
   annotation('rectangle', [0.3 0.26 0.53 0.58], 'LineWidth',8,...
@@ -2307,11 +2361,17 @@ function [stat] = annotationTextUnits()
     'Color',[1 0 0]);
 
   % Create textbox
-  annotation(gcf,'textbox',...
-    [0.71643086172344 0.195876288659794 0.10020240480962 0.209240982129118],...
-    'String',{'Multiple Lines due to fixed width'},...
-    'FitBoxToText','off',...
-    'Units','characters');
+  if ~isOctave(4)
+      annotation(gcf,'textbox',...
+        [0.71643086172344 0.195876288659794 0.10020240480962 0.209240982129118],...
+        'String',{'Multiple Lines due to fixed width'},...
+        'FitBoxToText','off',...
+        'Units','characters');
+  else
+      % Octave 4 doesn't seem to like the "'Units','Characters'" in there
+      % so just remove the object altogether.
+      % This is strange, since it is documented: https://www.gnu.org/software/octave/doc/interpreter/Plot-Annotations.html#Plot-Annotations
+  end
 
   % Create textbox
   annotation(gcf,'textbox',...
@@ -2412,7 +2472,7 @@ end
 % =========================================================================
 function [stat] = stackedBarsWithOther()
   stat.description = 'stacked bar plots and other plots';
-  stat.issues = 442;
+  stat.issues = [442,648];
   stat.unreliable = isOctave || isMATLAB(); % FIXME: #614
   % details: https://github.com/matlab2tikz/matlab2tikz/pull/614#issuecomment-91844506
 
