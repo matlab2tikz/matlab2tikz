@@ -680,6 +680,8 @@ function [stat] = stemplot()
   % Let's mimick this behavior everywhere else.
   baselines = findall(gca, 'Type', 'line', 'Color', [0 0 0]);
   if numel(baselines) > 1
+      % We only need the last line in Octave 3.8, as that is where
+      % Octave 4.0 places the baseline
       delete(baselines(1:end-1));
   end
 end
