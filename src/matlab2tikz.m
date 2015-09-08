@@ -691,9 +691,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                 % supported by matlab2tikz or pgfplots.
 
             case ''
-                warning('matlab2tikz:NoChildren',...
-                        ['No children found for handle %d. ',...
-                         'Carrying on as if nothing happened'], double(h));
+                % No children found for handle. (It has only a title and/or
+                % labels). Carrying on as if nothing happened
 
             otherwise
                 error('matlab2tikz:handleAllChildren',                 ...
