@@ -408,9 +408,20 @@ function bool = isColorDefinitions(colors)
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
-    encoding = switchMatOct({'native', m2t.cmdOpts.Results.encoding}, {});
+    % Set the encoding of the output file.
+    % Currently only MATLAB supports different encodings.
+    fid = -1;
 
-    fid      = fopen(filename, 'w', encoding{:});
+    switch getEnvironment()
+        case 'MATLAB'
+            fid = fopen(filename, 'w', ...
+                        'native', m2t.cmdOpts.Results.encoding);
+        case 'Octave'
+            fid = fopen(filename, 'w');
+        otherwise
+            errorUnknownEnvironment();
+    end
+
     if fid == -1
         error('matlab2tikz:fileOpenError', ...
             'Unable to open file ''%s'' for writing.', filename);
@@ -540,7 +551,7 @@ function str = generateColorDefinitions(names, specs, colorFormat)
             % make sure to append with '%' to avoid spacing woes
             str = [str, ...
                 sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
-                names{k}', specs{k})];
+                names{k}, specs{k})];
         end
         str = [str sprintf('%%\n')];
     end
@@ -671,9 +682,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
             case 'histogram'
                 [m2t, str] = drawHistogram(m2t, child);
 
-            case {'uitoolbar', 'uimenu', 'uicontextmenu', 'uitoggletool',...
-                    'uitogglesplittool', 'uipushtool', 'hgjavacomponent'}
-                % don't to anything for these handles and its children
+            case guitypes()
+                % don't do anything for GUI objects and their children
                 str = '';
 
             case 'light'
@@ -1462,7 +1472,6 @@ function bool = isVisibleContainer(axisHandle)
                 end
             end
         end
-
     else
         bool = true;
     end
@@ -2528,17 +2537,21 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
 end
 % ==============================================================================
 function [m2t, str] = drawHggroup(m2t, h)
-% Octave doesn't have the handle() function, so there's no way to determine
-% the nature of the plot anymore at this point.  Set to 'unknown' to force
-% fallback handling. This produces something for bar plots, for example.
+% Continue according to the plot type. Since the function `handle` is
+% not available in Octave, the plot type will be guessed or the fallback type
+% 'unknown' used.
 % #COMPLEX: big switch-case
-% TODO: Introduce function `guessOctaveType()` to infer plot type by trying
-% to read certain properties, that are specific to a plot type (for example
-% `udata` should be unique to errorbarseries). See #645 for more details.
-    try
-        cl = class(handle(h));
-    catch %#ok
-        cl = 'unknown';
+    switch getEnvironment()
+        case 'MATLAB'
+            cl = class(handle(h));
+
+        case 'Octave'
+            % Function `handle` is not yet implemented in Octave
+            % Consequently the plot type needs to be guessed. See #645.
+            cl = guessOctavePlotType(h);
+
+         otherwise
+            errorUnknownEnvironment();
     end
 
     switch(cl)
@@ -2578,7 +2591,8 @@ function [m2t, str] = drawHggroup(m2t, h)
             [m2t, str] = handleAllChildren(m2t, h);
 
         case 'unknown'
-            % Weird spurious class from Octave.
+            % Octave only: plot type could not be determined
+            % Fall back to basic plotting
             [m2t, str] = handleAllChildren(m2t, h);
 
         otherwise
@@ -2591,6 +2605,38 @@ function [m2t, str] = drawHggroup(m2t, h)
                 [m2t, str] = deal(m2tBackup, ''); % roll-back
             end
     end
+end
+% ==============================================================================
+% Function `handle` is not yet implemented in Octave.
+% Consequently the plot type needs to be guessed. See #645.
+% If the type can not be determined reliably, 'unknown' will be set.
+function cl = guessOctavePlotType(h)
+    % scatter plots
+    if hasProperties(h, {'marker','sizedata','cdata'}, {})
+        cl = 'specgraph.scattergroup';
+
+    % error bars
+    elseif hasProperties(h, {'udata','ldata'}, {})
+        cl = 'specgraph.errorbarseries';
+
+    % quiver plots
+        % TODO: maybe check for existence of `udata` and absence of `ldata`
+
+    % unknown plot type
+    else
+        cl = 'unknown';
+    end
+end
+% ==============================================================================
+function bool = hasProperties(h, fieldsExpectedPresent, fieldsExpectedAbsent)
+% Check if object has all of the given properties (case-insensitive).
+% h                     handle to object (e.g. `gcf` or `gca`)
+% fieldsExpectedPresent cell array of strings with property names to be present
+% fieldsExpectedPresent cell array of strings with property names to be absent
+    fields = lower(fieldnames(get(h)));
+    present = all(ismember(lower(fieldsExpectedPresent), fields));
+    absent = ~any(ismember(lower(fieldsExpectedAbsent), fields));
+    bool = present && absent;
 end
 % ==============================================================================
 function m2t = drawAnnotations(m2t)
@@ -3256,6 +3302,10 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     zData = get(h, 'ZData');
     cData = get(h, 'CData');
     sData = get(h, 'SizeData');
+    
+    if isempty(cData) && strcmpi(getEnvironment(), 'Octave')
+        cData = get(h, 'MarkerEdgeColor');
+    end
 
     matlabMarker = get(h, 'Marker');
     markerFaceColor = get(h, 'MarkerFaceColor');
@@ -3269,6 +3319,10 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     constMarkerkSize = length(sData) == 1; % constant marker size
 
     % Rescale marker size (not definitive, follow discussion in #316)
+    % Prescale marker size for octave
+    if strcmpi(getEnvironment(), 'Octave')
+        sData = sData.^2/2;
+    end
     sData = translateMarkerSize(m2t, matlabMarker, sqrt(sData)/2);
 
     drawOptions = opts_new();
@@ -3921,8 +3975,7 @@ end
 % ==============================================================================
 function [m2t, str] = drawErrorBars(m2t, h)
 % Takes care of MATLAB's error bar plots.
-% Octave is not handled, since error bar plots can not be natively recognized as
-% such. See function `drawHggroup()` and #645 for more details.
+% Octave's error bar plots are handled as well.
 
     hData = h;
     upDev = get(h, 'UData');
