@@ -2479,12 +2479,17 @@ function [m2t, str] = drawHggroup(m2t, h)
 % not available in Octave, the plot type will be guessed or the fallback type
 % 'unknown' used.
 % #COMPLEX: big switch-case
-    if strcmpi(getEnvironment, 'MATLAB')
-        cl = class(handle(h));
-    elseif strcmpi(getEnvironment, 'octave')
-        % Function `handle` is not yet implemented in Octave
-        % Consequently the plot type needs to be guessed. See #645.
-        cl = guessOctavePlotType(h);
+    switch getEnvironment()
+        case 'MATLAB'
+            cl = class(handle(h));
+
+        case 'Octave'
+            % Function `handle` is not yet implemented in Octave
+            % Consequently the plot type needs to be guessed. See #645.
+            cl = guessOctavePlotType(h);
+
+         otherwise
+            errorUnknownEnvironment();
     end
 
     switch(cl)
