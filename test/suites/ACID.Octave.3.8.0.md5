@@ -1,5 +1,9 @@
 alphaImage : cbb2cf8ab5ccd1c4d27bb40cf8617214
 alphaTest : 93ad050f365faee18ae25a4f8ec067bc
+annotationAll : 2f06bee1eb5a1909599d088c80556fcc
+annotationSubplots : ade91307f28a9454f8aee10e651c62d4
+annotationText : 5b8562e0f9abd0407f19ca818ba9cd8c
+annotationTextUnits : 3533cf9b077689ab9b3c2a365882609c
 areaPlot : 6c70f6b2908ee95ec8d3e65280e8b86a
 axesColors : 21d1871d2f0b2a389ea6ffbbac43172e
 axesLocation : d1c194e852fd96c1db95ba5b23684860
@@ -8,6 +12,7 @@ besselImage : 0ffc3e10adb87029b44cbeb4bc435e07
 colorbarLabelTitle : d3c0aa0e9481c5ace5d64eeb50932e38
 colorbarLogplot : cb326bbb54e486a40d387acfe82f1b72
 compassplot : 76471346722595e1b113f3af59a6c91b
+contourPenny : e4af017e07881bc878b075f4b413d367
 customLegend : 3ce7c2ab5bc34f9825cb8eb91e282170
 decayingharmonic : e750cbafc69a0077b3fffe7cd077c3f0
 double_axes : fcbe776c394dec6dade8a6885cbaa0ac
@@ -27,7 +32,7 @@ legendsubplots : 5005469bf8cbe365f00ef9c78d955c1b
 linesWithOutliers : 77f19e676f4e6f188845aac2d454ac4c
 logbaseline : 76f1f5322fc46e6f86ff5be0c46eed87
 logicalImage : 82e9e5ed998aa1ecd78b514d801dc914
-logplot : ee0218b38b5c4c5f8c152c58c80d86df
+logplot : dc9b1c45dcefb3136cbfc834009a5c23
 manualAlignment : b84ea37c110e0598ecea02f32fa4b204
 many_random_points : 862953f704e6c786cf2d28d61d8f2b05
 markerSizes : bd7c0b27c5a014221a932daefed5e360
@@ -60,7 +65,7 @@ sine_with_markers : 8616b987547d14d6a2d8df18bd66785d
 spherePlot : c8f65d6e589eac12e4e7cf93a57e1e48
 stackedBarsWithOther : e3cd431e967814dfd0c6f92e8f4de87f
 stairsplot : 681e6fdb7ba33a463dc1c94041c210ed
-stemplot : 55c33b273285caa0771fb1ae2d22374e
+stemplot : f66acbbb6fc20e7895a28dc863a8137b
 stemplot2 : 6b045f52c230c3360edb598fd761c334
 subplot2x2b : 097ecc9418fb5826340f3903fed8a49f
 subplotCustom : bc56b2b60a5139ca743109333073e404
@@ -71,6 +76,6 @@ texcolor : 99d828ebc560c48182bcf29b97f8c9c7
 texrandom : 34db1f8bdcb21d6d85f098569c0eb953
 textAlignment : ab67c21b9a17cb4fc55cf2b112977581
 textext : 9997e18352f9fdc62152d725b88bae1c
-xAxisReversed : 705791f60903c9d90206f124f9da8c7e
-ylabels : 7c5e5df14bc439c11df81481a84893d6
+xAxisReversed : 3a4e4ba77a0eec77b4a1f34798242969
+ylabels : 86390ec1d8999909b891f5bc33de05f5
 zoom : 0763cf25f523e713247c03bdb398615f
