@@ -106,8 +106,7 @@ end
 function bool = shouldSkip(h)
     %  returns TRUE for objects that can be skipped
     objType = get(h, 'Type');
-    bool = ismember(lower(objType), {'uimenu', 'uitoolbar', 'uicontextmenu'});
-    %FIXME: maybe integrate this in matlab2tikz?
+    bool = ismember(lower(objType), guitypes);
 end
 % ==============================================================================
 function label = addHGProperty(label, h, propName, default)
