@@ -7,7 +7,10 @@ before_install:
   - sudo apt-get install octave
   - sudo apt-get purge libopenblas-base # fixes PPA Octave 4.0 crash on Travis
 before_script:
-- ulimit -c unlimited -S                # enable core dumps for Octave crash debugging
+  - ulimit -c unlimited -S                # enable core dumps for Octave crash debugging
+  - locale -a	# debug only (TODO: remove)
+  - locale		# debug only (TODO: remove)
+  - export LANG=en_US.utf8
 script:
   - cd test && /usr/bin/octave -q --eval runMatlab2TikzTests.m
 notifications:
