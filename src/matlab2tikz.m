@@ -681,7 +681,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
             case 'histogram'
                 [m2t, str] = drawHistogram(m2t, child);
 
-            case guitypes
+            case guitypes()
                 % don't do anything for GUI objects and their children
                 str = '';
 
