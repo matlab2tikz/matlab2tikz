@@ -3850,8 +3850,11 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     if showArrowHead
         %TODO: scale the arrows more rigorously to match MATLAB behavior
-        %There is a "MaxHeadSize" property (at least in R2014b) that plays a
-        %role in determining the quiver size.
+        %There is a "MaxHeadSize" property that plays a role.
+
+        % NOTE: `set(h, 'MaxHeadSize')` is bugged in HG1 (not in HG2 or Octave)
+        % according to http://www.mathworks.com/matlabcentral/answers/96754
+
         arrowHeadOpts = opts_new();
         arrowHeadOpts = opts_add(arrowHeadOpts, 'scale length', ...
                                  '{10*\pgfplotspointmetatransformed/1000}');
