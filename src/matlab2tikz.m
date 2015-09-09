@@ -148,7 +148,7 @@ function matlab2tikz(varargin)
 %   This program was based on Paul Wagenaars' Matfig2PGF that can be
 %   found on http://www.mathworks.com/matlabcentral/fileexchange/12962 .
 
-fprintf('Hiiiiii\n')
+fprintf('Byeeeee\n')
 
 %% Check if we are in MATLAB or Octave.
 minimalVersion = struct('MATLAB', struct('name','2014a', 'num',[8 3]), ...
