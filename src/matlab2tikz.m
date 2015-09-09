@@ -3845,6 +3845,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2)}';
     end
     plotOpts = opts_add(plotOpts, 'point meta', arrowLength);
+    plotOpts = opts_add(plotOpts, 'point meta min', '0');
 
     if showArrowHead
         %TODO: scale the arrows more rigorously to match MATLAB behavior
@@ -3852,9 +3853,9 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         %role in determining the quiver size.
         arrowHeadOpts = opts_new();
         arrowHeadOpts = opts_add(arrowHeadOpts, 'scale length', ...
-                                 '{max(0.01,\pgfplotspointmetatransformed/1000)}');
+                                 '{10*\pgfplotspointmetatransformed/1000}');
         arrowHeadOpts = opts_add(arrowHeadOpts, 'scale width', ...
-                                 '{0.5*max(0.01,\pgfplotspointmetatransformed/1000)}');
+                                 '{5*\pgfplotspointmetatransformed/1000}');
         headStyle = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
         quiverOpts = opts_add(quiverOpts, 'every arrow/.append style', ...
                               ['{' headStyle '}']);
