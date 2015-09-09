@@ -2563,7 +2563,8 @@ function cl = guessOctavePlotType(h)
         cl = 'specgraph.errorbarseries';
 
     % quiver plots
-        % TODO: maybe check for existence of `udata` and absence of `ldata`
+    elseif hasProperties(h, {'udata','vdata'}, {'ldata'})
+        cl = 'specgraph.quivergroup';
 
     % unknown plot type
     else
