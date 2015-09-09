@@ -974,13 +974,21 @@ switch getEnvironment
         for lhandle = m2t.legendHandles(:)'
             ud = get(lhandle, 'UserData');
             % Empty if no legend and multiple handles if plotyy
-            if ~isempty(ud) && any(handle == ud.handle) && isVisibleContainer(lhandle)
+            if ~isempty(ud) && any(handle == ud.handle) && isVisible(lhandle)
                 legendhandle = lhandle;
-                break;
+                break
             end
         end
     case 'MATLAB'
         legendhandle = legend(handle);
+        isInvisibleHG2 = isHG2() && ~isVisible(legendhandle);
+        % BUG in HG1 sets Visible -> off when Box -> off. Hence,
+        % we consider here that "Visible, off" and "Box, off" is VISIBLE. 
+        isInvisibleHG1 = ~isHG2() && ~isVisible(legendhandle) && isOn(get(legendhandle,'Box'));
+        if isInvisibleHG1 || isInvisibleHG2;
+            legendhandle = [];
+        end
+            
 end
 end
 % ==============================================================================
