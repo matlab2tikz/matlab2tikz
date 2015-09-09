@@ -968,27 +968,32 @@ end
 % ==============================================================================
 function legendhandle = getAssociatedLegend(m2t, handle)
 legendhandle = [];
-switch getEnvironment
+env = getEnvironment;
+switch env
     case 'Octave'
         % Make sure that m2t.legendHandles is a row vector.
         for lhandle = m2t.legendHandles(:)'
             ud = get(lhandle, 'UserData');
             % Empty if no legend and multiple handles if plotyy
-            if ~isempty(ud) && any(handle == ud.handle) && isVisible(lhandle)
+            if ~isempty(ud) && any(handle == ud.handle)
                 legendhandle = lhandle;
                 break
             end
         end
     case 'MATLAB'
         legendhandle = legend(handle);
-        isInvisibleHG2 = isHG2() && ~isVisible(legendhandle);
-        % BUG in HG1 sets Visible -> off when Box -> off. Hence,
-        % we consider here that "Visible, off" and "Box, off" is VISIBLE. 
-        isInvisibleHG1 = ~isHG2() && ~isVisible(legendhandle) && isOn(get(legendhandle,'Box'));
-        if isInvisibleHG1 || isInvisibleHG2;
-            legendhandle = [];
-        end
-            
+end
+
+% Do not return the handle if legend is invisible
+% NOTE: there is a BUG in HG1 and Octave. 
+%       `legend boxoff` sets Visible -> off.  We assume that when 
+%        both Box and Visible are off, then legend is actually VISIBLE
+isInvisibleHG2 = isHG2() && ~isVisible(legendhandle);
+isInvisibleHG1orOctave = (~isHG2() | strcmpi(env,'Octave'))  &&...
+    ~isVisible(legendhandle) && isOn(get(legendhandle,'Box'));
+    
+if isInvisibleHG1orOctave || isInvisibleHG2;
+    legendhandle = [];
 end
 end
 % ==============================================================================
