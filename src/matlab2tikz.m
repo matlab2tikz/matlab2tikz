@@ -1010,7 +1010,8 @@ switch getEnvironment
         % Take the first child from hggroup
         for ii = 1:numel(entries)
             entry     = entries(ii);
-            isHggroup = any(strcmpi(get(entry,'Type'),{'hggroup', 'matlab.graphics.primitive.Group'}));
+            isHggroup = any(strcmpi(get(entry,'Type'),{'hggroup', 'matlab.graphics.primitive.Group'})) & ...
+                            strcmpi(class(handle(entry)),'hggroup');
             if isHggroup
                 children    = get(entry, 'Children');
                 firstChild  = children(1);
