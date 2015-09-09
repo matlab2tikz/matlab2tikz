@@ -8,7 +8,7 @@
 #     ./runtests.sh RUNNER SWITCHES
 #
 # Arguments:
-#   - RUNNER: the (path of) the binary you want to use to execute the tests
+#   - RUNNER: (path of) the binary you want to use to execute the tests
 #         default value: "octave"
 #   - SWITCHES: switches you want to pass to the executable
 #         default value: * "-nodesktop -r" if runner contains "matlab"
