@@ -973,7 +973,8 @@ switch getEnvironment
         % Make sure that m2t.legendHandles is a row vector.
         for lhandle = m2t.legendHandles(:)'
             ud = get(lhandle, 'UserData');
-            if isVisibleContainer(lhandle) && any(handle == ud.handle)
+            % Empty if no legend and multiple handles if plotyy
+            if ~isempty(ud) && any(handle == ud.handle) && isVisibleContainer(lhandle)
                 legendhandle = lhandle;
                 break;
             end
