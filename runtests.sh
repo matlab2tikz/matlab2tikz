@@ -55,9 +55,10 @@ if [ -z "$Switches" ] ; then
     esac
 fi
 
-## Make sure the different harnesses know the intent
-CONTINUOUS_INTEGRATION=true
-CI=true
+## Make sure MATLAB/Octave know the intent
+# note: the export is required
+export CONTINUOUS_INTEGRATION=true
+export CI=true
 
 ## Actually run the test suite
 cd test
