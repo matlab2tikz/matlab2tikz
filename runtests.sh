@@ -19,6 +19,10 @@
 #  - http://askubuntu.com/questions/299710/how-to-determine-if-a-string-is-a-substring-of-another-in-bash
 #  - http://www.thegeekstuff.com/2010/07/bash-case-statement/
 #  - http://stackoverflow.com/questions/229551/string-contains-in-bash
+#  - http://stackoverflow.com/questions/2870992/automatic-exit-from-bash-shell-script-on-error
+#  - http://www.davidpashley.com/articles/writing-robust-shell-scripts/
+
+set -o errexit
 
 ## Handle Runner and Switches variables
 Runner=$1
