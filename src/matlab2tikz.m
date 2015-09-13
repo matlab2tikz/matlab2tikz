@@ -984,14 +984,14 @@ switch env
         legendhandle = legend(handle);
 end
 
-% Do not return the handle if legend is invisible
-% NOTE: there is a BUG in HG1 and Octave. 
-%       `legend boxoff` sets Visible -> off.  We assume that when 
-%        both Box and Visible are off, then legend is actually VISIBLE
+% NOTE: there is a BUG in HG1 and Octave. Setting the box off sets the
+% legend visibility off too. We assume the legend is visible if it has 
+% a visible child.
 isInvisibleHG2 = isHG2() && ~isVisible(legendhandle);
-isInvisibleHG1orOctave = (~isHG2() | strcmpi(env,'Octave'))  &&...
-    ~isVisible(legendhandle) && isOn(get(legendhandle,'Box'));
-    
+isInvisibleHG1orOctave = (~isHG2() || strcmpi(env,'Octave')) &&...
+    ~isVisibleContainer(legendhandle);
+
+% Do not return the handle if legend is invisible
 if isInvisibleHG1orOctave || isInvisibleHG2;
     legendhandle = [];
 end
