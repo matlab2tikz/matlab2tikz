@@ -56,7 +56,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Robert Whittlesey
   * Pooya Ziraksaz
   * Bastiaan Zuurendonk (The MathWorks)
-  * GitHub users: [andreas12345](https://github.com/andreas12345), [theswitch](https://github.com/theswitch)
+  * GitHub users: [andreas12345](https://github.com/andreas12345), [karih](https://github.com/karih), [theswitch](https://github.com/theswitch)
 
 # Acknowledgements
 Matlab2tikz has once greatly profited from its ancestor: [Matfig2PGF](http://www.mathworks.com/matlabcentral/fileexchange/12962) written by Paul Wagenaars.
