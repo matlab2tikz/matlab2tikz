@@ -24,7 +24,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * [David Horsley](https://github.com/widdma)
   * Kári Hreinsson
   * [Lucas Jeub](https://github.com/LJeub)
-  * Martin Kiefel
+  * [Martin Kiefel](https://github.com/mkiefel)
   * [Andreas Kloeckner](https://github.com/akloeckner)
   * Mykel Kochenderfer
   * [Oleg Komarov](https://github.com/okomarov)
