@@ -9,7 +9,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Martijn Aben (The MathWorks)
   * [Nicolas Alt](https://github.com/nalt)
   * [Eshwar Andhavarapu](https://github.com/gontadu)
-  * Matt Bauman
+  * [Matt Bauman](https://github.com/mbauman)
   * Eike Blechschmidt
   * [Klaus Broelemann](https://github.com/Broele)
   * [Katherine Elkington](https://github.com/kelkington)
