@@ -43,6 +43,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Julien Ridoux
   * [Christoph Rüdiger](https://github.com/mredd)
   * Carlos Russo
+  * [Michael Schellenberger Costa](https://github.com/miscco)
   * [Manuel Schiller](https://github.com/dachziegel)
   * [Nico Schlömer](https://github.com/nschloe)
   * Johannes Schmitz
