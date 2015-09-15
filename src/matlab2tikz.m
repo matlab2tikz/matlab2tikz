@@ -638,7 +638,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     % how MATLAB does it, too. Significant for patch (contour) plots,
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
-        m2t = hasLegend(m2t,child);
+        m2t = hasLegendEntry(m2t,child);
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %         [m2t, legendString, interpreter] = findLegendInformation(m2t, child);
         % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -701,7 +701,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
         end
         
-        m2t = hasLegend(m2t,child);
+        % Re-instate legend status
+        m2t = hasLegendEntry(m2t,child);
         str = addLegendInformation(m2t, str, child);
 
         % append the environment
@@ -1055,7 +1056,7 @@ delimeter = sprintf('\n');
 string    = regexp(string, delimeter, 'split');
 end
 % ==============================================================================
-function [m2t, bool] = hasLegend(m2t, h)
+function [m2t, bool] = hasLegendEntry(m2t, h)
 bool = any(ismember(h, m2t.axesContainers{end}.LegendEntries));
 m2t.currentHandleHasLegend = bool;
 end
