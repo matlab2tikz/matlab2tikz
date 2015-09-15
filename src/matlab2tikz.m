@@ -933,7 +933,10 @@ switch getEnvironment
         for ii = 1:numel(entries)
             child = entries(ii);
             anc   = ancestor(child,'hggroup');
-            cl    = guessOctavePlotType(anc);
+            if isempty(anc)
+                continue
+            end
+            cl = guessOctavePlotType(anc);
             if any(strcmpi(cl, guessable))
                 legendString = get(child,'displayname');
                 set(anc,'displayname',legendString);
