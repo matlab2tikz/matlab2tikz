@@ -19,6 +19,18 @@
 #  - http://askubuntu.com/questions/299710/how-to-determine-if-a-string-is-a-substring-of-another-in-bash
 #  - http://www.thegeekstuff.com/2010/07/bash-case-statement/
 #  - http://stackoverflow.com/questions/229551/string-contains-in-bash
+#  - http://stackoverflow.com/questions/2870992/automatic-exit-from-bash-shell-script-on-error
+#  - http://www.davidpashley.com/articles/writing-robust-shell-scripts/
+#  - http://stackoverflow.com/questions/13998941/how-can-i-propagate-an-exit-status-from-expect-to-its-parent-bash-script
+#  - http://tldp.org/HOWTO/Bash-Prog-Intro-HOWTO-8.html
+
+## Make sure some failures are detected by the CI runners
+function exitIfError {
+	# pass "$?" as argument: i.e. the exit status of the last call
+	if [ "$1" -ne 0 ]; then
+		exit $1;
+	fi
+}
 
 ## Handle Runner and Switches variables
 Runner=$1
@@ -43,9 +55,10 @@ if [ -z "$Switches" ] ; then
     esac
 fi
 
-## Make sure the different harnesses know the intent
-CONTINUOUS_INTEGRATION=true
-CI=true
+## Make sure MATLAB/Octave know the intent
+# note: the export is required
+export CONTINUOUS_INTEGRATION=true
+export CI=true
 
 ## Actually run the test suite
 cd test
@@ -53,6 +66,7 @@ TESTDIR=`pwd`
 # also CD in MATLAB/Octave to make sure that startup files
 # cannot play any role in setting the path
 ${Runner} ${Switches} "cd('${TESTDIR}'); runMatlab2TikzTests"
+exitIfError $?
 cd ..
 
 ## Post-processing
