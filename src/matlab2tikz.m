@@ -928,16 +928,14 @@ switch getEnvironment
         
         % Bubble-up legend entry properties from child to hggroup root
         % for guessable objects
-        guessable = {'specgraph.errorbarseries','matlab.graphics.chart.primitive.ErrorBar',...
-                     'specgraph.scattergroup'  ,'matlab.graphics.chart.primitive.Scatter'};
         for ii = 1:numel(entries)
             child = entries(ii);
             anc   = ancestor(child,'hggroup');
-            if isempty(anc)
-                continue
+            if isempty(anc) % not an hggroup
+                continue 
             end
             cl = guessOctavePlotType(anc);
-            if any(strcmpi(cl, guessable))
+            if ~strcmpi(cl, 'unknown') % guessable hggroup, then bubble-up
                 legendString = get(child,'displayname');
                 set(anc,'displayname',legendString);
                 entries(ii) = anc;
