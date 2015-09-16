@@ -987,9 +987,8 @@ switch getEnvironment
         % Take only the first child from a pure hggroup (e.g. bodeplots)
         for ii = 1:numel(entries)
             entry     = entries(ii);
-            isHggroup = any(strcmpi(get(entry,'Type'),{'hggroup', 'matlab.graphics.primitive.Group'})) & ...
-                            strcmpi(class(handle(entry)),'hggroup');
-            if isHggroup
+            isHggroupClass = strcmpi(class(handle(entry)),'hggroup');
+            if isHggroupClass
                 children    = get(entry, 'Children');
                 firstChild  = children(1);
                 % Inherits DisplayName from hggroup root
