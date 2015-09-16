@@ -641,7 +641,7 @@ function movePointsCloser(meta, handle)
 
       % If a point is part of two segments, that cross the border, we need to
       % insert a NaN to prevent an additional line segment
-      [~, ~, id_conflict] = intersect(id_first (~isInfinite_first), ...
+      [trash, trash, id_conflict] = intersect(id_first (~isInfinite_first), ...
                                       id_second(~isInfinite_second));
 
       % Cut the data into length(replaceIndices)+1 segments.

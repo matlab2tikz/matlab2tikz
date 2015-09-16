@@ -638,9 +638,14 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     % how MATLAB does it, too. Significant for patch (contour) plots,
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
-        % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        [m2t, legendString, interpreter] = findLegendInformation(m2t, child);
-        % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        % Check if object has legend. Some composite objects need to determine
+        % their status at the root level. For detailed explanations check 
+        % getLegendEntries(). 
+        % TODO: could move this check into drawHggroup. Need to verify how
+        % hgtransform behaves though. (priority - LOW) 
+        m2t = hasLegendEntry(m2t,child);
+
         switch char(get(child, 'Type'))
             % 'axes' environments are treated separately.
 
@@ -700,107 +705,29 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
         end
 
-        str = addLegendInformation(m2t, str, legendString, interpreter);
+        % A composite object might nest handleAllChildren calls that can
+        % modify the m2t.currentHandleHasLegend value. Re-instate the
+        % legend status. For detailed explanations check getLegendEntries().
+        m2t = hasLegendEntry(m2t,child);
+        str = addLegendInformation(m2t, str, child);
 
         % append the environment
         pgfEnvironments{end+1} = str;
     end
 end
 % ==============================================================================
-function [m2t, legendString, interpreter] = findLegendInformation(m2t, child)
-% Check if 'child' is referenced in a legend.
-% If yes, some plot types may want to add stuff (e.g. 'forget plot').
-% Add '\addlegendentry{...}' then after the plot.
-legendString = '';
-interpreter  = '';
-hasLegend = false;
+function str = addLegendInformation(m2t, str, h)
+% Add the actual legend string
 
-if isempty(child)
-    return; % an empty (i.e. non-existent) child cannot have a legend entry
-end
+if ~m2t.currentHandleHasLegend, return, end
+    
+interpreter  = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
+legendString = getLegendString(m2t,h);
 
-% Check if current handle is referenced in a legend.
-switch getEnvironment
-    case 'MATLAB'
-        [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child);
-
-    case 'Octave'
-        % Octave does not store a reference to the legend entry in the
-        % plotted objects. It references the plotted objects in reverse,
-        % in the legend's 'deletefcn' property.
-        % The variable m2t.gcaAssociatedLegend is set in drawAxes().
-        if ~isempty(m2t.gcaAssociatedLegend)
-            delfun           = get(m2t.gcaAssociatedLegend,'deletefcn');
-            legendEntryPeers = delfun{6}; % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m  
-            hasLegend        = ismember(child, legendEntryPeers);
-            interpreter      = get(m2t.gcaAssociatedLegend, 'interpreter');
-            legendString     = getOrDefault(child,'displayname','');
-        end
-
-    otherwise
-        errorUnknownEnvironment();
-end
-
-% split string to cell, if newline character '\n' (ASCII 10) is present
-delimeter = sprintf('\n');
-legendString = regexp(legendString,delimeter,'split');
-
-m2t.currentHandleHasLegend = hasLegend && ~isempty(legendString);
-end
-% ==============================================================================
-function [legendString, interpreter, hasLegend] = findLegendInfoMATLAB(m2t, child)
-% finds the legend info in MATLAB (only!). Eventually this could be merged back
-% into `findLegendInformation`
-    legendString = '';
-    interpreter  = '';
-    hasLegend = false;
-    legendRefersToParent = false;
-    %FIXME: this part (e.g. fall back objects) should be restructured.
-    for legendHandle = m2t.legendHandles(:)'
-        ud = get(legendHandle, 'UserData');
-        if isfield(ud, 'handles')
-            plotChildren = ud.handles;
-        else
-            plotChildren = getOrDefault(legendHandle, 'PlotChildren', []);
-        end
-        k = find(child == plotChildren);
-        if isempty(k)
-            % Lines of error bar plots are not referenced
-            % directly in legends as an error bars plot contains
-            % two "lines": the data and the deviations. Here, the
-            % legends refer to the specgraph.errorbarseries
-            % handle which is 'Parent' to the line handle.
-            k = find(get(child,'Parent') == plotChildren);
-            legendRefersToParent = ~isempty(k);
-        end
-        if ~isempty(k)
-            % Legend entry found. Add it to the plot.
-            hasLegend = true;
-            interpreter = get(legendHandle, 'Interpreter');
-            if ~isempty(ud) && isfield(ud, 'lstrings')
-                legendString = ud.lstrings{k};
-            else
-                if legendRefersToParent
-                    parent       = get(child,'Parent');
-                    legendString = get(parent, 'DisplayName');
-                else
-                    legendString = get(child, 'DisplayName');
-                end
-            end
-        end
-    end
-end
-% ==============================================================================
-function str = addLegendInformation(m2t, str, legendString, interpreter)
-% Add legend after the plot data.
-% The test for ischar(str) && ~isempty(str) is a workaround for hggroups;
-% the output might not necessarily be a string, but a cellstr.
-    if ischar(str) && ~isempty(str) && m2t.currentHandleHasLegend
-        c = prettyPrint(m2t, legendString, interpreter);
-        % We also need a legend alignment option to make multiline
-        % legend entries work. This is added by default in getLegendOpts().
-        str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
-    end
+c = prettyPrint(m2t, legendString, interpreter);
+% We also need a legend alignment option to make multiline
+% legend entries work. This is added by default in getLegendOpts().
+str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
 end
 % ==============================================================================
 function data = applyHgTransform(m2t, data)
@@ -839,9 +766,11 @@ function m2t = drawAxes(m2t, handle)
 
     % Flag if axis contains barplot
     m2t.axesContainers{end}.barAddedAxisOption = false;
-
-    m2t.gcaAssociatedLegend = getAssociatedLegend(m2t, handle);
-
+    
+    % Get legend entries
+    m2t.axesContainers{end}.LegendHandle  = getAssociatedLegend(m2t,handle);
+    m2t.axesContainers{end}.LegendEntries = getLegendEntries(m2t);
+    
     m2t = retrievePositionOfAxes(m2t, handle);
 
     m2t = addAspectRatioOptionsOfAxes(m2t, handle);
@@ -962,24 +891,140 @@ function m2t = add3DOptionsOfAxes(m2t, handle)
     end
 end
 % ==============================================================================
-function legendhandle = getAssociatedLegend(m2t, handle)
-% Check if the axis is referenced by a legend (only necessary for Octave)
-    legendhandle = [];
-    switch getEnvironment
-        case 'Octave'
-            % Make sure that m2t.legendHandles is a row vector.
-            for lhandle = m2t.legendHandles(:)'
-                ud = get(lhandle, 'UserData');
-                if isVisibleContainer(lhandle) && any(handle == ud.handle)
-                    legendhandle = lhandle;
-                    break;
-                end
+function legendhandle = getAssociatedLegend(m2t, axisHandle)
+% Get legend handle associated with current axis
+
+legendhandle = [];
+env = getEnvironment;
+switch env
+    case 'Octave'
+        % Make sure that m2t.legendHandles is a row vector.
+        for lhandle = m2t.legendHandles(:)'
+            ud = get(lhandle, 'UserData');
+            % Empty if no legend and multiple handles if plotyy
+            if ~isempty(ud) && any(axisHandle == ud.handle)
+                legendhandle = lhandle;
+                break
             end
-        case 'MATLAB'
-            % no action needed
-        otherwise
-            errorUnknownEnvironment();
-    end
+        end
+    case 'MATLAB'
+        legendhandle = legend(axisHandle);
+end
+
+% NOTE: there is a BUG in HG1 and Octave. Setting the box off sets the
+% legend visibility off too. We assume the legend is visible if it has 
+% a visible child.
+isInvisibleHG2 = isHG2() && ~isVisible(legendhandle);
+isInvisibleHG1orOctave = (~isHG2() || strcmpi(env,'Octave')) &&...
+    ~isVisibleContainer(legendhandle);
+
+% Do not return the handle if legend is invisible
+if isInvisibleHG1orOctave || isInvisibleHG2;
+    legendhandle = [];
+end
+end
+% ==============================================================================
+function entries = getLegendEntries(m2t)
+% Retrieve the handles of the objects that have a legend entry
+
+% Non-composite objects are straightforward, e.g. line, and have the 
+% legend entry at their same level, hence we return their handle. 
+%
+% Hggroups behave differently depending on the environment and we might 
+% return the handle to the hgroot or to one of its children:
+%   1) Matlab places the legend entry at the hgroot.
+%      
+%      Usually, the decision to place the legend is either unchanged from
+%      the first call to handleAllChildrena(axis) or delegated to a
+%      specialized drawing routine, e.g. drawContour(), if the group has to
+%      be drawn atomically. In this case, the legend entry stays with the
+%      hgroot.
+%
+%      If the hggroup is a pure container like in a bodeplot, i.e. the 
+%      `type` is not listed in drawHggroup(), a nested call to
+%      handleAllChildren(hgroot) follows. But, this second call cannot detect 
+%      legend entries on the children. Hence, we pass down the legend entry
+%      from the hgroot to its first child.
+%
+%   2) Octave places the entry with one of the children of the hgroot.
+%      Hence, most of the hggroups are correctly dealt by a nested 
+%      handleAllChildren() call which detects the entry on the child. 
+%      However, when we can guess the type of hggroup with 
+%      guessOctavePlotType(), the legend entry should be placed at the root
+%      level, hence we bubble it up from the child to the hgroot. 
+
+entries = [];
+legendHandle = m2t.axesContainers{end}.LegendHandle;
+
+if isempty(legendHandle), return, end
+
+switch getEnvironment
+    case 'Octave'
+        % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m
+        delfun  = get(legendHandle,'deletefcn');
+        entries = delfun{6};
+
+        % Bubble-up legend entry properties from child to hggroup root
+        % for guessable objects
+        for ii = 1:numel(entries)
+            child = entries(ii);
+            anc   = ancestor(child,'hggroup');
+            if isempty(anc) % not an hggroup
+                continue 
+            end
+            cl = guessOctavePlotType(anc);
+            if ~strcmpi(cl, 'unknown') % guessable hggroup, then bubble-up
+                legendString = get(child,'displayname');
+                set(anc,'displayname',legendString);
+                entries(ii) = anc;
+            end
+        end
+
+    case 'MATLAB'
+        % Undocumented property (exists at least since 2008a)
+        entries = double(get(legendHandle,'PlotChildren'));
+
+        % Take only the first child from a pure hggroup (e.g. bodeplots)
+        for ii = 1:numel(entries)
+            entry     = entries(ii);
+            isHggroup = any(strcmpi(get(entry,'Type'),{'hggroup', 'matlab.graphics.primitive.Group'})) & ...
+                            strcmpi(class(handle(entry)),'hggroup');
+            if isHggroup
+                children    = get(entry, 'Children');
+                firstChild  = children(1);
+                % Inherits DisplayName from hggroup root
+                set(firstChild, 'DisplayName', get(entry, 'DisplayName'));
+                entries(ii) = firstChild;
+            end
+        end
+end
+end
+% ==============================================================================
+function string = getLegendString(m2t, h)
+% Retrieve the legend string for the given handle 
+
+entries = m2t.axesContainers{end}.LegendEntries;
+idx     = ismember(entries, h);
+string  = getOrDefault(entries(idx), 'displayname', '');
+
+% HG1: autogenerated legend strings, i.e. data1,..., dataN, do not populate
+% the 'displayname' property. Go through 'userdata'
+if isempty(string)
+    ud     = get(m2t.axesContainers{end}.LegendHandle,'userdata');
+    idx    = ismember(ud.handles, h);
+    string = ud.lstrings{idx};
+end
+
+% split string to cell, if newline character '\n' (ASCII 10) is present
+delimeter = sprintf('\n');
+string    = regexp(string, delimeter, 'split');
+end
+% ==============================================================================
+function [m2t, bool] = hasLegendEntry(m2t, h)
+% Check if the handle has a legend entry and track its legend status in m2t
+
+bool = any(ismember(h, m2t.axesContainers{end}.LegendEntries));
+m2t.currentHandleHasLegend = bool;
 end
 % ==============================================================================
 function m2t = retrievePositionOfAxes(m2t, handle)
@@ -1123,56 +1168,17 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
     end
 end
 % ==============================================================================
-function m2t = drawLegendOptionsOfAxes(m2t, handle)
-    % See if there are any legends that need to be plotted.
-    % Since the legends are at the same level as axes in the hierarchy,
-    % we can't work out which relates to which using the tree
-    % so we have to do it by looking for a plot inside which the legend sits.
-    % This could be done better with a heuristic of finding
-    % the nearest legend to a plot, which would cope with legends outside
-    % plot boundaries.
-    switch getEnvironment
-        case 'MATLAB'
-            legendHandle = legend(handle);
-            if ~isempty(legendHandle)
-                [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    key, ...
-                    ['{', legendOpts, '}']);
-            end
-        case 'Octave'
-            % TODO: How to uniquely connect a legend with a pair of axes in Octave?
-            axisDims = pos2dims(get(handle,'Position')); %#ok
-            % siblings of this handle:
-            siblings = allchild(get(handle,'Parent'));
-            % "siblings" always(?) is a column vector. Iterating over the column
-            % with the for statement below wouldn't return the individual vector
-            % elements but the same column vector, resulting in no legends exported.
-            % So let's make sure "siblings" is a row vector by reshaping it:
-            siblings = reshape(siblings, 1, []);
-            for sibling = siblings
-                if sibling && strcmpi(get(sibling,'Type'), 'axes') && strcmpi(get(sibling,'Tag'), 'legend')
-                    legDims = pos2dims(get(sibling, 'Position')); %#ok
+function m2t = drawLegendOptionsOfAxes(m2t,handle)
+legendHandle = m2t.axesContainers{end}.LegendHandle;
+if isempty(legendHandle)
+    return
+end
 
-                    % TODO The following logic does not work for 3D plots.
-                    %      => Commented out.
-                    %      This creates problems though for stacked plots with legends.
-                    %                if (   legDims.left   > axisDims.left ...
-                    %                     && legDims.bottom > axisDims.bottom ...
-                    %                     && legDims.left + legDims.width < axisDims.left + axisDims.width ...
-                    %                     && legDims.bottom + legDims.height  < axisDims.bottom + axisDims.height)
-                    [m2t, key, legendOpts] = getLegendOpts(m2t, sibling);
-                    m2t.axesContainers{end}.options = ...
-                        opts_add(m2t.axesContainers{end}.options, ...
-                        key, ...
-                        ['{', legendOpts, '}']);
-                    %                end
-                end
-            end
-        otherwise
-            errorUnknownEnvironment();
-    end
+[m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
+m2t.axesContainers{end}.options = ...
+    opts_add(m2t.axesContainers{end}.options, ...
+    key, ...
+    ['{', legendOpts, '}']);
 end
 % ==============================================================================
 function m2t = handleColorbar(m2t, handle)
@@ -4453,14 +4459,6 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
 end
 % ==============================================================================
 function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
-% Need to check that there's nothing inside visible before we
-% abandon this legend -- an invisible property of the parent just
-% means the legend has no box.
-    children = allchild(handle);
-    if ~isVisible(handle) && ~any(isVisible(children))
-        return
-    end
-
     lStyle = opts_new();
 
     lStyle = legendPosition(m2t, handle, lStyle);
