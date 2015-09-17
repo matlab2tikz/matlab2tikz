@@ -718,10 +718,8 @@ end
 % ==============================================================================
 function [m2t, str] = addPlotyyReference(m2t, str, h)
 
-plotyyAxisType = m2t.axesContainers{end}.PlotyyAxisType;
-
 % This ensures we are either on the main or secondary axis
-if isempty(plotyyAxisType), return, end
+if ~isAxisPlotyy(m2t.currentHandles.gca), return, end
 
 if hasPlotyyReference(m2t,h)
     % Add reference (label) not legend entry 
@@ -930,7 +928,7 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
 % Get legend handle associated with current axis
 
 legendhandle = [];
-env = getEnvironment;
+env = getEnvironment();
 switch env
     case 'Octave'
         % Make sure that m2t.legendHandles is a row vector.
@@ -993,7 +991,7 @@ legendHandle = m2t.axesContainers{end}.LegendHandle;
 
 if isempty(legendHandle), return, end
 
-switch getEnvironment
+switch getEnvironment()
     case 'Octave'
         % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m
         delfun  = get(legendHandle,'deletefcn');
@@ -1035,23 +1033,21 @@ end
 end
 % ==============================================================================
 function m2t = getPlotyyReferences(m2t,axisHandle)
+% Retrieve references to legend entries of the main plotyy axis
 
 % Retrieve legend handle
-if isMainAxis(axisHandle)
+if isAxisMain(axisHandle)
     legendHandle = m2t.axesContainers{end}.LegendHandle;
-elseif isPlotyy(axisHandle)
+elseif isAxisPlotyy(axisHandle)
     legendHandle = getAssociatedLegend(m2t,getPlotyyPeer(axisHandle));
     m2t.axesContainers{end}.LegendHandle = legendHandle;
 end
 
 % No legend
-if ~isPlotyy(axisHandle) || isempty(legendHandle)
-    m2t.axesContainers{end}.PlotyyAxisType = '';
+if ~isAxisPlotyy(axisHandle) || isempty(legendHandle)
     m2t.axesContainers{end}.PlotyyReferences = [];
 
-elseif isMainAxis(axisHandle)
-    m2t.axesContainers{end}.PlotyyAxisType = 'main';
-    
+elseif isAxisMain(axisHandle)
     % Create plotyy references to legend entries of the main axis 
     legendEntries = m2t.axesContainers{end}.LegendEntries;
     ancAxes       = ancestor(legendEntries,'axes');
@@ -1061,8 +1057,6 @@ elseif isMainAxis(axisHandle)
     % Do not create a legend on the main axis
     m2t.axesContainers{end}.LegendHandle = [];
 else
-    m2t.axesContainers{end}.PlotyyAxisType = 'secondary';
-    
     % Get legend entries associated to secondary plotyy axis
     legendEntries = getLegendEntries(m2t);
     ancAxes       = ancestor(legendEntries,'axes');
@@ -1077,48 +1071,50 @@ else
 end
 end
 % ==============================================================================
-function bool = isMainAxis(axisHandle)
+function bool = isAxisMain(h)
+% Check if it is the main axis e.g. in a plotyy plot
 
-if ~isPlotyy(axisHandle)
+if ~isAxisPlotyy(h)
     bool = true;
     return
 end
 
 % If it is a Plotyy axis
-switch getEnvironment
+switch getEnvironment()
     case 'Octave'
-        plotyyAxes = get(axisHandle, '__plotyy_axes__');
-        bool       = find(plotyyAxes == axisHandle) == 1;
+        plotyyAxes = get(h, '__plotyy_axes__');
+        bool       = find(plotyyAxes == h) == 1;
                     
-    case 'Matlab'
-        bool = ~isempty(getappdata(axisHandle, 'PlotYYListenerManager'));
+    case 'MATLAB'
+        bool = ~isempty(getappdata(h, 'PlotYYListenerManager'));
 end
 end
 % ==============================================================================
-function bool = isPlotyy(axisHandle)
-% Check if it is a plotyy plot
+function bool = isAxisPlotyy(h)
+% Check if handle is a plotyy axis
 
-switch getEnvironment
+switch getEnvironment()
     case 'Octave'
         try 
-            get(axisHandle, '__plotyy_axes__');
+            get(h, '__plotyy_axes__');
             bool = true;
         catch
             bool = false;
         end
             
-    case 'Matlab'
-        bool = ~isempty(getappdata(axisHandle, 'graphicsPlotyyPeer'));
+    case 'MATLAB'
+        bool = ~isempty(getappdata(h, 'graphicsPlotyyPeer'));
 end
 end
 % ==============================================================================
 function peer = getPlotyyPeer(axisHandle)
-switch getEnvironment
+
+switch getEnvironment()
     case 'Octave'
         plotyyAxes = get(axisHandle, '__plotyy_axes__');
         peer       = setdiff(plotyyAxes, axisHandle);
         
-    case 'Matlab'
+    case 'MATLAB'
         peer = getappdata(axisHandle, 'graphicsPlotyyPeer');
 end
 end
@@ -4587,9 +4583,9 @@ end
 function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     lStyle = opts_new();
 
-    lStyle = legendPosition(m2t, handle, lStyle);
-    lStyle = legendOrientation(m2t, handle, lStyle);
-    lStyle = legendEntryAlignment(m2t, handle, lStyle);
+    lStyle = getLegendPosition(m2t, handle, lStyle);
+    lStyle = getLegendOrientation(m2t, handle, lStyle);
+    lStyle = getLegendEntryAlignment(m2t, handle, lStyle);
 
     % If the plot has 'legend boxoff', we have the 'not visible'
     % property, so turn off line and background fill.
@@ -4624,7 +4620,7 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     lOpts = opts_print(m2t, lStyle, ',');
 end
 % ==============================================================================
-function [lStyle] = legendOrientation(m2t, handle, lStyle)
+function [lStyle] = getLegendOrientation(m2t, handle, lStyle)
 % handle legend orientation
     ori = get(handle, 'Orientation');
     switch lower(ori)
@@ -4640,7 +4636,7 @@ function [lStyle] = legendOrientation(m2t, handle, lStyle)
     end
 end
 % ==============================================================================
-function [lStyle] = legendPosition(m2t, handle, lStyle)
+function [lStyle] = getLegendPosition(m2t, handle, lStyle)
 % handle legend location
 % #COMPLEX: just a big switch-case
     loc  = get(handle, 'Location');
@@ -4734,7 +4730,7 @@ function [lStyle] = legendPosition(m2t, handle, lStyle)
 
 end
 % ==============================================================================
-function [lStyle] = legendEntryAlignment(m2t, handle, lStyle)
+function [lStyle] = getLegendEntryAlignment(m2t, handle, lStyle)
 % determines the text and picture alignment inside a legend
     textalign = '';
     pictalign = '';
