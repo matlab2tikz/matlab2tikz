@@ -717,35 +717,37 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 end
 % ==============================================================================
 function [m2t, str] = addPlotyyReference(m2t, str, h)
+% Create labelled references to legend entries of the main plotyy axis
 
 % This ensures we are either on the main or secondary axis
 if ~isAxisPlotyy(m2t.currentHandles.gca), return, end
 
 if hasPlotyyReference(m2t,h)
-    % Add reference (label) not legend entry 
-    % NOTE: only legend entries on the main plotyy axis will have a plotyy
-    % reference
+    % Label the plot to later reference it. Only legend entries on the main
+    % plotyy axis will have a label
     c   = getLegendString(m2t,h);
     str = [str, sprintf('\\label{plotyyref:%s};\n\n', join(m2t, c, '\\'))];
 
 elseif m2t.currentHandleHasLegend
-    % We are on the secondary axis on the first legend entry
+    % We are on the secondary axis
     interpreter = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
     refs = '';
-    % Prepend all legend entries corresponding to the plotyy references
+    % Create labelled references to legend entries of the main axis
     for ref = m2t.axesContainers{end}.PlotyyReferences(:)'
         legendString = getLegendString(m2t,ref);
         c            = prettyPrint(m2t, legendString, interpreter);
         refs         = [refs, sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:%s}\\addlegendentry{%s};\n',...
-                        legendString{1}, join(m2t, c, '\\'))];
+            legendString{1}, join(m2t, c, '\\'))];
     end
     % Add references BEFORE next plot to preserve color order
     str = [refs, str];
-    
-    % Clear plotyy references
+
+    % Clear plotyy references. Ensures that references are created only once
     m2t.axesContainers{end}.PlotyyReferences = [];
+else
+    % Do nothing: it's gonna be a legend entry.
+    % Not a label nor a referenced entry from the main axis.
 end
-    
 end
 % ==============================================================================
 function str = addLegendInformation(m2t, str, h)
@@ -1020,6 +1022,7 @@ switch getEnvironment()
         % Take only the first child from a pure hggroup (e.g. bodeplots)
         for ii = 1:numel(entries)
             entry     = entries(ii);
+            % Note that class() is not supported in Octave
             isHggroupClass = strcmpi(class(handle(entry)),'hggroup');
             if isHggroupClass
                 children    = get(entry, 'Children');
@@ -1034,39 +1037,56 @@ end
 % ==============================================================================
 function m2t = getPlotyyReferences(m2t,axisHandle)
 % Retrieve references to legend entries of the main plotyy axis
+%
+% A plotyy plot has a main and a secondary axis. The legend is associated
+% with the main axis and hence m2t will only include the legend entries 
+% that belong to the \axis[] that has a legend. 
+%
+% One way to include the legend entries from the secondary axis (in the 
+% same legend) is to first label the \addplot[] and then reference them. 
+% See https://tex.stackexchange.com/questions/42697/42752#42752
+%
+% However, in .tex labels should come before they are referenced. Hence, 
+% we actually label the legend entries from the main axis and swap the 
+% legendhandle to the secondary axis. 
+%
+% The legend will not be plotted with the main \axis[] and the labelled
+% legend entries will be skipped until the secondary axis. Then, they will
+% be listed before any legend entry from the secondary axis.
 
 % Retrieve legend handle
 if isAxisMain(axisHandle)
     legendHandle = m2t.axesContainers{end}.LegendHandle;
-elseif isAxisPlotyy(axisHandle)
+else
     legendHandle = getAssociatedLegend(m2t,getPlotyyPeer(axisHandle));
     m2t.axesContainers{end}.LegendHandle = legendHandle;
 end
 
-% No legend
+% Not a plotyy axis or no legend
 if ~isAxisPlotyy(axisHandle) || isempty(legendHandle)
     m2t.axesContainers{end}.PlotyyReferences = [];
 
 elseif isAxisMain(axisHandle)
-    % Create plotyy references to legend entries of the main axis 
+    % Mark legend entries of the main axis for labelling
     legendEntries = m2t.axesContainers{end}.LegendEntries;
     ancAxes       = ancestor(legendEntries,'axes');
     idx           = ismember(double([ancAxes{:}]), axisHandle);
     m2t.axesContainers{end}.PlotyyReferences = legendEntries(idx);
-    
-    % Do not create a legend on the main axis
+
+    % Ensure no legend is created on the main axis
     m2t.axesContainers{end}.LegendHandle = [];
 else
-    % Get legend entries associated to secondary plotyy axis
+    % Get legend entries associated to secondary plotyy axis. We can do
+    % this because we took the legendhandle from the peer (main axis)
     legendEntries = getLegendEntries(m2t);
     ancAxes       = ancestor(legendEntries,'axes');
     if iscell(ancAxes)
-        ancAxes = [ancAxes{:}]; 
+        ancAxes = [ancAxes{:}];
     end
     idx = ismember(double(ancAxes), axisHandle);
     m2t.axesContainers{end}.LegendEntries = legendEntries(idx);
-    
-    % Reference the main axis legend entries
+
+    % Recover referenced legend entries of the main axis
     m2t.axesContainers{end}.PlotyyReferences = legendEntries(~idx);
 end
 end
@@ -1095,32 +1115,34 @@ function bool = isAxisPlotyy(h)
 
 switch getEnvironment()
     case 'Octave'
-        try 
+        % Cannot test hidden property with isfield(), is always false
+        try
             get(h, '__plotyy_axes__');
             bool = true;
         catch
             bool = false;
         end
-            
+
     case 'MATLAB'
         bool = ~isempty(getappdata(h, 'graphicsPlotyyPeer'));
 end
 end
 % ==============================================================================
 function peer = getPlotyyPeer(axisHandle)
+% Get the other axis coupled in plotyy plots
 
 switch getEnvironment()
     case 'Octave'
         plotyyAxes = get(axisHandle, '__plotyy_axes__');
         peer       = setdiff(plotyyAxes, axisHandle);
-        
+
     case 'MATLAB'
         peer = getappdata(axisHandle, 'graphicsPlotyyPeer');
 end
 end
 % ==============================================================================
 function string = getLegendString(m2t, h)
-% Retrieve the legend string for the given handle 
+% Retrieve the legend string for the given handle
 
 string  = getOrDefault(h, 'displayname', '');
 
@@ -1140,12 +1162,15 @@ end
 function [m2t, bool] = hasLegendEntry(m2t, h)
 % Check if the handle has a legend entry and track its legend status in m2t
 
+% Should not have a legend reference
 bool = any(ismember(h, m2t.axesContainers{end}.LegendEntries)) && ...
        ~hasPlotyyReference(m2t,h);
 m2t.currentHandleHasLegend = bool;
 end
 % ==============================================================================
 function bool = hasPlotyyReference(m2t,h)
+% Check if the handle has a legend reference
+
 bool = any(ismember(h, m2t.axesContainers{end}.PlotyyReferences));
 end
 % ==============================================================================
