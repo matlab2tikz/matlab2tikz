@@ -1036,23 +1036,20 @@ end
 % ==============================================================================
 function m2t = getPlotyyReferences(m2t,axisHandle)
 
-appdata    = getappdata(axisHandle);
-isMainAxis = isfield(appdata,'PlotYYListenerManager');
-
 % Retrieve legend handle
-if isMainAxis
+if isMainAxis(axisHandle)
     legendHandle = m2t.axesContainers{end}.LegendHandle;
-elseif isfield(appdata, 'graphicsPlotyyPeer')
-    legendHandle = getAssociatedLegend(m2t,appdata.graphicsPlotyyPeer);
+elseif isPlotyy(axisHandle)
+    legendHandle = getAssociatedLegend(m2t,getPlotyyPeer(axisHandle));
     m2t.axesContainers{end}.LegendHandle = legendHandle;
 end
 
 % No legend
-if ~isfield(appdata, 'graphicsPlotyyPeer') || isempty(legendHandle)
+if ~isPlotyy(axisHandle) || isempty(legendHandle)
     m2t.axesContainers{end}.PlotyyAxisType = '';
     m2t.axesContainers{end}.PlotyyReferences = [];
 
-elseif isMainAxis
+elseif isMainAxis(axisHandle)
     m2t.axesContainers{end}.PlotyyAxisType = 'main';
     
     % Create plotyy references to legend entries of the main axis 
@@ -1077,6 +1074,52 @@ else
     
     % Reference the main axis legend entries
     m2t.axesContainers{end}.PlotyyReferences = legendEntries(~idx);
+end
+end
+% ==============================================================================
+function bool = isMainAxis(axisHandle)
+
+if ~isPlotyy(axisHandle)
+    bool = true;
+    return
+end
+
+% If it is a Plotyy axis
+switch getEnvironment
+    case 'Octave'
+        plotyyAxes = get(axisHandle, '__plotyy_axes__');
+        bool       = find(plotyyAxes == axisHandle) == 1;
+                    
+    case 'Matlab'
+        bool = ~isempty(getappdata(axisHandle, 'PlotYYListenerManager'));
+end
+end
+% ==============================================================================
+function bool = isPlotyy(axisHandle)
+% Check if it is a plotyy plot
+
+switch getEnvironment
+    case 'Octave'
+        try 
+            get(axisHandle, '__plotyy_axes__');
+            bool = true;
+        catch
+            bool = false;
+        end
+            
+    case 'Matlab'
+        bool = ~isempty(getappdata(axisHandle, 'graphicsPlotyyPeer'));
+end
+end
+% ==============================================================================
+function peer = getPlotyyPeer(axisHandle)
+switch getEnvironment
+    case 'Octave'
+        plotyyAxes = get(axisHandle, '__plotyy_axes__');
+        peer       = setdiff(plotyyAxes, axisHandle);
+        
+    case 'Matlab'
+        peer = getappdata(axisHandle, 'graphicsPlotyyPeer');
 end
 end
 % ==============================================================================
