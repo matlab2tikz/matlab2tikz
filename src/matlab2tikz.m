@@ -1036,17 +1036,23 @@ end
 % ==============================================================================
 function m2t = getPlotyyReferences(m2t,axisHandle)
 
-plotyyPeer = getappdata(axisHandle,'graphicsPlotyyPeer');
-% Not a plotyy plot
-if isempty(plotyyPeer)
-    m2t.axesContainers{end}.PlotyyAxisType = '';
-    return
+appdata    = getappdata(axisHandle);
+isMainAxis = isfield(appdata,'PlotYYListenerManager');
+
+% Retrieve legend handle
+if isMainAxis
+    legendHandle = m2t.axesContainers{end}.LegendHandle;
+elseif isfield(appdata, 'graphicsPlotyyPeer')
+    legendHandle = getAssociatedLegend(m2t,appdata.graphicsPlotyyPeer);
+    m2t.axesContainers{end}.LegendHandle = legendHandle;
 end
 
-legendHandle = m2t.axesContainers{end}.LegendHandle;
+% No legend
+if ~isfield(appdata, 'graphicsPlotyyPeer') || isempty(legendHandle)
+    m2t.axesContainers{end}.PlotyyAxisType = '';
+    m2t.axesContainers{end}.PlotyyReferences = [];
 
-% Main plotyy axis
-if ~isempty(legendHandle)
+elseif isMainAxis
     m2t.axesContainers{end}.PlotyyAxisType = 'main';
     
     % Create plotyy references to legend entries of the main axis 
@@ -1060,19 +1066,18 @@ if ~isempty(legendHandle)
 else
     m2t.axesContainers{end}.PlotyyAxisType = 'secondary';
     
-    % Get legend handle plotyy main axis
-    m2t.axesContainers{end}.LegendHandle = getAssociatedLegend(m2t,plotyyPeer);
-    
     % Get legend entries associated to secondary plotyy axis
     legendEntries = getLegendEntries(m2t);
     ancAxes       = ancestor(legendEntries,'axes');
-    idx           = ismember(double([ancAxes{:}]), axisHandle);
+    if iscell(ancAxes)
+        ancAxes = [ancAxes{:}]; 
+    end
+    idx = ismember(double(ancAxes), axisHandle);
     m2t.axesContainers{end}.LegendEntries = legendEntries(idx);
     
     % Reference the main axis legend entries
     m2t.axesContainers{end}.PlotyyReferences = legendEntries(~idx);
 end
-
 end
 % ==============================================================================
 function string = getLegendString(m2t, h)
@@ -1096,13 +1101,13 @@ end
 function [m2t, bool] = hasLegendEntry(m2t, h)
 % Check if the handle has a legend entry and track its legend status in m2t
 
-bool = ismember(h, m2t.axesContainers{end}.LegendEntries) && ...
+bool = any(ismember(h, m2t.axesContainers{end}.LegendEntries)) && ...
        ~hasPlotyyReference(m2t,h);
 m2t.currentHandleHasLegend = bool;
 end
 % ==============================================================================
 function bool = hasPlotyyReference(m2t,h)
-bool = ismember(h, m2t.axesContainers{end}.PlotyyReferences);
+bool = any(ismember(h, m2t.axesContainers{end}.PlotyyReferences));
 end
 % ==============================================================================
 function m2t = retrievePositionOfAxes(m2t, handle)
