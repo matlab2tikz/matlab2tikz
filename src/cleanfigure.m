@@ -123,8 +123,10 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
+          setDataPrecision(meta, h);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
+          setDataPrecision(meta, h);
       elseif strcmp(type, 'text')
           % Ensure units of type 'data' (default) and restore the setting later
           units_original = get(h, 'Units');
@@ -172,6 +174,47 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
       end
   end
 
+  return;
+end
+% =========================================================================
+function processData(meta, h, func, keyword, varargin)
+  if strcmp(getEnvironment(), 'Octave')
+    keyword  = lower(keyword);
+    varargin = lower(varargin);
+  end
+    
+  if isprop(h, keyword)
+    arguments = cellfun(@(args) get(meta.gca, args), varargin, 'UniformOutput', false);
+    data = func(get(h, keyword), arguments{:});
+    set(h, keyword, data);
+  end
+end
+% =========================================================================
+function data = limitPrecision(data, scale)
+  % Get the maximal value of the data
+  if strcmp(scale,'linear')
+    range = max(abs(data));
+  else
+    range = max(abs(log10(data)));
+  end
+
+  % Get the maximal precision for the data range
+  eps_range = eps(range);
+  
+  % Scale the data wrt the range
+  data  = data / eps_range;
+  
+  % Round to precision and scale back
+  data  = round(data) * eps_range;
+end
+% =========================================================================
+function setDataPrecision(meta, handle)
+  processData(meta, handle, @limitPrecision, 'XData', 'XScale');
+  processData(meta, handle, @limitPrecision, 'YData', 'YScale');
+  
+  if isprop(meta, handle, 'ZData')
+    processData(handle, @limitPrecision, 'ZData', 'ZScale');
+  end
   return;
 end
 % =========================================================================
