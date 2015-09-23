@@ -443,13 +443,22 @@ function simplifyLine(meta, handle, targetResolution)
     if hasMarkers
         % Pixelate data at the zoom multiplier
         mask   = pixelate(data(:,1), data(:,2), xToPix, yToPix);
+        % If some of the data was logarithmic get the original data
+        if isXlog
+            xData = get(handle, 'XData');
+        end
+        if isYlog
+            yData = get(handle, 'YData');
+        end
+        if isZlog
+            zData = get(handle, 'ZData');
+        end
+
+        % Update the data
+        set(handle, 'XData', xData(mask));
+        set(handle, 'YData', yData(mask));
         if is3D
-            set(handle, 'XData', xData(mask));
-            set(handle, 'YData', yData(mask));
             set(handle, 'ZData', zData(mask));
-        else
-            set(handle, 'XData', data(mask, 1));
-            set(handle, 'YData', data(mask, 2));
         end
         return
     end
@@ -489,19 +498,26 @@ function simplifyLine(meta, handle, targetResolution)
         end
     end
 
-    % Merge the cells back together
-    data     = cat(1, dataSegments{:});
+    % Merge the mask back together
     mask     = cat(1, mask{:});
 
-    % Cut the data
-    if is3D
-        set(handle, 'XData', xData(mask));
-        set(handle, 'YData', yData(mask));
-        set(handle, 'ZData', zData(mask));
-    else
-        set(handle, 'XData', data(mask, 1));
-        set(handle, 'YData', data(mask, 2));
+    % If some of the data was logarithmic get the original data
+	if isXlog
+        xData = get(handle, 'XData');
 	end
+	if isYlog
+        yData = get(handle, 'YData');
+	end
+	if isZlog
+        zData = get(handle, 'ZData');
+	end
+    
+    % Update the data
+    set(handle, 'XData', xData(mask));
+    set(handle, 'YData', yData(mask));
+    if is3D
+        set(handle, 'ZData', zData(mask));
+    end
 end
 % =========================================================================
 function mask = pixelate(x, y, xToPix, yToPix)
