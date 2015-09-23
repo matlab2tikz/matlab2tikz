@@ -354,10 +354,12 @@ function simplifyLine(meta, handle, targetResolution)
     end
 
     % Check whether this is a 3D plot
-    if numel(zData) >1
-        is3D = true;
-    else
+    % Check if elevation is not orthogonal to xy plane
+    [az, el] = view(meta.gca);
+    if el == 90
         is3D = false;
+    else
+        is3D = true;
     end
 
     % Get info about log scaling
@@ -379,7 +381,6 @@ function simplifyLine(meta, handle, targetResolution)
     % Check whether this is a 3D plot and project the data if needed
     if is3D
         % Project the data onto the 2D image plane
-        [az, el] = view(meta.gca);
         C        = viewmtx(az, el);
         data     = [xData(:),...
                     yData(:),...
