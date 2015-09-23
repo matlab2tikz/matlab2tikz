@@ -442,7 +442,7 @@ function simplifyLine(meta, handle, targetResolution)
     hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
     if hasMarkers
         % Pixelate data at the zoom multiplier
-        mask   = pixelate(data, xToPix, yToPix);
+        mask   = pixelate(data(:,1), data(:,2), xToPix, yToPix);
         if is3D
             set(handle, 'XData', xData(mask));
             set(handle, 'YData', yData(mask));
@@ -459,9 +459,9 @@ function simplifyLine(meta, handle, targetResolution)
     tol = min(xPixelWidth, yPixelWidth);
 
     % Split up lines which are seperated by NaNs
-    inan   = find(any(isnan(data),2))';
+    inan   = find(any(isnan(data), 2))';
     if isempty(inan)
-        lengthSegments = size(data,1);
+        lengthSegments = size(data, 1);
     else
         % First get the length of the segments including NaNs
         lengthSegments = [inan(1), diff(inan), size(data, 1)-inan(end)];
@@ -482,7 +482,7 @@ function simplifyLine(meta, handle, targetResolution)
     for ii = 1:length(lengthSegments)
         % Simplify only if there are more than 2 points
         if size(dataSegments{ii},1) > 2
-            mask{ii} = opheimSimplify(dataSegments{ii},tol);
+            mask{ii} = opheimSimplify(dataSegments{ii}(:,1), dataSegments{ii}(:,2), tol);
         % Account for NaN segments
         else
             mask{ii} = true;
@@ -504,7 +504,7 @@ function simplifyLine(meta, handle, targetResolution)
 	end
 end
 % =========================================================================
-function mask = pixelate(data, xToPix, yToPix)
+function mask = pixelate(x, y, xToPix, yToPix)
     % Rough reduction of data points at a multiple of the target resolution
 
     % The resolution is lost only beyond the multiplier magnification
@@ -512,11 +512,11 @@ function mask = pixelate(data, xToPix, yToPix)
 
     % Convert data to pixel units, magnify and mark only the first
     % point that occupies a given position
-    mask = [true; diff(round(data(:, 1) * xToPix * mult))~=0];
-    mask = [true; diff(round(data(:, 2) * yToPix * mult))~=0] | mask;
+    mask = [true; diff(round(x * xToPix * mult))~=0];
+    mask = [true; diff(round(y * yToPix * mult))~=0] | mask;
 
     % Keep end points or it might truncate whole pixels
-    inan         = any(isnan(data), 2);
+    inan         = isnan(x) | isnan(y);
     df           = diff([false; inan; false]);
     istart       = df == 1;
     pend         = find(df == -1)-1;
@@ -524,7 +524,7 @@ function mask = pixelate(data, xToPix, yToPix)
     mask(pend)   = true;
 end
 % =========================================================================
-function mask = opheimSimplify(data, tol)
+function mask = opheimSimplify(x, y, tol)
     % Opheim path simplification algorithm
     %
     % Given a path of vertices V and a tolerance TOL, the algorithm:
@@ -555,19 +555,19 @@ function mask = opheimSimplify(data, tol)
     %       a segment which spans an angle with LINE larger than 90
     %       degrees.
 
-    mask = false(size(data, 1), 1);
+    mask = false(length(x), 1);
     mask(1) = true;
     mask(end) = true;
 
-    N = size(data, 1);
+    N = length(x);
     i = 1;
     while i <= N-2
         % Find first vertex farther than TOL from the KEY
         j = i+1;
-        v = [data(j, 1)-data(i, 1); data(j, 2)-data(i, 2)];
+        v = [x(j)-x(i); y(j)-y(i)];
         while j < N && norm(v) <= tol
             j = j+1;
-            v = [data(j, 1)-data(i, 1); data(j, 2)-data(i, 2)];
+            v = [x(j)-x(i); y(j)-y(i)];
         end
         v = v/norm(v);
 
@@ -581,7 +581,7 @@ function mask = opheimSimplify(data, tol)
         % TOL by construction.
         while j < N
             % Calculate the perpendicular distance from the i->j line
-            v1 = [data(j+1, 1)-data(i, 1); data(j+1, 2)-data(i, 2)];
+            v1 = [x(j+1)-x(i); y(j+1)-y(i)];
             d = abs(normal.'*v1);
             if d > tol
                 break
@@ -589,7 +589,7 @@ function mask = opheimSimplify(data, tol)
 
             % Calculate the angle between the line from the i->j and the
             % line from j -> j+1. If
-            v2 = [data(j+1, 1)-data(j, 1); data(j+1, 2)-data(j, 2)];
+            v2 = [x(j+1)-x(j); y(j+1)-y(j)];
             anglecosine = v.'*v2;
             if anglecosine <= 0;
                 break
