@@ -511,12 +511,12 @@ function mask = pixelate(data, xToPix, yToPix)
 
     % Convert data to pixel units, magnify and mark only the first
     % point that occupies a given position
-    mask = [true, diff(round(data(1, :) * xToPix * mult))~=0];
-    mask = [true, diff(round(data(2, :) * yToPix * mult))~=0] | mask;
+    mask = [true; diff(round(data(:, 1) * xToPix * mult))~=0];
+    mask = [true; diff(round(data(:, 2) * yToPix * mult))~=0] | mask;
 
     % Keep end points or it might truncate whole pixels
-    inan         = any(data, 1);
-    df           = diff([false, inan, false]);
+    inan         = any(isnan(data), 2);
+    df           = diff([false; inan; false]);
     istart       = df == 1;
     pend         = find(df == -1)-1;
     mask(istart) = true;
