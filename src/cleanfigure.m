@@ -118,11 +118,13 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
       %display(sprintf([repmat(' ',1,indent), '  handle this']))
 
       if strcmp(type, 'line')
-          simplifyLine(meta, h, targetResolution);
+          % NOTE: Always remove invisible points before simplifying the
+          % line. Otherwise it will generate additional line segments
           pruneOutsideBox(meta, h);
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
+          simplifyLine(meta, h, targetResolution);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
       elseif strcmp(type, 'text')
@@ -250,10 +252,10 @@ function pruneOutsideBox(meta, handle)
       id_remove  = id_remove(~idx);
       
       % Replace the data points
-      data(id_replace,:) = NaN(length(id_replace), size(data,2));
+      data(id_replace, :) = NaN(length(id_replace), size(data,2));
       
       % Remove the other non visible data points
-      data(id_remove,:) = [];
+      data(id_remove, :) = [];
   end
   
   % Make sure that there are no NaNs at the beginning of the data since
@@ -262,7 +264,7 @@ function pruneOutsideBox(meta, handle)
   notnan   = any(~isnan(data),2);
   id_first = find(notnan,1,'first');
   id_last  = find(notnan,1,'last');
-  data     = data(id_first:id_last,:);
+  data     = data(id_first:id_last, :);
 
   % Override with the new data.
   set(handle, 'XData', data(:, 1));
@@ -347,101 +349,175 @@ function simplifyLine(meta, handle, targetResolution)
     yData = get(handle, 'YData');
     zData = get(handle, 'ZData');
 
-    if ~isempty(zData)
-        % TODO: 3d simplificattion of frontal 2d projection
+    if numel(xData) <= 2 || numel(xData) <= 2
         return;
     end
-    if isempty(xData) || isempty(yData)
-        return;
-    end
-    if numel(xData) <= 2
-        return;
+
+    % Check whether this is a 3D plot
+    % Check if elevation is not orthogonal to xy plane
+    [az, el] = view(meta.gca);
+    if el == 90
+        is3D = false;
+    else
+        is3D = true;
     end
 
     % Get info about log scaling
     isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-    vxData = xData;
     if isXlog
-        vxData = log10(xData);
+        xData = log10(xData);
     end
 
     isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-    vyData = yData;
     if isYlog
-        vyData = log10(yData);
+        yData = log10(yData);
+    end
+
+    isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+    if isZlog && is3D
+        zData = log10(zData);
+    end
+
+    % Check whether this is a 3D plot and project the data if needed
+    if is3D
+        % Project the data onto the 2D image plane
+        C        = viewmtx(az, el);
+        data     = [xData(:),...
+                    yData(:),...
+                    zData(:),...
+                    ones(size(xData(:)))];
+        data     = C*data';
+
+        % Only take the x and y coordinates
+        data     = data(1:2, :)';
+
+        % Also project the axis limits in the image plane
+        xLim   = xlim(meta.gca);
+        yLim   = ylim(meta.gca);
+        % In 3D plots the yAxis normally runs from positive to negative
+        % values
+        yLim   = [yLim(2), yLim(1)];
+        zLim   = zlim(meta.gca);
+
+        if isXlog
+            xLim  = log10(xLim);
+        end
+        if isYlog
+            yLim  = log10(yLim);
+        end
+        if isZlog
+            zLim  = log10(zLim);
+        end
+
+        % Project the limits to 2D coordinates
+        Limits = C*[xLim(:), yLim(:), zLim(:), [1; 1]]';
+
+        % Assign the new projected 2D limits
+        xLim   = Limits(1, :);
+        yLim   = Limits(2, :);
+    else
+        data   = [xData(:),...
+                  yData(:)];
+        xLim   = xlim(meta.gca);
+        yLim   = ylim(meta.gca);
+
+        if isXlog
+            xLim  = log10(xLim);
+        end
+        if isYlog
+            yLim  = log10(yLim);
+        end
     end
 
     % Automatically guess a tol based on the area of the figure and
     % the area and resolution of the output
-    xLim = xlim(meta.gca);
-    if isXlog
-        xLim = log10(xLim);
-    end
-    xrange = xLim(2)-xLim(1);
-    yLim   = ylim(meta.gca);
-    if isYlog
-        yLim = log10(yLim);
-    end
-    yrange = yLim(2)-yLim(1);
+    xRange = xLim(2)-xLim(1);
+    yRange = yLim(2)-yLim(1);
 
     % Conversion factors of data units into pixels
-    xToPix = W/xrange;
-    yToPix = H/yrange;
+    xToPix = W/xRange;
+    yToPix = H/yRange;
 
     % If the path has markers, perform pixelation instead of simplification
     hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
     if hasMarkers
         % Pixelate data at the zoom multiplier
-        mask   = pixelate(vxData, vyData, xToPix, yToPix);
-        xData  = xData(mask);
-        yData  = yData(mask);
-        set(handle, 'XData', xData);
-        set(handle, 'YData', yData);
+        mask   = pixelate(data(:,1), data(:,2), xToPix, yToPix);
+        % If some of the data was logarithmic get the original data
+        if isXlog
+            xData = get(handle, 'XData');
+        end
+        if isYlog
+            yData = get(handle, 'YData');
+        end
+        if isZlog
+            zData = get(handle, 'ZData');
+        end
+
+        % Update the data
+        set(handle, 'XData', xData(mask));
+        set(handle, 'YData', yData(mask));
+        if is3D
+            set(handle, 'ZData', zData(mask));
+        end
         return
     end
 
     xPixelWidth = 1/xToPix;
     yPixelWidth = 1/yToPix;
-    tol = min(xPixelWidth,yPixelWidth);
+    tol = min(xPixelWidth, yPixelWidth);
 
     % Split up lines which are seperated by NaNs
-    inan   = isnan(vxData) | isnan(vyData);
-    df     = diff([false, ~inan, false]);
-    pstart = find(df == 1);
-    pend   = find(df == -1)-1;
-    nlines = numel(pstart);
+    inan   = find(any(isnan(data), 2))';
+    if isempty(inan)
+        lengthSegments = size(data, 1);
+    else
+        % First get the length of the segments including NaNs
+        lengthSegments = [inan(1), diff(inan), size(data, 1)-inan(end)];
 
-    [linesx, linesy] = deal(cell(1,nlines*2));
-    for ii = 1:nlines
-        % Visual data used for simplifications
-        vx = vxData(pstart(ii):pend(ii));
-        vy = vyData(pstart(ii):pend(ii));
+        % Put the NaNs into separate segments
+        lengthSegments = [lengthSegments-1; ones(size(lengthSegments))];
 
-        % Actual data that inherits the simplifications
-        x = xData(pstart(ii):pend(ii));
-        y = yData(pstart(ii):pend(ii));
-
-        % Line simplification
-        if numel(vx) > 2
-            mask = opheimSimplify(vx,vy,tol);
-            x    = x(mask);
-            y    = y(mask);
-        end
-
-        % Place eventually simplified lines segments on odd positions
-        linesx{ii*2-1} = x;
-        linesy{ii*2-1} = y;
-
-        % Add nans back (if any) in between the line segments
-        linesx{ii*2} = nan;
-        linesy{ii*2} = nan;
+        % Account for the last segment that never ends with a NaN
+        lengthSegments(:, end) = [lengthSegments(1,end)+1; 0];
+        lengthSegments = reshape(lengthSegments(1:end-1), 1, numel(lengthSegments)-1);
     end
-    xData = [linesx{1:end-1}];
-    yData = [linesy{1:end-1}];
 
-    % Update with the new (masked) data
-    set(handle, 'XData', xData);
-    set(handle, 'YData', yData);
+    % Split data into segments
+    dataSegments = mat2cell(data, lengthSegments, 2);
+    mask         = cell(length(lengthSegments), 1);
+
+    % Simplify the respective segments
+    for ii = 1:length(lengthSegments)
+        % Simplify only if there are more than 2 points
+        if size(dataSegments{ii},1) > 2
+            mask{ii} = opheimSimplify(dataSegments{ii}(:,1), dataSegments{ii}(:,2), tol);
+        % Account for NaN segments
+        else
+            mask{ii} = true;
+        end
+    end
+
+    % Merge the mask back together
+    mask     = cat(1, mask{:});
+
+    % If some of the data was logarithmic get the original data
+	if isXlog
+        xData = get(handle, 'XData');
+	end
+	if isYlog
+        yData = get(handle, 'YData');
+	end
+	if isZlog
+        zData = get(handle, 'ZData');
+	end
+    
+    % Update the data
+    set(handle, 'XData', xData(mask));
+    set(handle, 'YData', yData(mask));
+    if is3D
+        set(handle, 'ZData', zData(mask));
+    end
 end
 % =========================================================================
 function mask = pixelate(x, y, xToPix, yToPix)
@@ -452,19 +528,19 @@ function mask = pixelate(x, y, xToPix, yToPix)
 
     % Convert data to pixel units, magnify and mark only the first
     % point that occupies a given position
-    mask = [true, diff(round(x * xToPix * mult))~=0];
-    mask = [true, diff(round(y * yToPix * mult))~=0] | mask;
+    mask = [true; diff(round(x * xToPix * mult))~=0];
+    mask = [true; diff(round(y * yToPix * mult))~=0] | mask;
 
     % Keep end points or it might truncate whole pixels
     inan         = isnan(x) | isnan(y);
-    df           = diff([false, inan, false]);
+    df           = diff([false; inan; false]);
     istart       = df == 1;
     pend         = find(df == -1)-1;
     mask(istart) = true;
     mask(pend)   = true;
 end
 % =========================================================================
-function mask = opheimSimplify(x,y,tol)
+function mask = opheimSimplify(x, y, tol)
     % Opheim path simplification algorithm
     %
     % Given a path of vertices V and a tolerance TOL, the algorithm:
@@ -495,11 +571,11 @@ function mask = opheimSimplify(x,y,tol)
     %       a segment which spans an angle with LINE larger than 90
     %       degrees.
 
-    mask = false(size(x));
+    mask = false(length(x), 1);
     mask(1) = true;
     mask(end) = true;
 
-    N = numel(x);
+    N = length(x);
     i = 1;
     while i <= N-2
         % Find first vertex farther than TOL from the KEY
@@ -611,7 +687,7 @@ function movePointsCloser(meta, handle)
   % Only try to replace points if there are some to replace
   if (~isempty(replaceIndices))
       % Check whether the points are finite.
-      DataIsFinite = all(isfinite(data(replaceIndices,:)), 2);
+      DataIsFinite = all(isfinite(data(replaceIndices, :)), 2);
 
       % Get the indices of those points, that are the first point in a
       % segment
@@ -636,8 +712,8 @@ function movePointsCloser(meta, handle)
       isInfinite_first  = any(~isfinite(newData_first),  2);
       isInfinite_second = any(~isfinite(newData_second), 2);
 
-      newData_first(isInfinite_first,  :) = NaN(sum(isInfinite_first),  2);
-      newData_second(isInfinite_second,:) = NaN(sum(isInfinite_second), 2);
+      newData_first(isInfinite_first,   :) = NaN(sum(isInfinite_first),  2);
+      newData_second(isInfinite_second, :) = NaN(sum(isInfinite_second), 2);
 
       % If a point is part of two segments, that cross the border, we need to
       % insert a NaN to prevent an additional line segment
@@ -655,7 +731,7 @@ function movePointsCloser(meta, handle)
 
       % Remove the last point of every segment except the last one as they
       % will be replaced
-      dataCell(1:end-1) = cellfun(@(x) x(1:end-1,:), dataCell(1:end-1), 'UniformOutput', false);
+      dataCell(1:end-1) = cellfun(@(x) x(1:end-1, :), dataCell(1:end-1), 'UniformOutput', false);
 
       % Create an empty cell array for inserting NaNs and fill it at the
       % conflict sites
