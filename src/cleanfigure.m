@@ -180,56 +180,63 @@ end
 % =========================================================================
 function pruneOutsideBox(meta, handle)
   % Some sections of the line may sit outside of the visible box.
-  % Cut those off.
 
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-
-  % Obtain zData, if available
-  if isprop(handle, 'ZData')
-    zData = get(handle, 'ZData');
+  % Check whether this is a 3D plot
+  % If the elevation is not 90° it is a 3D plot
+  [az, el] = view(meta.gca);
+  if el == 90
+    is3D = false;
   else
-    zData = [];
+    is3D = true;
   end
 
-  if isempty(zData)
-    data = [xData(:), yData(:)];
-  else
-    data = [xData(:), yData(:), zData(:)];
-  end
-
-  if isempty(data)
+  % Get the data. If it is 3D project it into the image plane
+  [xData, yData] = getVisibleData(meta, handle);
+  if numel(xData) <= 2 || numel(yData) <= 2
       return;
   end
+  
+  % Get the limits
+  [xLim, yLim] = getVisibleLimits(meta);
 
-  %hasLines = ~strcmp(lineStyle,'none') && lineWidth>0.0;
-  %hasMarkers = ~strcmp(marker,'none');
+  % Merge data vectors
+  data = [xData, yData];
+
   hasLines = true;
   hasMarkers = true;
-  xLim = get(meta.gca, 'XLim');
-  yLim = get(meta.gca, 'YLim');
 
+  % Get the tolerance for the bounding box
   tol = 1.0e-10;
   relaxedXLim = xLim + [-tol, tol];
   relaxedYLim = yLim + [-tol, tol];
 
-  numPoints = size(data, 1);
-
   % Get which points are inside a (slightly larger) box.
-  dataIsInBox = isInBox(data(:,1:2), ...
-                        relaxedXLim, relaxedYLim);
+  dataIsInBox = isInBox(data, relaxedXLim, relaxedYLim);
 
   % By default, don't plot any points.
-  shouldPlot = false(numPoints, 1);
+  shouldPlot = false(size(xData(:)));
   if hasMarkers
       shouldPlot = shouldPlot | dataIsInBox;
   end
   if hasLines
       % Check if the connecting line is in the box.
-      segvis = segmentVisible(data(:,1:2), ...
-                              dataIsInBox, xLim, yLim);
+      segvis = segmentVisible(data, dataIsInBox, xLim, yLim);
       % Plot points which are next to an edge which is in the box.
       shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
+  end
+
+  % If some of the data was logarithmic or projected get the original data
+  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+  if isXlog || is3D
+    xData = get(handle, 'XData');
+  end
+  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+  if isYlog || is3D
+    yData = get(handle, 'YData');
+  end
+  isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+  if isZlog || is3D
+    zData = get(handle, 'ZData');
   end
 
   if ~all(shouldPlot)
@@ -248,30 +255,47 @@ function pruneOutsideBox(meta, handle)
       % the first one by a NaN. Consecutive data points have 
       % diff(id_remove)==1, so replace diff(id_remove)>1 by NaN and remove
       % the rest
-      idx        = [true; diff(id_remove) >1];
+      idx        = [true; diff(id_remove) > 1];
       id_replace = id_remove(idx);
       id_remove  = id_remove(~idx);
-      
+
       % Replace the data points
-      data(id_replace,:) = NaN(length(id_replace), size(data,2));
-      
+      xData(id_replace) = NaN(size(id_replace));
+      yData(id_replace) = NaN(size(id_replace));
+      if is3D
+        zData(id_replace) = NaN(size(id_replace));
+      end
+
       % Remove the other non visible data points
-      data(id_remove,:) = [];
+      xData(id_remove) = [];
+      yData(id_remove) = [];
+      if is3D
+        zData(id_remove) = [];
+      end
   end
   
   % Make sure that there are no NaNs at the beginning of the data since
   % this would be interpreted as column names by Pgfplots.
   % Also drop all NaNs at the end of the data
-  notnan   = any(~isnan(data),2);
+  if is3D
+    notnan   = ~isnan(xData(:)) | ~isnan(yData(:)) | ~isnan(zData(:));
+  else
+    notnan   = ~isnan(xData(:)) | ~isnan(yData(:));
+  end
   id_first = find(notnan,1,'first');
   id_last  = find(notnan,1,'last');
-  data     = data(id_first:id_last,:);
 
-  % Override with the new data.
-  set(handle, 'XData', data(:, 1));
-  set(handle, 'YData', data(:, 2));
-  if ~isempty(zData)
-    set(handle, 'ZData', data(:, 3));
+  xData    = xData(id_first:id_last);
+  yData    = yData(id_first:id_last);
+  if is3D
+    zData  = zData(id_first:id_last);
+  end
+
+  % Update the data
+  set(handle, 'XData', xData);
+  set(handle, 'YData', yData);
+  if is3D
+      set(handle, 'ZData', zData);
   end
 
   return;
@@ -325,6 +349,111 @@ function out = segmentsIntersect(X1, X2, X3, X4)
         0.0 < lambda(:, 2) & lambda(:, 2) < 1.0;
 end
 % =========================================================================
+function [xData, yData] = getVisibleData(meta, handle)
+    % Check whether this is a 3D plot
+    % If the elevation is not 90° it is a 3D plot
+    [az, el] = view(meta.gca);
+    if el == 90
+        is3D = false;
+    else
+        is3D = true;
+    end
+
+    % Extract the data from the current line handle.
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+    if is3D
+        zData = get(handle, 'ZData');
+    end
+    % Get info about log scaling
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    if isXlog
+        xData = log10(xData);
+    end
+
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    if isYlog
+        yData = log10(yData);
+    end
+
+    isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+    if isZlog && is3D
+        zData = log10(zData);
+    end
+
+    % If this is a 3D plot, project the data into the image plane
+    if is3D
+        % Projection matrix from view
+        C        = viewmtx(az, el);
+
+        % Put the data into the 4D datavector used in the projection
+        data     = [xData(:),...
+                    yData(:),...
+                    zData(:),...
+                    ones(size(xData(:)))];
+
+        % Project the data into the image plane
+        data     = C*data';
+
+        % Only take the x and y coordinates
+        xData    = data(1, :)';
+        yData    = data(2, :)';
+    else
+        % Turn the data into a row vector
+        xData    = xData(:);
+        yData    = yData(:);
+    end
+end
+% =========================================================================
+function [xLim, yLim] = getVisibleLimits(meta)
+    % Check whether this is a 3D plot
+    % If the elevation is not 90° it is a 3D plot
+    [az, el] = view(meta.gca);
+    if el == 90
+        is3D = false;
+    else
+        is3D = true;
+    end
+
+    % Get the axis limits
+    xLim     = xlim(meta.gca);
+    yLim     = ylim(meta.gca);
+
+    % In 3D plots the yAxis normally runs from positive to negative
+    % values, so flip it
+    if is3D
+        yLim   = [yLim(2), yLim(1)];
+        zLim     = zlim(meta.gca);
+    end
+
+    % Check for logarithmic scales
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    if isXlog
+        xLim  = log10(xLim);
+    end
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+	if isYlog
+        yLim  = log10(yLim);
+	end
+    isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+    if isZlog && is3D
+        zLim  = log10(zLim);
+    end
+
+    % If this is a 3D plot, project the limits into the image plane
+    if is3D
+        % Projection matrix from view
+        C        = viewmtx(az, el);
+
+        % Project the limits to 2D coordinates
+        Limits = C*[xLim(:), yLim(:), zLim(:), [1; 1]]';
+
+        % Assign the new projected 2D limits
+        xLim   = Limits(1, :);
+        yLim   = Limits(2, :);
+    end
+end
+% =========================================================================
 function simplifyLine(meta, handle, targetResolution)
     % Reduce the number of data points in the line 'handle'.
     %
@@ -342,18 +471,6 @@ function simplifyLine(meta, handle, targetResolution)
         return
     end
 
-    % Retrieve target figure size in pixels
-    [W, H] = getWidthHeightInPixels(targetResolution);
-
-    % Extract the data from the current line handle.
-    xData = get(handle, 'XData');
-    yData = get(handle, 'YData');
-    zData = get(handle, 'ZData');
-
-    if numel(xData) <= 2 || numel(yData) <= 2
-        return;
-    end
-
     % Check whether this is a 3D plot
     % If the elevation is not 90° it is a 3D plot
     [az, el] = view(meta.gca);
@@ -363,78 +480,17 @@ function simplifyLine(meta, handle, targetResolution)
         is3D = true;
     end
 
-    % Get info about log scaling
-    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-    if isXlog
-        xData = log10(xData);
+    % Retrieve target figure size in pixels
+    [W, H] = getWidthHeightInPixels(targetResolution);
+
+    % Get the data. If it is 3D project it into the image plane
+    [xData, yData] = getVisibleData(meta, handle);
+    if numel(xData) <= 2 || numel(yData) <= 2
+        return;
     end
 
-    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-    if isYlog
-        yData = log10(yData);
-    end
-
-    isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
-    if isZlog && is3D
-        zData = log10(zData);
-    end
-
-    % If this is a 3D plot, project the data and bounds into the image plane
-    if is3D
-        % Projection matrix from view
-        C        = viewmtx(az, el);
-
-        % Put the data into the 4D datavector used in the projection
-        data     = [xData(:),...
-                    yData(:),...
-                    zData(:),...
-                    ones(size(xData(:)))];
-
-        % Project the data into the image plane
-        data     = C*data';
-
-        % Only take the x and y coordinates
-        xData    = data(1, :)';
-        yData    = data(2, :)';
-
-        % Also project the axis limits into the image plane
-        xLim     = xlim(meta.gca);
-        yLim     = ylim(meta.gca);
-        zLim     = zlim(meta.gca);
-
-        % In 3D plots the yAxis normally runs from positive to negative
-        % values, so flip it
-        yLim   = [yLim(2), yLim(1)];
-
-        % Check for logarithmic scales
-        if isXlog
-            xLim  = log10(xLim);
-        end
-        if isYlog
-            yLim  = log10(yLim);
-        end
-        if isZlog
-            zLim  = log10(zLim);
-        end
-
-        % Project the limits to 2D coordinates
-        Limits = C*[xLim(:), yLim(:), zLim(:), [1; 1]]';
-
-        % Assign the new projected 2D limits
-        xLim   = Limits(1, :);
-        yLim   = Limits(2, :);
-    else
-        % If the plot is 2D only check for logarithmic scale
-        xLim   = xlim(meta.gca);
-        yLim   = ylim(meta.gca);
-
-        if isXlog
-            xLim  = log10(xLim);
-        end
-        if isYlog
-            yLim  = log10(yLim);
-        end
-    end
+    % Get the limits
+    [xLim, yLim] = getVisibleLimits(meta);
 
     % Automatically guess a tol based on the area of the figure and
     % the area and resolution of the output
@@ -449,7 +505,7 @@ function simplifyLine(meta, handle, targetResolution)
     hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
     if hasMarkers
         % Pixelate data at the zoom multiplier
-        mask   = pixelate(xData(:), yData(:), xToPix, yToPix);
+        mask   = pixelate(xData, yData, xToPix, yToPix);
     else
         % Simplify the line
         xPixelWidth = 1/xToPix;
@@ -462,12 +518,11 @@ function simplifyLine(meta, handle, targetResolution)
             lengthSegments = length(xData);
         else
             % First get the length of the segments including NaNs
-            lengthSegments = [inan(1), diff(inan), length(xData)-inan(end)];
+            lengthSegments = [inan(1); diff(inan); length(xData)-inan(end)];
 
             % Put the NaNs into separate segments
-            lengthSegments = [lengthSegments-1;
-                              ones(size(lengthSegments))];
-            lengthSegments = reshape(lengthSegments(1:end), 1, numel(lengthSegments));
+            lengthSegments = [lengthSegments-1, ones(size(lengthSegments))];
+            lengthSegments = reshape(lengthSegments(1:end), size(lengthSegments));
 
             % Account for the last segment that never ends with a NaN
             lengthSegments(end-1) = lengthSegments(end-1)+1;
@@ -494,13 +549,16 @@ function simplifyLine(meta, handle, targetResolution)
         mask     = cat(1, mask{:});
     end
 
-    % If some of the data was logarithmic get the original data
+    % If some of the data was logarithmic or projected get the original data
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
 	if isXlog || is3D
         xData = get(handle, 'XData');
 	end
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
 	if isYlog || is3D
         yData = get(handle, 'YData');
 	end
+    isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
 	if isZlog || is3D
         zData = get(handle, 'ZData');
 	end
