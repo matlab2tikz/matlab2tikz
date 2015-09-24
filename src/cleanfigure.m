@@ -118,12 +118,13 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
       %display(sprintf([repmat(' ',1,indent), '  handle this']))
 
       if strcmp(type, 'line')
+          % NOTE: Always remove invisible points before simplifying the
+          % line. Otherwise it will generate additional line segments
           pruneOutsideBox(meta, h);
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
-          % NOTE: Always remove invisible points before simplifying the
-          % line. Otherwise it will generate additional line segments
+          % Simplify the lines by removing superflous points
           simplifyLine(meta, h, targetResolution);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
