@@ -118,11 +118,14 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
       %display(sprintf([repmat(' ',1,indent), '  handle this']))
 
       if strcmp(type, 'line')
-          simplifyLine(meta, h, targetResolution);
+          % NOTE: Always remove invisible points before simplifying the
+          % line. Otherwise it will generate additional line segments
           pruneOutsideBox(meta, h);
           % Move some points closer to the box to avoid TeX:DimensionTooLarge
           % errors. This may involve inserting extra points.
           movePointsCloser(meta, h);
+          % Simplify the lines by removing superflous points
+          simplifyLine(meta, h, targetResolution);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
       elseif strcmp(type, 'text')
@@ -347,101 +350,167 @@ function simplifyLine(meta, handle, targetResolution)
     yData = get(handle, 'YData');
     zData = get(handle, 'ZData');
 
-    if ~isempty(zData)
-        % TODO: 3d simplificattion of frontal 2d projection
+    if numel(xData) <= 2 || numel(yData) <= 2
         return;
     end
-    if isempty(xData) || isempty(yData)
-        return;
-    end
-    if numel(xData) <= 2
-        return;
+
+    % Check whether this is a 3D plot
+    % If the elevation is not 90° it is a 3D plot
+    [az, el] = view(meta.gca);
+    if el == 90
+        is3D = false;
+    else
+        is3D = true;
     end
 
     % Get info about log scaling
     isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-    vxData = xData;
     if isXlog
-        vxData = log10(xData);
+        xData = log10(xData);
     end
 
     isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-    vyData = yData;
     if isYlog
-        vyData = log10(yData);
+        yData = log10(yData);
+    end
+
+    isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+    if isZlog && is3D
+        zData = log10(zData);
+    end
+
+    % If this is a 3D plot, project the data and bounds into the image plane
+    if is3D
+        % Projection matrix from view
+        C        = viewmtx(az, el);
+
+        % Put the data into the 4D datavector used in the projection
+        data     = [xData(:),...
+                    yData(:),...
+                    zData(:),...
+                    ones(size(xData(:)))];
+
+        % Project the data into the image plane
+        data     = C*data';
+
+        % Only take the x and y coordinates
+        xData    = data(1, :)';
+        yData    = data(2, :)';
+
+        % Also project the axis limits into the image plane
+        xLim     = xlim(meta.gca);
+        yLim     = ylim(meta.gca);
+        zLim     = zlim(meta.gca);
+
+        % In 3D plots the yAxis normally runs from positive to negative
+        % values, so flip it
+        yLim   = [yLim(2), yLim(1)];
+
+        % Check for logarithmic scales
+        if isXlog
+            xLim  = log10(xLim);
+        end
+        if isYlog
+            yLim  = log10(yLim);
+        end
+        if isZlog
+            zLim  = log10(zLim);
+        end
+
+        % Project the limits to 2D coordinates
+        Limits = C*[xLim(:), yLim(:), zLim(:), [1; 1]]';
+
+        % Assign the new projected 2D limits
+        xLim   = Limits(1, :);
+        yLim   = Limits(2, :);
+    else
+        % If the plot is 2D only check for logarithmic scale
+        xLim   = xlim(meta.gca);
+        yLim   = ylim(meta.gca);
+
+        if isXlog
+            xLim  = log10(xLim);
+        end
+        if isYlog
+            yLim  = log10(yLim);
+        end
     end
 
     % Automatically guess a tol based on the area of the figure and
     % the area and resolution of the output
-    xLim = xlim(meta.gca);
-    if isXlog
-        xLim = log10(xLim);
-    end
-    xrange = xLim(2)-xLim(1);
-    yLim   = ylim(meta.gca);
-    if isYlog
-        yLim = log10(yLim);
-    end
-    yrange = yLim(2)-yLim(1);
+    xRange = xLim(2)-xLim(1);
+    yRange = yLim(2)-yLim(1);
 
     % Conversion factors of data units into pixels
-    xToPix = W/xrange;
-    yToPix = H/yrange;
+    xToPix = W/xRange;
+    yToPix = H/yRange;
 
     % If the path has markers, perform pixelation instead of simplification
     hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
     if hasMarkers
         % Pixelate data at the zoom multiplier
-        mask   = pixelate(vxData, vyData, xToPix, yToPix);
-        xData  = xData(mask);
-        yData  = yData(mask);
-        set(handle, 'XData', xData);
-        set(handle, 'YData', yData);
-        return
-    end
+        mask   = pixelate(xData(:), yData(:), xToPix, yToPix);
+    else
+        % Simplify the line
+        xPixelWidth = 1/xToPix;
+        yPixelWidth = 1/yToPix;
+        tol = min(xPixelWidth, yPixelWidth);
 
-    xPixelWidth = 1/xToPix;
-    yPixelWidth = 1/yToPix;
-    tol = min(xPixelWidth,yPixelWidth);
+        % Split up lines which are seperated by NaNs
+        inan   = find(isnan(xData) | isnan(yData));
+        if isempty(inan)
+            lengthSegments = length(xData);
+        else
+            % First get the length of the segments including NaNs
+            lengthSegments = [inan(1), diff(inan), length(xData)-inan(end)];
 
-    % Split up lines which are seperated by NaNs
-    inan   = isnan(vxData) | isnan(vyData);
-    df     = diff([false, ~inan, false]);
-    pstart = find(df == 1);
-    pend   = find(df == -1)-1;
-    nlines = numel(pstart);
+            % Put the NaNs into separate segments
+            lengthSegments = [lengthSegments-1;
+                              ones(size(lengthSegments))];
+            lengthSegments = reshape(lengthSegments(1:end), 1, numel(lengthSegments));
 
-    [linesx, linesy] = deal(cell(1,nlines*2));
-    for ii = 1:nlines
-        % Visual data used for simplifications
-        vx = vxData(pstart(ii):pend(ii));
-        vy = vyData(pstart(ii):pend(ii));
-
-        % Actual data that inherits the simplifications
-        x = xData(pstart(ii):pend(ii));
-        y = yData(pstart(ii):pend(ii));
-
-        % Line simplification
-        if numel(vx) > 2
-            mask = opheimSimplify(vx,vy,tol);
-            x    = x(mask);
-            y    = y(mask);
+            % Account for the last segment that never ends with a NaN
+            lengthSegments(end-1) = lengthSegments(end-1)+1;
+            lengthSegments(end)   = [];
         end
 
-        % Place eventually simplified lines segments on odd positions
-        linesx{ii*2-1} = x;
-        linesy{ii*2-1} = y;
+        % Split data into segments
+        xDataSegments = mat2cell(xData(:), lengthSegments, 1);
+        yDataSegments = mat2cell(yData(:), lengthSegments, 1);
+        mask          = cell(length(lengthSegments), 1);
 
-        % Add nans back (if any) in between the line segments
-        linesx{ii*2} = nan;
-        linesy{ii*2} = nan;
+        % Simplify the respective segments
+        for ii = 1:length(lengthSegments)
+            % Simplify only if there are more than 2 points
+            if length(xDataSegments{ii}) > 2 && length(yDataSegments{ii}) > 2
+                mask{ii} = opheimSimplify(xDataSegments{ii}, yDataSegments{ii}, tol);
+            else
+                % Always print NaNs
+                mask{ii} = true;
+            end
+        end
+
+        % Merge the mask back together
+        mask     = cat(1, mask{:});
     end
-    xData = [linesx{1:end-1}];
-    yData = [linesy{1:end-1}];
 
-    % Update with the new (masked) data
-    set(handle, 'XData', xData);
-    set(handle, 'YData', yData);
+    % If some of the data was logarithmic get the original data
+	if isXlog || is3D
+        xData = get(handle, 'XData');
+	end
+	if isYlog || is3D
+        yData = get(handle, 'YData');
+	end
+	if isZlog || is3D
+        zData = get(handle, 'ZData');
+	end
+
+    % Update the data
+    set(handle, 'XData', xData(mask));
+    set(handle, 'YData', yData(mask));
+    if is3D
+        set(handle, 'ZData', zData(mask));
+    end
 end
 % =========================================================================
 function mask = pixelate(x, y, xToPix, yToPix)
@@ -452,12 +521,12 @@ function mask = pixelate(x, y, xToPix, yToPix)
 
     % Convert data to pixel units, magnify and mark only the first
     % point that occupies a given position
-    mask = [true, diff(round(x * xToPix * mult))~=0];
-    mask = [true, diff(round(y * yToPix * mult))~=0] | mask;
+    mask = [true; diff(round(x * xToPix * mult))~=0];
+    mask = [true; diff(round(y * yToPix * mult))~=0] | mask;
 
     % Keep end points or it might truncate whole pixels
     inan         = isnan(x) | isnan(y);
-    df           = diff([false, inan, false]);
+    df           = diff([false; inan; false]);
     istart       = df == 1;
     pend         = find(df == -1)-1;
     mask(istart) = true;
