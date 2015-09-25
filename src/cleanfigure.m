@@ -181,22 +181,15 @@ end
 function pruneOutsideBox(meta, handle)
   % Some sections of the line may sit outside of the visible box.
 
-  % Check whether this is a 3D plot
-  % If the elevation is not 90° it is a 3D plot
-  [az, el] = view(meta.gca);
-  if el == 90
-    is3D = false;
-  else
-    is3D = true;
-  end
-
-  % Get the data. If it is 3D project it into the image plane
+  % Get the data. If it is 3D, project it into the image plane
   [xData, yData] = getVisibleData(meta, handle);
+
+  % Only do something if there are multiple data points
   if numel(xData) <= 2 || numel(yData) <= 2
       return;
   end
   
-  % Get the limits
+  % Get the (projected) limits
   [xLim, yLim] = getVisibleLimits(meta);
 
   % Merge data vectors
@@ -224,6 +217,9 @@ function pruneOutsideBox(meta, handle)
       % Plot points which are next to an edge which is in the box.
       shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
   end
+
+  % Check whether this is a 3D plot
+  is3D = isAxis3D(meta.gca);
 
   % If some of the data was logarithmic or projected get the original data
   isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
@@ -351,13 +347,7 @@ end
 % =========================================================================
 function [xData, yData] = getVisibleData(meta, handle)
     % Check whether this is a 3D plot
-    % If the elevation is not 90° it is a 3D plot
-    [az, el] = view(meta.gca);
-    if el == 90
-        is3D = false;
-    else
-        is3D = true;
-    end
+    is3D = isAxis3D(meta.gca);
 
     % Extract the data from the current line handle.
     xData = get(handle, 'XData');
@@ -383,6 +373,9 @@ function [xData, yData] = getVisibleData(meta, handle)
 
     % If this is a 3D plot, project the data into the image plane
     if is3D
+        % Get the projection angle
+        [az, el] = view(meta.gca);
+
         % Projection matrix from view
         C        = viewmtx(az, el);
 
@@ -407,13 +400,7 @@ end
 % =========================================================================
 function [xLim, yLim] = getVisibleLimits(meta)
     % Check whether this is a 3D plot
-    % If the elevation is not 90° it is a 3D plot
-    [az, el] = view(meta.gca);
-    if el == 90
-        is3D = false;
-    else
-        is3D = true;
-    end
+    is3D = isAxis3D(meta.gca);
 
     % Get the axis limits
     xLim     = xlim(meta.gca);
@@ -442,6 +429,9 @@ function [xLim, yLim] = getVisibleLimits(meta)
 
     % If this is a 3D plot, project the limits into the image plane
     if is3D
+        % Get the projection angle
+        [az, el] = view(meta.gca);
+
         % Projection matrix from view
         C        = viewmtx(az, el);
 
@@ -472,13 +462,7 @@ function simplifyLine(meta, handle, targetResolution)
     end
 
     % Check whether this is a 3D plot
-    % If the elevation is not 90° it is a 3D plot
-    [az, el] = view(meta.gca);
-    if el == 90
-        is3D = false;
-    else
-        is3D = true;
-    end
+    is3D = isAxis3D(meta.gca);
 
     % Retrieve target figure size in pixels
     [W, H] = getWidthHeightInPixels(targetResolution);
