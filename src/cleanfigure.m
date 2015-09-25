@@ -355,17 +355,16 @@ function [xData, yData] = getVisibleData(meta, handle)
     if is3D
         zData = get(handle, 'ZData');
     end
+
     % Get info about log scaling
     isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
     if isXlog
         xData = log10(xData);
     end
-
     isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
     if isYlog
         yData = log10(yData);
     end
-
     isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
     if isZlog && is3D
         zData = log10(zData);
@@ -431,11 +430,7 @@ function [xLim, yLim] = getVisibleLimits(meta)
     % Get the axis limits
     xLim     = xlim(meta.gca);
     yLim     = ylim(meta.gca);
-
-    % In 3D plots the yAxis might run from positive to negative
-    % values, so sort it
     if is3D
-        yLim = sort(yLim);
         zLim = zlim(meta.gca);
     end
 
@@ -917,8 +912,8 @@ end
 % =========================================================================
 function out = isInBox(data, xLim, yLim)
 
-  out = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
-      & data(:,2) > yLim(1) & data(:,2) < yLim(2);
+  out = data(:,1) > min(xLim) & data(:,1) < max(xLim) ...
+      & data(:,2) > min(yLim) & data(:,2) < max(yLim);
 end
 % =========================================================================
 function lambda = crossLines(X1, X2, X3, X4)
