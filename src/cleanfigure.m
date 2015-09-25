@@ -505,8 +505,8 @@ function simplifyLine(meta, handle, targetResolution)
             lengthSegments = [inan(1); diff(inan); length(xData)-inan(end)];
 
             % Put the NaNs into separate segments
-            lengthSegments = [lengthSegments-1, ones(size(lengthSegments))];
-            lengthSegments = reshape(lengthSegments(1:end), size(lengthSegments));
+            lengthSegments = [lengthSegments-1, ones(size(lengthSegments))]';
+            lengthSegments = reshape(lengthSegments, numel(lengthSegments), 1);
 
             % Account for the last segment that never ends with a NaN
             lengthSegments(end-1) = lengthSegments(end-1)+1;
@@ -516,16 +516,16 @@ function simplifyLine(meta, handle, targetResolution)
         % Split data into segments
         xDataSegments = mat2cell(xData(:), lengthSegments, 1);
         yDataSegments = mat2cell(yData(:), lengthSegments, 1);
-        mask          = cell(length(lengthSegments), 1);
+        mask          = cell(size(lengthSegments));
 
         % Simplify the respective segments
         for ii = 1:length(lengthSegments)
             % Simplify only if there are more than 2 points
-            if length(xDataSegments{ii}) > 2 && length(yDataSegments{ii}) > 2
+            if numel(xDataSegments{ii}) > 2 && numel(yDataSegments{ii}) > 2
                 mask{ii} = opheimSimplify(xDataSegments{ii}, yDataSegments{ii}, tol);
             else
-                % Always print NaNs
-                mask{ii} = true;
+                % Always print NaNs and 2 point segments
+                mask{ii} = true(size(xDataSegments{ii}));
             end
         end
 
