@@ -432,11 +432,11 @@ function [xLim, yLim] = getVisibleLimits(meta)
     xLim     = xlim(meta.gca);
     yLim     = ylim(meta.gca);
 
-    % In 3D plots the yAxis normally runs from positive to negative
-    % values, so flip it
+    % In 3D plots the yAxis might run from positive to negative
+    % values, so sort it
     if is3D
-        yLim   = [yLim(2), yLim(1)];
-        zLim     = zlim(meta.gca);
+        yLim = sort(yLim);
+        zLim = zlim(meta.gca);
     end
 
     % Check for logarithmic scales
