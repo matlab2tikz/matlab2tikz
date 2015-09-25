@@ -14,19 +14,18 @@ function hash = calculateMD5Hash(filename)
             % is a  cryptographic hash, even though its security has been
             % broken. Instead we make use of the Java libraries.
             % Unless the "-nojvm" flag is specified, this should work well.
-
-            % Java only has reliable support for absolute paths.
-            absoluteFilename = fullfile(pwd, filename);
-
-            % Based on code by Stéphane Pinchaux and Bastian Ebeling that can be
-            % found at <http://stackoverflow.com/questions/12140458/>.
-
-            fis = java.io.FileInputStream(java.io.File(absoluteFilename));
+            
+            % Get message digest instance
             MD5 = java.security.MessageDigest.getInstance('MD5');
-            dis = java.security.DigestInputStream(fis, MD5);
-
-            while(dis.read() ~= -1), end; % read the whole file
-
+                        
+            % Open the file
+            fid     = fopen(filename, 'r');
+            cleanup = onCleanup(@()fclose(fid));
+            
+            % Read file into a stream of uint8
+            stream = fread(fid, '*uint8');
+            MD5.update(stream);
+            
             hash = reshape(dec2hex(typecast(MD5.digest(),'uint8')).', 1, 32);
     end
 
