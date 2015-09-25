@@ -377,7 +377,33 @@ function [xData, yData] = getVisibleData(meta, handle)
         [az, el] = view(meta.gca);
 
         % Projection matrix from view
-        C        = viewmtx(az, el);
+        % C        = viewmtx(az, el);
+        % NOTE: This is a subset of the MATLAB viewmtx function, as octave
+        % does not provide such functionality
+        % Make sure az and el are in the correct range.
+        el = rem(rem(el+180,360)+360,360)-180; % Make sure -180 <= el <= 180
+        if el>90,
+          el = 180-el;
+          az = az + 180;
+        elseif el<-90,
+          el = -180-el;
+          az = az + 180;
+        end
+        az = rem(rem(az,360)+360,360); % Make sure 0 <= az <= 360
+
+        % Convert from degrees to radians.
+        az = az*pi/180;
+        el = el*pi/180;
+
+        % View transformation matrix:
+        % Formed by composing two rotations:
+        %   1) Rotate about the z axis -AZ radians
+        %   2) Rotate about the x axis (EL-pi/2) radians
+
+        C = [ cos(az)           sin(az)           0       0
+             -sin(el)*sin(az)   sin(el)*cos(az)   cos(el) 0
+              cos(el)*sin(az)  -cos(el)*cos(az)   sin(el) 0
+              0                 0                 0       1 ];
 
         % Put the data into the 4D datavector used in the projection
         data     = [xData(:),...
@@ -433,7 +459,33 @@ function [xLim, yLim] = getVisibleLimits(meta)
         [az, el] = view(meta.gca);
 
         % Projection matrix from view
-        C        = viewmtx(az, el);
+        % C        = viewmtx(az, el);
+        % NOTE: This is a subset of the MATLAB viewmtx function, as octave
+        % does not provide such functionality
+        % Make sure az and el are in the correct range.
+        el = rem(rem(el+180,360)+360,360)-180; % Make sure -180 <= el <= 180
+        if el>90,
+          el = 180-el;
+          az = az + 180;
+        elseif el<-90,
+          el = -180-el;
+          az = az + 180;
+        end
+        az = rem(rem(az,360)+360,360); % Make sure 0 <= az <= 360
+
+        % Convert from degrees to radians.
+        az = az*pi/180;
+        el = el*pi/180;
+
+        % View transformation matrix:
+        % Formed by composing two rotations:
+        %   1) Rotate about the z axis -AZ radians
+        %   2) Rotate about the x axis (EL-pi/2) radians
+
+        C = [ cos(az)           sin(az)           0       0
+             -sin(el)*sin(az)   sin(el)*cos(az)   cos(el) 0
+              cos(el)*sin(az)  -cos(el)*cos(az)   sin(el) 0
+              0                 0                 0       1 ];
 
         % Project the limits to 2D coordinates
         Limits = C*[xLim(:), yLim(:), zLim(:), [1; 1]]';
