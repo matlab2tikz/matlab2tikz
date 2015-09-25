@@ -720,24 +720,34 @@ function [m2t, str] = addPlotyyReference(m2t, str, h)
 % Create labelled references to legend entries of the main plotyy axis
 
 % This ensures we are either on the main or secondary axis
-if ~isAxisPlotyy(m2t.currentHandles.gca), return, end
+if ~isAxisPlotyy(m2t.currentHandles.gca)
+    return
+end
+
+% Get current label counter
+if isfield(m2t.axesContainers{end},'PlotyyLabelNum')
+    labelNum = m2t.axesContainers{end}.PlotyyLabelNum;
+else
+    labelNum = 0;
+end
 
 if hasPlotyyReference(m2t,h)
     % Label the plot to later reference it. Only legend entries on the main
     % plotyy axis will have a label
-    c   = getLegendString(m2t,h);
-    str = [str, sprintf('\\label{plotyyref:%s};\n\n', join(m2t, c, '\\'))];
+    str = [str, sprintf('\\label{plotyyref:leg%d};\n\n', labelNum + 1)];
+    m2t.axesContainers{end}.PlotyyLabelNum = labelNum + 1;
 
 elseif m2t.currentHandleHasLegend
     % We are on the secondary axis
     interpreter = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
     refs = '';
     % Create labelled references to legend entries of the main axis
-    for ref = m2t.axesContainers{end}.PlotyyReferences(:)'
-        legendString = getLegendString(m2t,ref);
-        c            = prettyPrint(m2t, legendString, interpreter);
-        refs         = [refs, sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:%s}\\addlegendentry{%s};\n',...
-            legendString{1}, join(m2t, c, '\\'))];
+    for ii = 1:labelNum
+        ref     = m2t.axesContainers{end}.PlotyyReferences(ii);
+        lString = getLegendString(m2t,ref);
+        c       = prettyPrint(m2t, lString, interpreter);
+        refs    = [refs, sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:leg%d}\\addlegendentry{%s};\n',...
+            ii, join(m2t, c, '\\'))];
     end
     % Add references BEFORE next plot to preserve color order
     str = [refs, str];
@@ -753,7 +763,9 @@ end
 function str = addLegendInformation(m2t, str, h)
 % Add the actual legend string
 
-if ~m2t.currentHandleHasLegend, return, end
+if ~m2t.currentHandleHasLegend
+    return
+end
     
 interpreter  = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
 legendString = getLegendString(m2t,h);
@@ -991,7 +1003,9 @@ function entries = getLegendEntries(m2t)
 entries = [];
 legendHandle = m2t.axesContainers{end}.LegendHandle;
 
-if isempty(legendHandle), return, end
+if isempty(legendHandle)
+    return 
+end
 
 switch getEnvironment()
     case 'Octave'
