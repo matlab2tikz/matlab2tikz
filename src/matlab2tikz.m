@@ -98,6 +98,9 @@ function matlab2tikz(varargin)
 %   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
 %   (default: false)
 %
+%   MATLAB2TIKZ('arrowHeadSizeFactor', FLOAT, ...) allows to resize the arrow heads
+%   in quiver plots by rescaling the arrow heads by a positive scalar. (default: 10)
+%
 %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
 %   of the output file. (default: '')
 %
@@ -228,6 +231,7 @@ ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'dataPath', '', @ischar);
 ipp = ipp.addParamValue(ipp, 'relativeDataPath', '', @ischar);
 ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
+ipp = ipp.addParamValue(ipp, 'arrowHeadSizeFactor', 10, @(x) x>0);
 
 % Maximum chunk length.
 % TeX parses files line by line with a buffer of size buf_size. If the
@@ -3845,15 +3849,25 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     else
         arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2)}';
     end
+
     plotOpts = opts_add(plotOpts, 'point meta', arrowLength);
     plotOpts = opts_add(plotOpts, 'point meta min', '0');
 
     if showArrowHead
         %TODO: scale the arrows more rigorously to match MATLAB behavior
         %There is a "MaxHeadSize" property that plays a role.
+        % Currently, this is quite hard to do, since
+        userInfo(m2t, ['Please change the "arrowHeadSizeFactor" option', ...
+                       ' if the size of the arrows is incorrect.']);
+        arrowHeadSizeFactor = sprintf(m2t.ff, abs(m2t.cmdOpts.Results.arrowHeadSizeFactor));
 
         % NOTE: `set(h, 'MaxHeadSize')` is bugged in HG1 (not in HG2 or Octave)
         % according to http://www.mathworks.com/matlabcentral/answers/96754
+
+        % MaxHeadSize is said to be relative to the length of the quiver in the
+        % MATLAB documentation. However, in practice, there seems to be a SQRT
+        % involved somewhere (e.g. if u.^2 + v.^2 == 2, all MHS values >
+        % 1/sqrt(2) are capped to 1/sqrt(2)).
 
         arrowHeadOpts = opts_new();
         arrowHeadOpts = opts_add(arrowHeadOpts, 'angle''', '18.263');
@@ -3861,7 +3875,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         % approximately 18.263 degrees in 2D as can be derived from the
         % |quiver| function. One of the example files covers this derivation.
         arrowHeadOpts = opts_add(arrowHeadOpts, 'scale', ...
-                                 '{10*\pgfplotspointmetatransformed/1000}');
+              ['{' arrowHeadSizeFactor '*\pgfplotspointmetatransformed/1000}']);
         headStyle = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
         quiverOpts = opts_add(quiverOpts, 'every arrow/.append style', ...
                               ['{' headStyle '}']);
