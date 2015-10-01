@@ -51,9 +51,9 @@ peaks_contourf : 957fcc67221ce5c54b1981b2675348a1
 pixelLegend : 26c3af8f30df0fefcb56697b534b8516
 plain_cos : 6743ec5be29b98ee072b5ce23dc26b2a
 polarplot : 1108f4018f5f14ad3bff73865caafb98
-quiver3plot : 1e2266cae37d6565e96e1f0466540d6c
-quiveroverlap : a5c76200c93b83f2480aca8563626bf9
-quiverplot : 0cc7aef48dddc2c9075a079eaf580700
+quiver3plot : 3f93e4772835321d20e37eb82a4855ac
+quiveroverlap : 8f8ce66b4e8101bdb95ac80b994ca1b5
+quiverplot : 58a261b8e4e4604013f2c865f5612872
 randomWithLines : 8095aa52dd58fae39a8d5718eebe55d5
 rectanglePlot : f63538597348033398ef9cc37dcf57cd
 roseplot : 10c269e1ff65975791d794b489ebbed9
