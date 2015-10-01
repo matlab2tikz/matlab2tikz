@@ -3856,10 +3856,12 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         % according to http://www.mathworks.com/matlabcentral/answers/96754
 
         arrowHeadOpts = opts_new();
-        arrowHeadOpts = opts_add(arrowHeadOpts, 'scale length', ...
+        arrowHeadOpts = opts_add(arrowHeadOpts, 'angle''', '18.263');
+        % In MATLAB (HG1), the arrow head is constructed to have an angle of
+        % approximately 18.263 degrees in 2D as can be derived from the
+        % |quiver| function. One of the example files covers this derivation.
+        arrowHeadOpts = opts_add(arrowHeadOpts, 'scale', ...
                                  '{10*\pgfplotspointmetatransformed/1000}');
-        arrowHeadOpts = opts_add(arrowHeadOpts, 'scale width', ...
-                                 '{5*\pgfplotspointmetatransformed/1000}');
         headStyle = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
         quiverOpts = opts_add(quiverOpts, 'every arrow/.append style', ...
                               ['{' headStyle '}']);
