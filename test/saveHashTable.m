@@ -144,8 +144,8 @@ function saveHashTable(status, varargin)
             % First step is to transpose the data concatenate both fields under
             % each other. Since MATLAB indexing uses "column major order",
             % traversing the concatenated array is in the order we want.
-            dataTransposed = cellfun(@transpose, data, 'UniformOutput', false);
-            allValues = vertcat(dataTransposed{:});
+            data      = [data{:}]';
+            allValues = data(:)';
         else
             allValues = {};
         end
