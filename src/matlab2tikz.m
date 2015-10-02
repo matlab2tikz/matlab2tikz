@@ -3856,7 +3856,11 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     if showArrowHead
         %TODO: scale the arrows more rigorously to match MATLAB behavior
         %There is a "MaxHeadSize" property that plays a role.
-        % Currently, this is quite hard to do, since
+        % Currently, this is quite hard to do, since the size of the arrows
+        % is defined in pgfplots in absolute units (here we specify that those
+        % should be scaled up/down according to the data), while the data itself
+        % is in axis coordinates (or some scaled variant). I.e. we need the
+        % physical dimensions of the axis to compute the correct scaling!
         userInfo(m2t, ['Please change the "arrowHeadSizeFactor" option', ...
                        ' if the size of the arrows is incorrect.']);
         arrowHeadSizeFactor = sprintf(m2t.ff, abs(m2t.cmdOpts.Results.arrowHeadSizeFactor));
