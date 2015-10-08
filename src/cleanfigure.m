@@ -181,23 +181,19 @@ end
 function pruneOutsideBox(meta, handle)
   % Some sections of the line may sit outside of the visible box.
   % Cut those off.
-
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-
-  % Obtain zData, if available
-  if isprop(handle, 'ZData')
-    zData = get(handle, 'ZData');
-  else
-    zData = [];
+  
+  % TODO: 3d simplificattion of frontal 2d projection
+  if isAxis3D(meta.gca)
+      return;
   end
 
-  if isempty(zData)
-    data = [xData(:), yData(:)];
-  else
-    data = [xData(:), yData(:), zData(:)];
-  end
+  % Extract the visual data from the current line handle.
+  [xData, yData] = getVisualData(meta, handle);
+  
+  % Merge the data into one matrix
+  data = [xData(:), yData(:)];
 
+  % Dont do anythingif the data is empty
   if isempty(data)
       return;
   end
@@ -206,8 +202,9 @@ function pruneOutsideBox(meta, handle)
   %hasMarkers = ~strcmp(marker,'none');
   hasLines = true;
   hasMarkers = true;
-  xLim = get(meta.gca, 'XLim');
-  yLim = get(meta.gca, 'YLim');
+  
+  % Extract the visual limits from the current line handle.
+  [xLim, yLim]   = getVisualLimits(meta);
 
   tol = 1.0e-10;
   relaxedXLim = xLim + [-tol, tol];
@@ -216,8 +213,7 @@ function pruneOutsideBox(meta, handle)
   numPoints = size(data, 1);
 
   % Get which points are inside a (slightly larger) box.
-  dataIsInBox = isInBox(data(:,1:2), ...
-                        relaxedXLim, relaxedYLim);
+  dataIsInBox = isInBox(data, relaxedXLim, relaxedYLim);
 
   % By default, don't plot any points.
   shouldPlot = false(numPoints, 1);
@@ -226,8 +222,7 @@ function pruneOutsideBox(meta, handle)
   end
   if hasLines
       % Check if the connecting line is in the box.
-      segvis = segmentVisible(data(:,1:2), ...
-                              dataIsInBox, xLim, yLim);
+      segvis = segmentVisible(data, dataIsInBox, xLim, yLim);
       % Plot points which are next to an edge which is in the box.
       shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
   end
@@ -270,10 +265,6 @@ function pruneOutsideBox(meta, handle)
   % Override with the new data.
   set(handle, 'XData', data(:, 1));
   set(handle, 'YData', data(:, 2));
-  if ~isempty(zData)
-    set(handle, 'ZData', data(:, 3));
-  end
-
   return;
 end
 % =========================================================================
@@ -282,31 +273,30 @@ function movePointsCloser(meta, handle)
   % to the boundary of that box and make sure that lines in the visible
   % box are preserved. This typically involves replacing one point by
   % two new ones and a NaN.
-
-  % Extract the data from the current line handle.
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
-
-  if ~isempty(zData) && any(zData(1)~=zData)
-    % Don't do funny stuff with varying zData.
-    return;
-  end
   
-  data = [xData(:), yData(:)];
+  % TODO: 3d simplificattion of frontal 2d projection
+  if isAxis3D(meta.gca)
+      return;
+  end
 
-  xlim = get(meta.gca, 'XLim');
-  ylim = get(meta.gca, 'YLim');
+  % Extract the visual data from the current line handle.
+  [xData, yData] = getVisualData(meta, handle);
+  
+  % Extract the visual limits from the current line handle.
+  [xLim, yLim]   = getVisualLimits(meta);
 
   % Calculate the extension of the extended box  
-  xWidth = xlim(2) - xlim(1);
-  yWidth = ylim(2) - ylim(1);
+  xWidth = xLim(2) - xLim(1);
+  yWidth = yLim(2) - yLim(1);
   
   % Don't choose the larger box too large to make sure that the values inside
   % it can still be treated by TeX.
   extendFactor = 0.1;
   largeXLim = xlim + extendFactor * [-xWidth, xWidth];
   largeYLim = ylim + extendFactor * [-yWidth, yWidth];
+  
+  % Put the data into one matrix
+  data = [xData, yData];
 
   % Get which points are in an extended box (the limits of which
   % don't exceed TeX's memory).
@@ -320,17 +310,17 @@ function movePointsCloser(meta, handle)
   replaceIndices = find(~dataIsInLargeBox);  
   
   % Only try to replace points if there are some to replace
-  if (~isempty(replaceIndices))
+  if ~isempty(replaceIndices)
       % Check whether the points are finite.
-      DataIsFinite = all(isfinite(data(replaceIndices,:)), 2);
+      dataIsFinite = all(isfinite(data(replaceIndices,:)), 2);
 
       % Get the indices of those points, that are the first point in a
       % segment
-      id_first  = replaceIndices(replaceIndices < size(data, 1) & DataIsFinite);
+      id_first  = replaceIndices(replaceIndices < size(data, 1) & dataIsFinite);
 
       % Get the indices of those points, that are the second point in a
       % segment
-      id_second = replaceIndices(replaceIndices > 1  & DataIsFinite);
+      id_second = replaceIndices(replaceIndices > 1  & dataIsFinite);
 
       % Define the vectors of data points for the segments X1--X2
       X1_first  = data(id_first,    :);
@@ -353,7 +343,7 @@ function movePointsCloser(meta, handle)
       % If a point is part of two segments, that cross the border, we need to
       % insert a NaN to prevent an additional line segment
       [trash, trash, id_conflict] = intersect(id_first (~isInfinite_first), ...
-                                      id_second(~isInfinite_second));
+                                      id_second(~isInfinite_second)); %#ok<ASGLU>
 
       % Cut the data into length(replaceIndices)+1 segments.
       % Calculate the length of the segments
@@ -410,12 +400,6 @@ function movePointsCloser(meta, handle)
   % Set the new (masked) data.
   set(handle, 'XData', data(:, 1));
   set(handle, 'YData', data(:, 2));
-  if ~isempty(zData)
-    % As per precondition, all zData entries are equal.
-    zDataNew = zData(1) * ones(size(data, 1), 1);
-    set(handle, 'zData', zDataNew);
-  end
-
   return;
 end
 % =========================================================================
@@ -436,109 +420,76 @@ function simplifyLine(meta, handle, targetResolution)
         return
     end
 
+    % TODO: 3d simplificattion of frontal 2d projection
+    if isAxis3D(meta.gca)
+        return;
+    end
+    
     % Retrieve target figure size in pixels
     [W, H] = getWidthHeightInPixels(targetResolution);
+   
+    % Extract the visual data from the current line handle.
+    [xData, yData] = getVisualData(meta, handle);
 
-    % Extract the data from the current line handle.
-    xData = get(handle, 'XData');
-    yData = get(handle, 'YData');
-    zData = get(handle, 'ZData');
-
-    if ~isempty(zData)
-        % TODO: 3d simplificattion of frontal 2d projection
+    % Only simplify if there are more than 2 points
+    if numel(xData) <= 2 || numel(yData) <= 2
         return;
     end
-    if isempty(xData) || isempty(yData)
-        return;
-    end
-    if numel(xData) <= 2
-        return;
-    end
-
-    % Get info about log scaling
-    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-    vxData = xData;
-    if isXlog
-        vxData = log10(xData);
-    end
-
-    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-    vyData = yData;
-    if isYlog
-        vyData = log10(yData);
-    end
+    
+    % Extract the visual limits from the current line handle.
+    [xLim, yLim]   = getVisualLimits(meta);
 
     % Automatically guess a tol based on the area of the figure and
     % the area and resolution of the output
-    xLim = xlim(meta.gca);
-    if isXlog
-        xLim = log10(xLim);
-    end
-    xrange = xLim(2)-xLim(1);
-    yLim   = ylim(meta.gca);
-    if isYlog
-        yLim = log10(yLim);
-    end
-    yrange = yLim(2)-yLim(1);
+    xRange = xLim(2)-xLim(1);
+    yRange = yLim(2)-yLim(1);
 
     % Conversion factors of data units into pixels
-    xToPix = W/xrange;
-    yToPix = H/yrange;
-
+    xToPix = W/xRange;
+    yToPix = H/yRange;
+    
+    % Mask for removing data points
+    id_remove = [];
+    
     % If the path has markers, perform pixelation instead of simplification
     hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
     if hasMarkers
         % Pixelate data at the zoom multiplier
-        mask   = pixelate(vxData, vyData, xToPix, yToPix);
-        xData  = xData(mask);
-        yData  = yData(mask);
-        set(handle, 'XData', xData);
-        set(handle, 'YData', yData);
-        return
-    end
+        mask      = pixelate(xData, yData, xToPix, yToPix);
+        id_remove = find(mask==0);
+    else
+        % Get the width of a pixel
+        xPixelWidth = 1/xToPix;
+        yPixelWidth = 1/yToPix;
+        tol = min(xPixelWidth,yPixelWidth);
 
-    xPixelWidth = 1/xToPix;
-    yPixelWidth = 1/yToPix;
-    tol = min(xPixelWidth,yPixelWidth);
+        % Split up lines which are seperated by NaNs
+        inan   = isnan(xData) | isnan(yData);
+        df     = diff([false, ~inan, false]);
+        pstart = find(df == 1);
+        pend   = find(df == -1)-1;
+        nlines = numel(pstart);
 
-    % Split up lines which are seperated by NaNs
-    inan   = isnan(vxData) | isnan(vyData);
-    df     = diff([false, ~inan, false]);
-    pstart = find(df == 1);
-    pend   = find(df == -1)-1;
-    nlines = numel(pstart);
+        % Count the number of data points in the previous segments
+        countData = 0;
+        for ii = 1:nlines
+            % Actual data that inherits the simplifications
+            x = xData(pstart(ii):pend(ii));
+            y = yData(pstart(ii):pend(ii));
 
-    [linesx, linesy] = deal(cell(1,nlines*2));
-    for ii = 1:nlines
-        % Visual data used for simplifications
-        vx = vxData(pstart(ii):pend(ii));
-        vy = vyData(pstart(ii):pend(ii));
-
-        % Actual data that inherits the simplifications
-        x = xData(pstart(ii):pend(ii));
-        y = yData(pstart(ii):pend(ii));
-
-        % Line simplification
-        if numel(vx) > 2
-            mask = opheimSimplify(vx,vy,tol);
-            x    = x(mask);
-            y    = y(mask);
+            % Line simplification
+            if numel(x) > 2
+                mask = opheimSimplify(x, y, tol);
+                id_remove = find(mask==0) + countData;
+            end
+            
+            % Update the number of processed data points
+            countData = countData + pend(ii);
         end
-
-        % Place eventually simplified lines segments on odd positions
-        linesx{ii*2-1} = x;
-        linesy{ii*2-1} = y;
-
-        % Add nans back (if any) in between the line segments
-        linesx{ii*2} = nan;
-        linesy{ii*2} = nan;
     end
-    xData = [linesx{1:end-1}];
-    yData = [linesy{1:end-1}];
 
-    % Update with the new (masked) data
-    set(handle, 'XData', xData);
-    set(handle, 'YData', yData);
+    % Remove the data points
+    removeData(handle, id_remove)
 end
 % =========================================================================
 function mask = isInBox(data, xLim, yLim)
@@ -793,6 +744,104 @@ function xNew = moveToBox(x, xRef, xLim, yLim)
 
   % Create the new point
   xNew = x + bsxfun(@times ,minAlpha, (xRef-x));
+end
+% =========================================================================
+function [xData, yData] = getVisualData(meta, handle)
+    % Extract the data from the current line handle.
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+    zData = get(handle, 'ZData');
+
+    % Get info about log scaling
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    if isXlog
+        xData = log10(xData);
+    end
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    if isYlog
+        yData = log10(yData);
+    end
+    
+    % Turn the data into a row vector
+    xData = xData(:);
+    yData = yData(:);
+end
+% =========================================================================
+function [xLim, yLim] = getVisualLimits(meta)
+    % Get the axis limits
+    xLim     = xlim(meta.gca);
+    yLim     = ylim(meta.gca);
+
+    % Check for logarithmic scales
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    if isXlog
+        xLim  = log10(xLim);
+    end
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+	if isYlog
+        yLim  = log10(yLim);
+	end
+end
+% =========================================================================
+function updateData(handle, id_update, id_insert, data_update, data_insert)
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+
+  % Update the data indicated by id_update
+  xData(id_update) = data_update(1,:);
+  yData(id_update) = data_update(2,:);
+
+  if ~isempty(id_insert)
+      length_segments = [id_insert(1);
+                         diff(id_insert);
+                         length(xData)-id_insert(end)];
+
+      % Cut the data into segments
+      xDataCell   = mat2cell(xData, 1, length_segments);
+      yDataCell   = mat2cell(yData, 1, length_segments);
+
+      % Cut the inserted data into segments
+      xDataInsert = mat2cell(data_insert(1,:)', 1, size(data_insert,1));
+      yDataInsert = mat2cell(data_insert(2,:)', 1, size(data_insert,1));
+
+      % Merge the cell arrays
+      xDataCell = [xDataCell;
+                   xDataInsert];
+      yDataCell = [yDataCell;
+                   yDataInsert];
+
+      % Merge the cells back together
+      xData     = cat(1, xDataCell{:});
+      yData     = cat(1, yDataCell{:});
+  end
+    
+  % Set the new (masked) data.
+  set(handle, 'XData', xData);
+  set(handle, 'YData', yData);
+  return;
+end
+% =========================================================================
+function removeData(handle, id_remove)
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  zData = get(handle, 'ZData');    
+
+  % Remove the data indicated by id_remove
+  xData(id_remove) = [];
+  yData(id_remove) = [];
+  if isAxis3D(h)
+      zData(id_remove) = [];
+  end
+
+  % Set the new (masked) data.
+  set(handle, 'XData', xData);
+  set(handle, 'YData', yData);
+  if isAxis3D(h)
+  	set(handle, 'zData', zData);
+  end
+  return;    
 end
 % ==========================================================================
 function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
