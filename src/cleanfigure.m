@@ -276,298 +276,6 @@ function pruneOutsideBox(meta, handle)
 
   return;
 end
-% ==========================================================================
-function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
-    % Determine the corners of the axes as defined by xLim and yLim
-    bottomLeft  = [xLim(1); yLim(1)];
-    topLeft     = [xLim(1); yLim(2)];
-    bottomRight = [xLim(2); yLim(1)];
-    topRight    = [xLim(2); yLim(2)];
-end
-% =========================================================================
-function out = segmentVisible(data, dataIsInBox, xLim, yLim)
-    % Given a bounding box {x,y}Lim, determine whether the line between all 
-    % pairs of subsequent data points crosses the box.
-    n = size(data, 1);
-    out = false(n-1, 1);
-    
-    % Only check if there is more than 1 point    
-    if n>1
-        % Define the vectors of data points for the segments X1--X2
-        idx= 1:n-1;
-        X1 = data(idx,   :);
-        X2 = data(idx+1, :);
-        
-        % One of the neighbors is inside the box and the other is finite
-        thisVisible = (dataIsInBox(idx)     & all(isfinite(X2), 2));
-        nextVisible = (dataIsInBox(idx+1)   & all(isfinite(X1), 2));
-
-        % Get the corner coordinates
-        [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
-
-        % Check if data points intersect with the borders of the plot
-        left   = segmentsIntersect(X1, X2, bottomLeft , topLeft);
-        right  = segmentsIntersect(X1, X2, bottomRight, topRight);
-        bottom = segmentsIntersect(X1, X2, bottomLeft , bottomRight);
-        top    = segmentsIntersect(X1, X2, topLeft    , topRight);
-
-        % Check the result
-        out = thisVisible | nextVisible | left | right | top | bottom;
-    end
-end
-% =========================================================================
-function out = segmentsIntersect(X1, X2, X3, X4)
-  % Checks whether the segments X1--X2 and X3--X4 intersect. 
-  lambda = crossLines(X1, X2, X3, X4);
-  
-  % Check whether lambda is in bound
-  out = 0.0 < lambda(:, 1) & lambda(:, 1) < 1.0 &...
-        0.0 < lambda(:, 2) & lambda(:, 2) < 1.0;
-end
-% =========================================================================
-function simplifyLine(meta, handle, targetResolution)
-    % Reduce the number of data points in the line 'handle'.
-    %
-    % Aplies a path-simplification algorithm if there are no markers or
-    % pixelization otherwise. Changes are visually negligible at the target
-    % resolution.
-    %
-    % The target resolution is either specificed as the number of PPI or as
-    % the [Width, Heigth] of the figure in pixels.
-    % A scalar value of INF or 0 disables path simplification.
-    % (default = 600)
-
-    % Do not simpify
-    if any(isinf(targetResolution) | targetResolution == 0)
-        return
-    end
-
-    % Retrieve target figure size in pixels
-    [W, H] = getWidthHeightInPixels(targetResolution);
-
-    % Extract the data from the current line handle.
-    xData = get(handle, 'XData');
-    yData = get(handle, 'YData');
-    zData = get(handle, 'ZData');
-
-    if ~isempty(zData)
-        % TODO: 3d simplificattion of frontal 2d projection
-        return;
-    end
-    if isempty(xData) || isempty(yData)
-        return;
-    end
-    if numel(xData) <= 2
-        return;
-    end
-
-    % Get info about log scaling
-    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-    vxData = xData;
-    if isXlog
-        vxData = log10(xData);
-    end
-
-    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-    vyData = yData;
-    if isYlog
-        vyData = log10(yData);
-    end
-
-    % Automatically guess a tol based on the area of the figure and
-    % the area and resolution of the output
-    xLim = xlim(meta.gca);
-    if isXlog
-        xLim = log10(xLim);
-    end
-    xrange = xLim(2)-xLim(1);
-    yLim   = ylim(meta.gca);
-    if isYlog
-        yLim = log10(yLim);
-    end
-    yrange = yLim(2)-yLim(1);
-
-    % Conversion factors of data units into pixels
-    xToPix = W/xrange;
-    yToPix = H/yrange;
-
-    % If the path has markers, perform pixelation instead of simplification
-    hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
-    if hasMarkers
-        % Pixelate data at the zoom multiplier
-        mask   = pixelate(vxData, vyData, xToPix, yToPix);
-        xData  = xData(mask);
-        yData  = yData(mask);
-        set(handle, 'XData', xData);
-        set(handle, 'YData', yData);
-        return
-    end
-
-    xPixelWidth = 1/xToPix;
-    yPixelWidth = 1/yToPix;
-    tol = min(xPixelWidth,yPixelWidth);
-
-    % Split up lines which are seperated by NaNs
-    inan   = isnan(vxData) | isnan(vyData);
-    df     = diff([false, ~inan, false]);
-    pstart = find(df == 1);
-    pend   = find(df == -1)-1;
-    nlines = numel(pstart);
-
-    [linesx, linesy] = deal(cell(1,nlines*2));
-    for ii = 1:nlines
-        % Visual data used for simplifications
-        vx = vxData(pstart(ii):pend(ii));
-        vy = vyData(pstart(ii):pend(ii));
-
-        % Actual data that inherits the simplifications
-        x = xData(pstart(ii):pend(ii));
-        y = yData(pstart(ii):pend(ii));
-
-        % Line simplification
-        if numel(vx) > 2
-            mask = opheimSimplify(vx,vy,tol);
-            x    = x(mask);
-            y    = y(mask);
-        end
-
-        % Place eventually simplified lines segments on odd positions
-        linesx{ii*2-1} = x;
-        linesy{ii*2-1} = y;
-
-        % Add nans back (if any) in between the line segments
-        linesx{ii*2} = nan;
-        linesy{ii*2} = nan;
-    end
-    xData = [linesx{1:end-1}];
-    yData = [linesy{1:end-1}];
-
-    % Update with the new (masked) data
-    set(handle, 'XData', xData);
-    set(handle, 'YData', yData);
-end
-% =========================================================================
-function mask = pixelate(x, y, xToPix, yToPix)
-    % Rough reduction of data points at a multiple of the target resolution
-
-    % The resolution is lost only beyond the multiplier magnification
-    mult = 2;
-
-    % Convert data to pixel units, magnify and mark only the first
-    % point that occupies a given position
-    mask = [true, diff(round(x * xToPix * mult))~=0];
-    mask = [true, diff(round(y * yToPix * mult))~=0] | mask;
-
-    % Keep end points or it might truncate whole pixels
-    inan         = isnan(x) | isnan(y);
-    df           = diff([false, inan, false]);
-    istart       = df == 1;
-    pend         = find(df == -1)-1;
-    mask(istart) = true;
-    mask(pend)   = true;
-end
-% =========================================================================
-function mask = opheimSimplify(x,y,tol)
-    % Opheim path simplification algorithm
-    %
-    % Given a path of vertices V and a tolerance TOL, the algorithm:
-    %   1. selects the first vertex as the KEY;
-    %   2. finds the first vertex farther than TOL from the KEY and links
-    %      the two vertices with a LINE;
-    %   3. finds the last vertex from KEY which stays within TOL from the
-    %      LINE and sets it to be the LAST vertex. Removes all points in
-    %      between the KEY and the LAST vertex;
-    %   4. sets the KEY to the LAST vertex and restarts from step 2.
-    %
-    % The Opheim algorithm can produce unexpected results if the path
-    % returns back on itself while remaining within TOL from the LINE.
-    % This behaviour can be seen in the following example:
-    %
-    %   x   = [1,2,2,2,3];
-    %   y   = [1,1,2,1,1];
-    %   tol < 1
-    %
-    % The algorithm undesirably removes the second last point. See
-    % https://github.com/matlab2tikz/matlab2tikz/pull/585#issuecomment-89397577
-    % for additional details.
-    %
-    % To rectify this issues, step 3 is modified to find the LAST vertex as
-    % follows:
-    %   3*. finds the last vertex from KEY which stays within TOL from the
-    %       LINE, or the vertex that connected to its previous point forms
-    %       a segment which spans an angle with LINE larger than 90
-    %       degrees.
-
-    mask = false(size(x));
-    mask(1) = true;
-    mask(end) = true;
-
-    N = numel(x);
-    i = 1;
-    while i <= N-2
-        % Find first vertex farther than TOL from the KEY
-        j = i+1;
-        v = [x(j)-x(i); y(j)-y(i)];
-        while j < N && norm(v) <= tol
-            j = j+1;
-            v = [x(j)-x(i); y(j)-y(i)];
-        end
-        v = v/norm(v);
-
-        % Unit normal to the line between point i and point j
-        normal = [v(2);-v(1)];
-
-        % Find the last point which stays within TOL from the line
-        % connecting i to j, or the last point within a direction change
-        % of pi/2.
-        % Starts from the j+1 points, since all previous points are within
-        % TOL by construction.
-        while j < N
-            % Calculate the perpendicular distance from the i->j line
-            v1 = [x(j+1)-x(i); y(j+1)-y(i)];
-            d = abs(normal.'*v1);
-            if d > tol
-                break
-            end
-
-            % Calculate the angle between the line from the i->j and the
-            % line from j -> j+1. If
-            v2 = [x(j+1)-x(j); y(j+1)-y(j)];
-            anglecosine = v.'*v2;
-            if anglecosine <= 0;
-                break
-            end
-            j = j + 1;
-        end
-        i = j;
-        mask(i) = true;
-    end
-end
-% =========================================================================
-function [W, H] = getWidthHeightInPixels(targetResolution)
-    % Retrieves target figure width and height in pixels
-    % TODO: If targetResolution is a scalar, W and H are determined
-    % differently on different environments (octave, local vs. Travis).
-    % It is unclear why, as this even happens, if `Units` and `Position`
-    % are matching. Could it be that the `set(gcf,'Units','Inches')` is not
-    % taken into consideration for `Position`, directly after setting it?
-
-    % targetResolution is PPI
-    if isscalar(targetResolution)
-        % Query figure size in inches and convert W and H to target pixels
-        oldunits  = get(gcf,'Units');
-        set(gcf,'Units','Inches');
-        figSizeIn = get(gcf,'Position');
-        W         = figSizeIn(3) * targetResolution;
-        H         = figSizeIn(4) * targetResolution;
-        set(gcf,'Units', oldunits) % restore original unit
-
-    % It is already in the format we want
-    else
-        W = targetResolution(1);
-        H = targetResolution(2);
-    end
-end
 % =========================================================================
 function movePointsCloser(meta, handle)
   % Move all points outside a box much larger than the visible one
@@ -711,54 +419,269 @@ function movePointsCloser(meta, handle)
   return;
 end
 % =========================================================================
-function xNew = moveToBox(x, xRef, xLim, yLim)
-  % Takes a box defined by xlim, ylim, a vector of points x and a vector of 
-  % reference points xRef.
-  % Returns the vector of points xNew that sits on the line segment between 
-  % x and xRef *and* on the box. If several such points exist, take the 
-  % closest one to x.
-  n = size(x, 1);
+function simplifyLine(meta, handle, targetResolution)
+    % Reduce the number of data points in the line 'handle'.
+    %
+    % Aplies a path-simplification algorithm if there are no markers or
+    % pixelization otherwise. Changes are visually negligible at the target
+    % resolution.
+    %
+    % The target resolution is either specificed as the number of PPI or as
+    % the [Width, Heigth] of the figure in pixels.
+    % A scalar value of INF or 0 disables path simplification.
+    % (default = 600)
 
-  % Find out with which border the line x---xRef intersects, and determine
-  % the smallest parameter alpha such that x + alpha*(xRef-x)
-  % sits on the boundary. Otherwise set Alpha to inf.
-  minAlpha = inf(n, 1);
-  
-  % Get the corner points
-  [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+    % Do not simpify
+    if any(isinf(targetResolution) | targetResolution == 0)
+        return
+    end
 
-  % left boundary:
-  minAlpha = updateAlpha(x, xRef, bottomLeft, topLeft, minAlpha);
+    % Retrieve target figure size in pixels
+    [W, H] = getWidthHeightInPixels(targetResolution);
 
-  % bottom boundary:
-  minAlpha = updateAlpha(x, xRef, bottomLeft, bottomRight, minAlpha);
+    % Extract the data from the current line handle.
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+    zData = get(handle, 'ZData');
 
-  % right boundary:
-  minAlpha = updateAlpha(x, xRef, bottomRight, topRight, minAlpha);
-  
-  % top boundary:
-  minAlpha = updateAlpha(x, xRef, topLeft, topRight, minAlpha);
+    if ~isempty(zData)
+        % TODO: 3d simplificattion of frontal 2d projection
+        return;
+    end
+    if isempty(xData) || isempty(yData)
+        return;
+    end
+    if numel(xData) <= 2
+        return;
+    end
 
-  % Create the new point
-  xNew = x + bsxfun(@times ,minAlpha, (xRef-x));
+    % Get info about log scaling
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    vxData = xData;
+    if isXlog
+        vxData = log10(xData);
+    end
+
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    vyData = yData;
+    if isYlog
+        vyData = log10(yData);
+    end
+
+    % Automatically guess a tol based on the area of the figure and
+    % the area and resolution of the output
+    xLim = xlim(meta.gca);
+    if isXlog
+        xLim = log10(xLim);
+    end
+    xrange = xLim(2)-xLim(1);
+    yLim   = ylim(meta.gca);
+    if isYlog
+        yLim = log10(yLim);
+    end
+    yrange = yLim(2)-yLim(1);
+
+    % Conversion factors of data units into pixels
+    xToPix = W/xrange;
+    yToPix = H/yrange;
+
+    % If the path has markers, perform pixelation instead of simplification
+    hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
+    if hasMarkers
+        % Pixelate data at the zoom multiplier
+        mask   = pixelate(vxData, vyData, xToPix, yToPix);
+        xData  = xData(mask);
+        yData  = yData(mask);
+        set(handle, 'XData', xData);
+        set(handle, 'YData', yData);
+        return
+    end
+
+    xPixelWidth = 1/xToPix;
+    yPixelWidth = 1/yToPix;
+    tol = min(xPixelWidth,yPixelWidth);
+
+    % Split up lines which are seperated by NaNs
+    inan   = isnan(vxData) | isnan(vyData);
+    df     = diff([false, ~inan, false]);
+    pstart = find(df == 1);
+    pend   = find(df == -1)-1;
+    nlines = numel(pstart);
+
+    [linesx, linesy] = deal(cell(1,nlines*2));
+    for ii = 1:nlines
+        % Visual data used for simplifications
+        vx = vxData(pstart(ii):pend(ii));
+        vy = vyData(pstart(ii):pend(ii));
+
+        % Actual data that inherits the simplifications
+        x = xData(pstart(ii):pend(ii));
+        y = yData(pstart(ii):pend(ii));
+
+        % Line simplification
+        if numel(vx) > 2
+            mask = opheimSimplify(vx,vy,tol);
+            x    = x(mask);
+            y    = y(mask);
+        end
+
+        % Place eventually simplified lines segments on odd positions
+        linesx{ii*2-1} = x;
+        linesy{ii*2-1} = y;
+
+        % Add nans back (if any) in between the line segments
+        linesx{ii*2} = nan;
+        linesy{ii*2} = nan;
+    end
+    xData = [linesx{1:end-1}];
+    yData = [linesy{1:end-1}];
+
+    % Update with the new (masked) data
+    set(handle, 'XData', xData);
+    set(handle, 'YData', yData);
 end
 % =========================================================================
-function minAlpha = updateAlpha(X1, X2, X3, X4, minAlpha)
+function mask = isInBox(data, xLim, yLim)
+
+  mask = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
+      & data(:,2) > yLim(1) & data(:,2) < yLim(2);
+end
+% =========================================================================
+function mask = segmentVisible(data, dataIsInBox, xLim, yLim)
+    % Given a bounding box {x,y}Lim, determine whether the line between all 
+    % pairs of subsequent data points crosses the box.
+    n = size(data, 1);
+    mask = false(n-1, 1);
+    
+    % Only check if there is more than 1 point    
+    if n>1
+        % Define the vectors of data points for the segments X1--X2
+        idx= 1:n-1;
+        X1 = data(idx,   :);
+        X2 = data(idx+1, :);
+        
+        % One of the neighbors is inside the box and the other is finite
+        thisVisible = (dataIsInBox(idx)     & all(isfinite(X2), 2));
+        nextVisible = (dataIsInBox(idx+1)   & all(isfinite(X1), 2));
+
+        % Get the corner coordinates
+        [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+
+        % Check if data points intersect with the borders of the plot
+        left   = segmentsIntersect(X1, X2, bottomLeft , topLeft);
+        right  = segmentsIntersect(X1, X2, bottomRight, topRight);
+        bottom = segmentsIntersect(X1, X2, bottomLeft , bottomRight);
+        top    = segmentsIntersect(X1, X2, topLeft    , topRight);
+
+        % Check the result
+        mask = thisVisible | nextVisible | left | right | top | bottom;
+    end
+end
+% =========================================================================
+function mask = segmentsIntersect(X1, X2, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect. 
   lambda = crossLines(X1, X2, X3, X4);
   
-  % Check if lambda is in bounds and lambda1 large enough
-  id_Alpha           = 0.0 < lambda(:,2) & lambda(:,2) < 1.0 ...
-                     & abs(minAlpha) > abs(lambda(:,1));
-
-  % Update alpha when applicable
-  minAlpha(id_Alpha) = lambda(id_Alpha,1);
+  % Check whether lambda is in bound
+  mask = 0.0 < lambda(:, 1) & lambda(:, 1) < 1.0 &...
+         0.0 < lambda(:, 2) & lambda(:, 2) < 1.0;
 end
 % =========================================================================
-function out = isInBox(data, xLim, yLim)
+function mask = pixelate(x, y, xToPix, yToPix)
+    % Rough reduction of data points at a multiple of the target resolution
 
-  out = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
-      & data(:,2) > yLim(1) & data(:,2) < yLim(2);
+    % The resolution is lost only beyond the multiplier magnification
+    mult = 2;
+
+    % Convert data to pixel units, magnify and mark only the first
+    % point that occupies a given position
+    mask = [true, diff(round(x * xToPix * mult))~=0];
+    mask = [true, diff(round(y * yToPix * mult))~=0] | mask;
+
+    % Keep end points or it might truncate whole pixels
+    inan         = isnan(x) | isnan(y);
+    df           = diff([false, inan, false]);
+    istart       = df == 1;
+    pend         = find(df == -1)-1;
+    mask(istart) = true;
+    mask(pend)   = true;
+end
+% =========================================================================
+function mask = opheimSimplify(x,y,tol)
+    % Opheim path simplification algorithm
+    %
+    % Given a path of vertices V and a tolerance TOL, the algorithm:
+    %   1. selects the first vertex as the KEY;
+    %   2. finds the first vertex farther than TOL from the KEY and links
+    %      the two vertices with a LINE;
+    %   3. finds the last vertex from KEY which stays within TOL from the
+    %      LINE and sets it to be the LAST vertex. Removes all points in
+    %      between the KEY and the LAST vertex;
+    %   4. sets the KEY to the LAST vertex and restarts from step 2.
+    %
+    % The Opheim algorithm can produce unexpected results if the path
+    % returns back on itself while remaining within TOL from the LINE.
+    % This behaviour can be seen in the following example:
+    %
+    %   x   = [1,2,2,2,3];
+    %   y   = [1,1,2,1,1];
+    %   tol < 1
+    %
+    % The algorithm undesirably removes the second last point. See
+    % https://github.com/matlab2tikz/matlab2tikz/pull/585#issuecomment-89397577
+    % for additional details.
+    %
+    % To rectify this issues, step 3 is modified to find the LAST vertex as
+    % follows:
+    %   3*. finds the last vertex from KEY which stays within TOL from the
+    %       LINE, or the vertex that connected to its previous point forms
+    %       a segment which spans an angle with LINE larger than 90
+    %       degrees.
+
+    mask = false(size(x));
+    mask(1) = true;
+    mask(end) = true;
+
+    N = numel(x);
+    i = 1;
+    while i <= N-2
+        % Find first vertex farther than TOL from the KEY
+        j = i+1;
+        v = [x(j)-x(i); y(j)-y(i)];
+        while j < N && norm(v) <= tol
+            j = j+1;
+            v = [x(j)-x(i); y(j)-y(i)];
+        end
+        v = v/norm(v);
+
+        % Unit normal to the line between point i and point j
+        normal = [v(2);-v(1)];
+
+        % Find the last point which stays within TOL from the line
+        % connecting i to j, or the last point within a direction change
+        % of pi/2.
+        % Starts from the j+1 points, since all previous points are within
+        % TOL by construction.
+        while j < N
+            % Calculate the perpendicular distance from the i->j line
+            v1 = [x(j+1)-x(i); y(j+1)-y(i)];
+            d = abs(normal.'*v1);
+            if d > tol
+                break
+            end
+
+            % Calculate the angle between the line from the i->j and the
+            % line from j -> j+1. If
+            v2 = [x(j+1)-x(j); y(j+1)-y(j)];
+            anglecosine = v.'*v2;
+            if anglecosine <= 0;
+                break
+            end
+            j = j + 1;
+        end
+        i = j;
+        mask(i) = true;
+    end
 end
 % =========================================================================
 function lambda = crossLines(X1, X2, X3, X4)
@@ -826,6 +749,83 @@ function lambda = crossLines(X1, X2, X3, X4)
       % sum( [nx2] * [2x2] .* [nx2], 2) = sum([nx2],2) = [nx1] 
       lambda(id_detA, 2) = sum(-(X2(id_detA, :)-X1(id_detA, :)) * Rotate .* rhs(id_detA, :), 2)./detA(id_detA);
   end
+end
+% =========================================================================
+function minAlpha = updateAlpha(X1, X2, X3, X4, minAlpha)
+  % Checks whether the segments X1--X2 and X3--X4 intersect. 
+  lambda = crossLines(X1, X2, X3, X4);
+  
+  % Check if lambda is in bounds and lambda1 large enough
+  id_Alpha           = 0.0 < lambda(:,2) & lambda(:,2) < 1.0 ...
+                     & abs(minAlpha) > abs(lambda(:,1));
+
+  % Update alpha when applicable
+  minAlpha(id_Alpha) = lambda(id_Alpha,1);
+end
+% =========================================================================
+function xNew = moveToBox(x, xRef, xLim, yLim)
+  % Takes a box defined by xlim, ylim, a vector of points x and a vector of 
+  % reference points xRef.
+  % Returns the vector of points xNew that sits on the line segment between 
+  % x and xRef *and* on the box. If several such points exist, take the 
+  % closest one to x.
+  n = size(x, 1);
+
+  % Find out with which border the line x---xRef intersects, and determine
+  % the smallest parameter alpha such that x + alpha*(xRef-x)
+  % sits on the boundary. Otherwise set Alpha to inf.
+  minAlpha = inf(n, 1);
+  
+  % Get the corner points
+  [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+
+  % left boundary:
+  minAlpha = updateAlpha(x, xRef, bottomLeft, topLeft, minAlpha);
+
+  % bottom boundary:
+  minAlpha = updateAlpha(x, xRef, bottomLeft, bottomRight, minAlpha);
+
+  % right boundary:
+  minAlpha = updateAlpha(x, xRef, bottomRight, topRight, minAlpha);
+  
+  % top boundary:
+  minAlpha = updateAlpha(x, xRef, topLeft, topRight, minAlpha);
+
+  % Create the new point
+  xNew = x + bsxfun(@times ,minAlpha, (xRef-x));
+end
+% ==========================================================================
+function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
+    % Determine the corners of the axes as defined by xLim and yLim
+    bottomLeft  = [xLim(1); yLim(1)];
+    topLeft     = [xLim(1); yLim(2)];
+    bottomRight = [xLim(2); yLim(1)];
+    topRight    = [xLim(2); yLim(2)];
+end
+% =========================================================================
+function [W, H] = getWidthHeightInPixels(targetResolution)
+    % Retrieves target figure width and height in pixels
+    % TODO: If targetResolution is a scalar, W and H are determined
+    % differently on different environments (octave, local vs. Travis).
+    % It is unclear why, as this even happens, if `Units` and `Position`
+    % are matching. Could it be that the `set(gcf,'Units','Inches')` is not
+    % taken into consideration for `Position`, directly after setting it?
+
+    % targetResolution is PPI
+    if isscalar(targetResolution)
+        % Query figure size in inches and convert W and H to target pixels
+        oldunits  = get(gcf,'Units');
+        set(gcf,'Units','Inches');
+        figSizeIn = get(gcf,'Position');
+        W         = figSizeIn(3) * targetResolution;
+        H         = figSizeIn(4) * targetResolution;
+        set(gcf,'Units', oldunits) % restore original unit
+
+    % It is already in the format we want
+    else
+        W = targetResolution(1);
+        H = targetResolution(2);
+    end
 end
 % =========================================================================
 function bool = isValidTargetResolution(val)
