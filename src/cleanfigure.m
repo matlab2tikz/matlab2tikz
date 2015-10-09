@@ -97,7 +97,6 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
   % Update the current axes.
   if strcmp(get(h, 'Type'), 'axes')
       meta.gca  = h;
-      meta.is3D = isAxis3D(h); 
   end
 
   children = get(h, 'Children');
@@ -143,7 +142,7 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
 
           pos = get(h, 'Position');
           % If the axis is 2D, ignore the z component for the checks
-          if ~meta.is3D
+          if ~isAxis3D(meta.gca)
               pos(3) = 0; 
           end
           bPosInsideLim = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
@@ -184,7 +183,7 @@ function pruneOutsideBox(meta, handle)
   % Cut those off.
 
   % TODO: 3d simplification of frontal 2d projection
-  if meta.is3D
+  if isAxis3D(meta.gca)
       return;
   end
 
@@ -269,7 +268,7 @@ function movePointsCloser(meta, handle)
   % two new ones and a NaN.
 
   % TODO: 3d simplification of frontal 2d projection
-  if meta.is3D
+  if isAxis3D(meta.gca)
       return;
   end
 
@@ -368,12 +367,14 @@ function movePointsCloser(meta, handle)
       dataInsert_first  = mat2cell(newData_first,  ones(size(id_first)),  2);
       dataInsert_second = mat2cell(newData_second, ones(size(id_second)), 2);
 
-      % Add an empty cell at the end of the last segment
+      % Add an empty cell at the end of the last segment, as we do not
+      % insert something *after* the data
       dataInsert_first  = [dataInsert_first;  cell(1)];
       dataInsert_second = [dataInsert_second; cell(1)];
 
       % If the first or the last point would have been replaced add an empty
-      % cell at the beginning/end
+      % cell at the beginning/end. This is because the last data point
+      % cannot be the first data point of a line segment and vice versa.
       if(id_replace(end) == size(data, 1))
         dataInsert_first  = [dataInsert_first; cell(1)];
       end
@@ -397,14 +398,11 @@ function movePointsCloser(meta, handle)
   % data points
   id_remove = id_replace + cumsum(cellfun(@(x) size(x,1), [cell(1);dataInsert(1:end-2)]));
   
-  % Remove the data point to be replaced. This has to happen fist, as it is
-  % not clear, hom many points are to be inserted
-  % Remove the data outside the box
+  % Remove the data point that should be replaced. 
   removeData(meta, handle, id_remove);
 
   % Remove possible NaN duplications
   removeNaNs(meta, handle);
-  return;
 end
 % =========================================================================
 function simplifyLine(meta, handle, targetResolution)
@@ -425,7 +423,7 @@ function simplifyLine(meta, handle, targetResolution)
     end
 
     % TODO: 3d simplificattion of frontal 2d projection
-    if meta.is3D
+    if isAxis3D(meta.gca)
         return;
     end
 
@@ -807,7 +805,6 @@ function replaceData(handle, id_replace, dataReplace)
   % Set the new (masked) data.
   set(handle, 'XData', xData);
   set(handle, 'YData', yData);
-  return;
 end
 % =========================================================================
 function insertData(handle, id_insert, dataInsert)
@@ -827,10 +824,10 @@ function insertData(handle, id_insert, dataInsert)
                      length(xData)-id_insert(end)];
 
   % Put the data into one matrix
-  data = [xData(:), yData(:)];
+  data     = [xData(:), yData(:)];
 
   % Cut the data into segments
-  dataCell   = mat2cell(data, length_segments, 2);
+  dataCell = mat2cell(data, length_segments, 2);
 
   % Merge the cell arrays
   dataCell = [dataCell';
@@ -842,7 +839,6 @@ function insertData(handle, id_insert, dataInsert)
   % Set the new (masked) data.
   set(handle, 'XData', data(:,1));
   set(handle, 'YData', data(:,2));
-  return;
 end
 % =========================================================================
 function removeData(meta, handle, id_remove)
@@ -856,24 +852,23 @@ function removeData(meta, handle, id_remove)
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
-  if meta.is3D
+  if isAxis3D(meta.gca)
   	zData = get(handle, 'ZData');
   end
 
   % Remove the data indicated by id_remove
   xData(id_remove) = [];
   yData(id_remove) = [];
-  if meta.is3D
+  if isAxis3D(meta.gca)
   	zData(id_remove) = [];
   end
 
   % Set the new data.
   set(handle, 'XData', xData);
   set(handle, 'YData', yData);
-  if meta.is3D
+  if isAxis3D(meta.gca)
   	set(handle, 'zData', zData);
   end
-  return;    
 end
 % =========================================================================
 function removeNaNs(meta, handle)
@@ -882,7 +877,7 @@ function removeNaNs(meta, handle)
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
-  if meta.is3D
+  if isAxis3D(meta.gca)
   	zData = get(handle, 'ZData');
     data  = [xData(:), yData(:), zData(:)];
   else      
@@ -890,16 +885,22 @@ function removeNaNs(meta, handle)
   end
 
   % Remove consecutive NaNs
-  id_nan   = any(isnan(data),2);
-  id_remove= find(id_nan);
-  id_remove= id_remove(diff(id_remove) == 1);
+  id_nan    = any(isnan(data), 2);
+  id_remove = find(id_nan);
+  id_remove = id_remove(diff(id_remove) == 1);
 
   % Make sure that there are no NaNs at the beginning of the data since
   % this would be interpreted as column names by Pgfplots.
   % Also drop all NaNs at the end of the data
-  id_first = find(~id_nan,1,'first');
-  id_last  = find(~id_nan,1,'last');
-  id_remove= [1:id_first-1, id_remove', id_last+1:length(xData)]';
+  id_first  = find(~id_nan, 1, 'first');
+  id_last   = find(~id_nan, 1, 'last');
+  
+  % If there are no not-NaN data points just remove the whole data
+  if isempty(id_first)
+    id_remove = 1:length(xData);
+  else
+    id_remove = [1:id_first-1, id_remove', id_last+1:length(xData)]';
+  end
 
   % Remove the NaNs
   data(id_remove,:) = [];
@@ -907,10 +908,9 @@ function removeNaNs(meta, handle)
   % Set the new data.
   set(handle, 'XData', data(:,1));
   set(handle, 'YData', data(:,2));
-  if meta.is3D
+  if isAxis3D(meta.gca)
   	set(handle, 'zData', data(:,3));
   end
-  return;    
 end
 % ==========================================================================
 function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
