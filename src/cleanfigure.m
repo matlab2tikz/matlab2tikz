@@ -96,7 +96,7 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
 
   % Update the current axes.
   if strcmp(get(h, 'Type'), 'axes')
-      meta.gca  = h;
+      meta.gca = h;
   end
 
   children = get(h, 'Children');
@@ -384,7 +384,7 @@ function movePointsCloser(meta, handle)
 
       % Put the cells together, right points first, then the possible NaN
       % and then the left points      
-      dataInsert = cellfun(@(x,y,z) [x; y; z],...
+      dataInsert = cellfun(@(a,b,c) [a; b; c],...
                             dataInsert_second,...
                             dataInsert_NaN,...
                             dataInsert_first,...
@@ -396,7 +396,8 @@ function movePointsCloser(meta, handle)
   
   % Get the indices of the to be removed points respecting the now inserted
   % data points
-  id_remove = id_replace + cumsum(cellfun(@(x) size(x,1), [cell(1);dataInsert(1:end-2)]));
+  numPointsInserted = cellfun(@(x) size(x,1), [cell(1);dataInsert(1:end-2)]);
+  id_remove = id_replace + cumsum(numPointsInserted);
   
   % Remove the data point that should be replaced. 
   removeData(meta, handle, id_remove);
@@ -799,8 +800,8 @@ function replaceData(handle, id_replace, dataReplace)
   yData = get(handle, 'YData');
 
   % Update the data indicated by id_update
-  xData(id_replace) = dataReplace(:,1);
-  yData(id_replace) = dataReplace(:,2);
+  xData(id_replace) = dataReplace(:, 1);
+  yData(id_replace) = dataReplace(:, 2);
 
   % Set the new (masked) data.
   set(handle, 'XData', xData);
