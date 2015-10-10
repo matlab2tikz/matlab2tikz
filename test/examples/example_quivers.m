@@ -22,7 +22,13 @@ clear variables;
 close all;
 
 %% Parameters
-syms x y z u v w alpha beta epsilon real
+try
+    syms x y z u v w alpha beta epsilon real
+catch
+    warning('Symbolic toolbox not found. Interpret the values with care!');
+    x = randn(); y = randn(); z = randn();
+    u = randn(); v = randn(); w = randn();
+end
 alpha = 0.33;
 beta = alpha;
 epsilon = 0;
@@ -56,7 +62,11 @@ end
 unitVector = @(v) v/norm(v);
 cosAngleBetween = @(a,b,c) unitVector(a-b).' * unitVector(c-b);
 
-cosTwiceTheta = simplify(cosAngleBetween(C,B,D));
+cosTwiceTheta = cosAngleBetween(C,B,D);
+if isa(cosTwiceTheta, 'sym')
+    cosTwiceTheta = simplify(cosTwiceTheta);
+end
+
 theta = acos(cosTwiceTheta) / 2
 
 radToDeg = @(rads) (rads * 180 / pi);
