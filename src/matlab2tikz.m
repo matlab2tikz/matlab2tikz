@@ -1120,7 +1120,7 @@ switch getEnvironment()
         bool       = find(plotyyAxes == h) == 1;
                     
     case 'MATLAB'
-        bool = ~isempty(getappdata(h, 'PlotYYListenerManager'));
+        bool = ~isempty(getappdata(h, 'LegendPeerHandle'));
 end
 end
 % ==============================================================================
