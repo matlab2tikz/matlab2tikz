@@ -725,17 +725,14 @@ if ~isAxisPlotyy(m2t.currentHandles.gca)
 end
 
 % Get current label counter
-if isfield(m2t.axesContainers{end},'PlotyyLabelNum')
-    labelNum = m2t.axesContainers{end}.PlotyyLabelNum;
-else
-    labelNum = 0;
-end
+labelNum = m2t.PlotyyLabelNum;
 
 if hasPlotyyReference(m2t,h)
     % Label the plot to later reference it. Only legend entries on the main
     % plotyy axis will have a label
-    str = [str, sprintf('\\label{plotyyref:leg%d};\n\n', labelNum + 1)];
-    m2t.axesContainers{end}.PlotyyLabelNum = labelNum + 1;
+    labelNum = labelNum + 1;
+    str = [str, sprintf('\\label{plotyyref:leg%d};\n\n', labelNum)];
+    m2t.PlotyyLabelNum = labelNum;
 
 elseif m2t.currentHandleHasLegend
     % We are on the secondary axis
@@ -1079,8 +1076,11 @@ end
 % Not a plotyy axis or no legend
 if ~isAxisPlotyy(axisHandle) || isempty(legendHandle)
     m2t.axesContainers{end}.PlotyyReferences = [];
+    m2t.PlotyyLabelNum = [];
 
 elseif isAxisMain(axisHandle)
+    m2t.PlotyyLabelNum = 0;
+    
     % Mark legend entries of the main axis for labelling
     legendEntries = m2t.axesContainers{end}.LegendEntries;
     ancAxes       = ancestor(legendEntries,'axes');
