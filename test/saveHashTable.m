@@ -30,7 +30,8 @@ function saveHashTable(status, varargin)
     %% settings
     suite = status{1}.testsuite; %TODO: handle multiple test suites in a single array
     filename = hashTableName(suite);
-    FILEFORMAT = '%s : %s\n';
+    READFORMAT = '%s : %s';
+    WRITEFORMAT = [READFORMAT '\n'];
 
     %% process the hash table
     oldHashes = readHashesFromFile(filename);
@@ -125,7 +126,7 @@ function saveHashTable(status, varargin)
         funcNames = sort(fieldnames(hashes));
         for iFunc = 1:numel(funcNames)
             func = funcNames{iFunc};
-            fprintf(fid, FILEFORMAT, func, hashes.(func));
+            fprintf(fid, WRITEFORMAT, func, hashes.(func));
         end
     end
     function hashes = readHashesFromFile(filename)
@@ -134,7 +135,7 @@ function saveHashTable(status, varargin)
             fid = fopen(filename, 'r');
             finally_fclose_fid = onCleanup(@() fclose(fid));
 
-            data = textscan(fid, FILEFORMAT);
+            data = textscan(fid, READFORMAT);
             % data is now a cell array with 2 elements, each a (row) cell array
             %  - the first is all the function names
             %  - the second is all the hashes
@@ -143,8 +144,8 @@ function saveHashTable(status, varargin)
             % First step is to transpose the data concatenate both fields under
             % each other. Since MATLAB indexing uses "column major order",
             % traversing the concatenated array is in the order we want.
-            dataTransposed = cellfun(@transpose, data, 'UniformOutput', false);
-            allValues = vertcat(dataTransposed{:});
+            data      = [data{:}]';
+            allValues = data(:)';
         else
             allValues = {};
         end
