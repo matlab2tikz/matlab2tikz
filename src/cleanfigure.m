@@ -305,16 +305,15 @@ function movePointsCloser(meta, handle)
   % Only try to replace points if there are some to replace
   dataInsert = {};
   if ~isempty(id_replace)
-      % Check whether the points are finite.
-      dataIsFinite = all(isfinite(data(id_replace,:)), 2);
-
       % Get the indices of those points, that are the first point in a
-      % segment
-      id_first  = id_replace(id_replace < size(data, 1) & dataIsFinite);
+      % segment. The last data point at size(data, 1) cannot be the first
+      % point in a segment.
+      id_first  = id_replace(id_replace < size(data, 1));
 
       % Get the indices of those points, that are the second point in a
-      % segment
-      id_second = id_replace(id_replace > 1  & dataIsFinite);
+      % segment. Similarly the first data point cannot be the second data
+      % point in a segment.
+      id_second = id_replace(id_replace > 1);
 
       % Define the vectors of data points for the segments X1--X2
       X1_first  = data(id_first,    :);
@@ -343,8 +342,8 @@ function movePointsCloser(meta, handle)
       isInfinite_first  = any(~isfinite(newData_first),  2);
       isInfinite_second = any(~isfinite(newData_second), 2);
 
-      newData_first(isInfinite_first,  :) = NaN(sum(isInfinite_first),  2);
-      newData_second(isInfinite_second,:) = NaN(sum(isInfinite_second), 2);
+      newData_first (isInfinite_first,  :) = NaN(sum(isInfinite_first),  2);
+      newData_second(isInfinite_second, :) = NaN(sum(isInfinite_second), 2);
 
       % If a point is part of two segments, that cross the border, we need to
       % insert a NaN to prevent an additional line segment
@@ -394,7 +393,7 @@ function movePointsCloser(meta, handle)
   % Insert the data
   insertData(handle, id_replace, dataInsert);
   
-  % Get the indices of the to be removed points respecting the now inserted
+  % Get the indices of the to be removed points accounting for the now inserted
   % data points
   numPointsInserted = cellfun(@(x) size(x,1), [cell(1);dataInsert(1:end-2)]);
   id_remove = id_replace + cumsum(numPointsInserted);
@@ -467,18 +466,22 @@ function simplifyLine(meta, handle, targetResolution)
         tol = min(xPixelWidth,yPixelWidth);
 
         % Split up lines which are seperated by NaNs
-        inan   = isnan(xData) | isnan(yData);
-        df     = diff([false; ~inan; false]);
-        pstart = find(df == 1);
-        pend   = find(df == -1)-1;
-        nlines = numel(pstart);
+        id_nan  = isnan(xData) | isnan(yData);
+
+        % If lines were separated by a NaN, diff(~id_nan) would give 1 for
+        % the start of a line and -1 for the index after the end of
+        % a line.
+        id_diff = diff([false; ~id_nan; false]);
+        lineStart = find(id_diff == 1);
+        lineEnd   = find(id_diff == -1)-1;
+        numLines = numel(lineStart);
 
         % Count the number of data points in the previous segments
         countData = 0;
-        for ii = 1:nlines
+        for ii = 1:numLines
             % Actual data that inherits the simplifications
-            x = xData(pstart(ii):pend(ii));
-            y = yData(pstart(ii):pend(ii));
+            x = xData(lineStart(ii):lineEnd(ii));
+            y = yData(lineStart(ii):lineEnd(ii));
 
             % Line simplification
             if numel(x) > 2
@@ -489,7 +492,7 @@ function simplifyLine(meta, handle, targetResolution)
             end
 
             % Update the number of processed data points
-            countData = countData + pend(ii) - pstart(ii);
+            countData = countData + lineEnd(ii) - lineStart(ii);
         end
     end
 
@@ -498,6 +501,8 @@ function simplifyLine(meta, handle, targetResolution)
 end
 % =========================================================================
 function mask = isInBox(data, xLim, yLim)
+  % Returns a mask that indicates, whether a data point is within the
+  % limits
 
   mask = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
        & data(:,2) > yLim(1) & data(:,2) < yLim(2);
@@ -505,7 +510,10 @@ end
 % =========================================================================
 function mask = segmentVisible(data, dataIsInBox, xLim, yLim)
     % Given a bounding box {x,y}Lim, determine whether the line between all 
-    % pairs of subsequent data points crosses the box.
+    % pairs of subsequent data points [data(idx,:)<-->data(idx+1,:)] is
+    % visible. There are two possible cases:
+    % 1: One of the data points is within the limits
+    % 2: The line segments between the datapoints crosses the bounding box
     n = size(data, 1);
     mask = false(n-1, 1);
     
@@ -752,39 +760,45 @@ function xNew = moveToBox(x, xRef, xLim, yLim)
 end
 % =========================================================================
 function [xData, yData] = getVisualData(meta, handle)
-    % Extract the data from the current line handle.
-    xData = get(handle, 'XData');
-    yData = get(handle, 'YData');
+  % Returns the visual representation of the data (Respecting possible
+  % log_scaling)
 
-    % Get info about log scaling
-    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-    if isXlog
-        xData = log10(xData);
-    end
-    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-    if isYlog
-        yData = log10(yData);
-    end
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
 
-    % Turn the data into a row vector
-    xData = xData(:);
-    yData = yData(:);
+  % Get info about log scaling
+  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+  if isXlog
+    xData = log10(xData);
+  end
+  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+  if isYlog
+    yData = log10(yData);
+  end
+
+  % Turn the data into a row vector
+  xData = xData(:);
+  yData = yData(:);
 end
 % =========================================================================
 function [xLim, yLim] = getVisualLimits(meta)
-    % Get the axis limits
-    xLim = get(meta.gca, 'XLim');
-    yLim = get(meta.gca, 'YLim');
+  % Returns the visual representation of the axis limits (Respecting
+  % possible log_scaling)
 
-    % Check for logarithmic scales
-    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-    if isXlog
-        xLim  = log10(xLim);
-    end
-    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-	if isYlog
-        yLim  = log10(yLim);
-	end
+  % Get the axis limits
+  xLim = get(meta.gca, 'XLim');
+  yLim = get(meta.gca, 'YLim');
+
+  % Check for logarithmic scales
+  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+  if isXlog
+    xLim  = log10(xLim);
+  end
+  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+  if isYlog
+    yLim  = log10(yLim);
+  end
 end
 % =========================================================================
 function replaceData(handle, id_replace, dataReplace)
@@ -838,8 +852,8 @@ function insertData(handle, id_insert, dataInsert)
   data     = cat(1, dataCell{:});
 
   % Set the new (masked) data.
-  set(handle, 'XData', data(:,1));
-  set(handle, 'YData', data(:,2));
+  set(handle, 'XData', data(:, 1));
+  set(handle, 'YData', data(:, 2));
 end
 % =========================================================================
 function removeData(meta, handle, id_remove)
@@ -849,7 +863,7 @@ function removeData(meta, handle, id_remove)
   if isempty(id_remove)
       return
   end
-  
+
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
@@ -873,7 +887,8 @@ function removeData(meta, handle, id_remove)
 end
 % =========================================================================
 function removeNaNs(meta, handle)
-  % Removes superflous NaNs in the data
+  % Removes superflous NaNs in the data, i.e. those at the end/beginning of
+  % the data and consequtive ones.
 
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
@@ -888,6 +903,8 @@ function removeNaNs(meta, handle)
   % Remove consecutive NaNs
   id_nan    = any(isnan(data), 2);
   id_remove = find(id_nan);
+
+  % If a NaN is preceeded by another NaN, then diff(id_remove)==1
   id_remove = id_remove(diff(id_remove) == 1);
 
   % Make sure that there are no NaNs at the beginning of the data since
@@ -896,7 +913,7 @@ function removeNaNs(meta, handle)
   id_first  = find(~id_nan, 1, 'first');
   id_last   = find(~id_nan, 1, 'last');
   
-  % If there are no not-NaN data points just remove the whole data
+  % If there are only NaN data points, remove the whole data
   if isempty(id_first)
     id_remove = 1:length(xData);
   else
