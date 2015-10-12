@@ -48,7 +48,6 @@ markerSizes : 703bd6d9f3a26af0062adb66493f864f
 markerSizes2 : d6a12826350462efeb1f2194833cb6cc
 meshPlot : 219102d4595a4dad5b6d65ab610fea9e
 mixedBarLine : e25853bc5595f8b9bfdb756abcce14dd
-moreLegends : fce1b3851870a7a2c02b6bfbf6def080
 multiline_labels : a2fb844c26e59f8089b54741a49e3d52
 multipleAxes : 684ffc9e128bc6d1c139bc17d5ac77c8
 multiplePatches : 2e36b1f1e2c6d68988f10e7d6f646301
@@ -61,6 +60,7 @@ peaks_contour : 8885c9a4185aaca594ce5d0139aa578b
 peaks_contourf : 030941f855ccd9296b66b463e84559a3
 pixelLegend : 870e44c03d22304b43b4d92d71bdd23f
 plain_cos : d8bad8f89dd1e29c870e1b2c0c875fc3
+plotyyLegends : db7d2a3805c0fa6976c6b861b820b49f
 polarplot : 596c564ebbcf5d121434bda45d1d78b2
 quiver3plot : 02b0ed99603f0533aa1991ecbdb41008
 quiveroverlap : a2d1a3209a2e048ead8755aa8a12de75
