@@ -182,22 +182,18 @@ function pruneOutsideBox(meta, handle)
   % Some sections of the line may sit outside of the visible box.
   % Cut those off.
 
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-
-  % Obtain zData, if available
-  if isprop(handle, 'ZData')
-    zData = get(handle, 'ZData');
-  else
-    zData = [];
+  % TODO: 3d simplification of frontal 2d projection
+  if isAxis3D(meta.gca)
+      return;
   end
 
-  if isempty(zData)
-    data = [xData(:), yData(:)];
-  else
-    data = [xData(:), yData(:), zData(:)];
-  end
+  % Extract the visual data from the current line handle.
+  [xData, yData] = getVisualData(meta, handle);
 
+  % Merge the data into one matrix
+  data = [xData, yData];
+
+  % Dont do anything if the data is empty
   if isempty(data)
       return;
   end
@@ -206,8 +202,9 @@ function pruneOutsideBox(meta, handle)
   %hasMarkers = ~strcmp(marker,'none');
   hasLines = true;
   hasMarkers = true;
-  xLim = get(meta.gca, 'XLim');
-  yLim = get(meta.gca, 'YLim');
+
+  % Extract the visual limits from the current line handle.
+  [xLim, yLim]   = getVisualLimits(meta);
 
   tol = 1.0e-10;
   relaxedXLim = xLim + [-tol, tol];
@@ -216,8 +213,7 @@ function pruneOutsideBox(meta, handle)
   numPoints = size(data, 1);
 
   % Get which points are inside a (slightly larger) box.
-  dataIsInBox = isInBox(data(:,1:2), ...
-                        relaxedXLim, relaxedYLim);
+  dataIsInBox = isInBox(data, relaxedXLim, relaxedYLim);
 
   % By default, don't plot any points.
   shouldPlot = false(numPoints, 1);
@@ -226,12 +222,14 @@ function pruneOutsideBox(meta, handle)
   end
   if hasLines
       % Check if the connecting line is in the box.
-      segvis = segmentVisible(data(:,1:2), ...
-                              dataIsInBox, xLim, yLim);
+      segvis = segmentVisible(data, dataIsInBox, xLim, yLim);
       % Plot points which are next to an edge which is in the box.
       shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
   end
-
+  
+  % Remove or replace points outside the box
+  id_replace = [];
+  id_remove  = [];
   if ~all(shouldPlot)
       % There are two options here:
       %      data = data(shouldPlot, :);
@@ -251,45 +249,273 @@ function pruneOutsideBox(meta, handle)
       idx        = [true; diff(id_remove) >1];
       id_replace = id_remove(idx);
       id_remove  = id_remove(~idx);
-      
-      % Replace the data points
-      data(id_replace,:) = NaN(length(id_replace), size(data,2));
-      
-      % Remove the other non visible data points
-      data(id_remove,:) = [];
   end
-  
-  % Make sure that there are no NaNs at the beginning of the data since
-  % this would be interpreted as column names by Pgfplots.
-  % Also drop all NaNs at the end of the data
-  notnan   = any(~isnan(data),2);
-  id_first = find(notnan,1,'first');
-  id_last  = find(notnan,1,'last');
-  data     = data(id_first:id_last,:);
+  % Replace the data points
+  replaceData(handle, id_replace, NaN(length(id_replace), size(data,2)));
 
-  % Override with the new data.
-  set(handle, 'XData', data(:, 1));
-  set(handle, 'YData', data(:, 2));
-  if ~isempty(zData)
-    set(handle, 'ZData', data(:, 3));
-  end
+  % Remove the data outside the box
+  removeData(meta, handle, id_remove);
 
+  % Remove possible NaN duplications
+  removeNaNs(meta, handle);
   return;
 end
-% ==========================================================================
-function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
-    % Determine the corners of the axes as defined by xLim and yLim
-    bottomLeft  = [xLim(1); yLim(1)];
-    topLeft     = [xLim(1); yLim(2)];
-    bottomRight = [xLim(2); yLim(1)];
-    topRight    = [xLim(2); yLim(2)];
+% =========================================================================
+function movePointsCloser(meta, handle)
+  % Move all points outside a box much larger than the visible one
+  % to the boundary of that box and make sure that lines in the visible
+  % box are preserved. This typically involves replacing one point by
+  % two new ones and a NaN.
+
+  % TODO: 3d simplification of frontal 2d projection
+  if isAxis3D(meta.gca)
+      return;
+  end
+
+  % Extract the visual data from the current line handle.
+  [xData, yData] = getVisualData(meta, handle);
+
+  % Extract the visual limits from the current line handle.
+  [xLim, yLim]   = getVisualLimits(meta);
+
+  % Calculate the extension of the extended box  
+  xWidth = xLim(2) - xLim(1);
+  yWidth = yLim(2) - yLim(1);
+
+  % Don't choose the larger box too large to make sure that the values inside
+  % it can still be treated by TeX.
+  extendFactor = 0.1;
+  largeXLim = xLim + extendFactor * [-xWidth, xWidth];
+  largeYLim = yLim + extendFactor * [-yWidth, yWidth];
+
+  % Put the data into one matrix
+  data = [xData, yData];
+
+  % Get which points are in an extended box (the limits of which
+  % don't exceed TeX's memory).
+  dataIsInLargeBox = isInBox(data, largeXLim, largeYLim);
+
+  % Count the NaNs as being inside the box.
+  dataIsInLargeBox = dataIsInLargeBox | any(isnan(data), 2);
+
+  % Find all points which are to be included in the plot yet do not fit
+  % into the extended box
+  id_replace = find(~dataIsInLargeBox);  
+
+  % Only try to replace points if there are some to replace
+  dataInsert = {};
+  if ~isempty(id_replace)
+      % Get the indices of those points, that are the first point in a
+      % segment. The last data point at size(data, 1) cannot be the first
+      % point in a segment.
+      id_first  = id_replace(id_replace < size(data, 1));
+
+      % Get the indices of those points, that are the second point in a
+      % segment. Similarly the first data point cannot be the second data
+      % point in a segment.
+      id_second = id_replace(id_replace > 1);
+
+      % Define the vectors of data points for the segments X1--X2
+      X1_first  = data(id_first,    :);
+      X2_first  = data(id_first+1,  :);
+      X1_second = data(id_second,   :);
+      X2_second = data(id_second-1, :);
+
+      % Move the points closer to the large box along the segment
+      newData_first = moveToBox(X1_first,  X2_first,  largeXLim, largeYLim);
+      newData_second= moveToBox(X1_second, X2_second, largeXLim, largeYLim);
+      
+      % Respect logarithmic scaling for the new points
+      isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+      if isXlog
+          newData_first (:, 1) = 10.^newData_first (:, 1);
+          newData_second(:, 1) = 10.^newData_second(:, 1);
+      end
+      isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+      if isYlog
+          newData_first (:, 2) = 10.^newData_first (:, 2);
+          newData_second(:, 2) = 10.^newData_second(:, 2);
+      end
+
+      % If newData_* is infinite, the segment was not visible. However, as we
+      % move the point closer, it would become visible. So insert a NaN.
+      isInfinite_first  = any(~isfinite(newData_first),  2);
+      isInfinite_second = any(~isfinite(newData_second), 2);
+
+      newData_first (isInfinite_first,  :) = NaN(sum(isInfinite_first),  2);
+      newData_second(isInfinite_second, :) = NaN(sum(isInfinite_second), 2);
+
+      % If a point is part of two segments, that cross the border, we need to
+      % insert a NaN to prevent an additional line segment
+      [trash, trash, id_conflict] = intersect(id_first (~isInfinite_first), ...
+                                              id_second(~isInfinite_second));
+
+      % Cut the data into length(id_replace)+1 segments.
+      % Calculate the length of the segments
+      length_segments = [id_replace(1);
+                         diff(id_replace);
+                         size(data, 1)-id_replace(end)];
+
+      % Create an empty cell array for inserting NaNs and fill it at the
+      % conflict sites
+      dataInsert_NaN              = cell(length(length_segments),1);
+      dataInsert_NaN(id_conflict) = mat2cell(NaN(length(id_conflict), 2),...
+                                             ones(size(id_conflict)), 2);
+
+      % Create a cell array for the moved points
+      dataInsert_first  = mat2cell(newData_first,  ones(size(id_first)),  2);
+      dataInsert_second = mat2cell(newData_second, ones(size(id_second)), 2);
+
+      % Add an empty cell at the end of the last segment, as we do not
+      % insert something *after* the data
+      dataInsert_first  = [dataInsert_first;  cell(1)];
+      dataInsert_second = [dataInsert_second; cell(1)];
+
+      % If the first or the last point would have been replaced add an empty
+      % cell at the beginning/end. This is because the last data point
+      % cannot be the first data point of a line segment and vice versa.
+      if(id_replace(end) == size(data, 1))
+        dataInsert_first  = [dataInsert_first; cell(1)];
+      end
+      if(id_replace(1) == 1)
+        dataInsert_second = [cell(1); dataInsert_second];
+      end
+
+      % Put the cells together, right points first, then the possible NaN
+      % and then the left points      
+      dataInsert = cellfun(@(a,b,c) [a; b; c],...
+                            dataInsert_second,...
+                            dataInsert_NaN,...
+                            dataInsert_first,...
+                            'UniformOutput',false);
+  end
+
+  % Insert the data
+  insertData(handle, id_replace, dataInsert);
+  
+  % Get the indices of the to be removed points accounting for the now inserted
+  % data points
+  numPointsInserted = cellfun(@(x) size(x,1), [cell(1);dataInsert(1:end-2)]);
+  id_remove = id_replace + cumsum(numPointsInserted);
+  
+  % Remove the data point that should be replaced. 
+  removeData(meta, handle, id_remove);
+
+  % Remove possible NaN duplications
+  removeNaNs(meta, handle);
 end
 % =========================================================================
-function out = segmentVisible(data, dataIsInBox, xLim, yLim)
+function simplifyLine(meta, handle, targetResolution)
+    % Reduce the number of data points in the line 'handle'.
+    %
+    % Aplies a path-simplification algorithm if there are no markers or
+    % pixelization otherwise. Changes are visually negligible at the target
+    % resolution.
+    %
+    % The target resolution is either specificed as the number of PPI or as
+    % the [Width, Heigth] of the figure in pixels.
+    % A scalar value of INF or 0 disables path simplification.
+    % (default = 600)
+
+    % Do not simpify
+    if any(isinf(targetResolution) | targetResolution == 0)
+        return
+    end
+
+    % TODO: 3d simplificattion of frontal 2d projection
+    if isAxis3D(meta.gca)
+        return;
+    end
+
+    % Retrieve target figure size in pixels
+    [W, H] = getWidthHeightInPixels(targetResolution);
+
+    % Extract the visual data from the current line handle.
+    [xData, yData] = getVisualData(meta, handle);
+
+    % Only simplify if there are more than 2 points
+    if numel(xData) <= 2 || numel(yData) <= 2
+        return;
+    end
+
+    % Extract the visual limits from the current line handle.
+    [xLim, yLim]   = getVisualLimits(meta);
+
+    % Automatically guess a tol based on the area of the figure and
+    % the area and resolution of the output
+    xRange = xLim(2)-xLim(1);
+    yRange = yLim(2)-yLim(1);
+
+    % Conversion factors of data units into pixels
+    xToPix = W/xRange;
+    yToPix = H/yRange;
+
+    % Mask for removing data points
+    id_remove = [];
+
+    % If the path has markers, perform pixelation instead of simplification
+    hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
+    if hasMarkers
+        % Pixelate data at the zoom multiplier
+        mask      = pixelate(xData, yData, xToPix, yToPix);
+        id_remove = find(mask==0);
+    else
+        % Get the width of a pixel
+        xPixelWidth = 1/xToPix;
+        yPixelWidth = 1/yToPix;
+        tol = min(xPixelWidth,yPixelWidth);
+
+        % Split up lines which are seperated by NaNs
+        id_nan  = isnan(xData) | isnan(yData);
+
+        % If lines were separated by a NaN, diff(~id_nan) would give 1 for
+        % the start of a line and -1 for the index after the end of
+        % a line.
+        id_diff = diff([false; ~id_nan; false]);
+        lineStart = find(id_diff == 1);
+        lineEnd   = find(id_diff == -1)-1;
+        numLines = numel(lineStart);
+
+        % Count the number of data points in the previous segments
+        countData = 0;
+        for ii = 1:numLines
+            % Actual data that inherits the simplifications
+            x = xData(lineStart(ii):lineEnd(ii));
+            y = yData(lineStart(ii):lineEnd(ii));
+
+            % Line simplification
+            if numel(x) > 2
+                mask      = opheimSimplify(x, y, tol);
+                % Remove all those with mask==0 respecting the number of
+                % data points in the previoous segments
+                id_remove = find(mask==0) + countData;
+            end
+
+            % Update the number of processed data points
+            countData = countData + lineEnd(ii) - lineStart(ii);
+        end
+    end
+
+    % Remove the data points
+    removeData(meta, handle, id_remove)
+end
+% =========================================================================
+function mask = isInBox(data, xLim, yLim)
+  % Returns a mask that indicates, whether a data point is within the
+  % limits
+
+  mask = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
+       & data(:,2) > yLim(1) & data(:,2) < yLim(2);
+end
+% =========================================================================
+function mask = segmentVisible(data, dataIsInBox, xLim, yLim)
     % Given a bounding box {x,y}Lim, determine whether the line between all 
-    % pairs of subsequent data points crosses the box.
+    % pairs of subsequent data points [data(idx,:)<-->data(idx+1,:)] is
+    % visible. There are two possible cases:
+    % 1: One of the data points is within the limits
+    % 2: The line segments between the datapoints crosses the bounding box
     n = size(data, 1);
-    out = false(n-1, 1);
+    mask = false(n-1, 1);
     
     % Only check if there is more than 1 point    
     if n>1
@@ -312,139 +538,17 @@ function out = segmentVisible(data, dataIsInBox, xLim, yLim)
         top    = segmentsIntersect(X1, X2, topLeft    , topRight);
 
         % Check the result
-        out = thisVisible | nextVisible | left | right | top | bottom;
+        mask = thisVisible | nextVisible | left | right | top | bottom;
     end
 end
 % =========================================================================
-function out = segmentsIntersect(X1, X2, X3, X4)
+function mask = segmentsIntersect(X1, X2, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect. 
   lambda = crossLines(X1, X2, X3, X4);
   
   % Check whether lambda is in bound
-  out = 0.0 < lambda(:, 1) & lambda(:, 1) < 1.0 &...
-        0.0 < lambda(:, 2) & lambda(:, 2) < 1.0;
-end
-% =========================================================================
-function simplifyLine(meta, handle, targetResolution)
-    % Reduce the number of data points in the line 'handle'.
-    %
-    % Aplies a path-simplification algorithm if there are no markers or
-    % pixelization otherwise. Changes are visually negligible at the target
-    % resolution.
-    %
-    % The target resolution is either specificed as the number of PPI or as
-    % the [Width, Heigth] of the figure in pixels.
-    % A scalar value of INF or 0 disables path simplification.
-    % (default = 600)
-
-    % Do not simpify
-    if any(isinf(targetResolution) | targetResolution == 0)
-        return
-    end
-
-    % Retrieve target figure size in pixels
-    [W, H] = getWidthHeightInPixels(targetResolution);
-
-    % Extract the data from the current line handle.
-    xData = get(handle, 'XData');
-    yData = get(handle, 'YData');
-    zData = get(handle, 'ZData');
-
-    if ~isempty(zData)
-        % TODO: 3d simplificattion of frontal 2d projection
-        return;
-    end
-    if isempty(xData) || isempty(yData)
-        return;
-    end
-    if numel(xData) <= 2
-        return;
-    end
-
-    % Get info about log scaling
-    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-    vxData = xData;
-    if isXlog
-        vxData = log10(xData);
-    end
-
-    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-    vyData = yData;
-    if isYlog
-        vyData = log10(yData);
-    end
-
-    % Automatically guess a tol based on the area of the figure and
-    % the area and resolution of the output
-    xLim = xlim(meta.gca);
-    if isXlog
-        xLim = log10(xLim);
-    end
-    xrange = xLim(2)-xLim(1);
-    yLim   = ylim(meta.gca);
-    if isYlog
-        yLim = log10(yLim);
-    end
-    yrange = yLim(2)-yLim(1);
-
-    % Conversion factors of data units into pixels
-    xToPix = W/xrange;
-    yToPix = H/yrange;
-
-    % If the path has markers, perform pixelation instead of simplification
-    hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
-    if hasMarkers
-        % Pixelate data at the zoom multiplier
-        mask   = pixelate(vxData, vyData, xToPix, yToPix);
-        xData  = xData(mask);
-        yData  = yData(mask);
-        set(handle, 'XData', xData);
-        set(handle, 'YData', yData);
-        return
-    end
-
-    xPixelWidth = 1/xToPix;
-    yPixelWidth = 1/yToPix;
-    tol = min(xPixelWidth,yPixelWidth);
-
-    % Split up lines which are seperated by NaNs
-    inan   = isnan(vxData) | isnan(vyData);
-    df     = diff([false, ~inan, false]);
-    pstart = find(df == 1);
-    pend   = find(df == -1)-1;
-    nlines = numel(pstart);
-
-    [linesx, linesy] = deal(cell(1,nlines*2));
-    for ii = 1:nlines
-        % Visual data used for simplifications
-        vx = vxData(pstart(ii):pend(ii));
-        vy = vyData(pstart(ii):pend(ii));
-
-        % Actual data that inherits the simplifications
-        x = xData(pstart(ii):pend(ii));
-        y = yData(pstart(ii):pend(ii));
-
-        % Line simplification
-        if numel(vx) > 2
-            mask = opheimSimplify(vx,vy,tol);
-            x    = x(mask);
-            y    = y(mask);
-        end
-
-        % Place eventually simplified lines segments on odd positions
-        linesx{ii*2-1} = x;
-        linesy{ii*2-1} = y;
-
-        % Add nans back (if any) in between the line segments
-        linesx{ii*2} = nan;
-        linesy{ii*2} = nan;
-    end
-    xData = [linesx{1:end-1}];
-    yData = [linesy{1:end-1}];
-
-    % Update with the new (masked) data
-    set(handle, 'XData', xData);
-    set(handle, 'YData', yData);
+  mask = 0.0 < lambda(:, 1) & lambda(:, 1) < 1.0 &...
+         0.0 < lambda(:, 2) & lambda(:, 2) < 1.0;
 end
 % =========================================================================
 function mask = pixelate(x, y, xToPix, yToPix)
@@ -455,12 +559,12 @@ function mask = pixelate(x, y, xToPix, yToPix)
 
     % Convert data to pixel units, magnify and mark only the first
     % point that occupies a given position
-    mask = [true, diff(round(x * xToPix * mult))~=0];
-    mask = [true, diff(round(y * yToPix * mult))~=0] | mask;
+    mask = [true; diff(round(x * xToPix * mult))~=0];
+    mask = [true; diff(round(y * yToPix * mult))~=0] | mask;
 
     % Keep end points or it might truncate whole pixels
     inan         = isnan(x) | isnan(y);
-    df           = diff([false, inan, false]);
+    df           = diff([false; inan; false]);
     istart       = df == 1;
     pend         = find(df == -1)-1;
     mask(istart) = true;
@@ -544,223 +648,6 @@ function mask = opheimSimplify(x,y,tol)
     end
 end
 % =========================================================================
-function [W, H] = getWidthHeightInPixels(targetResolution)
-    % Retrieves target figure width and height in pixels
-    % TODO: If targetResolution is a scalar, W and H are determined
-    % differently on different environments (octave, local vs. Travis).
-    % It is unclear why, as this even happens, if `Units` and `Position`
-    % are matching. Could it be that the `set(gcf,'Units','Inches')` is not
-    % taken into consideration for `Position`, directly after setting it?
-
-    % targetResolution is PPI
-    if isscalar(targetResolution)
-        % Query figure size in inches and convert W and H to target pixels
-        oldunits  = get(gcf,'Units');
-        set(gcf,'Units','Inches');
-        figSizeIn = get(gcf,'Position');
-        W         = figSizeIn(3) * targetResolution;
-        H         = figSizeIn(4) * targetResolution;
-        set(gcf,'Units', oldunits) % restore original unit
-
-    % It is already in the format we want
-    else
-        W = targetResolution(1);
-        H = targetResolution(2);
-    end
-end
-% =========================================================================
-function movePointsCloser(meta, handle)
-  % Move all points outside a box much larger than the visible one
-  % to the boundary of that box and make sure that lines in the visible
-  % box are preserved. This typically involves replacing one point by
-  % two new ones and a NaN.
-
-  % Extract the data from the current line handle.
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  zData = get(handle, 'ZData');
-
-  if ~isempty(zData) && any(zData(1)~=zData)
-    % Don't do funny stuff with varying zData.
-    return;
-  end
-  
-  data = [xData(:), yData(:)];
-
-  xlim = get(meta.gca, 'XLim');
-  ylim = get(meta.gca, 'YLim');
-
-  % Calculate the extension of the extended box  
-  xWidth = xlim(2) - xlim(1);
-  yWidth = ylim(2) - ylim(1);
-  
-  % Don't choose the larger box too large to make sure that the values inside
-  % it can still be treated by TeX.
-  extendFactor = 0.1;
-  largeXLim = xlim + extendFactor * [-xWidth, xWidth];
-  largeYLim = ylim + extendFactor * [-yWidth, yWidth];
-
-  % Get which points are in an extended box (the limits of which
-  % don't exceed TeX's memory).
-  dataIsInLargeBox = isInBox(data(:, 1:2), largeXLim, largeYLim);
-
-  % Count the NaNs as being inside the box.
-  dataIsInLargeBox = dataIsInLargeBox | any(isnan(data), 2);
-
-  % Find all points which are to be included in the plot yet do not fit
-  % into the extended box
-  replaceIndices = find(~dataIsInLargeBox);  
-  
-  % Only try to replace points if there are some to replace
-  if (~isempty(replaceIndices))
-      % Check whether the points are finite.
-      DataIsFinite = all(isfinite(data(replaceIndices,:)), 2);
-
-      % Get the indices of those points, that are the first point in a
-      % segment
-      id_first  = replaceIndices(replaceIndices < size(data, 1) & DataIsFinite);
-
-      % Get the indices of those points, that are the second point in a
-      % segment
-      id_second = replaceIndices(replaceIndices > 1  & DataIsFinite);
-
-      % Define the vectors of data points for the segments X1--X2
-      X1_first  = data(id_first,    :);
-      X2_first  = data(id_first+1,  :);
-      X1_second = data(id_second,   :);
-      X2_second = data(id_second-1, :);
-
-      % Move the points closer to the large box along the segment
-      newData_first = moveToBox(X1_first,  X2_first,  largeXLim, largeYLim);
-      newData_second= moveToBox(X1_second, X2_second, largeXLim, largeYLim);
-
-      % If newData_* is infinite, the segment was not visible. However, as we
-      % move the point closer, it would become visible. So insert a NaN.
-      isInfinite_first  = any(~isfinite(newData_first),  2);
-      isInfinite_second = any(~isfinite(newData_second), 2);
-
-      newData_first(isInfinite_first,  :) = NaN(sum(isInfinite_first),  2);
-      newData_second(isInfinite_second,:) = NaN(sum(isInfinite_second), 2);
-
-      % If a point is part of two segments, that cross the border, we need to
-      % insert a NaN to prevent an additional line segment
-      [trash, trash, id_conflict] = intersect(id_first (~isInfinite_first), ...
-                                      id_second(~isInfinite_second));
-
-      % Cut the data into length(replaceIndices)+1 segments.
-      % Calculate the length of the segments
-      length_segments = [replaceIndices(1);
-                         diff(replaceIndices);
-                         size(data, 1)-replaceIndices(end)];
-
-      % Cut the data into segments
-      dataCell = mat2cell(data, length_segments, 2);
-
-      % Remove the last point of every segment except the last one as they
-      % will be replaced
-      dataCell(1:end-1) = cellfun(@(x) x(1:end-1,:), dataCell(1:end-1), 'UniformOutput', false);
-
-      % Create an empty cell array for inserting NaNs and fill it at the
-      % conflict sites
-      dataInsert_NaN   = cell(length(length_segments),1);
-      dataInsert_NaN(id_conflict) = mat2cell(NaN(length(id_conflict), 2),...
-                                             ones(size(id_conflict)), 2);
-
-      % Create a cell array for the moved points
-      dataInsert_first  = mat2cell(newData_first,  ones(size(id_first)),  2);
-      dataInsert_second = mat2cell(newData_second, ones(size(id_second)), 2);
-
-      % Add an empty cell at the end of the last segment
-      dataInsert_first  = [dataInsert_first;  cell(1)];
-      dataInsert_second = [dataInsert_second; cell(1)];
-
-      % If the first or the last point would have been replaced add an empty
-      % cell at the beginning/end
-      if(replaceIndices(end) == size(data, 1))
-        dataInsert_first  = [dataInsert_first; cell(1)];
-      end
-      if(replaceIndices(1) == 1)
-        dataInsert_second = [cell(1); dataInsert_second];
-      end
-
-      % Put the cells together, right points first, then the possible NaN
-      % and then the left points
-      dataCell = [dataCell';
-                  dataInsert_second';
-                  dataInsert_NaN';
-                  dataInsert_first'];
-
-      % Merge the cells back together
-      data     = cat(1, dataCell{:});
-  end
-
-  % Remove consecutive NaNs
-  id_NaN = find(isnan(data(:, 1)));
-  id_NaN = id_NaN(diff(id_NaN) == 1);
-  data(id_NaN, :) = [];
-
-  % Set the new (masked) data.
-  set(handle, 'XData', data(:, 1));
-  set(handle, 'YData', data(:, 2));
-  if ~isempty(zData)
-    % As per precondition, all zData entries are equal.
-    zDataNew = zData(1) * ones(size(data, 1), 1);
-    set(handle, 'zData', zDataNew);
-  end
-
-  return;
-end
-% =========================================================================
-function xNew = moveToBox(x, xRef, xLim, yLim)
-  % Takes a box defined by xlim, ylim, a vector of points x and a vector of 
-  % reference points xRef.
-  % Returns the vector of points xNew that sits on the line segment between 
-  % x and xRef *and* on the box. If several such points exist, take the 
-  % closest one to x.
-  n = size(x, 1);
-
-  % Find out with which border the line x---xRef intersects, and determine
-  % the smallest parameter alpha such that x + alpha*(xRef-x)
-  % sits on the boundary. Otherwise set Alpha to inf.
-  minAlpha = inf(n, 1);
-  
-  % Get the corner points
-  [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
-
-  % left boundary:
-  minAlpha = updateAlpha(x, xRef, bottomLeft, topLeft, minAlpha);
-
-  % bottom boundary:
-  minAlpha = updateAlpha(x, xRef, bottomLeft, bottomRight, minAlpha);
-
-  % right boundary:
-  minAlpha = updateAlpha(x, xRef, bottomRight, topRight, minAlpha);
-  
-  % top boundary:
-  minAlpha = updateAlpha(x, xRef, topLeft, topRight, minAlpha);
-
-  % Create the new point
-  xNew = x + bsxfun(@times ,minAlpha, (xRef-x));
-end
-% =========================================================================
-function minAlpha = updateAlpha(X1, X2, X3, X4, minAlpha)
-  % Checks whether the segments X1--X2 and X3--X4 intersect. 
-  lambda = crossLines(X1, X2, X3, X4);
-  
-  % Check if lambda is in bounds and lambda1 large enough
-  id_Alpha           = 0.0 < lambda(:,2) & lambda(:,2) < 1.0 ...
-                     & abs(minAlpha) > abs(lambda(:,1));
-
-  % Update alpha when applicable
-  minAlpha(id_Alpha) = lambda(id_Alpha,1);
-end
-% =========================================================================
-function out = isInBox(data, xLim, yLim)
-
-  out = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
-      & data(:,2) > yLim(1) & data(:,2) < yLim(2);
-end
-% =========================================================================
 function lambda = crossLines(X1, X2, X3, X4)
   % Checks whether the segments X1--X2 and X3--X4 intersect.
   % See https://en.wikipedia.org/wiki/Line-line_intersection for reference.
@@ -826,6 +713,255 @@ function lambda = crossLines(X1, X2, X3, X4)
       % sum( [nx2] * [2x2] .* [nx2], 2) = sum([nx2],2) = [nx1] 
       lambda(id_detA, 2) = sum(-(X2(id_detA, :)-X1(id_detA, :)) * Rotate .* rhs(id_detA, :), 2)./detA(id_detA);
   end
+end
+% =========================================================================
+function minAlpha = updateAlpha(X1, X2, X3, X4, minAlpha)
+  % Checks whether the segments X1--X2 and X3--X4 intersect. 
+  lambda = crossLines(X1, X2, X3, X4);
+  
+  % Check if lambda is in bounds and lambda1 large enough
+  id_Alpha           = 0.0 < lambda(:,2) & lambda(:,2) < 1.0 ...
+                     & abs(minAlpha) > abs(lambda(:,1));
+
+  % Update alpha when applicable
+  minAlpha(id_Alpha) = lambda(id_Alpha,1);
+end
+% =========================================================================
+function xNew = moveToBox(x, xRef, xLim, yLim)
+  % Takes a box defined by xlim, ylim, a vector of points x and a vector of 
+  % reference points xRef.
+  % Returns the vector of points xNew that sits on the line segment between 
+  % x and xRef *and* on the box. If several such points exist, take the 
+  % closest one to x.
+  n = size(x, 1);
+
+  % Find out with which border the line x---xRef intersects, and determine
+  % the smallest parameter alpha such that x + alpha*(xRef-x)
+  % sits on the boundary. Otherwise set Alpha to inf.
+  minAlpha = inf(n, 1);
+  
+  % Get the corner points
+  [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+
+  % left boundary:
+  minAlpha = updateAlpha(x, xRef, bottomLeft, topLeft, minAlpha);
+
+  % bottom boundary:
+  minAlpha = updateAlpha(x, xRef, bottomLeft, bottomRight, minAlpha);
+
+  % right boundary:
+  minAlpha = updateAlpha(x, xRef, bottomRight, topRight, minAlpha);
+  
+  % top boundary:
+  minAlpha = updateAlpha(x, xRef, topLeft, topRight, minAlpha);
+
+  % Create the new point
+  xNew = x + bsxfun(@times ,minAlpha, (xRef-x));
+end
+% =========================================================================
+function [xData, yData] = getVisualData(meta, handle)
+  % Returns the visual representation of the data (Respecting possible
+  % log_scaling)
+
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+
+  % Get info about log scaling
+  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+  if isXlog
+    xData = log10(xData);
+  end
+  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+  if isYlog
+    yData = log10(yData);
+  end
+
+  % Turn the data into a row vector
+  xData = xData(:);
+  yData = yData(:);
+end
+% =========================================================================
+function [xLim, yLim] = getVisualLimits(meta)
+  % Returns the visual representation of the axis limits (Respecting
+  % possible log_scaling)
+
+  % Get the axis limits
+  xLim = get(meta.gca, 'XLim');
+  yLim = get(meta.gca, 'YLim');
+
+  % Check for logarithmic scales
+  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+  if isXlog
+    xLim  = log10(xLim);
+  end
+  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+  if isYlog
+    yLim  = log10(yLim);
+  end
+end
+% =========================================================================
+function replaceData(handle, id_replace, dataReplace)
+  % Replaces data at id_replace with dataReplace
+
+  % Only do something if id_replace is not empty
+  if isempty(id_replace)
+      return
+  end
+
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+
+  % Update the data indicated by id_update
+  xData(id_replace) = dataReplace(:, 1);
+  yData(id_replace) = dataReplace(:, 2);
+
+  % Set the new (masked) data.
+  set(handle, 'XData', xData);
+  set(handle, 'YData', yData);
+end
+% =========================================================================
+function insertData(handle, id_insert, dataInsert)
+  % Inserts the elements of the cell array dataInsert at position id_insert
+
+  % Only do something if id_insert is not empty
+  if isempty(id_insert)
+      return
+  end
+
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+
+  length_segments = [id_insert(1);
+                     diff(id_insert);
+                     length(xData)-id_insert(end)];
+
+  % Put the data into one matrix
+  data     = [xData(:), yData(:)];
+
+  % Cut the data into segments
+  dataCell = mat2cell(data, length_segments, 2);
+
+  % Merge the cell arrays
+  dataCell = [dataCell';
+              dataInsert'];
+
+  % Merge the cells back together
+  data     = cat(1, dataCell{:});
+
+  % Set the new (masked) data.
+  set(handle, 'XData', data(:, 1));
+  set(handle, 'YData', data(:, 2));
+end
+% =========================================================================
+function removeData(meta, handle, id_remove)
+  % Removes the data at position id_remove
+
+  % Only do something if id_remove is not empty
+  if isempty(id_remove)
+      return
+  end
+
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  if isAxis3D(meta.gca)
+  	zData = get(handle, 'ZData');
+  end
+
+  % Remove the data indicated by id_remove
+  xData(id_remove) = [];
+  yData(id_remove) = [];
+  if isAxis3D(meta.gca)
+  	zData(id_remove) = [];
+  end
+
+  % Set the new data.
+  set(handle, 'XData', xData);
+  set(handle, 'YData', yData);
+  if isAxis3D(meta.gca)
+  	set(handle, 'zData', zData);
+  end
+end
+% =========================================================================
+function removeNaNs(meta, handle)
+  % Removes superflous NaNs in the data, i.e. those at the end/beginning of
+  % the data and consequtive ones.
+
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  if isAxis3D(meta.gca)
+  	zData = get(handle, 'ZData');
+    data  = [xData(:), yData(:), zData(:)];
+  else      
+    data  = [xData(:), yData(:)];
+  end
+
+  % Remove consecutive NaNs
+  id_nan    = any(isnan(data), 2);
+  id_remove = find(id_nan);
+
+  % If a NaN is preceeded by another NaN, then diff(id_remove)==1
+  id_remove = id_remove(diff(id_remove) == 1);
+
+  % Make sure that there are no NaNs at the beginning of the data since
+  % this would be interpreted as column names by Pgfplots.
+  % Also drop all NaNs at the end of the data
+  id_first  = find(~id_nan, 1, 'first');
+  id_last   = find(~id_nan, 1, 'last');
+  
+  % If there are only NaN data points, remove the whole data
+  if isempty(id_first)
+    id_remove = 1:length(xData);
+  else
+    id_remove = [1:id_first-1, id_remove', id_last+1:length(xData)]';
+  end
+
+  % Remove the NaNs
+  data(id_remove,:) = [];
+
+  % Set the new data.
+  set(handle, 'XData', data(:,1));
+  set(handle, 'YData', data(:,2));
+  if isAxis3D(meta.gca)
+  	set(handle, 'zData', data(:,3));
+  end
+end
+% ==========================================================================
+function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
+    % Determine the corners of the axes as defined by xLim and yLim
+    bottomLeft  = [xLim(1); yLim(1)];
+    topLeft     = [xLim(1); yLim(2)];
+    bottomRight = [xLim(2); yLim(1)];
+    topRight    = [xLim(2); yLim(2)];
+end
+% =========================================================================
+function [W, H] = getWidthHeightInPixels(targetResolution)
+    % Retrieves target figure width and height in pixels
+    % TODO: If targetResolution is a scalar, W and H are determined
+    % differently on different environments (octave, local vs. Travis).
+    % It is unclear why, as this even happens, if `Units` and `Position`
+    % are matching. Could it be that the `set(gcf,'Units','Inches')` is not
+    % taken into consideration for `Position`, directly after setting it?
+
+    % targetResolution is PPI
+    if isscalar(targetResolution)
+        % Query figure size in inches and convert W and H to target pixels
+        oldunits  = get(gcf,'Units');
+        set(gcf,'Units','Inches');
+        figSizeIn = get(gcf,'Position');
+        W         = figSizeIn(3) * targetResolution;
+        H         = figSizeIn(4) * targetResolution;
+        set(gcf,'Units', oldunits) % restore original unit
+
+    % It is already in the format we want
+    else
+        W = targetResolution(1);
+        H = targetResolution(2);
+    end
 end
 % =========================================================================
 function bool = isValidTargetResolution(val)
