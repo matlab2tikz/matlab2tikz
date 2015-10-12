@@ -187,11 +187,6 @@ function pruneOutsideBox(meta, handle)
   % Some sections of the line may sit outside of the visible box.
   % Cut those off.
 
-  % TODO: 3d simplification of frontal 2d projection
-  if isAxis3D(meta.gca)
-      return;
-  end
-
   % Extract the visual data from the current line handle.
   [xData, yData] = getVisualData(meta, handle);
 
@@ -256,7 +251,7 @@ function pruneOutsideBox(meta, handle)
       id_remove  = id_remove(~idx);
   end
   % Replace the data points
-  replaceData(handle, id_replace, NaN(length(id_replace), size(data,2)));
+  replaceDataWithNaN(meta, handle, id_replace);
 
   % Remove the data outside the box
   removeData(meta, handle, id_remove);
@@ -272,7 +267,9 @@ function movePointsCloser(meta, handle)
   % box are preserved. This typically involves replacing one point by
   % two new ones and a NaN.
 
-  % TODO: 3d simplification of frontal 2d projection
+  % TODO: 3D simplification of frontal 2D projection. This requires the
+  % full transformation rather than the projection, as we have to calculate
+  % the inverse trnasfornmation to project back into 3D
   if isAxis3D(meta.gca)
       return;
   end
@@ -396,7 +393,7 @@ function movePointsCloser(meta, handle)
   end
 
   % Insert the data
-  insertData(handle, id_replace, dataInsert);
+  insertData(meta, handle, id_replace, dataInsert);
   
   % Get the indices of the to be removed points accounting for the now inserted
   % data points
@@ -425,11 +422,6 @@ function simplifyLine(meta, handle, targetResolution)
     % Do not simpify
     if any(isinf(targetResolution) | targetResolution == 0)
         return
-    end
-
-    % TODO: 3d simplificattion of frontal 2d projection
-    if isAxis3D(meta.gca)
-        return;
     end
 
     % Retrieve target figure size in pixels
@@ -505,8 +497,8 @@ function mask = isInBox(data, xLim, yLim)
   % Returns a mask that indicates, whether a data point is within the
   % limits
 
-  mask = data(:,1) > xLim(1) & data(:,1) < xLim(2) ...
-       & data(:,2) > yLim(1) & data(:,2) < yLim(2);
+  mask = data(:, 1) > xLim(1) & data(:, 1) < xLim(2) ...
+       & data(:, 2) > yLim(1) & data(:, 2) < yLim(2);
 end
 % =========================================================================
 function mask = segmentVisible(data, dataIsInBox, xLim, yLim)
@@ -530,7 +522,7 @@ function mask = segmentVisible(data, dataIsInBox, xLim, yLim)
         nextVisible = (dataIsInBox(idx+1)   & all(isfinite(X1), 2));
 
         % Get the corner coordinates
-        [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+        [bottomLeft, topLeft, bottomRight, topRight] = corners2D(xLim, yLim);
 
         % Check if data points intersect with the borders of the plot
         left   = segmentsIntersect(X1, X2, bottomLeft , topLeft);
@@ -685,7 +677,7 @@ function lambda = crossLines(X1, X2, X3, X4)
       % rhs = X3(:) - X1(:)
       % NOTE: Originaly this was a [2x1] vector. However as we vectorize the 
       % calculation it is beneficial to treat it as an [nx2] matrix rather than a [2xn]
-      rhs = bsxfun(@minus, X3', X1);
+      rhs = bsxfun(@minus, X3, X1);
       
       % Calculate the inverse of A and lambda
       % invA=[-(X4(2)-X3(2)), X4(1)-X3(1);...
@@ -704,7 +696,7 @@ function lambda = crossLines(X1, X2, X3, X4)
       % This is a matrix multiplication of the form [1x2] * [2x1] = [1x1]
       % As we have transposed rhs we can write this as:
       % rhs * Rotate * (X4-X3) => [nx2] * [2x2] * [2x1] = [nx1]
-      lambda(id_detA, 1) = (rhs(id_detA, :) * Rotate * (X4-X3))./detA(id_detA);
+      lambda(id_detA, 1) = (rhs(id_detA, :) * Rotate * (X4-X3)')./detA(id_detA);
 
       % The lower half is dependent on (X2-X1) which is a matrix of size [nx2]
       % [-(X2(2)-X1(2)), X2(1)-X1(1)] / detA * rhs 
@@ -742,7 +734,7 @@ function xNew = moveToBox(x, xRef, xLim, yLim)
   minAlpha = inf(n, 1);
   
   % Get the corner points
-  [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim);
+  [bottomLeft, topLeft, bottomRight, topRight] = corners2D(xLim, yLim);
 
   % left boundary:
   minAlpha = updateAlpha(x, xRef, bottomLeft, topLeft, minAlpha);
@@ -762,11 +754,17 @@ end
 % =========================================================================
 function [xData, yData] = getVisualData(meta, handle)
   % Returns the visual representation of the data (Respecting possible
-  % log_scaling)
+  % log_scaling and projection into the image plane)
+
+  % Check whether this is a 3D plot
+  is3D = isAxis3D(meta.gca);
 
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
+  if is3D
+    zData = get(handle, 'ZData');
+  end
 
   % Get info about log scaling
   isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
@@ -777,6 +775,48 @@ function [xData, yData] = getVisualData(meta, handle)
   if isYlog
     yData = log10(yData);
   end
+  if is3D
+      isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+      if isZlog
+        zData  = log10(zData);
+      end
+  end
+
+  % In case of 3D plots, project the data into the image plane.
+  if is3D
+	% Get the projection angle
+    [az, el] = view(meta.gca);
+
+    % Convert from degrees to radians.
+    az = az*pi/180;
+    el = el*pi/180;
+
+    % The transformation into the image plane is done i a two-step process.
+    % First rotate around the z-axis by -az (in radians)
+    % Second rotate around the x-axis by (el -pi/2) radians.
+
+    Rot_z = [ cos(az)  -sin(az)   0
+              sin(az)   cos(az)   0
+              0         0         1];
+
+    % NOTE: There are some trigonometric simplifications, as we use
+    % (el-pi/2)
+    % cos(x - pi/2) =  sin(x)
+    % sin(x - pi/2) = -cos(x)
+    Rot_x = [ 1         0         0
+              0         sin(el)   cos(el)
+              0        -cos(el)   sin(el)];
+
+    % Put the data ino one matrix
+    data = [xData(:), yData(:), zData(:)];
+
+    % Project the data into the image plane
+    dataProjected = (Rot_x * Rot_z * data')';
+
+    % Only consider the x and y coordinates
+    xData = dataProjected(:, 1);
+    yData = dataProjected(:, 2);
+  end
 
   % Turn the data into a row vector
   xData = xData(:);
@@ -785,11 +825,17 @@ end
 % =========================================================================
 function [xLim, yLim] = getVisualLimits(meta)
   % Returns the visual representation of the axis limits (Respecting
-  % possible log_scaling)
+  % possible log_scaling and projection into the image plane)
+
+  % Check whether this is a 3D plot
+  is3D = isAxis3D(meta.gca);
 
   % Get the axis limits
   xLim = get(meta.gca, 'XLim');
   yLim = get(meta.gca, 'YLim');
+  if is3D
+    zLim = get(meta.gca, 'ZLim');
+  end
 
   % Check for logarithmic scales
   isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
@@ -800,30 +846,87 @@ function [xLim, yLim] = getVisualLimits(meta)
   if isYlog
     yLim  = log10(yLim);
   end
+  if is3D
+      isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+      if isZlog
+        zLim  = log10(zLim);
+      end
+  end
+
+  % In case of 3D plots, project the limits into the image plane. Depending
+  % on the angles, any of the 8 corners of the 3D cube mit be relevant so
+  % check for all
+  if is3D
+	% Get the projection angle
+    [az, el] = view(meta.gca);
+
+    % Convert from degrees to radians.
+    az = az*pi/180;
+    el = el*pi/180;
+
+    % The transformation into the image plane is done i a two-step process.
+    % First rotate around the z-axis by -az (in radians)
+    % Second rotate around the x-axis by (el -pi/2) radians.
+
+    Rot_z = [ cos(az)  -sin(az)   0
+              sin(az)   cos(az)   0
+              0         0         1];
+
+    % NOTE: There are some trigonometric simplifications, as we use
+    % (el-pi/2)
+    % cos(x - pi/2) =  sin(x)
+    % sin(x - pi/2) = -cos(x)
+    Rot_x = [ 1         0         0
+              0         sin(el)   cos(el)
+              0        -cos(el)   sin(el)];
+
+    % Get the coordinates of the 8 corners
+    corners = corners3D(yLim, yLim, zLim);
+
+    % Project the corner points to 2D coordinates
+    corners_projected = Rot_x * Rot_z * corners';
+
+    % Get the maximal and minimal values of the x and y coordinates as
+    % limits
+    xLim   = [min(corners_projected(1, :)), max(corners_projected(1, :))];
+    yLim   = [min(corners_projected(2, :)), max(corners_projected(2, :))];
+  end
 end
 % =========================================================================
-function replaceData(handle, id_replace, dataReplace)
-  % Replaces data at id_replace with dataReplace
+function replaceDataWithNaN(meta, handle, id_replace)
+  % Replaces data at id_replace with NaNs
 
   % Only do something if id_replace is not empty
   if isempty(id_replace)
       return
   end
 
+  % Check whether this is a 3D plot
+  is3D = isAxis3D(meta.gca);
+
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
+  if is3D
+    zData = get(handle, 'ZData');
+  end
 
   % Update the data indicated by id_update
-  xData(id_replace) = dataReplace(:, 1);
-  yData(id_replace) = dataReplace(:, 2);
+  xData(id_replace) = NaN(size(id_replace));
+  yData(id_replace) = NaN(size(id_replace));
+  if is3D
+    zData(id_replace) = NaN(size(id_replace));
+  end
 
   % Set the new (masked) data.
   set(handle, 'XData', xData);
   set(handle, 'YData', yData);
+  if is3D
+    set(handle, 'ZData', zData);
+  end
 end
 % =========================================================================
-function insertData(handle, id_insert, dataInsert)
+function insertData(meta, handle, id_insert, dataInsert)
   % Inserts the elements of the cell array dataInsert at position id_insert
 
   % Only do something if id_insert is not empty
@@ -831,19 +934,29 @@ function insertData(handle, id_insert, dataInsert)
       return
   end
 
+  % Check whether this is a 3D plot
+  is3D = isAxis3D(meta.gca);
+
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
+  if is3D
+    zData = get(handle, 'ZData');
+  end
 
   length_segments = [id_insert(1);
                      diff(id_insert);
                      length(xData)-id_insert(end)];
 
   % Put the data into one matrix
-  data     = [xData(:), yData(:)];
+  if is3D
+    data = [xData(:), yData(:), zData(:)];
+  else
+    data = [xData(:), yData(:)];
+  end
 
   % Cut the data into segments
-  dataCell = mat2cell(data, length_segments, 2);
+  dataCell = mat2cell(data, length_segments, size(data, 2));
 
   % Merge the cell arrays
   dataCell = [dataCell';
@@ -855,6 +968,9 @@ function insertData(handle, id_insert, dataInsert)
   % Set the new (masked) data.
   set(handle, 'XData', data(:, 1));
   set(handle, 'YData', data(:, 2));
+  if is3D
+    set(handle, 'ZData', data(:, 3));
+  end
 end
 % =========================================================================
 function removeData(meta, handle, id_remove)
@@ -865,25 +981,28 @@ function removeData(meta, handle, id_remove)
       return
   end
 
+  % Check whether this is a 3D plot
+  is3D = isAxis3D(meta.gca);
+
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
-  if isAxis3D(meta.gca)
+  if is3D
   	zData = get(handle, 'ZData');
   end
 
   % Remove the data indicated by id_remove
   xData(id_remove) = [];
   yData(id_remove) = [];
-  if isAxis3D(meta.gca)
+  if is3D
   	zData(id_remove) = [];
   end
 
   % Set the new data.
   set(handle, 'XData', xData);
   set(handle, 'YData', yData);
-  if isAxis3D(meta.gca)
-  	set(handle, 'zData', zData);
+  if is3D
+	set(handle, 'ZData', zData);
   end
 end
 % =========================================================================
@@ -891,14 +1010,21 @@ function removeNaNs(meta, handle)
   % Removes superflous NaNs in the data, i.e. those at the end/beginning of
   % the data and consequtive ones.
 
+  % Check whether this is a 3D plot
+  is3D = isAxis3D(meta.gca);
+
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
-  if isAxis3D(meta.gca)
+  if is3D
   	zData = get(handle, 'ZData');
-    data  = [xData(:), yData(:), zData(:)];
-  else      
-    data  = [xData(:), yData(:)];
+  end
+
+  % Put the data into one matrix
+  if is3D
+    data = [xData(:), yData(:), zData(:)];
+  else
+    data = [xData(:), yData(:)];
   end
 
   % Remove consecutive NaNs
@@ -925,19 +1051,46 @@ function removeNaNs(meta, handle)
   data(id_remove,:) = [];
 
   % Set the new data.
-  set(handle, 'XData', data(:,1));
-  set(handle, 'YData', data(:,2));
-  if isAxis3D(meta.gca)
-  	set(handle, 'zData', data(:,3));
+  set(handle, 'XData', data(:, 1));
+  set(handle, 'YData', data(:, 2));
+  if is3D
+	set(handle, 'ZData', data(:, 3));
   end
 end
 % ==========================================================================
-function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
-    % Determine the corners of the axes as defined by xLim and yLim
-    bottomLeft  = [xLim(1); yLim(1)];
-    topLeft     = [xLim(1); yLim(2)];
-    bottomRight = [xLim(2); yLim(1)];
-    topRight    = [xLim(2); yLim(2)];
+function [bottomLeft, topLeft, bottomRight, topRight] = corners2D(xLim, yLim)
+  % Determine the corners of the axes as defined by xLim and yLim
+  bottomLeft  = [xLim(1), yLim(1)];
+  topLeft     = [xLim(1), yLim(2)];
+  bottomRight = [xLim(2), yLim(1)];
+  topRight    = [xLim(2), yLim(2)];
+end
+% ==========================================================================
+function corners = corners3D(xLim, yLim, zLim)
+    % Determine the corners of the 3D axes as defined by xLim, yLim, and
+    % zLim
+
+    % Lower square of the cube
+    lowerBottomLeft  = [xLim(1), yLim(1), zLim(1)];
+    lowerTopLeft     = [xLim(1), yLim(2), zLim(1)];
+    lowerBottomRight = [xLim(2), yLim(1), zLim(1)];
+    lowerTopRight    = [xLim(2), yLim(2), zLim(1)];
+
+    % Upper square of the cube
+    upperBottomLeft  = [xLim(1), yLim(1), zLim(2)];
+    upperTopLeft     = [xLim(1), yLim(2), zLim(2)];
+    upperBottomRight = [xLim(2), yLim(1), zLim(2)];
+    upperTopRight    = [xLim(2), yLim(2), zLim(2)];
+
+    % Put the into one matrix
+    corners          = [lowerBottomLeft;
+                        lowerTopLeft;
+                        lowerBottomRight;
+                        lowerTopRight;
+                        upperBottomLeft;
+                        upperTopLeft;
+                        upperBottomRight;
+                        upperTopRight];
 end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
