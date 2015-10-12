@@ -763,59 +763,37 @@ function [xData, yData] = getVisualData(meta, handle)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   if is3D
-    zData = get(handle, 'ZData');
+      zData = get(handle, 'ZData');
   end
 
   % Get info about log scaling
   isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
   if isXlog
-    xData = log10(xData);
+      xData = log10(xData);
   end
   isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
   if isYlog
-    yData = log10(yData);
+      yData = log10(yData);
   end
-  if is3D
-      isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
-      if isZlog
-        zData  = log10(zData);
-      end
+  isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+  if isZlog
+      zData  = log10(zData);
   end
 
   % In case of 3D plots, project the data into the image plane.
   if is3D
-	% Get the projection angle
-    [az, el] = view(meta.gca);
+	  % Get the projection matrix
+      P = getProjectionMatrix(meta);
 
-    % Convert from degrees to radians.
-    az = az*pi/180;
-    el = el*pi/180;
+      % Put the data ino one matrix
+      data = [xData(:), yData(:), zData(:)];
 
-    % The transformation into the image plane is done i a two-step process.
-    % First rotate around the z-axis by -az (in radians)
-    % Second rotate around the x-axis by (el -pi/2) radians.
+      % Project the data into the image plane
+      dataProjected = (P * data')';
 
-    Rot_z = [ cos(az)  -sin(az)   0
-              sin(az)   cos(az)   0
-              0         0         1];
-
-    % NOTE: There are some trigonometric simplifications, as we use
-    % (el-pi/2)
-    % cos(x - pi/2) =  sin(x)
-    % sin(x - pi/2) = -cos(x)
-    Rot_x = [ 1         0         0
-              0         sin(el)   cos(el)
-              0        -cos(el)   sin(el)];
-
-    % Put the data ino one matrix
-    data = [xData(:), yData(:), zData(:)];
-
-    % Project the data into the image plane
-    dataProjected = (Rot_x * Rot_z * data')';
-
-    % Only consider the x and y coordinates
-    xData = dataProjected(:, 1);
-    yData = dataProjected(:, 2);
+      % Only consider the x and y coordinates
+      xData = dataProjected(:, 1);
+      yData = dataProjected(:, 2);
   end
 
   % Turn the data into a row vector
@@ -833,63 +811,39 @@ function [xLim, yLim] = getVisualLimits(meta)
   % Get the axis limits
   xLim = get(meta.gca, 'XLim');
   yLim = get(meta.gca, 'YLim');
-  if is3D
-    zLim = get(meta.gca, 'ZLim');
-  end
+  zLim = get(meta.gca, 'ZLim');
 
   % Check for logarithmic scales
   isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
   if isXlog
-    xLim  = log10(xLim);
+      xLim  = log10(xLim);
   end
   isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
   if isYlog
-    yLim  = log10(yLim);
+      yLim  = log10(yLim);
   end
-  if is3D
-      isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
-      if isZlog
-        zLim  = log10(zLim);
-      end
+  isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+  if isZlog
+  	  zLim  = log10(zLim);
   end
 
   % In case of 3D plots, project the limits into the image plane. Depending
   % on the angles, any of the 8 corners of the 3D cube mit be relevant so
   % check for all
   if is3D
-	% Get the projection angle
-    [az, el] = view(meta.gca);
+      % Get the projection matrix
+      P = getProjectionMatrix(meta);
 
-    % Convert from degrees to radians.
-    az = az*pi/180;
-    el = el*pi/180;
+      % Get the coordinates of the 8 corners
+      corners = corners3D(yLim, yLim, zLim);
 
-    % The transformation into the image plane is done i a two-step process.
-    % First rotate around the z-axis by -az (in radians)
-    % Second rotate around the x-axis by (el -pi/2) radians.
+      % Project the corner points to 2D coordinates
+      corners_projected = P * corners';
 
-    Rot_z = [ cos(az)  -sin(az)   0
-              sin(az)   cos(az)   0
-              0         0         1];
-
-    % NOTE: There are some trigonometric simplifications, as we use
-    % (el-pi/2)
-    % cos(x - pi/2) =  sin(x)
-    % sin(x - pi/2) = -cos(x)
-    Rot_x = [ 1         0         0
-              0         sin(el)   cos(el)
-              0        -cos(el)   sin(el)];
-
-    % Get the coordinates of the 8 corners
-    corners = corners3D(yLim, yLim, zLim);
-
-    % Project the corner points to 2D coordinates
-    corners_projected = Rot_x * Rot_z * corners';
-
-    % Get the maximal and minimal values of the x and y coordinates as
-    % limits
-    xLim   = [min(corners_projected(1, :)), max(corners_projected(1, :))];
-    yLim   = [min(corners_projected(2, :)), max(corners_projected(2, :))];
+      % Get the maximal and minimal values of the x and y coordinates as
+      % limits
+      xLim = [min(corners_projected(1, :)), max(corners_projected(1, :))];
+      yLim = [min(corners_projected(2, :)), max(corners_projected(2, :))];
   end
 end
 % =========================================================================
@@ -908,21 +862,21 @@ function replaceDataWithNaN(meta, handle, id_replace)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   if is3D
-    zData = get(handle, 'ZData');
+      zData = get(handle, 'ZData');
   end
 
   % Update the data indicated by id_update
   xData(id_replace) = NaN(size(id_replace));
   yData(id_replace) = NaN(size(id_replace));
   if is3D
-    zData(id_replace) = NaN(size(id_replace));
+      zData(id_replace) = NaN(size(id_replace));
   end
 
   % Set the new (masked) data.
   set(handle, 'XData', xData);
   set(handle, 'YData', yData);
   if is3D
-    set(handle, 'ZData', zData);
+      set(handle, 'ZData', zData);
   end
 end
 % =========================================================================
@@ -941,7 +895,7 @@ function insertData(meta, handle, id_insert, dataInsert)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   if is3D
-    zData = get(handle, 'ZData');
+      zData = get(handle, 'ZData');
   end
 
   length_segments = [id_insert(1);
@@ -950,9 +904,9 @@ function insertData(meta, handle, id_insert, dataInsert)
 
   % Put the data into one matrix
   if is3D
-    data = [xData(:), yData(:), zData(:)];
+      data = [xData(:), yData(:), zData(:)];
   else
-    data = [xData(:), yData(:)];
+      data = [xData(:), yData(:)];
   end
 
   % Cut the data into segments
@@ -969,7 +923,7 @@ function insertData(meta, handle, id_insert, dataInsert)
   set(handle, 'XData', data(:, 1));
   set(handle, 'YData', data(:, 2));
   if is3D
-    set(handle, 'ZData', data(:, 3));
+      set(handle, 'ZData', data(:, 3));
   end
 end
 % =========================================================================
@@ -988,21 +942,21 @@ function removeData(meta, handle, id_remove)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   if is3D
-  	zData = get(handle, 'ZData');
+  	  zData = get(handle, 'ZData');
   end
 
   % Remove the data indicated by id_remove
   xData(id_remove) = [];
   yData(id_remove) = [];
   if is3D
-  	zData(id_remove) = [];
+  	  zData(id_remove) = [];
   end
 
   % Set the new data.
   set(handle, 'XData', xData);
   set(handle, 'YData', yData);
   if is3D
-	set(handle, 'ZData', zData);
+	  set(handle, 'ZData', zData);
   end
 end
 % =========================================================================
@@ -1017,14 +971,14 @@ function removeNaNs(meta, handle)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   if is3D
-  	zData = get(handle, 'ZData');
+  	  zData = get(handle, 'ZData');
   end
 
   % Put the data into one matrix
   if is3D
-    data = [xData(:), yData(:), zData(:)];
+      data = [xData(:), yData(:), zData(:)];
   else
-    data = [xData(:), yData(:)];
+      data = [xData(:), yData(:)];
   end
 
   % Remove consecutive NaNs
@@ -1042,9 +996,9 @@ function removeNaNs(meta, handle)
   
   % If there are only NaN data points, remove the whole data
   if isempty(id_first)
-    id_remove = 1:length(xData);
+      id_remove = 1:length(xData);
   else
-    id_remove = [1:id_first-1, id_remove', id_last+1:length(xData)]';
+      id_remove = [1:id_first-1, id_remove', id_last+1:length(xData)]';
   end
 
   % Remove the NaNs
@@ -1054,7 +1008,7 @@ function removeNaNs(meta, handle)
   set(handle, 'XData', data(:, 1));
   set(handle, 'YData', data(:, 2));
   if is3D
-	set(handle, 'ZData', data(:, 3));
+	  set(handle, 'ZData', data(:, 3));
   end
 end
 % ==========================================================================
@@ -1091,6 +1045,34 @@ function corners = corners3D(xLim, yLim, zLim)
                         upperTopLeft;
                         upperBottomRight;
                         upperTopRight];
+end
+% ==========================================================================
+function P = getProjectionMatrix(meta)
+    % Calculate the projection matrix from a 3D plot into the image plane
+
+	% Get the projection angle
+    [az, el] = view(meta.gca);
+
+    % Convert from degrees to radians.
+    az = az*pi/180;
+    el = el*pi/180;
+
+    % The transformation into the image plane is done in a two-step process.
+    % First rotate around the z-axis by -az (in radians)
+    Rot_z = [ cos(-az)  -sin(-az)   0
+              sin(-az)   cos(-az)   0
+              0          0          1];
+
+    % Second rotate around the x-axis by (el - pi/2) radians.
+    % NOTE: There are some trigonometric simplifications, as we use
+    % (el-pi/2)
+    % cos(x - pi/2) =  sin(x)
+    % sin(x - pi/2) = -cos(x)
+    Rot_x = [ 1         0         0
+              0         sin(el)   cos(el)
+              0        -cos(el)   sin(el)];
+
+    P = Rot_x * Rot_z;
 end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
