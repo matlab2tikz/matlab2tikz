@@ -218,7 +218,7 @@ function pruneOutsideBox(meta, handle)
   % By default, don't plot any points.
   shouldPlot = false(numPoints, 1);
   if hasMarkers
-      shouldPlot = shouldPlot | dataIsInBox;
+      shouldPlot = shouldPlot | dataIsInBox | all(isnan(data),2);
   end
   if hasLines
       % Check if the connecting line is in the box.
@@ -468,10 +468,10 @@ function simplifyLine(meta, handle, targetResolution)
         % If lines were separated by a NaN, diff(~id_nan) would give 1 for
         % the start of a line and -1 for the index after the end of
         % a line.
-        id_diff = diff([false; ~id_nan; false]);
+        id_diff   = diff([false; ~id_nan; false]);
         lineStart = find(id_diff == 1);
         lineEnd   = find(id_diff == -1)-1;
-        numLines = numel(lineStart);
+        numLines  = numel(lineStart);
 
         % Simplify the line segments
         for ii = 1:numLines
@@ -835,7 +835,7 @@ function [xLim, yLim] = getVisualLimits(meta)
       P = getProjectionMatrix(meta);
 
       % Get the coordinates of the 8 corners
-      corners = corners3D(yLim, yLim, zLim);
+      corners = corners3D(xLim, yLim, zLim);
 
       % Project the corner points to 2D coordinates
       corners_projected = P * corners';
