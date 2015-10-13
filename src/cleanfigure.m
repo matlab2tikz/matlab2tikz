@@ -944,12 +944,15 @@ function data = limitPrecision(data)
   % Limit the precision of the given data
   
   % Only do something if the data is not empty
-  if isempty(data)
+  if isempty(data) || all(~isfinite(data))
       return
   end
+  
+  % Only consider finite values
+  mask = isfinite(data);
 
   % Get the maximal value of the data
-  range = max(abs(data));
+  range = max(abs(data(mask)));
 
   % Get the maximal precision for the data range
   eps_range = eps(range);
