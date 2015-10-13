@@ -941,6 +941,13 @@ function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
 end
 % =========================================================================
 function data = limitPrecision(data)
+  % Limit the precision of the given data
+  
+  % Only do something if the data is not empty
+  if isempty(data)
+      return
+  end
+
   % Get the maximal value of the data
   range = max(abs(data));
 
