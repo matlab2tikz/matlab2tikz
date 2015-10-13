@@ -1084,11 +1084,15 @@ function P = getProjectionMatrix(meta)
               0         0        0          1];
 
     % Get the data aspect ration
-    scale     = get(meta.gca, 'DataAspectRatio');
-    Transform = makehgtform('scale',1./scale);
+    AspectRatio = get(meta.gca, 'DataAspectRatio');
+    scale       = 1./AspectRatio;
+    scaleMatrix = [ scale(1) 0        0        0
+                    0        scale(2) 0        0
+                    0        0        scale(3) 0
+                    0        0        0        1];
 
     % Calculate the projection matrix
-    P = Rot_x * Rot_z * Transform;
+    P = Rot_x * Rot_z * scaleMatrix;
 end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
