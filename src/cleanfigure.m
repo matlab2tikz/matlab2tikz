@@ -778,9 +778,9 @@ function [xData, yData] = getVisualData(meta, handle)
     yData = log10(yData);
   end
 
-  % Turn the data into a row vector
-  xData = xData(:);
-  yData = yData(:);
+  % Limit the precision of the data
+  xData = limitPrecision(xData(:));
+  yData = limitPrecision(yData(:));
 end
 % =========================================================================
 function [xLim, yLim] = getVisualLimits(meta)
@@ -938,6 +938,20 @@ function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
     topLeft     = [xLim(1); yLim(2)];
     bottomRight = [xLim(2); yLim(1)];
     topRight    = [xLim(2); yLim(2)];
+end
+% =========================================================================
+function data = limitPrecision(data)
+  % Get the maximal value of the data
+  range = max(abs(data));
+
+  % Get the maximal precision for the data range
+  eps_range = eps(range);
+
+  % Scale the data wrt the range
+  data  = data / eps_range;
+
+  % Round to precision and scale back
+  data  = round(data) * eps_range;
 end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
