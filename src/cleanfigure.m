@@ -785,15 +785,16 @@ function [xData, yData] = getVisualData(meta, handle)
 	  % Get the projection matrix
       P = getProjectionMatrix(meta);
 
-      % Put the data ino one matrix
-      data = [xData(:), yData(:), zData(:)];
+      % Put the data into one matrix accounting for the canonical 4th
+      % dimension
+      data = [xData(:), yData(:), zData(:), ones(size(xData(:)))];
 
       % Project the data into the image plane
-      dataProjected = (P * data')';
+      dataProjected = P * data';
 
-      % Only consider the x and y coordinates
-      xData = dataProjected(:, 1);
-      yData = dataProjected(:, 2);
+      % Only consider the x and y coordinates and scale them correctly
+      xData = dataProjected(1, :) ./ dataProjected(4, :);
+      yData = dataProjected(2, :) ./ dataProjected(4, :);
   end
 
   % Turn the data into a row vector
@@ -837,13 +838,21 @@ function [xLim, yLim] = getVisualLimits(meta)
       % Get the coordinates of the 8 corners
       corners = corners3D(xLim, yLim, zLim);
 
+      % Add the canonical 4th dimension
+      corners = [corners, ones(8,1)];
+
       % Project the corner points to 2D coordinates
-      corners_projected = P * corners';
+      cornersProjected = P * corners';
+
+      % Pick the x and y values of the projected corners and scale them
+      % correctly
+      xCorners = cornersProjected(1, :) ./ cornersProjected(4, :);
+      yCorners = cornersProjected(2, :) ./ cornersProjected(4, :);
 
       % Get the maximal and minimal values of the x and y coordinates as
       % limits
-      xLim = [min(corners_projected(1, :)), max(corners_projected(1, :))];
-      yLim = [min(corners_projected(2, :)), max(corners_projected(2, :))];
+      xLim = [min(xCorners), max(xCorners)];
+      yLim = [min(yCorners), max(yCorners)];
   end
 end
 % =========================================================================
@@ -1059,20 +1068,27 @@ function P = getProjectionMatrix(meta)
 
     % The transformation into the image plane is done in a two-step process.
     % First rotate around the z-axis by -az (in radians)
-    Rot_z = [ cos(-az)  -sin(-az)   0
-              sin(-az)   cos(-az)   0
-              0          0          1];
+    Rot_z = [ cos(-az)  -sin(-az)   0   0
+              sin(-az)   cos(-az)   0   0
+              0          0          1   0
+              0          0          0   1];
 
     % Second rotate around the x-axis by (el - pi/2) radians.
     % NOTE: There are some trigonometric simplifications, as we use
     % (el-pi/2)
     % cos(x - pi/2) =  sin(x)
     % sin(x - pi/2) = -cos(x)
-    Rot_x = [ 1         0         0
-              0         sin(el)   cos(el)
-              0        -cos(el)   sin(el)];
+    Rot_x = [ 1         0         0         0
+              0         sin(el)   cos(el)   0
+              0        -cos(el)   sin(el)   0
+              0         0        0          1];
 
-    P = Rot_x * Rot_z;
+    % Get the data aspect ration
+    scale     = get(meta.gca, 'DataAspectRatio');
+    Transform = makehgtform('scale',1./scale);
+
+    % Calculate the projection matrix
+    P = Rot_x * Rot_z * Transform;
 end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
