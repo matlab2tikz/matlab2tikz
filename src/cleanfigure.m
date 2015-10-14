@@ -16,7 +16,8 @@ function cleanfigure(varargin)
 %   Use targetResolution = Inf or 0 to disable line simplification.
 %   (default: 600)
 %   CLEANFIGURE('scalePrecision',alpha,...)
-%   Scale the precision the data is represented with.
+%   Scale the precision the data is represented with. Setting it to 0
+%   or negative values disable this feature.
 %   (default: 1)
 %
 %   Example
@@ -513,6 +514,11 @@ end
 % =========================================================================
 function limitPrecision(meta, handle, alpha)
   % Limit the precision of the given data
+  
+  % If alpha is 0 or negative do nothing
+  if alpha<=0
+      return
+  end
 
   % Extract the data from the current line handle.
   xData = get(handle, 'XData');
