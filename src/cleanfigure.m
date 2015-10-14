@@ -64,9 +64,8 @@ function cleanfigure(varargin)
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', 600, @isValidTargetResolution);
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'scalePrecision', 1, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
-  m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'scalePrecision', 1, 'scalePrecision');
-
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
@@ -110,7 +109,7 @@ function indent = recursiveCleanup(meta, h, targetResolution, scalePrecision, in
   if ~isempty(children)
       for child = children(:)'
           indent = indent + 4;
-          indent = recursiveCleanup(meta, child, targetResolution, indent);
+          indent = recursiveCleanup(meta, child, targetResolution, scalePrecision, indent);
           indent = indent - 4;
       end
   else
@@ -510,6 +509,46 @@ function simplifyLine(meta, handle, targetResolution)
 
     % Remove the data points
     removeData(meta, handle, id_remove)
+end
+% =========================================================================
+function limitPrecision(meta, handle, alpha)
+  % Limit the precision of the given data
+
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  if isAxis3D(meta.gca)
+	  zData = get(handle, 'ZData');
+  end
+
+  % Put the data into a matrix
+  if isAxis3D(meta.gca)
+      data  = [xData(:), yData(:), zData(:)];
+  else
+      data  = [xData(:), yData(:)];
+  end
+
+  % Only do something if the data is not empty
+  if isempty(data) || all(all(~isfinite(data)))
+      return
+  end
+
+  % Get the maximal value of the data, only considering finite values
+  maxValue = max(abs(data(isfinite(data))));
+
+  % The least significant bit is proportional to the numerical precision
+  % of the largest number. Scale it with a user defined value alpha
+  eps_range = eps(maxValue) * alpha;
+
+  % Round to precision and scale back
+  data  = round(data / eps_range) * eps_range;
+
+  % Set the new data.
+  set(handle, 'XData', data(:, 1));
+  set(handle, 'YData', data(:, 2));
+  if isAxis3D(meta.gca)
+	  set(handle, 'zData', data(:, 3));
+  end
 end
 % =========================================================================
 function mask = isInBox(data, xLim, yLim)
@@ -949,46 +988,6 @@ function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
     topLeft     = [xLim(1); yLim(2)];
     bottomRight = [xLim(2); yLim(1)];
     topRight    = [xLim(2); yLim(2)];
-end
-% =========================================================================
-function limitPrecision(meta, handle, alpha)
-  % Limit the precision of the given data
-  
-  % Extract the data from the current line handle.
-  xData = get(handle, 'XData');
-  yData = get(handle, 'YData');
-  if isAxis3D(meta.gca)
-	  zData = get(handle, 'ZData');
-  end
-
-  % Put the data into a matrix
-  if isAxis3D(meta.gca)
-      data  = [xData(:), yData(:), zData(:)];
-  else
-      data  = [xData(:), yData(:)];
-  end
-
-  % Only do something if the data is not empty
-  if isempty(data)
-      return
-  end
-
-  % Get the maximal value of the data, only considering finite values
-  maxValue = max(abs(data(isfinite(data))), 'omitnan');
-
-  % The least significant bit is proportional to the numerical precision
-  % of the largest number. Scale it with a user defined value alpha
-  eps_range = eps(maxValue) * alpha;
-
-  % Round to precision and scale back
-  data  = round(data / eps_range) * eps_range;
-
-  % Set the new data.
-  set(handle, 'XData', data(:, 1));
-  set(handle, 'YData', data(:, 2));
-  if isAxis3D(meta.gca)
-	  set(handle, 'zData', data(:, 3));
-  end
 end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
