@@ -11,7 +11,7 @@ bars : 3b7ac8767e299b849c3cbdeee804f0c5
 besselImage : 0ffc3e10adb87029b44cbeb4bc435e07
 colorbarLabelTitle : d3c0aa0e9481c5ace5d64eeb50932e38
 colorbarLogplot : cb326bbb54e486a40d387acfe82f1b72
-compassplot : 76471346722595e1b113f3af59a6c91b
+compassplot : e33bb95d2c3ad25d887dac837d26bc1e
 contourPenny : e4af017e07881bc878b075f4b413d367
 customLegend : 3ce7c2ab5bc34f9825cb8eb91e282170
 decayingharmonic : e750cbafc69a0077b3fffe7cd077c3f0
@@ -50,13 +50,13 @@ peaks_contourf : 957fcc67221ce5c54b1981b2675348a1
 pixelLegend : 26c3af8f30df0fefcb56697b534b8516
 plain_cos : 6743ec5be29b98ee072b5ce23dc26b2a
 plotyyLegends : 8e439c4b17afabd8cc915932d798c97a
-polarplot : 1108f4018f5f14ad3bff73865caafb98
+polarplot : 621d3d9332bc75ad246c1d20fad94346
 quiver3plot : 8d74c782c57b27be844585d37328d3cf
 quiveroverlap : a5c76200c93b83f2480aca8563626bf9
 quiverplot : 6e2d74dd2d73bfa916c571bf704e360b
 randomWithLines : 8095aa52dd58fae39a8d5718eebe55d5
 rectanglePlot : f63538597348033398ef9cc37dcf57cd
-roseplot : 10c269e1ff65975791d794b489ebbed9
+roseplot : d4c8506bd33b885bc6d0c1c4e7394b96
 scatter3Plot : 96bd87d3f46beb1a8057f7929df7a254
 scatterPlotMarkers : b46648fe15cd942df897d7f7547c6b32
 scatterPlotRandom : f43dd304532dc4288e46ec5c63ed8b18
