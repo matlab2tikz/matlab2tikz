@@ -15,6 +15,9 @@ function cleanfigure(varargin)
 %   pixels, e.g. [9000, 5400].
 %   Use targetResolution = Inf or 0 to disable line simplification.
 %   (default: 600)
+%   CLEANFIGURE('scalePrecision',alpha,...)
+%   Scale the precision the data is represented with.
+%   (default: 1)
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -62,13 +65,17 @@ function cleanfigure(varargin)
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
+  m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'scalePrecision', 1, 'scalePrecision');
 
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
   % Recurse down the tree of plot objects and clean up the leaves.
   for h = m2t.cmdOpts.Results.handle(:)'
-    recursiveCleanup(meta, h, m2t.cmdOpts.Results.targetResolution, 0);
+    recursiveCleanup(meta, h, ...
+                     m2t.cmdOpts.Results.targetResolution, ...
+                     m2t.cmdOpts.Results.scalePrecision, ...
+                     0);
   end
 
   % Reset to initial state.
@@ -77,7 +84,7 @@ function cleanfigure(varargin)
   return;
 end
 % =========================================================================
-function indent = recursiveCleanup(meta, h, targetResolution, indent)
+function indent = recursiveCleanup(meta, h, targetResolution, scalePrecision, indent)
 
   type = get(h, 'Type');
 
@@ -126,8 +133,12 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
           movePointsCloser(meta, h);
           % Simplify the lines by removing superflous points
           simplifyLine(meta, h, targetResolution);
+          % Limit the precision of the output
+          limitPrecision(meta, h, scalePrecision);
       elseif strcmpi(type, 'stair')
           pruneOutsideBox(meta, h);
+          % Limit the precision of the output
+          limitPrecision(meta, h, scalePrecision);
       elseif strcmp(type, 'text')
           % Ensure units of type 'data' (default) and restore the setting later
           units_original = get(h, 'Units');
@@ -778,9 +789,9 @@ function [xData, yData] = getVisualData(meta, handle)
     yData = log10(yData);
   end
 
-  % Limit the precision of the data
-  xData = limitPrecision(xData(:));
-  yData = limitPrecision(yData(:));
+  % Return column vectors
+  xData = xData(:);
+  yData = yData(:);
 end
 % =========================================================================
 function [xLim, yLim] = getVisualLimits(meta)
@@ -940,28 +951,44 @@ function [bottomLeft, topLeft, bottomRight, topRight] = corners(xLim, yLim)
     topRight    = [xLim(2); yLim(2)];
 end
 % =========================================================================
-function data = limitPrecision(data)
+function limitPrecision(meta, handle, alpha)
   % Limit the precision of the given data
   
+  % Extract the data from the current line handle.
+  xData = get(handle, 'XData');
+  yData = get(handle, 'YData');
+  if isAxis3D(meta.gca)
+	  zData = get(handle, 'ZData');
+  end
+
+  % Put the data into a matrix
+  if isAxis3D(meta.gca)
+      data  = [xData(:), yData(:), zData(:)];
+  else
+      data  = [xData(:), yData(:)];
+  end
+
   % Only do something if the data is not empty
-  if isempty(data) || all(~isfinite(data))
+  if isempty(data)
       return
   end
-  
-  % Only consider finite values
-  mask = isfinite(data);
 
-  % Get the maximal value of the data
-  range = max(abs(data(mask)));
+  % Get the maximal value of the data, only considering finite values
+  maxValue = max(abs(data(isfinite(data))), 'omitnan');
 
-  % Get the maximal precision for the data range
-  eps_range = eps(range);
-
-  % Scale the data wrt the range
-  data  = data / eps_range;
+  % The least significant bit is proportional to the numerical precision
+  % of the largest number. Scale it with a user defined value alpha
+  eps_range = eps(maxValue) * alpha;
 
   % Round to precision and scale back
-  data  = round(data) * eps_range;
+  data  = round(data / eps_range) * eps_range;
+
+  % Set the new data.
+  set(handle, 'XData', data(:, 1));
+  set(handle, 'YData', data(:, 2));
+  if isAxis3D(meta.gca)
+	  set(handle, 'zData', data(:, 3));
+  end
 end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
