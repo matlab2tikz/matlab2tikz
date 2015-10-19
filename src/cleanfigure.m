@@ -168,7 +168,12 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
             bPosInsideLim = bPosInsideLim | bPosInsideLimExt;
           end
 
-          if ~all(bPosInsideLim)
+          % Check if it is the title
+          isTitle = (h== get(meta.gca, 'title'));
+
+          % Disable visibility if it is outside the limits and it is not
+          % the title
+          if ~all(bPosInsideLim) && ~isTitle
               % Artificially disable visibility. m2t will check and skip.
               set(h, 'Visible', 'off');
           end
