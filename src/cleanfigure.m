@@ -544,10 +544,10 @@ function limitPrecision(meta, handle, alpha)
 
   % The least significant bit is proportional to the numerical precision
   % of the largest number. Scale it with a user defined value alpha
-  eps_range = eps(maxValue) * alpha;
+  leastSignificantBit = eps(maxValue) * alpha;
 
   % Round to precision and scale back
-  data  = round(data / eps_range) * eps_range;
+  data  = round(data / leastSignificantBit) * leastSignificantBit;
 
   % Set the new data.
   set(handle, 'XData', data(:, 1));
