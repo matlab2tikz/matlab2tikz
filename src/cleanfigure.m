@@ -1067,32 +1067,28 @@ function P = getProjectionMatrix(meta)
     el = el*pi/180;
 
     % The transformation into the image plane is done in a two-step process.
-    % First rotate around the z-axis by -az (in radians)
-    Rot_z = [ cos(-az)  -sin(-az)   0   0
-              sin(-az)   cos(-az)   0   0
-              0          0          1   0
-              0          0          0   1];
+    % First: rotate around the z-axis by -az (in radians)
+    rotationZ = [ cos(-az)  -sin(-az)   0   0
+                  sin(-az)   cos(-az)   0   0
+                  0          0          1   0
+                  0          0          0   1];
 
-    % Second rotate around the x-axis by (el - pi/2) radians.
+    % Second: rotate around the x-axis by (el - pi/2) radians.
     % NOTE: There are some trigonometric simplifications, as we use
     % (el-pi/2)
     % cos(x - pi/2) =  sin(x)
     % sin(x - pi/2) = -cos(x)
-    Rot_x = [ 1         0         0         0
-              0         sin(el)   cos(el)   0
-              0        -cos(el)   sin(el)   0
-              0         0        0          1];
+    rotationX = [ 1         0         0         0
+                  0         sin(el)   cos(el)   0
+                  0        -cos(el)   sin(el)   0
+                  0         0        0          1];
 
     % Get the data aspect ration
-    AspectRatio = get(meta.gca, 'DataAspectRatio');
-    scale       = 1./AspectRatio;
-    scaleMatrix = [ scale(1) 0        0        0
-                    0        scale(2) 0        0
-                    0        0        scale(3) 0
-                    0        0        0        1];
+    aspectRatio = get(meta.gca, 'DataAspectRatio');
+    scaleMatrix = diag([1./aspectRatio, 1]);
 
     % Calculate the projection matrix
-    P = Rot_x * Rot_z * scaleMatrix;
+    P = rotationX * rotationZ * scaleMatrix;
 end
 % =========================================================================
 function [W, H] = getWidthHeightInPixels(targetResolution)
