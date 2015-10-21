@@ -295,9 +295,10 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB('>=',[8,4]) ... %FIXME: investigate
+                    || isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
-  x = -pi:.1:pi;
+  x = -pi:.1:pi; %TODO: the 0.1 step is probably a bad idea (not representable in float)
   y = sin(x);
   h = plot(x,y);
   set(gca,'XTick',-pi:pi/2:pi);
@@ -761,8 +762,8 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
-
+  stat.unreliable = isOctave('>=', 4) || ... %FIXME: see #759, #757/#759 and #687
+                    isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
 end
@@ -770,7 +771,8 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
+  stat.unreliable = isOctave('>=', 4) || ... %FIXME: see #759, #757/#759 and #687
+                    isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -779,7 +781,8 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
+  stat.unreliable = isOctave('>=', 4) || ... %FIXME: see #759, #757/#759 and #687
+                    isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
@@ -1353,14 +1356,14 @@ function [stat] = surfPlot2()
 end
 % =========================================================================
 function [stat] = superkohle()
+  stat.description = 'Superkohle plot.';
+  stat.unreliable = isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
   if ~exist('initmesh')
       fprintf( 'initmesh() not found. Skipping.\n\n' );
       stat.skip = true;
       return;
   end
-
-  stat.description = 'Superkohle plot.';
 
   x1=0;
   x2=pi;
@@ -1759,6 +1762,7 @@ end
 function [stat] = latexInterpreter()
     stat.description = '\LaTeX{} interpreter test (display math not working)';
     stat.issues = 448;
+    stat.unreliable = isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
     plot(magic(3),'-x');
 
