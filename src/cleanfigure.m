@@ -527,6 +527,20 @@ function limitPrecision(meta, handle, alpha)
 	  zData = get(handle, 'ZData');
   end
 
+  % Get info about log scaling
+  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+  if isXlog
+    xData = log10(xData);
+  end
+  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+  if isYlog
+    yData = log10(yData);
+  end
+  isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+  if isZlog
+    zData = log10(zData);
+  end
+
   % Put the data into a matrix
   if isAxis3D(meta.gca)
       data  = [xData(:), yData(:), zData(:)];
@@ -548,6 +562,20 @@ function limitPrecision(meta, handle, alpha)
 
   % Round to precision and scale back
   data  = round(data / leastSignificantBit) * leastSignificantBit;
+
+  % Scale back in case of log scaling
+  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+  if isXlog
+    data(:, 1) = 10.^data(:, 1);
+  end
+  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+  if isYlog
+    data(:, 2) = 10.^data(:, 2);
+  end
+  isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+  if isZlog && isAxis3D(meta.gca)
+    data(:, 3) = 10.^data(:, 3);
+  end
 
   % Set the new data.
   set(handle, 'XData', data(:, 1));
