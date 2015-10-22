@@ -481,8 +481,7 @@ function simplifyLine(meta, handle, targetResolution)
         lineEnd   = find(id_diff == -1)-1;
         numLines = numel(lineStart);
 
-        % Count the number of data points in the previous segments
-        countData = 0;
+        % Simplify the line segments
         for ii = 1:numLines
             % Actual data that inherits the simplifications
             x = xData(lineStart(ii):lineEnd(ii));
@@ -493,11 +492,8 @@ function simplifyLine(meta, handle, targetResolution)
                 mask      = opheimSimplify(x, y, tol);
                 % Remove all those with mask==0 respecting the number of
                 % data points in the previoous segments
-                id_remove = find(mask==0) + countData;
+                id_remove = find(mask==0) + lineStart(ii) -1;
             end
-
-            % Update the number of processed data points
-            countData = countData + lineEnd(ii) - lineStart(ii);
         end
     end
 
