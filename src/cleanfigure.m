@@ -527,31 +527,27 @@ function limitPrecision(meta, handle, alpha)
 	  zData = get(handle, 'ZData');
   end
 
-  % Get info about log scaling
+  % Check for log scaling
   isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-  if isXlog
-    xData = log10(xData);
-  end
   isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-  if isYlog
-    yData = log10(yData);
-  end
   isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
-  if isZlog
-    zData = log10(zData);
-  end
 
-  % Put the data into a matrix
+  % Put the data into a matrix and log bits into vector
   if isAxis3D(meta.gca)
-      data  = [xData(:), yData(:), zData(:)];
+	  data  = [xData(:), yData(:), zData(:)];
+      isLog = [isXlog, isYlog, isZlog];
   else
       data  = [xData(:), yData(:)];
+      isLog = [isXlog, isYlog];
   end
 
   % Only do something if the data is not empty
   if isempty(data) || all(all(~isfinite(data)))
       return
   end
+
+  % Scale to visual coordinates
+  data(:, isLog) = log10(data(:, isLog));
 
   % Get the maximal value of the data, only considering finite values
   maxValue = max(abs(data(isfinite(data))));
@@ -564,18 +560,7 @@ function limitPrecision(meta, handle, alpha)
   data  = round(data / leastSignificantBit) * leastSignificantBit;
 
   % Scale back in case of log scaling
-  isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
-  if isXlog
-    data(:, 1) = 10.^data(:, 1);
-  end
-  isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
-  if isYlog
-    data(:, 2) = 10.^data(:, 2);
-  end
-  isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
-  if isZlog && isAxis3D(meta.gca)
-    data(:, 3) = 10.^data(:, 3);
-  end
+  data(:, isLog) = 10.^data(:, isLog);
 
   % Set the new data.
   set(handle, 'XData', data(:, 1));
