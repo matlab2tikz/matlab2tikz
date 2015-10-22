@@ -491,8 +491,8 @@ function simplifyLine(meta, handle, targetResolution)
             if numel(x) > 2
                 mask      = opheimSimplify(x, y, tol);
                 % Remove all those with mask==0 respecting the number of
-                % data points in the previoous segments
-                id_remove = find(mask==0) + lineStart(ii) -1;
+                % data points in the previous segments
+                id_remove = find(mask==0) + lineStart(ii) - 1;
             end
         end
     end
