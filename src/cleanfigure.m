@@ -534,7 +534,7 @@ function limitPrecision(meta, handle, alpha)
 
   % Put the data into a matrix and log bits into vector
   if isAxis3D(meta.gca)
-	  data  = [xData(:), yData(:), zData(:)];
+      data  = [xData(:), yData(:), zData(:)];
       isLog = [isXlog, isYlog, isZlog];
   else
       data  = [xData(:), yData(:)];
