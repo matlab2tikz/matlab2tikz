@@ -524,7 +524,7 @@ function limitPrecision(meta, handle, alpha)
   xData = get(handle, 'XData');
   yData = get(handle, 'YData');
   if isAxis3D(meta.gca)
-	  zData = get(handle, 'ZData');
+      zData = get(handle, 'ZData');
   end
 
   % Check for log scaling
