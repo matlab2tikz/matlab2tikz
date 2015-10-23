@@ -1458,7 +1458,15 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     tickMode        = get(handle, keywordTickMode);
     keywordTick     = [upper(axis), 'Tick'];
     ticks           = get(handle, keywordTick);
-    isDatetimeTicks = hasProperties(handle, 'DatetimeDurationPlotAxesListenersManager','');
+
+    % hidden properties are not caught by hasProperties
+    try 
+        get(handle, 'DatetimeDurationPlotAxesListenersManager');
+        isDatetimeTicks = strcmpi(axis,'x');
+    catch
+        isDatetimeTicks = false;
+    end
+
     if isempty(ticks)
         % If no ticks are present, we need to enforce this in any case.
         pgfTicks = '\empty';
@@ -1469,7 +1477,6 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     else % strcmpi(tickMode,'manual') || m2t.cmdOpts.Results.strict
         pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
     end
-    
 
     keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
     tickLabelMode        = get(handle, keywordTickLabelMode);
@@ -1495,10 +1502,10 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     tickDirection = getOrDefault(handle, 'TickDir', 'in');
 
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
-        hasMinorTicks, tickDirection);
+        hasMinorTicks, tickDirection, isDatetimeTicks);
 end
 % ==============================================================================
-function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir)
+function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir,isDatetimeTicks)
 % set ticks options
 
     % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
@@ -1530,6 +1537,10 @@ function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTi
     elseif strcmpi(tickDir,'both')
         options = opts_add(options, ...
         'tick align','center');
+    end
+    if isDatetimeTicks
+        options = opts_add(options, ...
+        'scaled x ticks','false');
     end
 end
 % ==============================================================================
