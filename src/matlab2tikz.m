@@ -3847,7 +3847,7 @@ end
 % ==============================================================================
 function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
     str = '';
-    if isOff(get(hparent,'ShowBaseLine'))
+    if isOff(get(hparent,'ShowBaseLine')) || ~isHG2()
         return
     end
     
