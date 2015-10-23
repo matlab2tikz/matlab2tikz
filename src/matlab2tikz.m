@@ -1444,26 +1444,25 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     assertValidAxisSpecifier(axis);
 
     keywordTickMode = [upper(axis), 'TickMode'];
-    tickMode = get(handle, keywordTickMode);
-    keywordTick = [upper(axis), 'Tick'];
-    ticks = get(handle, keywordTick);
+    tickMode        = get(handle, keywordTickMode);
+    keywordTick     = [upper(axis), 'Tick'];
+    ticks           = get(handle, keywordTick);
+    isDatetimeTicks = hasProperties(handle, 'DatetimeDurationPlotAxesListenersManager','');
     if isempty(ticks)
         % If no ticks are present, we need to enforce this in any case.
         pgfTicks = '\empty';
-    else
-        if strcmpi(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict
-            % If the ticks are set automatically, and strict conversion is
-            % not required, then let Pgfplots take care of the ticks.
-            % In most cases, this looks a lot better anyway.
-            pgfTicks = [];
-        else % strcmpi(tickMode,'manual') || m2t.cmdOpts.Results.strict
-            pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
-        end
+    elseif strcmpi(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict && ~isDatetimeTicks
+        % Let pgfplots decide if the tickmode is auto or conversion is not
+        % strict and we are not dealing with datetime ticks
+        pgfTicks = [];
+    else % strcmpi(tickMode,'manual') || m2t.cmdOpts.Results.strict
+        pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
     end
+    
 
     keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
-    tickLabelMode = get(handle, keywordTickLabelMode);
-    if strcmpi(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict
+    tickLabelMode        = get(handle, keywordTickLabelMode);
+    if strcmpi(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict && ~isDatetimeTicks
         pgfTickLabels = [];
     else % strcmpi(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
         % HG2 allows to set 'TickLabelInterpreter'.
