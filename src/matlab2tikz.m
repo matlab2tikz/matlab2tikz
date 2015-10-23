@@ -3847,7 +3847,8 @@ end
 % ==============================================================================
 function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
     str = '';
-    if isOff(get(hparent,'ShowBaseLine')) || ~isHG2()
+    baseValue = get(hparent, 'BaseValue');
+    if isOff(get(hparent,'ShowBaseLine')) || ~isHG2() || baseValue ~= 0
         return
     end
     
@@ -3872,11 +3873,11 @@ function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
 
     % Get data
     if isVertical
-        xData = repmat(get(hBaseLine, 'BaseValue'),1,2);
+        xData = repmat(baseValue,1,2);
         yData = get(m2t.currentHandles.gca,'Ylim');
     else
         xData = get(m2t.currentHandles.gca,'Xlim');
-        yData = repmat(get(hBaseLine, 'BaseValue'),1,2);
+        yData = repmat(baseValue,1,2);
     end
     
     [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
