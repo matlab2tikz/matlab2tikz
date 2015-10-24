@@ -3710,6 +3710,9 @@ function [m2t, str] = drawBarseries(m2t, h)
     str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
                  opts_print(m2t, drawOptions, ','), ...
                  opts_print(m2t, tabOpts, ','), table);
+
+    [m2t, baseline] = drawBaseline(m2t,h,isHoriz);
+    str             = [str, baseline];
 end
 % ==============================================================================
 function [barType, isHorizontal] = getOrientationOfBarSeries(h)
@@ -3842,8 +3845,65 @@ function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
     [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'fill', faceColor);
 end
 % ==============================================================================
+function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
+% DRAWBASELINE Draws baseline for bar and stem plots
+% 
+% Notes: 
+%   - In HG2, the baseline is a specific object child of a bar or stem
+%     plot. So, handleAllChildren() won't find a line in the axes to plot as
+%     the baseline.
+%   - The baseline is horizontal for vertical bar and stem plots and is
+%     vertical for horixontal barplots. The ISVERTICAL input refers to the
+%     baseline.
+%   - We do not plot baselines with a BaseValue different from 0 because 
+%     pgfplots does not support shifts in the BaseValue, e.g. see #438. 
+%     We either implement our own data shifting or wait for pgfplots.     
+
+    if ~exist('isVertical','var')
+        isVertical = false;
+    end
+
+    str = '';
+    baseValue = get(hparent, 'BaseValue');
+    if isOff(get(hparent,'ShowBaseLine')) || ~isHG2() || baseValue ~= 0
+        return
+    end
+
+    hBaseLine = get(hparent,'BaseLine');
+
+    % Line options of the baseline
+    lineStyle        = get(hBaseLine, 'LineStyle');
+    lineWidth        = get(hBaseLine, 'LineWidth');
+    lineOptions      = getLineOptions(m2t, lineStyle, lineWidth);
+    color            = get(hBaseLine, 'Color');
+    [m2t, lineColor] = getColor(m2t, hBaseLine, color, 'patch');
+
+    drawOptions = opts_new();
+    drawOptions = opts_add(drawOptions, 'forget plot');
+    drawOptions = opts_add(drawOptions, 'color', lineColor);
+    drawOptions = opts_merge(drawOptions, lineOptions);
+    drawOpts    = opts_print(m2t, drawOptions, ',');
+
+    % Get data
+    if isVertical
+        xData = repmat(baseValue,1,2);
+        yData = get(m2t.currentHandles.gca,'Ylim');
+    else
+        xData = get(m2t.currentHandles.gca,'Xlim');
+        yData = repmat(baseValue,1,2);
+    end
+
+    [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
+
+    str = sprintf('%s\\addplot[%s] table[%s] {%s};\n', ...
+        str, drawOpts, opts_print(m2t, tabOpts, ','), table);
+end
+% ==============================================================================
 function [m2t, str] = drawStemSeries(m2t, h)
     [m2t, str] = drawStemOrStairSeries_(m2t, h, 'ycomb');
+    
+    [m2t, baseline] = drawBaseline(m2t,h);
+    str             = [str, baseline];
 end
 function [m2t, str] = drawStairSeries(m2t, h)
     [m2t, str] = drawStemOrStairSeries_(m2t, h, 'const plot');
