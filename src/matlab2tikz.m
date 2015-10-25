@@ -1461,8 +1461,13 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
 
     % hidden properties are not caught by hasProperties
     try 
-        get(handle, 'DatetimeDurationPlotAxesListenersManager');
-        isDatetimeTicks = strcmpi(axis,'x');
+        % Get hidden properties of the datetime axes manager
+        dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
+        warning('off', 'MATLAB:structOnObject')
+        dtsManager = struct(dtsManager);
+        warning('on', 'MATLAB:structOnObject')
+        
+        isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
     catch
         isDatetimeTicks = false;
     end
@@ -1540,7 +1545,7 @@ function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTi
     end
     if isDatetimeTicks
         options = opts_add(options, ...
-        'scaled x ticks','false');
+        ['scaled ' axis ' ticks'],'false');
     end
 end
 % ==============================================================================
