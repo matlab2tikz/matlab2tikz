@@ -1816,9 +1816,8 @@ function [stat] = latexmath2()
 end
 % =========================================================================
 function [stat] = parameterCurve3d()
-  stat.description = 'Parameter curve in 3D with text boxes in-/outise axis.';
-  stat.issues = 378;
-  stat.issues = 790;
+  stat.description = 'Parameter curve in 3D with text boxes in-/outside axis.';
+  stat.issues = [378, 790] ;
   ezplot3('t', 'sin(t)', '50 * cos(t)', [0, 20]*pi);
   text(0.5, 0.5, 10, 'text inside axis limits');
   text(5.0, 1.5, 50, 'text outside axis (will be removed by cleanfigure())');
