@@ -218,7 +218,7 @@ function pruneOutsideBox(meta, handle)
   % By default, don't plot any points.
   shouldPlot = false(numPoints, 1);
   if hasMarkers
-      shouldPlot = shouldPlot | dataIsInBox | all(isnan(data),2);
+      shouldPlot = shouldPlot | dataIsInBox;
   end
   if hasLines
       % Check if the connecting line is in the box.
