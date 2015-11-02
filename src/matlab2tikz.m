@@ -1463,10 +1463,10 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     try 
         % Get hidden properties of the datetime axes manager
         dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
-        warning('off', 'MATLAB:structOnObject')
+        oldState   = warning('off','MATLAB:structOnObject');
         dtsManager = struct(dtsManager);
-        warning('on', 'MATLAB:structOnObject')
-        
+        warning(oldState);
+
         isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
     catch
         isDatetimeTicks = false;
