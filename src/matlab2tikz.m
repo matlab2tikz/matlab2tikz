@@ -1028,7 +1028,7 @@ switch getEnvironment()
 
     case 'MATLAB'
         % Undocumented property (exists at least since 2008a)
-        entries = double(get(legendHandle,'PlotChildren'));
+        entries = get(legendHandle,'PlotChildren');
 
         % Take only the first child from a pure hggroup (e.g. bodeplots)
         for ii = 1:numel(entries)
@@ -1038,6 +1038,9 @@ switch getEnvironment()
             if isHggroupClass
                 children    = get(entry, 'Children');
                 firstChild  = children(1);
+                if isnumeric(firstChild)
+                    firstChild = handle(firstChild);
+                end
                 % Inherits DisplayName from hggroup root
                 set(firstChild, 'DisplayName', get(entry, 'DisplayName'));
                 entries(ii) = firstChild;
@@ -1084,7 +1087,7 @@ elseif isAxisMain(axisHandle)
     % Mark legend entries of the main axis for labelling
     legendEntries = m2t.axesContainers{end}.LegendEntries;
     ancAxes       = ancestor(legendEntries,'axes');
-    idx           = ismember(double([ancAxes{:}]), axisHandle);
+    idx           = ismember([ancAxes{:}], axisHandle);
     m2t.axesContainers{end}.PlotyyReferences = legendEntries(idx);
 
     % Ensure no legend is created on the main axis
@@ -1097,7 +1100,7 @@ else
     if iscell(ancAxes)
         ancAxes = [ancAxes{:}];
     end
-    idx = ismember(double(ancAxes), axisHandle);
+    idx = ismember(ancAxes, axisHandle);
     m2t.axesContainers{end}.LegendEntries = legendEntries(idx);
 
     % Recover referenced legend entries of the main axis
@@ -1175,17 +1178,25 @@ end
 % ==============================================================================
 function [m2t, bool] = hasLegendEntry(m2t, h)
 % Check if the handle has a legend entry and track its legend status in m2t
-
+legendEntries = m2t.axesContainers{end}.LegendEntries;
+if isnumeric(h)
+    legendEntries = double(legendEntries);
+end
+    
 % Should not have a legend reference
-bool = any(ismember(h, m2t.axesContainers{end}.LegendEntries)) && ...
+bool = any(ismember(h, legendEntries)) && ...
        ~hasPlotyyReference(m2t,h);
 m2t.currentHandleHasLegend = bool;
 end
 % ==============================================================================
 function bool = hasPlotyyReference(m2t,h)
 % Check if the handle has a legend reference
+plotyyReferences = m2t.axesContainers{end}.PlotyyReferences;
+if isnumeric(h)
+    plotyyReferences = double(plotyyReferences);
+end
 
-bool = any(ismember(h, m2t.axesContainers{end}.PlotyyReferences));
+bool = any(ismember(h, plotyyReferences));
 end
 % ==============================================================================
 function m2t = retrievePositionOfAxes(m2t, handle)
@@ -1348,7 +1359,7 @@ function m2t = handleColorbar(m2t, handle)
     end
 
     % Find the axes environment that this colorbar belongs to.
-    parentAxesHandle = double(get(handle,'axes'));
+    parentAxesHandle = get(handle,'axes');
     parentFound = false;
     for k = 1:length(m2t.axesContainers)
         if m2t.axesContainers{k}.handle == parentAxesHandle
@@ -1444,26 +1455,37 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     assertValidAxisSpecifier(axis);
 
     keywordTickMode = [upper(axis), 'TickMode'];
-    tickMode = get(handle, keywordTickMode);
-    keywordTick = [upper(axis), 'Tick'];
-    ticks = get(handle, keywordTick);
+    tickMode        = get(handle, keywordTickMode);
+    keywordTick     = [upper(axis), 'Tick'];
+    ticks           = get(handle, keywordTick);
+
+    % hidden properties are not caught by hasProperties
+    try 
+        % Get hidden properties of the datetime axes manager
+        dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
+        oldState   = warning('off','MATLAB:structOnObject');
+        dtsManager = struct(dtsManager);
+        warning(oldState);
+
+        isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
+    catch
+        isDatetimeTicks = false;
+    end
+
     if isempty(ticks)
         % If no ticks are present, we need to enforce this in any case.
         pgfTicks = '\empty';
-    else
-        if strcmpi(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict
-            % If the ticks are set automatically, and strict conversion is
-            % not required, then let Pgfplots take care of the ticks.
-            % In most cases, this looks a lot better anyway.
-            pgfTicks = [];
-        else % strcmpi(tickMode,'manual') || m2t.cmdOpts.Results.strict
-            pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
-        end
+    elseif strcmpi(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict && ~isDatetimeTicks
+        % Let pgfplots decide if the tickmode is auto or conversion is not
+        % strict and we are not dealing with datetime ticks
+        pgfTicks = [];
+    else % strcmpi(tickMode,'manual') || m2t.cmdOpts.Results.strict
+        pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
     end
 
     keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
-    tickLabelMode = get(handle, keywordTickLabelMode);
-    if strcmpi(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict
+    tickLabelMode        = get(handle, keywordTickLabelMode);
+    if strcmpi(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict && ~isDatetimeTicks
         pgfTickLabels = [];
     else % strcmpi(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
         % HG2 allows to set 'TickLabelInterpreter'.
@@ -1485,10 +1507,10 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     tickDirection = getOrDefault(handle, 'TickDir', 'in');
 
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
-        hasMinorTicks, tickDirection);
+        hasMinorTicks, tickDirection, isDatetimeTicks);
 end
 % ==============================================================================
-function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir)
+function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir,isDatetimeTicks)
 % set ticks options
 
     % According to http://www.mathworks.com/help/techdoc/ref/axes_props.html,
@@ -1520,6 +1542,10 @@ function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTi
     elseif strcmpi(tickDir,'both')
         options = opts_add(options, ...
         'tick align','center');
+    end
+    if isDatetimeTicks
+        options = opts_add(options, ...
+        ['scaled ' axis ' ticks'],'false');
     end
 end
 % ==============================================================================
@@ -5568,7 +5594,7 @@ function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
     end
     % Store the relevant axes in m2t to simplify querying e.g. positions
     % of subplots
-    m2t.relevantAxesHandles = double(axesHandles(idx));
+    m2t.relevantAxesHandles = axesHandles(idx);
 
     % Compute the bounding box if width or height of the figure are set by
     % parameter
