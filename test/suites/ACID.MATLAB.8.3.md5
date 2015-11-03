@@ -35,7 +35,7 @@ imagescplot2 : 440da094f42db1adf7355a23ef841597
 latexInterpreter : ea3ec541540f3ca0e4234216c3d2de87
 latexmath2 : d05870d00eef2742d44bb39cb2e96057
 legendplot : 1a15a9d38698e0bacc2dfefcb54c60dd
-legendplotBoxoff : dddcb152976a45f4af6990efab85e606
+legendplotBoxoff : b9eaa52e7a7eb9a7e2645e70590aee17
 legendsubplots : 528e57cc9c7858f9c941bd64733b2f12
 linesWithOutliers : 4976c3f7b1e8e8cd32f7e17e34fcc99f
 logbaseline : 59ff71a8a8125053e2ddac4dd3070e5a
@@ -54,7 +54,7 @@ multiplePatches : ae923ae5cdc9e12f70e7da2673504476
 myBoxplot : c2fce0eeef9167804100754817c7e473
 overlappingPlots : e3f4a07b2e345edb1d3ccfcafbe3d163
 pColorPlot : a0c6891bb9ad3c2942cc6ede4dad840d
-parameterCurve3d : 920f30819e8f40b70b2834728772a06b
+parameterCurve3d : f72d890fee5b361e4864bc2337215c2b
 parameterSurf : d12b08a56aa74174ac66d361ca128302
 peaks_contour : beba575152e4de5ee22d25a1b7ec2a5c
 peaks_contourf : 96975c89b72ced7a0807e835ef069601
@@ -63,7 +63,7 @@ plain_cos : b36357bc9a1cf6e1d50c3634c79b02c4
 plotyyLegends : db7d2a3805c0fa6976c6b861b820b49f
 polarplot : 915d26d216077d2d7d8527df5855be2d
 quiver3plot : 612ab8ee8ed66a0368767b39854bb274
-quiveroverlap : 54a653adc319a2847fed16021dc9bf1f
+quiveroverlap : 33ba3b2e8aed8286a5f58f7ab3cb9e01
 quiverplot : 3f5231d7089336c9aff107db7bed7eaa
 randomWithLines : 98dc43749ff89beeced69ddeac11a4f5
 rectanglePlot : 6b95520cdbb7071cbdb7c7eece7326ca
@@ -74,7 +74,7 @@ scatterPlot : f7dad4b70f665cb321e8231f9ea1968b
 scatterPlotMarkers : e0218f8ba36622fedc5cfa2c8a999b26
 scatterPlotRandom : 3650331121436e1f53bad63aa2839796
 sine_with_annotation : 59c96e5b5d5b447ddb83ac381f7145fa
-sine_with_markers : 449b3b36328bd0434732b686a3e97974
+sine_with_markers : 5aeb5c7353e8fb12ef6173b104ae89cc
 spectro : b983a40d5898d86abe6704552f7ad834
 spherePlot : e1cb7280398cddae4d6088d16f960944
 stackedBarsWithOther : 174cbc9ac89716d20d75890dbb7ca512
