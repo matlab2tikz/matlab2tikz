@@ -1818,7 +1818,8 @@ end
 function [stat] = parameterCurve3d()
   stat.description = 'Parameter curve in 3D with text boxes in-/outside axis.';
   stat.issues = [378, 790] ;
-  ezplot3('t', 'sin(t)', '50 * cos(t)', [0, 20]*pi);
+  t = linspace(0, 20*pi, 1e5);
+  plot3(t, sin(t), 50 * cos(t));
   text(0.5, 0.5, 10, 'text inside axis limits');
   text(5.0, 1.5, 50, 'text outside axis (will be removed by cleanfigure())');
 end
