@@ -1153,7 +1153,8 @@ function P = getProjectionMatrix(meta)
                   0        -cos(el)   sin(el)   0
                   0         0        0          1];
 
-    % Get the data aspect ration
+    % Get the data aspect ratio. This is necessary, as the axes usually do
+    % not have the same scale (xRange~=yRange)
     aspectRatio = get(meta.gca, 'DataAspectRatio');
     scaleMatrix = diag([1./aspectRatio, 1]);
 
