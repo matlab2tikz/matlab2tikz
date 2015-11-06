@@ -73,6 +73,10 @@ function matlab2tikz(varargin)
 %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
 %   explicitly adds extra options to the tikzpicture environment. (default: [])
 %
+%   MATLAB2TIKZ('extraTikzLegendOptions',CHAR or CELLCHAR,...)
+%   explicitly adds extra options to the legend style, e.g., 'legend columns=2'
+%   or 'transpose legend' (default: [])
+%
 %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
 %
 %   MATLAB2TIKZ('floatFormat',CHAR,...) sets the format used for float values.
@@ -218,6 +222,7 @@ ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'extraCodeAtEnd', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
+ipp = ipp.addParamValue(ipp, 'extraTikzLegendOptions', {}, @isCellOrChar);
 ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
 ipp = ipp.addParamValue(ipp, 'automaticLabels', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
@@ -4739,6 +4744,9 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
             lStyle = opts_add(lStyle, 'fill', col);
         end
     end
+
+    lStyle = opts_append_userdefined(lStyle, m2t.cmdOpts.Results.extraTikzLegendOptions)
+
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     key = 'legend style';
