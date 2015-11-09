@@ -472,6 +472,7 @@ function simplifyLine(meta, handle, targetResolution)
         lineStart = find(id_diff == 1);
         lineEnd   = find(id_diff == -1)-1;
         numLines  = numel(lineStart);
+        id_remove = cell(numLines, 1);
 
         % Simplify the line segments
         for ii = 1:numLines
@@ -484,9 +485,12 @@ function simplifyLine(meta, handle, targetResolution)
                 mask      = opheimSimplify(x, y, tol);
                 % Remove all those with mask==0 respecting the number of
                 % data points in the previous segments
-                id_remove = find(mask==0) + lineStart(ii) - 1;
+                id_remove{ii} = find(mask==0) + lineStart(ii) - 1;
             end
         end
+        
+        % Merge the indices of the line segments
+        id_remove = cat(1, id_remove{:});
     end
 
     % Remove the data points
