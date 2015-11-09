@@ -557,7 +557,7 @@ function [stat] = legendplot()
 %    h = legend('one pretty long legend cos_x','sin_x',2);
 %    set(h,'Interpreter','none');
 
-  x = 0:0.01:2*pi;
+  x = linspace(0, 2*pi, 1e6);
   plot( x, sin(x), 'b', ...
         x, cos(x), 'r' );
   xlim( [0 2*pi] )
