@@ -1649,7 +1649,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     [data] = getXYZDataFromLine(m2t, h);
 
-    % Also add
+    % Also add errorbars to the data when needed
     if hasDeviations
         data = [data, yDeviation(:,1:2)];
     end
