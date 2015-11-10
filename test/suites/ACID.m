@@ -205,10 +205,18 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function.';
 
-  fplot( @cos, [0,2*pi] );
-  hold on;
-  
+  t = linspace(0, 2*pi, 1e6);
+  x = cos(t);
+
+  % Explicitely cut the line into segments
+  x([2e5, 5e5, 8e5]) = NaN;
+
+  % Plot the cosine
+  plot(t, x);
+  xlim([0, 2*pi]);
+
   % also add some patches to test their border color reproduction
+  hold on;
   h(1) = fill(pi*[1/4 1/4 1/2 1/2]   ,  [-2 1 1 -2], 'y');
   h(2) = fill(pi*[1/4 1/4 1/2 1/2]+pi, -[-2 1 1 -2], 'y');
 
