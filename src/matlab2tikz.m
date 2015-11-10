@@ -1613,18 +1613,15 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
 % not too fancy plots.
     str = '';
 
-    if ~isVisible(h)
-        return
-    end
-
-    % Check if there is anything to plot (line annotation has no marker)
-    lineStyle  = get(h, 'LineStyle');
-    lineWidth  = get(h, 'LineWidth');
-    marker     = getOrDefault(h, 'Marker','none');
-    hasLines   = ~isNone(lineStyle) && lineWidth > 0;
-    hasMarkers = ~isNone(marker);
-    if ~hasLines && ~hasMarkers
-        return
+    % Check if there is anything to plot
+    lineStyle     = get(h, 'LineStyle');
+    lineWidth     = get(h, 'LineWidth');
+    marker        = getOrDefault(h, 'Marker','none');
+    hasLines      = ~isNone(lineStyle) && lineWidth > 0;
+    hasMarkers    = ~isNone(marker);
+    hasDeviations = exist('yDeviation', 'var') && ~isempty(yDeviation);
+    if ~isVisible(h) || (~hasLines && ~hasMarkers && ~hasDeviations)
+        return % there is nothing to plot
     end
 
     % Color
@@ -1652,11 +1649,9 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     [data] = getXYZDataFromLine(m2t, h);
 
-    % check if the *optional* argument 'yDeviation' was given
-    hasDeviations = false;
-    if nargin > 2
+    % Also add
+    if hasDeviations
         data = [data, yDeviation(:,1:2)];
-        hasDeviations = true;
     end
 
     % Check if any value is infinite/NaN. In that case, add appropriate option.
