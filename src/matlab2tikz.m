@@ -1607,19 +1607,13 @@ function bool = isVisibleContainer(axisHandle)
     end
 end
 % ==============================================================================
-function [m2t, str] = drawLine(m2t, h, yDeviation)
+function [m2t, str] = drawLine(m2t, h)
 % Returns the code for drawing a regular line and error bars.
 % This is an extremely common operation and takes place in most of the
 % not too fancy plots.
     str = '';
-    if ~exist('yDeviation','var')
-        hasDeviations = false;
-    else
-        hasDeviations = true;
-    end
-    %TODO: get rid of yDeviation parameter, fetch actual data instead
 
-    if ~isLineVisible(h, hasDeviations)
+    if ~isLineVisible(h)
         return; % there is nothing to plot
     end
 
@@ -1639,7 +1633,8 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     % Check for "special" lines, e.g.:
     if strcmpi(get(h, 'Tag'), 'zplane_unitcircle')
         % Draw unit circle and axes.
-        % TODO Don't hardcode "10".
+        % TODO Don't hardcode "10".pa
+
         opts = opts_print(m2t, drawOptions, ',');
         str = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts),...
             sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
@@ -1647,12 +1642,11 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
         return
     end
 
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    [data] = getXYZDataFromLine(m2t, h);
-
-    % Also add errorbars to the data when needed
-    if hasDeviations
-        data = [data, yDeviation(:,1:2)];
+    % build the data matrix
+    data       = getXYZDataFromLine(m2t, h);
+    yDeviation = getYDeviations(h);
+    if ~isempty(yDeviation)
+        data = [data, yDeviation];
     end
 
     % Check if any value is infinite/NaN. In that case, add appropriate option.
@@ -1662,7 +1656,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     [m2t, str] = addLabel(m2t, str);
 end
 % ==============================================================================
-function bool = isLineVisible(h, hasDeviations)
+function bool = isLineVisible(h)
 % check if a line object is actually visible (has markers and so on)
 
     lineStyle     = get(h, 'LineStyle');
@@ -1670,6 +1664,7 @@ function bool = isLineVisible(h, hasDeviations)
     marker        = getOrDefault(h, 'Marker','none');
     hasLines      = ~isNone(lineStyle) && lineWidth > 0;
     hasMarkers    = ~isNone(marker);
+    hasDeviations = ~isempty(getYDeviations(h));
 
     bool = isVisible(h) && (hasLines || hasMarkers || hasDeviations);
 end
@@ -4174,20 +4169,18 @@ end
 function [m2t, str] = drawErrorBars(m2t, h)
 % Takes care of MATLAB's error bar plots.
 % Octave's error bar plots are handled as well.
-
-    yDeviations = getYDeviations(h);
-    % Now run drawLine() with deviation information.
-    [m2t, str] = drawLine(m2t, h, yDeviations);
+    [m2t, str] = drawLine(m2t, h);
+    % Even though this only calls |drawLine|, let's keep this wrapper
+    % such that the code is easier to read where it is called.
 end
 % ==============================================================================
-function [yDeviations, hasDeviations] = getYDeviations(h)
+function [yDeviations] = getYDeviations(h)
 % Retrieves upper/lower uncertainty data
     
-    upDev = get(h, 'UData');
-    loDev = get(h, 'LData');
+    upDev = getOrDefault(h, 'UData', []);
+    loDev = getOrDefault(h, 'LData', []);
 
     yDeviations = [upDev(:), loDev(:)];
-    hasDeviations = ~isempty(yDeviations);
 end
 % ==============================================================================
 function [m2t, str] = drawEllipse(m2t, handle)
