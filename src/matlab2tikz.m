@@ -1632,13 +1632,7 @@ function [m2t, str] = drawLine(m2t, h)
 
     % Check for "special" lines, e.g.:
     if strcmpi(get(h, 'Tag'), 'zplane_unitcircle')
-        % Draw unit circle and axes.
-        % TODO Don't hardcode "10".pa
-
-        opts = opts_print(m2t, drawOptions, ',');
-        str = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts),...
-            sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
-            sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
+        [m2t, str] = specialDrawZplaneUnitCircle(m2t, h, drawOptions);
         return
     end
 
@@ -1654,6 +1648,16 @@ function [m2t, str] = drawLine(m2t, h)
 
     [m2t, str] = writePlotData(m2t, str, data, drawOptions);
     [m2t, str] = addLabel(m2t, str);
+end
+% ==============================================================================
+function [m2t, str] = specialDrawZplaneUnitCircle(m2t, h, drawOptions)
+% Draw unit circle and axes.
+
+% TODO Don't hardcode "10", but extract from parent axes of |h|
+opts = opts_print(m2t, drawOptions, ',');
+str  = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts) , ...
+        sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
+        sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
 end
 % ==============================================================================
 function bool = isLineVisible(h)
