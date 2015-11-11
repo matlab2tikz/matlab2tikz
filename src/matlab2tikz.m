@@ -4175,14 +4175,19 @@ function [m2t, str] = drawErrorBars(m2t, h)
 % Takes care of MATLAB's error bar plots.
 % Octave's error bar plots are handled as well.
 
-    hData = h;
+    yDeviations = getYDeviations(h);
+    % Now run drawLine() with deviation information.
+    [m2t, str] = drawLine(m2t, h, yDeviations);
+end
+% ==============================================================================
+function [yDeviations, hasDeviations] = getYDeviations(h)
+% Retrieves upper/lower uncertainty data
+    
     upDev = get(h, 'UData');
     loDev = get(h, 'LData');
 
     yDeviations = [upDev(:), loDev(:)];
-
-    % Now run drawLine() with deviation information.
-    [m2t, str] = drawLine(m2t, hData, yDeviations);
+    hasDeviations = ~isempty(yDeviations);
 end
 % ==============================================================================
 function [m2t, str] = drawEllipse(m2t, handle)
