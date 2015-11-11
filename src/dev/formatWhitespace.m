@@ -1,4 +1,4 @@
-function formatWhitespace()
+function formatWhitespace(filename)
     % FORMATWHITESPACE Formats whitespace in the active document
     %
     %   Rules:
@@ -6,14 +6,12 @@ function formatWhitespace()
     %       - Indent content of all function with 4 spaces per level
     %       - Remove whitespace in empty lines
     %       - Preserve indentantion after line continuations, i.e. ...
+    if nargin < 1, filename = ''; end
 
     import matlab.desktop.editor.*
-    try
-        d        = getActive();
-        oldLines = textToLines(d.Text);
-    catch
-        error('formatWhitespace:noEditorApi','Check that the Editor API is available.')
-    end
+
+    d        = getDoc(filename);
+    oldLines = textToLines(d.Text);
 
     % Parse file into a tree
     tree = mtree(d.Text);
@@ -63,4 +61,24 @@ function formatWhitespace()
     lines(idx) = {''};
 
     d.Text = linesToText(lines);
+end
+
+function d = getDoc(filename)
+
+    try
+        d = matlab.desktop.editor.getActive();
+    catch
+        error('formatWhitespace:noEditorApi','Check that the Editor API is available.')
+    end
+
+    % Get specific document if filename is specified
+    if ~isempty(filename)
+        allDocs    = matlab.desktop.editor.getAll();
+        [~,fnames] = cellfun(@fileparts, {allDocs.Filename},'un',0);
+        [tf, pos]  = ismember(filename,fnames);
+        if ~tf
+            error('formatWhitespace:filenameNotFound','Filename "%s" not found.', filename)
+        end
+        d = allDocs(pos);
+    end
 end
