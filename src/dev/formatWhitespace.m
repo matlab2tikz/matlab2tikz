@@ -2,8 +2,8 @@ function formatWhitespace(filename)
     % FORMATWHITESPACE Formats whitespace in the active document
     %
     %   Rules:
-    %       - Smart-indent
-    %       - Indent content of all function with 4 spaces per level
+    %       - Smart-indent with all function indent option
+    %       - Indentation is 4 spaces
     %       - Remove whitespace in empty lines
     %       - Preserve indentantion after line continuations, i.e. ...
     if nargin < 1, filename = ''; end
@@ -13,24 +13,22 @@ function formatWhitespace(filename)
     d        = getDoc(filename);
     oldLines = textToLines(d.Text);
 
-    % Parse file into a tree
-    tree = mtree(d.Text);
-
-    % Check for mlint error
-    if ~isempty(tree.mtfind('Kind','ERR'))
-        [~,name,ext] = fileparts(obj.Filename);
-        error('formatWhitespace:mlintError','''%s'' contains syntax errors. Cannot proceed.',[name,ext])
-    end
-
-    % Smart indent except for crafted continuations of line
+    % Smart indent as AllFunctionIndent
+    % Using undocumented feature from http://undocumentedmatlab.com/blog/changing-system-preferences-programmatically
+    editorProp      = 'EditorMFunctionIndentType';
+    oldVal          = com.mathworks.services.Prefs.getStringPref(editorProp);
+    com.mathworks.services.Prefs.setStringPref(editorProp, 'AllFunctionIndent');
+    restoreSettings = onCleanup(@() com.mathworks.services.Prefs.setStringPref(editorProp, oldVal));
     d.smartIndentContents()
-    lines      = textToLines(d.Text);
-    iDots      = ~cellfun('isempty',regexp(lines, '\.\.\.','once'));
-    iComment   = ~cellfun('isempty',regexp(lines, '^ *%([^%]|$)','once'));
-    pAfterDots = find(iDots & ~iComment)+1;
+
+    % Preserve crafted continuations of line
+    lines         = textToLines(d.Text);
+    iContinuation = ~cellfun('isempty',strfind(lines, '...'));
+    iComment      = ~cellfun('isempty',regexp(lines, '^ *%([^%]|$)','once'));
+    pAfterDots    = find(iContinuation & ~iComment)+1;
     for ii = 1:numel(pAfterDots)
         % Carry over the change in space due to smart-indenting from the
-        % first line that has ... to the continued lines
+        % first continuation line to the last
         p            = pAfterDots(ii);
         nWhiteBefore = find(~isspace(oldLines{p-1}),1,'first');
         nWhiteAfter  = find(~isspace(lines{p-1}),1,'first');
@@ -43,17 +41,6 @@ function formatWhitespace(filename)
         else
             lines{p} = oldLines{p};
         end
-    end
-
-    % Find position of function/end pairs
-    tmp   = tree.mtfind('Kind','FUNCTION');
-    stpos = tmp.lineno;
-    enpos = tmp.lastone;
-
-    % Pad content with 4 spaces
-    for f = 1:numel(stpos)
-        pos        = stpos(f)+1:enpos(f)-1;
-        lines(pos) = strcat({'    '}, lines(pos));
     end
 
     % Remove whitespace lines
