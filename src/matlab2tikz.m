@@ -1651,17 +1651,17 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
 end
 % ==============================================================================
 function [m2t, str] = specialDrawZplaneUnitCircle(m2t, h, drawOptions)
-% Draw unit circle and axes.
+    % Draw unit circle and axes.
 
-% TODO Don't hardcode "10", but extract from parent axes of |h|
-opts = opts_print(m2t, drawOptions, ',');
-str  = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts) , ...
-        sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
-        sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
+    % TODO Don't hardcode "10", but extract from parent axes of |h|
+    opts = opts_print(m2t, drawOptions, ',');
+    str  = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts) , ...
+            sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
+            sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
 end
 % ==============================================================================
 function bool = isLineVisible(h)
-% check if a line object is actually visible (has markers and so on)
+    % check if a line object is actually visible (has markers and so on)
 
     lineStyle     = get(h, 'LineStyle');
     lineWidth     = get(h, 'LineWidth');
@@ -4171,16 +4171,16 @@ function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)
 end
 % ==============================================================================
 function [m2t, str] = drawErrorBars(m2t, h)
-% Takes care of MATLAB's error bar plots.
-% Octave's error bar plots are handled as well.
+    % Takes care of MATLAB's error bar plots.
+    % Octave's error bar plots are handled as well.
     [m2t, str] = drawLine(m2t, h);
     % Even though this only calls |drawLine|, let's keep this wrapper
     % such that the code is easier to read where it is called.
 end
 % ==============================================================================
 function [yDeviations] = getYDeviations(h)
-% Retrieves upper/lower uncertainty data
-    
+    % Retrieves upper/lower uncertainty data
+
     upDev = getOrDefault(h, 'UData', []);
     loDev = getOrDefault(h, 'LData', []);
 
@@ -4188,7 +4188,7 @@ function [yDeviations] = getYDeviations(h)
 end
 % ==============================================================================
 function [m2t, str] = drawEllipse(m2t, handle)
-% Takes care of MATLAB's ellipse annotations.
+    % Takes care of MATLAB's ellipse annotations.
 
     drawOptions = opts_new();
 
