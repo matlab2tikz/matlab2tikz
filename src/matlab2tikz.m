@@ -1607,30 +1607,22 @@ function bool = isVisibleContainer(axisHandle)
     end
 end
 % ==============================================================================
-function [m2t, str] = drawLine(m2t, h, yDeviation)
+function [m2t, str] = drawLine(m2t, h)
 % Returns the code for drawing a regular line and error bars.
 % This is an extremely common operation and takes place in most of the
 % not too fancy plots.
     str = '';
 
-    if ~isVisible(h)
-        return
-    end
-
-    % Check if there is anything to plot (line annotation has no marker)
-    lineStyle  = get(h, 'LineStyle');
-    lineWidth  = get(h, 'LineWidth');
-    marker     = getOrDefault(h, 'Marker','none');
-    hasLines   = ~isNone(lineStyle) && lineWidth > 0;
-    hasMarkers = ~isNone(marker);
-    if ~hasLines && ~hasMarkers
-        return
+    if ~isLineVisible(h)
+        return; % there is nothing to plot
     end
 
     % Color
     color         = get(h, 'Color');
     [m2t, xcolor] = getColor(m2t, h, color, 'patch');
     % Line and marker options
+    lineStyle            = get(h, 'LineStyle');
+    lineWidth            = get(h, 'LineWidth');
     lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
 
@@ -1640,23 +1632,15 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
 
     % Check for "special" lines, e.g.:
     if strcmpi(get(h, 'Tag'), 'zplane_unitcircle')
-        % Draw unit circle and axes.
-        % TODO Don't hardcode "10".
-        opts = opts_print(m2t, drawOptions, ',');
-        str = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts),...
-            sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
-            sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
+        [m2t, str] = specialDrawZplaneUnitCircle(m2t, h, drawOptions);
         return
     end
 
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    [data] = getXYZDataFromLine(m2t, h);
-
-    % check if the *optional* argument 'yDeviation' was given
-    hasDeviations = false;
-    if nargin > 2
-        data = [data, yDeviation(:,1:2)];
-        hasDeviations = true;
+    % build the data matrix
+    data       = getXYZDataFromLine(m2t, h);
+    yDeviation = getYDeviations(h);
+    if ~isempty(yDeviation)
+        data = [data, yDeviation];
     end
 
     % Check if any value is infinite/NaN. In that case, add appropriate option.
@@ -1664,6 +1648,29 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
 
     [m2t, str] = writePlotData(m2t, str, data, drawOptions);
     [m2t, str] = addLabel(m2t, str);
+end
+% ==============================================================================
+function [m2t, str] = specialDrawZplaneUnitCircle(m2t, h, drawOptions)
+% Draw unit circle and axes.
+
+% TODO Don't hardcode "10", but extract from parent axes of |h|
+opts = opts_print(m2t, drawOptions, ',');
+str  = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts) , ...
+        sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
+        sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
+end
+% ==============================================================================
+function bool = isLineVisible(h)
+% check if a line object is actually visible (has markers and so on)
+
+    lineStyle     = get(h, 'LineStyle');
+    lineWidth     = get(h, 'LineWidth');
+    marker        = getOrDefault(h, 'Marker','none');
+    hasLines      = ~isNone(lineStyle) && lineWidth > 0;
+    hasMarkers    = ~isNone(marker);
+    hasDeviations = ~isempty(getYDeviations(h));
+
+    bool = isVisible(h) && (hasLines || hasMarkers || hasDeviations);
 end
 % ==============================================================================
 function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
@@ -4166,22 +4173,22 @@ end
 function [m2t, str] = drawErrorBars(m2t, h)
 % Takes care of MATLAB's error bar plots.
 % Octave's error bar plots are handled as well.
-
-    hData = h;
-    upDev = get(h, 'UData');
-    loDev = get(h, 'LData');
+    [m2t, str] = drawLine(m2t, h);
+    % Even though this only calls |drawLine|, let's keep this wrapper
+    % such that the code is easier to read where it is called.
+end
+% ==============================================================================
+function [yDeviations] = getYDeviations(h)
+% Retrieves upper/lower uncertainty data
+    
+    upDev = getOrDefault(h, 'UData', []);
+    loDev = getOrDefault(h, 'LData', []);
 
     yDeviations = [upDev(:), loDev(:)];
-
-    % Now run drawLine() with deviation information.
-    [m2t, str] = drawLine(m2t, hData, yDeviations);
 end
 % ==============================================================================
 function [m2t, str] = drawEllipse(m2t, handle)
 % Takes care of MATLAB's ellipse annotations.
-%
-
-%     c = allchild(h);
 
     drawOptions = opts_new();
 
