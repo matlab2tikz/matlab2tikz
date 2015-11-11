@@ -1,14 +1,20 @@
 function formatWhitespace(filename)
-    % FORMATWHITESPACE Formats whitespace in the active document
+    % FORMATWHITESPACE Formats whitespace and indentation of a document
+    %
+    %   FORMATWHITESPACE(FILENAME)
+    %       Indents currently active document if FILENAME is empty or not
+    %       specified. FILENAME must be the name of an open document in the
+    %       editor.
     %
     %   Rules:
     %       - Smart-indent with all function indent option
     %       - Indentation is 4 spaces
     %       - Remove whitespace in empty lines
     %       - Preserve indentantion after line continuations, i.e. ...
-    if nargin < 1, filename = ''; end
-
+    %
     import matlab.desktop.editor.*
+
+    if nargin < 1, filename = ''; end
 
     d        = getDoc(filename);
     oldLines = textToLines(d.Text);
@@ -51,21 +57,31 @@ function formatWhitespace(filename)
 end
 
 function d = getDoc(filename)
+    import matlab.desktop.editor.*
+
+    if ~ischar(filename)
+        error('formatWhitespace:charFilename','The FILENAME should be a char.')
+    end
 
     try
-        d = matlab.desktop.editor.getActive();
+        isEditorAvailable();
     catch
         error('formatWhitespace:noEditorApi','Check that the Editor API is available.')
     end
 
-    % Get specific document if filename is specified
-    if ~isempty(filename)
-        allDocs    = matlab.desktop.editor.getAll();
-        [~,fnames] = cellfun(@fileparts, {allDocs.Filename},'un',0);
-        [tf, pos]  = ismember(filename,fnames);
-        if ~tf
-            error('formatWhitespace:filenameNotFound','Filename "%s" not found.', filename)
+    if isempty(filename)
+        d = getActive();
+    else
+        % TODO: open file if it isn't open in the editor already
+        d = findOpenDocument(filename);
+        try
+            [~,filenameFound] = fileparts(d.Filename);
+        catch
+            filenameFound = '';
         end
-        d = allDocs(pos);
+        isExactMatch = strcmp(filename, filenameFound);
+        if ~isExactMatch
+            error('formatWhitespace:filenameNotFound','Filename "%s" not found in the editor.', filename)
+        end
     end
 end
