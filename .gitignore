@@ -1,3 +1,6 @@
 *.sublime-workspace
 *.tap
 test/*.test.*
+*.asv
+*.m~
+octave-workspace
