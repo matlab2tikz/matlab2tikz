@@ -1612,22 +1612,23 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
 % This is an extremely common operation and takes place in most of the
 % not too fancy plots.
     str = '';
+    if ~exist('yDeviation','var')
+        hasDeviations = false;
+    else
+        hasDeviations = true;
+    end
+    %TODO: get rid of yDeviation parameter, fetch actual data instead
 
-    % Check if there is anything to plot
-    lineStyle     = get(h, 'LineStyle');
-    lineWidth     = get(h, 'LineWidth');
-    marker        = getOrDefault(h, 'Marker','none');
-    hasLines      = ~isNone(lineStyle) && lineWidth > 0;
-    hasMarkers    = ~isNone(marker);
-    hasDeviations = exist('yDeviation', 'var') && ~isempty(yDeviation);
-    if ~isVisible(h) || (~hasLines && ~hasMarkers && ~hasDeviations)
-        return % there is nothing to plot
+    if ~isLineVisible(h, hasDeviations)
+        return; % there is nothing to plot
     end
 
     % Color
     color         = get(h, 'Color');
     [m2t, xcolor] = getColor(m2t, h, color, 'patch');
     % Line and marker options
+    lineStyle            = get(h, 'LineStyle');
+    lineWidth            = get(h, 'LineWidth');
     lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
 
@@ -1659,6 +1660,18 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
 
     [m2t, str] = writePlotData(m2t, str, data, drawOptions);
     [m2t, str] = addLabel(m2t, str);
+end
+% ==============================================================================
+function bool = isLineVisible(h, hasDeviations)
+% check if a line object is actually visible (has markers and so on)
+
+    lineStyle     = get(h, 'LineStyle');
+    lineWidth     = get(h, 'LineWidth');
+    marker        = getOrDefault(h, 'Marker','none');
+    hasLines      = ~isNone(lineStyle) && lineWidth > 0;
+    hasMarkers    = ~isNone(marker);
+
+    bool = isVisible(h) && (hasLines || hasMarkers || hasDeviations);
 end
 % ==============================================================================
 function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
