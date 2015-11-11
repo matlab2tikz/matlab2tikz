@@ -4192,9 +4192,6 @@ end
 % ==============================================================================
 function [m2t, str] = drawEllipse(m2t, handle)
 % Takes care of MATLAB's ellipse annotations.
-%
-
-%     c = allchild(h);
 
     drawOptions = opts_new();
 
