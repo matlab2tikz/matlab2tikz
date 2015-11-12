@@ -919,7 +919,13 @@ function [stat] = errorBars()
   eH = abs(data(1:10,1))/10;
   eL = abs(data(1:10,3))/50;
 
-  errorbar(1:10, plotData, eL, eH, '.')
+  x = 1:10;
+  hold all;
+  errorbar(x, plotData, eL, eH, '.')
+  h = errorbar(x+0.5, plotData, eL, eH);
+  set(h, 'LineStyle', 'none');
+  % Octave 3.8 doesn't support passing extra options to |errorbar|, but
+  % it does allow for changing it after the fact
 end
 % =========================================================================
 function [stat] = errorBars2()
