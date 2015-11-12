@@ -21,7 +21,7 @@ decayingharmonic : c67ef8bce9c1a04374ddecb01b31904b
 double_axes : 9f8c17431799500843ed763f3c1c87bf
 double_axes2 : 4eb98e72daf0682f957900e81775b7e7
 double_colorbar : 5f02038f01fa53e20313272d1bfb5fde
-errorBars : 477d0ec72293dbcc91cce1d76aa724bd
+errorBars : bcce58dfd882029037cd07628427736a
 errorBars2 : 213d3ebde888c914637dbc52c17a4ba9
 fill3plot : a67d6f01c02797fe84a1a205cf2832ef
 freqResponsePlot : 653abbbeb508d6b10875b5ee70d3bd99
@@ -59,7 +59,7 @@ parameterSurf : 2e220b6b70c8cbf922f438ac0ece740e
 peaks_contour : e6ff7630352cc781bb5981586a794af6
 peaks_contourf : 96975c89b72ced7a0807e835ef069601
 pixelLegend : 870e44c03d22304b43b4d92d71bdd23f
-plain_cos : b36357bc9a1cf6e1d50c3634c79b02c4
+plain_cos : 0d676d2ef4af1c391c3a5f474f94ec1b
 plotyyLegends : db7d2a3805c0fa6976c6b861b820b49f
 polarplot : 915d26d216077d2d7d8527df5855be2d
 quiver3plot : 612ab8ee8ed66a0368767b39854bb274
