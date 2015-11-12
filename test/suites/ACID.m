@@ -209,7 +209,7 @@ function [stat] = plain_cos()
   x = cos(t);
 
   % Explicitely cut the line into segments
-  x([2e5, 5e5, 8e5]) = NaN;
+  x([2e4, 5e4, 8e4]) = NaN;
 
   % Plot the cosine
   plot(t, x);
