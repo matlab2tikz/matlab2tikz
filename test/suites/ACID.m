@@ -205,7 +205,7 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function.';
 
-  t = linspace(0, 2*pi, 1e6);
+  t = linspace(0, 2*pi, 1e5);
   x = cos(t);
 
   % Explicitely cut the line into segments
