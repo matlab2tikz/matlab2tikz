@@ -558,16 +558,19 @@ function mask = pixelate(x, y, xToPix, yToPix)
     dataPixel = round([x * xToPix * mult, ...
                        y * yToPix * mult]);
 
-    % Find the unique pixels
-    [~, id_unique, ~] = unique(dataPixel, 'rows');
+    % Sort the pixels
+    [dataPixelSorted, id_orig] = sortrows(dataPixel);
 
-    % Assume every pixel to be a duplicate
-    mask = false(size(x));
+    % Find the duplicate pixels
+    mask = [true; diff(dataPixelSorted(:,1))~=0 | ...
+                  diff(dataPixelSorted(:,2))~=0];
+
+    % Unwind the sorting
+    mask = mask(id_orig);
 
     % Set the first, last, as well as unique pixels to true
     mask(1)         = true;
     mask(end)       = true;
-    mask(id_unique) = true(size(id_unique));
 
     % Set NaNs to true
     inan         = isnan(x) | isnan(y);
