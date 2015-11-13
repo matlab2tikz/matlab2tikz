@@ -562,11 +562,12 @@ function mask = pixelate(x, y, xToPix, yToPix)
     [dataPixelSorted, id_orig] = sortrows(dataPixel);
 
     % Find the duplicate pixels
-    mask = [true; diff(dataPixelSorted(:,1))~=0 | ...
-                  diff(dataPixelSorted(:,2))~=0];
+    mask_sorted = [true; diff(dataPixelSorted(:,1))~=0 | ...
+                         diff(dataPixelSorted(:,2))~=0];
 
     % Unwind the sorting
-    mask = mask(id_orig);
+    mask            = false(size(x));
+    mask(id_orig)   = mask_sorted;
 
     % Set the first, last, as well as unique pixels to true
     mask(1)         = true;
