@@ -554,18 +554,24 @@ function mask = pixelate(x, y, xToPix, yToPix)
     % The resolution is lost only beyond the multiplier magnification
     mult = 2;
 
-    % Convert data to pixel units, magnify and mark only the first
-    % point that occupies a given position
-    mask = [true; diff(round(x * xToPix * mult))~=0];
-    mask = [true; diff(round(y * yToPix * mult))~=0] | mask;
+    % Convert data to pixel units and magnify
+    dataPixel = round([x * xToPix * mult, ...
+                       y * yToPix * mult]);
 
-    % Keep end points or it might truncate whole pixels
+    % Find the unique pixels
+    [~, id_unique, ~] = unique(dataPixel, 'rows');
+
+    % Assume every pixel to be a duplicate
+    mask = false(size(x));
+
+    % Set the first, last, as well as unique pixels to true
+    mask(1)         = true;
+    mask(end)       = true;
+    mask(id_unique) = true(size(id_unique));
+
+    % Set NaNs to true
     inan         = isnan(x) | isnan(y);
-    df           = diff([false; inan; false]);
-    istart       = df == 1;
-    pend         = find(df == -1)-1;
-    mask(istart) = true;
-    mask(pend)   = true;
+    mask(inan)   = true;
 end
 % =========================================================================
 function mask = opheimSimplify(x,y,tol)
