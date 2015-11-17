@@ -95,7 +95,7 @@ function [status, parameters] = testMatlab2tikz(varargin)
       mkdir(ipp.Results.output);
   end
   template = m2troot('test','template');
-  copyfile(template, ipp.Results.output);
+  copyfile(fullfile(template,'*'), ipp.Results.output);
 
   % start overall timing
   elapsedTimeOverall = tic;
