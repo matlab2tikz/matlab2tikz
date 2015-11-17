@@ -17,11 +17,11 @@ function [ status ] = testGraphical( varargin )
     [state,cwd] = initializeGlobalState();
     finally_restore_state = onCleanup(@() restoreGlobalState(state,cwd));
 
-    status = testMatlab2tikz('actionsToExecute', @actionsToExecute, ...
-                             varargin{:});
+    [status, args] = testMatlab2tikz('actionsToExecute', @actionsToExecute, ...
+                                     varargin{:});
 
     if nargout == 0
-        makeLatexReport(status);
+        makeLatexReport(status, args.output);
     end
 end
 % ==============================================================================
