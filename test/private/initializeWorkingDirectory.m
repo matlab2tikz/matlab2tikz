@@ -3,20 +3,16 @@ function cwd = initializeWorkingDirectory()
 % Return current working directory so that after tests it can be restored.
     fprintf('Initialize working directory...\n');
     cwd = pwd;
-    m2t_path = which('matlab2tikz.m');
-    bSuccess = 0;
-    
-    if ~isempty(m2t_path)
-        test_path = fullfile(fileparts(m2t_path), '..', 'test');
+    test_path = m2troot('test');
+    cdSucceeded = false;
         
-        if isdir(test_path)
-            cd(test_path);
-            fprintf('Successfully changed into test folder...\n');
-            bSuccess = 1;
-        end
+    if isdir(test_path)
+        cd(test_path);
+        fprintf('Successfully changed into test folder...\n');
+        cdSucceeded = true;
     end
     
-    if ~bSuccess
+    if ~cdSucceeded
         error('matlab2tikz:initializeWorkingDirectory', ...
             'Could not change into test folder.');
     end
