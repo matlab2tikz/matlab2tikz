@@ -6,6 +6,9 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
+%   CLEANFIGURE('pruneText',BOOL,...) explicitly specifies whether text
+%   should be pruned. (default: true)
+%
 %   CLEANFIGURE('targetResolution',PPI,...)
 %   CLEANFIGURE('targetResolution',[W,H],...)
 %   Reduce the number of data points in line objects by applying
@@ -59,6 +62,7 @@ function cleanfigure(varargin)
   m2t.cmdOpts = m2tInputParser;
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', 600, @isValidTargetResolution);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'pruneText', true, @islogical);
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
@@ -68,7 +72,7 @@ function cleanfigure(varargin)
 
   % Recurse down the tree of plot objects and clean up the leaves.
   for h = m2t.cmdOpts.Results.handle(:)'
-    recursiveCleanup(meta, h, m2t.cmdOpts.Results.targetResolution, 0);
+    recursiveCleanup(meta, h, m2t.cmdOpts.Results.targetResolution, m2t.cmdOpts.Results.pruneText);
   end
 
   % Reset to initial state.
@@ -77,47 +81,25 @@ function cleanfigure(varargin)
   return;
 end
 % =========================================================================
-function indent = recursiveCleanup(meta, h, targetResolution, indent)
+function recursiveCleanup(meta, h, targetResolution, pruneText)
+    % Recursive function, that cleans up the individual childs of a figure
 
+    % Get the type of the current figure handle
     type = get(h, 'Type');
 
-    %display(sprintf([repmat(' ',1,indent), type, '->']))
-
-    % Don't try to be smart about quiver groups.
-    % NOTE:
-    % A better way to write `strcmp(get(h,...))` would be to use
-    %     isa(handle(h), 'specgraph.quivergroup').
-    % The handle() function isn't supported by Octave, though, so let's stick
-    % with strcmp().
-    if strcmp(get(h, 'Type'), 'specgraph.quivergroup')
-        %if strcmp(class(handle(h)), 'specgraph.quivergroup')
-        return;
-    end
-
     % Update the current axes.
-    if strcmp(get(h, 'Type'), 'axes')
+    if strcmp(type, 'axes')
         meta.gca = h;
     end
 
     children = get(h, 'Children');
     if ~isempty(children)
         for child = children(:)'
-            indent = indent + 4;
-            indent = recursiveCleanup(meta, child, targetResolution, indent);
-            indent = indent - 4;
+            recursiveCleanup(meta, child, targetResolution, pruneText);
         end
     else
-        % We're in a leaf, so apply all the fancy simplications.
-
-        % Skip invisible objects.
-        %if ~strcmp(get(h, 'Visible'), 'on')
-        %    display(sprintf([repmat(' ',1,indent), '  invisible']))
-        %    return;
-        %end
-
-        %display(sprintf([repmat(' ',1,indent), '  handle this']))
-
         if strcmp(type, 'line')
+            % Remove data points outside of the axes
             % NOTE: Always remove invisible points before simplifying the
             % line. Otherwise it will generate additional line segments
             pruneOutsideBox(meta, h);
@@ -127,56 +109,11 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
             % Simplify the lines by removing superflous points
             simplifyLine(meta, h, targetResolution);
         elseif strcmpi(type, 'stair')
+            % Remove data points outside of the visible axes
             pruneOutsideBox(meta, h);
-        elseif strcmp(type, 'text')
-            % Ensure units of type 'data' (default) and restore the setting later
-            units_original = get(h, 'Units');
-            set(h, 'Units', 'data');
-
-            % Check if text is inside bounds by checking if the position is inside
-            % the x, y and z limits. This works for both 2D and 3D plots.
-            x_lim = get(meta.gca, 'XLim');
-            y_lim = get(meta.gca, 'YLim');
-            z_lim = get(meta.gca, 'ZLim');
-            axLim = [x_lim; y_lim; z_lim];
-
-            pos = get(h, 'Position');
-            % If the axis is 2D, ignore the z component for the checks
-            if ~isAxis3D(meta.gca)
-                pos(3) = 0;
-            end
-            bPosInsideLim = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
-
-            % In 2D plots the 'extent' of the textbox is available and also
-            % considered to keep the textbox, if it is partially inside the axis
-            % limits.
-            extent = get(h, 'Extent');
-
-            % Restore original units (after reading all dimensions)
-            set(h, 'Units', units_original);
-
-            % This check makes sure the extent is only considered if it contains
-            % valid values. The 3D case returns a vector of NaNs.
-            if all(~isnan(extent))
-                % Extend the actual axis limits by the extent of the textbox so that
-                % the textbox is not discarded, if it overlaps the axis.
-                x_lim(1) = x_lim(1) - extent(3);    % x-limit is extended by width
-                y_lim(1) = y_lim(1) - extent(4);    % y-limit is extended by height
-                axLim = [x_lim; y_lim; z_lim];
-
-                bPosInsideLimExt = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
-                bPosInsideLim = bPosInsideLim | bPosInsideLimExt;
-            end
-
-            % Check if it is the title
-            isTitle = (h== get(meta.gca, 'title'));
-
-            % Disable visibility if it is outside the limits and it is not
-            % the title
-            if ~all(bPosInsideLim) && ~isTitle
-                % Artificially disable visibility. m2t will check and skip.
-                set(h, 'Visible', 'off');
-            end
+        elseif strcmp(type, 'text') && pruneText
+            % Prune text that is outside of the axes
+            pruneOutsideText(meta, h);
         end
     end
 
@@ -495,6 +432,56 @@ function simplifyLine(meta, handle, targetResolution)
 
     % Remove the data points
     removeData(meta, handle, id_remove)
+end
+% =========================================================================
+function pruneOutsideText(meta, handle)
+    % Function to prune text outside of axis handles.
+
+    % Ensure units of type 'data' (default) and restore the setting later
+    units_original = get(handle, 'Units');
+    set(handle, 'Units', 'data');
+
+    % Check if text is inside bounds by checking if the position is inside
+    % the x, y and z limits. This works for both 2D and 3D plots.
+    xLim = get(meta.gca, 'XLim');
+    yLim = get(meta.gca, 'YLim');
+    zLim = get(meta.gca, 'ZLim');
+    axLim = [xLim; yLim; zLim];
+
+    pos = get(handle, 'Position');
+    % If the axis is 2D, ignore the z component and consider the extend of
+    % the textbox
+    if ~isAxis3D(meta.gca)
+        pos(3) = 0;
+
+        % In 2D plots the 'extent' of the textbox is available and also
+        % considered to keep the textbox, if it is partially inside the axis
+        % limits.
+        extent = get(handle, 'Extent');
+
+        % Extend the actual axis limits by the extent of the textbox so that
+        % the textbox is not discarded, if it overlaps the axis.
+        axLim(1, 1) = axLim(1, 1) - extent(3);    % x-limit is extended by width
+        axLim(2, 1) = axLim(2, 1) - extent(4);    % y-limit is extended by height
+    end
+
+    % Check if the (extended) textbox is inside the axis limits
+    bPosInsideLim = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
+
+    % Restore original units (after reading all dimensions)
+    set(handle, 'Units', units_original);
+
+    % Check if it is the title
+    isTitle = (handle == get(meta.gca, 'title'));
+
+    % Disable visibility if it is outside the limits and it is not
+    % the title
+    if ~all(bPosInsideLim) && ~isTitle
+        % Warn about to be deprecated text removal
+        warning('cleanfigure:userWarning', 'Text removal by cleanfigure is planed to be deprecated');
+        % Artificially disable visibility. m2t will check and skip.
+        set(handle, 'Visible', 'off');
+    end
 end
 % =========================================================================
 function mask = isInBox(data, xLim, yLim)
