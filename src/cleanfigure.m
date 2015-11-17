@@ -87,6 +87,19 @@ function recursiveCleanup(meta, h, targetResolution, pruneText)
     % Get the type of the current figure handle
     type = get(h, 'Type');
 
+    %display(sprintf([repmat(' ',1,indent), type, '->']))
+
+    % Don't try to be smart about quiver groups.
+    % NOTE:
+    % A better way to write `strcmp(get(h,...))` would be to use
+    %     isa(handle(h), 'specgraph.quivergroup').
+    % The handle() function isn't supported by Octave, though, so let's stick
+    % with strcmp().
+    if strcmp(type, 'specgraph.quivergroup')
+        %if strcmp(class(handle(h)), 'specgraph.quivergroup')
+        return;
+    end
+
     % Update the current axes.
     if strcmp(type, 'axes')
         meta.gca = h;
