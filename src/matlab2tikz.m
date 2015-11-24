@@ -1463,17 +1463,7 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     ticks           = get(handle, keywordTick);
 
     % hidden properties are not caught by hasProperties
-    try
-        % Get hidden properties of the datetime axes manager
-        dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
-        oldState   = warning('off','MATLAB:structOnObject');
-        dtsManager = struct(dtsManager);
-        warning(oldState);
-
-        isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
-    catch
-        isDatetimeTicks = false;
-    end
+    isDatetimeTicks = isAxisTicksDateTime(handle, axis);
 
     if isempty(ticks)
         % If no ticks are present, we need to enforce this in any case.
@@ -1513,6 +1503,7 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
         hasMinorTicks, tickDirection, isDatetimeTicks);
 end
+% ==============================================================================
 function interpreter = defaultTickLabelInterpreter(m2t)
     % determines the default tick label interpreter
     % This is only relevant in HG1/Octave. In HG2, we use the interpreter
@@ -1521,6 +1512,21 @@ function interpreter = defaultTickLabelInterpreter(m2t)
         interpreter = 'tex';
     else
         interpreter = 'none';
+    end
+end
+% ==============================================================================
+function isDatetimeTicks = isAxisTicksDateTime(handle, axis);
+    % returns true when the axis has DateTime ticks
+    try
+        % Get hidden properties of the datetime axes manager
+        dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
+        oldState   = warning('off','MATLAB:structOnObject');
+        dtsManager = struct(dtsManager);
+        warning(oldState);
+
+        isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
+    catch
+        isDatetimeTicks = false;
     end
 end
 % ==============================================================================
