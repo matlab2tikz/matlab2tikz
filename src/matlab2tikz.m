@@ -95,8 +95,9 @@ function matlab2tikz(varargin)
     %   false)
     %
     %   MATLAB2TIKZ('interpretTickLabelsAsTex',BOOL,...) determines whether to
-    %   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
-    %   (default: false)
+    %   interpret tick labels as TeX. MATLAB(R) doesn't allow to do that in R2014a
+    %   or before. In R2014b and later, please set the "TickLabelInterpreter" 
+    %   property of the relevant axis to get the same effect. (default: false)
     %
     %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
     %   of the output file. (default: '')
@@ -275,6 +276,8 @@ function matlab2tikz(varargin)
     warnAboutParameter(m2t, 'imagesAsPng', @(opt)(opt==false), ...
          ['It is highly recommended to use PNG data to store images.\n', ...
           'Make sure to set "imagesAsPng" to true.']);
+    warnAboutParameter(m2t, 'interpretTickLabelsAsTex', @(opt)(opt==true&&isHG2), ...
+         'Please use "set(gca,''TickLabelInterpreter'',''tex'')" instead.');
 
     % The following color RGB-values which will need to be defined.
     % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
