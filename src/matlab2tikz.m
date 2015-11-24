@@ -1508,7 +1508,7 @@ function interpreter = defaultTickLabelInterpreter(m2t)
     % determines the default tick label interpreter
     % This is only relevant in HG1/Octave. In HG2, we use the interpreter
     % set in the object (not the global default).
-    if m2t.cmdOpts.interpretTickLabelsAsTex
+    if m2t.cmdOpts.Results.interpretTickLabelsAsTex
         interpreter = 'tex';
     else
         interpreter = 'none';
