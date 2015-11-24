@@ -1539,33 +1539,29 @@ function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTi
     % a reasonable default.
     matlabDefaultNumMinorTicks = 3;
     if ~isempty(ticks)
-        options = opts_add(options, ...
-            [axis,'tick'], sprintf('{%s}', ticks));
+        options = opts_add(options, [axis,'tick'], sprintf('{%s}', ticks));
     end
     if ~isempty(tickLabels)
         options = opts_add(options, ...
             [axis,'ticklabels'], sprintf('{%s}', tickLabels));
     end
     if hasMinorTicks
-        options = opts_add(options, ...
-            [axis,'minorticks'], 'true');
+        options = opts_add(options, [axis,'minorticks'], 'true');
         if m2t.cmdOpts.Results.strict
-            options = ...
-                opts_add(options, ...
+            options = opts_add(options, ...
                 sprintf('minor %s tick num', axis), ...
                 sprintf('{%d}', matlabDefaultNumMinorTicks));
         end
     end
+
     if strcmpi(tickDir,'out')
-        options = opts_add(options, ...
-            'tick align','outside');
+        options = opts_add(options, 'tick align', 'outside');
     elseif strcmpi(tickDir,'both')
-        options = opts_add(options, ...
-        'tick align','center');
+        options = opts_add(options, 'tick align', 'center');
     end
+
     if isDatetimeTicks
-        options = opts_add(options, ...
-        ['scaled ' axis ' ticks'],'false');
+        options = opts_add(options, ['scaled ' axis ' ticks'], 'false');
     end
 end
 % ==============================================================================
