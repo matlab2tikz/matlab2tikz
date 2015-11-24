@@ -1491,7 +1491,8 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
         % HG2 allows to set 'TickLabelInterpreter'.
         % HG1 tacitly uses the interpreter 'none'.
         % See http://www.mathworks.com/matlabcentral/answers/102053#comment_300079
-        interpreter = getOrDefault(handle, 'TickLabelInterpreter', 'none');
+        fallback    = defaultTickLabelInterpreter(m2t);
+        interpreter = getOrDefault(handle, 'TickLabelInterpreter', fallback);
         keywordTickLabel = [upper(axis), 'TickLabel'];
         tickLabels = cellstr(get(handle, keywordTickLabel));
         tickLabels = prettyPrint(m2t, tickLabels, interpreter);
@@ -1508,6 +1509,16 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
 
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
         hasMinorTicks, tickDirection, isDatetimeTicks);
+end
+function interpreter = defaultTickLabelInterpreter(m2t)
+    % determines the default tick label interpreter
+    % This is only relevant in HG1/Octave. In HG2, we use the interpreter
+    % set in the object (not the global default).
+    if m2t.cmdOpts.interpretTickLabelsAsTex
+        interpreter = 'tex';
+    else
+        interpreter = 'none';
+    end
 end
 % ==============================================================================
 function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir,isDatetimeTicks)
