@@ -74,10 +74,10 @@ or, equivalently,
 ```matlab
 makeLatexReport(testGraphical)
 ```
-This generates a LaTeX report in `test/output/current/tex/acid.tex` which can then be compiled.
-Compilation of this file can be done using the Makefile `test/output/current/Makefile` if you are on a Unix-like system (or have cygwin installed on Windows).
+This generates a LaTeX report in `test/output/current/acid.tex` which can then be compiled.
+Compilation of this file can be done using the Makefile `test/output/current/Makefile` if you are on a Unix-like system (OS X, Linux) or have [Cygwin](https://www.cygwin.com) installed on Windows.
 
-If all goes well, the result will be the file `test/output/current/tex/acid.pdf` that contains
+If all goes well, the result will be the file `test/output/current/acid.pdf` that contains
 a list of the test figures, exported as PDF and right next to it the matlab2tikz generated plot.
 
 Advanced Use
