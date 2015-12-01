@@ -339,8 +339,9 @@ end
 % =========================================================================
 function [stat] = peaks_contour()
   stat.description = 'Test contour plots.';
-  stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
-  % FIXME: see #604; contour() produces inconsistent output
+  stat.unreliable = isMATLAB('<', [8,4]) || isOctave || ... 
+                    ... % FIXME: see #604; contour() produces inconsistent output
+                    isMATLAB('>=', [8,5]); % FIXME: #687 (R2015)
 
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
@@ -355,8 +356,10 @@ end
 % =========================================================================
 function [stat] = contourPenny()
   stat.description = 'Contour plot of a US\$ Penny.';
-  stat.unreliable  = isMATLAB('<', [8,4]);
-  % FIXME: see #604; contour() produces inconsistent output (mac/windows of PeterPablo)
+  stat.unreliable  = isMATLAB('<', [8,4]) || ...
+                     ... % FIXME: see #604; contour() produces inconsistent output (mac/win of PeterPablo)
+                     isMATLAB('>=', [8,5]); %FIXME: #687 (R2015)
+  
   stat.issues = [49 404];
 
   if ~exist('penny.mat','file')
@@ -386,6 +389,7 @@ end
 % =========================================================================
 function [stat] = double_colorbar()
   stat.description = 'Double colorbar.';
+  stat.unreliable = isMATLAB('>=', [8,5]); %FIXME: #687 (R2015)
 
   if isOctave()
       fprintf( 'Octave can''t handle tight axes.\n\n' );
@@ -716,6 +720,7 @@ end
 % =========================================================================
 function [stat] = quiverplot()
   stat.description = 'A combined quiver/contour plot of $x\exp(-x^2-y^2)$.' ;
+  stat.unreliable = isMATLAB('>=', [8,5]); %FIXME: #687 (R2015)
 
   [X,Y] = meshgrid(-2:.2:2);
   Z = X.*exp(-X.^2 - Y.^2);
@@ -1090,7 +1095,8 @@ end
 % =========================================================================
 function [stat] = besselImage()
   stat.description = 'Bessel function.';
-  stat.unreliable = isOctave(); % FIXME (Travis differs from Linux/Mac octave)
+  stat.unreliable = isOctave() || ... % FIXME (Travis differs from Linux/Mac octave)
+                    isMATLAB('>=', [8,6]); %FIXME: #687 (R2015); 
 
   nu   = -5:0.25:5;
   beta = 0:0.05:2.5;
@@ -1329,6 +1335,7 @@ end
 % =========================================================================
 function [stat] = surfPlot()
   stat.description = 'Surface plot.';
+  stat.unreliable = isMATLAB('>=', [8,6]); %FIXME: #687 (R2015); 
 
   [X,Y,Z] = peaks(30);
   surf(X,Y,Z)
@@ -1435,7 +1442,8 @@ end
 % =========================================================================
 function [stat] = spectro()
   stat.description = 'Spectrogram plot';
-  stat.unreliable = isMATLAB('<', [8,4]); % FIXME: investigate
+  stat.unreliable = isMATLAB('<', [8,4]) || ... % FIXME: investigate
+                    isMATLAB('>=', [8,5]); %FIXME: #687 (R2015); 
 
   % In the original test case, this is 0:0.001:2, but that takes forever
   % for LaTeX to process.
@@ -1776,7 +1784,8 @@ end
 function [stat] = latexInterpreter()
     stat.description = '\LaTeX{} interpreter test (display math not working)';
     stat.issues = 448;
-    stat.unreliable = isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
+    stat.unreliable = isMATLAB('<=', [8,3]) || ... %FIXME: broken since decd496 (mac vs linux)
+                      isMATLAB('>=', [8,6]); %FIXME: #687 (R2015); 
 
     plot(magic(3),'-x');
 
@@ -1877,6 +1886,7 @@ end
 % =========================================================================
 function [stat] = fill3plot()
   stat.description = 'fill3 plot.';
+  stat.unreliable = isMATLAB('>=', [8,6]); %FIXME: #687 (R2015); 
 
   if ~exist('fill3','builtin')
       fprintf( 'fill3() not found. Skipping.\n\n' );
@@ -1897,8 +1907,9 @@ function [stat] = fill3plot()
 end
 % =========================================================================
 function [stat] = rectanglePlot()
-  stat.unreliable = isMATLAB('<=', [8,3]); %FIXME: #749 (Jenkins)
   stat.description = 'Rectangle handle.';
+  stat.unreliable = isMATLAB('<=', [8,3]) || ... %FIXME: #749 (Jenkins)
+                    isMATLAB('>=', [8,6]); %FIXME: #687 (R2015); 
 
   rectangle('Position', [0.59,0.35,3.75,1.37],...
             'Curvature', [0.8,0.4],...
@@ -2107,6 +2118,7 @@ end
 % =========================================================================
 function [stat] = logbaseline()
   stat.description = 'Logplot with modified baseline.';
+  stat.unreliable = isMATLAB('>=', [8,6]); %FIXME: #687 (R2015); 
 
   bar([0 1 2], [1 1e-2 1e-5],'basevalue', 1e-6);
   set(gca,'YScale','log');
@@ -2559,7 +2571,8 @@ end
 function [stat] = textAlignment()
     stat.description = 'alignment of text boxes and position relative to axis';
     stat.issues = 378;
-    stat.unreliable = isOctave; %FIXME: investigate
+    stat.unreliable = isOctave || ... %FIXME: investigate
+                      isMATLAB('>=', [8,6]); %FIXME: #687 (R2015); 
 
     plot([0.0 2.0], [1.0 1.0],'k'); hold on;
     plot([0.0 2.0], [0.5 0.5],'k');
