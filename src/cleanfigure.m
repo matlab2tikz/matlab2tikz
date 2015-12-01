@@ -18,6 +18,10 @@ function cleanfigure(varargin)
 %   pixels, e.g. [9000, 5400].
 %   Use targetResolution = Inf or 0 to disable line simplification.
 %   (default: 600)
+%   CLEANFIGURE('scalePrecision',alpha,...)
+%   Scale the precision the data is represented with. Setting it to 0
+%   or negative values disable this feature.
+%   (default: 1)
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -65,14 +69,14 @@ function cleanfigure(varargin)
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'pruneText', true, @islogical);
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'scalePrecision', 1, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
-
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
   % Recurse down the tree of plot objects and clean up the leaves.
   for h = m2t.cmdOpts.Results.handle(:)'
-    recursiveCleanup(meta, h, m2t.cmdOpts.Results.targetResolution, m2t.cmdOpts.Results.pruneText);
+    recursiveCleanup(meta, h, m2t.cmdOpts.Results);
   end
 
   % Reset to initial state.
@@ -81,7 +85,7 @@ function cleanfigure(varargin)
   return;
 end
 % =========================================================================
-function recursiveCleanup(meta, h, targetResolution, pruneText)
+function recursiveCleanup(meta, h, cmdOpts)
     % Recursive function, that cleans up the individual childs of a figure
 
     % Get the type of the current figure handle
@@ -108,7 +112,7 @@ function recursiveCleanup(meta, h, targetResolution, pruneText)
     children = get(h, 'Children');
     if ~isempty(children)
         for child = children(:)'
-            recursiveCleanup(meta, child, targetResolution, pruneText);
+            recursiveCleanup(meta, child, cmdOpts);
         end
     else
         if strcmp(type, 'line')
@@ -120,11 +124,15 @@ function recursiveCleanup(meta, h, targetResolution, pruneText)
             % errors. This may involve inserting extra points.
             movePointsCloser(meta, h);
             % Simplify the lines by removing superflous points
-            simplifyLine(meta, h, targetResolution);
+            simplifyLine(meta, h, cmdOpts.targetResolution);
+            % Limit the precision of the output
+            limitPrecision(meta, h, cmdOpts.scalePrecision);
         elseif strcmpi(type, 'stair')
             % Remove data points outside of the visible axes
             pruneOutsideBox(meta, h);
-        elseif strcmp(type, 'text') && pruneText
+            % Limit the precision of the output
+            limitPrecision(meta, h, cmdOpts.scalePrecision);
+        elseif strcmp(type, 'text') && cmdOpts.pruneText
             % Prune text that is outside of the axes
             pruneOutsideText(meta, h);
         end
@@ -445,6 +453,64 @@ function simplifyLine(meta, handle, targetResolution)
 
     % Remove the data points
     removeData(meta, handle, id_remove)
+end
+% =========================================================================
+function limitPrecision(meta, handle, alpha)
+    % Limit the precision of the given data
+
+    % If alpha is 0 or negative do nothing
+    if alpha<=0
+        return
+    end
+
+    % Extract the data from the current line handle.
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+    if isAxis3D(meta.gca)
+        zData = get(handle, 'ZData');
+    end
+
+    % Check for log scaling
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+
+    % Put the data into a matrix and log bits into vector
+    if isAxis3D(meta.gca)
+        data  = [xData(:), yData(:), zData(:)];
+        isLog = [isXlog, isYlog, isZlog];
+    else
+        data  = [xData(:), yData(:)];
+        isLog = [isXlog, isYlog];
+    end
+
+    % Only do something if the data is not empty
+    if isempty(data) || all(isinf(data(:)))
+        return
+    end
+
+    % Scale to visual coordinates
+    data(:, isLog) = log10(data(:, isLog));
+
+    % Get the maximal value of the data, only considering finite values
+    maxValue = max(abs(data(isfinite(data))));
+
+    % The least significant bit is proportional to the numerical precision
+    % of the largest number. Scale it with a user defined value alpha
+    leastSignificantBit = eps(maxValue) * alpha;
+
+    % Round to precision and scale back
+    data  = round(data / leastSignificantBit) * leastSignificantBit;
+
+    % Scale back in case of log scaling
+    data(:, isLog) = 10.^data(:, isLog);
+
+    % Set the new data.
+    set(handle, 'XData', data(:, 1));
+    set(handle, 'YData', data(:, 2));
+    if isAxis3D(meta.gca)
+        set(handle, 'zData', data(:, 3));
+    end
 end
 % =========================================================================
 function pruneOutsideText(meta, handle)
@@ -1097,7 +1163,8 @@ function P = getProjectionMatrix(meta)
                   0        -cos(el)   sin(el)   0
                   0         0        0          1];
 
-    % Get the data aspect ration
+    % Get the data aspect ratio. This is necessary, as the axes usually do
+    % not have the same scale (xRange~=yRange)
     aspectRatio = get(meta.gca, 'DataAspectRatio');
     scaleMatrix = diag([1./aspectRatio, 1]);
 
