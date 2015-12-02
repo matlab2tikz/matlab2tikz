@@ -98,7 +98,7 @@ function matlab2tikz(varargin)
 %   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
 %   (default: false)
 %
-%   MATLAB2TIKZ('arrowHeadSizeFactor', FLOAT, ...) allows to resize the arrow heads
+%   MATLAB2TIKZ('arrowHeadSize', FLOAT, ...) allows to resize the arrow heads
 %   in quiver plots by rescaling the arrow heads by a positive scalar. (default: 10)
 %
 %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
@@ -231,7 +231,7 @@ ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'dataPath', '', @ischar);
 ipp = ipp.addParamValue(ipp, 'relativeDataPath', '', @ischar);
 ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
-ipp = ipp.addParamValue(ipp, 'arrowHeadSizeFactor', 10, @(x) x>0);
+ipp = ipp.addParamValue(ipp, 'arrowHeadSize', 10, @(x) x>0);
 
 % Maximum chunk length.
 % TeX parses files line by line with a buffer of size buf_size. If the
@@ -4041,16 +4041,16 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         % NOTE: `set(h, 'MaxHeadSize')` is bugged in HG1 (not in HG2 or Octave)
         % according to http://www.mathworks.com/matlabcentral/answers/96754
 
-        userInfo(m2t, ['Please change the "arrowHeadSizeFactor" option', ...
+        userInfo(m2t, ['Please change the "arrowHeadSize" option', ...
                        ' if the size of the arrows is incorrect.']);
-        arrowHeadSizeFactor = sprintf(m2t.ff, abs(m2t.cmdOpts.Results.arrowHeadSizeFactor));
+        arrowHeadSize = sprintf(m2t.ff, abs(m2t.cmdOpts.Results.arrowHeadSize));
 
         % Write out the actual scaling for TikZ.
         % `\pgfplotspointsmetatransformed` is in the range [0, 1000], so
         % divide by this span (as is done in the pgfplots manual) to normalize
         % the arrow head size.
         arrowHeadOpts = opts_add(arrowHeadOpts, 'scale', ...
-              ['{' arrowHeadSizeFactor '*\pgfplotspointmetatransformed/1000}']);
+              ['{' arrowHeadSize '*\pgfplotspointmetatransformed/1000}']);
 
         headStyle = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
         quiverOpts = opts_add(quiverOpts, 'every arrow/.append style', ...
