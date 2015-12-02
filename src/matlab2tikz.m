@@ -95,8 +95,9 @@ function matlab2tikz(varargin)
     %   false)
     %
     %   MATLAB2TIKZ('interpretTickLabelsAsTex',BOOL,...) determines whether to
-    %   interpret tick labels as TeX. MATLAB(R) doesn't do that by default.
-    %   (default: false)
+    %   interpret tick labels as TeX. MATLAB(R) doesn't allow to do that in R2014a
+    %   or before. In R2014b and later, please set the "TickLabelInterpreter" 
+    %   property of the relevant axis to get the same effect. (default: false)
     %
     %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
     %   of the output file. (default: '')
@@ -275,6 +276,8 @@ function matlab2tikz(varargin)
     warnAboutParameter(m2t, 'imagesAsPng', @(opt)(opt==false), ...
          ['It is highly recommended to use PNG data to store images.\n', ...
           'Make sure to set "imagesAsPng" to true.']);
+    warnAboutParameter(m2t, 'interpretTickLabelsAsTex', @(opt)(opt==true&&isHG2), ...
+         'Please use "set(gca,''TickLabelInterpreter'',''tex'')" instead.');
 
     % The following color RGB-values which will need to be defined.
     % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
@@ -1460,17 +1463,7 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     ticks           = get(handle, keywordTick);
 
     % hidden properties are not caught by hasProperties
-    try
-        % Get hidden properties of the datetime axes manager
-        dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
-        oldState   = warning('off','MATLAB:structOnObject');
-        dtsManager = struct(dtsManager);
-        warning(oldState);
-
-        isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
-    catch
-        isDatetimeTicks = false;
-    end
+    isDatetimeTicks = isAxisTicksDateTime(handle, axis);
 
     if isempty(ticks)
         % If no ticks are present, we need to enforce this in any case.
@@ -1491,7 +1484,8 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
         % HG2 allows to set 'TickLabelInterpreter'.
         % HG1 tacitly uses the interpreter 'none'.
         % See http://www.mathworks.com/matlabcentral/answers/102053#comment_300079
-        interpreter = getOrDefault(handle, 'TickLabelInterpreter', 'none');
+        fallback    = defaultTickLabelInterpreter(m2t);
+        interpreter = getOrDefault(handle, 'TickLabelInterpreter', fallback);
         keywordTickLabel = [upper(axis), 'TickLabel'];
         tickLabels = cellstr(get(handle, keywordTickLabel));
         tickLabels = prettyPrint(m2t, tickLabels, interpreter);
@@ -1510,6 +1504,32 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
         hasMinorTicks, tickDirection, isDatetimeTicks);
 end
 % ==============================================================================
+function interpreter = defaultTickLabelInterpreter(m2t)
+    % determines the default tick label interpreter
+    % This is only relevant in HG1/Octave. In HG2, we use the interpreter
+    % set in the object (not the global default).
+    if m2t.cmdOpts.Results.interpretTickLabelsAsTex
+        interpreter = 'tex';
+    else
+        interpreter = 'none';
+    end
+end
+% ==============================================================================
+function isDatetimeTicks = isAxisTicksDateTime(handle, axis);
+    % returns true when the axis has DateTime ticks
+    try
+        % Get hidden properties of the datetime axes manager
+        dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
+        oldState   = warning('off','MATLAB:structOnObject');
+        dtsManager = struct(dtsManager);
+        warning(oldState);
+
+        isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
+    catch
+        isDatetimeTicks = false;
+    end
+end
+% ==============================================================================
 function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir,isDatetimeTicks)
     % set ticks options
 
@@ -1519,33 +1539,29 @@ function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTi
     % a reasonable default.
     matlabDefaultNumMinorTicks = 3;
     if ~isempty(ticks)
-        options = opts_add(options, ...
-            [axis,'tick'], sprintf('{%s}', ticks));
+        options = opts_add(options, [axis,'tick'], sprintf('{%s}', ticks));
     end
     if ~isempty(tickLabels)
         options = opts_add(options, ...
             [axis,'ticklabels'], sprintf('{%s}', tickLabels));
     end
     if hasMinorTicks
-        options = opts_add(options, ...
-            [axis,'minorticks'], 'true');
+        options = opts_add(options, [axis,'minorticks'], 'true');
         if m2t.cmdOpts.Results.strict
-            options = ...
-                opts_add(options, ...
+            options = opts_add(options, ...
                 sprintf('minor %s tick num', axis), ...
                 sprintf('{%d}', matlabDefaultNumMinorTicks));
         end
     end
+
     if strcmpi(tickDir,'out')
-        options = opts_add(options, ...
-            'tick align','outside');
+        options = opts_add(options, 'tick align', 'outside');
     elseif strcmpi(tickDir,'both')
-        options = opts_add(options, ...
-        'tick align','center');
+        options = opts_add(options, 'tick align', 'center');
     end
+
     if isDatetimeTicks
-        options = opts_add(options, ...
-        ['scaled ' axis ' ticks'],'false');
+        options = opts_add(options, ['scaled ' axis ' ticks'], 'false');
     end
 end
 % ==============================================================================

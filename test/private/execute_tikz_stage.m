@@ -10,9 +10,14 @@ function [status] = execute_tikz_stage(status, ipp)
 
     % now, test matlab2tikz
     try
+        %TODO: remove this once text removal has been removed
+        oldWarn = warning('off','cleanfigure:textRemoval');
+
         cleanfigure_time = tic;
         cleanfigure(status.extraCleanfigureOptions{:});
         cleanfigure_time = toc(cleanfigure_time);
+
+        warning(oldWarn);
 
         m2t_time = tic;
         matlab2tikz('filename', gen_tex, ...
