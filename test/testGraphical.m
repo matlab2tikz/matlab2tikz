@@ -14,14 +14,14 @@ function [ status ] = testGraphical( varargin )
 %
 % See also: testMatlab2tikz, testHeadless, makeLatexReport
 
-    [state,cwd] = initializeGlobalState();
-    finally_restore_state = onCleanup(@() restoreGlobalState(state,cwd));
+    [state] = initializeGlobalState();
+    finally_restore_state = onCleanup(@() restoreGlobalState(state));
 
-    status = testMatlab2tikz('actionsToExecute', @actionsToExecute, ...
-                             varargin{:});
+    [status, args] = testMatlab2tikz('actionsToExecute', @actionsToExecute, ...
+                                     varargin{:});
 
     if nargout == 0
-        makeLatexReport(status);
+        makeLatexReport(status, args.output);
     end
 end
 % ==============================================================================
