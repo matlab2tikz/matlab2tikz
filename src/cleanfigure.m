@@ -410,7 +410,8 @@ function simplifyLine(meta, handle, targetResolution)
 
     % If the path has markers, perform pixelation instead of simplification
     hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
-    if hasMarkers
+    hasLines   = ~strcmpi(get(handle,'LineStyle'),'none');
+    if hasMarkers && ~hasLines
         % Pixelate data at the zoom multiplier
         mask      = pixelate(xData, yData, xToPix, yToPix);
         id_remove = find(mask==0);
@@ -452,7 +453,7 @@ function simplifyLine(meta, handle, targetResolution)
     end
 
     % Remove the data points
-    removeData(meta, handle, id_remove)
+    removeData(meta, handle, id_remove);
 end
 % =========================================================================
 function limitPrecision(meta, handle, alpha)
