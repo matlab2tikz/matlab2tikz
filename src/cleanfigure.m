@@ -411,10 +411,20 @@ function simplifyLine(meta, handle, targetResolution)
     % If the path has markers, perform pixelation instead of simplification
     hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
     hasLines   = ~strcmpi(get(handle,'LineStyle'),'none');
-    if hasMarkers && ~hasLines
+    if hasMarkers
         % Pixelate data at the zoom multiplier
         mask      = pixelate(xData, yData, xToPix, yToPix);
-        id_remove = find(mask==0);
+
+        % If this is a lineplot with markers, removing the markers would
+        % introduce new lines. Therefore, replace them by NaNs and filter
+        % out unnecessary ones.
+        if hasLines
+            id_replace = find(mask==0);
+            replaceDataWithNaN(meta, handle, id_replace);
+            removeNaNs(meta, handle);
+        else
+            id_remove = find(mask==0);
+        end
     else
         % Get the width of a pixel
         xPixelWidth = 1/xToPix;
