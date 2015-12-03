@@ -157,8 +157,8 @@ function pruneOutsideBox(meta, handle)
     end
 
     % Check if the plot has lines
-    hasLines    = ~strcmp(get(handle, 'lineStyle'),'none')...
-                && get(handle, 'lineWidth') > 0.0;
+    hasLines    = ~strcmp(get(handle, 'LineStyle'),'none')...
+                && get(handle, 'LineWidth') > 0.0;
 
     % Extract the visual limits from the current line handle.
     [xLim, yLim]= getVisualLimits(meta);
