@@ -156,32 +156,28 @@ function pruneOutsideBox(meta, handle)
         return;
     end
 
-    %hasLines = ~strcmp(lineStyle,'none') && lineWidth>0.0;
-    %hasMarkers = ~strcmp(marker,'none');
-    hasLines = true;
-    hasMarkers = true;
+    % Check if the plot has lines
+    hasLines    = ~strcmp(get(handle, 'lineStyle'),'none')...
+                && get(handle, 'lineWidth') > 0.0;
 
     % Extract the visual limits from the current line handle.
-    [xLim, yLim]   = getVisualLimits(meta);
+    [xLim, yLim]= getVisualLimits(meta);
 
     tol = 1.0e-10;
     relaxedXLim = xLim + [-tol, tol];
     relaxedYLim = yLim + [-tol, tol];
 
-    numPoints = size(data, 1);
-
     % Get which points are inside a (slightly larger) box.
     dataIsInBox = isInBox(data, relaxedXLim, relaxedYLim);
 
-    % By default, don't plot any points.
-    shouldPlot = false(numPoints, 1);
-    if hasMarkers
-        shouldPlot = shouldPlot | dataIsInBox;
-    end
+    % Plot all the points inside the box
+    shouldPlot = dataIsInBox;
+    
     if hasLines
-        % Check if the connecting line is in the box.
+        % Check if the connecting line between two data points is visible.
         segvis = segmentVisible(data, dataIsInBox, xLim, yLim);
-        % Plot points which are next to an edge which is in the box.
+        
+        % Plot points which part of an visible line segment.
         shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
     end
 
@@ -189,11 +185,8 @@ function pruneOutsideBox(meta, handle)
     id_replace = [];
     id_remove  = [];
     if ~all(shouldPlot)
-        % There are two options here:
-        %      data = data(shouldPlot, :);
-        % i.e., simply removing the data that isn't supposed to be plotted.
-        % For line plots, this has the disadvantage that the line between two
-        % 'loose' ends may now appear in the figure.
+        % For line plots, simply removing the data has the disadvantage 
+        % that the line between two 'loose' ends may now appear in the figure.
         % To avoid this, add a row of NaNs wherever a block of actual data is
         % removed.
 
