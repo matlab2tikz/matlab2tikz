@@ -415,8 +415,7 @@ function simplifyLine(meta, handle, targetResolution)
         % Pixelate data at the zoom multiplier
         mask      = pixelate(xData, yData, xToPix, yToPix);
         id_remove = find(mask==0);
-    end
-    if hasLines && ~hasMarkers
+    elseif hasLines && ~hasMarkers
         % Get the width of a pixel
         xPixelWidth = 1/xToPix;
         yPixelWidth = 1/yToPix;
