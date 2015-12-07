@@ -896,29 +896,45 @@ function m2t = drawGridOfAxes(m2t, handle)
     gridOpts = opts_new();
 
     % Check for major/minor grids
-    hasGrid =  [isOn(get(handle, 'XGrid'));
-                isOn(get(handle, 'YGrid'));
-                isOn(get(handle, 'ZGrid'))];
+    hasGrid = [isOn(get(handle, 'XGrid'));
+               isOn(get(handle, 'YGrid'));
+               isOn(get(handle, 'ZGrid')) && isAxis3D(handle)];
 
-    hasMinorGrid =  [isOn(get(handle, 'XMinorGrid'));
-                 	 isOn(get(handle, 'YMinorGrid'));
-                 	 isOn(get(handle, 'ZMinorGrid'))];
+    hasMinorGrid = [isOn(get(handle, 'XMinorGrid'));
+                    isOn(get(handle, 'YMinorGrid'));
+                    isOn(get(handle, 'ZMinorGrid')) && isAxis3D(handle)];
 
-    % Check for the grid options
+    xyz = {'x', 'y', 'z'};
+
+    % Check for local grid options
+    for i=1:3
+        if hasGrid(i)
+            grid     = [xyz{i}, 'majorgrids'];
+            gridOpts = opts_add(gridOpts, grid, []);
+        end
+        if hasMinorGrid(i)
+            grid     = [xyz{i}, 'minorgrids'];
+            gridOpts = opts_add(gridOpts, grid, []);
+        end
+    end
+
+    % Check for global grid options
     if any(hasGrid)
         % Get the line style and translate it to pgfplots
-        gridLS = translateLineStyle(get(handle, 'GridLineStyle'));
-
-        % Add the options
-        gridOpts = opts_add(gridOpts, 'grid style', sprintf('{%s}', gridLS));
+        [gridLS, isDefault] = getAndCheckDefault('axes', handle, 'GridLineStyle', ':');
+        if ~isDefault || m2t.cmdOpts.Results.strict
+            gridLS   = translateLineStyle(gridLS);
+            gridOpts = opts_add(gridOpts, 'grid style', sprintf('{%s}', gridLS));
+        end
     end
 
     if any(hasMinorGrid)
         % Get the line style and translate it to pgfplots
-        minorGridLS = translateLineStyle(get(handle, 'MinorGridLineStyle'));
-
-        % Add the options
-        gridOpts = opts_add(gridOpts, 'minor grid style', sprintf('{%s}', minorGridLS));
+        [minorGridLS, isDefault] = getAndCheckDefault('axes', handle, 'MinorGridLineStyle', ':');
+        if ~isDefault || m2t.cmdOpts.Results.strict
+            minorGridLS = translateLineStyle(minorGridLS);
+            gridOpts    = opts_add(gridOpts, 'minor grid style', sprintf('{%s}', minorGridLS));
+        end
     end
 
     if ~any(hasGrid) && ~any(hasMinorGrid)
@@ -927,7 +943,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         % behavior).
         %TODO: use proper grid ordering
         if m2t.cmdOpts.Results.strict
-           gridOpts = opts_add(gridOpts, 'axis on top', []);
+            gridOpts = opts_add(gridOpts, 'axis on top', []);
         end
         % FIXME: axis background, axis grid, main, axis ticks, axis lines, axis tick labels, axis descriptions, axis foreground
     end
@@ -1453,14 +1469,6 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis label
     [m2t, options] = getAxisLabel(m2t, handle, axis, options);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % get grids
-    if isOn(getOrDefault(handle, [upper(axis),'Grid'], 'off'));
-        options = opts_add(options, [axis, 'majorgrids'], []);
-    end
-    if isOn(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'));
-        options = opts_add(options, [axis, 'minorgrids'], []);
-    end
 end
 % ==============================================================================
 function [options] = getAxisTicks(m2t, handle, axis, options)
