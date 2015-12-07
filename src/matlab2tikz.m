@@ -892,26 +892,52 @@ function m2t = drawAxes(m2t, handle)
 end
 % ==============================================================================
 function m2t = drawGridOfAxes(m2t, handle)
-    % draws the grids of an axes
-    %TODO: has{XYZ}Grid is always false without a good reason
-    hasXGrid = false;
-    hasYGrid = false;
-    hasZGrid = false;
-    if hasXGrid || hasYGrid || hasZGrid
-        matlabGridLineStyle = get(handle, 'GridLineStyle');
-        % Take over the grid line style in any case when in strict mode.
-        % If not, don't add anything in case of default line grid line style
-        % and effectively take Pgfplots' default.
-        defaultMatlabGridLineStyle = ':';
-        if m2t.cmdOpts.Results.strict ...
-                || ~strcmpi(matlabGridLineStyle,defaultMatlabGridLineStyle)
-            gls = translateLineStyle(matlabGridLineStyle);
+    % Draws the grids of an axis
+    % Check for major grids
+    hasGrid =  strcmpi(get(handle, 'XGrid'), 'on') ...
+            || strcmpi(get(handle, 'YGrid'), 'on') ...
+            || strcmpi(get(handle, 'ZGrid'), 'on');
+
+    % Check for minor grids
+    hasMinorGrid =  strcmpi(get(handle, 'XMinorGrid'), 'on') ...
+                 || strcmpi(get(handle, 'YMinorGrid'), 'on') ...
+                 || strcmpi(get(handle, 'ZMinorGrid'), 'on');
+
+    % Default matlab grid style ommited for brevity
+    % defaultGridLineStyle = ':';
+
+    % Check for the grid line styles
+    if hasGrid
+        % Get the line style
+        GridLineStyle = get(handle, 'GridLineStyle');
+
+        % Check whether they are the default style
+        hasLineStyle  = strcmpi(GridLineStyle, ':');
+
+        % Translate the line styles if necessary
+        if m2t.cmdOpts.Results.strict || hasLineStyle
+            gls = translateLineStyle(GridLineStyle);
+            % Add the options
             axisGridOpts = {'grid style', sprintf('{%s}', gls)};
             m2t.axesContainers{end}.options = cat(1, ...
-                m2t.axesContainers{end}.options,...
-                axisGridOpts);
+                m2t.axesContainers{end}.options, axisGridOpts);
         end
-    else
+    end
+
+    if hasMinorGrid
+        % Get the line style
+        MinorGridLineStyle = get(handle, 'MinorGridLineStyle');
+
+        % Translate the line style (always for minor grids)
+        glsMinor = translateLineStyle(MinorGridLineStyle);
+
+        % Add the options
+        axisGridOpts = {'minor grid style', sprintf('{%s}', glsMinor)};
+        m2t.axesContainers{end}.options = cat(1, ...
+            m2t.axesContainers{end}.options, axisGridOpts);
+    end
+
+    if ~hasGrid && ~hasMinorGrid
         % When specifying 'axis on top', the axes stay above all graphs (which is
         % default MATLAB behavior), but so do the grids (which is not default
         % behavior).
