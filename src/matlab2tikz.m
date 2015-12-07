@@ -5594,11 +5594,10 @@ end
 function bool = isVisible(handles)
     % Determines whether an object is actually visible or not.
     bool = isOn(get(handles,'Visible'));
-    % There's another handle property, 'HandleVisibility', which may or may not
-    % determine the visibility of the object. Empirically, it seems to be 'off'
-    % whenever we're dealing with an object that's not user-created, such as
-    % automatic axis ticks, baselines in bar plots, axis lines for polar plots
-    % and so forth. For now, don't check 'HandleVisibility'.
+    % There's another handle property, 'HandleVisibility', that is unrelated
+    % to the "physical" visibility of an object. Rather, it sets whether an
+    % object should be visitable by |findobj|. Hence, it is often switched off
+    % for non-data objects such as custom axes/grid objects.
 end
 % ==============================================================================
 function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
