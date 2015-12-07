@@ -5337,8 +5337,8 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
     % Iterate over all handles
     for i = 1:numel(axesHandles)
         axesHandle = axesHandles(i);
-        axesPos = get(axesHandle, 'Position');
-        axesUnits = get(axesHandle, 'Units');
+        axesPos    = get(axesHandle, 'Position');
+        axesUnits  = get(axesHandle, 'Units');
         if isequal(lower(axesUnits), 'normalized')
             % Position is already relative
             position(i,:) = axesPos;
@@ -5375,11 +5375,10 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                     errorUnknownEnvironment();
             end
 
-
             vertices = projection * [0, 1, 0, 0, 1, 1, 0, 1;
-                0, 0, 1, 0, 1, 0, 1, 1;
-                0, 0, 0, 1, 0, 1, 1, 1;
-                1, 1, 1, 1, 1, 1, 1, 1];
+                                     0, 0, 1, 0, 1, 0, 1, 1;
+                                     0, 0, 0, 1, 0, 1, 1, 1;
+                                     1, 1, 1, 1, 1, 1, 1, 1];
 
             % each of the columns of vertices represents a vertex of the 3D axes
             % but we only need their XY coordinates
@@ -5388,9 +5387,9 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             % the size of the projected plot box is limited by the long diagonals
             % The matrix A determines the connectivity, e.g. the first diagonal runs from vertices(:,3) -> vertices(:,4)
             A = [ 0,  0,  0, -1, +1,  0,  0,  0;
-                0,  0, -1,  0,  0, +1,  0,  0;
-                0, -1,  0,  0,  0,  0, +1,  0;
-                -1,  0,  0,  0,  0,  0,  0, +1];
+                  0,  0, -1,  0,  0, +1,  0,  0;
+                  0, -1,  0,  0,  0,  0, +1,  0;
+                 -1,  0,  0,  0,  0,  0,  0, +1];
             diagonals = verticesXY * A';
             % each of the columns of this matrix contains a the X and Y distance of a diagonal
             dimensions = max(abs(diagonals), [], 2);
@@ -5399,15 +5398,15 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             aspectRatio = dimensions(2) * figWidth / (dimensions(1) * figHeight);
             axesAspectRatio = position(i,4) / position(i,3);
             if aspectRatio > axesAspectRatio
-                newWidth = position(i,4) / aspectRatio;
+                newWidth      = position(i,4) / aspectRatio;
                 % Center Axis
-                offset = (position(i,3) - newWidth) / 2;
+                offset        = (position(i,3) - newWidth) / 2;
                 position(i,1) = position(i,1) + offset;
                 % Store new width
                 position(i,3) = newWidth;
             else
-                newHeight = position(i,3) * aspectRatio;
-                offset = (position(i,4) - newHeight) / 2;
+                newHeight     = position(i,3) * aspectRatio;
+                offset        = (position(i,4) - newHeight) / 2;
                 position(i,2) = position(i,2) + offset;
                 % Store new height
                 position(i,4) = newHeight;
