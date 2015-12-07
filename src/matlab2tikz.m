@@ -909,14 +909,14 @@ function m2t = drawGridOfAxes(m2t, handle)
     % Check for the grid line styles
     if hasGrid
         % Get the line style
-        GridLineStyle = get(handle, 'GridLineStyle');
+        gridLineStyle = get(handle, 'GridLineStyle');
 
         % Check whether they are the default style
-        hasLineStyle  = strcmpi(GridLineStyle, ':');
+        hasLineStyle  = strcmpi(gridLineStyle, ':');
 
         % Translate the line styles if necessary
         if m2t.cmdOpts.Results.strict || hasLineStyle
-            gls = translateLineStyle(GridLineStyle);
+            gls = translateLineStyle(gridLineStyle);
             % Add the options
             axisGridOpts = {'grid style', sprintf('{%s}', gls)};
             m2t.axesContainers{end}.options = cat(1, ...
@@ -926,10 +926,10 @@ function m2t = drawGridOfAxes(m2t, handle)
 
     if hasMinorGrid
         % Get the line style
-        MinorGridLineStyle = get(handle, 'MinorGridLineStyle');
+        minorGridLineStyle = get(handle, 'MinorGridLineStyle');
 
         % Translate the line style (always for minor grids)
-        glsMinor = translateLineStyle(MinorGridLineStyle);
+        glsMinor = translateLineStyle(minorGridLineStyle);
 
         % Add the options
         axisGridOpts = {'minor grid style', sprintf('{%s}', glsMinor)};
