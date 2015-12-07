@@ -893,62 +893,47 @@ end
 % ==============================================================================
 function m2t = drawGridOfAxes(m2t, handle)
     % Draws the grids of an axis
-    % Check for major grids
-    hasGrid =  isOn(get(handle, 'XGrid')) ...
-            || isOn(get(handle, 'YGrid')) ...
-            || isOn(get(handle, 'ZGrid'));
+    gridOpts = opts_new();
 
-    % Check for minor grids
-    hasMinorGrid =  isOn(get(handle, 'XMinorGrid')) ...
-                 || isOn(get(handle, 'YMinorGrid')) ...
-                 || isOn(get(handle, 'ZMinorGrid'));
+    % Check for major/minor grids
+    hasGrid =  [isOn(get(handle, 'XGrid'));
+                isOn(get(handle, 'YGrid'));
+                isOn(get(handle, 'ZGrid'))];
 
-    % Default matlab grid style ommited for brevity
-    % defaultGridLineStyle = ':';
+    hasMinorGrid =  [isOn(get(handle, 'XMinorGrid'));
+                 	 isOn(get(handle, 'YMinorGrid'));
+                 	 isOn(get(handle, 'ZMinorGrid'))];
 
-    % Check for the grid line styles
-    if hasGrid
-        % Get the line style
-        gridLineStyle = get(handle, 'GridLineStyle');
-
-        % Check whether they are the default style
-        hasLineStyle  = strcmpi(gridLineStyle, ':');
-
-        % Translate the line styles if necessary
-        if m2t.cmdOpts.Results.strict || hasLineStyle
-            gls = translateLineStyle(gridLineStyle);
-            % Add the options
-            axisGridOpts = {'grid style', sprintf('{%s}', gls)};
-            m2t.axesContainers{end}.options = cat(1, ...
-                m2t.axesContainers{end}.options, axisGridOpts);
-        end
-    end
-
-    if hasMinorGrid
-        % Get the line style
-        minorGridLineStyle = get(handle, 'MinorGridLineStyle');
-
-        % Translate the line style (always for minor grids)
-        glsMinor = translateLineStyle(minorGridLineStyle);
+    % Check for the grid options
+    if any(hasGrid)
+        % Get the line style and translate it to pgfplots
+        gridLS = translateLineStyle(get(handle, 'GridLineStyle'));
 
         % Add the options
-        axisGridOpts = {'minor grid style', sprintf('{%s}', glsMinor)};
-        m2t.axesContainers{end}.options = cat(1, ...
-            m2t.axesContainers{end}.options, axisGridOpts);
+        gridOpts = opts_add(gridOpts, 'grid style', sprintf('{%s}', gridLS));
     end
 
-    if ~hasGrid && ~hasMinorGrid
+    if any(hasMinorGrid)
+        % Get the line style and translate it to pgfplots
+        minorGridLS = translateLineStyle(get(handle, 'MinorGridLineStyle'));
+
+        % Add the options
+        gridOpts = opts_add(gridOpts, 'minor grid style', sprintf('{%s}', minorGridLS));
+    end
+
+    if ~any(hasGrid) && ~any(hasMinorGrid)
         % When specifying 'axis on top', the axes stay above all graphs (which is
         % default MATLAB behavior), but so do the grids (which is not default
         % behavior).
         %TODO: use proper grid ordering
         if m2t.cmdOpts.Results.strict
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis on top', []);
+           gridOpts = opts_add(gridOpts, 'axis on top', []);
         end
         % FIXME: axis background, axis grid, main, axis ticks, axis lines, axis tick labels, axis descriptions, axis foreground
     end
+
+    m2t.axesContainers{end}.options = opts_merge(...
+        m2t.axesContainers{end}.options, gridOpts);
 end
 % ==============================================================================
 function m2t = add3DOptionsOfAxes(m2t, handle)
