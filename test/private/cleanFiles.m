@@ -1,5 +1,7 @@
 function cleanFiles(cleanBefore)
 % clean output files in ./tex using make
+%FIXME: this file appears to be unused (but it is useful)
+%FIXME: adapt this file to take the output directory into account
     if cleanBefore && exist(fullfile('tex','Makefile'),'file')
         fprintf(1, 'Cleaning output files...\n');
         cwd = pwd;

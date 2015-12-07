@@ -1,0 +1,6 @@
+# just ignore all generate files
+acid.*
+*.log
+*.aux
+*.pdf
+*.tex
