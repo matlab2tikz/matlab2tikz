@@ -212,6 +212,16 @@ function changelog = changelogUntilVersion(currentVersion)
     else
         % Just show the whole changelog if we don't find the old version.
     end
+    changelog = replaceIssuesWithUrls(changelog);
+end
+% ==============================================================================
+function changelog = replaceIssuesWithUrls(changelog)
+% Replaces GitHub issues ("#...") with URLs
+    baseurl = 'https://github.com/matlab2tikz/matlab2tikz/issues/';
+    if strcmpi(getEnvironment(), 'MATLAB')
+        replacement = sprintf('<a href="%s$1">#$1</a>', baseurl);
+        changelog = regexprep(changelog, '\#(\d+)', replacement);
+    end
 end
 % ==============================================================================
 function warnAboutUpgradeImplications(currentVersion, latestVersion, verbose)
