@@ -145,13 +145,12 @@ function [value] = m2tcustom(handle, varargin)
     value = rmfield(value, {'handle'});
     
     %% Normalize the actual values
-    EOL = sprintf('\n');
-    value.codeBefore      = cellstr2char(value.codeBefore     , EOL);
-    value.codeAfter       = cellstr2char(value.codeAfter      , EOL);
-    value.commentsBefore  = cellstr2char(value.commentsBefore , EOL);
-    value.commentsAfter   = cellstr2char(value.commentsAfter  , EOL);
-    value.codeInsideFirst = cellstr2char(value.codeInsideFirst, EOL);
-    value.codeInsideLast  = cellstr2char(value.codeInsideLast , EOL);
+    value.codeBefore      =         cellstr2char(value.codeBefore);
+    value.codeAfter       =         cellstr2char(value.codeAfter);
+    value.codeInsideFirst =         cellstr2char(value.codeInsideFirst);
+    value.codeInsideLast  =         cellstr2char(value.codeInsideLast);
+    value.commentsBefore  = comment(cellstr2char(value.commentsBefore));
+    value.commentsAfter   = comment(cellstr2char(value.commentsAfter));
     if isempty(value.customHandler)
         value = rmfield(value, 'customHandler');
     end
@@ -199,10 +198,19 @@ function bool = atLeastOrUnknown(nargs, limit)
     bool = (nargs == UNKNOWN) || nargs >= limit;
 end 
 % == FIELD NORMALIZATION =======================================================
-function value = cellstr2char(value, delimiter)
+function value = cellstr2char(value)
     % convert cellstr to char (and keep char unaffected)
     if iscellstr(value)
-        value = m2tstrjoin(value, delimiter);
+        EOL = sprintf('\n');
+        value = m2tstrjoin(value, EOL);
+    end
+end
+function str = comment(str)
+    % format as a LaTeX comment (retain empty strings)
+    if ~isempty(str)
+        EOL = sprintf('\n');
+        PERCENT = '%';
+        str = [PERCENT strrep(str, EOL, [EOL PERCENT])];
     end
 end
 % ==============================================================================
