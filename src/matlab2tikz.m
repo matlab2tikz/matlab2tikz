@@ -907,6 +907,8 @@ function m2t = drawGridOfAxes(m2t, handle)
     xyz = {'x', 'y', 'z'};
 
     % Check for local grid options
+    % NOTE: for individual axis color options see the pfgmanual under
+    % major x grid style
     for i=1:3
         if hasGrid(i)
             grid    = [xyz{i}, 'majorgrids'];
