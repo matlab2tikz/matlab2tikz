@@ -2958,9 +2958,9 @@ function [m2t, str] = handleObject(m2t, h, actualHandler)
     % to specify custom options, code, comments or even handler via |m2tcustom|.
     assert(isa(actualHandler,'function_handle'));
 
-    customSettings = m2tcustom(h); % retrieve custom settings
-    if isfield(customSettings, 'customHandler')
-        actualHandler = customSettings.customHandler;
+    custom = m2tcustom(h); % retrieve custom settings
+    if isfield(custom, 'customHandler')
+        actualHandler = custom.customHandler;
     end
     
     [m2t, str] = feval(actualHandler, m2t, h, custom);
