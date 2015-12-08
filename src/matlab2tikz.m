@@ -859,7 +859,7 @@ function m2t = drawAxes(m2t, handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
         % in MATLAB, they may still be visible. Well.
         m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'hide axis', []);
+            opts_add(m2t.axesContainers{end}.options, 'hide axis');
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
         %    children = allchild(handle);
@@ -1298,7 +1298,7 @@ function m2t = retrievePositionOfAxes(m2t, handle)
         % the following is general MATLAB behavior:
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
-            'scale only axis', []);
+            'scale only axis');
     end
 end
 % ==============================================================================
@@ -1429,8 +1429,7 @@ function m2t = drawLegendOptionsOfAxes(m2t,handle)
     [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
     m2t.axesContainers{end}.options = ...
         opts_add(m2t.axesContainers{end}.options, ...
-        key, ...
-        ['{', legendOpts, '}']);
+        key, ['{', legendOpts, '}']);
 end
 % ==============================================================================
 function m2t = handleColorbar(m2t, handle)
@@ -1487,7 +1486,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
             % axes are drawn as four separate paths. This makes the alignment
             % at the box corners somewhat less nice, but allows for different
             % axis styles (e.g., colors).
-            options = opts_add(options, 'separate axis lines', []);
+            options = opts_add(options, 'separate axis lines');
         end
         options = ...
             opts_add(options, ...
@@ -2146,7 +2145,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     % -----------------------------------------------------------------------
     % gather the draw options
     % Make sure that legends are shown in area mode.
-    drawOptions = opts_add(opts_new,'area legend','');
+    drawOptions = opts_add(opts_new,'area legend');
     verticesTableOptions = opts_new();
 
     % Marker options
@@ -2184,9 +2183,9 @@ function [m2t, str] = drawPatch(m2t, handle)
 
         % Enforce 'patch' or cannot use 'patch table='
         if strcmpi(s.plotType,'mesh')
-            drawOptions = opts_add(drawOptions,'patch','');
+            drawOptions = opts_add(drawOptions,'patch');
         end
-        drawOptions = opts_add(drawOptions,s.plotType,''); % Eventually add mesh, but after patch!
+        drawOptions = opts_add(drawOptions,s.plotType); % Eventually add mesh, but after patch!
 
         drawOptions = getPatchShape(m2t, handle, drawOptions, patchOptions);
 
@@ -2231,7 +2230,7 @@ function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
         % Add the color map
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
-            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap));
 
         % Determine if mapping is direct or scaled
         CDataMapping = get(handle,'CDataMapping');
@@ -2282,7 +2281,7 @@ function [drawOptions] = maybeShowInLegend(showInLegend, drawOptions)
     % sets the appropriate options to show/hide the plot in the legend
     if ~showInLegend
         % No legend entry found. Don't include plot in legend.
-        drawOptions = opts_add(drawOptions, 'forget plot', '');
+        drawOptions = opts_add(drawOptions, 'forget plot');
     end
 end
 % ==============================================================================
@@ -2383,8 +2382,7 @@ function [m2t, str] = drawImage(m2t, handle)
 
     % Make sure that the axes are still visible above the image.
     m2t.axesContainers{end}.options = ...
-        opts_add(m2t.axesContainers{end}.options, ...
-        'axis on top', []);
+        opts_add(m2t.axesContainers{end}.options, 'axis on top');
 end
 % ==============================================================================
 function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
@@ -3283,8 +3281,7 @@ function m2t = disableClippingInCurrentAxes(m2t, pos)
     zOutOfRange = is3D && (pos(3) < zlim(1) || pos(3) > zlim(2));
     if xOutOfRange || yOutOfRange || zOutOfRange
         m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'clip', 'false');
+            opts_add(m2t.axesContainers{end}.options, 'clip', 'false');
     end
 end
 % ==============================================================================
