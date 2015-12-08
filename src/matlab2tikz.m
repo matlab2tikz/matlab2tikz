@@ -716,11 +716,12 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case guitypes()
                 % don't do anything for GUI objects and their children
-                str = '';
+                [m2t, str] = handleObject(m2t, child, @drawNothing);
 
             case 'light'
                 % These objects are not supported and should not/cannot be
                 % supported by matlab2tikz or pgfplots.
+                [m2t, str] = handleObject(m2t, child, @drawNothing);
 
             case ''
                 % No children found for handle. (It has only a title and/or
@@ -2954,6 +2955,8 @@ function bool = hasProperties(h, fieldsExpectedPresent, fieldsExpectedAbsent)
 end
 % ==============================================================================
 function [m2t, str] = handleObject(m2t, h, actualHandler)
+    % this function wraps the actual drawing handlers and allows the user
+    % to specify custom options, code, comments or even handler via |m2tcustom|.
     assert(isa(actualHandler,'function_handle'));
 
     customSettings = m2tcustom(h); % retrieve custom settings
@@ -2964,6 +2967,14 @@ function [m2t, str] = handleObject(m2t, h, actualHandler)
     str = [custom.commentsBefore, custom.codeBefore, ...
            str, ...
            custom.commentsAfter, custom.codeAfter];
+end
+% ==============================================================================
+function [m2t, str] = drawNothing(m2t, h, custom) %#ok some params unused
+    % draws nothing
+    % While it may seem useless, this allows a user to add comments/code
+    % for objects that matlab2tikz cannot translate (yet) thanks to the
+    % |handleObject| function together with |m2tcustom|.
+    str = '';
 end
 % ==============================================================================
 function m2t = drawAnnotations(m2t)
