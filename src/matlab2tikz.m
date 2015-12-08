@@ -909,23 +909,23 @@ function m2t = drawGridOfAxes(m2t, handle)
     % Check for local grid options
     for i=1:3
         if hasGrid(i)
-            grid     = [xyz{i}, 'majorgrids'];
+            grid    = [xyz{i}, 'majorgrids'];
             options = opts_add(options, grid, []);
         end
         if hasMinorGrid(i)
-            grid     = [xyz{i}, 'minorgrids'];
+            grid    = [xyz{i}, 'minorgrids'];
             options = opts_add(options, grid, []);
         end
     end
 
     % Check for global grid options
     if any(hasGrid)
-        gridOpts = [];
+        gridOpts = opts_new();
         % Get the line style and translate it to pgfplots
         [gridLS, isDefault] = getAndCheckDefault(...
             'axes', handle, 'GridLineStyle', ':');
         if ~isDefault || m2t.cmdOpts.Results.strict
-            gridOpts = translateLineStyle(gridLS);
+            gridOpts = opts_add(gridOpts, translateLineStyle(gridLS), []);
         end
 
         % Get the color of the grid and translate it to pgfplots usable
@@ -934,7 +934,7 @@ function m2t = drawGridOfAxes(m2t, handle)
             'axes', handle, 'GridColor', [0.15, 0.15, 0.15]);
         if ~noColor
             [m2t, gridColor] = getColor(m2t, handle, gridColor, 'patch');
-            gridOpts = [gridOpts, ', ', gridColor];
+            gridOpts = opts_add(gridOpts, gridColor, []);
         end
 
         % Get the alpha of the grid and translate it to pgfplots
@@ -944,21 +944,23 @@ function m2t = drawGridOfAxes(m2t, handle)
         [gridAlpha, noAlpha] = getAndCheckDefault(...
             'axes', handle, 'GridAlpha', 0.1);
         if ~noAlpha || ~noColor
-            gridOpts = [gridOpts, ', opacity =', num2str(gridAlpha)];
+            gridOpts = opts_add(gridOpts, 'opacity', num2str(gridAlpha));
         end
 
         if ~isempty(gridOpts)
-            options = opts_add(options, 'grid style', sprintf('{%s}', gridOpts));
+            gridOptions = opts_print(m2t, gridOpts, ',');
+            options = opts_add(options, 'grid style', ['{' gridOptions '}']);
         end
     end
 
     if any(hasMinorGrid)
+        minorGridOpts = opts_new();
         % Get the line style and translate it to pgfplots
         % NOTE: The default styles for minor grids differ between MATLAB
         % and pgfplots. Therefore, always translate the style.
         minorGridLS   = getAndCheckDefault(...
             'axes', handle, 'MinorGridLineStyle', ':');
-        minorGridOpts = translateLineStyle(minorGridLS);
+        minorGridOpts = opts_add(minorGridOpts, translateLineStyle(minorGridLS), []);
 
         %Get the color of the grid and translate it to pgfplots usable
         % values
@@ -966,7 +968,7 @@ function m2t = drawGridOfAxes(m2t, handle)
             'axes', handle, 'MinorGridColor', [0.1, 0.1, 0.1]);
         if ~noColor
             [m2t, minorGridColor] = getColor(m2t, handle, minorGridColor, 'patch');
-            minorGridOpts = [minorGridOpts, ', ', minorGridColor];
+            minorGridOpts = opts_add(minorGridOpts, minorGridColor, []);
         end
 
         % Get the alpha of the grid and translate it to pgfplots
@@ -976,11 +978,12 @@ function m2t = drawGridOfAxes(m2t, handle)
         [minorGridAlpha, noAlpha] = getAndCheckDefault(...
             'axes', handle, 'MinorGridAlpha', 0.1);
         if ~noAlpha || ~noColor
-            minorGridOpts = [minorGridOpts, ', opacity =', num2str(minorGridAlpha)];
+            minorGridOpts = opts_add(minorGridOpts, 'opacity', num2str(minorGridAlpha));
         end
 
         if ~isempty(minorGridOpts)
-            options = opts_add(options, 'minor grid style', sprintf('{%s}', minorGridOpts));
+            minorGridOptions = opts_print(m2t, minorGridOpts, ',');
+            options = opts_add(options, 'minor grid style', ['{' minorGridOptions '}']);
         end
     end
 
