@@ -165,7 +165,11 @@ function [value] = m2tcustom(handle, varargin)
     if numel(varargin) == 0
         %% GETTER MODE
         % syntax: value = m2tcustom(h);
-        object = getappdata(handle, MATLAB2TIKZ);
+        if ~isempty(handle)
+            object = getappdata(handle, MATLAB2TIKZ);
+        else
+            object = [];
+        end
         if ~isempty(object)
             value = object;
         else
