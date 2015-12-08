@@ -2953,6 +2953,19 @@ function bool = hasProperties(h, fieldsExpectedPresent, fieldsExpectedAbsent)
     bool = present && absent;
 end
 % ==============================================================================
+function [m2t, str] = handleObject(m2t, h, actualHandler)
+    assert(isa(actualHandler,'function_handle'));
+
+    customSettings = m2tcustom(h); % retrieve custom settings
+    if isfield(customSettings, 'customHandler')
+        actualHandler = customSettings.customHandler;
+    end
+    [m2t, str] = feval(actualHandler, m2t, h, customSettings);
+    str = [custom.commentsBefore, custom.codeBefore, ...
+           str, ...
+           custom.commentsAfter, custom.codeAfter];
+end
+% ==============================================================================
 function m2t = drawAnnotations(m2t)
     % Draws annotation in Matlab (Octave not supported).
 

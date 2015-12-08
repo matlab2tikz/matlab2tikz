@@ -91,21 +91,22 @@ function [value] = m2tcustom(handle, varargin)
     %
     %    figure;
     %    plot(1:10);
-    %    m2tCustom(gca, 'codeBefore'      , '<codeBefore>'     , ...
-    %                   'codeAfter'       , '<codeAfter>'      , ...
-    %                   'commentsBefore'  , '<commentsBefore>' , ...
-    %                   'commentsAfter'   , '<commentsAfter>'  , ...
-    %                   'codeInsideFirst' , '<codeInsideFirst>', ...
-    %                   'codeInsideLast'  , '<codeInsideLast>' , ...
-    %                   'extraOptions'    , '<extraOptions>');
+    %    EOL = sprintf('\n');
+    %    m2tCustom(gca, 'codeBefore'      , ['<codeBefore>' EOL]     , ...
+    %                   'codeAfter'       , ['<codeAfter>'  EOL]     , ...
+    %                   'commentsBefore'  ,  '<commentsBefore>'      , ...
+    %                   'commentsAfter'   ,  '<commentsAfter>'       , ...
+    %                   'codeInsideFirst' , ['<codeInsideFirst>' EOL], ...
+    %                   'codeInsideLast'  , ['<codeInsideLast>'  EOL], ...
+    %                   'extraOptions'    ,  '<extraOptions>');
     %
     %    matlab2tikz('test.tikz')
     % 
-    % Should result in a |test.tikz| file with contents the look like
-    % this:
+    % Should result in a |test.tikz| file with contents that look somewhat
+    % like this:
     %
     %       \begin{tikzpicture}
-    %           %<commentsBefore
+    %           %<commentsBefore>
     %           <codeBefore>
     %           \begin{axis}[..., <extraOptions>]
     %               <codeInsideFirst>
@@ -210,7 +211,7 @@ function str = comment(str)
     if ~isempty(str)
         EOL = sprintf('\n');
         PERCENT = '%';
-        str = [PERCENT strrep(str, EOL, [EOL PERCENT])];
+        str = [PERCENT strrep(str, EOL, [EOL PERCENT]) EOL];
     end
 end
 % ==============================================================================
