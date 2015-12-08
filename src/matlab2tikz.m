@@ -910,11 +910,11 @@ function m2t = drawGridOfAxes(m2t, handle)
     for i=1:3
         if hasGrid(i)
             grid    = [xyz{i}, 'majorgrids'];
-            options = opts_add(options, grid, []);
+            options = opts_add(options, grid);
         end
         if hasMinorGrid(i)
             grid    = [xyz{i}, 'minorgrids'];
-            options = opts_add(options, grid, []);
+            options = opts_add(options, grid);
         end
     end
 
@@ -925,7 +925,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         [gridLS, isDefault] = getAndCheckDefault(...
             'axes', handle, 'GridLineStyle', ':');
         if ~isDefault || m2t.cmdOpts.Results.strict
-            gridOpts = opts_add(gridOpts, translateLineStyle(gridLS), []);
+            gridOpts = opts_add(gridOpts, translateLineStyle(gridLS));
         end
 
         % Get the color of the grid and translate it to pgfplots usable
@@ -934,7 +934,7 @@ function m2t = drawGridOfAxes(m2t, handle)
             'axes', handle, 'GridColor', [0.15, 0.15, 0.15]);
         if ~noColor
             [m2t, gridColor] = getColor(m2t, handle, gridColor, 'patch');
-            gridOpts = opts_add(gridOpts, gridColor, []);
+            gridOpts = opts_add(gridOpts, gridColor);
         end
 
         % Get the alpha of the grid and translate it to pgfplots
@@ -960,7 +960,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         % and pgfplots. Therefore, always translate the style.
         minorGridLS   = getAndCheckDefault(...
             'axes', handle, 'MinorGridLineStyle', ':');
-        minorGridOpts = opts_add(minorGridOpts, translateLineStyle(minorGridLS), []);
+        minorGridOpts = opts_add(minorGridOpts, translateLineStyle(minorGridLS));
 
         %Get the color of the grid and translate it to pgfplots usable
         % values
@@ -968,7 +968,7 @@ function m2t = drawGridOfAxes(m2t, handle)
             'axes', handle, 'MinorGridColor', [0.1, 0.1, 0.1]);
         if ~noColor
             [m2t, minorGridColor] = getColor(m2t, handle, minorGridColor, 'patch');
-            minorGridOpts = opts_add(minorGridOpts, minorGridColor, []);
+            minorGridOpts = opts_add(minorGridOpts, minorGridColor);
         end
 
         % Get the alpha of the grid and translate it to pgfplots
@@ -993,7 +993,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         % behavior).
         %TODO: use proper grid ordering
         if m2t.cmdOpts.Results.strict
-            options = opts_add(options, 'axis on top', []);
+            options = opts_add(options, 'axis on top');
         end
         % FIXME: axis background, axis grid, main, axis ticks, axis lines, axis tick labels, axis descriptions, axis foreground
     end
