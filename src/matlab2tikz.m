@@ -537,7 +537,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     end
 
     % Finally print it to the file
-    addComments(fid, m2t.content.comment);
+    fprintf(fid, '%s', texcomment(m2t.content.comment));
     addStandalone(m2t, fid, 'preamble');
     addCustomCode(fid, '', m2t.args.extraCode, '');
     addStandalone(m2t, fid, 'begin');
@@ -626,12 +626,11 @@ function [m2t, axesHandles] = findPlotAxes(m2t, fh)
     axesHandles     = axesHandles(idx);
 end
 % ==============================================================================
-function addComments(fid, comment)
-    % prints TeX comments to file stream |fid|
-    if ~isempty(comment)
-        newline = sprintf('\n');
-        newlineTeX = sprintf('\n%%');
-        fprintf(fid, '%% %s\n', strrep(comment, newline, newlineTeX));
+function str = texcomment(str)
+    % format a (multiline) string as TeX comment
+    if ~isempty(str)
+        EOL = sprintf('\n');
+        str = ['% ' strrep(str, EOL, [EOL '%']) EOL];
     end
 end
 % ==============================================================================
@@ -2963,10 +2962,11 @@ function [m2t, str] = handleObject(m2t, h, actualHandler)
     if isfield(customSettings, 'customHandler')
         actualHandler = customSettings.customHandler;
     end
-    [m2t, str] = feval(actualHandler, m2t, h, customSettings);
-    str = [custom.commentsBefore, custom.codeBefore, ...
+    
+    [m2t, str] = feval(actualHandler, m2t, h, custom);
+    str = [texcomment(custom.commentsBefore), custom.codeBefore, ...
            str, ...
-           custom.commentsAfter, custom.codeAfter];
+           texcomment(custom.commentsAfter), custom.codeAfter];
 end
 % ==============================================================================
 function warnDoesNotHandleCustomProperties(h, custom, unhandledProperties)

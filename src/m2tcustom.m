@@ -149,12 +149,12 @@ function [value] = m2tcustom(handle, varargin)
     value = rmfield(value, {'handle'});
     
     %% Normalize the actual values
-    value.codeBefore      =         cellstr2char(value.codeBefore);
-    value.codeAfter       =         cellstr2char(value.codeAfter);
-    value.codeInsideFirst =         cellstr2char(value.codeInsideFirst);
-    value.codeInsideLast  =         cellstr2char(value.codeInsideLast);
-    value.commentsBefore  = comment(cellstr2char(value.commentsBefore));
-    value.commentsAfter   = comment(cellstr2char(value.commentsAfter));
+    value.codeBefore      = cellstr2char(value.codeBefore);
+    value.codeAfter       = cellstr2char(value.codeAfter);
+    value.codeInsideFirst = cellstr2char(value.codeInsideFirst);
+    value.codeInsideLast  = cellstr2char(value.codeInsideLast);
+    value.commentsBefore  = cellstr2char(value.commentsBefore);
+    value.commentsAfter   = cellstr2char(value.commentsAfter);
     if isempty(value.customHandler)
         value = rmfield(value, 'customHandler');
     end
@@ -211,14 +211,6 @@ function value = cellstr2char(value)
     if iscellstr(value)
         EOL = sprintf('\n');
         value = m2tstrjoin(value, EOL);
-    end
-end
-function str = comment(str)
-    % format as a LaTeX comment (retain empty strings)
-    if ~isempty(str)
-        EOL = sprintf('\n');
-        PERCENT = '%';
-        str = [PERCENT strrep(str, EOL, [EOL PERCENT]) EOL];
     end
 end
 % ==============================================================================
