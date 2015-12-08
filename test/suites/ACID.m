@@ -539,6 +539,8 @@ function [stat] = logplot()
 
   ylim([1 1e45]);
   grid on;
+  set(gca, 'GridColor', 'red');
+  set(gca, 'MinorGridColor', 'blue');
 end
 % =========================================================================
 function [stat] = colorbarLogplot()
