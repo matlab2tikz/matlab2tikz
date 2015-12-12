@@ -940,12 +940,9 @@ function m2t = drawGridOfAxes(m2t, handle)
         end
 
         % Get the alpha of the grid and translate it to pgfplots
-        % NOTE: The color conversion does not take alpha values into
-        % account. Therefore, we have to add it explicitely when using
-        % colored grids
         [gridAlpha, defaultAlpha] = getAndCheckDefault(...
             'axes', handle, 'GridAlpha', 0.1);
-        if ~defaultAlpha || ~defaultColor
+        if ~defaultAlpha
             gridOpts = opts_add(gridOpts, 'opacity', num2str(gridAlpha));
         end
 
@@ -974,12 +971,9 @@ function m2t = drawGridOfAxes(m2t, handle)
         end
 
         % Get the alpha of the grid and translate it to pgfplots
-        % NOTE: The color conversion does not take alpha values into
-        % account. Therefore, we have to add it explicitely when using
-        % colored grids
         [minorGridAlpha, defaultAlpha] = getAndCheckDefault(...
             'axes', handle, 'MinorGridAlpha', 0.1);
-        if ~defaultAlpha || ~defaultColor
+        if ~defaultAlpha
             minorGridOpts = opts_add(minorGridOpts, 'opacity', num2str(minorGridAlpha));
         end
 
