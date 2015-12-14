@@ -759,6 +759,9 @@ function [stat] = quiveroverlap ()
   % perfect. As such, in MATLAB the arrow heads may appear extremely tiny.
   % In Octave, they look fine though. Once the scaling has been done decently,
   % this reminder can be removed.
+  if isOctave
+    stat.extraOptions = {'arrowHeadSize', 20};
+  end
 
   x = [0 1];
   y = [0 0];
