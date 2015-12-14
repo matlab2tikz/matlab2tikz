@@ -205,10 +205,18 @@ end
 function [stat] = plain_cos()
   stat.description = 'Plain cosine function.';
 
-  fplot( @cos, [0,2*pi] );
-  hold on;
-  
+  t = linspace(0, 2*pi, 1e5);
+  x = cos(t);
+
+  % Explicitely cut the line into segments
+  x([2e4, 5e4, 8e4]) = NaN;
+
+  % Plot the cosine
+  plot(t, x);
+  xlim([0, 2*pi]);
+
   % also add some patches to test their border color reproduction
+  hold on;
   h(1) = fill(pi*[1/4 1/4 1/2 1/2]   ,  [-2 1 1 -2], 'y');
   h(2) = fill(pi*[1/4 1/4 1/2 1/2]+pi, -[-2 1 1 -2], 'y');
 
@@ -295,9 +303,10 @@ end
 function [stat] = sine_with_annotation ()
   stat.description = [ 'Plot of the sine function. ',...
         'Pay particular attention to how titles and annotations are treated.' ];
-  stat.unreliable = isOctave || isMATLAB('>=',[8,4]); %FIXME: investigate
+  stat.unreliable = isOctave || isMATLAB('>=',[8,4]) ... %FIXME: investigate
+                    || isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
-  x = -pi:.1:pi;
+  x = -pi:.1:pi; %TODO: the 0.1 step is probably a bad idea (not representable in float)
   y = sin(x);
   h = plot(x,y);
   set(gca,'XTick',-pi:pi/2:pi);
@@ -556,7 +565,7 @@ function [stat] = legendplot()
 %    h = legend('one pretty long legend cos_x','sin_x',2);
 %    set(h,'Interpreter','none');
 
-  x = 0:0.01:2*pi;
+  x = linspace(0, 2*pi, 1e5);
   plot( x, sin(x), 'b', ...
         x, cos(x), 'r' );
   xlim( [0 2*pi] )
@@ -765,8 +774,8 @@ end
 function [stat] = polarplot ()
   stat.description = 'A simple polar plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
-
+  stat.unreliable = isOctave('>=', 4) || ... %FIXME: see #759, #757/#759 and #687
+                    isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
   t = 0:.01:2*pi;
   polar(t,sin(2*t).*cos(2*t),'--r')
 end
@@ -774,7 +783,8 @@ end
 function [stat] = roseplot ()
   stat.description = 'A simple rose plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
+  stat.unreliable = isOctave('>=', 4) || ... %FIXME: see #759, #757/#759 and #687
+                    isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
   theta = 2*pi*sin(linspace(0,8,100));
   rose(theta);
@@ -783,7 +793,8 @@ end
 function [stat] = compassplot ()
   stat.description = 'A simple compass plot.' ;
   stat.extraOptions = {'showHiddenStrings',true};
-  stat.unreliable = isOctave('>=', 4); %FIXME: see #759, #757/#759 and #687
+  stat.unreliable = isOctave('>=', 4) || ... %FIXME: see #759, #757/#759 and #687
+                    isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
   Z = (1:20).*exp(1i*2*pi*cos(1:20));
   compass(Z);
@@ -912,7 +923,13 @@ function [stat] = errorBars()
   eH = abs(data(1:10,1))/10;
   eL = abs(data(1:10,3))/50;
 
-  errorbar(1:10, plotData, eL, eH, '.')
+  x = 1:10;
+  hold all;
+  errorbar(x, plotData, eL, eH, '.')
+  h = errorbar(x+0.5, plotData, eL, eH);
+  set(h, 'LineStyle', 'none');
+  % Octave 3.8 doesn't support passing extra options to |errorbar|, but
+  % it does allow for changing it after the fact
 end
 % =========================================================================
 function [stat] = errorBars2()
@@ -1357,14 +1374,14 @@ function [stat] = surfPlot2()
 end
 % =========================================================================
 function [stat] = superkohle()
+  stat.description = 'Superkohle plot.';
+  stat.unreliable = isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
   if ~exist('initmesh')
       fprintf( 'initmesh() not found. Skipping.\n\n' );
       stat.skip = true;
       return;
   end
-
-  stat.description = 'Superkohle plot.';
 
   x1=0;
   x2=pi;
@@ -1763,6 +1780,7 @@ end
 function [stat] = latexInterpreter()
     stat.description = '\LaTeX{} interpreter test (display math not working)';
     stat.issues = 448;
+    stat.unreliable = isMATLAB('<=', [8,3]); %FIXME: broken since decd496 (mac vs linux)
 
     plot(magic(3),'-x');
 
@@ -1816,12 +1834,12 @@ function [stat] = latexmath2()
 end
 % =========================================================================
 function [stat] = parameterCurve3d()
-  stat.description = 'Parameter curve in 3D with text boxes in-/outise axis.';
-  stat.issues = 378;
-
-  ezplot3('sin(t)','cos(t)','t',[0,6*pi]);
+  stat.description = 'Parameter curve in 3D with text boxes in-/outside axis.';
+  stat.issues = [378, 790] ;
+  t = linspace(0, 20*pi, 1e5);
+  plot3(t, sin(t), 50 * cos(t));
   text(0.5, 0.5, 10, 'text inside axis limits');
-  text(0.0, 1.5, 10, 'text outside axis (will be removed by cleanfigure())');
+  text(5.0, 1.5, 50, 'text outside axis (will be removed by cleanfigure())');
 end
 % =========================================================================
 function [stat] = parameterSurf()

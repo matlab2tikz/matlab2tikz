@@ -1,9 +1,13 @@
-function makeLatexReport(status)
+function makeLatexReport(status, output)
 % generate a LaTeX report
-
+%
+% 
+    if ~exist('output','var')
+        output = m2troot('test','output','current');
+    end
     % first, initialize the tex output
     SM = StreamMaker();
-    stream = SM.make('tex/acid.tex', 'w');
+    stream = SM.make(fullfile(output, 'acid.tex'), 'w');
 
     texfile_init(stream);
 
@@ -163,9 +167,9 @@ function str = include_figure(errorOccured, command, filename)
     else
         switch command
             case 'includegraphics'
-                strFormat = '\\includegraphics[width=\\figurewidth]{../%s}';
+                strFormat = '\\includegraphics[width=\\figurewidth]{%s}';
             case 'input'
-                strFormat = '\\input{../%s}';
+                strFormat = '\\input{%s}';
             otherwise
                 error('Matlab2tikz_acidtest:UnknownFigureCommand', ...
                       'Unknown figure command "%s"', command);

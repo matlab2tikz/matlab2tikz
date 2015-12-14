@@ -1,4 +1,4 @@
-function status = testMatlab2tikz(varargin)
+function [status, parameters] = testMatlab2tikz(varargin)
 %TESTMATLAB2TIKZ    unit test driver for matlab2tikz
 %
 % This function should NOT be called directly by the user (or even developer).
@@ -24,6 +24,10 @@ function status = testMatlab2tikz(varargin)
 %     when 0: returns a cell array containing the N function handles to the tests
 %     when >=1 and <=N: runs the appropriate test function
 %     when >N: throws an error
+%
+% TESTMATLAB2TIKZ('output', DIRECTORY, ...)
+%   Sets the output directory where the output files are places.
+%   The default directory is $M2TROOT/test/output/current
 %
 % See also matlab2tikz, ACID
 
@@ -64,10 +68,12 @@ function status = testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'actionsToExecute', @(varargin) varargin{1}, @isFunction);
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @isFunction );
+  ipp = ipp.addParamValue(ipp, 'output', m2troot('test','output','current'), @ischar);
 
   ipp = ipp.parse(ipp, varargin{:});
 
   ipp = sanitizeInputs(ipp);
+  parameters = ipp.Results;
 
   % -----------------------------------------------------------------------
   if strcmpi(env, 'Octave')
@@ -83,6 +89,13 @@ function status = testMatlab2tikz(varargin)
           setenv ('PRINTF_EXPONENT_DIGITS', '2')
       end
   end
+  
+  % copy output template into output directory
+  if ~exist(ipp.Results.output,'dir')
+      mkdir(ipp.Results.output);
+  end
+  template = m2troot('test','template');
+  copyfile(fullfile(template,'*'), ipp.Results.output);
 
   % start overall timing
   elapsedTimeOverall = tic;

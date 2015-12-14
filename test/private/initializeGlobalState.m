@@ -1,4 +1,4 @@
-function [orig,cwd] = initializeGlobalState()
+function [orig] = initializeGlobalState()
 % Initialize global state. Set working directory and various properties of
 % the graphical root to ensure reliable output of the ACID testsuite.
 % See #542 and #552
@@ -8,9 +8,6 @@ function [orig,cwd] = initializeGlobalState()
 % 3. Set specific properties, required by matlab2tikz
     fprintf('Initialize global state...\n');
     orig = struct();
-
-    %--- Initialize working directory
-    cwd = initializeWorkingDirectory();
 
     %--- Extract user defined default properties and set factory state
     default = get(0,'Default');

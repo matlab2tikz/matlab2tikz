@@ -26,8 +26,8 @@ function [ status ] = testHeadless( varargin )
                         '\newlength\figureWidth \setlength{\figureWidth}{10cm}'}
                    };
 
-    [state,cwd] = initializeGlobalState();
-    finally_restore_state = onCleanup(@() restoreGlobalState(state,cwd));
+    [state] = initializeGlobalState();
+    finally_restore_state = onCleanup(@() restoreGlobalState(state));
 
     status = testMatlab2tikz('extraOptions', extraOptions, ...
                              'actionsToExecute', @actionsToExecute, ...
