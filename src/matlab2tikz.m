@@ -4154,9 +4154,9 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         % Write out the actual scaling for TikZ.
         % `\pgfplotspointsmetatransformed` is in the range [0, 1000], so
         % divide by this span (as is done in the pgfplots manual) to normalize
-        % the arrow head size.
+        % the arrow head size. First divide to avoid overflows.
         arrowHeadOpts = opts_add(arrowHeadOpts, 'scale', ...
-            ['{' arrowHeadSize '*\pgfplotspointmetatransformed/1000}']);
+            ['{' arrowHeadSize '/1000*\pgfplotspointmetatransformed}']);
 
         headStyle = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
         quiverOpts = opts_add(quiverOpts, 'every arrow/.append style', ...
