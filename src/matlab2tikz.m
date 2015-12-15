@@ -2969,12 +2969,32 @@ function [m2t, str] = handleObject(m2t, h, actualHandler)
            custom.commentsAfter, custom.codeAfter];
 end
 % ==============================================================================
+function warnDoesNotHandleCustomProperties(h, custom, unhandledProperties)
+% warns the user about unhandled custom properties
+    if ~exist('unhandledProperties','var')
+        unhandledProperties = {'codeInsideFirst', 'codeInsideLast', 'extraOptions'};
+    elseif ischar(unhandledProperties)
+        unhandledProperties = {unhandledProperties};
+    end
+
+    customProps = fieldnames(custom);
+    for iProperty = 1:numel(customProps)
+        prop = customProps{iProperty};
+        if ~isempty(custom.(prop)) && ismember(prop, unhandledProperties)
+            warning('matlab2tikz:unhandledCustomProperty', ...
+                    'Custom property "%s" of %s has not been handled.',...
+                    prop, get(h, 'Type'));
+        end
+    end
+end
+% ==============================================================================
 function [m2t, str] = drawNothing(m2t, h, custom) %#ok some params unused
     % draws nothing
     % While it may seem useless, this allows a user to add comments/code
     % for objects that matlab2tikz cannot translate (yet) thanks to the
     % |handleObject| function together with |m2tcustom|.
     str = '';
+    warnDoesNotHandleCustomProperties(custom);
 end
 % ==============================================================================
 function m2t = drawAnnotations(m2t)
