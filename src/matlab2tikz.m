@@ -1502,6 +1502,16 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
 
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
         hasMinorTicks, tickDirection, isDatetimeTicks);
+        
+    options = setAxisTickLabelStyle(m2t, options,axis,handle);
+end
+
+function options = setAxisTickLabelStyle(m2t, options,axis,handle)
+ keywordTickLabelRotation = [upper(axis), 'TickLabelRotation'];
+ Rotation=get(handle,keywordTickLabelRotation);
+ if Rotation ~=0
+    options = opts_add(options, [axis,'ticklabel style'], sprintf('{rotate=%d}',Rotation));
+ end
 end
 % ==============================================================================
 function interpreter = defaultTickLabelInterpreter(m2t)
