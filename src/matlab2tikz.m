@@ -1505,13 +1505,13 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
         
     options = setAxisTickLabelStyle(m2t, options,axis,handle);
 end
-
-function options = setAxisTickLabelStyle(m2t, options,axis,handle)
- keywordTickLabelRotation = [upper(axis), 'TickLabelRotation'];
-  Rotation=getOrDefault(handle, keywordTickLabelRotation, 0);
- if Rotation ~=0
-    options = opts_add(options, [axis,'ticklabel style'], sprintf('{rotate=%d}',Rotation));
- end
+% ==============================================================================
+function options = setAxisTickLabelStyle(m2t, options, axis, handle)
+    keywordTickLabelRotation = [upper(axis), 'TickLabelRotation'];
+    Rotation = getOrDefault(handle, keywordTickLabelRotation, 0);
+    if Rotation ~= 0
+        options = opts_add(options, [axis, 'ticklabel style'], sprintf('{rotate=%d}', Rotation));
+    end
 end
 % ==============================================================================
 function interpreter = defaultTickLabelInterpreter(m2t)
