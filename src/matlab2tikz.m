@@ -1508,7 +1508,7 @@ end
 
 function options = setAxisTickLabelStyle(m2t, options,axis,handle)
  keywordTickLabelRotation = [upper(axis), 'TickLabelRotation'];
- Rotation=get(handle,keywordTickLabelRotation);
+  Rotation=getOrDefault(handle, keywordTickLabelRotation, 0);
  if Rotation ~=0
     options = opts_add(options, [axis,'ticklabel style'], sprintf('{rotate=%d}',Rotation));
  end
