@@ -102,9 +102,9 @@ function matlab2tikz(varargin)
     %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
     %   of the output file. (default: '')
     %
-    %   MATLAB2TIKZ('automaticLabels',BOOL,...) determines whether to automatically
-    %   add labels to plots (where applicable) which make it possible to refer
-    %   to them using \ref{...} (e.g., in the caption of a figure). (default: false)
+    %   MATLAB2TIKZ('addLabels',BOOL,...) add labels to plots: using Tag property
+    %   or automatic names (where applicable) which make it possible to refer to
+    %   them using \ref{...} (e.g., in the caption of a figure). (default: false)
     %
     %   MATLAB2TIKZ('standalone',BOOL,...) determines whether to produce
     %   a standalone compilable LaTeX file. Setting this to true may be useful for
@@ -221,6 +221,7 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
     ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
     ipp = ipp.addParamValue(ipp, 'automaticLabels', false, @islogical);
+    ipp = ipp.addParamValue(ipp, 'addLabels', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'height', '', @ischar);
     ipp = ipp.addParamValue(ipp, 'width' , '', @ischar);
@@ -262,6 +263,7 @@ function matlab2tikz(varargin)
     %% deprecated parameters (will auto-generate warnings upon parse)
     ipp = ipp.addParamValue(ipp, 'relativePngPath', '', @ischar);
     ipp = ipp.deprecateParam(ipp, 'relativePngPath', 'relativeDataPath');
+    ipp = ipp.deprecateParam(ipp, 'automaticLabels', 'addLabels');
 
     %% Finally parse all the arguments
     ipp = ipp.parse(ipp, varargin{:});
@@ -1763,7 +1765,7 @@ function [m2t, generatedCodeSoFar] = addLabel(m2t, generatedCodeSoFar, h)
         generatedCodeSoFar = '';
     end
     
-    if m2t.cmdOpts.Results.automaticLabels
+    if m2t.cmdOpts.Results.automaticLabels||m2t.cmdOpts.Results.addLabels
         lineTag = get(h,'Tag');
         if ~isempty(lineTag)
             labelName = sprintf('%s', lineTag);
