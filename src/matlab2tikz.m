@@ -1653,7 +1653,6 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     lineStyle            = get(h, 'LineStyle');
     lineWidth            = get(h, 'LineWidth');
     lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
-    lineTag              = get(h,'Tag');
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
 
     drawOptions = opts_new();
@@ -1677,7 +1676,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     m2t = jumpAtUnboundCoords(m2t, data);
 
     [m2t, str] = writePlotData(m2t, str, data, drawOptions);
-    [m2t, str] = addLabel(m2t, str, lineTag);
+    [m2t, str] = addLabel(m2t, str, h);
 end
 % ==============================================================================
 function [m2t, str] = specialDrawZplaneUnitCircle(m2t, h, drawOptions)
@@ -1758,13 +1757,14 @@ function [data] = getXYZDataFromLine(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t, generatedCodeSoFar, labelCode] = addLabel(m2t, generatedCodeSoFar, lineTag)
+function [m2t, generatedCodeSoFar] = addLabel(m2t, generatedCodeSoFar, h)
     % conditionally add a LaTeX label after the current plot
     if ~exist('generatedCodeSoFar','var') || isempty(generatedCodeSoFar)
         generatedCodeSoFar = '';
     end
     
     if m2t.cmdOpts.Results.automaticLabels
+        lineTag = get(h,'Tag');
         if ~isempty(lineTag)
             labelName = sprintf('%s', lineTag);
         else
