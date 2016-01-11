@@ -1763,20 +1763,19 @@ function [m2t, generatedCodeSoFar, labelCode] = addLabel(m2t, generatedCodeSoFar
     if ~exist('generatedCodeSoFar','var') || isempty(generatedCodeSoFar)
         generatedCodeSoFar = '';
     end
+    
     if m2t.cmdOpts.Results.automaticLabels
-        [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
-        labelName = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
-        labelCode = sprintf('\\label{%s}\n', labelName);
-        m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
-
-        userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
-        generatedCodeSoFar = [generatedCodeSoFar, labelCode];
-        
         if ~isempty(lineTag)
             labelName = sprintf('%s', lineTag);
-            labelCode = sprintf('\\label{%s}\n', labelName);
-            generatedCodeSoFar = [generatedCodeSoFar, labelCode];
+        else
+            [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
+            labelName = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
+            m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
         end
+        labelCode = sprintf('\\label{%s}\n', labelName);
+        generatedCodeSoFar = [generatedCodeSoFar, labelCode];
+        
+        userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
     end
 end
 % ==============================================================================
