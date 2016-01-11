@@ -1,51 +1,89 @@
-function makeLatexReport(status)
+function makeLatexReport(status, output)
 % generate a LaTeX report
-
-    % first, initialize the tex output
-    texfile = 'tex/acid.tex';
-    fh = fopen(texfile, 'w');
-    finally_fclose_fh = onCleanup(@() fclose(fh));
-
-    assert(fh ~= -1, 'Could not open TeX file ''%s'' for writing.', texfile);
-    texfile_init(fh);
-
-    for k = 1:length(status)
-        % ...and finally write the bits to the LaTeX file
-        texfile_addtest(fh, status{k});
+%
+% 
+    if ~exist('output','var')
+        output = m2troot('test','output','current');
     end
+    % first, initialize the tex output
+    SM = StreamMaker();
+    stream = SM.make(fullfile(output, 'acid.tex'), 'w');
 
-    % Write the summary table to the LaTeX file
-    texfile_tab_completion_init(fh)
+    texfile_init(stream);
+
+    printFigures(stream, status);
+    printSummaryTable(stream, status);
+    printErrorMessages(stream, status);
+    printEnvironmentInfo(stream, status);
+
+    texfile_finish(stream);
+end
+% =========================================================================
+function texfile_init(stream)
+
+    stream.print(['\\documentclass[landscape]{scrartcl}\n'                , ...
+                  '\\pdfminorversion=6\n\n'                               , ...
+                  '\\usepackage{amsmath} %% required for $\\text{xyz}$\n\n', ...
+                  '\\usepackage{hyperref}\n'                              , ...
+                  '\\usepackage{graphicx}\n'                              , ...
+                  '\\usepackage{epstopdf}\n'                              , ...
+                  '\\usepackage{tikz}\n'                                  , ...
+                  '\\usetikzlibrary{plotmarks}\n\n'                       , ...
+                  '\\usepackage{pgfplots}\n'                              , ...
+                  '\\pgfplotsset{compat=newest}\n\n'                      , ...
+                  '\\usepackage[margin=0.5in]{geometry}\n'                , ...
+                  '\\newlength\\figurewidth\n'                            , ...
+                  '\\setlength\\figurewidth{0.4\\textwidth}\n\n'          , ...
+                  '\\begin{document}\n\n']);
+
+end
+% =========================================================================
+function texfile_finish(stream)
+    stream.print('\\end{document}');
+end
+% =========================================================================
+function printFigures(stream, status)
+    for k = 1:length(status)
+        texfile_addtest(stream, status{k});
+    end
+end
+% =========================================================================
+function printSummaryTable(stream, status)
+    texfile_tab_completion_init(stream)
     for k = 1:length(status)
         stat = status{k};
         testNumber = stat.index;
         % Break table up into pieces if it gets too long for one page
+        %TODO: use booktabs instead
+        %TODO: maybe just write a function to construct the table at once
+        % from a cell array (see makeTravisReport for GFM counterpart)
         if ~mod(k,35)
-            texfile_tab_completion_finish(fh);
-            texfile_tab_completion_init(fh);
+            texfile_tab_completion_finish(stream);
+            texfile_tab_completion_init(stream);
         end
 
-        fprintf(fh, '%d & \\texttt{%s}', testNumber, name2tex(stat.function));
+        stream.print('%d & \\texttt{%s}', testNumber, name2tex(stat.function));
         if stat.skip
-            fprintf(fh, ' & --- & skipped & ---');
+            stream.print(' & --- & skipped & ---');
         else
             for err = [stat.plotStage.error, ...
                        stat.saveStage.error, ...
                        stat.tikzStage.error]
                 if err
-                    fprintf(fh, ' & \\textcolor{red}{failed}');
+                    stream.print(' & \\textcolor{red}{failed}');
                 else
-                    fprintf(fh, ' & \\textcolor{green!50!black}{passed}');
+                    stream.print(' & \\textcolor{green!50!black}{passed}');
                 end
             end
         end
-        fprintf(fh, ' \\\\\n');
+        stream.print(' \\\\\n');
     end
-    texfile_tab_completion_finish(fh);
-
-    % Write the error messages to the LaTeX file if there are any
+    texfile_tab_completion_finish(stream);
+end
+% =========================================================================
+function printErrorMessages(stream, status)
     if errorHasOccurred(status)
-        fprintf(fh, '\\section*{Error messages}\n\\scriptsize\n');
+        stream.print('\\section*{Error messages}\n\\scriptsize\n');
         for k = 1:length(status)
             stat = status{k};
             testNumber = stat.index;
@@ -55,71 +93,44 @@ function makeLatexReport(status)
                 continue % No error messages for this test case
             end
 
-            fprintf(fh, '\n\\subsection*{Test case %d: \\texttt{%s}}\n', testNumber, name2tex(stat.function));
-            print_verbatim_information(fh, 'Plot generation', stat.plotStage.message);
-            print_verbatim_information(fh, 'PDF generation' , stat.saveStage.message);
-            print_verbatim_information(fh, 'matlab2tikz'    , stat.tikzStage.message);
+            stream.print('\n\\subsection*{Test case %d: \\texttt{%s}}\n', testNumber, name2tex(stat.function));
+            print_verbatim_information(stream, 'Plot generation', stat.plotStage.message);
+            print_verbatim_information(stream, 'PDF generation' , stat.saveStage.message);
+            print_verbatim_information(stream, 'matlab2tikz'    , stat.tikzStage.message);
         end
-        fprintf(fh, '\n\\normalsize\n\n');
+        stream.print('\n\\normalsize\n\n');
     end
-
-    texfile_finish(fh, status);
 end
 % =========================================================================
-function texfile_init(texfile_handle)
-
-    fprintf(texfile_handle, ...
-             ['\\documentclass[landscape]{scrartcl}\n'                , ...
-              '\\pdfminorversion=6\n\n'                               , ...
-              '\\usepackage{amsmath} %% required for $\\text{xyz}$\n\n', ...
-              '\\usepackage{hyperref}\n'                              , ...
-              '\\usepackage{graphicx}\n'                              , ...
-              '\\usepackage{epstopdf}\n'                              , ...
-              '\\usepackage{tikz}\n'                                  , ...
-              '\\usetikzlibrary{plotmarks}\n\n'                       , ...
-              '\\usepackage{pgfplots}\n'                              , ...
-              '\\pgfplotsset{compat=newest}\n\n'                      , ...
-              '\\usepackage[margin=0.5in]{geometry}\n'                , ...
-              '\\newlength\\figurewidth\n'                            , ...
-              '\\setlength\\figurewidth{0.4\\textwidth}\n\n'          , ...
-              '\\begin{document}\n\n']);
-
-end
-% =========================================================================
-function texfile_finish(texfile_handle, status)
-
+function printEnvironmentInfo(stream, status)
     [env,versionString] = getEnvironment();
 
     testsuites = unique(cellfun(@(s) func2str(s.testsuite) , status, ...
-                       'UniformOutput', false));                 
+                       'UniformOutput', false));
     testsuites = name2tex(m2tstrjoin(testsuites, ', '));
 
-    fprintf(texfile_handle, ...
-        [
-        '\\newpage\n',...
-        '\\begin{tabular}{ll}\n',...
-        '  Suite    & ' testsuites ' \\\\ \n', ...
-        '  Created  & ' datestr(now) ' \\\\ \n', ...
-        '  OS       & ' OSVersion ' \\\\ \n',...
-        '  ' env '  & ' versionString ' \\\\ \n', ...
-        VersionControlIdentifier, ...
-        '  TikZ     & \\expandafter\\csname ver@tikz.sty\\endcsname \\\\ \n',...
-        '  Pgfplots & \\expandafter\\csname ver@pgfplots.sty\\endcsname \\\\ \n',...
-        '\\end{tabular}\n',...
-        '\\end{document}']);
+    stream.print(['\\newpage\n',...
+                  '\\begin{tabular}{ll}\n',...
+                  '  Suite    & ' testsuites ' \\\\ \n', ...
+                  '  Created  & ' datestr(now) ' \\\\ \n', ...
+                  '  OS       & ' OSVersion ' \\\\ \n',...
+                  '  ' env '  & ' versionString ' \\\\ \n', ...
+                  VersionControlIdentifier, ...
+                  '  TikZ     & \\expandafter\\csname ver@tikz.sty\\endcsname \\\\ \n',...
+                  '  Pgfplots & \\expandafter\\csname ver@pgfplots.sty\\endcsname \\\\ \n',...
+                  '\\end{tabular}\n']);
 
 end
 % =========================================================================
-function print_verbatim_information(texfile_handle, title, contents)
+function print_verbatim_information(stream, title, contents)
     if ~isempty(contents)
-        fprintf(texfile_handle, ...
-                ['\\subsubsection*{%s}\n', ...
-                 '\\begin{verbatim}\n%s\\end{verbatim}\n'], ...
-                title, contents);
+        stream.print(['\\subsubsection*{%s}\n', ...
+                      '\\begin{verbatim}\n%s\\end{verbatim}\n'], ...
+                     title, contents);
     end
 end
 % =========================================================================
-function texfile_addtest(texfile_handle, status)
+function texfile_addtest(stream, status)
 % Actually add the piece of LaTeX code that'll later be used to display
 % the given test.
     if ~status.skip
@@ -130,7 +141,7 @@ function texfile_addtest(texfile_handle, status)
         ref_file  = status.saveStage.texReference;
         gen_file  = status.tikzStage.pdfFile;
 
-        fprintf(texfile_handle, ...
+        stream.print(...
                 ['\\begin{figure}\n'                                          , ...
                  '  \\centering\n'                                            , ...
                  '  \\begin{tabular}{cc}\n'                                   , ...
@@ -156,9 +167,9 @@ function str = include_figure(errorOccured, command, filename)
     else
         switch command
             case 'includegraphics'
-                strFormat = '\\includegraphics[width=\\figurewidth]{../%s}';
+                strFormat = '\\includegraphics[width=\\figurewidth]{%s}';
             case 'input'
-                strFormat = '\\input{../%s}';
+                strFormat = '\\input{%s}';
             otherwise
                 error('Matlab2tikz_acidtest:UnknownFigureCommand', ...
                       'Unknown figure command "%s"', command);
@@ -167,22 +178,22 @@ function str = include_figure(errorOccured, command, filename)
     end
 end
 % =========================================================================
-function texfile_tab_completion_init(texfile_handle)
+function texfile_tab_completion_init(stream)
 
-    fprintf(texfile_handle, ['\\clearpage\n\n'                            , ...
-                             '\\begin{table}\n'                           , ...
-                             '\\centering\n'                              , ...
-                             '\\caption{Test case completion summary}\n'  , ...
-                             '\\begin{tabular}{rlccc}\n'                  , ...
-                             'No. & Test case & Plot & PDF & TikZ \\\\\n' , ...
-                             '\\hline\n']);
+    stream.print(['\\clearpage\n\n'                            , ...
+                  '\\begin{table}\n'                           , ...
+                  '\\centering\n'                              , ...
+                  '\\caption{Test case completion summary}\n'  , ...
+                  '\\begin{tabular}{rlccc}\n'                  , ...
+                  'No. & Test case & Plot & PDF & TikZ \\\\\n' , ...
+                  '\\hline\n']);
 
 end
 % =========================================================================
-function texfile_tab_completion_finish(texfile_handle)
+function texfile_tab_completion_finish(stream)
 
-    fprintf(texfile_handle, ['\\end{tabular}\n' , ...
-                             '\\end{table}\n\n' ]);
+    stream.print( ['\\end{tabular}\n' , ...
+                   '\\end{table}\n\n' ]);
 
 end
 % =========================================================================

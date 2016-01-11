@@ -2,8 +2,10 @@ function [status] = execute_save_stage(status, ipp)
 % save stage: saves the figure to EPS/PDF depending on env
     testNumber = status.index;
 
-    reference_eps = sprintf('data/reference/test%d-reference.eps', testNumber);
-    reference_pdf = sprintf('data/reference/test%d-reference.pdf', testNumber);
+    basepath = fullfile(ipp.Results.output,'data','reference');
+    reference_eps = fullfile(basepath, sprintf('test%d-reference.eps', testNumber));
+    reference_pdf = fullfile(basepath, sprintf('test%d-reference.pdf', testNumber));
+    % the reference below is for inclusion in LaTeX! Use UNIX conventions!
     reference_fig = sprintf('data/reference/test%d-reference', testNumber);
 
     % Save reference output as PDF
