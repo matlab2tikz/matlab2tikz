@@ -102,9 +102,9 @@ function matlab2tikz(varargin)
     %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
     %   of the output file. (default: '')
     %
-    %   MATLAB2TIKZ('automaticLabels',BOOL,...) determines whether to automatically
-    %   add labels to plots (where applicable) which make it possible to refer
-    %   to them using \ref{...} (e.g., in the caption of a figure). (default: false)
+    %   MATLAB2TIKZ('addLabels',BOOL,...) add labels to plots: using Tag property
+    %   or automatic names (where applicable) which make it possible to refer to
+    %   them using \ref{...} (e.g., in the caption of a figure). (default: false)
     %
     %   MATLAB2TIKZ('standalone',BOOL,...) determines whether to produce
     %   a standalone compilable LaTeX file. Setting this to true may be useful for
@@ -221,6 +221,7 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
     ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
     ipp = ipp.addParamValue(ipp, 'automaticLabels', false, @islogical);
+    ipp = ipp.addParamValue(ipp, 'addLabels', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'height', '', @ischar);
     ipp = ipp.addParamValue(ipp, 'width' , '', @ischar);
@@ -262,6 +263,7 @@ function matlab2tikz(varargin)
     %% deprecated parameters (will auto-generate warnings upon parse)
     ipp = ipp.addParamValue(ipp, 'relativePngPath', '', @ischar);
     ipp = ipp.deprecateParam(ipp, 'relativePngPath', 'relativeDataPath');
+    ipp = ipp.deprecateParam(ipp, 'automaticLabels', 'addLabels');
 
     %% Finally parse all the arguments
     ipp = ipp.parse(ipp, varargin{:});
@@ -1572,6 +1574,19 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
 
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
         hasMinorTicks, tickDirection, isDatetimeTicks);
+        
+    options = setAxisTickLabelStyle(options, axis, handle);
+end
+% ==============================================================================
+function options = setAxisTickLabelStyle(options, axis, handle)
+    % determine the style of tick labels
+    %TODO: translate the style of tick labels fully (font?, weight, ...)
+    kwRotation = [upper(axis), 'TickLabelRotation'];
+    rotation = getOrDefault(handle, kwRotation, 0);
+    if rotation ~= 0
+        options = opts_add(options, [axis, 'ticklabel style'], ...
+                                    sprintf('{rotate=%d}', rotation));
+    end
 end
 % ==============================================================================
 function interpreter = defaultTickLabelInterpreter(m2t)
@@ -1733,7 +1748,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     m2t = jumpAtUnboundCoords(m2t, data);
 
     [m2t, str] = writePlotData(m2t, str, data, drawOptions);
-    [m2t, str] = addLabel(m2t, str);
+    [m2t, str] = addLabel(m2t, str, h);
 end
 % ==============================================================================
 function [m2t, str] = specialDrawZplaneUnitCircle(m2t, h, drawOptions)
@@ -1814,19 +1829,25 @@ function [data] = getXYZDataFromLine(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t, generatedCodeSoFar, labelCode] = addLabel(m2t, generatedCodeSoFar)
+function [m2t, generatedCodeSoFar] = addLabel(m2t, generatedCodeSoFar, h)
     % conditionally add a LaTeX label after the current plot
     if ~exist('generatedCodeSoFar','var') || isempty(generatedCodeSoFar)
         generatedCodeSoFar = '';
     end
-    if m2t.cmdOpts.Results.automaticLabels
-        [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
-        labelName = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
+    
+    if m2t.cmdOpts.Results.automaticLabels||m2t.cmdOpts.Results.addLabels
+        lineTag = get(h,'Tag');
+        if ~isempty(lineTag)
+            labelName = sprintf('%s', lineTag);
+        else
+            [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
+            labelName = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
+            m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
+        end
         labelCode = sprintf('\\label{%s}\n', labelName);
-        m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
-
-        userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
         generatedCodeSoFar = [generatedCodeSoFar, labelCode];
+        
+        userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
     end
 end
 % ==============================================================================
