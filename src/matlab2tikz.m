@@ -934,20 +934,17 @@ function m2t = drawGridOfAxes(m2t, handle)
 
         % Get the color of the grid and translate it to pgfplots usable
         % values
-        [gridColor, noColor] = getAndCheckDefault(...
+        [gridColor, defaultColor] = getAndCheckDefault(...
             'axes', handle, 'GridColor', [0.15, 0.15, 0.15]);
-        if ~noColor
+        if ~defaultColor
             [m2t, gridColor] = getColor(m2t, handle, gridColor, 'patch');
             gridOpts = opts_add(gridOpts, gridColor);
         end
 
         % Get the alpha of the grid and translate it to pgfplots
-        % NOTE: The color conversion does not take alpha values into
-        % account. Therefore, we have to add it explicitely when using
-        % colored grids
-        [gridAlpha, noAlpha] = getAndCheckDefault(...
+        [gridAlpha, defaultAlpha] = getAndCheckDefault(...
             'axes', handle, 'GridAlpha', 0.1);
-        if ~noAlpha || ~noColor
+        if ~defaultAlpha
             gridOpts = opts_add(gridOpts, 'opacity', num2str(gridAlpha));
         end
 
@@ -960,28 +957,25 @@ function m2t = drawGridOfAxes(m2t, handle)
     if any(hasMinorGrid)
         minorGridOpts = opts_new();
         % Get the line style and translate it to pgfplots
-        % NOTE: The default styles for minor grids differ between MATLAB
-        % and pgfplots. Therefore, always translate the style.
-        minorGridLS   = getAndCheckDefault(...
+        [minorGridLS, isDefault] = getAndCheckDefault(...
             'axes', handle, 'MinorGridLineStyle', ':');
-        minorGridOpts = opts_add(minorGridOpts, translateLineStyle(minorGridLS));
+        if ~isDefault || m2t.cmdOpts.Results.strict
+            minorGridOpts = opts_add(minorGridOpts, translateLineStyle(minorGridLS));
+        end
 
-        %Get the color of the grid and translate it to pgfplots usable
+        % Get the color of the grid and translate it to pgfplots usable
         % values
-        [minorGridColor, noColor] = getAndCheckDefault(...
+        [minorGridColor, defaultColor] = getAndCheckDefault(...
             'axes', handle, 'MinorGridColor', [0.1, 0.1, 0.1]);
-        if ~noColor
+        if ~defaultColor
             [m2t, minorGridColor] = getColor(m2t, handle, minorGridColor, 'patch');
             minorGridOpts = opts_add(minorGridOpts, minorGridColor);
         end
 
         % Get the alpha of the grid and translate it to pgfplots
-        % NOTE: The color conversion does not take alpha values into
-        % account. Therefore, we have to add it explicitely when using
-        % colored grids
-        [minorGridAlpha, noAlpha] = getAndCheckDefault(...
+        [minorGridAlpha, defaultAlpha] = getAndCheckDefault(...
             'axes', handle, 'MinorGridAlpha', 0.1);
-        if ~noAlpha || ~noColor
+        if ~defaultAlpha
             minorGridOpts = opts_add(minorGridOpts, 'opacity', num2str(minorGridAlpha));
         end
 
