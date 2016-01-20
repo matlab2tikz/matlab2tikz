@@ -4267,8 +4267,8 @@ function [m2t, drawOptions] = getPatchDrawOptions(m2t, h, drawOptions)
     faceColor          = get(obj, 'FaceColor');
     [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'fill', faceColor, 'none');
 
-    % FaceAlpha
-    faceAlpha = get(h, 'FaceAlpha');
+    % FaceAlpha (Not applicable for MATLAB2014a/b)
+    faceAlpha = getOrDefault(h, 'FaceAlpha', 'none');
     if ~isNone(faceColor) && isnumeric(faceAlpha) && faceAlpha ~= 1.0
         drawOptions = opts_add(drawOptions, 'fill opacity', sprintf(m2t.ff,faceAlpha));
     end
