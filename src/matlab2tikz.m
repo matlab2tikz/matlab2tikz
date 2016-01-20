@@ -1801,7 +1801,7 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
     end
 
     % Print out
-    tabOpts = opts_print(m2t, tableOptions, ',');
+    tabOpts = opts_print(m2t, tableOptions, ', ');
     str     = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
                       opts, errorBar, tabOpts, table);
 end
@@ -2067,7 +2067,6 @@ function [m2t, str] = drawPatch(m2t, handle)
     % Draws a 'patch' graphics object (as found in contourf plots, for example).
     %
     str = '';
-
     if ~isVisible(handle)
         return
     end
@@ -2169,7 +2168,7 @@ function [m2t, str] = drawPatch(m2t, handle)
 
     % Print out
     drawOpts = opts_print(m2t, drawOptions,  ',');
-    tabOpts  = opts_print(m2t, tableOptions, ',');
+    tabOpts  = opts_print(m2t, tableOptions, ', ');
     str = sprintf('\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
                   plotCmd, drawOpts, tabOpts, verticesTable, cycle);
 end
@@ -2593,7 +2592,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
         [m2t, table, tableOptions] = makeTable(m2t, {'',''}, contours);
 
         % Print out
-        plotOpts = opts_print(m2t, plotOptions,  ',');
+        plotOpts = opts_print(m2t, plotOptions,  ', ');
         tabOpts  = opts_print(m2t, tableOptions, ',');
         str      = sprintf('\\addplot[%s] table[%s] {%%\n%s};\n', ...
                            plotOpts, tabOpts, table);
@@ -3707,9 +3706,6 @@ function [m2t, str] = drawHistogram(m2t, h)
     % Init drawOptions
     drawOptions = opts_new();
 
-    % Get the draw options for the bars
-    [m2t, drawOptions] = getPatchDrawOptions(m2t, h, drawOptions);
-
     % Data
     binEdges = get(h, 'BinEdges');
     binValue = get(h, 'Values');
@@ -3723,6 +3719,9 @@ function [m2t, str] = drawHistogram(m2t, h)
     else
         drawOptions = opts_add(drawOptions, 'ybar interval');
     end
+
+    % Get the draw options for the bars
+    [m2t, drawOptions] = getPatchDrawOptions(m2t, h, drawOptions);
 
     % Make table
     [m2t, table, tableOptions] = makeTable(m2t, {'x','y'},data);
@@ -3749,6 +3748,15 @@ function [m2t, str] = drawBarseries(m2t, h)
     % Init drawOptions
     drawOptions = opts_new();
 
+    % Check for orientation of the bars and their layout
+    isHorizontal = isOn(get(h, 'Horizontal'));
+    if isHorizontal
+        barType = 'xbar';
+    else
+        barType = 'ybar';
+    end
+    [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions);
+
     % Get the draw options for the bars
     [m2t, drawOptions] = getPatchDrawOptions(m2t, h, drawOptions);
 
@@ -3761,15 +3769,6 @@ function [m2t, str] = drawBarseries(m2t, h)
             'log origin', 'infty');
         %TODO: wait for pgfplots to implement other base values (see #438)
     end
-
-    % Check for orientation of the bars and their layout
-    isHorizontal = isOn(get(h, 'Horizontal'));
-    if isHorizontal
-        barType = 'xbar';
-    else
-        barType = 'ybar';
-    end
-    [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions);
 
     % Generate the tikz table
     xData = get(h, 'XData');
