@@ -3945,7 +3945,7 @@ function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
     % Print out
     drawOpts = opts_print(m2t, drawOptions,  ',');
     tabOpts  = opts_print(m2t, tableOptions, ',');
-    str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+    str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 end
 % ==============================================================================
