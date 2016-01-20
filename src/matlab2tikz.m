@@ -2325,7 +2325,6 @@ end
 % ==============================================================================
 function [m2t, str] = drawImage(m2t, handle)
     str = '';
-
     if ~isVisible(handle)
         return
     end
@@ -2551,6 +2550,9 @@ end
 % ==============================================================================
 function [m2t, str] = drawContourHG2(m2t, h)
     str = '';
+    if ~isVisible(h)
+        return
+    end
 
     % Retrieve ContourMatrix
     contours = get(h,'ContourMatrix')';
@@ -2621,6 +2623,10 @@ function [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows)
     % defined by inclusion, i.e. its members are contained within one
     % outer contour. The outer contours of two groups cannot include
     % each other.
+    str = '';
+    if ~isVisible(h)
+        return
+    end
 
     % Split contours in cell array
     cellcont = mat2cell(contours, diff([istart; nrows+1]));
@@ -2717,8 +2723,8 @@ function [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows)
         % Print out
         drawOpts = opts_print(m2t, drawOptions,  ',');
         tabOpts  = opts_print(m2t, tableOptions, ',');
-        str      = sprintf('\\addplot[%s] table[%s] {%%\n%s};\n', ...
-                           drawOpts, tabOpts, table);
+        str      = sprintf('%s\\addplot[%s] table[%s] {%%\n%s};\n', ...
+                           str, drawOpts, tabOpts, table);
     end
 end
 % ==============================================================================
