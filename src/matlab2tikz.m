@@ -1709,10 +1709,13 @@ function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
     is3D = m2t.axesContainers{end}.is3D;
     if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
-        [m2t, table, tabOpts] = makeTable(m2t, {'','',''}, data);
-        str = sprintf('%s\\addplot3 [%s]\n table[%s] {%s};\n ', ...
-                      str, opts_print(m2t, drawOptions, ','), ...
-                      opts_print(m2t, tabOpts,','), table);
+        [m2t, table, tableOptions] = makeTable(m2t, {'','',''}, data);
+
+        % Print out
+        drawOpts = opts_print(m2t, drawOptions,  ',');
+        tabOpts  = opts_print(m2t, tableOptions, ',');
+        str      = sprintf('\\addplot3 [%s]\n table[%s] {%s};\n ', ...
+                           drawOpts, tabOpts, table);
     else
         % split the data into logical chunks
         dataCell = splitLine(m2t, data);
@@ -1764,7 +1767,7 @@ function [m2t, generatedCodeSoFar] = addLabel(m2t, generatedCodeSoFar, h)
     if ~exist('generatedCodeSoFar','var') || isempty(generatedCodeSoFar)
         generatedCodeSoFar = '';
     end
-    
+
     if m2t.cmdOpts.Results.automaticLabels||m2t.cmdOpts.Results.addLabels
         lineTag = get(h,'Tag');
         if ~isempty(lineTag)
@@ -1784,20 +1787,23 @@ end
 function [m2t,str] = plotLine2d(m2t, opts, data)
     errorbarMode = (size(data,2) == 4); % is (optional) yDeviation given?
 
-    str = '';
+    errorBar = '';
     if errorbarMode
-        m2t = needsPgfplotsVersion(m2t, [1,9]);
-        str = sprintf('plot [error bars/.cd, y dir = both, y explicit]\n');
+        m2t      = needsPgfplotsVersion(m2t, [1,9]);
+        errorBar = sprintf('plot [error bars/.cd, y dir = both, y explicit]\n');
     end
 
     % Convert to string array then cell to call sprintf once (and no loops).
-    [m2t, table, tabOpts] = makeTable(m2t, repmat({''}, size(data,2)), data);
+    [m2t, table, tableOptions] = makeTable(m2t, repmat({''}, size(data,2)), data);
     if errorbarMode
-        tabOpts = opts_add(tabOpts, 'y error plus index', '2');
-        tabOpts = opts_add(tabOpts, 'y error minus index', '3');
+        tableOptions = opts_add(tableOptions, 'y error plus index', '2');
+        tableOptions = opts_add(tableOptions, 'y error minus index', '3');
     end
-    str = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
-        opts, str, opts_print(m2t, tabOpts, ', '), table);
+
+    % Print out
+    tabOpts = opts_print(m2t, tableOptions, ', ');
+    str     = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
+                      opts, errorBar, tabOpts, table);
 end
 % ==============================================================================
 function dataCell = splitLine(m2t, data)
@@ -2061,7 +2067,6 @@ function [m2t, str] = drawPatch(m2t, handle)
     % Draws a 'patch' graphics object (as found in contourf plots, for example).
     %
     str = '';
-
     if ~isVisible(handle)
         return
     end
@@ -2156,14 +2161,16 @@ function [m2t, str] = drawPatch(m2t, handle)
         [m2t, facesTable] = makeTable(m2t, repmat({''},1,size(Faces,2)), Faces);
         drawOptions = opts_add(drawOptions, ptType, sprintf('{%s}', facesTable));
     end
-    drawOpts = opts_print(m2t, drawOptions,',');
 
     % Plot the actual data.
-    [m2t, verticesTable, tabOpts] = makeTable(m2t, columnNames, Vertices);
-    tabOpts = opts_merge(tabOpts, verticesTableOptions);
+    [m2t, verticesTable, tableOptions] = makeTable(m2t, columnNames, Vertices);
+    tableOptions = opts_merge(tableOptions, verticesTableOptions);
 
-    str = sprintf('%s\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
-        str, plotCmd, drawOpts, opts_print(m2t, tabOpts, ', '), verticesTable, cycle);
+    % Print out
+    drawOpts = opts_print(m2t, drawOptions,  ',');
+    tabOpts  = opts_print(m2t, tableOptions, ', ');
+    str = sprintf('\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
+                  plotCmd, drawOpts, tabOpts, verticesTable, cycle);
 end
 % ==============================================================================
 function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
@@ -2317,7 +2324,6 @@ end
 % ==============================================================================
 function [m2t, str] = drawImage(m2t, handle)
     str = '';
-
     if ~isVisible(handle)
         return
     end
@@ -2403,8 +2409,10 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     opts = opts_add(opts, 'ymin', sprintf(m2t.ff, yData(1  ) - yw/2));
     opts = opts_add(opts, 'ymax', sprintf(m2t.ff, yData(end) + yw/2));
 
-    str = sprintf('\\addplot [forget plot] graphics [%s] {%s};\n', ...
-        opts_print(m2t, opts, ','), pngReferencePath);
+    % Print out
+    drawOpts = opts_print(m2t, opts,  ',');
+    str      = sprintf('\\addplot [forget plot] graphics [%s] {%s};\n', ...
+                       drawOpts, pngReferencePath);
 
     userInfo(m2t, ...
         ['\nA PNG file is stored at ''%s'' for which\n', ...
@@ -2541,6 +2549,9 @@ end
 % ==============================================================================
 function [m2t, str] = drawContourHG2(m2t, h)
     str = '';
+    if ~isVisible(h)
+        return
+    end
 
     % Retrieve ContourMatrix
     contours = get(h,'ContourMatrix')';
@@ -2559,8 +2570,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
     % Draw a contour group (MATLAB R2014b and newer only)
     isFilled = isOn(get(h,'Fill'));
     if isFilled
-        [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows);
-
+        [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows);
     else
         % Add colormap
         cmap = m2t.currentHandles.colormap;
@@ -2569,22 +2579,23 @@ function [m2t, str] = drawContourHG2(m2t, h)
             matlab2pgfplotsColormap(m2t, cmap));
 
         % Contour table in Matlab format
-        plotoptions = opts_new();
-        plotoptions = opts_add(plotoptions,'contour prepared');
-        plotoptions = opts_add(plotoptions,'contour prepared format','matlab');
+        plotOptions = opts_new();
+        plotOptions = opts_add(plotOptions,'contour prepared');
+        plotOptions = opts_add(plotOptions,'contour prepared format','matlab');
 
         % Labels
         if isOff(get(h,'ShowText'))
-            plotoptions = opts_add(plotoptions,'contour/labels','false');
+            plotOptions = opts_add(plotOptions,'contour/labels','false');
         end
 
         % Make contour table
-        [m2t, table, tabOpts] = makeTable(m2t, {'',''}, contours);
+        [m2t, table, tableOptions] = makeTable(m2t, {'',''}, contours);
 
-        str = sprintf('\\addplot[%s] table[%s] {%%\n%s};\n', ...
-            opts_print(m2t, plotoptions, ', '),...
-            opts_print(m2t, tabOpts, ','), table);
-
+        % Print out
+        plotOpts = opts_print(m2t, plotOptions,  ', ');
+        tabOpts  = opts_print(m2t, tableOptions, ',');
+        str      = sprintf('\\addplot[%s] table[%s] {%%\n%s};\n', ...
+                           plotOpts, tabOpts, table);
     end
 end
 % ==============================================================================
@@ -2600,7 +2611,7 @@ function [istart, nrows] = findStartOfContourData(contours)
     istart = find(istart);
 end
 % ==============================================================================
-function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
+function [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows)
     % Loop each contour and plot a filled region
     %
     % NOTE:
@@ -2611,6 +2622,10 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     % defined by inclusion, i.e. its members are contained within one
     % outer contour. The outer contours of two groups cannot include
     % each other.
+    str = '';
+    if ~isVisible(h)
+        return
+    end
 
     % Split contours in cell array
     cellcont = mat2cell(contours, diff([istart; nrows+1]));
@@ -2680,33 +2695,35 @@ function [m2t, str] = drawFilledContours(m2t, str, h, contours, istart, nrows)
     % Plot
     columnNames = {'x','y'};
     for ii = 1:ncont + 1
-        drawOpts = opts_new();
+        drawOptions = opts_new();
 
         % Get fill color
         zval          = cellcont{ii}(1,1);
         [m2t, xcolor] = getColor(m2t,h,zval,'image');
-        drawOpts      = opts_add(drawOpts,'fill',xcolor);
+        drawOptions   = opts_add(drawOptions,'fill',xcolor);
 
         % Get line properties
         lineStyle = get(h, 'LineStyle');
         lineColor = get(h, 'LineColor');
         lineWidth = get(h, 'LineWidth');
 
-        [m2t, drawOpts] = setColor(m2t, h, drawOpts, 'draw', lineColor, 'none');
+        [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'draw', lineColor, 'none');
 
-        lineOpts = getLineOptions(m2t, lineStyle, lineWidth);
-        drawOpts = opts_merge(drawOpts, lineOpts);
+        lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+        drawOptions = opts_merge(drawOptions, lineOptions);
 
         % Toggle legend entry
-        hasLegend = ii == 1 && m2t.currentHandleHasLegend;
-        drawOpts  = maybeShowInLegend(hasLegend, drawOpts);
+        hasLegend   = ii == 1 && m2t.currentHandleHasLegend;
+        drawOptions = maybeShowInLegend(hasLegend, drawOptions);
 
         % Print table
-        [m2t, table, tabOpts] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
+        [m2t, table, tableOptions] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
 
-        % Fillplot
-        str = sprintf('%s\\addplot[%s] table[%s] {%%\n%s};\n', ...
-            str, opts_print(m2t,drawOpts,','), opts_print(m2t,tabOpts,','), table);
+        % Print out
+        drawOpts = opts_print(m2t, drawOptions,  ',');
+        tabOpts  = opts_print(m2t, tableOptions, ',');
+        str      = sprintf('%s\\addplot[%s] table[%s] {%%\n%s};\n', ...
+                           str, drawOpts, tabOpts, table);
     end
 end
 % ==============================================================================
@@ -3116,8 +3133,9 @@ function [m2t, str] = drawText(m2t, handle)
     % plot the thing
     [m2t, posString] = getPositionOfText(m2t, handle);
 
-    str = sprintf('\\node[%s]\nat %s {%s};\n', ...
-        opts_print(m2t, style, ', '), posString, String);
+    styleOpts = opts_print(m2t, style, ', ');
+    str       = sprintf('\\node[%s]\nat %s {%s};\n', ...
+                        styleOpts, posString, String);
 end
 % ==============================================================================
 function [style] = getXYAlignmentOfText(handle, style)
@@ -3521,17 +3539,19 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             'scatter/@pre marker code/.append style', ...
             '{/tikz/mark size=\perpointmarksize}');
     end
-    drawOpts = opts_print(m2t, drawOptions, ',');
 
     [data, metaPart] = addCDataToScatterData(data, cData);
 
     % The actual printing.
     nColumns = size(data, 2);
-    [m2t, table, tabOpts] = makeTable(m2t, repmat({''},1,nColumns), data);
-    tabOpts = opts_merge(tabOpts, metaPart);
+    [m2t, table, tableOptions] = makeTable(m2t, repmat({''},1,nColumns), data);
+    tableOptions = opts_merge(tableOptions, metaPart);
 
-    str = sprintf('%s\\%s[%s] plot table[%s]{%s};\n', str, env, ...
-        drawOpts, opts_print(m2t, tabOpts, ','), table);
+    % Print
+    drawOpts = opts_print(m2t, drawOptions,  ',');
+    tabOpts  = opts_print(m2t, tableOptions, ',');
+    str      = sprintf('\\%s[%s] plot table[%s]{%s};\n',...
+                       env, drawOpts, tabOpts, table);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
@@ -3672,67 +3692,73 @@ function [m2t, xcolor, hasColor] = getColorOfMarkers(m2t, h, name, cData)
 end
 % ==============================================================================
 function [m2t, str] = drawHistogram(m2t, h)
+    % Takes care of plots like the ones produced by MATLAB's histogram function.
+    % The main pillar is Pgfplots's '{x,y}bar' plot.
+    %
+    % TODO Get rid of code duplication with 'drawAxes'.
 
+    % Do nothing if plot is invisible
+    str = '';
     if ~isVisible(h)
-        str = '';
         return;
     end
 
-    % Init options
-    opts = opts_new();
-
-    % Face
-    faceColor = get(h,'FaceColor');
-    [m2t, opts] = setColor(m2t, h, opts, 'fill', faceColor, 'none');
-
-    % FaceAlpha
-    faceAlpha = get(h, 'FaceAlpha');
-    if ~isNone(faceColor) && isnumeric(faceAlpha) && faceAlpha ~= 1.0
-        opts = opts_add(opts,'fill opacity', sprintf(m2t.ff,faceAlpha));
-    end
-
-    % Edge
-    edgeColor = get(h, 'EdgeColor');
-    [m2t, opts] = setColor(m2t, h, opts, 'draw', edgeColor, 'none');
+    % Init drawOptions
+    drawOptions = opts_new();
 
     % Data
     binEdges = get(h, 'BinEdges');
     binValue = get(h, 'Values');
     data     = [binEdges(:), [binValue(:); binValue(end)]];
 
-    % Bar type (depends on orientation)
-    isVertical = strcmpi(get(h,'Orientation'),'vertical');
-    if isVertical
-        opts = opts_add(opts, 'ybar interval');
+    % Check for orientation of the bars
+    isHorizontal = ~strcmpi(get(h, 'Orientation'), 'vertical');
+    if isHorizontal
+        drawOptions = opts_add(drawOptions, 'xbar interval');
+        data        = fliplr(data);
     else
-        opts = opts_add(opts, 'xbar interval');
-        data = fliplr(data);
+        drawOptions = opts_add(drawOptions, 'ybar interval');
     end
+
+    % Get the draw options for the bars
+    [m2t, drawOptions] = getPatchDrawOptions(m2t, h, drawOptions);
 
     % Make table
     [m2t, table, tableOptions] = makeTable(m2t, {'x','y'},data);
 
-    % Add 'area legend' (x/ybar interval legend do not seem to work)
-    opts = opts_add(opts, 'area legend');
-
     % Print out
-    drawOpts = opts_print(m2t, opts, ',');
-    tabOpts = opts_print(m2t, tableOptions, ',');
+    drawOpts = opts_print(m2t, drawOptions,  ',');
+    tabOpts  = opts_print(m2t, tableOptions, ',');
     str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 end
 % ==============================================================================
 function [m2t, str] = drawBarseries(m2t, h)
-    % Takes care of plots like the ones produced by MATLAB's hist.
+    % Takes care of plots like the ones produced by MATLAB's bar function.
     % The main pillar is Pgfplots's '{x,y}bar' plot.
     %
     % TODO Get rid of code duplication with 'drawAxes'.
 
+    % Do nothing if plot is invisible
     str = '';
-
     if ~isVisible(h)
-        return; % don't bother drawing invisible things
+        return;
     end
+
+    % Init drawOptions
+    drawOptions = opts_new();
+
+    % Check for orientation of the bars and their layout
+    isHorizontal = isOn(get(h, 'Horizontal'));
+    if isHorizontal
+        barType = 'xbar';
+    else
+        barType = 'ybar';
+    end
+    [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions);
+
+    % Get the draw options for the bars
+    [m2t, drawOptions] = getPatchDrawOptions(m2t, h, drawOptions);
 
     % Add 'log origin = infty' if BaseValue differs from zero (log origin=0 is
     % the default behaviour since Pgfplots v1.5).
@@ -3744,55 +3770,25 @@ function [m2t, str] = drawBarseries(m2t, h)
         %TODO: wait for pgfplots to implement other base values (see #438)
     end
 
+    % Generate the tikz table
     xData = get(h, 'XData');
     yData = get(h, 'YData');
-
-    % init drawOptions
-    drawOptions = opts_new();
-
-    [barType, isHoriz] = getOrientationOfBarSeries(h);
-    [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions);
-
-    % define edge color
-    edgeColor = get(h, 'EdgeColor');
-    lineStyle = get(h, 'LineStyle');
-    if isNone(lineStyle)
-        drawOptions = opts_add(drawOptions, 'draw', 'none');
-    else
-        [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'draw', ...
-            edgeColor, 'none');
-    end
-
-    [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions);
-
-    % Add 'area legend' to the options as otherwise the legend indicators
-    % will just highlight the edges.
-    drawOptions = opts_add(drawOptions, 'area legend');
-
-    % plot the thing
-    if isHoriz
+    if isHorizontal
         [yDataPlot, xDataPlot] = deal(xData, yData); % swap values
     else
         [xDataPlot, yDataPlot] = deal(xData, yData);
     end
+    [m2t, table, tableOptions] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
 
-    [m2t, table, tabOpts] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
-    str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
-                 opts_print(m2t, drawOptions, ','), ...
-                 opts_print(m2t, tabOpts, ','), table);
+    % Print out
+    drawOpts = opts_print(m2t, drawOptions,  ',');
+    tabOpts  = opts_print(m2t, tableOptions, ',');
+    str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+                       drawOpts, tabOpts, table);
 
-    [m2t, baseline] = drawBaseline(m2t,h,isHoriz);
+    % Add a baseline if appropriate
+    [m2t, baseline] = drawBaseline(m2t,h,isHorizontal);
     str             = [str, baseline];
-end
-% ==============================================================================
-function [barType, isHorizontal] = getOrientationOfBarSeries(h)
-    % determines the orientation (horizontal/vertical) of a BarSeries object
-    isHorizontal = isOn(get(h, 'Horizontal'));
-    if isHorizontal
-        barType = 'xbar';
-    else
-        barType = 'ybar';
-    end
 end
 % ==============================================================================
 function BarWidth = getBarWidthInAbsolutUnits(h)
@@ -3902,19 +3898,6 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(h)
     [dummy, barSeriesId] = ismember(h, bargroup);
 end
 % ==============================================================================
-function [m2t, drawOptions] = getFaceColorOfBar(m2t, h, drawOptions)
-    % retrieve the FaceColor of a barseries object
-    if ~isempty(allchild(h))
-        % quite oddly, before MATLAB R2014b this value is stored in a child
-        % patch and not in the object itself
-        obj = allchild(h);
-    else % R2014b and newer
-        obj = h;
-    end
-    faceColor = get(obj, 'FaceColor');
-    [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'fill', faceColor);
-end
-% ==============================================================================
 function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
     % DRAWBASELINE Draws baseline for bar and stem plots
     %
@@ -3952,7 +3935,6 @@ function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
     drawOptions = opts_add(drawOptions, 'forget plot');
     drawOptions = opts_add(drawOptions, 'color', lineColor);
     drawOptions = opts_merge(drawOptions, lineOptions);
-    drawOpts    = opts_print(m2t, drawOptions, ',');
 
     % Get data
     if isVertical
@@ -3963,10 +3945,55 @@ function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
         yData = repmat(baseValue,1,2);
     end
 
-    [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
+    [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
 
-    str = sprintf('%s\\addplot[%s] table[%s] {%s};\n', ...
-        str, drawOpts, opts_print(m2t, tabOpts, ','), table);
+    % Print out
+    drawOpts = opts_print(m2t, drawOptions,  ',');
+    tabOpts  = opts_print(m2t, tableOptions, ',');
+    str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
+                       drawOpts, tabOpts, table);
+end
+% ==============================================================================
+function [m2t, str] = drawAreaSeries(m2t, h)
+    % Takes care of MATLAB's area plots.
+    %
+    % TODO Get rid of code duplication with 'drawAxes'.
+
+    % Do nothing if plot is invisible
+    str = '';
+    if ~isVisible(h)
+        return;
+    end
+
+    % Init drawOptions
+    drawOptions = opts_new();
+
+    % Get the draw options for the bars
+    [m2t, drawOptions] = getPatchDrawOptions(m2t, h, drawOptions);
+
+    if ~isfield(m2t, 'addedAreaOption') || isempty(m2t.addedAreaOption) || ~m2t.addedAreaOption
+        % Add 'area style' to axes options.
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, 'area style');
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, 'stack plots', 'y');
+        m2t.addedAreaOption = true;
+    end
+
+    % Toggle legend entry
+    drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
+
+    % Generate the tikz table
+    xData = get(h, 'XData');
+    yData = get(h, 'YData');
+    [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
+
+    % Print out
+    drawOpts = opts_print(m2t, drawOptions,  ',');
+    tabOpts  = opts_print(m2t, tableOptions, ',');
+    str      = sprintf('\\addplot[%s] plot table[%s]{%s}\n\\closedcycle;\n',...
+                       drawOpts, tabOpts, table);
+    %TODO: shouldn't this be "\addplot[] table[] {}" instead?
 end
 % ==============================================================================
 function [m2t, str] = drawStemSeries(m2t, h)
@@ -3979,7 +4006,12 @@ function [m2t, str] = drawStairSeries(m2t, h)
     [m2t, str] = drawStemOrStairSeries_(m2t, h, 'const plot');
 end
 function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
+
+    % Do nothing if plot is invisible
     str = '';
+    if ~isVisible(h)
+        return;
+    end
 
     lineStyle = get(h, 'LineStyle');
     lineWidth = get(h, 'LineWidth');
@@ -4004,72 +4036,16 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     % Toggle legend entry
     drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
 
-    % insert draw options
-    drawOpts = opts_print(m2t, drawOptions, ',');
-
-    % plot the thing
+    % Generate the tikz table
     xData = get(h, 'XData');
     yData = get(h, 'YData');
-    [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
+    [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
 
-    str = sprintf('%s\\addplot[%s] plot table[%s] {%s};\n', ...
-        str, drawOpts, opts_print(m2t, tabOpts, ','), table);
-end
-% ==============================================================================
-function [m2t, str] = drawAreaSeries(m2t, h)
-    % Takes care of MATLAB's stem plots.
-    %
-    % TODO Get rid of code duplication with 'drawAxes'.
-
-    str = '';
-
-    if ~isfield(m2t, 'addedAreaOption') || isempty(m2t.addedAreaOption) || ~m2t.addedAreaOption
-        % Add 'area style' to axes options.
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'area style');
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'stack plots', 'y');
-        m2t.addedAreaOption = true;
-    end
-
-    % Handle draw options.
-    % define edge color
-    drawOptions = opts_new();
-    edgeColor = get(h, 'EdgeColor');
-    [m2t, xEdgeColor] = getColor(m2t, h, edgeColor, 'patch');
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % define face color;
-    if ~isempty(allchild(h))
-        % quite oddly, before MATLAB R2014b this value is stored in a child
-        % patch and not in the object itself
-        obj = allchild(h);
-    else % R2014b and newer
-        obj = h;
-    end
-    faceColor = get(obj, 'FaceColor');
-    [m2t, xFaceColor] = getColor(m2t, h, faceColor, 'patch');
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % gather the draw options
-    lineStyle = get(h, 'LineStyle');
-    drawOptions = opts_add(drawOptions, 'fill', xFaceColor);
-    if isNone(lineStyle)
-        drawOptions = opts_add(drawOptions, 'draw', 'none');
-    else
-        drawOptions = opts_add(drawOptions, 'draw', xEdgeColor);
-    end
-
-    % Toggle legend entry
-    drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
-
-    drawOpts = opts_print(m2t, drawOptions, ',');
-
-    % plot the thing
-    xData = get(h, 'XData');
-    yData = get(h, 'YData');
-    [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
-    str = sprintf('%s\\addplot[%s] plot table[%s]{%s}\n\\closedcycle;\n',...
-        str, drawOpts, opts_print(m2t, tabOpts, ','), table);
-    %TODO: shouldn't this be "\addplot[] table[] {}" instead?
+    % Print out
+    drawOpts = opts_print(m2t, drawOptions,  ',');
+    tabOpts  = opts_print(m2t, tableOptions, ',');
+    str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+                       drawOpts, tabOpts, table);
 end
 % ==============================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
@@ -4110,32 +4086,32 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         return
     end
 
-    plotOpts = opts_new();
+    plotOptions = opts_new();
     if showArrowHead
-        plotOpts = opts_add(plotOpts, '-Straight Barb');
+        plotOptions = opts_add(plotOptions, '-Straight Barb');
         signalDependency(m2t, 'tikzlibrary', 'arrows.meta');
     else
-        plotOpts = opts_add(plotOpts, '-');
+        plotOptions = opts_add(plotOptions, '-');
     end
 
     % Append the arrow style to the TikZ options themselves.
     color = get(h, 'Color');
     lineOpts = getLineOptions(m2t, lineStyle, lineWidth);
     [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
-    plotOpts = opts_add(plotOpts, 'color', arrowcolor);
-    plotOpts = opts_merge(plotOpts, lineOpts);
+    plotOptions = opts_add(plotOptions, 'color', arrowcolor);
+    plotOptions = opts_merge(plotOptions, lineOpts);
 
     % Define the quiver settings
-    quiverOpts = opts_new();
-    quiverOpts = opts_add(quiverOpts, 'u', '\thisrow{u}');
-    quiverOpts = opts_add(quiverOpts, 'v', '\thisrow{v}');
+    quiverOptions = opts_new();
+    quiverOptions = opts_add(quiverOptions, 'u', '\thisrow{u}');
+    quiverOptions = opts_add(quiverOptions, 'v', '\thisrow{v}');
     if is3D
-        quiverOpts = opts_add(quiverOpts, 'w', '\thisrow{w}');
+        quiverOptions = opts_add(quiverOptions, 'w', '\thisrow{w}');
         arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2+(\thisrow{w})^2)}';
     else
         arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2)}';
     end
-    plotOpts = opts_add(plotOpts, 'point meta', arrowLength);
+    plotOptions = opts_add(plotOptions, 'point meta', arrowLength);
 
     if showArrowHead
         %TODO: scale the arrows more rigorously to match MATLAB behavior
@@ -4146,18 +4122,20 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
                                  '{max(0.01,\pgfplotspointmetatransformed/1000)}');
         arrowHeadOpts = opts_add(arrowHeadOpts, 'scale width', ...
                                  '{0.5*max(0.01,\pgfplotspointmetatransformed/1000)}');
-        headStyle = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
-        quiverOpts = opts_add(quiverOpts, 'every arrow/.append style', ...
+        headStyle     = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
+        quiverOptions = opts_add(quiverOptions, 'every arrow/.append style', ...
                               ['{' headStyle '}']);
     end
-    plotOpts = opts_add(plotOpts,'quiver', ['{' opts_print(m2t, quiverOpts, ',') '}']);
-    plotOptions = opts_print(m2t, plotOpts, ',');
+    quiverOpts  = opts_print(m2t, quiverOptions, ',');
+    plotOptions = opts_add(plotOptions,'quiver', ['{', quiverOpts, '}']);
 
-    [m2t, table, tabOpts] = makeTable(m2t, variables, data);
-    tableOptions = opts_print(m2t, tabOpts, ',');
+    [m2t, table, tableOptions] = makeTable(m2t, variables, data);
 
-    str = sprintf('%s\\%s[%s]\n table[%s] {%s};\n', ...
-                  str, name, plotOptions, tableOptions, table);
+    % Print out
+    plotOpts = opts_print(m2t, plotOptions,  ',');
+    tabOpts  = opts_print(m2t, tableOptions, ',');
+    str      = sprintf('\\%s[%s]\n table[%s] {%s};\n', ...
+                       name, plotOpts, tabOpts, table);
 end
 % ==============================================================================
 function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)
@@ -4271,6 +4249,54 @@ function [m2t, str] = drawTextarrow(m2t, handle)
     if ~m2t.cmdOpts.Results.showHiddenStrings
         child = findall(handle, 'type', 'text');
         [m2t, str{end+1}] = drawText(m2t, child);
+    end
+end
+% ==============================================================================
+function [m2t, drawOptions] = getPatchDrawOptions(m2t, h, drawOptions)
+    % Determines the reoccurring draw options usually applied when drawing
+    % a patch/area/bar. These include EdgeColor, LineType, FaceColor/Alpha
+
+    % Get object for color;
+    if ~isempty(allchild(h))
+        % quite oddly, before MATLAB R2014b this value is stored in a child
+        % patch and not in the object itself
+        obj = allchild(h);
+    else % R2014b and newer
+        obj = h;
+    end
+
+    % Get the object type
+    type = get(h, 'Type');
+
+    % Face Color (inside of area)
+    faceColor          = get(obj, 'FaceColor');
+    [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'fill', faceColor, 'none');
+
+    % FaceAlpha (Not applicable for MATLAB2014a/b)
+    faceAlpha = getOrDefault(h, 'FaceAlpha', 'none');
+    if ~isNone(faceColor) && isnumeric(faceAlpha) && faceAlpha ~= 1.0
+        drawOptions = opts_add(drawOptions, 'fill opacity', sprintf(m2t.ff,faceAlpha));
+    end
+
+    % Define linestyle
+    [lineStyle, isDefaultLS] = getAndCheckDefault(type, h, 'LineStyle', '-');
+    if isNone(lineStyle)
+        drawOptions = opts_add(drawOptions, 'draw', 'none');
+    elseif ~isDefaultLS
+        drawOptions = opts_add(drawOptions, translateLineStyle(lineStyle));
+    end
+
+    % Check for the edge color. Only plot it if it is different from the
+    % face color and if there is a linestyle
+    edgeColor = get(h, 'EdgeColor');
+    if ~isNone(lineStyle) && ~isNone(edgeColor) && ~strcmpi(edgeColor,faceColor)
+        [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'draw', edgeColor, 'none');
+    end
+
+    % Add 'area legend' to the options as otherwise the legend indicators
+    % will just highlight the edges.
+    if strcmpi(type, 'bar') || strcmpi(type, 'histogram')
+        drawOptions = opts_add(drawOptions, 'area legend');
     end
 end
 % ==============================================================================
