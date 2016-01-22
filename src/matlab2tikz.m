@@ -557,7 +557,7 @@ function str = generateColorDefinitions(names, specs, colorFormat)
             colorDef{k}= sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
                                   names{k}, specs{k});
         end
-        str = join(m2t, [colorDef, sprintf('%%\n')], '');
+        str = strjoin([colorDef, sprintf('%%\n')], '');
     end
 end
 % ==============================================================================
