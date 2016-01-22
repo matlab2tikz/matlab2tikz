@@ -4001,15 +4001,7 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
 
     % Do nothing if plot is invisible
     str = '';
-    if ~isVisible(h)
-        return;
-    end
-
-    lineStyle = get(h, 'LineStyle');
-    lineWidth = get(h, 'LineWidth');
-    marker    = get(h, 'Marker');
-
-    if (isNone(lineStyle) || lineWidth==0) && isNone(marker)
+    if ~isLineVisible(h)
         return % nothing to plot!
     end
 
@@ -4071,10 +4063,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % gather the arrow options
     showArrowHead = get(h, 'ShowArrowHead');
-    lineStyle     = get(h, 'LineStyle');
-    lineWidth     = get(h, 'LineWidth');
-
-    if (isNone(lineStyle) || lineWidth==0)  && ~showArrowHead
+    if ~isLineVisible(h)  && ~showArrowHead
         return
     end
 
