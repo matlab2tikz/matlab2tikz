@@ -25,9 +25,9 @@ errorBars2 : 213d3ebde888c914637dbc52c17a4ba9
 fill3plot : a67d6f01c02797fe84a1a205cf2832ef
 freqResponsePlot : 396383b779bf45e50cc0561803efb4b3
 herrorbarPlot : ddc0991c26f47511b1bbf3d574cea4b5
-hgTransformPlot : 2957594afce5e573db08275a13dfbaa0
-hist3d : ea6d941c91e4fc3bff489d3c8ebe5933
-histogramPlot : fbd97051f63e6c72d57a33e0558ef49e
+hgTransformPlot : 22ee3d0eec7e2794e7556affce3553ed
+hist3d : 4bada1927d7a4bd850020c9ec1cd02d5
+histogramPlot : ee4289e305d9300088cbf1ff7594bde1
 imageOrientation_PNG : 7d128937fe3013280c5ae044b007f8ff
 imageOrientation_inline : 66626ef3a5b91d6f2e690c54d7f78bd2
 imagescplot : 56cc54455d162d8493224f6e9afa0122
@@ -38,7 +38,7 @@ legendplot : 746423d1c0d403421667221a6b0528bf
 legendplotBoxoff : b9eaa52e7a7eb9a7e2645e70590aee17
 legendsubplots : 6a6386dc5a6ef191aad4caaa0cf07999
 linesWithOutliers : 4976c3f7b1e8e8cd32f7e17e34fcc99f
-logbaseline : 62e5d4780d05237d5bc77ba52903bfd2
+logbaseline : 0387bef302889fb9e33cdc7bc7cd826c
 logicalImage : e2d9da14cb4121727dd0b17b6ae58434
 logplot : 175f4adf3a1a0acc53ffaf870636cdfe
 mandrillImage : 5cfaf3971064af419bb5375ee1dffe41
