@@ -1652,9 +1652,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     color         = get(h, 'Color');
     [m2t, xcolor] = getColor(m2t, h, color, 'patch');
     % Line and marker options
-    lineStyle            = get(h, 'LineStyle');
-    lineWidth            = get(h, 'LineWidth');
-    lineOptions          = getLineOptions(m2t, lineStyle, lineWidth);
+    [m2t, lineOptions]   = getLineOptions(m2t, h);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
 
     drawOptions = opts_new();
@@ -1849,9 +1847,13 @@ function dataCellNew = splitByArraySize(m2t, dataCell)
     end
 end
 % ==============================================================================
-function lineOpts = getLineOptions(m2t, lineStyle, lineWidth)
+function [m2t, lineOpts] = getLineOptions(m2t, h)
     % Gathers the line options.
     lineOpts = opts_new();
+
+    % Get the options from the handle
+    lineStyle = get(h, 'LineStyle');
+    lineWidth = get(h, 'LineWidth');
 
     if ~isNone(lineStyle) && (lineWidth > m2t.tol)
         lineOpts = opts_add(lineOpts, translateLineStyle(lineStyle));
@@ -2111,9 +2113,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     drawOptions          = opts_merge(drawOptions, markerOptions);
 
     % Line options
-    lineStyle   = get(handle, 'LineStyle');
-    lineWidth   = get(handle, 'LineWidth');
-    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+    [m2t, lineOptions] = getLineOptions(m2t, handle);
     drawOptions = opts_merge(drawOptions, lineOptions);
 
     % No patch: if one patch and single face/edge color
@@ -2703,13 +2703,11 @@ function [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows)
         drawOptions   = opts_add(drawOptions,'fill',xcolor);
 
         % Get line properties
-        lineStyle = get(h, 'LineStyle');
         lineColor = get(h, 'LineColor');
-        lineWidth = get(h, 'LineWidth');
 
         [m2t, drawOptions] = setColor(m2t, h, drawOptions, 'draw', lineColor, 'none');
 
-        lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+        [m2t, lineOptions] = getLineOptions(m2t, h);
         drawOptions = opts_merge(drawOptions, lineOptions);
 
         % Toggle legend entry
@@ -3272,21 +3270,17 @@ function [m2t, str] = drawRectangle(m2t, h)
 
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Get draw options.
-    lineStyle = get(h, 'LineStyle');
-    lineWidth = get(h, 'LineWidth');
-
-    drawOptions = getLineOptions(m2t, lineStyle, lineWidth);
-
-    [m2t, drawOptions] = getRectangleFaceOptions(m2t, h, drawOptions);
-    [m2t, drawOptions] = getRectangleEdgeOptions(m2t, h, drawOptions);
+    [m2t, lineOptions] = getLineOptions(m2t, h);
+    [m2t, lineOptions] = getRectangleFaceOptions(m2t, h, lineOptions);
+    [m2t, lineOptions] = getRectangleEdgeOptions(m2t, h, lineOptions);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % plot the thing
+    lineOpts = opts_print(m2t, lineOptions, ', ');
     str = sprintf(['\\draw[%s] (axis cs:',m2t.ff,',',m2t.ff, ')', ...
                    ' rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
-                  opts_print(m2t, drawOptions, ', '), ...
-                  pos.left, pos.bottom, pos.right, pos.top);
+                   lineOpts, pos.left, pos.bottom, pos.right, pos.top);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getRectangleFaceOptions(m2t, h, drawOptions)
@@ -3925,11 +3919,9 @@ function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
     hBaseLine = get(hparent,'BaseLine');
 
     % Line options of the baseline
-    lineStyle        = get(hBaseLine, 'LineStyle');
-    lineWidth        = get(hBaseLine, 'LineWidth');
-    lineOptions      = getLineOptions(m2t, lineStyle, lineWidth);
-    color            = get(hBaseLine, 'Color');
-    [m2t, lineColor] = getColor(m2t, hBaseLine, color, 'patch');
+    [m2t, lineOptions] = getLineOptions(m2t, hparent);
+    color              = get(hBaseLine, 'Color');
+    [m2t, lineColor]   = getColor(m2t, hBaseLine, color, 'patch');
 
     drawOptions = opts_new();
     drawOptions = opts_add(drawOptions, 'forget plot');
@@ -4025,7 +4017,7 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     color = get(h, 'Color');
     [m2t, plotColor] = getColor(m2t, h, color, 'patch');
 
-    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+    [m2t, lineOptions]   = getLineOptions(m2t, h);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
 
     drawOptions = opts_new();
@@ -4096,10 +4088,10 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
 
     % Append the arrow style to the TikZ options themselves.
     color = get(h, 'Color');
-    lineOpts = getLineOptions(m2t, lineStyle, lineWidth);
+    [m2t, lineOptions] = getLineOptions(m2t, h);
     [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
     plotOptions = opts_add(plotOptions, 'color', arrowcolor);
-    plotOptions = opts_merge(plotOptions, lineOpts);
+    plotOptions = opts_merge(plotOptions, lineOptions);
 
     % Define the quiver settings
     quiverOptions = opts_new();
@@ -4211,12 +4203,9 @@ function [m2t, str] = drawEllipse(m2t, handle)
     radius = p([3 4]) / 2;
     center = p([1 2]) + radius;
 
-    lineStyle = get(handle, 'LineStyle');
-    lineWidth = get(handle, 'LineWidth');
-
     color = get(handle, 'Color');
     [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
-    lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
+    [m2t, lineOptions] = getLineOptions(m2t, handle);
 
     filling = get(handle, 'FaceColor');
 
