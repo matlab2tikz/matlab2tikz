@@ -551,13 +551,14 @@ function str = generateColorDefinitions(names, specs, colorFormat)
     ff  = colorFormat;
     if ~isempty(names)
         m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
+        colorDef = cell(1, length(names)+1);
         for k = 1:length(names)
             % make sure to append with '%' to avoid spacing woes
-            colorDef= sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
-                               names{k}, specs{k});
-            str = strcat(str, colorDef);
+            colorDef{k}= sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
+                                  names{k}, specs{k});
         end
-        str = strcat(str, sprintf('%%\n'));
+        colorDef{end} = sprintf('%%\n');
+        str = strjoin(colorDef, '');
     end
 end
 % ==============================================================================
@@ -742,18 +743,17 @@ function [m2t, str] = addPlotyyReference(m2t, str, h)
     elseif m2t.currentHandleHasLegend
         % We are on the secondary axis
         interpreter = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
-        references = '';
+        refs        = cell(1, labelNum);
         % Create labelled references to legend entries of the main axis
         for ii = 1:labelNum
             ref     = m2t.axesContainers{end}.PlotyyReferences(ii);
             lString = getLegendString(m2t,ref);
             c       = prettyPrint(m2t, lString, interpreter);
-            refs    = sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:leg%d}\\addlegendentry{%s};\n',...
+            refs{ii}= sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:leg%d}\\addlegendentry{%s};\n',...
                               ii, join(m2t, c, '\\'));
-            references = strcat(references, refs);
         end
         % Add references BEFORE next plot to preserve color order
-        str = strcat(references, str);
+        str = strjoin([refs, str], '');
 
         % Clear plotyy references. Ensures that references are created only once
         m2t.axesContainers{end}.PlotyyReferences = [];
@@ -1677,7 +1677,7 @@ function [m2t, str] = drawLine(m2t, h)
     [m2t, dataString]  = writePlotData(m2t, data, drawOptions);
     [m2t, labelString] = addLabel(m2t, h);
     
-    str = strcat(dataString, labelString);
+    str = [dataString, labelString];
 end
 % ==============================================================================
 function [m2t, str] = specialDrawZplaneUnitCircle(m2t, drawOptions)
@@ -1685,9 +1685,9 @@ function [m2t, str] = specialDrawZplaneUnitCircle(m2t, drawOptions)
 
     % TODO Don't hardcode "10", but extract from parent axes of |h|
     opts = opts_print(m2t, drawOptions, ',');
-    str  = strcat(sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n',  opts), ...
-                  sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
-                  sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts));
+    str  = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n',  opts), ...
+            sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
+            sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
 end
 % ==============================================================================
 function bool = isLineVisible(h)
@@ -1722,6 +1722,7 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
         dataCell = splitLine(m2t, data);
 
         % plot them
+        strPart = cell(1, length(dataCell));
         for k = 1:length(dataCell)
             % If the line has a legend string, make sure to only include a legend
             % entry for the *last* occurrence of the plot series.
@@ -1736,8 +1737,10 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
             end
 
             [m2t, Part] = plotLine2d(m2t, opts, dataCell{k});
-            str = strcat(str, Part);
+            strPart{k} = Part;
         end
+        strPart = strjoin(strPart, '');
+        str = [str, strPart];
     end
 end
 % ==============================================================================
@@ -2447,17 +2450,20 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     str = '';
     m = length(X);
     n = length(Y);
+    imageString = cell(1, m);
     for i = 1:m
+        subString = cell(1, n);
         for j = 1:n
-            imageStr = sprintf(['\t\\fill [%s] ', ...
-                                '(axis cs:', m2t.ff,',', m2t.ff,') rectangle ', ...
-                                '(axis cs:', m2t.ff,',',m2t.ff,');\n'], ...
-                                xcolor{n-j+1,i}, ...
-                                X(i)-hX/2, Y(j)-hY/2, ...
-                                X(i)+hX/2, Y(j)+hY/2);
-            str = strcat(str, imageStr);
+            subString{j} = sprintf(['\t\\fill [%s] ', ...
+                            '(axis cs:', m2t.ff,',', m2t.ff,') rectangle ', ...
+                            '(axis cs:', m2t.ff,',',m2t.ff,');\n'], ...
+                            xcolor{n-j+1,i}, ...
+                            X(i)-hX/2, Y(j)-hY/2, ...
+                            X(i)+hX/2, Y(j)+hY/2);
         end
+        imageString{i} = strjoin(subString, '');
     end
+    str = strjoin([str, imageString], '');
 end
 function [XY, delta] = constructUniformXYDataForImage(XYData, expectedLength)
     % Generate uniformly distributed X, Y, although xData/yData may be
@@ -2931,7 +2937,7 @@ end
 function [m2t,str] = drawSurface(m2t, h)
 
     [m2t, opts, s] = shaderOpts(m2t, h,'surf');
-    tabOpts = opts_new();
+    tableOptions = opts_new();
 
     % Allow for empty surf
     if isNone(s.plotType)
@@ -2976,7 +2982,7 @@ function [m2t,str] = drawSurface(m2t, h)
         % Index into custom colormap
         color = (0:nrows-1)';
 
-        tabOpts = opts_add(tabOpts, 'colormap name','surfmap');
+        tableOptions = opts_add(tableOptions, 'colormap name','surfmap');
     else
         opts = opts_add(opts,matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap),'');
         % If NaNs are present in the color specifications, don't use them for
@@ -2994,7 +3000,7 @@ function [m2t,str] = drawSurface(m2t, h)
             color = dz(:);      % Fallback on the z-values, especially if 2D view
         end
     end
-    tabOpts = opts_add(tabOpts, 'point meta','\thisrow{c}');
+    tableOptions = opts_add(tableOptions, 'point meta','\thisrow{c}');
 
     data = [data, color];
 
@@ -3008,18 +3014,20 @@ function [m2t,str] = drawSurface(m2t, h)
 
     % Print the data
     [m2t, table, tabOptsExtra] = makeTable(m2t, columnNames, data);
-    tabOpts = opts_merge(tabOptsExtra, tabOpts);
+    tableOptions = opts_merge(tabOptsExtra, tableOptions);
+    tabOpts = opts_print(m2t, tableOptions, ', ');
 
     % Here is where everything is put together
     str = sprintf('%s\ntable[%s] {%%\n%s};\n', ...
-                  str, opts_print(m2t, tabOpts, ', '), table);
+                  str, tabOpts, table);
 
     % TODO:
     % - remove grids in spectrogram by either removing grid command
     %   or adding: 'grid=none' from/in axis options
     % - handling of huge data amounts in LaTeX.
 
-    [m2t, str] = addLabel(m2t, str);
+    [m2t, labelString] = addLabel(m2t, h);
+    str = [str, labelString];
 end
 % ==============================================================================
 function [m2t, opts] = addZBufferOptions(m2t, h, opts)
