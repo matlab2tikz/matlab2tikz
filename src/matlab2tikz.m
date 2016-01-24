@@ -861,7 +861,7 @@ function m2t = drawAxes(m2t, handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
         % in MATLAB, they may still be visible. Well.
         m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'hide axis', []);
+            opts_add(m2t.axesContainers{end}.options, 'hide axis');
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
         %    children = allchild(handle);
@@ -894,37 +894,110 @@ function m2t = drawAxes(m2t, handle)
 end
 % ==============================================================================
 function m2t = drawGridOfAxes(m2t, handle)
-    % draws the grids of an axes
-    %TODO: has{XYZ}Grid is always false without a good reason
-    hasXGrid = false;
-    hasYGrid = false;
-    hasZGrid = false;
-    if hasXGrid || hasYGrid || hasZGrid
-        matlabGridLineStyle = get(handle, 'GridLineStyle');
-        % Take over the grid line style in any case when in strict mode.
-        % If not, don't add anything in case of default line grid line style
-        % and effectively take Pgfplots' default.
-        defaultMatlabGridLineStyle = ':';
-        if m2t.cmdOpts.Results.strict ...
-                || ~strcmpi(matlabGridLineStyle,defaultMatlabGridLineStyle)
-            gls = translateLineStyle(matlabGridLineStyle);
-            axisGridOpts = {'grid style', sprintf('{%s}', gls)};
-            m2t.axesContainers{end}.options = cat(1, ...
-                m2t.axesContainers{end}.options,...
-                axisGridOpts);
+    % Draws the grids of an axis
+    options = opts_new();
+
+    % Check for major/minor grids
+    hasGrid = [isOn(get(handle, 'XGrid'));
+               isOn(get(handle, 'YGrid'));
+               isOn(get(handle, 'ZGrid')) && isAxis3D(handle)];
+
+    hasMinorGrid = [isOn(get(handle, 'XMinorGrid'));
+                    isOn(get(handle, 'YMinorGrid'));
+                    isOn(get(handle, 'ZMinorGrid')) && isAxis3D(handle)];
+
+    xyz = {'x', 'y', 'z'};
+
+    % Check for local grid options
+    % NOTE: for individual axis color options see the pfgmanual under
+    % major x grid style
+    for i=1:3
+        if hasGrid(i)
+            grid    = [xyz{i}, 'majorgrids'];
+            options = opts_add(options, grid);
         end
-    else
+        if hasMinorGrid(i)
+            grid    = [xyz{i}, 'minorgrids'];
+            options = opts_add(options, grid);
+        end
+    end
+
+    % Check for global grid options
+    if any(hasGrid)
+        gridOpts = opts_new();
+        % Get the line style and translate it to pgfplots
+        [gridLS, isDefault] = getAndCheckDefault(...
+            'axes', handle, 'GridLineStyle', ':');
+        if ~isDefault || m2t.cmdOpts.Results.strict
+            gridOpts = opts_add(gridOpts, translateLineStyle(gridLS));
+        end
+
+        % Get the color of the grid and translate it to pgfplots usable
+        % values
+        [gridColor, defaultColor] = getAndCheckDefault(...
+            'axes', handle, 'GridColor', [0.15, 0.15, 0.15]);
+        if ~defaultColor
+            [m2t, gridColor] = getColor(m2t, handle, gridColor, 'patch');
+            gridOpts = opts_add(gridOpts, gridColor);
+        end
+
+        % Get the alpha of the grid and translate it to pgfplots
+        [gridAlpha, defaultAlpha] = getAndCheckDefault(...
+            'axes', handle, 'GridAlpha', 0.1);
+        if ~defaultAlpha
+            gridOpts = opts_add(gridOpts, 'opacity', num2str(gridAlpha));
+        end
+
+        if ~isempty(gridOpts)
+            gridOptions = opts_print(m2t, gridOpts, ',');
+            options = opts_add(options, 'grid style', ['{' gridOptions '}']);
+        end
+    end
+
+    if any(hasMinorGrid)
+        minorGridOpts = opts_new();
+        % Get the line style and translate it to pgfplots
+        [minorGridLS, isDefault] = getAndCheckDefault(...
+            'axes', handle, 'MinorGridLineStyle', ':');
+        if ~isDefault || m2t.cmdOpts.Results.strict
+            minorGridOpts = opts_add(minorGridOpts, translateLineStyle(minorGridLS));
+        end
+
+        % Get the color of the grid and translate it to pgfplots usable
+        % values
+        [minorGridColor, defaultColor] = getAndCheckDefault(...
+            'axes', handle, 'MinorGridColor', [0.1, 0.1, 0.1]);
+        if ~defaultColor
+            [m2t, minorGridColor] = getColor(m2t, handle, minorGridColor, 'patch');
+            minorGridOpts = opts_add(minorGridOpts, minorGridColor);
+        end
+
+        % Get the alpha of the grid and translate it to pgfplots
+        [minorGridAlpha, defaultAlpha] = getAndCheckDefault(...
+            'axes', handle, 'MinorGridAlpha', 0.1);
+        if ~defaultAlpha
+            minorGridOpts = opts_add(minorGridOpts, 'opacity', num2str(minorGridAlpha));
+        end
+
+        if ~isempty(minorGridOpts)
+            minorGridOptions = opts_print(m2t, minorGridOpts, ',');
+            options = opts_add(options, 'minor grid style', ['{' minorGridOptions '}']);
+        end
+    end
+
+    if ~any(hasGrid) && ~any(hasMinorGrid)
         % When specifying 'axis on top', the axes stay above all graphs (which is
         % default MATLAB behavior), but so do the grids (which is not default
         % behavior).
         %TODO: use proper grid ordering
         if m2t.cmdOpts.Results.strict
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis on top', []);
+            options = opts_add(options, 'axis on top');
         end
         % FIXME: axis background, axis grid, main, axis ticks, axis lines, axis tick labels, axis descriptions, axis foreground
     end
+
+    m2t.axesContainers{end}.options = opts_merge(...
+        m2t.axesContainers{end}.options, options);
 end
 % ==============================================================================
 function m2t = add3DOptionsOfAxes(m2t, handle)
@@ -1223,7 +1296,7 @@ function m2t = retrievePositionOfAxes(m2t, handle)
         % the following is general MATLAB behavior:
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
-            'scale only axis', []);
+            'scale only axis');
     end
 end
 % ==============================================================================
@@ -1354,8 +1427,7 @@ function m2t = drawLegendOptionsOfAxes(m2t,handle)
     [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
     m2t.axesContainers{end}.options = ...
         opts_add(m2t.axesContainers{end}.options, ...
-        key, ...
-        ['{', legendOpts, '}']);
+        key, ['{', legendOpts, '}']);
 end
 % ==============================================================================
 function m2t = handleColorbar(m2t, handle)
@@ -1412,7 +1484,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
             % axes are drawn as four separate paths. This makes the alignment
             % at the box corners somewhat less nice, but allows for different
             % axis styles (e.g., colors).
-            options = opts_add(options, 'separate axis lines', []);
+            options = opts_add(options, 'separate axis lines');
         end
         options = ...
             opts_add(options, ...
@@ -1444,14 +1516,6 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis label
     [m2t, options] = getAxisLabel(m2t, handle, axis, options);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % get grids
-    if isOn(getOrDefault(handle, [upper(axis),'Grid'], 'off'));
-        options = opts_add(options, [axis, 'majorgrids'], []);
-    end
-    if isOn(getOrDefault(handle, [upper(axis),'MinorGrid'], 'off'));
-        options = opts_add(options, [axis, 'minorgrids'], []);
-    end
 end
 % ==============================================================================
 function [options] = getAxisTicks(m2t, handle, axis, options)
@@ -2105,7 +2169,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     % -----------------------------------------------------------------------
     % gather the draw options
     % Make sure that legends are shown in area mode.
-    drawOptions = opts_add(opts_new,'area legend','');
+    drawOptions = opts_add(opts_new,'area legend');
     verticesTableOptions = opts_new();
 
     % Marker options
@@ -2141,9 +2205,9 @@ function [m2t, str] = drawPatch(m2t, handle)
 
         % Enforce 'patch' or cannot use 'patch table='
         if strcmpi(s.plotType,'mesh')
-            drawOptions = opts_add(drawOptions,'patch','');
+            drawOptions = opts_add(drawOptions,'patch');
         end
-        drawOptions = opts_add(drawOptions,s.plotType,''); % Eventually add mesh, but after patch!
+        drawOptions = opts_add(drawOptions,s.plotType); % Eventually add mesh, but after patch!
 
         drawOptions = getPatchShape(m2t, handle, drawOptions, patchOptions);
 
@@ -2190,7 +2254,7 @@ function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
         % Add the color map
         m2t.axesContainers{end}.options = ...
             opts_add(m2t.axesContainers{end}.options, ...
-            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap));
 
         % Determine if mapping is direct or scaled
         CDataMapping = get(handle,'CDataMapping');
@@ -2241,7 +2305,7 @@ function [drawOptions] = maybeShowInLegend(showInLegend, drawOptions)
     % sets the appropriate options to show/hide the plot in the legend
     if ~showInLegend
         % No legend entry found. Don't include plot in legend.
-        drawOptions = opts_add(drawOptions, 'forget plot', '');
+        drawOptions = opts_add(drawOptions, 'forget plot');
     end
 end
 % ==============================================================================
@@ -2341,8 +2405,7 @@ function [m2t, str] = drawImage(m2t, handle)
 
     % Make sure that the axes are still visible above the image.
     m2t.axesContainers{end}.options = ...
-        opts_add(m2t.axesContainers{end}.options, ...
-        'axis on top', []);
+        opts_add(m2t.axesContainers{end}.options, 'axis on top');
 end
 % ==============================================================================
 function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
@@ -3251,8 +3314,7 @@ function m2t = disableClippingInCurrentAxes(m2t, pos)
     zOutOfRange = is3D && (pos(3) < zlim(1) || pos(3) > zlim(2));
     if xOutOfRange || yOutOfRange || zOutOfRange
         m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'clip', 'false');
+            opts_add(m2t.axesContainers{end}.options, 'clip', 'false');
     end
 end
 % ==============================================================================
