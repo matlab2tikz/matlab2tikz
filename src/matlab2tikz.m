@@ -714,10 +714,11 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
         % A composite object might nest handleAllChildren calls that can
         % modify the m2t.currentHandleHasLegend value. Re-instate the
         % legend status. For detailed explanations check getLegendEntries().
-        m2t        = hasLegendEntry(m2t,child);
-        [m2t,str]  = addPlotyyReference(m2t, str, child);
-        legendInfo = addLegendInformation(m2t, child);
-        str        = join(m2t, {str, legendInfo}, '');
+        m2t               = hasLegendEntry(m2t,child);
+        [m2t, ref1, ref2] = addPlotyyReference(m2t, child);
+        legendInfo        = addLegendInformation(m2t, child);
+        % Add reference 2 BEFORE next plot to preserve color order
+        str               = join(m2t, {ref2, str, ref1, legendInfo}, '');
 
         % append the environment
         pgfEnvironments{envCounter} = str;
@@ -725,10 +726,12 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t, str] = addPlotyyReference(m2t, str, h)
+function [m2t, ref1, ref2] = addPlotyyReference(m2t, h)
     % Create labelled references to legend entries of the main plotyy axis
 
     % This ensures we are either on the main or secondary axis
+    ref1 = '';
+    ref2 = '';
     if ~isAxisPlotyy(m2t.currentHandles.gca)
         return
     end
@@ -740,7 +743,7 @@ function [m2t, str] = addPlotyyReference(m2t, str, h)
         % Label the plot to later reference it. Only legend entries on the main
         % plotyy axis will have a label
         labelNum = labelNum + 1;
-        str = [str, sprintf('\\label{plotyyref:leg%d};\n\n', labelNum)];
+        ref1 = sprintf('\\label{plotyyref:leg%d};\n\n', labelNum);
         m2t.PlotyyLabelNum = labelNum;
 
     elseif m2t.currentHandleHasLegend
@@ -753,8 +756,7 @@ function [m2t, str] = addPlotyyReference(m2t, str, h)
             refs{ii}= sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:leg%d}\\addlegendentry{%s};\n',...
                               ii, lString);
         end
-        % Add references BEFORE next plot to preserve color order
-        str = join(m2t, [refs, str], '');
+        ref2 = join(m2t, refs, '');
 
         % Clear plotyy references. Ensures that references are created only once
         m2t.axesContainers{end}.PlotyyReferences = [];
