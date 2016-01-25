@@ -1435,16 +1435,6 @@ function m2t = handleColorbar(m2t, handle)
     end
 end
 % ==============================================================================
-function tag = getTag(handle)
-    % if a tag is given, use it as comment
-    tag = get(handle, 'tag');
-    if ~isempty(tag)
-        tag = sprintf('Axis "%s"', tag);
-    else
-        tag = sprintf('Axis at [%.2g %.2f %.2g %.2g]', get(handle, 'position'));
-    end
-end
-% ==============================================================================
 function [m2t, options] = getAxisOptions(m2t, handle, axis)
     assertValidAxisSpecifier(axis);
 
