@@ -636,12 +636,14 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     children = allchild(h);
 
     % prepare cell array of pgfEnvironments
-    pgfEnvironments = {};
+    pgfEnvironments = cell(1, numel(children));
+    numEnvironments = 1;
 
     % It's important that we go from back to front here, as this is
     % how MATLAB does it, too. Significant for patch (contour) plots,
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
+        
 
         % Check if object has legend. Some composite objects need to determine
         % their status at the root level. For detailed explanations check
@@ -718,7 +720,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
         str        = join(m2t, {str, legendInfo}, '');
 
         % append the environment
-        pgfEnvironments{end+1} = str;
+        pgfEnvironments{numEnvironments} = str;
+        numEnvironments = numEnvironments +1;
     end
 end
 % ==============================================================================
