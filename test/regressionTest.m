@@ -6,12 +6,17 @@ function regressionTest(commitBefore,commitAfter)
     if ~isempty(cmdout)
         error('regressionTest:treeNotClean','Working tree is not clean.')
     end
-
+    
+    branchName = getBranchName();
+    
+    system(['git checkout ', commitBefore]);
+    statusBefore = runMatlab2TikzTests();
+        
     % Initialize state and prepare cleanup
     [state,cwd]           = initializeGlobalState();
-    branchName            = getBranchName();
+    
     finally_restore_state = onCleanup(@() restoreStateAndGit(state,cwd, branchName));
-
+    
     % Toggle-off paging in Octave
     if strcmpi(getEnvironment(), 'Octave')
         more off
