@@ -884,7 +884,7 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawTitleOfAxes(m2t, handle);
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
     m2t = drawGridOfAxes(m2t, handle);
-    m2t = drawLegendOptionsOfAxes(m2t, handle);
+    m2t = drawLegendOptionsOfAxes(m2t);
 
     m2t.axesContainers{end}.options = opts_append_userdefined(...
         m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
@@ -1399,7 +1399,7 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
     end
 end
 % ==============================================================================
-function m2t = drawLegendOptionsOfAxes(m2t, handle)
+function m2t = drawLegendOptionsOfAxes(m2t)
     legendHandle = m2t.axesContainers{end}.LegendHandle;
     if isempty(legendHandle)
         return
