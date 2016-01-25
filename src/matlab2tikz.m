@@ -1856,32 +1856,26 @@ function dataCellNew = splitByArraySize(m2t, dataCell)
     % plot has too many data points, pdfTeX's buffer size may be exceeded.
     % As a work-around, the plot is split into several smaller plots, and this
     % function does the job.
-    dataCellNew = cell(0);
 
-    %TODO: pre-allocate the cell array such that it doesn't grow during the loop
+    % Get the length of the data array and the corresponding chung size
     %TODO: scale `maxChunkLength` with the number of columns in the data array
+    len         = size(dataCell{1}, 1);
+    chunkLength = m2t.cmdOpts.Results.maxChunkLength;
+    chunks      = chunkLength * ones(ceil(len/chunkLength), 1);
+    if mod(len, chunkLength) ~=0
+        chunks(end) = mod(len, chunkLength);
+    end
 
-    for data = dataCell
-        chunkStart = 1;
-        len = size(data{1}, 1);
-        while chunkStart <= len
-            chunkEnd = min(chunkStart + m2t.cmdOpts.Results.maxChunkLength - 1, len);
+    % Cut the data into chunks
+    dataCellNew = mat2cell(cell2mat(dataCell), chunks);
 
-            % Copy over the data to the new containers.
-            dataCellNew{end+1} = data{1}(chunkStart:chunkEnd,:);
-
-            % Add an extra (overlap) point to the data stream;
-            % otherwise the line between two data chunks would be broken.
-            % Technically, this is only needed when the plot has a line
-            % connecting the points, but the additional cost when there is no
-            % line doesn't justify the added complexity.
-            if chunkEnd~=len
-                dataCellNew{end} = [dataCellNew{end};...
-                                    data{1}(chunkEnd+1,:)];
-            end
-
-            chunkStart = chunkEnd + 1;
-        end
+    % Add an extra (overlap) point to the data stream otherwise the line
+    % between two data chunks would be broken. Technically, this is only
+    % needed when the plot has a line connecting the points, but the
+    % additional cost when there is no line doesn't justify the added
+    % complexity.
+    for i=1:length(dataCellNew)-1
+        dataCellNew{i}(end+1,:) = dataCellNew{i+1}(1,:);
     end
 end
 % ==============================================================================
