@@ -133,7 +133,8 @@ function [status] = ACID(k)
                            @textAlignment       , ...
                            @overlappingPlots    , ...
                            @histogramPlot       , ...
-                           @alphaTest
+                           @alphaTest           , ...
+                           @removeOutsideMarker
                          };
 
 
@@ -539,6 +540,12 @@ function [stat] = logplot()
 
   ylim([1 1e45]);
   grid on;
+  if isprop(gca,'GridColor')
+      set(gca, 'GridColor', 'red');
+      set(gca, 'MinorGridColor', 'blue');
+  else
+    %TODO equivalent HG1 settings (if those exist)
+  end
 end
 % =========================================================================
 function [stat] = colorbarLogplot()
@@ -2693,5 +2700,30 @@ function [stat] = alphaTest()
   set(h, 'MarkerSize', 14);
   set(h, 'MarkerEdgeColor', [1 1 0]);
   set(h, 'MarkerFaceColor', [1 0 0]);
+end
+% =========================================================================
+function [stat] = removeOutsideMarker()
+  stat.description = 'remove markers outside of the box';
+  stat.issues      = 788;
+
+  % Create the data and plot it
+  xdata          = -1 : 0.5 : 1.5;
+  ydata_marker   = 1.5 * ones(size(xdata));
+  ydata_line     = 1   * ones(size(xdata));  
+  ydata_combined = 0.5 * ones(size(xdata));
+  plot(xdata, ydata_marker, '*', ...
+       xdata, ydata_line, '-', ...
+       xdata, ydata_combined, '*-');
+  title('Markers at -1 and 0.5 should be removed, the line shortened'); 
+
+  % Change the limits, so one marker is outside the box
+  ylim([0, 2]);
+  xlim([0, 2]);
+  
+  % Remove it
+  cleanfigure;
+  
+  % Change the limits back to check result
+  xlim([-1, 2]);
 end
 % =========================================================================
