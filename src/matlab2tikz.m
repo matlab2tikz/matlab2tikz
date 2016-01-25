@@ -869,7 +869,8 @@ function m2t = drawAxes(m2t, handle)
         %            m2t.axesContainers{end}.name = 'axis';
         %            m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
         %                                               'hide x axis', 'hide y axis'};
-        %            m2t.axesContainers{end}.comment = getTag(handle);
+        %            NOTE: getTag was removed in 76d260d12e615602653d6f7b357393242b2430b3
+        %            m2t.axesContainers{end}.comment = getTag(handle); 
         %            break;
         %        end
         %    end
