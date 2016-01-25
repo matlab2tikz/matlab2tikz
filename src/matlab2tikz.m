@@ -637,7 +637,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
     % prepare cell array of pgfEnvironments
     pgfEnvironments = cell(1, numel(children));
-    numEnvironments = 1;
+    envCounter      = 1;
 
     % It's important that we go from back to front here, as this is
     % how MATLAB does it, too. Significant for patch (contour) plots,
@@ -720,8 +720,8 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
         str        = join(m2t, {str, legendInfo}, '');
 
         % append the environment
-        pgfEnvironments{numEnvironments} = str;
-        numEnvironments = numEnvironments +1;
+        pgfEnvironments{envCounter} = str;
+        envCounter = envCounter +1;
     end
 end
 % ==============================================================================
