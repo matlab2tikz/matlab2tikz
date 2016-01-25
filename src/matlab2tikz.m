@@ -5769,7 +5769,7 @@ function c = prettyPrint(m2t, strings, interpreter)
     strings = cellstrOneLinePerCell(strings);
 
     % Now loop over the strings and return them pretty-printed in c.
-    c = {};
+    c = cell(1, length(strings));
     for k = 1:length(strings)
         % linear indexing for independence of cell array dimensions
         s = strings{k};
@@ -5851,7 +5851,7 @@ function c = prettyPrint(m2t, strings, interpreter)
             otherwise
                 error('matlab2tikz:prettyPrint', 'Unknown interpreter');
         end
-        c{end+1} = string;
+        c{k} = string;
     end
 end
 % ==============================================================================
@@ -5860,10 +5860,10 @@ function strings = cellstrOneLinePerCell(strings)
     if ischar(strings)
         strings = cellstr(strings);
     elseif iscellstr(strings)
-        cs = {};
-        for s = strings
-            tmp = cellstr(s);
-            cs = [cs tmp];
+        cs = cell(1, length(strings));
+        for s = 1:length(strings)
+            tmp = cellstr(strings{s});
+            cs{s} = tmp;
         end
         strings = cs;
     else
