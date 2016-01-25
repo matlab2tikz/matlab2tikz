@@ -1843,23 +1843,14 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
 end
 % ==============================================================================
 function dataCell = splitLine(m2t, data)
-    % Split the xData, yData into several chunks of data for each of which
-    % an \addplot will be generated.
-    dataCell{1} = data;
-
-    % Split each of the current chunks further with respect to outliers.
-    dataCell = splitByArraySize(m2t, dataCell);
-end
-% ==============================================================================
-function dataCellNew = splitByArraySize(m2t, dataCell)
     % TeX parses files line by line with a buffer of size buf_size. If the
     % plot has too many data points, pdfTeX's buffer size may be exceeded.
-    % As a work-around, the plot is split into several smaller plots, and this
-    % function does the job.
+    % As a work-around, split the xData, yData into several chunks of data
+    % for each of which an \addplot will be generated.
 
     % Get the length of the data array and the corresponding chung size
     %TODO: scale `maxChunkLength` with the number of columns in the data array
-    len         = size(dataCell{1}, 1);
+    len         = size(data, 1);
     chunkLength = m2t.cmdOpts.Results.maxChunkLength;
     chunks      = chunkLength * ones(ceil(len/chunkLength), 1);
     if mod(len, chunkLength) ~=0
@@ -1867,15 +1858,15 @@ function dataCellNew = splitByArraySize(m2t, dataCell)
     end
 
     % Cut the data into chunks
-    dataCellNew = mat2cell(cell2mat(dataCell), chunks);
+    dataCell = mat2cell(data, chunks);
 
     % Add an extra (overlap) point to the data stream otherwise the line
     % between two data chunks would be broken. Technically, this is only
     % needed when the plot has a line connecting the points, but the
     % additional cost when there is no line doesn't justify the added
     % complexity.
-    for i=1:length(dataCellNew)-1
-        dataCellNew{i}(end+1,:) = dataCellNew{i+1}(1,:);
+    for i=1:length(dataCell)-1
+        dataCell{i}(end+1,:) = dataCell{i+1}(1,:);
     end
 end
 % ==============================================================================
