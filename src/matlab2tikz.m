@@ -551,13 +551,13 @@ function str = generateColorDefinitions(names, specs, colorFormat)
     ff  = colorFormat;
     if ~isempty(names)
         m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
+        colorDef = cell(1, length(names));
         for k = 1:length(names)
             % make sure to append with '%' to avoid spacing woes
-            str = [str, ...
-                sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
-                names{k}, specs{k})];
+            colorDef{k}= sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
+                                  names{k}, specs{k});
         end
-        str = [str sprintf('%%\n')];
+        str = strjoin([colorDef, sprintf('%%\n')], '');
     end
 end
 % ==============================================================================
@@ -636,12 +636,14 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     children = allchild(h);
 
     % prepare cell array of pgfEnvironments
-    pgfEnvironments = cell(0);
+    pgfEnvironments = cell(1, numel(children));
+    envCounter      = 1;
 
     % It's important that we go from back to front here, as this is
     % how MATLAB does it, too. Significant for patch (contour) plots,
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
+        
 
         % Check if object has legend. Some composite objects need to determine
         % their status at the root level. For detailed explanations check
@@ -712,19 +714,24 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
         % A composite object might nest handleAllChildren calls that can
         % modify the m2t.currentHandleHasLegend value. Re-instate the
         % legend status. For detailed explanations check getLegendEntries().
-        m2t = hasLegendEntry(m2t,child);
-        [m2t,str] = addPlotyyReference(m2t, str, child);
-        str = addLegendInformation(m2t, str, child);
+        m2t               = hasLegendEntry(m2t,child);
+        [m2t, ref1, ref2] = addPlotyyReference(m2t, child);
+        legendInfo        = addLegendInformation(m2t, child);
+        % Add reference 2 BEFORE next plot to preserve color order
+        str               = join(m2t, {ref2, str, ref1, legendInfo}, '');
 
         % append the environment
-        pgfEnvironments{end+1} = str;
+        pgfEnvironments{envCounter} = str;
+        envCounter = envCounter +1;
     end
 end
 % ==============================================================================
-function [m2t, str] = addPlotyyReference(m2t, str, h)
+function [m2t, ref1, ref2] = addPlotyyReference(m2t, h)
     % Create labelled references to legend entries of the main plotyy axis
 
     % This ensures we are either on the main or secondary axis
+    ref1 = '';
+    ref2 = '';
     if ~isAxisPlotyy(m2t.currentHandles.gca)
         return
     end
@@ -736,23 +743,20 @@ function [m2t, str] = addPlotyyReference(m2t, str, h)
         % Label the plot to later reference it. Only legend entries on the main
         % plotyy axis will have a label
         labelNum = labelNum + 1;
-        str = [str, sprintf('\\label{plotyyref:leg%d};\n\n', labelNum)];
+        ref1 = sprintf('\\label{plotyyref:leg%d};\n\n', labelNum);
         m2t.PlotyyLabelNum = labelNum;
 
     elseif m2t.currentHandleHasLegend
         % We are on the secondary axis
-        interpreter = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
-        refs = '';
+        refs        = cell(1, labelNum);
         % Create labelled references to legend entries of the main axis
         for ii = 1:labelNum
             ref     = m2t.axesContainers{end}.PlotyyReferences(ii);
             lString = getLegendString(m2t,ref);
-            c       = prettyPrint(m2t, lString, interpreter);
-            refs    = [refs, sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:leg%d}\\addlegendentry{%s};\n',...
-                ii, join(m2t, c, '\\'))];
+            refs{ii}= sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:leg%d}\\addlegendentry{%s};\n',...
+                              ii, lString);
         end
-        % Add references BEFORE next plot to preserve color order
-        str = [refs, str];
+        ref2 = join(m2t, refs, '');
 
         % Clear plotyy references. Ensures that references are created only once
         m2t.axesContainers{end}.PlotyyReferences = [];
@@ -762,20 +766,18 @@ function [m2t, str] = addPlotyyReference(m2t, str, h)
     end
 end
 % ==============================================================================
-function str = addLegendInformation(m2t, str, h)
+function legendInfo = addLegendInformation(m2t, h)
     % Add the actual legend string
 
+    legendInfo = '';
     if ~m2t.currentHandleHasLegend
         return
     end
-
-    interpreter  = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
     legendString = getLegendString(m2t,h);
 
-    c = prettyPrint(m2t, legendString, interpreter);
     % We also need a legend alignment option to make multiline
     % legend entries work. This is added by default in getLegendOpts().
-    str = [str, sprintf('\\addlegendentry{%s};\n\n', join(m2t, c, '\\'))];
+    legendInfo = sprintf('\\addlegendentry{%s};\n\n', legendString);
 end
 % ==============================================================================
 function data = applyHgTransform(m2t, data)
@@ -834,10 +836,8 @@ function m2t = drawAxes(m2t, handle)
     CLimMode = get(handle,'CLimMode');
     if strcmpi(CLimMode,'manual') || ~isempty(m2t.cbarHandles)
         clim = caxis(handle);
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'point meta min', sprintf(m2t.ff, clim(1)));
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'point meta max', sprintf(m2t.ff, clim(2)));
+        m2t = m2t_addAxisOption(m2t, 'point meta min', sprintf(m2t.ff, clim(1)));
+        m2t = m2t_addAxisOption(m2t, 'point meta max', sprintf(m2t.ff, clim(2)));
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Recurse into the children of this environment.
@@ -860,8 +860,7 @@ function m2t = drawAxes(m2t, handle)
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
         % in MATLAB, they may still be visible. Well.
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'hide axis');
+        m2t = m2t_addAxisOption(m2t, 'hide axis');
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
         %    children = allchild(handle);
@@ -872,7 +871,8 @@ function m2t = drawAxes(m2t, handle)
         %            m2t.axesContainers{end}.name = 'axis';
         %            m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
         %                                               'hide x axis', 'hide y axis'};
-        %            m2t.axesContainers{end}.comment = getTag(handle);
+        %            NOTE: getTag was removed in 76d260d12e615602653d6f7b357393242b2430b3
+        %            m2t.axesContainers{end}.comment = getTag(handle); 
         %            break;
         %        end
         %    end
@@ -887,7 +887,7 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawTitleOfAxes(m2t, handle);
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
     m2t = drawGridOfAxes(m2t, handle);
-    m2t = drawLegendOptionsOfAxes(m2t, handle);
+    m2t = drawLegendOptionsOfAxes(m2t);
 
     m2t.axesContainers{end}.options = opts_append_userdefined(...
         m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
@@ -1007,9 +1007,8 @@ function m2t = add3DOptionsOfAxes(m2t, handle)
         m2t.axesContainers{end}.options = opts_merge(...
             m2t.axesContainers{end}.options, zopts);
 
-        m2t.axesContainers{end}.options = ...
-           opts_add(m2t.axesContainers{end}.options, ...
-           'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], get(handle, 'View')));
+        m2t = m2t_addAxisOption(m2t, 'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], ...
+                          get(handle, 'View')));
     end
 end
 % ==============================================================================
@@ -1236,22 +1235,24 @@ function peer = getPlotyyPeer(axisHandle)
     end
 end
 % ==============================================================================
-function string = getLegendString(m2t, h)
+function legendString = getLegendString(m2t, h)
     % Retrieve the legend string for the given handle
-
-    string  = getOrDefault(h, 'displayname', '');
+    str         = getOrDefault(h, 'displayname', '');
+    interpreter = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
 
     % HG1: autogenerated legend strings, i.e. data1,..., dataN, do not populate
     % the 'displayname' property. Go through 'userdata'
-    if isempty(string)
-        ud     = get(m2t.axesContainers{end}.LegendHandle,'userdata');
-        idx    = ismember(ud.handles, h);
-        string = ud.lstrings{idx};
+    if isempty(str)
+        ud  = get(m2t.axesContainers{end}.LegendHandle,'userdata');
+        idx = ismember(ud.handles, h);
+        str = ud.lstrings{idx};
     end
 
     % split string to cell, if newline character '\n' (ASCII 10) is present
-    delimeter = sprintf('\n');
-    string    = regexp(string, delimeter, 'split');
+    delimeter    = sprintf('\n');
+    str          = regexp(str, delimeter, 'split');
+    str          = prettyPrint(m2t, str, interpreter);
+    legendString = join(m2t, str, '\\');
 end
 % ==============================================================================
 function [m2t, bool] = hasLegendEntry(m2t, h)
@@ -1289,21 +1290,17 @@ function m2t = retrievePositionOfAxes(m2t, handle)
         m2t = setDimensionOfAxes(m2t, 'width',  pos.w);
         m2t = setDimensionOfAxes(m2t, 'height', pos.h);
 
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'at', ...
+        m2t = m2t_addAxisOption(m2t, 'at', ...
                 ['{(' formatDim(pos.x.value, pos.x.unit) ','...
                       formatDim(pos.y.value, pos.y.unit) ')}']);
         % the following is general MATLAB behavior:
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'scale only axis');
+        m2t = m2t_addAxisOption(m2t, 'scale only axis');
     end
 end
 % ==============================================================================
 function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
     % sets the dimension "name" of the current axes to the struct "dim"
-    m2t.axesContainers{end}.options = opts_add(...
-            m2t.axesContainers{end}.options, widthOrHeight, ...
+    m2t = m2t_addAxisOption(m2t, widthOrHeight, ...
             formatDim(dimension.value, dimension.unit));
 end
 % ==============================================================================
@@ -1317,9 +1314,8 @@ function m2t = addAspectRatioOptionsOfAxes(m2t, handle)
             % Note: set 'plot box ratio' for 3D axes to avoid bug with
             % 'scale mode = uniformly' (see #560)
             aspectRatio = getPlotBoxAspectRatio(handle);
-            m2t.axesContainers{end}.options = opts_add(...
-            m2t.axesContainers{end}.options, 'plot box ratio', ...
-            formatAspectRatio(m2t, aspectRatio));
+            m2t = m2t_addAxisOption(m2t, 'plot box ratio', ...
+                              formatAspectRatio(m2t, aspectRatio));
         end
     end
 end
@@ -1329,9 +1325,7 @@ function m2t = drawBackgroundOfAxes(m2t, handle)
     backgroundColor = get(handle, 'Color');
     if ~isNone(backgroundColor) && isVisible(handle)
         [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'axis background/.style', sprintf('{fill=%s}', col));
+        m2t = m2t_addAxisOption(m2t, 'axis background/.style', sprintf('{fill=%s}', col));
     end
 end
 % ==============================================================================
@@ -1390,44 +1384,32 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
     % left/bottom positions
     if isBoxOn
         if ~isXaxisBottom
-            m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'xticklabel pos','right');
+            m2t = m2t_addAxisOption(m2t, 'xticklabel pos','right');
         end
         if ~isYaxisLeft
-            m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'yticklabel pos','right');
+            m2t = m2t_addAxisOption(m2t, 'yticklabel pos','right');
         end
 
         % Position axes lines (strips the box)
     else
-        m2t.axesContainers{end}.options = ...
-            opts_append(m2t.axesContainers{end}.options, ...
-            'axis x line*', xLoc);
-        m2t.axesContainers{end}.options = ...
-            opts_append(m2t.axesContainers{end}.options, ...
-            'axis y line*', yLoc);
+        m2t = m2t_addAxisOption(m2t, 'axis x line*', xLoc);
+        m2t = m2t_addAxisOption(m2t, 'axis y line*', yLoc);
         if m2t.axesContainers{end}.is3D
             % There's no such attribute as 'ZAxisLocation'.
             % Instead, the default seems to be 'left'.
-            m2t.axesContainers{end}.options = ...
-                opts_add(m2t.axesContainers{end}.options, ...
-                'axis z line*', 'left');
+            m2t = m2t_addAxisOption(m2t, 'axis z line*', 'left');
         end
     end
 end
 % ==============================================================================
-function m2t = drawLegendOptionsOfAxes(m2t,handle)
+function m2t = drawLegendOptionsOfAxes(m2t)
     legendHandle = m2t.axesContainers{end}.LegendHandle;
     if isempty(legendHandle)
         return
     end
 
     [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
-    m2t.axesContainers{end}.options = ...
-        opts_add(m2t.axesContainers{end}.options, ...
-        key, ['{', legendOpts, '}']);
+    m2t = m2t_addAxisOption(m2t, key, legendOpts);
 end
 % ==============================================================================
 function m2t = handleColorbar(m2t, handle)
@@ -1456,16 +1438,6 @@ function m2t = handleColorbar(m2t, handle)
     else
         warning('matlab2tikz:parentAxesOfColorBarNotFound',...
             'Could not find parent axes for color bar. Skipping.');
-    end
-end
-% ==============================================================================
-function tag = getTag(handle)
-    % if a tag is given, use it as comment
-    tag = get(handle, 'tag');
-    if ~isempty(tag)
-        tag = sprintf('Axis "%s"', tag);
-    else
-        tag = sprintf('Axis at [%.2g %.2f %.2g %.2g]', get(handle, 'position'));
     end
 end
 % ==============================================================================
@@ -1594,7 +1566,7 @@ function interpreter = defaultTickLabelInterpreter(m2t)
     end
 end
 % ==============================================================================
-function isDatetimeTicks = isAxisTicksDateTime(handle, axis);
+function isDatetimeTicks = isAxisTicksDateTime(handle, axis)
     % returns true when the axis has DateTime ticks
     try
         % Get hidden properties of the datetime axes manager
@@ -1702,12 +1674,11 @@ function bool = isVisibleContainer(axisHandle)
     end
 end
 % ==============================================================================
-function [m2t, str] = drawLine(m2t, h, yDeviation)
+function [m2t, str] = drawLine(m2t, h)
     % Returns the code for drawing a regular line and error bars.
     % This is an extremely common operation and takes place in most of the
     % not too fancy plots.
     str = '';
-
     if ~isLineVisible(h)
         return; % there is nothing to plot
     end
@@ -1725,7 +1696,7 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
 
     % Check for "special" lines, e.g.:
     if strcmpi(get(h, 'Tag'), 'zplane_unitcircle')
-        [m2t, str] = specialDrawZplaneUnitCircle(m2t, h, drawOptions);
+        [m2t, str] = specialDrawZplaneUnitCircle(m2t, drawOptions);
         return
     end
 
@@ -1739,16 +1710,18 @@ function [m2t, str] = drawLine(m2t, h, yDeviation)
     % Check if any value is infinite/NaN. In that case, add appropriate option.
     m2t = jumpAtUnboundCoords(m2t, data);
 
-    [m2t, str] = writePlotData(m2t, str, data, drawOptions);
-    [m2t, str] = addLabel(m2t, str, h);
+    [m2t, dataString]  = writePlotData(m2t, data, drawOptions);
+    [m2t, labelString] = addLabel(m2t, h);
+    
+    str = [dataString, labelString];
 end
 % ==============================================================================
-function [m2t, str] = specialDrawZplaneUnitCircle(m2t, h, drawOptions)
+function [m2t, str] = specialDrawZplaneUnitCircle(m2t, drawOptions)
     % Draw unit circle and axes.
 
     % TODO Don't hardcode "10", but extract from parent axes of |h|
     opts = opts_print(m2t, drawOptions, ',');
-    str  = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n', opts) , ...
+    str  = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n',  opts), ...
             sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
             sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
 end
@@ -1766,8 +1739,10 @@ function bool = isLineVisible(h)
     bool = isVisible(h) && (hasLines || hasMarkers || hasDeviations);
 end
 % ==============================================================================
-function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
+function [m2t, str] = writePlotData(m2t, data, drawOptions)
     % actually writes the plot data to file
+    str = '';
+    
     is3D = m2t.axesContainers{end}.is3D;
     if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
@@ -1783,6 +1758,7 @@ function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
         dataCell = splitLine(m2t, data);
 
         % plot them
+        strPart = cell(1, length(dataCell));
         for k = 1:length(dataCell)
             % If the line has a legend string, make sure to only include a legend
             % entry for the *last* occurrence of the plot series.
@@ -1797,8 +1773,10 @@ function [m2t, str] = writePlotData(m2t, str, data, drawOptions)
             end
 
             [m2t, Part] = plotLine2d(m2t, opts, dataCell{k});
-            str = [str, Part];
+            strPart{k} = Part;
         end
+        strPart = join(m2t, strPart, '');
+        str = [str, strPart];
     end
 end
 % ==============================================================================
@@ -1824,12 +1802,10 @@ function [data] = getXYZDataFromLine(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t, generatedCodeSoFar] = addLabel(m2t, generatedCodeSoFar, h)
+function [m2t, labelCode] = addLabel(m2t, h)
     % conditionally add a LaTeX label after the current plot
-    if ~exist('generatedCodeSoFar','var') || isempty(generatedCodeSoFar)
-        generatedCodeSoFar = '';
-    end
-
+    labelCode = '';
+    
     if m2t.cmdOpts.Results.automaticLabels||m2t.cmdOpts.Results.addLabels
         lineTag = get(h,'Tag');
         if ~isempty(lineTag)
@@ -1839,9 +1815,7 @@ function [m2t, generatedCodeSoFar] = addLabel(m2t, generatedCodeSoFar, h)
             labelName = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
             m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
         end
-        labelCode = sprintf('\\label{%s}\n', labelName);
-        generatedCodeSoFar = [generatedCodeSoFar, labelCode];
-        
+        labelCode = sprintf('\\label{%s}\n', labelName);        
         userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
     end
 end
@@ -2252,9 +2226,7 @@ function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
     if rowsCData > 1
 
         % Add the color map
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap));
+        m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap));
 
         % Determine if mapping is direct or scaled
         CDataMapping = get(handle,'CDataMapping');
@@ -2381,8 +2353,7 @@ function m2t = jumpAtUnboundCoords(m2t, data)
     % See also pgfplots 1.12 manual section 4.5.13 "Interrupted Plots".
     if any(~isfinite(data(:)))
         m2t = needsPgfplotsVersion(m2t, [1 4]);
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'unbounded coords', 'jump');
+        m2t = m2t_addAxisOption(m2t, 'unbounded coords', 'jump');
     end
 end
 % ==============================================================================
@@ -2404,8 +2375,7 @@ function [m2t, str] = drawImage(m2t, handle)
     end
 
     % Make sure that the axes are still visible above the image.
-    m2t.axesContainers{end}.options = ...
-        opts_add(m2t.axesContainers{end}.options, 'axis on top');
+    m2t = m2t_addAxisOption(m2t, 'axis on top');
 end
 % ==============================================================================
 function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
@@ -2513,18 +2483,20 @@ function [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData)
     str = '';
     m = length(X);
     n = length(Y);
+    imageString = cell(1, m);
     for i = 1:m
+        subString = cell(1, n);
         for j = 1:n
-            str = [str, ...
-                sprintf(['\t\\fill [%s] ', ...
-                    '(axis cs:', m2t.ff,',', m2t.ff,') rectangle ', ...
-                    '(axis cs:', m2t.ff,',',m2t.ff,');\n'], ...
-                    xcolor{n-j+1,i}, ...
-                    X(i)-hX/2, Y(j)-hY/2, ...
-                    X(i)+hX/2, Y(j)+hY/2 ...
-                    )];
+            subString{j} = sprintf(['\t\\fill [%s] ', ...
+                            '(axis cs:', m2t.ff,',', m2t.ff,') rectangle ', ...
+                            '(axis cs:', m2t.ff,',',m2t.ff,');\n'], ...
+                            xcolor{n-j+1,i}, ...
+                            X(i)-hX/2, Y(j)-hY/2, ...
+                            X(i)+hX/2, Y(j)+hY/2);
         end
+        imageString{i} = join(m2t, subString, '');
     end
+    str = join(m2t, [str, imageString], '');
 end
 function [XY, delta] = constructUniformXYDataForImage(XYData, expectedLength)
     % Generate uniformly distributed X, Y, although xData/yData may be
@@ -2637,9 +2609,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
     else
         % Add colormap
         cmap = m2t.currentHandles.colormap;
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            matlab2pgfplotsColormap(m2t, cmap));
+        m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, cmap));
 
         % Contour table in Matlab format
         plotOptions = opts_new();
@@ -2908,8 +2878,9 @@ function m2t = drawAnnotations(m2t)
     if isHG2
         annotPanes   = findall(m2t.currentHandles.gcf,'Tag','scribeOverlay');
         children = allchild(annotPanes);
+        %TODO: is this dead code?
         if iscell(children)
-            children = [children{:}]
+            children = [children{:}];
         end
         annotHandles = findall(children,'Visible','on');
     else
@@ -2941,7 +2912,7 @@ function m2t = drawAnnotationsHelper(m2t,h)
     % Get class name
     try
         cl = class(handle(h));
-    catch %#ok
+    catch
         cl = 'unknown';
     end
 
@@ -2996,7 +2967,7 @@ end
 function [m2t,str] = drawSurface(m2t, h)
 
     [m2t, opts, s] = shaderOpts(m2t, h,'surf');
-    tabOpts = opts_new();
+    tableOptions = opts_new();
 
     % Allow for empty surf
     if isNone(s.plotType)
@@ -3041,7 +3012,7 @@ function [m2t,str] = drawSurface(m2t, h)
         % Index into custom colormap
         color = (0:nrows-1)';
 
-        tabOpts = opts_add(tabOpts, 'colormap name','surfmap');
+        tableOptions = opts_add(tableOptions, 'colormap name','surfmap');
     else
         opts = opts_add(opts,matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap),'');
         % If NaNs are present in the color specifications, don't use them for
@@ -3059,7 +3030,7 @@ function [m2t,str] = drawSurface(m2t, h)
             color = dz(:);      % Fallback on the z-values, especially if 2D view
         end
     end
-    tabOpts = opts_add(tabOpts, 'point meta','\thisrow{c}');
+    tableOptions = opts_add(tableOptions, 'point meta','\thisrow{c}');
 
     data = [data, color];
 
@@ -3073,18 +3044,20 @@ function [m2t,str] = drawSurface(m2t, h)
 
     % Print the data
     [m2t, table, tabOptsExtra] = makeTable(m2t, columnNames, data);
-    tabOpts = opts_merge(tabOptsExtra, tabOpts);
+    tableOptions = opts_merge(tabOptsExtra, tableOptions);
+    tabOpts = opts_print(m2t, tableOptions, ', ');
 
     % Here is where everything is put together
     str = sprintf('%s\ntable[%s] {%%\n%s};\n', ...
-                  str, opts_print(m2t, tabOpts, ', '), table);
+                  str, tabOpts, table);
 
     % TODO:
     % - remove grids in spectrogram by either removing grid command
     %   or adding: 'grid=none' from/in axis options
     % - handling of huge data amounts in LaTeX.
 
-    [m2t, str] = addLabel(m2t, str);
+    [m2t, labelString] = addLabel(m2t, h);
+    str = [str, labelString];
 end
 % ==============================================================================
 function [m2t, opts] = addZBufferOptions(m2t, h, opts)
@@ -3160,16 +3133,14 @@ function [m2t, str] = drawText(m2t, handle)
     % Not that, in Pgfplots, long texts get cut off at the axes. This is
     % Different from the default MATLAB behavior. To fix this, one could use
     % /pgfplots/after end axis/.code.
-
-    str = '';
-
+    
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get required properties
-    String = get(handle, 'String');
+    content     = get(handle, 'String');
     Interpreter = get(handle, 'Interpreter');
-    String = prettyPrint(m2t, String, Interpreter);
+    content     = prettyPrint(m2t, content, Interpreter);
     % Concatenate multiple lines
-    String = join(m2t, String, '\\');
+    content = join(m2t, content, '\\');
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % translate them to pgf style
     style = opts_new();
@@ -3196,12 +3167,12 @@ function [m2t, str] = drawText(m2t, handle)
 
     styleOpts = opts_print(m2t, style, ', ');
     str       = sprintf('\\node[%s]\nat %s {%s};\n', ...
-                        styleOpts, posString, String);
+                        styleOpts, posString, content);
 end
 % ==============================================================================
 function [style] = getXYAlignmentOfText(handle, style)
     % sets the horizontal and vertical alignment options of a text object
-    VerticalAlignment = get(handle, 'VerticalAlignment');
+    VerticalAlignment   = get(handle, 'VerticalAlignment');
     HorizontalAlignment = get(handle, 'HorizontalAlignment');
 
     horizontal = '';
@@ -3313,8 +3284,7 @@ function m2t = disableClippingInCurrentAxes(m2t, pos)
     yOutOfRange =          pos(2) < ylim(1) || pos(2) > ylim(2);
     zOutOfRange = is3D && (pos(3) < zlim(1) || pos(3) > zlim(2));
     if xOutOfRange || yOutOfRange || zOutOfRange
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'clip', 'false');
+        m2t = m2t_addAxisOption(m2t, 'clip', 'false');
     end
 end
 % ==============================================================================
@@ -3544,6 +3514,9 @@ end
 % ==============================================================================
 function [m2t, str] = drawScatterPlot(m2t, h)
     str = '';
+    if ~isVisible(h)
+        return; % there is nothing to plot
+    end
 
     xData = get(h, 'XData');
     yData = get(h, 'YData');
@@ -3692,9 +3665,7 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
     drawOptions = opts_add(drawOptions, 'scatter/use mapped color', ...
         ['{' opts_print(m2t, markerOptions, ',') '}']);
     % Add color map.
-    m2t.axesContainers{end}.options = opts_append(...
-        m2t.axesContainers{end}.options, ...
-        matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+    m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
 end
 % ==============================================================================
 function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData)
@@ -3820,9 +3791,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     % the default behaviour since Pgfplots v1.5).
     baseValue = get(h, 'BaseValue');
     if baseValue ~= 0.0
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, ...
-            'log origin', 'infty');
+        m2t = m2t_addAxisOption(m2t, 'log origin', 'infty');
         %TODO: wait for pgfplots to implement other base values (see #438)
     end
 
@@ -3910,9 +3879,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
 
             if ~m2t.axesContainers{end}.barAddedAxisOption;
                 barWidth = getBarWidthInAbsolutUnits(h);
-                m2t.axesContainers{end}.options = ...
-                    opts_add(m2t.axesContainers{end}.options, ...
-                    'bar width', formatDim(barWidth,''));
+                m2t = m2t_addAxisOption(m2t, 'bar width', formatDim(barWidth,''));
                 m2t.axesContainers{end}.barAddedAxisOption = true;
             end
 
@@ -4027,10 +3994,8 @@ function [m2t, str] = drawAreaSeries(m2t, h)
 
     if ~isfield(m2t, 'addedAreaOption') || isempty(m2t.addedAreaOption) || ~m2t.addedAreaOption
         % Add 'area style' to axes options.
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'area style');
-        m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'stack plots', 'y');
+        m2t = m2t_addAxisOption(m2t, 'area style');
+        m2t = m2t_addAxisOption(m2t, 'stack plots', 'y');
         m2t.addedAreaOption = true;
     end
 
@@ -4484,7 +4449,7 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap, name)
 
     % Get it in Pgfplots-readable form.
     unit = 'pt';
-    colSpecs = {};
+    colSpecs = cell(length(steps), 1);
     for k = 1:length(steps)
         x = steps(k)-1;
         colSpecs{k} = sprintf('rgb(%d%s)=(%g,%g,%g)', x, unit, colors(k,:));
@@ -4815,7 +4780,7 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
     end
 end
 % ==============================================================================
-function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
+function [m2t, key, legendOpts] = getLegendOpts(m2t, handle)
     lStyle = opts_new();
 
     lStyle = getLegendPosition(m2t, handle, lStyle);
@@ -4852,7 +4817,8 @@ function [m2t, key, lOpts] = getLegendOpts(m2t, handle)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     key = 'legend style';
-    lOpts = opts_print(m2t, lStyle, ',');
+    legendOpts = opts_print(m2t, lStyle, ',');
+    legendOpts = ['{', legendOpts, '}'];
 end
 % ==============================================================================
 function [lStyle] = getLegendOrientation(m2t, handle, lStyle)
@@ -5729,7 +5695,7 @@ function userWarning(m2t, message, varargin)
     end
 end
 % ==============================================================================
-function signalDependency(m2t, dependencyType, name);
+function signalDependency(m2t, dependencyType, name)
     % Signals an (optional) dependency to the user
     switch lower(dependencyType)
         case 'tikzlibrary'
@@ -5760,7 +5726,7 @@ function parent = addChildren(parent, children)
         if isempty(parent.children)
             parent.children = {children};
         else
-            parent.children = {parent.children{:} children};
+            parent.children = [parent.children children];
         end
     end
 end
@@ -5809,7 +5775,7 @@ function c = prettyPrint(m2t, strings, interpreter)
     strings = cellstrOneLinePerCell(strings);
 
     % Now loop over the strings and return them pretty-printed in c.
-    c = {};
+    c = cell(1, length(strings));
     for k = 1:length(strings)
         % linear indexing for independence of cell array dimensions
         s = strings{k};
@@ -5891,7 +5857,7 @@ function c = prettyPrint(m2t, strings, interpreter)
             otherwise
                 error('matlab2tikz:prettyPrint', 'Unknown interpreter');
         end
-        c{end+1} = string;
+        c{k} = string;
     end
 end
 % ==============================================================================
@@ -5900,10 +5866,10 @@ function strings = cellstrOneLinePerCell(strings)
     if ischar(strings)
         strings = cellstr(strings);
     elseif iscellstr(strings)
-        cs = {};
-        for s = strings
-            tmp = cellstr(s);
-            cs = {cs{:}, tmp{:}};
+        cs = cell(1, length(strings));
+        for s = 1:length(strings)
+            tmp = cellstr(strings{s});
+            cs{s} = tmp;
         end
         strings = cs;
     else
@@ -6453,6 +6419,15 @@ function str  = opts_print(m2t, opts, sep)
     str = join(m2t, c, sep);
 end
 % ==============================================================================
+function m2t = m2t_addAxisOption(m2t, key, value)
+    % Adds an option to the last axesContainer
+    if ~exist('value','var')
+        value = '';
+    end
+	m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, key, value);
+end
+% ==============================================================================
 function bool = isHG2()
     % Checks if graphics system is HG2 (true) or HG1 (false).
     % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
@@ -6579,7 +6554,7 @@ function [formatted,treeish] = VersionControlIdentifier()
                 return;
             end
         end
-    catch %#ok
+    catch
         treeish = '';
     end
     if ~isempty(treeish)
