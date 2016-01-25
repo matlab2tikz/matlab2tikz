@@ -834,8 +834,8 @@ function m2t = drawAxes(m2t, handle)
     CLimMode = get(handle,'CLimMode');
     if strcmpi(CLimMode,'manual') || ~isempty(m2t.cbarHandles)
         clim = caxis(handle);
-        m2t = m2t_OptsAdd(m2t, 'point meta min', sprintf(m2t.ff, clim(1)));
-        m2t = m2t_OptsAdd(m2t, 'point meta max', sprintf(m2t.ff, clim(2)));
+        m2t = m2t_addAxisOption(m2t, 'point meta min', sprintf(m2t.ff, clim(1)));
+        m2t = m2t_addAxisOption(m2t, 'point meta max', sprintf(m2t.ff, clim(2)));
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Recurse into the children of this environment.
@@ -858,7 +858,7 @@ function m2t = drawAxes(m2t, handle)
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
         % in MATLAB, they may still be visible. Well.
-        m2t = m2t_OptsAdd(m2t, 'hide axis');
+        m2t = m2t_addAxisOption(m2t, 'hide axis');
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
         %    children = allchild(handle);
@@ -1004,7 +1004,7 @@ function m2t = add3DOptionsOfAxes(m2t, handle)
         m2t.axesContainers{end}.options = opts_merge(...
             m2t.axesContainers{end}.options, zopts);
 
-        m2t = m2t_OptsAdd(m2t, 'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], ...
+        m2t = m2t_addAxisOption(m2t, 'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], ...
                           get(handle, 'View')));
     end
 end
@@ -1287,17 +1287,17 @@ function m2t = retrievePositionOfAxes(m2t, handle)
         m2t = setDimensionOfAxes(m2t, 'width',  pos.w);
         m2t = setDimensionOfAxes(m2t, 'height', pos.h);
 
-        m2t = m2t_OptsAdd(m2t, 'at', ...
+        m2t = m2t_addAxisOption(m2t, 'at', ...
                 ['{(' formatDim(pos.x.value, pos.x.unit) ','...
                       formatDim(pos.y.value, pos.y.unit) ')}']);
         % the following is general MATLAB behavior:
-        m2t = m2t_OptsAdd(m2t, 'scale only axis');
+        m2t = m2t_addAxisOption(m2t, 'scale only axis');
     end
 end
 % ==============================================================================
 function m2t = setDimensionOfAxes(m2t, widthOrHeight, dimension)
     % sets the dimension "name" of the current axes to the struct "dim"
-    m2t = m2t_OptsAdd(m2t, widthOrHeight, ...
+    m2t = m2t_addAxisOption(m2t, widthOrHeight, ...
             formatDim(dimension.value, dimension.unit));
 end
 % ==============================================================================
@@ -1311,7 +1311,7 @@ function m2t = addAspectRatioOptionsOfAxes(m2t, handle)
             % Note: set 'plot box ratio' for 3D axes to avoid bug with
             % 'scale mode = uniformly' (see #560)
             aspectRatio = getPlotBoxAspectRatio(handle);
-            m2t = m2t_OptsAdd(m2t, 'plot box ratio', ...
+            m2t = m2t_addAxisOption(m2t, 'plot box ratio', ...
                               formatAspectRatio(m2t, aspectRatio));
         end
     end
@@ -1322,7 +1322,7 @@ function m2t = drawBackgroundOfAxes(m2t, handle)
     backgroundColor = get(handle, 'Color');
     if ~isNone(backgroundColor) && isVisible(handle)
         [m2t, col] = getColor(m2t, handle, backgroundColor, 'patch');
-        m2t = m2t_OptsAdd(m2t, 'axis background/.style', sprintf('{fill=%s}', col));
+        m2t = m2t_addAxisOption(m2t, 'axis background/.style', sprintf('{fill=%s}', col));
     end
 end
 % ==============================================================================
@@ -1381,20 +1381,20 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
     % left/bottom positions
     if isBoxOn
         if ~isXaxisBottom
-            m2t = m2t_OptsAdd(m2t, 'xticklabel pos','right');
+            m2t = m2t_addAxisOption(m2t, 'xticklabel pos','right');
         end
         if ~isYaxisLeft
-            m2t = m2t_OptsAdd(m2t, 'yticklabel pos','right');
+            m2t = m2t_addAxisOption(m2t, 'yticklabel pos','right');
         end
 
         % Position axes lines (strips the box)
     else
-        m2t = m2t_OptsAdd(m2t, 'axis x line*', xLoc);
-        m2t = m2t_OptsAdd(m2t, 'axis y line*', yLoc);
+        m2t = m2t_addAxisOption(m2t, 'axis x line*', xLoc);
+        m2t = m2t_addAxisOption(m2t, 'axis y line*', yLoc);
         if m2t.axesContainers{end}.is3D
             % There's no such attribute as 'ZAxisLocation'.
             % Instead, the default seems to be 'left'.
-            m2t = m2t_OptsAdd(m2t, 'axis z line*', 'left');
+            m2t = m2t_addAxisOption(m2t, 'axis z line*', 'left');
         end
     end
 end
@@ -1406,7 +1406,7 @@ function m2t = drawLegendOptionsOfAxes(m2t)
     end
 
     [m2t, key, legendOpts] = getLegendOpts(m2t, legendHandle);
-    m2t = m2t_OptsAdd(m2t, key, legendOpts);
+    m2t = m2t_addAxisOption(m2t, key, legendOpts);
 end
 % ==============================================================================
 function m2t = handleColorbar(m2t, handle)
@@ -2223,7 +2223,7 @@ function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
     if rowsCData > 1
 
         % Add the color map
-        m2t = m2t_OptsAdd(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap));
+        m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap));
 
         % Determine if mapping is direct or scaled
         CDataMapping = get(handle,'CDataMapping');
@@ -2350,7 +2350,7 @@ function m2t = jumpAtUnboundCoords(m2t, data)
     % See also pgfplots 1.12 manual section 4.5.13 "Interrupted Plots".
     if any(~isfinite(data(:)))
         m2t = needsPgfplotsVersion(m2t, [1 4]);
-        m2t = m2t_OptsAdd(m2t, 'unbounded coords', 'jump');
+        m2t = m2t_addAxisOption(m2t, 'unbounded coords', 'jump');
     end
 end
 % ==============================================================================
@@ -2372,7 +2372,7 @@ function [m2t, str] = drawImage(m2t, handle)
     end
 
     % Make sure that the axes are still visible above the image.
-    m2t = m2t_OptsAdd(m2t, 'axis on top');
+    m2t = m2t_addAxisOption(m2t, 'axis on top');
 end
 % ==============================================================================
 function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
@@ -2606,7 +2606,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
     else
         % Add colormap
         cmap = m2t.currentHandles.colormap;
-        m2t = m2t_OptsAdd(m2t, matlab2pgfplotsColormap(m2t, cmap));
+        m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, cmap));
 
         % Contour table in Matlab format
         plotOptions = opts_new();
@@ -3281,7 +3281,7 @@ function m2t = disableClippingInCurrentAxes(m2t, pos)
     yOutOfRange =          pos(2) < ylim(1) || pos(2) > ylim(2);
     zOutOfRange = is3D && (pos(3) < zlim(1) || pos(3) > zlim(2));
     if xOutOfRange || yOutOfRange || zOutOfRange
-        m2t = m2t_OptsAdd(m2t, 'clip', 'false');
+        m2t = m2t_addAxisOption(m2t, 'clip', 'false');
     end
 end
 % ==============================================================================
@@ -3662,7 +3662,7 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
     drawOptions = opts_add(drawOptions, 'scatter/use mapped color', ...
         ['{' opts_print(m2t, markerOptions, ',') '}']);
     % Add color map.
-    m2t = m2t_OptsAdd(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+    m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
 end
 % ==============================================================================
 function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData)
@@ -3788,7 +3788,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     % the default behaviour since Pgfplots v1.5).
     baseValue = get(h, 'BaseValue');
     if baseValue ~= 0.0
-        m2t = m2t_OptsAdd(m2t, 'log origin', 'infty');
+        m2t = m2t_addAxisOption(m2t, 'log origin', 'infty');
         %TODO: wait for pgfplots to implement other base values (see #438)
     end
 
@@ -3876,7 +3876,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
 
             if ~m2t.axesContainers{end}.barAddedAxisOption;
                 barWidth = getBarWidthInAbsolutUnits(h);
-                m2t = m2t_OptsAdd(m2t, 'bar width', formatDim(barWidth,''));
+                m2t = m2t_addAxisOption(m2t, 'bar width', formatDim(barWidth,''));
                 m2t.axesContainers{end}.barAddedAxisOption = true;
             end
 
@@ -3991,8 +3991,8 @@ function [m2t, str] = drawAreaSeries(m2t, h)
 
     if ~isfield(m2t, 'addedAreaOption') || isempty(m2t.addedAreaOption) || ~m2t.addedAreaOption
         % Add 'area style' to axes options.
-        m2t = m2t_OptsAdd(m2t, 'area style');
-        m2t = m2t_OptsAdd(m2t, 'stack plots', 'y');
+        m2t = m2t_addAxisOption(m2t, 'area style');
+        m2t = m2t_addAxisOption(m2t, 'stack plots', 'y');
         m2t.addedAreaOption = true;
     end
 
@@ -6415,7 +6415,8 @@ function str  = opts_print(m2t, opts, sep)
     end
     str = join(m2t, c, sep);
 end
-function m2t = m2t_OptsAdd(m2t, key, value)
+% ==============================================================================
+function m2t = m2t_addAxisOption(m2t, key, value)
     % Adds an option to the last axesContainer
     if ~exist('value','var')
         value = '';
