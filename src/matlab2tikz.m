@@ -3802,7 +3802,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     else
         barType = 'ybar';
     end
-    m2t = m2t_addAxisOption(m2t, barType);
+    m2t = m2t_addAxisOption(m2t, 'bar shift auto');
 
     % Get the draw options for the layout
     [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions);
