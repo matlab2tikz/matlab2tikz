@@ -714,11 +714,11 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
         % A composite object might nest handleAllChildren calls that can
         % modify the m2t.currentHandleHasLegend value. Re-instate the
         % legend status. For detailed explanations check getLegendEntries().
-        m2t               = hasLegendEntry(m2t,child);
-        [m2t, ref1, ref2] = addPlotyyReference(m2t, child);
-        legendInfo        = addLegendInformation(m2t, child);
-        % Add reference 2 BEFORE next plot to preserve color order
-        str               = join(m2t, {ref2, str, ref1, legendInfo}, '');
+        m2t                          = hasLegendEntry(m2t,child);
+        [m2t, legendLabel, labelRef] = addPlotyyReference(m2t, child);
+        legendInfo                   = addLegendInformation(m2t, child);
+        % Add labelRef BEFORE next plot to preserve color order
+        str = join(m2t, {labelRef, str, legendLabel, legendInfo}, '');
 
         % append the environment
         pgfEnvironments{envCounter} = str;
@@ -726,12 +726,12 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t, ref1, ref2] = addPlotyyReference(m2t, h)
+function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
     % Create labelled references to legend entries of the main plotyy axis
 
     % This ensures we are either on the main or secondary axis
-    ref1 = '';
-    ref2 = '';
+    label    = '';
+    labelRef = '';
     if ~isAxisPlotyy(m2t.currentHandles.gca)
         return
     end
@@ -743,20 +743,20 @@ function [m2t, ref1, ref2] = addPlotyyReference(m2t, h)
         % Label the plot to later reference it. Only legend entries on the main
         % plotyy axis will have a label
         labelNum = labelNum + 1;
-        ref1 = sprintf('\\label{plotyyref:leg%d};\n\n', labelNum);
+        label = sprintf('\\label{plotyyref:leg%d};\n\n', labelNum);
         m2t.PlotyyLabelNum = labelNum;
 
     elseif m2t.currentHandleHasLegend
         % We are on the secondary axis
-        refs        = cell(1, labelNum);
+        labelRef = cell(1, labelNum);
         % Create labelled references to legend entries of the main axis
         for ii = 1:labelNum
-            ref     = m2t.axesContainers{end}.PlotyyReferences(ii);
-            lString = getLegendString(m2t,ref);
-            refs{ii}= sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:leg%d}\\addlegendentry{%s};\n',...
-                              ii, lString);
+            ref         = m2t.axesContainers{end}.PlotyyReferences(ii);
+            lString     = getLegendString(m2t,ref);
+            labelRef{ii}= sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:leg%d}\\addlegendentry{%s};\n',...
+                                  ii, lString);
         end
-        ref2 = join(m2t, refs, '');
+        labelRef = join(m2t, labelRef, '');
 
         % Clear plotyy references. Ensures that references are created only once
         m2t.axesContainers{end}.PlotyyReferences = [];
