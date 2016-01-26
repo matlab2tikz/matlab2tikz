@@ -2856,7 +2856,8 @@ function cl = guessOctavePlotType(h)
 
         % quiver plots
         % TODO: maybe check for existence of `udata` and absence of `ldata`
-
+    elseif hasProperties(h, {'bargroup','barwidth', 'barlayout'}, {})
+        cl = 'specgraph.barseries';
         % unknown plot type
     else
         cl = 'unknown';
@@ -3801,6 +3802,9 @@ function [m2t, str] = drawBarseries(m2t, h)
     else
         barType = 'ybar';
     end
+    m2t = m2t_addAxisOption(m2t, barType);
+
+    % Get the draw options for the layout
     [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions);
 
     % Get the draw options for the bars
@@ -3869,8 +3873,11 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             % In case of numBars==2, this returns [-1/4, 1/4],
             % In case of numBars==3, this returns [-1/3, 0, 1/3],
             % and so forth.
-            assumedBarWidth = groupWidth/numBarSeries; % assumption
-            barShift        = (barSeriesId - 0.5) * assumedBarWidth - groupWidth/2;
+            % assumedBarWidth = groupWidth/numBarSeries; % assumption
+            % barShift        = (barSeriesId - 0.5) * assumedBarWidth - groupWidth/2;
+            % FIXME #785: The previous version of barshift lead to regressions
+            % Instead remove the calculation of barShift and add x/ybar to
+            % the axis.
 
             % From http://www.mathworks.com/help/techdoc/ref/bar.html:
             % bar(...,width) sets the relative bar width and controls the
@@ -3878,6 +3885,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             % you do not specify X, the bars within a group have a slight
             % separation. If width is 1, the bars within a group touch one
             % another. The value of width must be a scalar.
+            assumedBarWidth = groupWidth/numBarSeries; % assumption
             barWidth = getBarWidthInAbsolutUnits(h) * assumedBarWidth;
 
             % Bar type
@@ -3886,12 +3894,6 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             % Bar width
             drawOptions = opts_add(drawOptions, 'bar width', ...
                                  formatDim(barWidth, ''));
-            % Bar shift
-            if barShift ~= 0
-                drawOptions = opts_add(drawOptions, 'bar shift', ...
-                                 formatDim(barShift, ''));
-            end
-
         case 'stacked' % stacked plots
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
@@ -3933,7 +3935,9 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(h)
 
     else
         % In Octave, the bargroup is a replicated cell array. Pick first
-        bargroup = bargroup{1};
+        if iscell(bargroup)
+          bargroup = bargroup{1};
+        end
     end
 
     % Get bar series Id
