@@ -3875,9 +3875,10 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             % and so forth.
             % assumedBarWidth = groupWidth/numBarSeries; % assumption
             % barShift        = (barSeriesId - 0.5) * assumedBarWidth - groupWidth/2;
-            % FIXME #785: The previous version of barshift lead to regressions
+            % FIXME #785: The previous version of barshift lead to
+            % regressions, as the bars were stacked.
             % Instead remove the calculation of barShift and add x/ybar to
-            % the axis.
+            % the axis so that pgf determines it automatically.
 
             % From http://www.mathworks.com/help/techdoc/ref/bar.html:
             % bar(...,width) sets the relative bar width and controls the
