@@ -2305,6 +2305,7 @@ function drawOptions = getPatchShape(m2t, h, drawOptions, patchOptions)
             userInfo(m2t, '\nMake sure to load \\usepgfplotslibrary{patchplots} in the preamble.\n');
 
             % Default interpolated shader,not supported by polygon, to faceted
+            isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
             if ~isFaceColorFlat
                 % NOTE: check if pgfplots supports this (or specify version)
                 userInfo(m2t, '\nPgfplots does not support interpolation for polygons.\n Use patches with at most 4 vertices.\n');
