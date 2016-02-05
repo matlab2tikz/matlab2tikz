@@ -84,6 +84,7 @@ function figure2dot(filename, varargin)
             end
             label = addProperty(label, 'Handle', sprintf('%g', double(h)));
             label = addHGProperty(label, h, 'Title', '');
+            label = addHGProperty(label, h, 'Axes', []);
             label = addHGProperty(label, h, 'String', '');
             label = addHGProperty(label, h, 'Tag', '');
             label = addHGProperty(label, h, 'DisplayName', '');
@@ -124,6 +125,9 @@ function label = addHGProperty(label, h, propName, default)
         if numel(propValue) == 1 && ishghandle(propValue) && isprop(propValue, 'String')
             % dereference Titles, labels, ...
             propValue = get(propValue, 'String');
+        elseif ishghandle(propValue)
+            % dereference other HG objects to their raw handle value (double)
+            propValue = double(propValue);
         elseif iscell(propValue)
             propValue = ['{' m2tstrjoin(propValue,',') '}'];
         end
