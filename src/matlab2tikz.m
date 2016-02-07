@@ -3538,8 +3538,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         drawOptions = getScatterOptsRGB(m2t, drawOptions);
     else
         [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
-                           markOptions, tikzMarker, rawMarker.hasEdgeColor, ...
-                           rawMarker.hasFaceColor);
+                           markOptions, tikzMarker, rawMarker);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
@@ -3637,20 +3636,20 @@ function drawOptions = getScatterOptsRGB(m2t, drawOptions)
     % See e.g. http://tex.stackexchange.com/questions/197270 and #433
 end
 function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
-                                markOptions, tikzMarker, hasEdgeColor, hasFaceColor)
+                                markOptions, tikzMarker, rawMarker)
     % scatter plot where the colors are set using a color map
     markerOptions = opts_new();
     markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
     markerOptions = opts_add(markerOptions, 'mark options', ...
         ['{' opts_print(m2t, markOptions, ',') '}']);
 
-    if hasEdgeColor && hasFaceColor
-        [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
+    if rawMarker.hasEdgeColor && rawMarker.hasFaceColor
+        [m2t, ecolor] = getColor(m2t, h, rawMarker.EdgeColor, 'patch');
         markerOptions = opts_add(markerOptions, 'draw', ecolor);
     else
         markerOptions = opts_add(markerOptions, 'draw', 'mapped color');
     end
-    if hasFaceColor
+    if rawMarker.hasFaceColor
         markerOptions = opts_add(markerOptions, 'fill', 'mapped color');
     end
     drawOptions = opts_add(drawOptions, 'scatter');
