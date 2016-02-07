@@ -3514,14 +3514,11 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         cData = get(h, 'MarkerEdgeColor');
     end
 
-    matlabMarker = get(h, 'Marker');
-    markerFaceColor = get(h, 'MarkerFaceColor');
-    markerEdgeColor = get(h, 'MarkerEdgeColor');
-    hasFaceColor = ~isNone(markerFaceColor);
-    hasEdgeColor = ~isNone(markerEdgeColor);
+    rawMarker = getMarkerStruct(h);
+
     markOptions = opts_new();
-    [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, ...
-        markOptions, hasFaceColor);
+    [tikzMarker, markOptions] = translateMarker(m2t, rawMarker.style, ...
+        markOptions, rawMarker.hasFaceColor);
 
     constMarkerkSize = length(sData) == 1; % constant marker size
 
@@ -3530,7 +3527,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     if strcmpi(getEnvironment(), 'Octave')
         sData = sData.^2/2;
     end
-    sData = translateMarkerSize(m2t, matlabMarker, sqrt(sData)/2);
+    sData = translateMarkerSize(m2t, rawMarker.style, sqrt(sData)/2);
 
     drawOptions = opts_new();
     if length(cData) == 3
@@ -3541,7 +3538,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         drawOptions = getScatterOptsRGB(m2t, drawOptions);
     else
         [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
-                           markOptions, tikzMarker, hasEdgeColor, hasFaceColor);
+                           markOptions, tikzMarker, rawMarker.hasEdgeColor, ...
+                           rawMarker.hasFaceColor);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
@@ -3567,6 +3565,16 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     tabOpts  = opts_print(m2t, tableOptions, ',');
     str      = sprintf('\\%s[%s] plot table[%s]{%s};\n',...
                        env, drawOpts, tabOpts, table);
+end
+% ==============================================================================
+function marker = getMarkerStruct(h)
+    % gets marker-related options as a struct
+    marker              = struct();
+    marker.style        = get(h, 'Marker');
+    marker.FaceColor    = get(h, 'MarkerFaceColor');
+    marker.EdgeColor    = get(h, 'MarkerEdgeColor');
+    marker.hasFaceColor = ~isNone(markerFaceColor);
+    marker.hasEdgeColor = ~isNone(markerEdgeColor);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
