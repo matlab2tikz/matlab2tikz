@@ -3563,13 +3563,13 @@ end
 % ==============================================================================
 function marker = getMarkerStruct(m2t, h)
     % gets marker-related options as a struct
-    marker                       = struct();
-    marker.style                 = get(h, 'Marker');
-    marker.FaceColor             = get(h, 'MarkerFaceColor');
-    marker.EdgeColor             = get(h, 'MarkerEdgeColor');
-    marker.hasFaceColor          = ~isNone(marker.FaceColor);
-    marker.hasEdgeColor          = ~isNone(marker.EdgeColor);
-    [marker.tikz, marker.ptions] = translateMarker(m2t, marker.style, ...
+    marker                        = struct();
+    marker.style                  = get(h, 'Marker');
+    marker.FaceColor              = get(h, 'MarkerFaceColor');
+    marker.EdgeColor              = get(h, 'MarkerEdgeColor');
+    marker.hasFaceColor           = ~isNone(marker.FaceColor);
+    marker.hasEdgeColor           = ~isNone(marker.EdgeColor);
+    [marker.tikz, marker.options] = translateMarker(m2t, marker.style, ...
         opts_new(), marker.hasFaceColor);
 end
 % ==============================================================================
