@@ -949,8 +949,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         end
 
         if ~isempty(gridOpts)
-            gridOptions = opts_print(m2t, gridOpts, ',');
-            options = opts_add(options, 'grid style', ['{' gridOptions '}']);
+            options = opts_addOpts(m2t, options, 'grid style', gridOpts);
         end
     end
 
@@ -980,8 +979,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         end
 
         if ~isempty(minorGridOpts)
-            minorGridOptions = opts_print(m2t, minorGridOpts, ',');
-            options = opts_add(options, 'minor grid style', ['{' minorGridOptions '}']);
+            options = opts_addOpts(m2t, options, 'minor grid style', minorGridOpts);
         end
     end
 
@@ -1364,8 +1362,7 @@ function [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelKind, tikzKeywor
             style = opts_add(style, 'align', 'center');
         end
         if ~isempty(style)
-            opts = opts_add(opts, [tikzKeyword ' style'], ...
-                   sprintf('{%s}', opts_print(m2t, style, ',')));
+            opts = opts_addOpts(m2t, opts, [tikzKeyword ' style'], style);
         end
         str = join(m2t, str, '\\[1ex]');
         opts =  opts_add(opts, tikzKeyword, sprintf('{%s}', str));
@@ -1929,10 +1926,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         end
 
         % get the marker color right
-        markerInfo = getMarkerInfo(m2t, h);
-
-        markerInfo.options = opts_merge(markOptions, markerInfo.options);
-        %TODO: change markOptions to markerInfo.options (will change hashes!)
+        markerInfo = getMarkerInfo(m2t, h, markOptions);
 
         [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'fill', markerInfo.FaceColor);
 
@@ -1944,8 +1938,8 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
 
         if ~isempty(markOptions)
-            mo = opts_print(m2t, markerInfo.options, ',');
-            drawOptions = opts_add(drawOptions, 'mark options', ['{' mo '}']);
+            drawOptions = opts_addOpts(m2t, drawOptions, 'mark options', ...
+                                       markerInfo.options);
         end
     end
 end
@@ -3561,8 +3555,11 @@ function [m2t, str] = drawScatterPlot(m2t, h)
                        env, drawOpts, tabOpts, table);
 end
 % ==============================================================================
-function marker = getMarkerInfo(m2t, h)
+function marker = getMarkerInfo(m2t, h, markOptions)
     % gets marker-related options as a struct
+    if ~exist('markOptions','var') || isempty(markOptions)
+        markOptions = opts_new();
+    end
     marker                        = struct();
     marker.style                  = get(h, 'Marker');
     marker.FaceColor              = get(h, 'MarkerFaceColor');
@@ -3570,7 +3567,7 @@ function marker = getMarkerInfo(m2t, h)
     marker.hasFaceColor           = ~isNone(marker.FaceColor);
     marker.hasEdgeColor           = ~isNone(marker.EdgeColor);
     [marker.tikz, marker.options] = translateMarker(m2t, marker.style, ...
-        opts_new(), marker.hasFaceColor);
+                                            markOptions, marker.hasFaceColor);
 end
 % ==============================================================================
 function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
@@ -3635,8 +3632,8 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, marker
     % scatter plot where the colors are set using a color map
     markerOptions = opts_new();
     markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
-    markerOptions = opts_add(markerOptions, 'mark options', ...
-        ['{' opts_print(m2t, markerInfo.options , ',') '}']);
+    markerOptions = opts_addOpts(m2t, markerOptions, 'mark options', ...
+                                 markerInfo.options);
 
     if markerInfo.hasEdgeColor && markerInfo.hasFaceColor
         [m2t, ecolor] = getColor(m2t, h, markerInfo.EdgeColor, 'patch');
@@ -3650,8 +3647,8 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, marker
     drawOptions = opts_add(drawOptions, 'scatter');
     drawOptions = opts_add(drawOptions, 'only marks');
     drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
-    drawOptions = opts_add(drawOptions, 'scatter/use mapped color', ...
-        ['{' opts_print(m2t, markerOptions, ',') '}']);
+    drawOptions = opts_addOpts(m2t, drawOptions, 'scatter/use mapped color', ...
+                               markerOptions);
     % Add color map.
     m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
 end
@@ -4122,8 +4119,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         quiverOptions = opts_add(quiverOptions, 'every arrow/.append style', ...
                               ['{' headStyle '}']);
     end
-    quiverOpts  = opts_print(m2t, quiverOptions, ',');
-    plotOptions = opts_add(plotOptions,'quiver', ['{', quiverOpts, '}']);
+    plotOptions = opts_addOpts(m2t, plotOptions, 'quiver', quiverOptions);
 
     [m2t, table, tableOptions] = makeTable(m2t, variables, data);
 
@@ -4536,9 +4532,8 @@ function axisOptions = getColorbarOptions(m2t, handle)
     axisOptions = opts_add(axisOptions, strtrim(['colorbar ', cbarTemplate]));
 
     if ~isempty(cbarStyleOptions)
-        axisOptions = opts_add(axisOptions, ...
-            'colorbar style', ...
-            ['{' opts_print(m2t, cbarStyleOptions, ',') '}']);
+        axisOptions = opts_addOpts(m2t, axisOptions, ...
+                                   'colorbar style', cbarStyleOptions);
     end
 
     % do _not_ handle colorbar's children
@@ -4807,6 +4802,7 @@ function [m2t, key, legendOpts] = getLegendOpts(m2t, handle)
     key = 'legend style';
     legendOpts = opts_print(m2t, lStyle, ',');
     legendOpts = ['{', legendOpts, '}'];
+    %TODO: just pass out the `lStyle` instead of `legendOpts`
 end
 % ==============================================================================
 function [lStyle] = getLegendOrientation(m2t, handle, lStyle)
