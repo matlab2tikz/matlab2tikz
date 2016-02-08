@@ -3514,6 +3514,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
 
     markerInfo = getMarkerInfo(m2t, h);
+    %TODO: check against getMarkerOptions() for duplicated code
 
     constMarkerkSize = length(sData) == 1; % constant marker size
 
