@@ -949,7 +949,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         end
 
         if ~isempty(gridOpts)
-            options = opts_addOpts(options, 'grid style', gridOpts);
+            options = opts_addSubOpts(options, 'grid style', gridOpts);
         end
     end
 
@@ -979,7 +979,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         end
 
         if ~isempty(minorGridOpts)
-            options = opts_addOpts(options, 'minor grid style', minorGridOpts);
+            options = opts_addSubOpts(options, 'minor grid style', minorGridOpts);
         end
     end
 
@@ -1362,7 +1362,7 @@ function [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelKind, tikzKeywor
             style = opts_add(style, 'align', 'center');
         end
         if ~isempty(style)
-            opts = opts_addOpts(opts, [tikzKeyword ' style'], style);
+            opts = opts_addSubOpts(opts, [tikzKeyword ' style'], style);
         end
         str = join(m2t, str, '\\[1ex]');
         opts =  opts_add(opts, tikzKeyword, sprintf('{%s}', str));
@@ -1938,7 +1938,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
 
         if ~isempty(markOptions)
-            drawOptions = opts_addOpts(drawOptions, 'mark options', ...
+            drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
                                        markerInfo.options);
         end
     end
@@ -3581,7 +3581,7 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
     if constMarkerkSize
         drawOptions = opts_add(drawOptions, 'only marks');
         drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
-        drawOptions = opts_addOpts(drawOptions, 'mark options', ...
+        drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
                                    markerInfo.options);
         drawOptions = opts_add(drawOptions, 'mark size', ...
             sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff`
@@ -3594,7 +3594,7 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
     else % if changing marker size but same color on all marks
         markerOptions = opts_new();
         markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
-        markerOptions = opts_addOpts(markerOptions, 'mark options', ...
+        markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
                                      markerInfo.options);
         if hasEdgeColor
             markerOptions = opts_add(markerOptions, 'draw', ecolor);
@@ -3609,14 +3609,14 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
         drawOptions = opts_add(drawOptions, 'only marks');
         drawOptions = opts_add(drawOptions, 'color', xcolor);
         drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
-        drawOptions = opts_addOpts(drawOptions, 'mark options', ...
+        drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
                                    markerInfo.options);
 
         if ~hasFaceColor
             drawOptions = opts_add(drawOptions, ...
                 'scatter/use mapped color', xcolor);
         else
-            drawOptions = opts_addOpts(drawOptions, ...
+            drawOptions = opts_addSubOpts(drawOptions, ...
                 'scatter/use mapped color', markerOptions);
         end
     end
@@ -3632,7 +3632,7 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, marker
     % scatter plot where the colors are set using a color map
     markerOptions = opts_new();
     markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
-    markerOptions = opts_addOpts(markerOptions, 'mark options', ...
+    markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
                                  markerInfo.options);
 
     if markerInfo.hasEdgeColor && markerInfo.hasFaceColor
@@ -3647,7 +3647,7 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, marker
     drawOptions = opts_add(drawOptions, 'scatter');
     drawOptions = opts_add(drawOptions, 'only marks');
     drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
-    drawOptions = opts_addOpts(drawOptions, 'scatter/use mapped color', ...
+    drawOptions = opts_addSubOpts(drawOptions, 'scatter/use mapped color', ...
                                markerOptions);
     % Add color map.
     m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
@@ -4119,7 +4119,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         quiverOptions = opts_add(quiverOptions, 'every arrow/.append style', ...
                               ['{' headStyle '}']);
     end
-    plotOptions = opts_addOpts(plotOptions, 'quiver', quiverOptions);
+    plotOptions = opts_addSubOpts(plotOptions, 'quiver', quiverOptions);
 
     [m2t, table, tableOptions] = makeTable(m2t, variables, data);
 
@@ -4532,7 +4532,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
     axisOptions = opts_add(axisOptions, strtrim(['colorbar ', cbarTemplate]));
 
     if ~isempty(cbarStyleOptions)
-        axisOptions = opts_addOpts(axisOptions, ...
+        axisOptions = opts_addSubOpts(axisOptions, ...
                                    'colorbar style', cbarStyleOptions);
     end
 
@@ -6327,7 +6327,7 @@ function opts = opts_add(opts, key, value)
     end
     opts = opts_append(opts, key, value);
 end
-function opts = opts_addOpts(opts, key, subOpts)
+function opts = opts_addSubOpts(opts, key, subOpts)
     % add a key={Opts} pair to an options array
     formatted = ['{' opts_print(subOpts) '}'];
     opts      = opts_add(opts, key, formatted);
