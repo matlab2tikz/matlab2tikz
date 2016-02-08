@@ -6397,7 +6397,7 @@ end
 function str = opts_print(opts, sep)
     % pretty print an options array
     if ~exist('sep','var') || ~ischar(sep)
-        sep = ',';
+        sep = ','; %TODO: perhaps change this to ', ' (beware of the hashes!)
     end
     nOpts = size(opts,1);
     c = cell(1,nOpts);
