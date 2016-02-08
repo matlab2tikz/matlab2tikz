@@ -1929,23 +1929,22 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         end
 
         % get the marker color right
-        markerFaceColor = get(h, 'markerfaceColor');
-        markerEdgeColor = get(h, 'markeredgeColor');
+        markerInfo = getMarkerInfo(m2t, h);
 
-        [tikzMarker, markOptions] = translateMarker(m2t, marker, ...
-                                        markOptions, ~isNone(markerFaceColor));
+        markerInfo.options = opts_merge(markOptions, markerInfo.options);
+        %TODO: change markOptions to markerInfo.options (will change hashes!)
 
-        [m2t, markOptions] = setColor(m2t, h, markOptions, 'fill', markerFaceColor);
+        [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'fill', markerInfo.FaceColor);
 
-        if ~strcmpi(markerEdgeColor,'auto')
-            [m2t, markOptions] = setColor(m2t, h, markOptions, 'draw', markerEdgeColor);
+        if ~strcmpi(markerInfo.EdgeColor,'auto')
+            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'draw', markerInfo.EdgeColor);
         end
 
         % add it all to drawOptions
-        drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
+        drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
 
         if ~isempty(markOptions)
-            mo = opts_print(m2t, markOptions, ',');
+            mo = opts_print(m2t, markerInfo.options, ',');
             drawOptions = opts_add(drawOptions, 'mark options', ['{' mo '}']);
         end
     end
