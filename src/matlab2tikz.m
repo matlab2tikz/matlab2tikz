@@ -557,7 +557,7 @@ function str = generateColorDefinitions(names, specs, colorFormat)
             colorDef{k}= sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
                                   names{k}, specs{k});
         end
-        str = strjoin([colorDef, sprintf('%%\n')], '');
+        str = m2tstrjoin([colorDef, sprintf('%%\n')], '');
     end
 end
 % ==============================================================================
@@ -949,8 +949,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         end
 
         if ~isempty(gridOpts)
-            gridOptions = opts_print(m2t, gridOpts, ',');
-            options = opts_add(options, 'grid style', ['{' gridOptions '}']);
+            options = opts_addSubOpts(options, 'grid style', gridOpts);
         end
     end
 
@@ -980,8 +979,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         end
 
         if ~isempty(minorGridOpts)
-            minorGridOptions = opts_print(m2t, minorGridOpts, ',');
-            options = opts_add(options, 'minor grid style', ['{' minorGridOptions '}']);
+            options = opts_addSubOpts(options, 'minor grid style', minorGridOpts);
         end
     end
 
@@ -1364,8 +1362,7 @@ function [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelKind, tikzKeywor
             style = opts_add(style, 'align', 'center');
         end
         if ~isempty(style)
-            opts = opts_add(opts, [tikzKeyword ' style'], ...
-                   sprintf('{%s}', opts_print(m2t, style, ',')));
+            opts = opts_addSubOpts(opts, [tikzKeyword ' style'], style);
         end
         str = join(m2t, str, '\\[1ex]');
         opts =  opts_add(opts, tikzKeyword, sprintf('{%s}', str));
@@ -1720,7 +1717,7 @@ function [m2t, str] = specialDrawZplaneUnitCircle(m2t, drawOptions)
     % Draw unit circle and axes.
 
     % TODO Don't hardcode "10", but extract from parent axes of |h|
-    opts = opts_print(m2t, drawOptions, ',');
+    opts = opts_print(drawOptions);
     str  = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n',  opts), ...
             sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
             sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
@@ -1749,8 +1746,8 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
         [m2t, table, tableOptions] = makeTable(m2t, {'','',''}, data);
 
         % Print out
-        drawOpts = opts_print(m2t, drawOptions,  ',');
-        tabOpts  = opts_print(m2t, tableOptions, ',');
+        drawOpts = opts_print(drawOptions);
+        tabOpts  = opts_print(tableOptions);
         str      = sprintf('\\addplot3 [%s]\n table[%s] {%s};\n ', ...
                            drawOpts, tabOpts, table);
     else
@@ -1767,9 +1764,9 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
             if ~m2t.currentHandleHasLegend || k < length(dataCell)
                 % No legend entry found. Don't include plot in legend.
                 hiddenDrawOptions = maybeShowInLegend(false, drawOptions);
-                opts = opts_print(m2t, hiddenDrawOptions, ',');
+                opts = opts_print(hiddenDrawOptions);
             else
-                opts = opts_print(m2t, drawOptions, ',');
+                opts = opts_print(drawOptions);
             end
 
             [m2t, Part] = plotLine2d(m2t, opts, dataCell{k});
@@ -1837,7 +1834,7 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
     end
 
     % Print out
-    tabOpts = opts_print(m2t, tableOptions, ', ');
+    tabOpts = opts_print(tableOptions, ', '); %TODO: standardize comma
     str     = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
                       opts, errorBar, tabOpts, table);
 end
@@ -1929,24 +1926,20 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         end
 
         % get the marker color right
-        markerFaceColor = get(h, 'markerfaceColor');
-        markerEdgeColor = get(h, 'markeredgeColor');
+        markerInfo = getMarkerInfo(m2t, h, markOptions);
 
-        [tikzMarker, markOptions] = translateMarker(m2t, marker, ...
-                                        markOptions, ~isNone(markerFaceColor));
+        [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'fill', markerInfo.FaceColor);
 
-        [m2t, markOptions] = setColor(m2t, h, markOptions, 'fill', markerFaceColor);
-
-        if ~strcmpi(markerEdgeColor,'auto')
-            [m2t, markOptions] = setColor(m2t, h, markOptions, 'draw', markerEdgeColor);
+        if ~strcmpi(markerInfo.EdgeColor,'auto')
+            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'draw', markerInfo.EdgeColor);
         end
 
         % add it all to drawOptions
-        drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
+        drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
 
         if ~isempty(markOptions)
-            mo = opts_print(m2t, markOptions, ',');
-            drawOptions = opts_add(drawOptions, 'mark options', ['{' mo '}']);
+            drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
+                                       markerInfo.options);
         end
     end
 end
@@ -2190,8 +2183,8 @@ function [m2t, str] = drawPatch(m2t, handle)
     tableOptions = opts_merge(tableOptions, verticesTableOptions);
 
     % Print out
-    drawOpts = opts_print(m2t, drawOptions,  ',');
-    tabOpts  = opts_print(m2t, tableOptions, ', ');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions, ', '); %TODO: standardize comma
     str = sprintf('\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
                   plotCmd, drawOpts, tabOpts, verticesTable, cycle);
 end
@@ -2429,7 +2422,7 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     opts = opts_add(opts, 'ymax', sprintf(m2t.ff, yData(end) + yw/2));
 
     % Print out
-    drawOpts = opts_print(m2t, opts,  ',');
+    drawOpts = opts_print(opts);
     str      = sprintf('\\addplot [forget plot] graphics [%s] {%s};\n', ...
                        drawOpts, pngReferencePath);
 
@@ -2611,8 +2604,8 @@ function [m2t, str] = drawContourHG2(m2t, h)
         [m2t, table, tableOptions] = makeTable(m2t, {'',''}, contours);
 
         % Print out
-        plotOpts = opts_print(m2t, plotOptions,  ', ');
-        tabOpts  = opts_print(m2t, tableOptions, ',');
+        plotOpts = opts_print(plotOptions,  ', '); %TODO: standardize comma
+        tabOpts  = opts_print(tableOptions);
         str      = sprintf('\\addplot[%s] table[%s] {%%\n%s};\n', ...
                            plotOpts, tabOpts, table);
     end
@@ -2737,8 +2730,8 @@ function [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows)
         [m2t, table, tableOptions] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
 
         % Print out
-        drawOpts = opts_print(m2t, drawOptions,  ',');
-        tabOpts  = opts_print(m2t, tableOptions, ',');
+        drawOpts = opts_print(drawOptions);
+        tabOpts  = opts_print(tableOptions);
         str      = sprintf('%s\\addplot[%s] table[%s] {%%\n%s};\n', ...
                            str, drawOpts, tabOpts, table);
     end
@@ -3026,12 +3019,12 @@ function [m2t,str] = drawSurface(m2t, h)
     opts = opts_add(opts,'mesh/rows',sprintf('%d', numrows));
 
     % Print the addplot options
-    str = sprintf('\n\\%s[%%\n%s,\n%s]', plotCmd, s.plotType, opts_print(m2t, opts, ','));
+    str = sprintf('\n\\%s[%%\n%s,\n%s]', plotCmd, s.plotType, opts_print(opts));
 
     % Print the data
     [m2t, table, tabOptsExtra] = makeTable(m2t, columnNames, data);
     tableOptions = opts_merge(tabOptsExtra, tableOptions);
-    tabOpts = opts_print(m2t, tableOptions, ', ');
+    tabOpts = opts_print(tableOptions, ', '); %TODO: standardize comma
 
     % Here is where everything is put together
     str = sprintf('%s\ntable[%s] {%%\n%s};\n', ...
@@ -3151,7 +3144,7 @@ function [m2t, str] = drawText(m2t, handle)
     % plot the thing
     [m2t, posString] = getPositionOfText(m2t, handle);
 
-    styleOpts = opts_print(m2t, style, ', ');
+    styleOpts = opts_print(style, ', '); %TODO: standardize comma
     str       = sprintf('\\node[%s]\nat %s {%s};\n', ...
                         styleOpts, posString, content);
 end
@@ -3295,7 +3288,7 @@ function [m2t, str] = drawRectangle(m2t, h)
     pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % plot the thing
-    lineOpts = opts_print(m2t, lineOptions, ', ');
+    lineOpts = opts_print(lineOptions, ', '); %TODO: standardize comma
     str = sprintf(['\\draw[%s] (axis cs:',m2t.ff,',',m2t.ff, ')', ...
                    ' rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
                    lineOpts, pos.left, pos.bottom, pos.right, pos.top);
@@ -3514,14 +3507,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         cData = get(h, 'MarkerEdgeColor');
     end
 
-    matlabMarker = get(h, 'Marker');
-    markerFaceColor = get(h, 'MarkerFaceColor');
-    markerEdgeColor = get(h, 'MarkerEdgeColor');
-    hasFaceColor = ~isNone(markerFaceColor);
-    hasEdgeColor = ~isNone(markerEdgeColor);
-    markOptions = opts_new();
-    [tikzMarker, markOptions] = translateMarker(m2t, matlabMarker, ...
-        markOptions, hasFaceColor);
+    markerInfo = getMarkerInfo(m2t, h);
+    %TODO: check against getMarkerOptions() for duplicated code
 
     constMarkerkSize = length(sData) == 1; % constant marker size
 
@@ -3530,18 +3517,17 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     if strcmpi(getEnvironment(), 'Octave')
         sData = sData.^2/2;
     end
-    sData = translateMarkerSize(m2t, matlabMarker, sqrt(sData)/2);
+    sData = translateMarkerSize(m2t, markerInfo.style, sqrt(sData)/2);
 
     drawOptions = opts_new();
     if length(cData) == 3
         [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
-                                                markOptions, tikzMarker, ...
-                                                cData, sData, constMarkerkSize);
+                                                markerInfo, cData, sData, ...
+                                                constMarkerkSize);
     elseif size(cData,2) == 3
         drawOptions = getScatterOptsRGB(m2t, drawOptions);
     else
-        [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
-                           markOptions, tikzMarker, hasEdgeColor, hasFaceColor);
+        [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, markerInfo);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
@@ -3563,14 +3549,29 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     tableOptions = opts_merge(tableOptions, metaPart);
 
     % Print
-    drawOpts = opts_print(m2t, drawOptions,  ',');
-    tabOpts  = opts_print(m2t, tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\%s[%s] plot table[%s]{%s};\n',...
                        env, drawOpts, tabOpts, table);
 end
 % ==============================================================================
+function marker = getMarkerInfo(m2t, h, markOptions)
+    % gets marker-related options as a struct
+    if ~exist('markOptions','var') || isempty(markOptions)
+        markOptions = opts_new();
+    end
+    marker                        = struct();
+    marker.style                  = get(h, 'Marker');
+    marker.FaceColor              = get(h, 'MarkerFaceColor');
+    marker.EdgeColor              = get(h, 'MarkerEdgeColor');
+    marker.hasFaceColor           = ~isNone(marker.FaceColor);
+    marker.hasEdgeColor           = ~isNone(marker.EdgeColor);
+    [marker.tikz, marker.options] = translateMarker(m2t, marker.style, ...
+                                            markOptions, marker.hasFaceColor);
+end
+% ==============================================================================
 function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
-                            markOptions, tikzMarker, cData, sData, constMarkerkSize)
+                            markerInfo, cData, sData, constMarkerkSize)
     % gets options specific to scatter plots with a single color
     % No special treatment for the colors or markers are needed.
     % All markers have the same color.
@@ -3579,9 +3580,9 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
 
     if constMarkerkSize
         drawOptions = opts_add(drawOptions, 'only marks');
-        drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
-        drawOptions = opts_add(drawOptions, 'mark options', ...
-            ['{' opts_print(m2t, markOptions, ',') '}']);
+        drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
+        drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
+                                   markerInfo.options);
         drawOptions = opts_add(drawOptions, 'mark size', ...
             sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff`
         if hasFaceColor && hasEdgeColor
@@ -3592,9 +3593,9 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
         end
     else % if changing marker size but same color on all marks
         markerOptions = opts_new();
-        markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
-        markerOptions = opts_add(markerOptions, 'mark options', ...
-            ['{' opts_print(m2t, markOptions, ',') '}']);
+        markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
+        markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
+                                     markerInfo.options);
         if hasEdgeColor
             markerOptions = opts_add(markerOptions, 'draw', ecolor);
         else
@@ -3607,17 +3608,16 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
         drawOptions = opts_add(drawOptions, 'scatter');
         drawOptions = opts_add(drawOptions, 'only marks');
         drawOptions = opts_add(drawOptions, 'color', xcolor);
-        drawOptions = opts_add(drawOptions, 'mark', tikzMarker);
-        drawOptions = opts_add(drawOptions, 'mark options', ...
-            ['{' opts_print(m2t, markOptions, ',') '}']);
+        drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
+        drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
+                                   markerInfo.options);
 
         if ~hasFaceColor
             drawOptions = opts_add(drawOptions, ...
                 'scatter/use mapped color', xcolor);
         else
-            drawOptions = opts_add(drawOptions, ...
-                'scatter/use mapped color', ...
-                ['{' opts_print(m2t, markerOptions,',') '}']);
+            drawOptions = opts_addSubOpts(drawOptions, ...
+                'scatter/use mapped color', markerOptions);
         end
     end
 end
@@ -3628,28 +3628,27 @@ function drawOptions = getScatterOptsRGB(m2t, drawOptions)
     % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
     % See e.g. http://tex.stackexchange.com/questions/197270 and #433
 end
-function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
-                                markOptions, tikzMarker, hasEdgeColor, hasFaceColor)
+function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, markerInfo)
     % scatter plot where the colors are set using a color map
     markerOptions = opts_new();
-    markerOptions = opts_add(markerOptions, 'mark', tikzMarker);
-    markerOptions = opts_add(markerOptions, 'mark options', ...
-        ['{' opts_print(m2t, markOptions, ',') '}']);
+    markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
+    markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
+                                 markerInfo.options);
 
-    if hasEdgeColor && hasFaceColor
-        [m2t, ecolor] = getColor(m2t, h, markerEdgeColor,'patch');
+    if markerInfo.hasEdgeColor && markerInfo.hasFaceColor
+        [m2t, ecolor] = getColor(m2t, h, markerInfo.EdgeColor, 'patch');
         markerOptions = opts_add(markerOptions, 'draw', ecolor);
     else
         markerOptions = opts_add(markerOptions, 'draw', 'mapped color');
     end
-    if hasFaceColor
+    if markerInfo.hasFaceColor
         markerOptions = opts_add(markerOptions, 'fill', 'mapped color');
     end
     drawOptions = opts_add(drawOptions, 'scatter');
     drawOptions = opts_add(drawOptions, 'only marks');
     drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
-    drawOptions = opts_add(drawOptions, 'scatter/use mapped color', ...
-        ['{' opts_print(m2t, markerOptions, ',') '}']);
+    drawOptions = opts_addSubOpts(drawOptions, 'scatter/use mapped color', ...
+                               markerOptions);
     % Add color map.
     m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
 end
@@ -3740,8 +3739,8 @@ function [m2t, str] = drawHistogram(m2t, h)
     [m2t, table, tableOptions] = makeTable(m2t, {'x','y'},data);
 
     % Print out
-    drawOpts = opts_print(m2t, drawOptions,  ',');
-    tabOpts  = opts_print(m2t, tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 end
@@ -3792,8 +3791,8 @@ function [m2t, str] = drawBarseries(m2t, h)
     [m2t, table, tableOptions] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
 
     % Print out
-    drawOpts = opts_print(m2t, drawOptions,  ',');
-    tabOpts  = opts_print(m2t, tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 
@@ -3955,8 +3954,8 @@ function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
     [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
 
     % Print out
-    drawOpts = opts_print(m2t, drawOptions,  ',');
-    tabOpts  = opts_print(m2t, tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 end
@@ -3994,8 +3993,8 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
 
     % Print out
-    drawOpts = opts_print(m2t, drawOptions,  ',');
-    tabOpts  = opts_print(m2t, tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] plot table[%s]{%s}\n\\closedcycle;\n',...
                        drawOpts, tabOpts, table);
     %TODO: shouldn't this be "\addplot[] table[] {}" instead?
@@ -4039,8 +4038,8 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
 
     % Print out
-    drawOpts = opts_print(m2t, drawOptions,  ',');
-    tabOpts  = opts_print(m2t, tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 end
@@ -4116,18 +4115,17 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
                                  '{max(0.01,\pgfplotspointmetatransformed/1000)}');
         arrowHeadOpts = opts_add(arrowHeadOpts, 'scale width', ...
                                  '{0.5*max(0.01,\pgfplotspointmetatransformed/1000)}');
-        headStyle     = ['-{Straight Barb[' opts_print(m2t, arrowHeadOpts, ',') ']}'];
+        headStyle     = ['-{Straight Barb[' opts_print(arrowHeadOpts) ']}'];
         quiverOptions = opts_add(quiverOptions, 'every arrow/.append style', ...
                               ['{' headStyle '}']);
     end
-    quiverOpts  = opts_print(m2t, quiverOptions, ',');
-    plotOptions = opts_add(plotOptions,'quiver', ['{', quiverOpts, '}']);
+    plotOptions = opts_addSubOpts(plotOptions, 'quiver', quiverOptions);
 
     [m2t, table, tableOptions] = makeTable(m2t, variables, data);
 
     % Print out
-    plotOpts = opts_print(m2t, plotOptions,  ',');
-    tabOpts  = opts_print(m2t, tableOptions, ',');
+    plotOpts = opts_print(plotOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\%s[%s]\n table[%s] {%s};\n', ...
                        name, plotOpts, tabOpts, table);
 end
@@ -4224,7 +4222,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
     end
     drawOptions = opts_merge(drawOptions, lineOptions);
 
-    opt = opts_print(m2t, drawOptions, ',');
+    opt = opts_print(drawOptions);
 
     str = sprintf('%s [%s] (axis cs:%g,%g) ellipse [x radius=%g, y radius=%g];\n', ...
         drawCommand, opt, center, radius);
@@ -4534,9 +4532,8 @@ function axisOptions = getColorbarOptions(m2t, handle)
     axisOptions = opts_add(axisOptions, strtrim(['colorbar ', cbarTemplate]));
 
     if ~isempty(cbarStyleOptions)
-        axisOptions = opts_add(axisOptions, ...
-            'colorbar style', ...
-            ['{' opts_print(m2t, cbarStyleOptions, ',') '}']);
+        axisOptions = opts_addSubOpts(axisOptions, ...
+                                   'colorbar style', cbarStyleOptions);
     end
 
     % do _not_ handle colorbar's children
@@ -4803,8 +4800,9 @@ function [m2t, key, legendOpts] = getLegendOpts(m2t, handle)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     key = 'legend style';
-    legendOpts = opts_print(m2t, lStyle, ',');
+    legendOpts = opts_print(lStyle);
     legendOpts = ['{', legendOpts, '}'];
+    %TODO: just pass out the `lStyle` instead of `legendOpts`
 end
 % ==============================================================================
 function [lStyle] = getLegendOrientation(m2t, handle, lStyle)
@@ -5726,7 +5724,7 @@ function printAll(m2t, env, fid)
         fprintf(fid, '\\begin{%s}\n', env.name);
     else
         fprintf(fid, '\\begin{%s}[%%\n%s\n]\n', env.name, ...
-                opts_print(m2t, env.options, sprintf(',\n')));
+                opts_print(env.options, sprintf(',\n'))); %TODO: standardize comma
     end
 
     for item = env.content
@@ -6329,6 +6327,11 @@ function opts = opts_add(opts, key, value)
     end
     opts = opts_append(opts, key, value);
 end
+function opts = opts_addSubOpts(opts, key, subOpts)
+    % add a key={Opts} pair to an options array
+    formatted = ['{' opts_print(subOpts) '}'];
+    opts      = opts_add(opts, key, formatted);
+end
 function bool = opts_has(opts, key)
     % returns true if the options array contains the key
     bool = ~isempty(opts) && ismember(key, opts(:,1));
@@ -6391,8 +6394,11 @@ function opts = opts_merge(opts, varargin)
         end
     end
 end
-function str  = opts_print(m2t, opts, sep)
+function str = opts_print(opts, sep)
     % pretty print an options array
+    if ~exist('sep','var') || ~ischar(sep)
+        sep = ','; %TODO: perhaps change this to ', ' (beware of the hashes!)
+    end
     nOpts = size(opts,1);
     c = cell(1,nOpts);
     for k = 1:nOpts
@@ -6402,7 +6408,7 @@ function str  = opts_print(m2t, opts, sep)
             c{k} = sprintf('%s=%s', opts{k,1}, opts{k,2});
         end
     end
-    str = join(m2t, c, sep);
+    str = m2tstrjoin(c, sep);
 end
 % ==============================================================================
 function m2t = m2t_addAxisOption(m2t, key, value)
