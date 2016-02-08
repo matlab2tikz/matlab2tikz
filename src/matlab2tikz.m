@@ -1717,7 +1717,7 @@ function [m2t, str] = specialDrawZplaneUnitCircle(m2t, drawOptions)
     % Draw unit circle and axes.
 
     % TODO Don't hardcode "10", but extract from parent axes of |h|
-    opts = opts_print(drawOptions, ',');
+    opts = opts_print(drawOptions);
     str  = [sprintf('\\draw[%s] (axis cs:0,0) circle[radius=1];\n',  opts), ...
             sprintf('\\draw[%s] (axis cs:-10,0)--(axis cs:10,0);\n', opts), ...
             sprintf('\\draw[%s] (axis cs:0,-10)--(axis cs:0,10);\n', opts)];
@@ -1746,8 +1746,8 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
         [m2t, table, tableOptions] = makeTable(m2t, {'','',''}, data);
 
         % Print out
-        drawOpts = opts_print(drawOptions,  ',');
-        tabOpts  = opts_print(tableOptions, ',');
+        drawOpts = opts_print(drawOptions);
+        tabOpts  = opts_print(tableOptions);
         str      = sprintf('\\addplot3 [%s]\n table[%s] {%s};\n ', ...
                            drawOpts, tabOpts, table);
     else
@@ -1764,9 +1764,9 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
             if ~m2t.currentHandleHasLegend || k < length(dataCell)
                 % No legend entry found. Don't include plot in legend.
                 hiddenDrawOptions = maybeShowInLegend(false, drawOptions);
-                opts = opts_print(hiddenDrawOptions, ',');
+                opts = opts_print(hiddenDrawOptions);
             else
-                opts = opts_print(drawOptions, ',');
+                opts = opts_print(drawOptions);
             end
 
             [m2t, Part] = plotLine2d(m2t, opts, dataCell{k});
@@ -1834,7 +1834,7 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
     end
 
     % Print out
-    tabOpts = opts_print(tableOptions, ', ');
+    tabOpts = opts_print(tableOptions, ', '); %TODO: standardize comma
     str     = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
                       opts, errorBar, tabOpts, table);
 end
@@ -2183,8 +2183,8 @@ function [m2t, str] = drawPatch(m2t, handle)
     tableOptions = opts_merge(tableOptions, verticesTableOptions);
 
     % Print out
-    drawOpts = opts_print(drawOptions,  ',');
-    tabOpts  = opts_print(tableOptions, ', ');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions, ', '); %TODO: standardize comma
     str = sprintf('\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
                   plotCmd, drawOpts, tabOpts, verticesTable, cycle);
 end
@@ -2422,7 +2422,7 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     opts = opts_add(opts, 'ymax', sprintf(m2t.ff, yData(end) + yw/2));
 
     % Print out
-    drawOpts = opts_print(opts,  ',');
+    drawOpts = opts_print(opts);
     str      = sprintf('\\addplot [forget plot] graphics [%s] {%s};\n', ...
                        drawOpts, pngReferencePath);
 
@@ -2604,8 +2604,8 @@ function [m2t, str] = drawContourHG2(m2t, h)
         [m2t, table, tableOptions] = makeTable(m2t, {'',''}, contours);
 
         % Print out
-        plotOpts = opts_print(plotOptions,  ', ');
-        tabOpts  = opts_print(tableOptions, ',');
+        plotOpts = opts_print(plotOptions,  ', '); %TODO: standardize comma
+        tabOpts  = opts_print(tableOptions);
         str      = sprintf('\\addplot[%s] table[%s] {%%\n%s};\n', ...
                            plotOpts, tabOpts, table);
     end
@@ -2730,8 +2730,8 @@ function [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows)
         [m2t, table, tableOptions] = makeTable(m2t, columnNames, cellcont{ii}(2:end,:));
 
         % Print out
-        drawOpts = opts_print(drawOptions,  ',');
-        tabOpts  = opts_print(tableOptions, ',');
+        drawOpts = opts_print(drawOptions);
+        tabOpts  = opts_print(tableOptions);
         str      = sprintf('%s\\addplot[%s] table[%s] {%%\n%s};\n', ...
                            str, drawOpts, tabOpts, table);
     end
@@ -3019,12 +3019,12 @@ function [m2t,str] = drawSurface(m2t, h)
     opts = opts_add(opts,'mesh/rows',sprintf('%d', numrows));
 
     % Print the addplot options
-    str = sprintf('\n\\%s[%%\n%s,\n%s]', plotCmd, s.plotType, opts_print(opts, ','));
+    str = sprintf('\n\\%s[%%\n%s,\n%s]', plotCmd, s.plotType, opts_print(opts));
 
     % Print the data
     [m2t, table, tabOptsExtra] = makeTable(m2t, columnNames, data);
     tableOptions = opts_merge(tabOptsExtra, tableOptions);
-    tabOpts = opts_print(tableOptions, ', ');
+    tabOpts = opts_print(tableOptions, ', '); %TODO: standardize comma
 
     % Here is where everything is put together
     str = sprintf('%s\ntable[%s] {%%\n%s};\n', ...
@@ -3144,7 +3144,7 @@ function [m2t, str] = drawText(m2t, handle)
     % plot the thing
     [m2t, posString] = getPositionOfText(m2t, handle);
 
-    styleOpts = opts_print(style, ', ');
+    styleOpts = opts_print(style, ', '); %TODO: standardize comma
     str       = sprintf('\\node[%s]\nat %s {%s};\n', ...
                         styleOpts, posString, content);
 end
@@ -3288,7 +3288,7 @@ function [m2t, str] = drawRectangle(m2t, h)
     pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % plot the thing
-    lineOpts = opts_print(lineOptions, ', ');
+    lineOpts = opts_print(lineOptions, ', '); %TODO: standardize comma
     str = sprintf(['\\draw[%s] (axis cs:',m2t.ff,',',m2t.ff, ')', ...
                    ' rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
                    lineOpts, pos.left, pos.bottom, pos.right, pos.top);
@@ -3549,8 +3549,8 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     tableOptions = opts_merge(tableOptions, metaPart);
 
     % Print
-    drawOpts = opts_print(drawOptions,  ',');
-    tabOpts  = opts_print(tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\%s[%s] plot table[%s]{%s};\n',...
                        env, drawOpts, tabOpts, table);
 end
@@ -3739,8 +3739,8 @@ function [m2t, str] = drawHistogram(m2t, h)
     [m2t, table, tableOptions] = makeTable(m2t, {'x','y'},data);
 
     % Print out
-    drawOpts = opts_print(drawOptions,  ',');
-    tabOpts  = opts_print(tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 end
@@ -3791,8 +3791,8 @@ function [m2t, str] = drawBarseries(m2t, h)
     [m2t, table, tableOptions] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
 
     % Print out
-    drawOpts = opts_print(drawOptions,  ',');
-    tabOpts  = opts_print(tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 
@@ -3954,8 +3954,8 @@ function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
     [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
 
     % Print out
-    drawOpts = opts_print(drawOptions,  ',');
-    tabOpts  = opts_print(tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 end
@@ -3993,8 +3993,8 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
 
     % Print out
-    drawOpts = opts_print(drawOptions,  ',');
-    tabOpts  = opts_print(tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] plot table[%s]{%s}\n\\closedcycle;\n',...
                        drawOpts, tabOpts, table);
     %TODO: shouldn't this be "\addplot[] table[] {}" instead?
@@ -4038,8 +4038,8 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
 
     % Print out
-    drawOpts = opts_print(drawOptions,  ',');
-    tabOpts  = opts_print(tableOptions, ',');
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 end
@@ -4115,7 +4115,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
                                  '{max(0.01,\pgfplotspointmetatransformed/1000)}');
         arrowHeadOpts = opts_add(arrowHeadOpts, 'scale width', ...
                                  '{0.5*max(0.01,\pgfplotspointmetatransformed/1000)}');
-        headStyle     = ['-{Straight Barb[' opts_print(arrowHeadOpts, ',') ']}'];
+        headStyle     = ['-{Straight Barb[' opts_print(arrowHeadOpts) ']}'];
         quiverOptions = opts_add(quiverOptions, 'every arrow/.append style', ...
                               ['{' headStyle '}']);
     end
@@ -4124,8 +4124,8 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     [m2t, table, tableOptions] = makeTable(m2t, variables, data);
 
     % Print out
-    plotOpts = opts_print(plotOptions,  ',');
-    tabOpts  = opts_print(tableOptions, ',');
+    plotOpts = opts_print(plotOptions);
+    tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\%s[%s]\n table[%s] {%s};\n', ...
                        name, plotOpts, tabOpts, table);
 end
@@ -4222,7 +4222,7 @@ function [m2t, str] = drawEllipse(m2t, handle)
     end
     drawOptions = opts_merge(drawOptions, lineOptions);
 
-    opt = opts_print(drawOptions, ',');
+    opt = opts_print(drawOptions);
 
     str = sprintf('%s [%s] (axis cs:%g,%g) ellipse [x radius=%g, y radius=%g];\n', ...
         drawCommand, opt, center, radius);
@@ -4800,7 +4800,7 @@ function [m2t, key, legendOpts] = getLegendOpts(m2t, handle)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     key = 'legend style';
-    legendOpts = opts_print(lStyle, ',');
+    legendOpts = opts_print(lStyle);
     legendOpts = ['{', legendOpts, '}'];
     %TODO: just pass out the `lStyle` instead of `legendOpts`
 end
@@ -5724,7 +5724,7 @@ function printAll(m2t, env, fid)
         fprintf(fid, '\\begin{%s}\n', env.name);
     else
         fprintf(fid, '\\begin{%s}[%%\n%s\n]\n', env.name, ...
-                opts_print(env.options, sprintf(',\n')));
+                opts_print(env.options, sprintf(',\n'))); %TODO: standardize comma
     end
 
     for item = env.content
@@ -6397,8 +6397,11 @@ function opts = opts_merge(opts, varargin)
         end
     end
 end
-function str  = opts_print(opts, sep)
+function str = opts_print(opts, sep)
     % pretty print an options array
+    if ~exist('sep','var') || ~ischar(sep)
+        sep = ',';
+    end
     nOpts = size(opts,1);
     c = cell(1,nOpts);
     for k = 1:nOpts
