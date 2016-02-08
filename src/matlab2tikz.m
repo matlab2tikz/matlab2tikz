@@ -6332,6 +6332,14 @@ function opts = opts_add(opts, key, value)
     end
     opts = opts_append(opts, key, value);
 end
+function opts = opts_addOpts(m2t, opts, key, subOpts, sep)
+    % add a key={Opts} pair to an options array
+    if ~exist('sep','var') || ~ischar(sep)
+        sep = ',';
+    end
+    formatted = ['{' opts_print(m2t, subOpts, sep) '}'];
+    opts = opts_add(opts, key, formatted);
+end
 function bool = opts_has(opts, key)
     % returns true if the options array contains the key
     bool = ~isempty(opts) && ismember(key, opts(:,1));
