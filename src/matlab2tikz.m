@@ -6408,7 +6408,7 @@ function str  = opts_print(m2t, opts, sep)
             c{k} = sprintf('%s=%s', opts{k,1}, opts{k,2});
         end
     end
-    str = join(m2t, c, sep);
+    str = m2tstrjoin(c, sep, m2t.ff);
 end
 % ==============================================================================
 function m2t = m2t_addAxisOption(m2t, key, value)
