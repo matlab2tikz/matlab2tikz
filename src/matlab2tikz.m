@@ -3528,17 +3528,16 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     drawOptions = opts_new();
     if length(dataInfo.C) == 3
         [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
-                                                markerInfo, dataInfo.C, dataInfo.Size);
+                                                markerInfo, dataInfo);
     elseif size(dataInfo.C,2) == 3
         drawOptions = getScatterOptsRGB(m2t, drawOptions);
     else
         [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
-                                                    markerInfo, dataInfo.Size);
+                                                    markerInfo, dataInfo);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
-    % TODO: it's probably best to also add cData into the table
-    [env, data, sColumn] = organizeScatterData(m2t, dataInfo.X, dataInfo.Y, dataInfo.Z, dataInfo.Size);
+    [env, data, sColumn, metaPart] = organizeScatterData(m2t, dataInfo);
 
     if numel(dataInfo.Size) ~= 1; % changing marker size
         drawOptions = opts_add(drawOptions, 'visualization depends on', ...
@@ -3547,8 +3546,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             'scatter/@pre marker code/.append style', ...
             '{/tikz/mark size=\perpointmarksize}');
     end
-
-    [data, metaPart] = addCDataToScatterData(data, dataInfo.C);
 
     % The actual printing.
     nColumns = size(data, 2);
@@ -3603,7 +3600,9 @@ function marker = getMarkerInfo(m2t, h, markOptions)
 end
 % ==============================================================================
 function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
-                            markerInfo, cData, sData)
+                            markerInfo, dataInfo)
+    cData = dataInfo.C;
+    sData = dataInfo.Size;
     % gets options specific to scatter plots with a single color
     % No special treatment for the colors or markers are needed.
     % All markers have the same color.
@@ -3661,8 +3660,9 @@ function drawOptions = getScatterOptsRGB(m2t, drawOptions)
     % See e.g. http://tex.stackexchange.com/questions/197270 and #433
 end
 function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
-                                                     markerInfo, sData)
+                                                     markerInfo, dataInfo)
     % scatter plot where the colors are set using a color map
+    sData = dataInfo.Size;
     markerOptions = opts_new();
     markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
     markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
@@ -3693,8 +3693,16 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
     m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
 end
 % ==============================================================================
-function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData)
+function [env, data, sColumn, metaOptions] = organizeScatterData(m2t, dataInfo)
     % reorganizes the {X,Y,Z,S} data into a single matrix
+    metaOptions = opts_new();
+    
+    xData = dataInfo.X;
+    yData = dataInfo.Y;
+    zData = dataInfo.Z;
+    cData = dataInfo.C;
+    sData = dataInfo.Size;
+    
     sColumn = [];
     if ~m2t.axesContainers{end}.is3D
         env = 'addplot';
@@ -3711,11 +3719,7 @@ function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sD
             data = [data, sData(:)];
         end
     end
-end
-% ==============================================================================
-function [data, metaOptions] = addCDataToScatterData(data, cData)
-    % adds the cData vector to the data table of a scatter plot
-    metaOptions = opts_new();
+    
     if length(cData) == 3
         % If size(cData,1)==1, then all the colors are the same and have
         % already been accounted for above.
@@ -3730,6 +3734,8 @@ function [data, metaOptions] = addCDataToScatterData(data, cData)
         data = [data, cData(:)];
     end
 end
+% ==============================================================================
+
 % ==============================================================================
 function [m2t, xcolor, hasColor] = getColorOfMarkers(m2t, h, name, cData)
     color = get(h, name);
