@@ -3616,11 +3616,11 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
-    [env, data, sColumn, metaPart, columns] = organizeScatterData(m2t, dataInfo);
+    [env, data, metaPart, columns] = organizeScatterData(m2t, dataInfo);
 
-    if numel(dataInfo.Size) ~= 1; % changing marker size
-        drawOptions = opts_add(drawOptions, 'visualization depends on', ...
-            ['{\thisrowno{', num2str(sColumn), '} \as \perpointmarksize}']);
+    if hasDifferentSizes
+        drawOptions = opts_append(drawOptions, 'visualization depends on', ...
+            '{\thisrow{size} \as \perpointmarksize}');
         drawOptions = opts_add(drawOptions, ...
             'scatter/@pre marker code/.append style', ...
             '{/tikz/mark size=\perpointmarksize}');
@@ -3677,7 +3677,7 @@ function marker = getMarkerInfo(m2t, h, markOptions)
                                             markOptions, marker.hasFaceColor);
 end
 % ==============================================================================
-function [env, data, sColumn, metaOptions, columns] = organizeScatterData(m2t, dataInfo)
+function [env, data, metaOptions, columns] = organizeScatterData(m2t, dataInfo)
     % reorganizes the {X,Y,Z,S} data into a single matrix
     metaOptions = opts_new();
     columns     = {'x','y'};
@@ -3688,7 +3688,6 @@ function [env, data, sColumn, metaOptions, columns] = organizeScatterData(m2t, d
     cData = dataInfo.C;
     sData = dataInfo.Size;
     
-    sColumn = [];
     % add the actual data
     if ~m2t.axesContainers{end}.is3D
         env = 'addplot';
@@ -3702,7 +3701,6 @@ function [env, data, sColumn, metaOptions, columns] = organizeScatterData(m2t, d
     % add marker sizes
     if length(sData) ~= 1
         columns = [columns, {'size'}];
-        sColumn = size(data, 2);
         data    = [data, sData(:)];
     end
     
@@ -3719,13 +3717,10 @@ function [env, data, sColumn, metaOptions, columns] = organizeScatterData(m2t, d
         data    = [data, cData(:,1), cData(:,2), cData(:,3)];
     else
         columns = [columns, {'color'}];
-        metaOptions = opts_add(metaOptions, ...
-                               'meta index', sprintf('%d', size(data,2)));
+        metaOptions = opts_add(metaOptions, 'meta', 'color');
         data = [data, cData(:)];
     end
 end
-% ==============================================================================
-
 % ==============================================================================
 function [m2t, xcolor, hasColor] = getColorOfMarkers(m2t, h, name, cData)
     color = get(h, name);

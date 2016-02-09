@@ -70,10 +70,10 @@ rectanglePlot : 6b95520cdbb7071cbdb7c7eece7326ca
 removeOutsideMarker : c4ce62a1af84262cafe7c516c0189acd
 rlocusPlot : 993857d5c76e55ac5a190048c1a97699
 roseplot : 9177ce651d7a3789d219b3d6ad1936fa
-scatter3Plot : 951291c5a93528b6ef1c3a595683f906
-scatterPlot : d03fd6b87445e80b53ca2ef51cc32cb7
-scatterPlotMarkers : a29670dad051b90875b2a58b83db3cfc
-scatterPlotRandom : c7e8c59fdafc367d68452aec4beb6adc
+scatter3Plot : 266eb95cc45355d41099bee20800bc64
+scatterPlot : 4fa1b2c3b1fd67aa0986c82623bd23c7
+scatterPlotMarkers : cac0b0402cfb97b1a6a3a8e700179c1c
+scatterPlotRandom : 9ceaaaacaaf9d36c0f6db66fa1acaae3
 sine_with_annotation : 59c96e5b5d5b447ddb83ac381f7145fa
 sine_with_markers : 5aeb5c7353e8fb12ef6173b104ae89cc
 spectro : b983a40d5898d86abe6704552f7ad834
