@@ -3530,7 +3530,11 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
                                                 markerInfo, dataInfo);
     elseif size(dataInfo.C,2) == 3
-        drawOptions = getScatterOptsRGB(m2t, drawOptions);
+        % scatter plots with each marker a different RGB color (not yet supported!)
+        drawOptions = opts_add(drawOptions, 'only marks');
+        userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
+        % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
+        % See e.g. http://tex.stackexchange.com/questions/197270 and #433
     else
         [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
                                                     markerInfo, dataInfo);
@@ -3548,8 +3552,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
 
     % The actual printing.
-    nColumns = numel(columns);
-    [m2t, table, tableOptions] = makeTable(m2t, repmat({''},1,nColumns), data);
+    [m2t, table, tableOptions] = makeTable(m2t, columns, data);
     tableOptions = opts_merge(tableOptions, metaPart);
 
     % Print
@@ -3651,13 +3654,6 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
                 'scatter/use mapped color', markerOptions);
         end
     end
-end
-function drawOptions = getScatterOptsRGB(m2t, drawOptions)
-    % scatter plots with each marker a different RGB color (not yet supported!)
-    drawOptions = opts_add(drawOptions, 'only marks');
-    userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
-    % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
-    % See e.g. http://tex.stackexchange.com/questions/197270 and #433
 end
 function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
                                                      markerInfo, dataInfo)
