@@ -3510,7 +3510,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     markerInfo = getMarkerInfo(m2t, h);
     %TODO: check against getMarkerOptions() for duplicated code
 
-    constMarkerkSize = length(sData) == 1; % constant marker size
+    sData = tryToMakeScalar(sData, m2t.tol);
 
     % Rescale marker size (not definitive, follow discussion in #316)
     % Prescale marker size for octave
@@ -3522,18 +3522,19 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     drawOptions = opts_new();
     if length(cData) == 3
         [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
-                                                markerInfo, cData, sData, ...
-                                                constMarkerkSize);
+                                                markerInfo, cData, sData);
     elseif size(cData,2) == 3
         drawOptions = getScatterOptsRGB(m2t, drawOptions);
     else
-        [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, markerInfo);
+        [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
+                                                    markerInfo, sData);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
+    % TODO: it's probably best to also add cData into the table
     [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData);
 
-    if ~constMarkerkSize %
+    if numel(sData) ~= 1; % changing marker size
         drawOptions = opts_add(drawOptions, 'visualization depends on', ...
             ['{\thisrowno{', num2str(sColumn), '} \as \perpointmarksize}']);
         drawOptions = opts_add(drawOptions, ...
@@ -3555,6 +3556,16 @@ function [m2t, str] = drawScatterPlot(m2t, h)
                        env, drawOpts, tabOpts, table);
 end
 % ==============================================================================
+function value = tryToMakeScalar(value, tolerance)
+    % make a vector into a scalar when all its components are equal
+    if ~exist('tolerance','var')
+        tolerance = 0; % do everything perfectly
+    end
+    if all(abs(value - value(1)) <= tolerance)
+        value = value(1);
+    end
+end
+% ==============================================================================
 function marker = getMarkerInfo(m2t, h, markOptions)
     % gets marker-related options as a struct
     if ~exist('markOptions','var') || isempty(markOptions)
@@ -3571,14 +3582,14 @@ function marker = getMarkerInfo(m2t, h, markOptions)
 end
 % ==============================================================================
 function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
-                            markerInfo, cData, sData, constMarkerkSize)
+                            markerInfo, cData, sData)
     % gets options specific to scatter plots with a single color
     % No special treatment for the colors or markers are needed.
     % All markers have the same color.
     [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', cData);
     [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', cData);
 
-    if constMarkerkSize
+    if length(sData) == 1;
         drawOptions = opts_add(drawOptions, 'only marks');
         drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
         drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
@@ -3628,13 +3639,13 @@ function drawOptions = getScatterOptsRGB(m2t, drawOptions)
     % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
     % See e.g. http://tex.stackexchange.com/questions/197270 and #433
 end
-function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, markerInfo)
+function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
+                                                     markerInfo, sData)
     % scatter plot where the colors are set using a color map
     markerOptions = opts_new();
     markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
     markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
                                  markerInfo.options);
-
     if markerInfo.hasEdgeColor && markerInfo.hasFaceColor
         [m2t, ecolor] = getColor(m2t, h, markerInfo.EdgeColor, 'patch');
         markerOptions = opts_add(markerOptions, 'draw', ecolor);
@@ -3646,6 +3657,14 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, marker
     end
     drawOptions = opts_add(drawOptions, 'scatter');
     drawOptions = opts_add(drawOptions, 'only marks');
+    
+    if numel(sData) == 1
+        drawOptions = opts_add(drawOptions, 'mark size', ...
+            sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff` 
+    else
+        %TODO: warn the user about this. It is not currently supported.
+    end
+    
     drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
     drawOptions = opts_addSubOpts(drawOptions, 'scatter/use mapped color', ...
                                markerOptions);
