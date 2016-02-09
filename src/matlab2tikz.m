@@ -3537,7 +3537,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
-    [env, data, sColumn, metaPart] = organizeScatterData(m2t, dataInfo);
+    [env, data, sColumn, metaPart, columns] = organizeScatterData(m2t, dataInfo);
 
     if numel(dataInfo.Size) ~= 1; % changing marker size
         drawOptions = opts_add(drawOptions, 'visualization depends on', ...
@@ -3548,7 +3548,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
 
     % The actual printing.
-    nColumns = size(data, 2);
+    nColumns = numel(columns);
     [m2t, table, tableOptions] = makeTable(m2t, repmat({''},1,nColumns), data);
     tableOptions = opts_merge(tableOptions, metaPart);
 
@@ -3693,9 +3693,10 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
     m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
 end
 % ==============================================================================
-function [env, data, sColumn, metaOptions] = organizeScatterData(m2t, dataInfo)
+function [env, data, sColumn, metaOptions, columns] = organizeScatterData(m2t, dataInfo)
     % reorganizes the {X,Y,Z,S} data into a single matrix
     metaOptions = opts_new();
+    columns     = {'x','y'};
     
     xData = dataInfo.X;
     yData = dataInfo.Y;
@@ -3704,22 +3705,24 @@ function [env, data, sColumn, metaOptions] = organizeScatterData(m2t, dataInfo)
     sData = dataInfo.Size;
     
     sColumn = [];
+    % add the actual data
     if ~m2t.axesContainers{end}.is3D
         env = 'addplot';
         data = [xData(:), yData(:)];
-        if length(sData) ~= 1
-            sColumn = 2;
-            data = [data, sData(:)];
-        end
     else
         env = 'addplot3';
+        columns = [columns, {'z'}];
         data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
-        if length(sData) ~= 1
-            sColumn = 3;
-            data = [data, sData(:)];
-        end
     end
     
+    % add marker sizes
+    if length(sData) ~= 1
+        columns = [columns, {'size'}];
+        sColumn = size(data, 2);
+        data    = [data, sData(:)];
+    end
+    
+    % add color data
     if length(cData) == 3
         % If size(cData,1)==1, then all the colors are the same and have
         % already been accounted for above.
@@ -3728,7 +3731,10 @@ function [env, data, sColumn, metaOptions] = organizeScatterData(m2t, dataInfo)
         %TODO Hm, can't deal with this?
         %[m2t, col] = rgb2colorliteral(m2t, cData(k,:));
         %str = strcat(str, sprintf(' [%s]\n', col));
+        columns = [columns, {'R','G','B'}];
+        data    = [data, cData(:,1), cData(:,2), cData(:,3)];
     else
+        columns = [columns, {'color'}];
         metaOptions = opts_add(metaOptions, ...
                                'meta index', sprintf('%d', size(data,2)));
         data = [data, cData(:)];
