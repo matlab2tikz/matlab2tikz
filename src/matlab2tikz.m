@@ -3492,6 +3492,16 @@ function url = clickableUrl(url, title)
 end
 % ==============================================================================
 function [m2t, str] = drawScatterPlot(m2t, h)
+    % DRAWSCATTERPLOT Draws a scatter plot
+    %
+    % A scatter plot is a plot containing only markers and where the
+    % size and/or color of each marker can be changed independently.
+    %
+    % References for TikZ code:
+    %  - http://tex.stackexchange.com/questions/197270/how-to-plot-scatter-points-using-pgfplots-with-color-defined-from-table-rgb-valu
+    %  - http://tex.stackexchange.com/questions/98646/multiple-different-meta-for-marker-color-and-marker-size
+    %
+    % See also: scatter
     str = '';
     if ~isVisible(h)
         return; % there is nothing to plot
