@@ -3536,6 +3536,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     end
     %TODO: we need to set the scatter source
     drawOptions = opts_add(drawOptions, 'only marks');
+    drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
 
     if length(dataInfo.C) == 3
         % gets options specific to scatter plots with a single color
@@ -3545,7 +3546,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', dataInfo.C);
 
         if length(dataInfo.Size) == 1;
-            drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
             drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
                                        markerInfo.options);
             drawOptions = opts_add(drawOptions, 'mark size', ...
@@ -3558,7 +3558,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             end
         else % if changing marker size but same color on all marks
             markerOptions = opts_new();
-            markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
             markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
                                          markerInfo.options);
             if hasEdgeColor
@@ -3571,7 +3570,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             end
             % for changing marker size, the 'scatter' option has to be added
             drawOptions = opts_add(drawOptions, 'color', xcolor);
-            drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
             drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
                                        markerInfo.options);
 
@@ -3591,7 +3589,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     else
         % scatter plot where the colors are set using a color map
         markerOptions = opts_new();
-        markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
         markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
                                      markerInfo.options);
         if markerInfo.hasEdgeColor && markerInfo.hasFaceColor
