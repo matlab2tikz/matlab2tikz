@@ -3506,45 +3506,41 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     if ~isVisible(h)
         return; % there is nothing to plot
     end
-
-    xData = get(h, 'XData');
-    yData = get(h, 'YData');
-    zData = get(h, 'ZData');
-    cData = get(h, 'CData');
-    sData = get(h, 'SizeData');
-
-    if isempty(cData) && strcmpi(getEnvironment(), 'Octave')
-        cData = get(h, 'MarkerEdgeColor');
+    
+    dataInfo   = getDataInfo(h, 'X','Y','Z','C','Size');
+    markerInfo = getMarkerInfo(m2t, h);
+    
+    if isempty(dataInfo.C) && strcmpi(getEnvironment(), 'Octave')
+        dataInfo.C = get(h, 'MarkerEdgeColor');
     end
 
-    markerInfo = getMarkerInfo(m2t, h);
     %TODO: check against getMarkerOptions() for duplicated code
 
-    sData = tryToMakeScalar(sData, m2t.tol);
+    dataInfo.Size = tryToMakeScalar(dataInfo.Size, m2t.tol);
 
     % Rescale marker size (not definitive, follow discussion in #316)
     % Prescale marker size for octave
     if strcmpi(getEnvironment(), 'Octave')
-        sData = sData.^2/2;
+        dataInfo.Size = dataInfo.Size.^2/2;
     end
-    sData = translateMarkerSize(m2t, markerInfo.style, sqrt(sData)/2);
+    dataInfo.Size = translateMarkerSize(m2t, markerInfo.style, sqrt(dataInfo.Size)/2);
 
     drawOptions = opts_new();
-    if length(cData) == 3
+    if length(dataInfo.C) == 3
         [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
-                                                markerInfo, cData, sData);
-    elseif size(cData,2) == 3
+                                                markerInfo, dataInfo.C, dataInfo.Size);
+    elseif size(dataInfo.C,2) == 3
         drawOptions = getScatterOptsRGB(m2t, drawOptions);
     else
         [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, ...
-                                                    markerInfo, sData);
+                                                    markerInfo, dataInfo.Size);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
     % TODO: it's probably best to also add cData into the table
-    [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData);
+    [env, data, sColumn] = organizeScatterData(m2t, dataInfo.X, dataInfo.Y, dataInfo.Z, dataInfo.Size);
 
-    if numel(sData) ~= 1; % changing marker size
+    if numel(dataInfo.Size) ~= 1; % changing marker size
         drawOptions = opts_add(drawOptions, 'visualization depends on', ...
             ['{\thisrowno{', num2str(sColumn), '} \as \perpointmarksize}']);
         drawOptions = opts_add(drawOptions, ...
@@ -3552,7 +3548,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
             '{/tikz/mark size=\perpointmarksize}');
     end
 
-    [data, metaPart] = addCDataToScatterData(data, cData);
+    [data, metaPart] = addCDataToScatterData(data, dataInfo.C);
 
     % The actual printing.
     nColumns = size(data, 2);
@@ -3564,6 +3560,21 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\%s[%s] plot table[%s]{%s};\n',...
                        env, drawOpts, tabOpts, table);
+end
+% ==============================================================================
+function dataInfo = getDataInfo(h, varargin)
+    % retrieves the "*Data  fields from a HG object
+    % When no names are specified, it assumes 'X','Y','Z' is requested
+    if nargin == 1
+        fields = {'X','Y','Z'};
+    else
+        fields = varargin;
+    end
+    dataInfo = struct();
+    for iField = 1:numel(fields)
+        name            = fields{iField};
+        dataInfo.(name) = get(h, [name 'Data']);
+    end
 end
 % ==============================================================================
 function value = tryToMakeScalar(value, tolerance)
