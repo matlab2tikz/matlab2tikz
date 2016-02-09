@@ -3527,6 +3527,16 @@ function [m2t, str] = drawScatterPlot(m2t, h)
 
     drawOptions = opts_new();
     
+    %% Determine if we are drawing an actual scatter plot
+    hasDifferentSizes  = numel(dataInfo.Size) ~= 1;
+    hasDifferentColors = numel(dataInfo.C)    ~= 3;
+    isaScatter         = hasDifferentSizes || hasDifferentColors;
+    if isaScatter
+        drawOptions = opts_add(drawOptions, 'scatter');
+    end
+    %TODO: we need to set the scatter source
+    drawOptions = opts_add(drawOptions, 'only marks');
+
     if length(dataInfo.C) == 3
         % gets options specific to scatter plots with a single color
         % No special treatment for the colors or markers are needed.
@@ -3535,7 +3545,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', dataInfo.C);
 
         if length(dataInfo.Size) == 1;
-            drawOptions = opts_add(drawOptions, 'only marks');
             drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
             drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
                                        markerInfo.options);
@@ -3561,8 +3570,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
                 markerOptions = opts_add(markerOptions, 'fill', xcolor);
             end
             % for changing marker size, the 'scatter' option has to be added
-            drawOptions = opts_add(drawOptions, 'scatter');
-            drawOptions = opts_add(drawOptions, 'only marks');
             drawOptions = opts_add(drawOptions, 'color', xcolor);
             drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
             drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
@@ -3578,7 +3585,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         end
     elseif size(dataInfo.C,2) == 3
         % scatter plots with each marker a different RGB color (not yet supported!)
-        drawOptions = opts_add(drawOptions, 'only marks');
         userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
         % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
         % See e.g. http://tex.stackexchange.com/questions/197270 and #433
@@ -3597,8 +3603,6 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         if markerInfo.hasFaceColor
             markerOptions = opts_add(markerOptions, 'fill', 'mapped color');
         end
-        drawOptions = opts_add(drawOptions, 'scatter');
-        drawOptions = opts_add(drawOptions, 'only marks');
 
         if numel(dataInfo.Size) == 1
             drawOptions = opts_add(drawOptions, 'mark size', ...
