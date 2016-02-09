@@ -3687,19 +3687,17 @@ function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sD
     sColumn = [];
     if ~m2t.axesContainers{end}.is3D
         env = 'addplot';
-        if length(sData) == 1
-            data = [xData(:), yData(:)];
-        else
+        data = [xData(:), yData(:)];
+        if length(sData) ~= 1
             sColumn = 2;
-            data = [xData(:), yData(:), sData(:)];
+            data = [data, sData(:)];
         end
     else
         env = 'addplot3';
-        if length(sData) == 1
-            data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
-        else
+        data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
+        if length(sData) ~= 1
             sColumn = 3;
-            data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)]);
+            data = [data, sData(:)];
         end
     end
 end
