@@ -71,7 +71,7 @@ removeOutsideMarker : a3b258f0df9a08307e5947262a9db3fb
 rlocusPlot : f372b9a4004fa45ac96a21014656e143
 roseplot : 687b1ba29c15466ce8f55e242a1ec838
 scatter3Plot : a9748cf8231a7c60bb9d2a6dc415a6fe
-scatterPlot : a13f88d618e847a37f1e1fdbd996230e
+scatterPlot : 15a87a614602b645b761efeef6a87ae5
 scatterPlotMarkers : 9a7ad7df70f570ea6b60eb36d882b1dd
 scatterPlotRandom : 3650331121436e1f53bad63aa2839796
 sine_with_annotation : 7d415c014eec35c249802eb3a3ee519e
