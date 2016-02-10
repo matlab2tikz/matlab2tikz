@@ -5612,7 +5612,8 @@ end
 % ==============================================================================
 function [val, isDefault] = getAndCheckDefault(handle, key, default)
     % gets the value from a handle of certain type and check the default values
-    default   = getFactoryOrDefault(handle.Type, key, default);
+    type      = get(handle, 'Type');
+    default   = getFactoryOrDefault(type, key, default);
     val       = getOrDefault(handle, key, default);
     isDefault = isequal(val, default);
 end
