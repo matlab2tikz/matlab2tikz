@@ -926,24 +926,24 @@ function m2t = drawGridOfAxes(m2t, handle)
     if any(hasGrid)
         gridOpts = opts_new();
         % Get the line style and translate it to pgfplots
-        [gridLS, isDefault] = getAndCheckDefault(...
-            'axes', handle, 'GridLineStyle', ':');
+        [gridLS, isDefault] = getAndCheckDefault(handle, ...
+                                'GridLineStyle', ':');
         if ~isDefault || m2t.cmdOpts.Results.strict
             gridOpts = opts_add(gridOpts, translateLineStyle(gridLS));
         end
 
         % Get the color of the grid and translate it to pgfplots usable
         % values
-        [gridColor, defaultColor] = getAndCheckDefault(...
-            'axes', handle, 'GridColor', [0.15, 0.15, 0.15]);
+        [gridColor, defaultColor] = getAndCheckDefault(handle, ...
+                                      'GridColor', [0.15, 0.15, 0.15]);
         if ~defaultColor
             [m2t, gridColor] = getColor(m2t, handle, gridColor, 'patch');
             gridOpts = opts_add(gridOpts, gridColor);
         end
 
         % Get the alpha of the grid and translate it to pgfplots
-        [gridAlpha, defaultAlpha] = getAndCheckDefault(...
-            'axes', handle, 'GridAlpha', 0.1);
+        [gridAlpha, defaultAlpha] = getAndCheckDefault(handle, ...
+                                      'GridAlpha', 0.1);
         if ~defaultAlpha
             gridOpts = opts_add(gridOpts, 'opacity', num2str(gridAlpha));
         end
@@ -956,24 +956,24 @@ function m2t = drawGridOfAxes(m2t, handle)
     if any(hasMinorGrid)
         minorGridOpts = opts_new();
         % Get the line style and translate it to pgfplots
-        [minorGridLS, isDefault] = getAndCheckDefault(...
-            'axes', handle, 'MinorGridLineStyle', ':');
+        [minorGridLS, isDefault] = getAndCheckDefault(handle, ...
+                                     'MinorGridLineStyle', ':');
         if ~isDefault || m2t.cmdOpts.Results.strict
             minorGridOpts = opts_add(minorGridOpts, translateLineStyle(minorGridLS));
         end
 
         % Get the color of the grid and translate it to pgfplots usable
         % values
-        [minorGridColor, defaultColor] = getAndCheckDefault(...
-            'axes', handle, 'MinorGridColor', [0.1, 0.1, 0.1]);
+        [minorGridColor, defaultColor] = getAndCheckDefault(handle, ...
+                                           'MinorGridColor', [0.1, 0.1, 0.1]);
         if ~defaultColor
             [m2t, minorGridColor] = getColor(m2t, handle, minorGridColor, 'patch');
             minorGridOpts = opts_add(minorGridOpts, minorGridColor);
         end
 
         % Get the alpha of the grid and translate it to pgfplots
-        [minorGridAlpha, defaultAlpha] = getAndCheckDefault(...
-            'axes', handle, 'MinorGridAlpha', 0.1);
+        [minorGridAlpha, defaultAlpha] = getAndCheckDefault(handle, ...
+                                           'MinorGridAlpha', 0.1);
         if ~defaultAlpha
             minorGridOpts = opts_add(minorGridOpts, 'opacity', num2str(minorGridAlpha));
         end
@@ -1444,8 +1444,8 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     options = opts_new();
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % axis colors
-    [color, isDfltColor] = getAndCheckDefault('Axes', handle, ...
-                                              [upper(axis),'Color'], [ 0 0 0 ]);
+    [color, isDfltColor] = getAndCheckDefault(handle, ...
+                             [upper(axis),'Color'], [ 0 0 0 ]);
     if ~isDfltColor || m2t.cmdOpts.Results.strict
         [m2t, col] = getColor(m2t, handle, color, 'patch');
         if isOn(get(handle, 'box'))
@@ -4268,7 +4268,7 @@ function [m2t, drawOptions] = getPatchDrawOptions(m2t, h, drawOptions)
     end
 
     % Define linestyle
-    [lineStyle, isDefaultLS] = getAndCheckDefault(type, h, 'LineStyle', '-');
+    [lineStyle, isDefaultLS] = getAndCheckDefault(h, 'LineStyle', '-');
     if isNone(lineStyle)
         drawOptions = opts_add(drawOptions, 'draw', 'none');
     elseif ~isDefaultLS
@@ -4777,8 +4777,8 @@ function [m2t, key, legendOpts] = getLegendOpts(m2t, handle)
         lStyle = opts_add(lStyle, 'draw', 'none');
     else
         % handle colors
-        [edgeColor, isDfltEdge] = getAndCheckDefault('Legend', handle, ...
-                                                     'EdgeColor', [1 1 1]);
+        [edgeColor, isDfltEdge] = getAndCheckDefault(handle, ...
+                                    'EdgeColor', [1 1 1]);
         if isNone(edgeColor)
             lStyle = opts_add(lStyle, 'draw', 'none');
 
@@ -4787,8 +4787,8 @@ function [m2t, key, legendOpts] = getLegendOpts(m2t, handle)
             lStyle = opts_add(lStyle, 'draw', col);
         end
 
-        [fillColor, isDfltFill] = getAndCheckDefault('Legend', handle, ...
-                                                     'Color', [1 1 1]);
+        [fillColor, isDfltFill] = getAndCheckDefault(handle, ...
+                                    'Color', [1 1 1]);
         if isNone(fillColor)
             lStyle = opts_add(lStyle, 'fill', 'none');
 
@@ -5610,9 +5610,9 @@ function val = getFactoryOrDefault(type, key, fallback)
     end
 end
 % ==============================================================================
-function [val, isDefault] = getAndCheckDefault(type, handle, key, default)
+function [val, isDefault] = getAndCheckDefault(handle, key, default)
     % gets the value from a handle of certain type and check the default values
-    default   = getFactoryOrDefault(type, key, default);
+    default   = getFactoryOrDefault(handle.Type, key, default);
     val       = getOrDefault(handle, key, default);
     isDefault = isequal(val, default);
 end
