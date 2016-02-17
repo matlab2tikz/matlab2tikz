@@ -129,7 +129,9 @@ function recursiveCleanup(meta, h, cmdOpts)
             limitPrecision(meta, h, cmdOpts.scalePrecision);
         elseif strcmpi(type, 'stair')
             % Remove data points outside of the visible axes
-            pruneOutsideBox(meta, h);
+            pruneOutsideBox(meta, h);            
+            % Remove superfluous data points
+            simplifyStairs(meta, h);
             % Limit the precision of the output
             limitPrecision(meta, h, cmdOpts.scalePrecision);
         elseif strcmp(type, 'text') && cmdOpts.pruneText
@@ -446,6 +448,31 @@ function simplifyLine(meta, handle, targetResolution)
     end
 
     % Remove the data points
+    removeData(meta, handle, id_remove);
+end
+% =========================================================================
+function simplifyStairs(meta, handle)
+   % Some data might not lead to a new step in the stair, e.g.
+   % [(x_1, y_1), (x_2, y_1), ... (x_k, y_1), (x_{k+1} y_2)] 
+   % equals [(x_1, y_1), (x_{k+1} y_2)]
+
+    % Extract the data
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+
+    % Dont do anything if the data is empty
+    if isempty(xData) || isempty(yData)
+        return;
+    end
+
+    % Check which point do lead to a new step
+    xStep = [true, (diff(xData) ~= 0)];
+    yStep = [true, (diff(yData) ~= 0)];
+
+    % Plot only points, that generate a new step
+    id_remove = find(~xStep | ~yStep);
+
+    % Remove the superfluous data
     removeData(meta, handle, id_remove);
 end
 % =========================================================================
