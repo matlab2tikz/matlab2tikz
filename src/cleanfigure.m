@@ -468,7 +468,11 @@ function simplifyStairs(meta, handle)
     % Check which point do lead to a new step
     xStep = [true, (diff(xData) ~= 0)];
     yStep = [true, (diff(yData) ~= 0)];
-
+    
+    % Do not remove the last data point
+    xStep(end) = true;
+    yStep(end) = true;
+    
     % Plot only points, that generate a new step
     id_remove = find(~xStep | ~yStep);
 
