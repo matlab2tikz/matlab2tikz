@@ -3802,6 +3802,8 @@ function [m2t, str] = drawBarseries(m2t, h)
     else
         barType = 'ybar';
     end
+    % Tthe bar shift auto feature was introduced in pgfplots 1.13
+    m2t = needsPgfplotsVersion(m2t, [1,13]);
     m2t = m2t_addAxisOption(m2t, 'bar shift auto');
 
     % Get the draw options for the layout
@@ -3851,6 +3853,7 @@ end
 function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptions)
     % sets the options specific to a bar layour (grouped vs stacked)
     barlayout = get(h, 'BarLayout');
+
     switch barlayout
         case 'grouped'  % grouped bar plots
 
@@ -3893,8 +3896,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             drawOptions = opts_add(drawOptions, barType);
 
             % Bar width
-            drawOptions = opts_add(drawOptions, 'bar width', ...
-                                 formatDim(barWidth, ''));
+            drawOptions = opts_add(drawOptions, 'bar width', formatDim(barWidth, ''));
         case 'stacked' % stacked plots
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
