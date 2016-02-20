@@ -465,16 +465,28 @@ function simplifyStairs(meta, handle)
         return;
     end
 
-    % Check which point do lead to a new step
-    xStep = [true, (diff(xData) ~= 0)];
-    yStep = [true, (diff(yData) ~= 0)];
-    
+    % Check for identic data points
+    xNoDiff      = [false, (diff(xData) == 0)];
+    yNoDiff      = [false, (diff(yData) == 0)];
+
     % Do not remove the last data point
-    xStep(end) = true;
-    yStep(end) = true;
-    
+    xNoDiff(end) = false;
+    yNoDiff(end) = false;
+
+    % Identic data might lead to a visible result if the sign in the other
+    % dimension changes , e.g. the sequence  [0, 1], [0, -1], [0, 2]
+    % Therefore check for a sign change in the difference between data
+    % points (The sign changes if diff(sign)~=0)
+    xIsMonotone  = [true, diff(sign(diff(xData)))==0, true];
+    yIsMonotone  = [true, diff(sign(diff(yData)))==0, true];
+
+    % Only remove points when there is no difference in one dimension and no
+    % change in monotonicity in the other
+    xRemove      = xNoDiff & yIsMonotone;
+    yRemove      = yNoDiff & xIsMonotone;
+
     % Plot only points, that generate a new step
-    id_remove = find(~xStep | ~yStep);
+    id_remove    = find(xRemove | yRemove);
 
     % Remove the superfluous data
     removeData(meta, handle, id_remove);
