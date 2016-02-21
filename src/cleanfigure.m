@@ -452,31 +452,43 @@ function simplifyLine(meta, handle, targetResolution)
 end
 % =========================================================================
 function simplifyStairs(meta, handle)
-   % Some data might not lead to a new step in the stair, e.g.
-   % [(x_1, y_1), (x_2, y_1), ... (x_k, y_1), (x_{k+1} y_2)] 
-   % equals [(x_1, y_1), (x_{k+1} y_2)]
+    % This function simplifies stair plots by removeing superflous data
+    % points
+
+	% Some data might not lead to a new step in the stair. This is the case
+	% if the difference in one dimension is zero, e.g
+	% [(x_1, y_1), (x_2, y_1), ... (x_k, y_1), (x_{k+1} y_2)].
+	% However, there is one exeption. If the monotonicity of the other
+	% dimension changes, e.g. the sequence  [0, 1], [0, -1], [0, 2]. This
+	% sequence cannot be simplified. Therefore, we check for monoticity too.
+    % As an example, we can remove the data points marked with x in the
+    % following stair
+    %       o--x--o
+    %       |     |
+    %       x     o --x--o
+    %       |          
+    % o--x--o         
+    %       |
+    %       o
 
     % Extract the data
     xData = get(handle, 'XData');
     yData = get(handle, 'YData');
 
-    % Dont do anything if the data is empty
+    % Do not do anything if the data is empty
     if isempty(xData) || isempty(yData)
         return;
     end
 
-    % Check for identic data points
+    % Check for nonchanging data points
     xNoDiff      = [false, (diff(xData) == 0)];
     yNoDiff      = [false, (diff(yData) == 0)];
 
-    % Do not remove the last data point
+    % Never remove the last data point
     xNoDiff(end) = false;
     yNoDiff(end) = false;
 
-    % Identic data might lead to a visible result if the sign in the other
-    % dimension changes , e.g. the sequence  [0, 1], [0, -1], [0, 2]
-    % Therefore check for a sign change in the difference between data
-    % points (The sign changes if diff(sign)~=0)
+    % Check for monotonicity (it changes if diff(sign)~=0)
     xIsMonotone  = [true, diff(sign(diff(xData)))==0, true];
     yIsMonotone  = [true, diff(sign(diff(yData)))==0, true];
 
