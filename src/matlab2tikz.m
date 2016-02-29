@@ -1872,10 +1872,12 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     lineOpts = opts_new();
 
     % Get the options from the handle
-    lineStyle = get(h, 'LineStyle');
     lineWidth = get(h, 'LineWidth');
 
-    if ~isNone(lineStyle) && (lineWidth > m2t.tol)
+    % Get the line style and check whether it is the default one
+    [lineStyle, isDefaultLS] = getAndCheckDefault('Line', h, 'LineStyle', '-');
+
+    if ~isDefaultLS && (lineWidth > m2t.tol)
         lineOpts = opts_add(lineOpts, translateLineStyle(lineStyle));
     end
 
@@ -2599,6 +2601,14 @@ function [m2t, str] = drawContourHG2(m2t, h)
         if isOff(get(h,'ShowText'))
             plotOptions = opts_add(plotOptions,'contour/labels','false');
         end
+
+        % Get line properties
+        [m2t, lineOptions] = getLineOptions(m2t, h);
+        lineColor          = get(h, 'LineColor');
+        [m2t, lineOptions] = setColor(m2t, h, lineOptions, 'draw', lineColor, 'none');
+
+        % Merge the line options with the contour plot options
+        plotOptions        = opts_merge(plotOptions, lineOptions);
 
         % Make contour table
         [m2t, table, tableOptions] = makeTable(m2t, {'',''}, contours);
