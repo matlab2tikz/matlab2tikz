@@ -5756,6 +5756,21 @@ function c = prettyPrint(m2t, strings, interpreter)
     % http://www.mathworks.com/help/techdoc/ref/text_props.html#Interpreter
     % http://www.mathworks.com/help/techdoc/ref/text.html#f68-481120
 
+    % If the user set the matlab2tikz parameter 'parseStrings' to false, no
+    % parsing of strings takes place, thus making the user 100% responsible.
+    if ~m2t.cmdOpts.Results.parseStrings
+        % If strings is an actual string (labels etc) we need to return a
+        % cell containing the string
+        c = cellstr(strings);
+        return
+    end
+
+    % Make sure we have a valid interpreter set up
+    if ~any(strcmpi(interpreter, {'latex', 'tex', 'none'}))
+        userWarning(m2t, 'Don''t know interpreter ''%s''. Default handling.', interpreter);
+        interpreter = 'tex';
+    end
+
     strings = cellstrOneLinePerCell(strings);
 
     % Now loop over the strings and return them pretty-printed in c.
@@ -5763,19 +5778,6 @@ function c = prettyPrint(m2t, strings, interpreter)
     for k = 1:length(strings)
         % linear indexing for independence of cell array dimensions
         s = strings{k};
-
-        % If the user set the matlab2tikz parameter 'parseStrings' to false, no
-        % parsing of strings takes place, thus making the user 100% responsible.
-        if ~m2t.cmdOpts.Results.parseStrings
-            c = strings;
-            return
-        end
-
-        % Make sure we have a valid interpreter set up
-        if ~any(strcmpi(interpreter, {'latex', 'tex', 'none'}))
-            userWarning(m2t, 'Don''t know interpreter ''%s''. Default handling.', interpreter);
-            interpreter = 'tex';
-        end
 
         % The interpreter property of the text element defines how the string
         % is parsed
