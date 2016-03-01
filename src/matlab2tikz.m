@@ -1877,7 +1877,7 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     % Get the line style and check whether it is the default one
     [lineStyle, isDefaultLS] = getAndCheckDefault('Line', h, 'LineStyle', '-');
 
-    if ~isDefaultLS && (lineWidth > m2t.tol)
+    if ~isDefaultLS && ~isNone(lineStyle) && (lineWidth > m2t.tol)
         lineOpts = opts_add(lineOpts, translateLineStyle(lineStyle));
     end
 
