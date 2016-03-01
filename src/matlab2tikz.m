@@ -2604,11 +2604,15 @@ function [m2t, str] = drawContourHG2(m2t, h)
 
         % Get line properties
         [m2t, lineOptions] = getLineOptions(m2t, h);
-        lineColor          = get(h, 'LineColor');
-        [m2t, lineOptions] = setColor(m2t, h, lineOptions, 'draw', lineColor, 'none');
+
+        % Check for special color settings
+        [lineColor, isDefaultColor] = getAndCheckDefault('contour', h, 'LineColor', 'flat');
+        if ~isDefaultColor
+            [m2t, lineOptions] = setColor(m2t, h, lineOptions, 'contour/draw color', lineColor, 'none');
+        end
 
         % Merge the line options with the contour plot options
-        plotOptions        = opts_merge(plotOptions, lineOptions);
+        plotOptions = opts_merge(plotOptions, lineOptions);
 
         % Make contour table
         [m2t, table, tableOptions] = makeTable(m2t, {'',''}, contours);
