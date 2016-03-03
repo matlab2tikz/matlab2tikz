@@ -716,8 +716,10 @@ end
 function [stat] = stairsplot()
   stat.description = 'A simple stairs plot.' ;
 
-  x = linspace(-2*pi,2*pi,40)';
-  h = stairs([sin(x), 0.2*cos(x)]);
+  X      = linspace(-2*pi,2*pi,40)';
+  Yconst = [zeros(10,1); 0.5*ones(20,1);-0.5*ones(10,1)];
+  Y      = [sin(X), 0.2*cos(X), Yconst];
+  h = stairs(Y);
   legend(h(2),'second entry')
 end
 % =========================================================================

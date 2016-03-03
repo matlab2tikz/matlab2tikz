@@ -129,7 +129,9 @@ function recursiveCleanup(meta, h, cmdOpts)
             limitPrecision(meta, h, cmdOpts.scalePrecision);
         elseif strcmpi(type, 'stair')
             % Remove data points outside of the visible axes
-            pruneOutsideBox(meta, h);
+            pruneOutsideBox(meta, h);            
+            % Remove superfluous data points
+            simplifyStairs(meta, h);
             % Limit the precision of the output
             limitPrecision(meta, h, cmdOpts.scalePrecision);
         elseif strcmp(type, 'text') && cmdOpts.pruneText
@@ -446,6 +448,59 @@ function simplifyLine(meta, handle, targetResolution)
     end
 
     % Remove the data points
+    removeData(meta, handle, id_remove);
+end
+% =========================================================================
+function simplifyStairs(meta, handle)
+    % This function simplifies stair plots by removeing superflous data
+    % points
+
+	% Some data might not lead to a new step in the stair. This is the case
+	% if the difference in one dimension is zero, e.g
+	% [(x_1, y_1), (x_2, y_1), ... (x_k, y_1), (x_{k+1} y_2)].
+	% However, there is one exeption. If the monotonicity of the other
+	% dimension changes, e.g. the sequence  [0, 1], [0, -1], [0, 2]. This
+	% sequence cannot be simplified. Therefore, we check for monoticity too.
+    % As an example, we can remove the data points marked with x in the
+    % following stair
+    %       o--x--o
+    %       |     |
+    %       x     o --x--o
+    %       |          
+    % o--x--o         
+    %       |
+    %       o
+
+    % Extract the data
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+
+    % Do not do anything if the data is empty
+    if isempty(xData) || isempty(yData)
+        return;
+    end
+
+    % Check for nonchanging data points
+    xNoDiff      = [false, (diff(xData) == 0)];
+    yNoDiff      = [false, (diff(yData) == 0)];
+
+    % Never remove the last data point
+    xNoDiff(end) = false;
+    yNoDiff(end) = false;
+
+    % Check for monotonicity (it changes if diff(sign)~=0)
+    xIsMonotone  = [true, diff(sign(diff(xData)))==0, true];
+    yIsMonotone  = [true, diff(sign(diff(yData)))==0, true];
+
+    % Only remove points when there is no difference in one dimension and no
+    % change in monotonicity in the other
+    xRemove      = xNoDiff & yIsMonotone;
+    yRemove      = yNoDiff & xIsMonotone;
+
+    % Plot only points, that generate a new step
+    id_remove    = find(xRemove | yRemove);
+
+    % Remove the superfluous data
     removeData(meta, handle, id_remove);
 end
 % =========================================================================
