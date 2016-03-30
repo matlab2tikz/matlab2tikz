@@ -1874,10 +1874,12 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     lineOpts = opts_new();
 
     % Get the options from the handle
-    lineStyle = get(h, 'LineStyle');
     lineWidth = get(h, 'LineWidth');
 
-    if ~isNone(lineStyle) && (lineWidth > m2t.tol)
+    % Get the line style and check whether it is the default one
+    [lineStyle, isDefaultLS] = getAndCheckDefault('Line', h, 'LineStyle', '-');
+
+    if ~isDefaultLS && ~isNone(lineStyle) && (lineWidth > m2t.tol)
         lineOpts = opts_add(lineOpts, translateLineStyle(lineStyle));
     end
 
@@ -2601,6 +2603,18 @@ function [m2t, str] = drawContourHG2(m2t, h)
         if isOff(get(h,'ShowText'))
             plotOptions = opts_add(plotOptions,'contour/labels','false');
         end
+
+        % Get line properties
+        [m2t, lineOptions] = getLineOptions(m2t, h);
+
+        % Check for special color settings
+        [lineColor, isDefaultColor] = getAndCheckDefault('contour', h, 'LineColor', 'flat');
+        if ~isDefaultColor
+            [m2t, lineOptions] = setColor(m2t, h, lineOptions, 'contour/draw color', lineColor, 'none');
+        end
+
+        % Merge the line options with the contour plot options
+        plotOptions = opts_merge(plotOptions, lineOptions);
 
         % Make contour table
         [m2t, table, tableOptions] = makeTable(m2t, {'',''}, contours);
@@ -5789,6 +5803,21 @@ function c = prettyPrint(m2t, strings, interpreter)
     % http://www.mathworks.com/help/techdoc/ref/text_props.html#Interpreter
     % http://www.mathworks.com/help/techdoc/ref/text.html#f68-481120
 
+    % If the user set the matlab2tikz parameter 'parseStrings' to false, no
+    % parsing of strings takes place, thus making the user 100% responsible.
+    if ~m2t.cmdOpts.Results.parseStrings
+        % If strings is an actual string (labels etc) we need to return a
+        % cell containing the string
+        c = cellstr(strings);
+        return
+    end
+
+    % Make sure we have a valid interpreter set up
+    if ~any(strcmpi(interpreter, {'latex', 'tex', 'none'}))
+        userWarning(m2t, 'Don''t know interpreter ''%s''. Default handling.', interpreter);
+        interpreter = 'tex';
+    end
+
     strings = cellstrOneLinePerCell(strings);
 
     % Now loop over the strings and return them pretty-printed in c.
@@ -5796,19 +5825,6 @@ function c = prettyPrint(m2t, strings, interpreter)
     for k = 1:length(strings)
         % linear indexing for independence of cell array dimensions
         s = strings{k};
-
-        % If the user set the matlab2tikz parameter 'parseStrings' to false, no
-        % parsing of strings takes place, thus making the user 100% responsible.
-        if ~m2t.cmdOpts.Results.parseStrings
-            c = strings;
-            return
-        end
-
-        % Make sure we have a valid interpreter set up
-        if ~any(strcmpi(interpreter, {'latex', 'tex', 'none'}))
-            userWarning(m2t, 'Don''t know interpreter ''%s''. Default handling.', interpreter);
-            interpreter = 'tex';
-        end
 
         % The interpreter property of the text element defines how the string
         % is parsed

@@ -343,6 +343,7 @@ function [stat] = peaks_contour()
   stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
   % FIXME: see #604; contour() produces inconsistent output
 
+  subplot(121)
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
 
@@ -352,6 +353,11 @@ function [stat] = peaks_contour()
 
   colormap winter;
 
+  % Contour layers with predefined color
+  subplot(122)
+  contour(peaks(20), 10,'r', 'LineWidth', 5)
+  set(gca,'YTickLabel',[]);
+  set(gca,'YTick',[]);
 end
 % =========================================================================
 function [stat] = contourPenny()
@@ -716,8 +722,10 @@ end
 function [stat] = stairsplot()
   stat.description = 'A simple stairs plot.' ;
 
-  x = linspace(-2*pi,2*pi,40)';
-  h = stairs([sin(x), 0.2*cos(x)]);
+  X      = linspace(-2*pi,2*pi,40)';
+  Yconst = [zeros(10,1); 0.5*ones(20,1);-0.5*ones(10,1)];
+  Y      = [sin(X), 0.2*cos(X), Yconst];
+  h = stairs(Y);
   legend(h(2),'second entry')
 end
 % =========================================================================
