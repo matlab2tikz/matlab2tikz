@@ -867,9 +867,11 @@ function m2t = drawAxes(m2t, handle)
 
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
-        % in MATLAB, they may still be visible. Well.
+        % in MATLAB, they may still be visible. Instead use the following.
         m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, 'hide axis', []);
+            opts_add(m2t.axesContainers{end}.options, 'axis line style={draw=none}', []);
+        m2t.axesContainers{end}.options = ...
+            opts_add(m2t.axesContainers{end}.options, 'ticks=none', []);
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
         %    children = get(handle, 'Children');
@@ -1224,6 +1226,14 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
         options = ...
             opts_add(options, ...
             ['every ',axis,' tick label/.append style'], ...
+            ['{font=\color{',col,'}}']);
+        options = ...
+            opts_add(options, ...
+            ['every ',axis,' tick/.append style'], ...
+            ['{',col,'}']);
+        options = ...
+            opts_add(options, ...
+            ['every axis ',axis,' label/.append style'], ...
             ['{font=\color{',col,'}}']);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1842,6 +1852,9 @@ function [m2t, str] = drawPatch(m2t, handle)
     lineWidth   = get(handle, 'LineWidth');
     lineOptions = getLineOptions(m2t, lineStyle, lineWidth);
     drawOptions = opts_merge(drawOptions, lineOptions);
+    if isNone(handle.Marker) && (isNone(handle.LineStyle) || isNone(handle.EdgeColor))
+      drawOptions = opts_add(drawOptions,'draw opacity','0');
+    end
 
     % No patch: if one patch and single face/edge color
     isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
@@ -3573,10 +3586,19 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     % plot the thing
     xData = get(h, 'XData');
     yData = get(h, 'YData');
-    [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
+    if m2t.axesContainers{end}.is3D
+      zData = get(h, 'ZData');
+      [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData, '', zData);
+      str = sprintf('%s\\addplot3 [%s]\n table[%s] {%s};\n ', ...
+        str, drawOpts, ...
+        opts_print(m2t, tabOpts,','), table);
+    else
+      [m2t, table, tabOpts] = makeTable(m2t, '', xData, '', yData);
+      str = sprintf('%s\\addplot[%s] plot table[%s] {%s};\n', ...
+        str, drawOpts, ...
+        opts_print(m2t, tabOpts, ','), table);
+    end
 
-    str = sprintf('%s\\addplot[%s] plot table[%s] {%s};\n', ...
-        str, drawOpts, opts_print(m2t, tabOpts, ','), table);
 end
 % ==============================================================================
 function [m2t, str] = drawAreaSeries(m2t, h)
@@ -4362,7 +4384,7 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
             idx3 = ~idx1 & ~idx2;
             colorindex(idx1) = 1;
             colorindex(idx2) = m;
-            colorindex(idx3) = fix((cdata(idx3)-clim(1)) / (clim(2)-clim(1)) *m) ...
+            colorindex(idx3) = fix(double(cdata(idx3)-clim(1)) / (clim(2)-clim(1)) *m) ...
                 + 1;
         case 'direct'
             % direct index
