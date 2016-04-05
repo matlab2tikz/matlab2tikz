@@ -2153,9 +2153,6 @@ function [m2t, str] = drawPatch(m2t, handle)
     % Line options
     [m2t, lineOptions] = getLineOptions(m2t, handle);
     drawOptions = opts_merge(drawOptions, lineOptions);
-    if isNone(handle.Marker) && (isNone(handle.LineStyle) || isNone(handle.EdgeColor))
-        drawOptions = opts_add(drawOptions,'draw opacity','0');
-    end
 
     % No patch: if one patch and single face/edge color
     isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
@@ -2290,6 +2287,9 @@ function [m2t, options] = setColor(m2t, handle, options, property, color, noneVa
     % that is set when the color == 'none' (if it is omitted, the property will not
     % be set).
     % TODO: probably this should be integrated with getAndCheckDefault etc.
+    if opts_has(options,property) && isNone(opts_get(options,property))
+        return
+    end
     if ~isNone(color)
         [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
         if ~isempty(xcolor)
