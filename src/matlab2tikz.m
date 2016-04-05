@@ -859,8 +859,9 @@ function m2t = drawAxes(m2t, handle)
 
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
-        % in MATLAB, they may still be visible. Well.
-        m2t = m2t_addAxisOption(m2t, 'hide axis');
+        % in MATLAB, they may still be visible. Instead use the following.
+        m2t = m2t_addAxisOption(m2t, 'axis line style={draw=none}');
+        m2t = m2t_addAxisOption(m2t, 'ticks=none');
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
         %    children = allchild(handle);
@@ -1455,13 +1456,25 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
             % axis styles (e.g., colors).
             options = opts_add(options, 'separate axis lines');
         end
+        % set color of axis lines
         options = ...
             opts_add(options, ...
             ['every outer ', axis, ' axis line/.append style'], ...
             ['{', col, '}']);
+        % set color of tick labels
         options = ...
             opts_add(options, ...
             ['every ',axis,' tick label/.append style'], ...
+            ['{font=\color{',col,'}}']);
+        % set color of ticks
+        options = ...
+            opts_add(options, ...
+            ['every ',axis,' tick/.append style'], ...
+            ['{',col,'}']);
+        % set color of axis labels
+        options = ...
+            opts_add(options, ...
+            ['every axis ',axis,' label/.append style'], ...
             ['{font=\color{',col,'}}']);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1891,6 +1904,11 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
             || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
         lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
     end
+
+    % print no lines
+    if isNone(lineStyle) || lineWidth==0
+        lineOpts = opts_add(lineOpts, 'draw', 'none');
+    end
 end
 % ==============================================================================
 function [m2t, drawOptions] = getMarkerOptions(m2t, h)
@@ -1922,18 +1940,20 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
             markOptions = opts_add(markOptions, 'solid');
         end
 
-        % print no lines
-        if isNone(lineStyle) || lineWidth==0
-            drawOptions = opts_add(drawOptions, 'only marks');
-        end
-
         % get the marker color right
         markerInfo = getMarkerInfo(m2t, h, markOptions);
 
         [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'fill', markerInfo.FaceColor);
 
         if ~strcmpi(markerInfo.EdgeColor,'auto')
-            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'draw', markerInfo.EdgeColor);
+            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, '', markerInfo.EdgeColor);
+        else
+            if isprop(h,'EdgeColor')
+                color = get(h, 'EdgeColor');
+            else
+                color = get(h, 'Color');
+            end
+            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, '', color);
         end
 
         % add it all to drawOptions
@@ -2133,6 +2153,9 @@ function [m2t, str] = drawPatch(m2t, handle)
     % Line options
     [m2t, lineOptions] = getLineOptions(m2t, handle);
     drawOptions = opts_merge(drawOptions, lineOptions);
+    if isNone(handle.Marker) && (isNone(handle.LineStyle) || isNone(handle.EdgeColor))
+        drawOptions = opts_add(drawOptions,'draw opacity','0');
+    end
 
     % No patch: if one patch and single face/edge color
     isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
@@ -4016,7 +4039,11 @@ end
 % ==============================================================================
 function [m2t, str] = drawStemSeries(m2t, h)
     [m2t, str] = drawStemOrStairSeries_(m2t, h, 'ycomb');
-
+    
+    % TODO: handle baseplane with stem3()
+    if m2t.axesContainers{end}.is3D
+      return
+    end
     [m2t, baseline] = drawBaseline(m2t,h);
     str             = [str, baseline];
 end
@@ -4046,16 +4073,27 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     % Toggle legend entry
     drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
 
+    drawOpts = opts_print(drawOptions);
+    
     % Generate the tikz table
     xData = get(h, 'XData');
     yData = get(h, 'YData');
-    [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
+    if m2t.axesContainers{end}.is3D
+        % TODO: account for hgtransform
+        zData = get(h, 'ZData');
+        [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData, '', zData);
+        % Print out
+        tabOpts  = opts_print(tableOptions);
+        str = sprintf('\\addplot3 [%s]\n table[%s] {%s};\n ', ...
+                         drawOpts, tabOpts, table);
+    else
+        [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
+        % Print out
+        tabOpts  = opts_print(tableOptions);
+        str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+                         drawOpts, tabOpts, table);
+    end
 
-    % Print out
-    drawOpts = opts_print(drawOptions);
-    tabOpts  = opts_print(tableOptions);
-    str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
-                       drawOpts, tabOpts, table);
 end
 % ==============================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
@@ -4765,7 +4803,9 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
             idx3 = ~idx1 & ~idx2;
             colorindex(idx1) = 1;
             colorindex(idx2) = m;
-            colorindex(idx3) = fix((cdata(idx3)-clim(1)) / (clim(2)-clim(1)) *m) ...
+            % cdata may be of type uint8. Convert to double to avoid
+            % getting binary indices
+            colorindex(idx3) = fix(double(cdata(idx3)-clim(1)) / (clim(2)-clim(1)) *m) ...
                 + 1;
         case 'direct'
             % direct index
@@ -6418,7 +6458,9 @@ function str = opts_print(opts, sep)
     nOpts = size(opts,1);
     c = cell(1,nOpts);
     for k = 1:nOpts
-        if isempty(opts{k,2})
+        if isempty(opts{k,1})
+            c{k} = sprintf('%s', opts{k,2});
+        elseif isempty(opts{k,2})
             c{k} = sprintf('%s', opts{k,1});
         else
             c{k} = sprintf('%s=%s', opts{k,1}, opts{k,2});
