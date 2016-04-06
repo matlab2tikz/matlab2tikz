@@ -860,8 +860,8 @@ function m2t = drawAxes(m2t, handle)
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
         % in MATLAB, they may still be visible. Instead use the following.
-        m2t = m2t_addAxisOption(m2t, 'axis line style={draw=none}');
-        m2t = m2t_addAxisOption(m2t, 'ticks=none');
+        m2t = m2t_addAxisOption(m2t, 'axis line style', '{draw=none}');
+        m2t = m2t_addAxisOption(m2t, 'ticks', 'none');
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
         %    children = allchild(handle);
