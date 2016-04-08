@@ -274,9 +274,10 @@ function matlab2tikz(varargin)
     m2t.color = configureColors(m2t);
     
     % define global counter variables
-    m2t.count.pngFile   = 0;
-    m2t.count.tsvFile   = 0;
-    m2t.count.autolabel = 0;
+    m2t.count.pngFile     = 0; % number of PNG files
+    m2t.count.tsvFile     = 0; % number of TSV files
+    m2t.count.autolabel   = 0; % number of automatic labels
+    m2t.count.plotyylabel = 0; % number of plotyy labels
     
     %% shortcut
     m2t.ff = m2t.args.floatFormat;
@@ -659,7 +660,6 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
         
-
         % Check if object has legend. Some composite objects need to determine
         % their status at the root level. For detailed explanations check
         % getLegendEntries().
@@ -760,15 +760,25 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
         label = sprintf('\\label{%s};\n\n', plotyyLabelName(labelNum));
 
     elseif m2t.currentHandleHasLegend && ~isempty(m2t.ax{end}.PlotyyReferences)
-        % We are on the secondary axis
-        labelNum = m2t.count.plotyylabel;
-        labelRef = cell(1, labelNum);
+        % We are on the secondary axis.
+        
+        % We have produced a number of labels we can refer to so far.
+        % Also, here we have a number of references that are to be recorded.
+        % So, we make the last references (assuming the other ones have been
+        % realized already)
+        nReferences  = numel(m2t.ax{end}.PlotyyReferences);
+        nLabels      = m2t.count.plotyylabel;
+        
+        % This is the range of labels, corresponding to the references
+        labelRange   = (nLabels-nReferences+1):nLabels;
+        
+        labelRef = cell(1, numel(labelRange));
         % Create labelled references to legend entries of the main axis
-        for ii = 1:labelNum
-            ref         = m2t.ax{end}.PlotyyReferences(ii);
-            lString     = getLegendString(m2t,ref);
-            labelRef{ii}= sprintf('\\addlegendimage{/pgfplots/refstyle=%s}\\addlegendentry{%s};\n',...
-                                  plotyyLabelName(ii), lString);
+        for iRef = 1:nReferences
+            ref            = m2t.ax{end}.PlotyyReferences(iRef);
+            lString        = getLegendString(m2t,ref);
+            labelRef{iRef} = sprintf('\\addlegendimage{/pgfplots/refstyle=%s}\\addlegendentry{%s};\n',...
+                                  plotyyLabelName(labelRange(iRef)), lString);
         end
         labelRef = join(m2t, labelRef, '');
 
@@ -1170,11 +1180,8 @@ function m2t = getPlotyyReferences(m2t,axisHandle)
     % Not a plotyy axis or no legend
     if ~isAxisPlotyy(axisHandle) || isempty(legendHandle)
         m2t.ax{end}.PlotyyReferences = [];
-        m2t.count.plotyylabel = [];
 
     elseif isAxisMain(axisHandle)
-        m2t.count.plotyylabel = 0;
-
         % Mark legend entries of the main axis for labelling
         legendEntries = m2t.ax{end}.LegendEntries;
         ancAxes       = ancestor(legendEntries,'axes');
@@ -1277,8 +1284,7 @@ function [m2t, bool] = hasLegendEntry(m2t, h)
     end
 
     % Should not have a legend reference
-    bool = any(ismember(h, legendEntries)) && ...
-           ~hasPlotyyReference(m2t,h);
+    bool = any(ismember(h, legendEntries)) && ~hasPlotyyReference(m2t,h);
     m2t.currentHandleHasLegend = bool;
 end
 % ==============================================================================
