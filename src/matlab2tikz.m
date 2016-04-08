@@ -752,17 +752,16 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
     end
 
     % Get current label counter
-    labelNum = m2t.PlotyyLabelNum;
 
     if hasPlotyyReference(m2t,h)
         % Label the plot to later reference it. Only legend entries on the main
         % plotyy axis will have a label
-        labelNum = labelNum + 1;
+        [m2t, labelNum] = getNextValue(m2t, 'plotyylabel');
         label = sprintf('\\label{%s};\n\n', plotyyLabelName(labelNum));
-        m2t.PlotyyLabelNum = labelNum;
 
     elseif m2t.currentHandleHasLegend && ~isempty(m2t.ax{end}.PlotyyReferences)
         % We are on the secondary axis
+        labelNum = m2t.count.plotyylabel;
         labelRef = cell(1, labelNum);
         % Create labelled references to legend entries of the main axis
         for ii = 1:labelNum
@@ -1171,10 +1170,10 @@ function m2t = getPlotyyReferences(m2t,axisHandle)
     % Not a plotyy axis or no legend
     if ~isAxisPlotyy(axisHandle) || isempty(legendHandle)
         m2t.ax{end}.PlotyyReferences = [];
-        m2t.PlotyyLabelNum = [];
+        m2t.count.plotyylabel = [];
 
     elseif isAxisMain(axisHandle)
-        m2t.PlotyyLabelNum = 0;
+        m2t.count.plotyylabel = 0;
 
         % Mark legend entries of the main axis for labelling
         legendEntries = m2t.ax{end}.LegendEntries;
@@ -1205,7 +1204,7 @@ function bool = isAxisMain(h)
 
     if ~isAxisPlotyy(h)
         bool = true;
-        return
+        return % an axis not constructed by plotyy is always(?) a main axis
     end
 
     % If it is a Plotyy axis
