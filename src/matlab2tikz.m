@@ -173,11 +173,6 @@ function matlab2tikz(varargin)
     m2t.dataFileNo   = 0;
     m2t.automaticLabelIndex = 0;
 
-    % definition of color depth
-    m2t.colorDepth     = 48; %[bit] RGB color depth (typical values: 24, 30, 48)
-    m2t.colorPrecision = 2^(-m2t.colorDepth/3);
-    m2t.colorFormat    = sprintf('%%0.%df',ceil(-log10(m2t.colorPrecision)));
-
     % the actual contents of the TikZ file go here
     m2t.content = struct('name',     '', ...
                          'comment',  [], ...
@@ -266,7 +261,7 @@ function matlab2tikz(varargin)
     ipp = ipp.parse(ipp, varargin{:});
     m2t.args = ipp.Results; % store the input arguments back into the m2t data struct
 
-    %% inform users of potentially dangerous options
+    %% Inform users of potentially dangerous options
     warnAboutParameter(m2t, 'parseStringsAsMath', @(opt)(opt==true), ...
         ['This may produce undesirable string output. For full control over output\n', ...
          'strings please set the parameter "parseStrings" to false.']);
@@ -278,12 +273,9 @@ function matlab2tikz(varargin)
     warnAboutParameter(m2t, 'interpretTickLabelsAsTex', @(opt)(opt==true&&isHG2), ...
          'Please use "set(gca,''TickLabelInterpreter'',''tex'')" instead.');
 
-    % The following color RGB-values which will need to be defined.
-    % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
-    % their specifications.
-    [m2t.extraRgbColorNames, m2t.extraRgbColorSpecs] = ...
-        dealColorDefinitions(m2t.args.extraColors);
-
+    %% Do some global initialization
+    m2t.color = configureColors(m2t);
+    
     %% shortcut
     m2t.ff = m2t.args.floatFormat;
 
@@ -353,6 +345,23 @@ function matlab2tikz(varargin)
         m2tUpdater(m2t.about, m2t.args.showInfo);
     end
 
+end
+% ==============================================================================
+function colorConfig = configureColors(m2t)
+    % Sets the global color options for matlab2tikz
+    colorConfig = struct();
+    
+    % Set the color resolution.
+    colorConfig.depth     = 48; %[bit] RGB color depth (typical values: 24, 30, 48)
+    colorConfig.precision = 2^(-colorConfig.depth/3);
+    colorConfig.format    = sprintf('%%0.%df',ceil(-log10(colorConfig.precision)));
+    
+    % The following color RGB-values which will need to be defined: 
+    %   
+    %   - 'extraNames' contains their designated names, 
+    %   - 'extraSpecs' their RGB specifications.
+    [colorConfig.extraNames, colorConfig.extraSpecs] = ...
+        dealColorDefinitions(m2t.args.extraColors);
 end
 % ==============================================================================
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
@@ -503,8 +512,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     m2t.content.options = opts_append_userdefined(m2t.content.options, ...
                                    m2t.args.extraTikzpictureOptions);
 
-    m2t.content.colors = generateColorDefinitions(m2t.extraRgbColorNames, ...
-                            m2t.extraRgbColorSpecs, m2t.colorFormat);
+    m2t.content.colors = generateColorDefinitions(m2t.color);
 
     % Open file if was not open
     if ~fileWasOpen
@@ -542,17 +550,19 @@ function addStandalone(m2t, fid, part)
     end
 end
 % ==============================================================================
-function str = generateColorDefinitions(names, specs, colorFormat)
+function str = generateColorDefinitions(colorConfig)
     % output the color definitions to LaTeX
-    str = '';
-    ff  = colorFormat;
+    str   = '';
+    names = colorConfig.extraNames;
+    specs = colorConfig.extraSpecs;
+    ff    = colorConfig.format;
+    
+    % make sure to append with '%' to avoid spacing woes
+    FORMAT = ['\\definecolor{%s}{rgb}{' ff ',' ff ',' ff '}%%\n'];
     if ~isempty(names)
-        m2t.content.colors = sprintf('%%\n%% defining custom colors\n');
         colorDef = cell(1, length(names));
         for k = 1:length(names)
-            % make sure to append with '%' to avoid spacing woes
-            colorDef{k}= sprintf(['\\definecolor{%s}{rgb}{', ff, ',', ff, ',', ff,'}%%\n'], ...
-                                  names{k}, specs{k});
+            colorDef{k}= sprintf(FORMAT, names{k}, specs{k});
         end
         str = m2tstrjoin([colorDef, sprintf('%%\n')], '');
     end
@@ -5241,13 +5251,13 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
                       [0.75,0,0.25], [0,0.5,0.5], [0.5,0,0.5], ...
                       [0.25,0.25,0.25], [0.5,0.5,0.5], [0.75,0.75,0.75]};
 
-    colorNames = [xcolColorNames, m2t.extraRgbColorNames];
-    colorSpecs = [xcolColorSpecs, m2t.extraRgbColorSpecs];
+    colorNames = [xcolColorNames, m2t.color.extraNames];
+    colorSpecs = [xcolColorSpecs, m2t.color.extraSpecs];
 
     %% check if rgb is a predefined color
     for kColor = 1:length(colorSpecs)
         Ck = colorSpecs{kColor}(:);
-        if max(abs(Ck - rgb(:))) < m2t.colorPrecision
+        if max(abs(Ck - rgb(:))) < m2t.color.precision
             colorLiteral = colorNames{kColor};
             return % exact color was predefined
         end
@@ -5264,7 +5274,7 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
             p  = round(100*p)/100;  % round to a percentage
             Ck = p * Ci + (1-p)*Cj; % approximated mixed color
 
-            if p <= 1 && p >= 0 && max(abs(Ck(:) - rgb(:))) < m2t.colorPrecision
+            if p <= 1 && p >= 0 && max(abs(Ck(:) - rgb(:))) < m2t.color.precision
                 colorLiteral = sprintf('%s!%d!%s', colorNames{iColor}, round(p*100), ...
                     colorNames{jColor});
                 return % linear combination found
@@ -5273,9 +5283,9 @@ function [m2t, colorLiteral] = rgb2colorliteral(m2t, rgb)
     end
 
     %% Define colors that are not a linear combination of two known colors
-    colorLiteral = sprintf('mycolor%d', length(m2t.extraRgbColorNames)+1);
-    m2t.extraRgbColorNames{end+1} = colorLiteral;
-    m2t.extraRgbColorSpecs{end+1} = rgb;
+    colorLiteral = sprintf('mycolor%d', length(m2t.color.extraNames)+1);
+    m2t.color.extraNames{end+1} = colorLiteral;
+    m2t.color.extraSpecs{end+1} = rgb;
 end
 % ==============================================================================
 function newstr = join(m2t, cellstr, delimiter)
