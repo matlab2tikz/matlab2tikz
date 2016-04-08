@@ -743,7 +743,7 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
         % Label the plot to later reference it. Only legend entries on the main
         % plotyy axis will have a label
         labelNum = labelNum + 1;
-        label = sprintf('\\label{plotyyref:leg%d};\n\n', labelNum);
+        label = sprintf('\\label{%s};\n\n', plotyyLabelName(labelNum));
         m2t.PlotyyLabelNum = labelNum;
 
     elseif m2t.currentHandleHasLegend && ~isempty(m2t.axesContainers{end}.PlotyyReferences)
@@ -753,8 +753,8 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
         for ii = 1:labelNum
             ref         = m2t.axesContainers{end}.PlotyyReferences(ii);
             lString     = getLegendString(m2t,ref);
-            labelRef{ii}= sprintf('\\addlegendimage{/pgfplots/refstyle=plotyyref:leg%d}\\addlegendentry{%s};\n',...
-                                  ii, lString);
+            labelRef{ii}= sprintf('\\addlegendimage{/pgfplots/refstyle=%s}\\addlegendentry{%s};\n',...
+                                  plotyyLabelName(ii), lString);
         end
         labelRef = join(m2t, labelRef, '');
 
@@ -764,6 +764,11 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
         % Do nothing: it's gonna be a legend entry.
         % Not a label nor a referenced entry from the main axis.
     end
+end
+% ==============================================================================
+function label = plotyyLabelName(num)
+    % creates a LaTeX label for a plotyy trace
+    label = sprintf('plotyyref:leg%d', num);
 end
 % ==============================================================================
 function legendInfo = addLegendInformation(m2t, h)
