@@ -154,9 +154,9 @@ function matlab2tikz(varargin)
                             'Octave', struct('name','3.8', 'num',[3 8]));
     checkDeprecatedEnvironment(minimalVersion);
 
-    m2t.currentHandles = [];
-
-    m2t.transform = []; % For hgtransform groups
+    m2t.args            = []; % For command line arguments
+    m2t.current         = []; % For currently active objects
+    m2t.transform       = []; % For hgtransform groups
     m2t.pgfplotsVersion = [1,3];
     m2t.about.name      = 'matlab2tikz';
     m2t.about.version   = '1.0.0';
@@ -283,11 +283,11 @@ function matlab2tikz(varargin)
     if isempty(m2t.args.figurehandle)
         error('matlab2tikz:figureNotFound','MATLAB figure not found.');
     end
-    m2t.currentHandles.gcf = m2t.args.figurehandle;
+    m2t.current.gcf = m2t.args.figurehandle;
     if m2t.args.colormap
-        m2t.currentHandles.colormap = m2t.args.colormap;
+        m2t.current.colormap = m2t.args.colormap;
     else
-        m2t.currentHandles.colormap = get(m2t.currentHandles.gcf, 'colormap');
+        m2t.current.colormap = get(m2t.current.gcf, 'colormap');
     end
 
     %% handle output file handle/file name
@@ -449,7 +449,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % Save the figure as TikZ to a file. All other routines are called from here.
 
     % get all axes handles
-    [m2t, axesHandles] = findPlotAxes(m2t, m2t.currentHandles.gcf);
+    [m2t, axesHandles] = findPlotAxes(m2t, m2t.current.gcf);
 
     % Turn around the handles vector to make sure that plots that appeared
     % first also appear first in the vector. This makes sure the z-order of
@@ -739,7 +739,7 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
     % This ensures we are either on the main or secondary axis
     label    = '';
     labelRef = '';
-    if ~isAxisPlotyy(m2t.currentHandles.gca)
+    if ~isAxisPlotyy(m2t.current.gca)
         return
     end
 
@@ -819,7 +819,7 @@ function m2t = drawAxes(m2t, handle)
         'children', {cell(0)});
 
     % update gca
-    m2t.currentHandles.gca = handle;
+    m2t.current.gca = handle;
 
     % Check if axis is 3d
     % In MATLAB, all plots are treated as 3D plots; it's just the view that
@@ -1439,7 +1439,7 @@ function m2t = handleColorbar(m2t, handle)
     if parentFound
         m2t.axesContainers{k0}.options = ...
             opts_append(m2t.axesContainers{k0}.options, ...
-            matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+            matlab2pgfplotsColormap(m2t, m2t.current.colormap), []);
         % Append cell string.
         m2t.axesContainers{k0}.options = cat(1,...
             m2t.axesContainers{k0}.options, ...
@@ -2218,7 +2218,7 @@ function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
     if rowsCData > 1
 
         % Add the color map
-        m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap));
+        m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.current.colormap));
 
         % Determine if mapping is direct or scaled
         CDataMapping = get(handle,'CDataMapping');
@@ -2402,13 +2402,13 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
         alphaOpts = {'Alpha', alphaData};
     end
     if (ndims(colorData) == 2) %#ok don't use ismatrix (cfr. #143)
-        if size(m2t.currentHandles.colormap, 1) <= 256 && ~hasAlpha
+        if size(m2t.current.colormap, 1) <= 256 && ~hasAlpha
             % imwrite supports maximum 256 values in a colormap (i.e. 8 bit)
             % and no alpha channel for indexed PNG images.
-            imwrite(colorData, m2t.currentHandles.colormap, ...
+            imwrite(colorData, m2t.current.colormap, ...
                 pngFileName, 'png');
         else % use true-color instead
-            imwrite(ind2rgb(colorData, m2t.currentHandles.colormap), ...
+            imwrite(ind2rgb(colorData, m2t.current.colormap), ...
                 pngFileName, 'png', alphaOpts{:});
         end
     else
@@ -2417,13 +2417,13 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
     % -----------------------------------------------------------------------
     % dimensions of a pixel in axes units
     if n == 1
-        xLim = get(m2t.currentHandles.gca, 'XLim');
+        xLim = get(m2t.current.gca, 'XLim');
         xw = xLim(2) - xLim(1);
     else
         xw = (xData(end)-xData(1)) / (n-1);
     end
     if m == 1
-        yLim = get(m2t.currentHandles.gca, 'YLim');
+        yLim = get(m2t.current.gca, 'YLim');
         yw = yLim(2) - yLim(1);
     else
         yw = (yData(end)-yData(1)) / (m-1);
@@ -2524,7 +2524,7 @@ function alpha = normalizedAlphaValues(m2t, alpha, handle)
     switch lower(alphaDataMapping)
         case 'none'  % no rescaling needed
         case 'scaled'
-            ALim = get(m2t.currentHandles.gca, 'ALim');
+            ALim = get(m2t.current.gca, 'ALim');
             AMax = ALim(2);
             AMin = ALim(1);
             if ~isfinite(AMax)
@@ -2532,7 +2532,7 @@ function alpha = normalizedAlphaValues(m2t, alpha, handle)
             end
             alpha = (alpha - AMin)./(AMax - AMin);
         case 'direct'
-            alpha = ind2rgb(alpha, get(m2t.currentHandles.gcf, 'Alphamap'));
+            alpha = ind2rgb(alpha, get(m2t.current.gcf, 'Alphamap'));
         otherwise
             error('matlab2tikz:UnknownAlphaMapping', ...
                   'Unknown alpha mapping "%s"', alphaMapping);
@@ -2601,7 +2601,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
         [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows);
     else
         % Add colormap
-        cmap = m2t.currentHandles.colormap;
+        cmap = m2t.current.colormap;
         m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, cmap));
 
         % Contour table in Matlab format
@@ -2881,7 +2881,7 @@ function m2t = drawAnnotations(m2t)
 
     % Get annotation handles
     if isHG2
-        annotPanes   = findall(m2t.currentHandles.gcf,'Tag','scribeOverlay');
+        annotPanes   = findall(m2t.current.gcf,'Tag','scribeOverlay');
         children = allchild(annotPanes);
         %TODO: is this dead code?
         if iscell(children)
@@ -3019,7 +3019,7 @@ function [m2t,str] = drawSurface(m2t, h)
 
         tableOptions = opts_add(tableOptions, 'colormap name','surfmap');
     else
-        opts = opts_add(opts,matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap),'');
+        opts = opts_add(opts,matlab2pgfplotsColormap(m2t, m2t.current.colormap),'');
         % If NaNs are present in the color specifications, don't use them for
         % Pgfplots; they may be interpreted as strings there.
         % Note:
@@ -3280,9 +3280,9 @@ end
 function m2t = disableClippingInCurrentAxes(m2t, pos)
     % Disables clipping in the current axes if the `pos` vector lies outside
     % the limits of the axes.
-    xlim  = getOrDefault(m2t.currentHandles.gca, 'XLim',[-Inf +Inf]);
-    ylim  = getOrDefault(m2t.currentHandles.gca, 'YLim',[-Inf +Inf]);
-    zlim  = getOrDefault(m2t.currentHandles.gca, 'ZLim',[-Inf +Inf]);
+    xlim  = getOrDefault(m2t.current.gca, 'XLim',[-Inf +Inf]);
+    ylim  = getOrDefault(m2t.current.gca, 'YLim',[-Inf +Inf]);
+    zlim  = getOrDefault(m2t.current.gca, 'ZLim',[-Inf +Inf]);
     is3D  = m2t.axesContainers{end}.is3D;
 
     xOutOfRange =          pos(1) < xlim(1) || pos(1) > xlim(2);
@@ -3676,7 +3676,7 @@ function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, marker
     drawOptions = opts_addSubOpts(drawOptions, 'scatter/use mapped color', ...
                                markerOptions);
     % Add color map.
-    m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.currentHandles.colormap), []);
+    m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.current.colormap), []);
 end
 % ==============================================================================
 function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData)
@@ -3971,9 +3971,9 @@ function [m2t,str] = drawBaseline(m2t,hparent,isVertical)
     % Get data
     if isVertical
         xData = repmat(baseValue,1,2);
-        yData = get(m2t.currentHandles.gca,'Ylim');
+        yData = get(m2t.current.gca,'Ylim');
     else
-        xData = get(m2t.currentHandles.gca,'Xlim');
+        xData = get(m2t.current.gca,'Xlim');
         yData = repmat(baseValue,1,2);
     end
 
@@ -4541,7 +4541,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
 
     if m2t.args.strict
         % Sampled colors.
-        numColors = size(m2t.currentHandles.colormap, 1);
+        numColors = size(m2t.current.colormap, 1);
         axisOptions = opts_add(axisOptions, 'colorbar sampled');
         cbarStyleOptions = opts_add(cbarStyleOptions, 'samples', ...
             sprintf('%d', numColors+1));
@@ -4668,7 +4668,7 @@ function [m2t, xcolor] = getColor(m2t, handle, color, mode)
                     [m2t, colorindex] = cdata2colorindex(m2t, color, handle);
                     for i = 1:m
                         for j = 1:n
-                            [m2t, xc] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex(i,j), :));
+                            [m2t, xc] = rgb2colorliteral(m2t, m2t.current.colormap(colorindex(i,j), :));
                             xcolor{i, j} = xc;
                         end
                     end
@@ -4699,7 +4699,7 @@ function [m2t, xcolor] = patchcolor2xcolor(m2t, color, patchhandle)
                     % All same color
                 elseif all(isnan(cdata) | abs(cdata-color1)<1.0e-10)
                     [m2t, colorindex] = cdata2colorindex(m2t, color1, patchhandle);
-                    [m2t, xcolor] = rgb2colorliteral(m2t, m2t.currentHandles.colormap(colorindex, :));
+                    [m2t, xcolor] = rgb2colorliteral(m2t, m2t.current.colormap(colorindex, :));
                 else
                     % Don't return anything meaningful and count on the caller
                     % to make something of it.
@@ -4755,7 +4755,7 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
             'Don''t know how to handle CData ''%s''.',cdata);
     end
 
-    axeshandle = m2t.currentHandles.gca;
+    axeshandle = m2t.current.gca;
 
     % -----------------------------------------------------------------------
     % For the following, see, for example, the MATLAB help page for 'image',
@@ -4770,7 +4770,7 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
             % need to scale within clim
             % see MATLAB's manual page for caxis for details
             clim = get(axeshandle, 'clim');
-            m = size(m2t.currentHandles.colormap, 1);
+            m = size(m2t.current.colormap, 1);
             colorindex = zeros(size(cdata));
             idx1 = cdata <= clim(1);
             idx2 = cdata >= clim(2);
@@ -4909,8 +4909,8 @@ function [lStyle] = getLegendPosition(m2t, handle, lStyle)
                 position = legendPos(1:2);
             else
                 % Calculate where the legend is located w.r.t. the axes.
-                axesPos = get(m2t.currentHandles.gca, 'Position');
-                axesUnit = get(m2t.currentHandles.gca, 'Units');
+                axesPos = get(m2t.current.gca, 'Position');
+                axesUnit = get(m2t.current.gca, 'Units');
                 % Convert to legend unit
                 axesPos = convertUnits(axesPos, axesUnit, unit);
                 % By default, the axes position is given w.r.t. to the figure,
@@ -5303,9 +5303,9 @@ function [width, height, unit] = getNaturalFigureDimension(m2t)
     % also returned.
 
     % Get current figure size
-    figuresize = get(m2t.currentHandles.gcf, 'Position');
+    figuresize = get(m2t.current.gcf, 'Position');
     figuresize = figuresize([3 4]);
-    figureunit = get(m2t.currentHandles.gcf, 'Units');
+    figureunit = get(m2t.current.gcf, 'Units');
 
     % Convert Figure Size
     unit = 'in';
