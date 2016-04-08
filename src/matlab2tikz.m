@@ -154,18 +154,17 @@ function matlab2tikz(varargin)
                             'Octave', struct('name','3.8', 'num',[3 8]));
     checkDeprecatedEnvironment(minimalVersion);
 
-    m2t.cmdOpts = [];
     m2t.currentHandles = [];
 
     m2t.transform = []; % For hgtransform groups
     m2t.pgfplotsVersion = [1,3];
-    m2t.about.name = 'matlab2tikz';
-    m2t.about.version = '1.0.0';
-    m2t.about.years = '2008--2016';
-    m2t.about.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
-    m2t.about.github = 'https://github.com/matlab2tikz/matlab2tikz';
-    m2t.about.wiki = [m2t.about.github '/wiki'];
-    m2t.about.issues = [m2t.about.github '/issues'];
+    m2t.about.name      = 'matlab2tikz';
+    m2t.about.version   = '1.0.0';
+    m2t.about.years     = '2008--2016';
+    m2t.about.website   = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
+    m2t.about.github    = 'https://github.com/matlab2tikz/matlab2tikz';
+    m2t.about.wiki      = [m2t.about.github '/wiki'];
+    m2t.about.issues    = [m2t.about.github '/issues'];
     VCID = VersionControlIdentifier();
     m2t.about.versionFull = strtrim(sprintf('v%s %s', m2t.about.version, VCID));
 
@@ -265,7 +264,7 @@ function matlab2tikz(varargin)
 
     %% Finally parse all the arguments
     ipp = ipp.parse(ipp, varargin{:});
-    m2t.cmdOpts = ipp; % store the input parser back into the m2t data struct
+    m2t.args = ipp.Results; % store the input arguments back into the m2t data struct
 
     %% inform users of potentially dangerous options
     warnAboutParameter(m2t, 'parseStringsAsMath', @(opt)(opt==true), ...
@@ -283,18 +282,18 @@ function matlab2tikz(varargin)
     % 'extraRgbColorNames' contains their designated names, 'extraRgbColorSpecs'
     % their specifications.
     [m2t.extraRgbColorNames, m2t.extraRgbColorSpecs] = ...
-        dealColorDefinitions(m2t.cmdOpts.Results.extraColors);
+        dealColorDefinitions(m2t.args.extraColors);
 
     %% shortcut
-    m2t.ff = m2t.cmdOpts.Results.floatFormat;
+    m2t.ff = m2t.args.floatFormat;
 
     %% add global elements
-    if isempty(m2t.cmdOpts.Results.figurehandle)
+    if isempty(m2t.args.figurehandle)
         error('matlab2tikz:figureNotFound','MATLAB figure not found.');
     end
-    m2t.currentHandles.gcf = m2t.cmdOpts.Results.figurehandle;
-    if m2t.cmdOpts.Results.colormap
-        m2t.currentHandles.colormap = m2t.cmdOpts.Results.colormap;
+    m2t.currentHandles.gcf = m2t.args.figurehandle;
+    if m2t.args.colormap
+        m2t.currentHandles.colormap = m2t.args.colormap;
     else
         m2t.currentHandles.colormap = get(m2t.currentHandles.gcf, 'colormap');
     end
@@ -305,22 +304,22 @@ function matlab2tikz(varargin)
     % By default, reference the PNG (if required) from the TikZ file
     % as the file path of the TikZ file itself. This works if the MATLAB script
     % is executed in the same folder where the TeX file sits.
-    if isempty(m2t.cmdOpts.Results.relativeDataPath)
-        if ~isempty(m2t.cmdOpts.Results.relativePngPath)
+    if isempty(m2t.args.relativeDataPath)
+        if ~isempty(m2t.args.relativePngPath)
             %NOTE: eventually break backwards compatibility of relative PNG path
-            m2t.relativeDataPath = m2t.cmdOpts.Results.relativePngPath;
+            m2t.relativeDataPath = m2t.args.relativePngPath;
             userWarning(m2t, ['Using "relativePngPath" for "relativeDataPath".', ...
                 ' This will stop working in a future release.']);
         else
-            m2t.relativeDataPath = m2t.cmdOpts.Results.relativeDataPath;
+            m2t.relativeDataPath = m2t.args.relativeDataPath;
         end
     else
-        m2t.relativeDataPath = m2t.cmdOpts.Results.relativeDataPath;
+        m2t.relativeDataPath = m2t.args.relativeDataPath;
     end
-    if isempty(m2t.cmdOpts.Results.dataPath)
+    if isempty(m2t.args.dataPath)
         m2t.dataPath = fileparts(m2t.tikzFileName);
     else
-        m2t.dataPath = m2t.cmdOpts.Results.dataPath;
+        m2t.dataPath = m2t.args.dataPath;
     end
 
 
@@ -350,18 +349,18 @@ function matlab2tikz(varargin)
     m2t = saveToFile(m2t, fid, fileWasOpen);
 
     %% Check for a new matlab2tikz version outside version control
-    if m2t.cmdOpts.Results.checkForUpdates
-        m2tUpdater(m2t.about, m2t.cmdOpts.Results.showInfo);
+    if m2t.args.checkForUpdates
+        m2tUpdater(m2t.about, m2t.args.showInfo);
     end
 
 end
 % ==============================================================================
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
     % opens the output file and/or show a dialog to select one
-    if ~isempty(m2t.cmdOpts.Results.filehandle)
-        fid         = m2t.cmdOpts.Results.filehandle;
+    if ~isempty(m2t.args.filehandle)
+        fid         = m2t.args.filehandle;
         fileWasOpen = true;
-        if ~isempty(m2t.cmdOpts.Results.filename)
+        if ~isempty(m2t.args.filename)
             userWarning(m2t, ...
                 'File handle AND file name for output given. File handle used, file name discarded.')
         end
@@ -370,8 +369,8 @@ function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
         fid         = [];
         fileWasOpen = false;
         % set filename
-        if ~isempty(m2t.cmdOpts.Results.filename)
-            filename = m2t.cmdOpts.Results.filename;
+        if ~isempty(m2t.args.filename)
+            filename = m2t.args.filename;
         else
             [filename, pathname] = uiputfile({'*.tex;*.tikz'; '*.*'}, 'Save File');
             filename = fullfile(pathname, filename);
@@ -418,7 +417,7 @@ function fid = fileOpenForWrite(m2t, filename)
     switch getEnvironment()
         case 'MATLAB'
             fid = fopen(filename, 'w', ...
-                        'native', m2t.cmdOpts.Results.encoding);
+                        'native', m2t.args.encoding);
         case 'Octave'
             fid = fopen(filename, 'w');
         otherwise
@@ -477,7 +476,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     m2t.content.comment = sprintf('This file was created by %s.\n', m2t.about.name);
 
-    if m2t.cmdOpts.Results.showInfo
+    if m2t.args.showInfo
         % disable this info if showInfo=false
         m2t.content.comment = [m2t.content.comment, ...
             sprintf(['\n',...
@@ -492,9 +491,9 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
         minimalPgfplotsVersion);
 
     % Add custom comment.
-    if ~isempty(m2t.cmdOpts.Results.tikzFileComment)
+    if ~isempty(m2t.args.tikzFileComment)
         m2t.content.comment = [m2t.content.comment, ...
-            sprintf('\n%s\n', m2t.cmdOpts.Results.tikzFileComment)
+            sprintf('\n%s\n', m2t.args.tikzFileComment)
             ];
     end
 
@@ -502,7 +501,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
 
     % Add custom TikZ options if any given.
     m2t.content.options = opts_append_userdefined(m2t.content.options, ...
-                                   m2t.cmdOpts.Results.extraTikzpictureOptions);
+                                   m2t.args.extraTikzpictureOptions);
 
     m2t.content.colors = generateColorDefinitions(m2t.extraRgbColorNames, ...
                             m2t.extraRgbColorSpecs, m2t.colorFormat);
@@ -516,19 +515,19 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     % Finally print it to the file
     addComments(fid, m2t.content.comment);
     addStandalone(m2t, fid, 'preamble');
-    addCustomCode(fid, '', m2t.cmdOpts.Results.extraCode, '');
+    addCustomCode(fid, '', m2t.args.extraCode, '');
     addStandalone(m2t, fid, 'begin');
 
     printAll(m2t, m2t.content, fid); % actual plotting happens here
 
-    addCustomCode(fid, '\n', m2t.cmdOpts.Results.extraCodeAtEnd, '');
+    addCustomCode(fid, '\n', m2t.args.extraCodeAtEnd, '');
 
     addStandalone(m2t, fid, 'end');
 end
 % ==============================================================================
 function addStandalone(m2t, fid, part)
     % writes a part of a standalone LaTeX file definition
-    if m2t.cmdOpts.Results.standalone
+    if m2t.args.standalone
         switch part
             case 'preamble'
                 fprintf(fid, '\\documentclass[tikz]{standalone}\n%s\n',  m2t.preamble);
@@ -893,7 +892,7 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawLegendOptionsOfAxes(m2t);
 
     m2t.axesContainers{end}.options = opts_append_userdefined(...
-        m2t.axesContainers{end}.options, m2t.cmdOpts.Results.extraAxisOptions);
+        m2t.axesContainers{end}.options, m2t.args.extraAxisOptions);
 end
 % ==============================================================================
 function m2t = drawGridOfAxes(m2t, handle)
@@ -931,7 +930,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         % Get the line style and translate it to pgfplots
         [gridLS, isDefault] = getAndCheckDefault(...
             'axes', handle, 'GridLineStyle', ':');
-        if ~isDefault || m2t.cmdOpts.Results.strict
+        if ~isDefault || m2t.args.strict
             gridOpts = opts_add(gridOpts, translateLineStyle(gridLS));
         end
 
@@ -961,7 +960,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         % Get the line style and translate it to pgfplots
         [minorGridLS, isDefault] = getAndCheckDefault(...
             'axes', handle, 'MinorGridLineStyle', ':');
-        if ~isDefault || m2t.cmdOpts.Results.strict
+        if ~isDefault || m2t.args.strict
             minorGridOpts = opts_add(minorGridOpts, translateLineStyle(minorGridLS));
         end
 
@@ -991,7 +990,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         % default MATLAB behavior), but so do the grids (which is not default
         % behavior).
         %TODO: use proper grid ordering
-        if m2t.cmdOpts.Results.strict
+        if m2t.args.strict
             options = opts_add(options, 'axis on top');
         end
         % FIXME: axis background, axis grid, main, axis ticks, axis lines, axis tick labels, axis descriptions, axis foreground
@@ -1283,10 +1282,10 @@ function m2t = retrievePositionOfAxes(m2t, handle)
     % This retrieves the position of an axes and stores it into the m2t data
     % structure
 
-    pos = getAxesPosition(m2t, handle, m2t.cmdOpts.Results.width, ...
-                          m2t.cmdOpts.Results.height, m2t.axesBoundingBox);
+    pos = getAxesPosition(m2t, handle, m2t.args.width, ...
+                          m2t.args.height, m2t.axesBoundingBox);
     % set the width
-    if (~m2t.cmdOpts.Results.noSize)
+    if (~m2t.args.noSize)
         % optionally prevents setting the width and height of the axis
         m2t = setDimensionOfAxes(m2t, 'width',  pos.w);
         m2t = setDimensionOfAxes(m2t, 'height', pos.h);
@@ -1449,7 +1448,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     % axis colors
     [color, isDfltColor] = getAndCheckDefault('Axes', handle, ...
                                               [upper(axis),'Color'], [ 0 0 0 ]);
-    if ~isDfltColor || m2t.cmdOpts.Results.strict
+    if ~isDfltColor || m2t.args.strict
         [m2t, col] = getColor(m2t, handle, color, 'patch');
         if isOn(get(handle, 'box'))
             % If the axes are arranged as a box, make sure that the individual
@@ -1506,19 +1505,19 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     if isempty(ticks)
         % If no ticks are present, we need to enforce this in any case.
         pgfTicks = '\empty';
-    elseif strcmpi(tickMode, 'auto') && ~m2t.cmdOpts.Results.strict && ~isDatetimeTicks
+    elseif strcmpi(tickMode, 'auto') && ~m2t.args.strict && ~isDatetimeTicks
         % Let pgfplots decide if the tickmode is auto or conversion is not
         % strict and we are not dealing with datetime ticks
         pgfTicks = [];
-    else % strcmpi(tickMode,'manual') || m2t.cmdOpts.Results.strict
+    else % strcmpi(tickMode,'manual') || m2t.args.strict
         pgfTicks = join(m2t, cellstr(num2str(ticks(:))), ', ');
     end
 
     keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
     tickLabelMode        = get(handle, keywordTickLabelMode);
-    if strcmpi(tickLabelMode, 'auto') && ~m2t.cmdOpts.Results.strict && ~isDatetimeTicks
+    if strcmpi(tickLabelMode, 'auto') && ~m2t.args.strict && ~isDatetimeTicks
         pgfTickLabels = [];
-    else % strcmpi(tickLabelMode,'manual') || m2t.cmdOpts.Results.strict
+    else % strcmpi(tickLabelMode,'manual') || m2t.args.strict
         % HG2 allows to set 'TickLabelInterpreter'.
         % HG1 tacitly uses the interpreter 'none'.
         % See http://www.mathworks.com/matlabcentral/answers/102053#comment_300079
@@ -1559,7 +1558,7 @@ function interpreter = defaultTickLabelInterpreter(m2t)
     % determines the default tick label interpreter
     % This is only relevant in HG1/Octave. In HG2, we use the interpreter
     % set in the object (not the global default).
-    if m2t.cmdOpts.Results.interpretTickLabelsAsTex
+    if m2t.args.interpretTickLabelsAsTex
         interpreter = 'tex';
     else
         interpreter = 'none';
@@ -1598,7 +1597,7 @@ function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTi
     end
     if hasMinorTicks
         options = opts_add(options, [axis,'minorticks'], 'true');
-        if m2t.cmdOpts.Results.strict
+        if m2t.args.strict
             options = opts_add(options, ...
                 sprintf('minor %s tick num', axis), ...
                 sprintf('{%d}', matlabDefaultNumMinorTicks));
@@ -1806,12 +1805,12 @@ function [m2t, labelCode] = addLabel(m2t, h)
     % conditionally add a LaTeX label after the current plot
     labelCode = '';
     
-    if m2t.cmdOpts.Results.automaticLabels||m2t.cmdOpts.Results.addLabels
+    if m2t.args.automaticLabels||m2t.args.addLabels
         lineTag = get(h,'Tag');
         if ~isempty(lineTag)
             labelName = sprintf('%s', lineTag);
         else
-            [pathstr, name] = fileparts(m2t.cmdOpts.Results.filename); %#ok
+            [pathstr, name] = fileparts(m2t.args.filename); %#ok
             labelName = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
             m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
         end
@@ -1851,7 +1850,7 @@ function dataCell = splitLine(m2t, data)
     % Get the length of the data array and the corresponding chung size
     %TODO: scale `maxChunkLength` with the number of columns in the data array
     len         = size(data, 1);
-    chunkLength = m2t.cmdOpts.Results.maxChunkLength;
+    chunkLength = m2t.args.maxChunkLength;
     chunks      = chunkLength * ones(ceil(len/chunkLength), 1);
     if mod(len, chunkLength) ~=0
         chunks(end) = mod(len, chunkLength);
@@ -1890,7 +1889,7 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     % Also apply the line width if no actual line is there; the markers make use
     % of this, too.
     matlabDefaultLineWidth = 0.5;
-    if m2t.cmdOpts.Results.strict ...
+    if m2t.args.strict ...
             || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
         lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
     end
@@ -1913,7 +1912,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         % take over the marker size in any case when in strict mode;
         % if not, don't add anything in case of default marker size
         % and effectively take Pgfplots' default.
-        if m2t.cmdOpts.Results.strict || ~isDefault
+        if m2t.args.strict || ~isDefault
             drawOptions = opts_add(drawOptions, 'mark size', ...
                                    sprintf('%.1fpt', tikzMarkerSize));
         end
@@ -2352,7 +2351,7 @@ function [m2t, str] = drawImage(m2t, handle)
     yData = get(handle, 'YData');
     cData = get(handle, 'CData');
 
-    if (m2t.cmdOpts.Results.imagesAsPng)
+    if (m2t.args.imagesAsPng)
         [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData);
     else
         [m2t, str] = imageAsTikZ(m2t, handle, xData, yData, cData);
@@ -3114,7 +3113,7 @@ function [m2t, str] = drawVisibleText(m2t, handle)
     if any(isnan(get(handle, 'Position')) | isnan(get(handle, 'Rotation'))) ...
             || isOff(get(handle, 'Visible')) ...
             || (isOff(get(handle, 'HandleVisibility')) && ...
-                ~m2t.cmdOpts.Results.showHiddenStrings)
+                ~m2t.args.showHiddenStrings)
 
         str = '';
         return;
@@ -4252,7 +4251,7 @@ function [m2t, str] = drawTextarrow(m2t, handle)
     [m2t, str] = handleAllChildren(m2t, handle);
 
     % handleAllChildren ignores the text, unless hidden strings are shown
-    if ~m2t.cmdOpts.Results.showHiddenStrings
+    if ~m2t.args.showHiddenStrings
         child = findall(handle, 'type', 'text');
         [m2t, str{end+1}] = drawText(m2t, child);
     end
@@ -4466,7 +4465,7 @@ function fontStyle = getFontStyle(m2t, handle)
     if strcmpi(get(handle, 'FontAngle'), 'Italic')
         fontStyle = sprintf('%s\\itshape',fontStyle);
     end
-    if m2t.cmdOpts.Results.strictFontSize
+    if m2t.args.strictFontSize
         fontSize  = get(handle,'FontSize');
         fontUnits = matlab2texUnits(get(handle,'FontUnits'), 'pt');
         fontStyle = sprintf('\\fontsize{%d%s}{1em}%s\\selectfont',fontSize,fontUnits,fontStyle);
@@ -4530,7 +4529,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
     % title
     [m2t, cbarStyleOptions] = getTitle(m2t, handle, cbarStyleOptions);
 
-    if m2t.cmdOpts.Results.strict
+    if m2t.args.strict
         % Sampled colors.
         numColors = size(m2t.currentHandles.colormap, 1);
         axisOptions = opts_add(axisOptions, 'colorbar sampled');
@@ -5127,7 +5126,7 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
     opts = opts_new();
 
     COLSEP = sprintf('\t');
-    if m2t.cmdOpts.Results.externalData
+    if m2t.args.externalData
         ROWSEP = sprintf('\n');
     else
         ROWSEP = sprintf('\\\\\n');
@@ -5162,7 +5161,7 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
     table = lower(table); % convert NaN and Inf to lower case for TikZ
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
 
-    if m2t.cmdOpts.Results.externalData
+    if m2t.args.externalData
         % output data to external file
         m2t.dataFileNo = m2t.dataFileNo + 1;
         [filename, latexFilename] = externalFilename(m2t, m2t.dataFileNo, '.tsv');
@@ -5551,7 +5550,7 @@ function dstValue = convertUnits(srcValue, srcUnit, dstUnit)
 end
 % ==============================================================================
 function out = extractValueUnit(str)
-    % Decompose m2t.cmdOpts.Results.width into value and unit.
+    % Decompose m2t.args.width into value and unit.
 
     % Regular expression to match '4.12cm', '\figurewidth', ...
     fp_regex = '[-+]?\d*\.?\d*(?:e[-+]?\d+)?';
@@ -5663,7 +5662,7 @@ function [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles)
 
     % Compute the bounding box if width or height of the figure are set by
     % parameter
-    if ~isempty(m2t.cmdOpts.Results.width) || ~isempty(m2t.cmdOpts.Results.height)
+    if ~isempty(m2t.args.width) || ~isempty(m2t.args.height)
         % TODO: check if relevant Axes or all Axes are better.
         axesBoundingBox = getRelativeAxesPosition(m2t, m2t.relevantAxesHandles);
         % Compute second corner from width and height for each axes
@@ -5681,7 +5680,7 @@ end
 % ==============================================================================
 function userInfo(m2t, message, varargin)
     % Display usage information.
-    if m2t.cmdOpts.Results.showInfo
+    if m2t.args.showInfo
         mess = sprintf(message, varargin{:});
 
         mess = strrep(mess, sprintf('\n'), sprintf('\n *** '));
@@ -5691,7 +5690,7 @@ end
 % ==============================================================================
 function userWarning(m2t, message, varargin)
     % Drop-in replacement for warning().
-    if m2t.cmdOpts.Results.showWarnings
+    if m2t.args.showWarnings
         warning('matlab2tikz:userWarning', message, varargin{:});
     end
 end
@@ -5710,7 +5709,7 @@ end
 function warnAboutParameter(m2t, parameter, isActive, message)
     % warn the user about the use of a dangerous parameter
     line = ['\n' repmat('=',1,80) '\n'];
-    if isActive(m2t.cmdOpts.Results.(parameter))
+    if isActive(m2t.args.(parameter))
         userWarning(m2t, [line, 'You are using the "%s" parameter.\n', ...
                           message line], parameter);
     end
@@ -5775,7 +5774,7 @@ function c = prettyPrint(m2t, strings, interpreter)
 
     % If the user set the matlab2tikz parameter 'parseStrings' to false, no
     % parsing of strings takes place, thus making the user 100% responsible.
-    if ~m2t.cmdOpts.Results.parseStrings
+    if ~m2t.args.parseStrings
         % If strings is an actual string (labels etc) we need to return a
         % cell containing the string
         c = cellstr(strings);
@@ -6055,7 +6054,7 @@ function string = parseTexSubstring(m2t, string)
     % '<' and '>' has to be either in math mode or needs to be typeset as
     % '\textless' and '\textgreater' in textmode
     % This is handled better, if 'parseStringsAsMath' is activated
-    if m2t.cmdOpts.Results.parseStringsAsMath == 0
+    if m2t.args.parseStringsAsMath == 0
         string = regexprep(string, '<', '\\textless{}');
         string = regexprep(string, '>', '\\textgreater{}');
     end
@@ -6218,7 +6217,7 @@ end
 function [string] = parseStringsAsMath(m2t, string)
     % Some further processing makes the output behave more like TeX math mode,
     % but only if the matlab2tikz parameter parseStringsAsMath=true.
-    if m2t.cmdOpts.Results.parseStringsAsMath
+    if m2t.args.parseStringsAsMath
 
         % Some characters should be in math mode: =-+/,.()<>0-9
         expr = '(\\text)\{([^}=\-+/,.()<>0-9]*)([=\-+/,.()<>0-9]+)([^}]*)\}';
