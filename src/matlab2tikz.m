@@ -161,9 +161,7 @@ function matlab2tikz(varargin)
     m2t.pgfplotsVersion = [1,3];
     m2t.about.name = 'matlab2tikz';
     m2t.about.version = '1.0.0';
-    m2t.about.author = 'Nico Schlömer';
-    m2t.about.authorEmail = 'nico.schloemer@gmail.com';
-    m2t.about.years = '2008--2015';
+    m2t.about.years = '2008--2016';
     m2t.about.website = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
     m2t.about.github = 'https://github.com/matlab2tikz/matlab2tikz';
     m2t.about.wiki = [m2t.about.github '/wiki'];
@@ -349,7 +347,7 @@ function matlab2tikz(varargin)
              clickableUrl(m2t.about.wiki, 'wiki'));
 
     %% Save the figure as TikZ to file
-    saveToFile(m2t, fid, fileWasOpen);
+    m2t = saveToFile(m2t, fid, fileWasOpen);
 
     %% Check for a new matlab2tikz version outside version control
     if m2t.cmdOpts.Results.checkForUpdates
