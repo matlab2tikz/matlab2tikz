@@ -169,9 +169,6 @@ function matlab2tikz(varargin)
     m2t.about.versionFull = strtrim(sprintf('v%s %s', m2t.about.version, VCID));
 
     m2t.tol = 1.0e-15; % numerical tolerance (e.g. used to test equality of doubles)
-    m2t.imageAsPngNo = 0;
-    m2t.dataFileNo   = 0;
-    m2t.automaticLabelIndex = 0;
 
     % the actual contents of the TikZ file go here
     m2t.content = struct('name',     '', ...
@@ -276,6 +273,11 @@ function matlab2tikz(varargin)
     %% Do some global initialization
     m2t.color = configureColors(m2t);
     
+    % define global counter variables
+    m2t.count.pngFile   = 0;
+    m2t.count.tsvFile   = 0;
+    m2t.count.autolabel = 0;
+    
     %% shortcut
     m2t.ff = m2t.args.floatFormat;
 
@@ -345,6 +347,12 @@ function matlab2tikz(varargin)
         m2tUpdater(m2t.about, m2t.args.showInfo);
     end
 
+end
+% ==============================================================================
+function [m2t, counterValue] = getNextValue(m2t, counterName)
+    % increases a global counter value and stores the augmented value
+    m2t.count.(counterName) = m2t.count.(counterName) + 1;
+    counterValue = m2t.count.(counterName);
 end
 % ==============================================================================
 function colorConfig = configureColors(m2t)
@@ -1815,8 +1823,8 @@ function [m2t, labelCode] = addLabel(m2t, h)
             labelName = sprintf('%s', lineTag);
         else
             [pathstr, name] = fileparts(m2t.args.filename); %#ok
-            labelName = sprintf('addplot:%s%d', name, m2t.automaticLabelIndex);
-            m2t.automaticLabelIndex = m2t.automaticLabelIndex + 1;
+            labelName = sprintf('addplot:%s%d', name, m2t.count.autolabel);
+            [m2t] = getNextValue(m2t, 'autolabel');
         end
         labelCode = sprintf('\\label{%s}\n', labelName);        
         userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
@@ -2366,10 +2374,10 @@ function [m2t, str] = drawImage(m2t, handle)
 end
 % ==============================================================================
 function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
-    m2t.imageAsPngNo = m2t.imageAsPngNo + 1;
+    [m2t, fileNum] = getNextValue(m2t, 'pngFile');
     % ------------------------------------------------------------------------
     % draw a png image
-    [pngFileName, pngReferencePath] = externalFilename(m2t, m2t.imageAsPngNo, '.png');
+    [pngFileName, pngReferencePath] = externalFilename(m2t, fileNum, '.png');
 
     % Get color indices for indexed images and truecolor values otherwise
     if ndims(cData) == 2 %#ok don't use ismatrix (cfr. #143)
@@ -5167,8 +5175,8 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
     if m2t.args.externalData
         % output data to external file
-        m2t.dataFileNo = m2t.dataFileNo + 1;
-        [filename, latexFilename] = externalFilename(m2t, m2t.dataFileNo, '.tsv');
+        [m2t, fileNum] = getNextValue(m2t, 'tsvFile');
+        [filename, latexFilename] = externalFilename(m2t, fileNum, '.tsv');
 
         % write the data table to an external file
         fid = fileOpenForWrite(m2t, filename);
