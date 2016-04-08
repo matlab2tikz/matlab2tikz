@@ -746,7 +746,7 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
         label = sprintf('\\label{plotyyref:leg%d};\n\n', labelNum);
         m2t.PlotyyLabelNum = labelNum;
 
-    elseif m2t.currentHandleHasLegend
+    elseif m2t.currentHandleHasLegend && ~isempty(m2t.axesContainers{end}.PlotyyReferences)
         % We are on the secondary axis
         labelRef = cell(1, labelNum);
         % Create labelled references to legend entries of the main axis
