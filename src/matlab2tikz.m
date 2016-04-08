@@ -1367,6 +1367,18 @@ function [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelKind, tikzKeywor
         end
         str = join(m2t, str, '\\[1ex]');
         opts =  opts_add(opts, tikzKeyword, sprintf('{%s}', str));
+    
+        % set color of axis labels
+        color = object.Color;
+        [m2t, col] = getColor(m2t, handle, color, 'patch');
+        if strcmpi(labelKind,'title')
+          % TODO: color titles
+        else
+          opts = ...
+              opts_add(opts, ...
+              ['every axis ',lower(labelKind(1)),' label/.append style'], ...
+              ['{font=\color{',col,'}}']);
+        end
     end
 end
 % ==============================================================================
@@ -1471,11 +1483,6 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
             opts_add(options, ...
             ['every ',axis,' tick/.append style'], ...
             ['{',col,'}']);
-        % set color of axis labels
-        options = ...
-            opts_add(options, ...
-            ['every axis ',axis,' label/.append style'], ...
-            ['{font=\color{',col,'}}']);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % handle the orientation
@@ -2295,7 +2302,11 @@ function [m2t, options] = setColor(m2t, handle, options, property, color, noneVa
         if ~isempty(xcolor)
             % this may happen when color == 'flat' and CData is Nx3, e.g. in
             % scatter plot or in patches
-            options = opts_add(options, property, xcolor);
+            if isempty(property)
+                options = opts_add(options, xcolor);
+            else
+                options = opts_add(options, property, xcolor);
+            end
         end
     else
         if exist('noneValue','var')
@@ -6458,9 +6469,7 @@ function str = opts_print(opts, sep)
     nOpts = size(opts,1);
     c = cell(1,nOpts);
     for k = 1:nOpts
-        if isempty(opts{k,1})
-            c{k} = sprintf('%s', opts{k,2});
-        elseif isempty(opts{k,2})
+        if isempty(opts{k,2})
             c{k} = sprintf('%s', opts{k,1});
         else
             c{k} = sprintf('%s=%s', opts{k,1}, opts{k,2});
