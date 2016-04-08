@@ -1358,7 +1358,7 @@ function [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelKind, tikzKeywor
     if ~isempty(str)
         interpreter = get(object, 'Interpreter');
         str = prettyPrint(m2t, str, interpreter);
-        style = getFontStyle(m2t, object);
+        [m2t, style] = getFontStyle(m2t, object);
         if length(str) > 1 %multiline
             style = opts_add(style, 'align', 'center');
         end
@@ -1367,18 +1367,6 @@ function [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelKind, tikzKeywor
         end
         str = join(m2t, str, '\\[1ex]');
         opts =  opts_add(opts, tikzKeyword, sprintf('{%s}', str));
-    
-        % set color of axis labels
-        color = object.Color;
-        [m2t, col] = getColor(m2t, handle, color, 'patch');
-        if strcmpi(labelKind,'title')
-          % TODO: color titles
-        else
-          opts = ...
-              opts_add(opts, ...
-              ['every axis ',lower(labelKind(1)),' label/.append style'], ...
-              ['{font=\color{',col,'}}']);
-        end
     end
 end
 % ==============================================================================
@@ -3179,11 +3167,8 @@ function [m2t, str] = drawText(m2t, handle)
 
     style = getRotationOfText(m2t, handle, style);
 
-    style = opts_merge(style, getFontStyle(m2t, handle));
-
-    color  = get(handle, 'Color');
-    [m2t, tcolor] = getColor(m2t, handle, color, 'patch');
-    style = opts_add(style, 'text', tcolor);
+    [m2t, fontStyle] = getFontStyle(m2t, handle);
+    style = opts_merge(style, fontStyle);
 
     EdgeColor = get(handle, 'EdgeColor');
     [m2t, style] = setColor(m2t, handle, style, 'draw', EdgeColor);
@@ -4504,13 +4489,18 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap, name)
     pgfplotsColormap = sprintf('colormap={%s}{[1%s] %s}',name, unit, join(m2t, colSpecs, '; '));
 end
 % ==============================================================================
-function fontStyle = getFontStyle(m2t, handle)
+function [m2t, fontStyle] = getFontStyle(m2t, handle)
     fontStyle = '';
     if strcmpi(get(handle, 'FontWeight'),'Bold')
         fontStyle = sprintf('%s\\bfseries',fontStyle);
     end
     if strcmpi(get(handle, 'FontAngle'), 'Italic')
         fontStyle = sprintf('%s\\itshape',fontStyle);
+    end
+    if ~all(get(handle, 'Color')==0)
+        color = get(handle, 'Color');
+        [m2t, col] = getColor(m2t, handle, color, 'patch');
+        fontStyle = sprintf('%s\\color{%s}', fontStyle, col);
     end
     if m2t.cmdOpts.Results.strictFontSize
         fontSize  = get(handle,'FontSize');
