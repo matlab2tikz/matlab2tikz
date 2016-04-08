@@ -461,7 +461,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     [m2t, axesBoundingBox] = getRelevantAxes(m2t, axesHandles);
 
     m2t.axesBoundingBox = axesBoundingBox;
-    m2t.axesContainers = {};
+    m2t.ax = {};
     for relevantAxesHandle = m2t.relevantAxesHandles(:)'
         m2t = drawAxes(m2t, relevantAxesHandle);
     end
@@ -475,7 +475,7 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
     m2t = drawAnnotations(m2t);
 
     % Add all axes containers to the file contents.
-    for axesContainer = m2t.axesContainers
+    for axesContainer = m2t.ax
         m2t.content = addChildren(m2t.content, axesContainer);
     end
 
@@ -753,12 +753,12 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
         label = sprintf('\\label{%s};\n\n', plotyyLabelName(labelNum));
         m2t.PlotyyLabelNum = labelNum;
 
-    elseif m2t.currentHandleHasLegend && ~isempty(m2t.axesContainers{end}.PlotyyReferences)
+    elseif m2t.currentHandleHasLegend && ~isempty(m2t.ax{end}.PlotyyReferences)
         % We are on the secondary axis
         labelRef = cell(1, labelNum);
         % Create labelled references to legend entries of the main axis
         for ii = 1:labelNum
-            ref         = m2t.axesContainers{end}.PlotyyReferences(ii);
+            ref         = m2t.ax{end}.PlotyyReferences(ii);
             lString     = getLegendString(m2t,ref);
             labelRef{ii}= sprintf('\\addlegendimage{/pgfplots/refstyle=%s}\\addlegendentry{%s};\n',...
                                   plotyyLabelName(ii), lString);
@@ -766,7 +766,7 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
         labelRef = join(m2t, labelRef, '');
 
         % Clear plotyy references. Ensures that references are created only once
-        m2t.axesContainers{end}.PlotyyReferences = [];
+        m2t.ax{end}.PlotyyReferences = [];
     else
         % Do nothing: it's gonna be a legend entry.
         % Not a label nor a referenced entry from the main axis.
@@ -811,12 +811,12 @@ function m2t = drawAxes(m2t, handle)
     % Use a struct instead of a custom subclass of hgsetget (which would
     % facilitate writing clean code) as structs are more portable (old MATLAB(R)
     % versions, GNU Octave).
-    m2t.axesContainers{end+1} = struct('handle', handle, ...
-        'name', '', ...
-        'comment', [], ...
-        'options', {opts_new()}, ...
-        'content', {cell(0)}, ...
-        'children', {cell(0)});
+    m2t.ax{end+1} = struct('handle',   handle, ...
+                           'name',     '', ...
+                           'comment',  [], ...
+                           'options',  {opts_new()}, ...
+                           'content',  {cell(0)}, ...
+                           'children', {cell(0)});
 
     % update gca
     m2t.current.gca = handle;
@@ -824,14 +824,14 @@ function m2t = drawAxes(m2t, handle)
     % Check if axis is 3d
     % In MATLAB, all plots are treated as 3D plots; it's just the view that
     % makes 2D plots appear like 2D.
-    m2t.axesContainers{end}.is3D = isAxis3D(handle);
+    m2t.ax{end}.is3D = isAxis3D(handle);
 
     % Flag if axis contains barplot
-    m2t.axesContainers{end}.barAddedAxisOption = false;
+    m2t.ax{end}.barAddedAxisOption = false;
 
     % Get legend entries
-    m2t.axesContainers{end}.LegendHandle  = getAssociatedLegend(m2t, handle);
-    m2t.axesContainers{end}.LegendEntries = getLegendEntries(m2t);
+    m2t.ax{end}.LegendHandle  = getAssociatedLegend(m2t, handle);
+    m2t.ax{end}.LegendEntries = getLegendEntries(m2t);
     m2t = getPlotyyReferences(m2t, handle);
 
     m2t = retrievePositionOfAxes(m2t, handle);
@@ -854,7 +854,7 @@ function m2t = drawAxes(m2t, handle)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Recurse into the children of this environment.
     [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
-    m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
+    m2t.ax{end} = addChildren(m2t.ax{end}, childrenEnvs);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % The rest of this is handling axes options.
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -864,8 +864,7 @@ function m2t = drawAxes(m2t, handle)
     [m2t, xopts] = getAxisOptions(m2t, handle, 'x');
     [m2t, yopts] = getAxisOptions(m2t, handle, 'y');
 
-    m2t.axesContainers{end}.options = opts_merge(m2t.axesContainers{end}.options, ...
-                                            xopts, yopts);
+    m2t.ax{end}.options = opts_merge(m2t.ax{end}.options, xopts, yopts);
 
     m2t = add3DOptionsOfAxes(m2t, handle);
 
@@ -880,20 +879,20 @@ function m2t = drawAxes(m2t, handle)
         %        if isVisible(child)
         %            % If the axes contain something that's visible, add an invisible
         %            % axes pair.
-        %            m2t.axesContainers{end}.name = 'axis';
-        %            m2t.axesContainers{end}.options = {m2t.axesContainers{end}.options{:}, ...
+        %            m2t.ax{end}.name = 'axis';
+        %            m2t.ax{end}.options = {m2t.ax{end}.options{:}, ...
         %                                               'hide x axis', 'hide y axis'};
         %            NOTE: getTag was removed in 76d260d12e615602653d6f7b357393242b2430b3
-        %            m2t.axesContainers{end}.comment = getTag(handle); 
+        %            m2t.ax{end}.comment = getTag(handle); 
         %            break;
         %        end
         %    end
         %    % recurse into the children of this environment
         %    [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
-        %    m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, childrenEnvs);
+        %    m2t.ax{end} = addChildren(m2t.ax{end}, childrenEnvs);
         %    return
     end
-    m2t.axesContainers{end}.name = 'axis';
+    m2t.ax{end}.name = 'axis';
 
     m2t = drawBackgroundOfAxes(m2t, handle);
     m2t = drawTitleOfAxes(m2t, handle);
@@ -901,8 +900,8 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawGridOfAxes(m2t, handle);
     m2t = drawLegendOptionsOfAxes(m2t);
 
-    m2t.axesContainers{end}.options = opts_append_userdefined(...
-        m2t.axesContainers{end}.options, m2t.args.extraAxisOptions);
+    m2t.ax{end}.options = opts_append_userdefined(m2t.ax{end}.options, ...
+                                                  m2t.args.extraAxisOptions);
 end
 % ==============================================================================
 function m2t = drawGridOfAxes(m2t, handle)
@@ -1006,19 +1005,17 @@ function m2t = drawGridOfAxes(m2t, handle)
         % FIXME: axis background, axis grid, main, axis ticks, axis lines, axis tick labels, axis descriptions, axis foreground
     end
 
-    m2t.axesContainers{end}.options = opts_merge(...
-        m2t.axesContainers{end}.options, options);
+    m2t.ax{end}.options = opts_merge(m2t.ax{end}.options, options);
 end
 % ==============================================================================
 function m2t = add3DOptionsOfAxes(m2t, handle)
     % adds 3D specific options of an axes object
     if isAxis3D(handle)
-        [m2t, zopts] = getAxisOptions(m2t, handle, 'z');
-        m2t.axesContainers{end}.options = opts_merge(...
-            m2t.axesContainers{end}.options, zopts);
-
-        m2t = m2t_addAxisOption(m2t, 'view', sprintf(['{', m2t.ff, '}{', m2t.ff, '}'], ...
-                          get(handle, 'View')));
+        [m2t, zopts]        = getAxisOptions(m2t, handle, 'z');
+        m2t.ax{end}.options = opts_merge(m2t.ax{end}.options, zopts);
+        
+        VIEWFORMAT = ['{' m2t.ff '}{' m2t.ff '}'];
+        m2t = m2t_addAxisOption(m2t, 'view', sprintf(VIEWFORMAT, get(handle, 'View')));
     end
 end
 % ==============================================================================
@@ -1085,7 +1082,7 @@ function entries = getLegendEntries(m2t)
     %      level, hence we bubble it up from the child to the hgroot.
 
     entries = [];
-    legendHandle = m2t.axesContainers{end}.LegendHandle;
+    legendHandle = m2t.ax{end}.LegendHandle;
 
     if isempty(legendHandle)
         return
@@ -1157,28 +1154,28 @@ function m2t = getPlotyyReferences(m2t,axisHandle)
 
     % Retrieve legend handle
     if isAxisMain(axisHandle)
-        legendHandle = m2t.axesContainers{end}.LegendHandle;
+        legendHandle = m2t.ax{end}.LegendHandle;
     else
         legendHandle = getAssociatedLegend(m2t,getPlotyyPeer(axisHandle));
-        m2t.axesContainers{end}.LegendHandle = legendHandle;
+        m2t.ax{end}.LegendHandle = legendHandle;
     end
 
     % Not a plotyy axis or no legend
     if ~isAxisPlotyy(axisHandle) || isempty(legendHandle)
-        m2t.axesContainers{end}.PlotyyReferences = [];
+        m2t.ax{end}.PlotyyReferences = [];
         m2t.PlotyyLabelNum = [];
 
     elseif isAxisMain(axisHandle)
         m2t.PlotyyLabelNum = 0;
 
         % Mark legend entries of the main axis for labelling
-        legendEntries = m2t.axesContainers{end}.LegendEntries;
+        legendEntries = m2t.ax{end}.LegendEntries;
         ancAxes       = ancestor(legendEntries,'axes');
         idx           = ismember([ancAxes{:}], axisHandle);
-        m2t.axesContainers{end}.PlotyyReferences = legendEntries(idx);
+        m2t.ax{end}.PlotyyReferences = legendEntries(idx);
 
         % Ensure no legend is created on the main axis
-        m2t.axesContainers{end}.LegendHandle = [];
+        m2t.ax{end}.LegendHandle = [];
     else
         % Get legend entries associated to secondary plotyy axis. We can do
         % this because we took the legendhandle from the peer (main axis)
@@ -1188,10 +1185,10 @@ function m2t = getPlotyyReferences(m2t,axisHandle)
             ancAxes = [ancAxes{:}];
         end
         idx = ismember(ancAxes, axisHandle);
-        m2t.axesContainers{end}.LegendEntries = legendEntries(idx);
+        m2t.ax{end}.LegendEntries = legendEntries(idx);
 
         % Recover referenced legend entries of the main axis
-        m2t.axesContainers{end}.PlotyyReferences = legendEntries(~idx);
+        m2t.ax{end}.PlotyyReferences = legendEntries(~idx);
     end
 end
 % ==============================================================================
@@ -1248,12 +1245,12 @@ end
 function legendString = getLegendString(m2t, h)
     % Retrieve the legend string for the given handle
     str         = getOrDefault(h, 'displayname', '');
-    interpreter = get(m2t.axesContainers{end}.LegendHandle,'interpreter');
+    interpreter = get(m2t.ax{end}.LegendHandle,'interpreter');
 
     % HG1: autogenerated legend strings, i.e. data1,..., dataN, do not populate
     % the 'displayname' property. Go through 'userdata'
     if isempty(str)
-        ud  = get(m2t.axesContainers{end}.LegendHandle,'userdata');
+        ud  = get(m2t.ax{end}.LegendHandle,'userdata');
         idx = ismember(ud.handles, h);
         str = ud.lstrings{idx};
     end
@@ -1267,7 +1264,7 @@ end
 % ==============================================================================
 function [m2t, bool] = hasLegendEntry(m2t, h)
     % Check if the handle has a legend entry and track its legend status in m2t
-    legendEntries = m2t.axesContainers{end}.LegendEntries;
+    legendEntries = m2t.ax{end}.LegendEntries;
     if isnumeric(h)
         legendEntries = double(legendEntries);
     end
@@ -1280,7 +1277,7 @@ end
 % ==============================================================================
 function bool = hasPlotyyReference(m2t,h)
     % Check if the handle has a legend reference
-    plotyyReferences = m2t.axesContainers{end}.PlotyyReferences;
+    plotyyReferences = m2t.ax{end}.PlotyyReferences;
     if isnumeric(h)
         plotyyReferences = double(plotyyReferences);
     end
@@ -1320,7 +1317,7 @@ function m2t = addAspectRatioOptionsOfAxes(m2t, handle)
     if strcmpi(get(handle, 'DataAspectRatioMode'), 'manual') ||...
        strcmpi(get(handle, 'PlotBoxAspectRatioMode'), 'manual')
         % we need to set the plot box aspect ratio
-        if m2t.axesContainers{end}.is3D
+        if m2t.ax{end}.is3D
             % Note: set 'plot box ratio' for 3D axes to avoid bug with
             % 'scale mode = uniformly' (see #560)
             aspectRatio = getPlotBoxAspectRatio(handle);
@@ -1341,8 +1338,7 @@ end
 % ==============================================================================
 function m2t = drawTitleOfAxes(m2t, handle)
     % processes the title of an axes object
-    [m2t, m2t.axesContainers{end}.options] = getTitle(m2t, handle, ...
-        m2t.axesContainers{end}.options);
+    [m2t, m2t.ax{end}.options] = getTitle(m2t, handle, m2t.ax{end}.options);
 end
 % ==============================================================================
 function [m2t, opts] = getTitle(m2t, handle, opts)
@@ -1403,7 +1399,7 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
     else
         m2t = m2t_addAxisOption(m2t, 'axis x line*', xLoc);
         m2t = m2t_addAxisOption(m2t, 'axis y line*', yLoc);
-        if m2t.axesContainers{end}.is3D
+        if m2t.ax{end}.is3D
             % There's no such attribute as 'ZAxisLocation'.
             % Instead, the default seems to be 'left'.
             m2t = m2t_addAxisOption(m2t, 'axis z line*', 'left');
@@ -1412,7 +1408,7 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
 end
 % ==============================================================================
 function m2t = drawLegendOptionsOfAxes(m2t)
-    legendHandle = m2t.axesContainers{end}.LegendHandle;
+    legendHandle = m2t.ax{end}.LegendHandle;
     if isempty(legendHandle)
         return
     end
@@ -1429,24 +1425,22 @@ function m2t = handleColorbar(m2t, handle)
     % Find the axes environment that this colorbar belongs to.
     parentAxesHandle = get(handle,'axes');
     parentFound = false;
-    for k = 1:length(m2t.axesContainers)
-        if m2t.axesContainers{k}.handle == parentAxesHandle
+    for k = 1:length(m2t.ax)
+        if m2t.ax{k}.handle == parentAxesHandle
             k0 = k;
             parentFound = true;
             break;
         end
     end
     if parentFound
-        m2t.axesContainers{k0}.options = ...
-            opts_append(m2t.axesContainers{k0}.options, ...
+        m2t.ax{k0}.options = opts_append(m2t.ax{k0}.options, ...
             matlab2pgfplotsColormap(m2t, m2t.current.colormap), []);
         % Append cell string.
-        m2t.axesContainers{k0}.options = cat(1,...
-            m2t.axesContainers{k0}.options, ...
-            getColorbarOptions(m2t, handle));
+        m2t.ax{k0}.options = cat(1, m2t.ax{k0}.options, ...
+                                    getColorbarOptions(m2t, handle));
     else
         warning('matlab2tikz:parentAxesOfColorBarNotFound',...
-            'Could not find parent axes for color bar. Skipping.');
+                'Could not find parent axes for color bar. Skipping.');
     end
 end
 % ==============================================================================
@@ -1752,7 +1746,7 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
     % actually writes the plot data to file
     str = '';
     
-    is3D = m2t.axesContainers{end}.is3D;
+    is3D = m2t.ax{end}.is3D;
     if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
         [m2t, table, tableOptions] = makeTable(m2t, {'','',''}, data);
@@ -1802,7 +1796,7 @@ function [data] = getXYZDataFromLine(m2t, h)
         xData = get(h, 'X');
         yData = get(h, 'Y');
     end
-    is3D  = m2t.axesContainers{end}.is3D;
+    is3D  = m2t.ax{end}.is3D;
     if ~is3D
         data = [xData(:), yData(:)];
     else
@@ -2104,7 +2098,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     end
 
     % This is for a quirky workaround for stacked bar plots.
-    m2t.axesContainers{end}.nonbarPlotsPresent = true;
+    m2t.ax{end}.nonbarPlotsPresent = true;
 
     % Each row of the faces matrix represents a distinct patch
     % NOTE: pgfplot uses zero-based indexing into vertices and interpolates
@@ -2113,7 +2107,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     Vertices = get(handle,'Vertices');
 
     % 3D vs 2D
-    is3D = m2t.axesContainers{end}.is3D;
+    is3D = m2t.ax{end}.is3D;
     if is3D
         columnNames = {'x', 'y', 'z'};
         plotCmd     = 'addplot3';
@@ -2238,7 +2232,7 @@ function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
         % Point meta as true color CData, i.e. RGB in [0,1]
         if size(fvCData,2) == 3
             % Create additional custom colormap
-            m2t.axesContainers{end}.options(end+1,:) = ...
+            m2t.ax{end}.options(end+1,:) = ...
                 {matlab2pgfplotsColormap(m2t, fvCData, 'patchmap'), []};
             drawOptions = opts_append(drawOptions, 'colormap name','patchmap');
 
@@ -2966,7 +2960,7 @@ function m2t = drawAnnotationsHelper(m2t,h)
     end
 
     % Add annotation to scribe overlay
-    m2t.axesContainers{end} = addChildren(m2t.axesContainers{end}, str);
+    m2t.ax{end} = addChildren(m2t.ax{end}, str);
 end
 % ==============================================================================
 function [m2t,str] = drawSurface(m2t, h)
@@ -2986,7 +2980,7 @@ function [m2t,str] = drawSurface(m2t, h)
     [m2t, opts] = addZBufferOptions(m2t, h, opts);
 
     % Check if 3D
-    is3D = m2t.axesContainers{end}.is3D;
+    is3D = m2t.ax{end}.is3D;
     if is3D
         columnNames = {'x','y','z','c'};
         plotCmd     = 'addplot3';
@@ -3011,7 +3005,7 @@ function [m2t,str] = drawSurface(m2t, h)
         % Create additional custom colormap
         nrows = size(data,1);
         CData = reshape(CData, nrows,3);
-        m2t.axesContainers{end}.options(end+1,:) = ...
+        m2t.ax{end}.options(end+1,:) = ...
             {matlab2pgfplotsColormap(m2t, CData, 'patchmap'), []};
 
         % Index into custom colormap
@@ -3077,7 +3071,7 @@ function [m2t, opts] = addZBufferOptions(m2t, h, opts)
     %   the shortest one even if positioned in the back
     isShaderFlat = isempty(strfind(opts_get(opts, 'shader'), 'interp'));
     isHist3D     = strcmpi(get(h,'tag'), 'hist3');
-    is3D         = m2t.axesContainers{end}.is3D;
+    is3D         = m2t.ax{end}.is3D;
     if is3D && isShaderFlat && ~isHist3D
         opts = opts_add(opts, 'z buffer', 'sort');
         % Pgfplots 1.12 contains a bug fix that fixes legend entries when
@@ -3216,7 +3210,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
     % makes the tikz position string of a text object
     pos   = get(h, 'Position');
     units = get(h, 'Units');
-    is3D  = m2t.axesContainers{end}.is3D;
+    is3D  = m2t.ax{end}.is3D;
 
     % Deduce if text or textbox
     type = get(h,'type');
@@ -3283,7 +3277,7 @@ function m2t = disableClippingInCurrentAxes(m2t, pos)
     xlim  = getOrDefault(m2t.current.gca, 'XLim',[-Inf +Inf]);
     ylim  = getOrDefault(m2t.current.gca, 'YLim',[-Inf +Inf]);
     zlim  = getOrDefault(m2t.current.gca, 'ZLim',[-Inf +Inf]);
-    is3D  = m2t.axesContainers{end}.is3D;
+    is3D  = m2t.ax{end}.is3D;
 
     xOutOfRange =          pos(1) < xlim(1) || pos(1) > xlim(2);
     yOutOfRange =          pos(2) < ylim(1) || pos(2) > ylim(2);
@@ -3682,7 +3676,7 @@ end
 function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData)
     % reorganizes the {X,Y,Z,S} data into a single matrix
     sColumn = [];
-    if ~m2t.axesContainers{end}.is3D
+    if ~m2t.ax{end}.is3D
         env = 'addplot';
         if length(sData) == 1
             data = [xData(:), yData(:)];
@@ -3888,10 +3882,10 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             % Pass option to parent axis & disallow anything but stacked plots
             % Make sure this happens exactly *once*.
 
-            if ~m2t.axesContainers{end}.barAddedAxisOption;
+            if ~m2t.ax{end}.barAddedAxisOption;
                 barWidth = getBarWidthInAbsolutUnits(h);
                 m2t = m2t_addAxisOption(m2t, 'bar width', formatDim(barWidth,''));
-                m2t.axesContainers{end}.barAddedAxisOption = true;
+                m2t.ax{end}.barAddedAxisOption = true;
             end
 
             % Somewhere between pgfplots 1.5 and 1.8 and starting
@@ -4075,7 +4069,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     str = '';
 
     [x,y,z,u,v,w] = getAndRescaleQuivers(m2t,h);
-    is3D = m2t.axesContainers{end}.is3D;
+    is3D = m2t.ax{end}.is3D;
 
     % prepare output
     if is3D
@@ -4166,7 +4160,7 @@ function [x,y,z,u,v,w] = getAndRescaleQuivers(m2t, h)
     v = get(h, 'VData');
     w = getOrDefault(h, 'WData', []);
 
-    is3D = m2t.axesContainers{end}.is3D;
+    is3D = m2t.ax{end}.is3D;
     if ~is3D
         z = 0;
         w = 0;
@@ -6444,8 +6438,7 @@ function m2t = m2t_addAxisOption(m2t, key, value)
     if ~exist('value','var')
         value = '';
     end
-	m2t.axesContainers{end}.options = ...
-            opts_add(m2t.axesContainers{end}.options, key, value);
+	m2t.ax{end}.options = opts_add(m2t.ax{end}.options, key, value);
 end
 % ==============================================================================
 function bool = isHG2()
@@ -6453,8 +6446,7 @@ function bool = isHG2()
     % HG1 : MATLAB up to R2014a and currently all OCTAVE versions
     % HG2 : MATLAB starting from R2014b (version 8.4)
     [env, envVersion] = getEnvironment();
-    bool = strcmpi(env,'MATLAB') && ...
-           ~isVersionBelow(envVersion, [8,4]);
+    bool = strcmpi(env,'MATLAB') && ~isVersionBelow(envVersion, [8,4]);
 end
 % ==============================================================================
 function str = formatAspectRatio(m2t, values)
