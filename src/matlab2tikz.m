@@ -560,18 +560,18 @@ function addStandalone(m2t, fid, part)
 end
 % ==============================================================================
 function str = generateColorDefinitions(colorConfig)
-    % output the color definitions to LaTeX
+    % Output the color definitions to LaTeX
     str   = '';
     names = colorConfig.extraNames;
     specs = colorConfig.extraSpecs;
     ff    = colorConfig.format;
     
-    % make sure to append with '%' to avoid spacing woes
-    FORMAT = ['\\definecolor{%s}{rgb}{' ff ',' ff ',' ff '}%%\n'];
     if ~isempty(names)
         colorDef = cell(1, length(names));
         for k = 1:length(names)
-            colorDef{k}= sprintf(FORMAT, names{k}, specs{k});
+            % Append with '%' to avoid spacing woes in LaTeX
+            FORMAT      = ['\\definecolor{%s}{rgb}{' ff ',' ff ',' ff '}%%\n'];
+            colorDef{k} = sprintf(FORMAT, names{k}, specs{k});
         end
         str = m2tstrjoin([colorDef, sprintf('%%\n')], '');
     end
