@@ -350,8 +350,8 @@ function matlab2tikz(varargin)
 
 end
 % ==============================================================================
-function [m2t, counterValue] = getNextValue(m2t, counterName)
-    % increases a global counter value and stores the augmented value
+function [m2t, counterValue] = incrementGlobalCounter(m2t, counterName)
+    % Increments a global counter value and returns its value
     m2t.count.(counterName) = m2t.count.(counterName) + 1;
     counterValue = m2t.count.(counterName);
 end
@@ -756,7 +756,7 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
     if hasPlotyyReference(m2t,h)
         % Label the plot to later reference it. Only legend entries on the main
         % plotyy axis will have a label
-        [m2t, labelNum] = getNextValue(m2t, 'plotyylabel');
+        [m2t, labelNum] = incrementGlobalCounter(m2t, 'plotyylabel');
         label = sprintf('\\label{%s};\n\n', plotyyLabelName(labelNum));
 
     elseif m2t.currentHandleHasLegend && ~isempty(m2t.ax{end}.PlotyyReferences)
@@ -1829,7 +1829,9 @@ function [m2t, labelCode] = addLabel(m2t, h)
         else
             [pathstr, name] = fileparts(m2t.args.filename); %#ok
             labelName = sprintf('addplot:%s%d', name, m2t.count.autolabel);
-            [m2t] = getNextValue(m2t, 'autolabel');
+            [m2t] = incrementGlobalCounter(m2t, 'autolabel');
+            % TODO: First increment the counter, then use it such that the
+            % pattern is the same everywhere
         end
         labelCode = sprintf('\\label{%s}\n', labelName);        
         userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
@@ -2379,7 +2381,7 @@ function [m2t, str] = drawImage(m2t, handle)
 end
 % ==============================================================================
 function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData)
-    [m2t, fileNum] = getNextValue(m2t, 'pngFile');
+    [m2t, fileNum] = incrementGlobalCounter(m2t, 'pngFile');
     % ------------------------------------------------------------------------
     % draw a png image
     [pngFileName, pngReferencePath] = externalFilename(m2t, fileNum, '.png');
@@ -5180,7 +5182,7 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
     if m2t.args.externalData
         % output data to external file
-        [m2t, fileNum] = getNextValue(m2t, 'tsvFile');
+        [m2t, fileNum] = incrementGlobalCounter(m2t, 'tsvFile');
         [filename, latexFilename] = externalFilename(m2t, fileNum, '.tsv');
 
         % write the data table to an external file
