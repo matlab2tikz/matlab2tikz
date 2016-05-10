@@ -4500,34 +4500,6 @@ function fontStyle = getFontStyle(m2t, handle)
     end
 end
 % ==============================================================================
-function   cbarStyleOptions = getColorBarTicks(handle, cbarStyleOptions)
-if strcmp( get(handle,'TickLabelsMode') , 'manual')
-
-    %ColorBar TickLabels 
-    TickLabels= get(handle,'TickLabels');
-    TickLabels_option ='{';
-    for e=1:length(TickLabels)
-        TickLabels_option = [ TickLabels_option ' {' TickLabels{e} '},'];
-    end
-    TickLabels_option(end)='}';
-
-    cbarStyleOptions=cat(1,cbarStyleOptions, {'yticklabels',TickLabels_option});
-
-
-    % ColorBar Ticks Number
-    Ticks= get(handle,'Ticks');
-    Ticks_option ='{';
-    for e=1:length(Ticks)
-        Ticks_option = [ Ticks_option ' ' num2str(Ticks(e)) ','];
-    end
-    Ticks_option(end)='}';
-
-    cbarStyleOptions=cat(1,cbarStyleOptions, {'ytick',Ticks_option});
-
-
-end
-end
-% ==============================================================================
 function axisOptions = getColorbarOptions(m2t, handle)
 
     % begin collecting axes options
@@ -4589,13 +4561,18 @@ function axisOptions = getColorbarOptions(m2t, handle)
             %FIXME: sampled colorbars should be inferred, not by using strict!
         end
     end
-    %color map ticks
-   cbarStyleOptions = getColorBarTicks(handle, cbarStyleOptions);
 
-   
    % Merge them together in axisOptions.
     axisOptions = opts_add(axisOptions, strtrim(['colorbar ', cbarTemplate]));
 
+   
+    %color map ticks
+    [m2t, options] = getAxisOptions(m2t, handle, 'y');
+    
+    cbarStyleOptions = opts_merge(cbarStyleOptions,options);
+   
+   
+    
     if ~isempty(cbarStyleOptions)
         axisOptions = opts_addSubOpts(axisOptions, ...
                                    'colorbar style', cbarStyleOptions);
