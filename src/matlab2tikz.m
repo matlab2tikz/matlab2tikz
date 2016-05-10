@@ -4568,8 +4568,8 @@ function axisOptions = getColorbarOptions(m2t, handle)
    
     %color map ticks
     [m2t, options] = getAxisOptions(m2t, handle, 'y');
-    
-    cbarStyleOptions = opts_merge(cbarStyleOptions,options);
+
+    cbarStyleOptions = opts_merge_unique(cbarStyleOptions,options);
    
    
     
@@ -6400,6 +6400,16 @@ function opts = opts_append(opts, key, value)
         opts = cat(1, opts, {key, value});
     end
 end
+function opts = opts_append_unique(opts, key, value)
+    % append a key-value pair to an options array (duplicate keys allowed)
+    if ~exist('value','var')
+        value = '';
+    end
+    value = char(value);
+    if ~opts_has(opts, key)
+        opts = cat(1, opts, {key, value});
+    end
+end
 function opts = opts_append_userdefined(opts, userDefined)
     % appends user-defined options to an options array
     % the userDefined options can come either as a single string or a cellstr that
@@ -6435,6 +6445,15 @@ function opts = opts_merge(opts, varargin)
         opts2 = varargin{jArg};
         for k = 1:size(opts2, 1)
             opts = opts_append(opts, opts2{k,1}, opts2{k,2});
+        end
+    end
+end
+function opts = opts_merge_unique(opts, varargin)
+    % merge multiple options arrays
+    for jArg = 1:numel(varargin)
+        opts2 = varargin{jArg};
+        for k = 1:size(opts2, 1)
+            opts = opts_append_unique(opts, opts2{k,1}, opts2{k,2});
         end
     end
 end
