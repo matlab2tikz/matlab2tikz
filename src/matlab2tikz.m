@@ -4500,7 +4500,7 @@ function fontStyle = getFontStyle(m2t, handle)
     end
 end
 % ==============================================================================
-function   cbarStyleOptions = getColotBarTicks(handle, cbarStyleOptions)
+function   cbarStyleOptions = getColorBarTicks(handle, cbarStyleOptions)
 if strcmp( get(handle,'TickLabelsMode') , 'manual')
 
     %ColorBar TickLabels 
@@ -4590,7 +4590,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
         end
     end
     %color map ticks
-   cbarStyleOptions = getColotBarTicks(handle, cbarStyleOptions);
+   cbarStyleOptions = getColorBarTicks(handle, cbarStyleOptions);
 
    
    % Merge them together in axisOptions.
