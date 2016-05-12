@@ -4568,8 +4568,9 @@ function axisOptions = getColorbarOptions(m2t, handle)
    
     %color map ticks
     [m2t, options] = getAxisOptions(m2t, handle, 'y');
-
-    cbarStyleOptions = opts_merge_unique(cbarStyleOptions,options);
+    options = opts_remove(options,'separate axis lines','every outer y axis line/.append style','every y tick label/.append style');
+    
+    cbarStyleOptions = opts_merge(cbarStyleOptions,options);
    
    
     
@@ -6445,15 +6446,6 @@ function opts = opts_merge(opts, varargin)
         opts2 = varargin{jArg};
         for k = 1:size(opts2, 1)
             opts = opts_append(opts, opts2{k,1}, opts2{k,2});
-        end
-    end
-end
-function opts = opts_merge_unique(opts, varargin)
-    % merge multiple options arrays
-    for jArg = 1:numel(varargin)
-        opts2 = varargin{jArg};
-        for k = 1:size(opts2, 1)
-            opts = opts_append_unique(opts, opts2{k,1}, opts2{k,2});
         end
     end
 end
