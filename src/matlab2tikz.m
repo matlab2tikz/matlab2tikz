@@ -3619,11 +3619,13 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
                                    markerInfo.options);
         drawOptions = opts_add(drawOptions, 'mark size', ...
             sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff`
-        if hasFaceColor && hasEdgeColor
+        if hasEdgeColor
             drawOptions = opts_add(drawOptions, 'draw', ecolor);
-            drawOptions = opts_add(drawOptions, 'fill', xcolor);
         else
             drawOptions = opts_add(drawOptions, 'color', xcolor);
+        end
+        if hasFaceColor
+            drawOptions = opts_add(drawOptions, 'fill', xcolor);
         end
     else % if changing marker size but same color on all marks
         markerOptions = opts_new();
