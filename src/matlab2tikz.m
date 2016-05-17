@@ -96,7 +96,7 @@ function matlab2tikz(varargin)
     %
     %   MATLAB2TIKZ('interpretTickLabelsAsTex',BOOL,...) determines whether to
     %   interpret tick labels as TeX. MATLAB(R) doesn't allow to do that in R2014a
-    %   or before. In R2014b and later, please set the "TickLabelInterpreter" 
+    %   or before. In R2014b and later, please set the "TickLabelInterpreter"
     %   property of the relevant axis to get the same effect. (default: false)
     %
     %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
@@ -273,13 +273,13 @@ function matlab2tikz(varargin)
 
     %% Do some global initialization
     m2t.color = configureColors(m2t);
-    
+
     % define global counter variables
     m2t.count.pngFile     = 0; % number of PNG files
     m2t.count.tsvFile     = 0; % number of TSV files
     m2t.count.autolabel   = 0; % number of automatic labels
     m2t.count.plotyylabel = 0; % number of plotyy labels
-    
+
     %% shortcut
     m2t.ff = m2t.args.floatFormat;
 
@@ -323,7 +323,7 @@ function matlab2tikz(varargin)
         '(For all other options, type ''help matlab2tikz''.)\n']);
 
     userInfo(m2t, '\nThis is %s %s.\n', m2t.about.name, m2t.about.versionFull)
-    
+
     % In Octave, put a new line and some spaces in between the URLs for clarity.
     % In MATLAB this is not necessary, since the URLs get (shorter) descriptions.
     sep = switchMatOct('', sprintf('\n '));
@@ -358,15 +358,15 @@ end
 function colorConfig = configureColors(m2t)
     % Sets the global color options for matlab2tikz
     colorConfig = struct();
-    
+
     % Set the color resolution.
     colorConfig.depth     = 48; %[bit] RGB color depth (typical values: 24, 30, 48)
     colorConfig.precision = 2^(-colorConfig.depth/3);
     colorConfig.format    = sprintf('%%0.%df',ceil(-log10(colorConfig.precision)));
-    
-    % The following color RGB-values which will need to be defined: 
-    %   
-    %   - 'extraNames' contains their designated names, 
+
+    % The following color RGB-values which will need to be defined:
+    %
+    %   - 'extraNames' contains their designated names,
     %   - 'extraSpecs' their RGB specifications.
     [colorConfig.extraNames, colorConfig.extraSpecs] = ...
         dealColorDefinitions(m2t.args.extraColors);
@@ -564,7 +564,7 @@ function str = generateColorDefinitions(colorConfig)
     names = colorConfig.extraNames;
     specs = colorConfig.extraSpecs;
     ff    = colorConfig.format;
-    
+
     if ~isempty(names)
         colorDef = cell(1, length(names));
         for k = 1:length(names)
@@ -658,7 +658,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     % how MATLAB does it, too. Significant for patch (contour) plots,
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
-        
+
         % Check if object has legend. Some composite objects need to determine
         % their status at the root level. For detailed explanations check
         % getLegendEntries().
@@ -760,17 +760,17 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
 
     elseif m2t.currentHandleHasLegend && ~isempty(m2t.axes{end}.PlotyyReferences)
         % We are on the secondary axis.
-        
+
         % We have produced a number of labels we can refer to so far.
         % Also, here we have a number of references that are to be recorded.
         % So, we make the last references (assuming the other ones have been
         % realized already)
         nReferences  = numel(m2t.axes{end}.PlotyyReferences);
         nLabels      = m2t.count.plotyylabel;
-        
+
         % This is the range of labels, corresponding to the references
         labelRange   = (nLabels-nReferences+1):nLabels;
-        
+
         labelRef = cell(1, numel(labelRange));
         % Create labelled references to legend entries of the main axis
         for iRef = 1:nReferences
@@ -899,7 +899,7 @@ function m2t = drawAxes(m2t, handle)
         %            m2t.axes{end}.options = {m2t.axes{end}.options{:}, ...
         %                                               'hide x axis', 'hide y axis'};
         %            NOTE: getTag was removed in 76d260d12e615602653d6f7b357393242b2430b3
-        %            m2t.axes{end}.comment = getTag(handle); 
+        %            m2t.axes{end}.comment = getTag(handle);
         %            break;
         %        end
         %    end
@@ -1029,7 +1029,7 @@ function m2t = add3DOptionsOfAxes(m2t, handle)
     if isAxis3D(handle)
         [m2t, zopts]        = getAxisOptions(m2t, handle, 'z');
         m2t.axes{end}.options = opts_merge(m2t.axes{end}.options, zopts);
-        
+
         VIEWFORMAT = ['{' m2t.ff '}{' m2t.ff '}'];
         m2t = m2t_addAxisOption(m2t, 'view', sprintf(VIEWFORMAT, get(handle, 'View')));
     end
@@ -1555,7 +1555,7 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
 
     options = setAxisTicks(m2t, options, axis, pgfTicks, pgfTickLabels, ...
         hasMinorTicks, tickDirection, isDatetimeTicks);
-        
+
     options = setAxisTickLabelStyle(options, axis, handle);
 end
 % ==============================================================================
@@ -1727,7 +1727,7 @@ function [m2t, str] = drawLine(m2t, h)
 
     [m2t, dataString]  = writePlotData(m2t, data, drawOptions);
     [m2t, labelString] = addLabel(m2t, h);
-    
+
     str = [dataString, labelString];
 end
 % ==============================================================================
@@ -1757,7 +1757,7 @@ end
 function [m2t, str] = writePlotData(m2t, data, drawOptions)
     % actually writes the plot data to file
     str = '';
-    
+
     is3D = m2t.axes{end}.is3D;
     if is3D
         % Don't try to be smart in parametric 3d plots: Just plot all the data.
@@ -1820,7 +1820,7 @@ end
 function [m2t, labelCode] = addLabel(m2t, h)
     % conditionally add a LaTeX label after the current plot
     labelCode = '';
-    
+
     if m2t.args.automaticLabels||m2t.args.addLabels
         lineTag = get(h,'Tag');
         if ~isempty(lineTag)
@@ -1832,7 +1832,7 @@ function [m2t, labelCode] = addLabel(m2t, h)
             % TODO: First increment the counter, then use it such that the
             % pattern is the same everywhere
         end
-        labelCode = sprintf('\\label{%s}\n', labelName);        
+        labelCode = sprintf('\\label{%s}\n', labelName);
         userWarning(m2t, 'Automatically added label ''%s'' for line plot.', labelName);
     end
 end
@@ -3146,7 +3146,7 @@ function [m2t, str] = drawText(m2t, handle)
     % Not that, in Pgfplots, long texts get cut off at the axes. This is
     % Different from the default MATLAB behavior. To fix this, one could use
     % /pgfplots/after end axis/.code.
-    
+
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get required properties
     content     = get(handle, 'String');
@@ -3622,7 +3622,7 @@ function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
         if hasEdgeColor
             drawOptions = opts_add(drawOptions, 'draw', ecolor);
         else
-            drawOptions = opts_add(drawOptions, 'color', xcolor);
+            drawOptions = opts_add(drawOptions, 'color', xcolor); %TODO: why do we even need this one?
         end
         if hasFaceColor
             drawOptions = opts_add(drawOptions, 'fill', xcolor);
