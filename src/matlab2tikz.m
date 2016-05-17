@@ -2154,6 +2154,12 @@ function [m2t, str] = drawPatch(m2t, handle)
     [m2t, lineOptions] = getLineOptions(m2t, handle);
     drawOptions = opts_merge(drawOptions, lineOptions);
 
+    % If the line is not visible, set edgeColor to none. Otherwise pgfplots
+    % draws it by default
+    if ~isLineVisible(handle)
+       s.edgeColor = 'none';
+    end
+
     % No patch: if one patch and single face/edge color
     isFaceColorFlat = isempty(strfind(opts_get(patchOptions, 'shader'),'interp'));
     if size(Faces,1) == 1 && s.hasOneEdgeColor && isFaceColorFlat
