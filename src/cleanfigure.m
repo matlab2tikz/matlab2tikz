@@ -71,7 +71,7 @@ function cleanfigure(varargin)
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'scalePrecision', 1, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
-  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'transformDates', '', @isValidAxis);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'normalizeAxis', '', @isValidAxis);
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
@@ -109,9 +109,9 @@ function recursiveCleanup(meta, h, cmdOpts)
     if strcmp(type, 'axes')
         meta.gca = h;
 
-        if ~isempty(cmdOpts.transformDates)
+        if ~isempty(cmdOpts.normalizeAxis)
             % If chosen transform the date axis
-            transform_dateticks(h, cmdOpts);
+            normalizeAxis(h, cmdOpts);
         end
     end
 
@@ -1258,36 +1258,42 @@ function bool = isValidTargetResolution(val)
 end
 % =========================================================================
 function bool = isValidAxis(val)
-    bool = strcmp(val, 'x') || strcmp(val, 'y') || strcmp(val, 'z');
+    bool = length(val) <= 3;
+    for i=1:length(val)
+        bool = bool && ...
+               (strcmp(val(i), 'x') || ...
+                strcmp(val(i), 'y') || ...
+                strcmp(val(i), 'z'));
+    end
 end
 % ========================================================================
-function transform_dateticks(handle, cmdOpts)
-    % Projects MALTAB date coordinates into the interval [0, 1], applying
-    % the transformation to all the relevant data
-    axis = cmdOpts.transformDates;
+function normalizeAxis(handle, cmdOpts)
+    % Normalizes data from a given axis into the interval [0, 1]
+    for i=1:length(cmdOpts.normalizeAxis)
+        axis = cmdOpts.normalizeAxis(i);
 
-    % Get the scale needed to set xlim to [0, 1]
-    dateLimits = get(handle, [upper(axis), 'Lim']);
-    dateScale  = 1/diff(dateLimits);
+        % Get the scale needed to set xyz-lim to [0, 1]
+        dateLimits = get(handle, [upper(axis), 'Lim']);
+        dateScale  = 1/diff(dateLimits);
 
-    % Project the ticks
-    ticks = get(handle, [upper(axis), 'Tick']);
-    ticks = (ticks - dateLimits(1))*dateScale;
+        % Project the ticks
+        ticks = get(handle, [upper(axis), 'Tick']);
+        ticks = (ticks - dateLimits(1))*dateScale;
 
-    % Set the data
-    set(handle, [upper(axis), 'Tick'], ticks);
-    set(handle, [upper(axis), 'Lim'],  [0, 1]);
+        % Set the data
+        set(handle, [upper(axis), 'Tick'], ticks);
+        set(handle, [upper(axis), 'Lim'],  [0, 1]);
 
-    % Traverse the children
-    children = get(handle, 'Children');
-    for child = children(:)'
-        type = get(child, 'type');
-        if strcmp(type, 'line') || strcmp(type, 'stair')
-            % Get the data and transform it
-            data = get(child, [upper(axis), 'Data']);
-            data = (data - dateLimits(1))*dateScale;
-            % Set the data again
-            set(child, [upper(axis), 'Data'], data);
+        % Traverse the children
+        children = get(handle, 'Children');
+        for child = children(:)'
+            if isprop(child, [upper(axis), 'Data'])
+                % Get the data and transform it
+                data = get(child, [upper(axis), 'Data']);
+                data = (data - dateLimits(1))*dateScale;
+                % Set the data again
+                set(child, [upper(axis), 'Data'], data);
+            end
         end
     end
 end
