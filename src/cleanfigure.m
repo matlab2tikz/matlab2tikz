@@ -22,6 +22,13 @@ function cleanfigure(varargin)
 %   Scale the precision the data is represented with. Setting it to 0
 %   or negative values disable this feature.
 %   (default: 1)
+%   CLEANFIGURE('normalizeAxis','xyz',...)
+%   EXPERIMENTAL: Normalize the data of the dimensions spezified by
+%   'normalizeAxis' to the interval [0, 1]. This might have side effects
+%   with hgtransform and friends. One can directly pass the axis handle to
+%   cleanfigure to ensure that only one axis gets normalized.
+%   Usage: Input 'xz' normalizes only x- and zData but not yData
+%   (default: '')
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -1269,6 +1276,10 @@ end
 % ========================================================================
 function normalizeAxis(handle, cmdOpts)
     % Normalizes data from a given axis into the interval [0, 1]
+
+    % Warn about normalizeAxis being experimental
+    warning('cleanfigure:normalizeAxis', ...
+        'Normalization of axis data is experimental!');
     for i=1:length(cmdOpts.normalizeAxis)
         axis = cmdOpts.normalizeAxis(i);
 
