@@ -23,7 +23,7 @@ function cleanfigure(varargin)
 %   or negative values disable this feature.
 %   (default: 1)
 %   CLEANFIGURE('normalizeAxis','xyz',...)
-%   EXPERIMENTAL: Normalize the data of the dimensions spezified by
+%   EXPERIMENTAL: Normalize the data of the dimensions specified by
 %   'normalizeAxis' to the interval [0, 1]. This might have side effects
 %   with hgtransform and friends. One can directly pass the axis handle to
 %   cleanfigure to ensure that only one axis gets normalized.
