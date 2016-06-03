@@ -1287,6 +1287,9 @@ function normalizeAxis(handle, cmdOpts)
         dateLimits = get(handle, [upper(axis), 'Lim']);
         dateScale  = 1/diff(dateLimits);
 
+        % Set the TickLabelMode to manual to preserve the labels
+        set(handle, [upper(axis), 'TickLabelMode'], 'manual');
+
         % Project the ticks
         ticks = get(handle, [upper(axis), 'Tick']);
         ticks = (ticks - dateLimits(1))*dateScale;
