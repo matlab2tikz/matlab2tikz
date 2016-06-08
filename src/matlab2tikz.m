@@ -954,7 +954,7 @@ function m2t = drawGridOfAxes(m2t, handle)
         gridOpts = opts_new();
         % Get the line style and translate it to pgfplots
         [gridLS, isDefault] = getAndCheckDefault(...
-            'axes', handle, 'GridLineStyle', ':');
+            'axes', handle, 'GridLineStyle', '-');
         if ~isDefault || m2t.args.strict
             gridOpts = opts_add(gridOpts, translateLineStyle(gridLS));
         end
@@ -984,8 +984,8 @@ function m2t = drawGridOfAxes(m2t, handle)
         minorGridOpts = opts_new();
         % Get the line style and translate it to pgfplots
         [minorGridLS, isDefault] = getAndCheckDefault(...
-            'axes', handle, 'MinorGridLineStyle', ':');
-        if ~isDefault || m2t.args.strict
+            'axes', handle, 'MinorGridLineStyle', '-');
+        if ~isDefault || m2t.args.strict || strcmpi(minorGridLS, ':')
             minorGridOpts = opts_add(minorGridOpts, translateLineStyle(minorGridLS));
         end
 
