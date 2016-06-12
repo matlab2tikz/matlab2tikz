@@ -18,10 +18,12 @@ function cleanfigure(varargin)
 %   pixels, e.g. [9000, 5400].
 %   Use targetResolution = Inf or 0 to disable line simplification.
 %   (default: 600)
+%
 %   CLEANFIGURE('scalePrecision',alpha,...)
 %   Scale the precision the data is represented with. Setting it to 0
 %   or negative values disable this feature.
 %   (default: 1)
+%
 %   CLEANFIGURE('normalizeAxis','xyz',...)
 %   EXPERIMENTAL: Normalize the data of the dimensions specified by
 %   'normalizeAxis' to the interval [0, 1]. This might have side effects
@@ -77,8 +79,11 @@ function cleanfigure(varargin)
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'scalePrecision', 1, @isnumeric);
-  m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'normalizeAxis', '', @isValidAxis);
+
+  % Deprecated parameters
+  m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
+
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
@@ -1280,9 +1285,8 @@ function normalizeAxis(handle, cmdOpts)
     % Warn about normalizeAxis being experimental
     warning('cleanfigure:normalizeAxis', ...
         'Normalization of axis data is experimental!');
-    for i=1:length(cmdOpts.normalizeAxis)
-        axis = cmdOpts.normalizeAxis(i);
 
+    for axis = cmdOpts.normalizeAxis(:)'
         % Get the scale needed to set xyz-lim to [0, 1]
         dateLimits = get(handle, [upper(axis), 'Lim']);
         dateScale  = 1/diff(dateLimits);
