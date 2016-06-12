@@ -62,9 +62,9 @@ pixelLegend : 85b87a55191be20a0288ee1543ce92b8
 plain_cos : 4cebfef9f3b21bc6c7375659676a4082
 plotyyLegends : 4b1af0dbd1d2ea42660edb7641b19117
 polarplot : bdaa91213a36aa5c8bcc643d0b8b7d52
-quiver3plot : 612ab8ee8ed66a0368767b39854bb274
-quiveroverlap : 4b189345cacbc7cce0d7f9844853b2a2
-quiverplot : d3917d2451ff073cd62d5f7c43c42d8b
+quiver3plot : 4cdd2bf02096d47b0eed8610eaa1c438
+quiveroverlap : caad1730b9948e25235d480819b13d74
+quiverplot : 8bcca8c835b301cf1d3a07a8a7427e79
 randomWithLines : 0ff7bf88f64df10491d53079e47d26af
 rectanglePlot : 6b95520cdbb7071cbdb7c7eece7326ca
 removeOutsideMarker : 3dd9819bc655d125ac07ea4fceb53dea
@@ -79,7 +79,7 @@ sine_with_markers : 5aeb5c7353e8fb12ef6173b104ae89cc
 spectro : 0ffa4ca9e4fe1d3e5791a2a391c481b4
 spherePlot : 5fa7e56e467030fbeb39d113ba976f4c
 stackedBarsWithOther : 979b797068fb431c57e85e813308a2ea
-stairsplot : e318d01a4bb2dd1d92b61b59f9a97c9a 
+stairsplot : e318d01a4bb2dd1d92b61b59f9a97c9a
 stemplot : 580698b54af5fef412578e4a49a679d0
 stemplot2 : e93b5c52974e700586a44506568c874e
 subplot2x2b : 63cf7ce7f29fef045cc5ab3042c3e89b

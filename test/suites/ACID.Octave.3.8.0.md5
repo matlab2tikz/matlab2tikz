@@ -52,7 +52,7 @@ plain_cos : 0e213c097845263bf5fb25292a558389
 plotyyLegends : 2ac0b39fa72bdc76e3376f655c9d75ae
 polarplot : 621d3d9332bc75ad246c1d20fad94346
 quiver3plot : 604a683bdc9720913abf19650fd670e2
-quiveroverlap : f8a9f880a1365ddcb1a3acd07d656563
+quiveroverlap : 62827021da956a24ee9fea82415a3628
 quiverplot : 23848779d54eafc8c1850ee3d19c0ad7
 randomWithLines : 138d8fbc0f1e53c40ee34501e12a7f3f
 rectanglePlot : f63538597348033398ef9cc37dcf57cd
@@ -65,7 +65,7 @@ sine_with_annotation : 92e9da02d8ff8cfd7d851ddf29c73123
 sine_with_markers : e1251419d940c05567766b05c6b1c843
 spherePlot : f0a3a98c1be86aeefe14a85e59324bab
 stackedBarsWithOther : e3cd431e967814dfd0c6f92e8f4de87f
-stairsplot : 792f97da7940424ecbb520149cccbe20 
+stairsplot : 792f97da7940424ecbb520149cccbe20
 stemplot : a54684401d36bfc248d33bbd95e1838f
 stemplot2 : c01081d322190b7bda9ef2a568c27cdd
 subplot2x2b : 097ecc9418fb5826340f3903fed8a49f
