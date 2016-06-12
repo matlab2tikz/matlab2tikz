@@ -18,10 +18,19 @@ function cleanfigure(varargin)
 %   pixels, e.g. [9000, 5400].
 %   Use targetResolution = Inf or 0 to disable line simplification.
 %   (default: 600)
+%
 %   CLEANFIGURE('scalePrecision',alpha,...)
 %   Scale the precision the data is represented with. Setting it to 0
 %   or negative values disable this feature.
 %   (default: 1)
+%
+%   CLEANFIGURE('normalizeAxis','xyz',...)
+%   EXPERIMENTAL: Normalize the data of the dimensions specified by
+%   'normalizeAxis' to the interval [0, 1]. This might have side effects
+%   with hgtransform and friends. One can directly pass the axis handle to
+%   cleanfigure to ensure that only one axis gets normalized.
+%   Usage: Input 'xz' normalizes only x- and zData but not yData
+%   (default: '')
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -70,7 +79,11 @@ function cleanfigure(varargin)
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'scalePrecision', 1, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'normalizeAxis', '', @isValidAxis);
+
+  % Deprecated parameters
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
+
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
@@ -107,6 +120,11 @@ function recursiveCleanup(meta, h, cmdOpts)
     % Update the current axes.
     if strcmp(type, 'axes')
         meta.gca = h;
+
+        if ~isempty(cmdOpts.normalizeAxis)
+            % If chosen transform the date axis
+            normalizeAxis(h, cmdOpts);
+        end
     end
 
     children = get(h, 'Children');
@@ -1249,5 +1267,52 @@ end
 % =========================================================================
 function bool = isValidTargetResolution(val)
     bool = isnumeric(val) && ~any(isnan(val)) && (isscalar(val) || numel(val) == 2);
+end
+% =========================================================================
+function bool = isValidAxis(val)
+    bool = length(val) <= 3;
+    for i=1:length(val)
+        bool = bool && ...
+               (strcmpi(val(i), 'x') || ...
+                strcmpi(val(i), 'y') || ...
+                strcmpi(val(i), 'z'));
+    end
+end
+% ========================================================================
+function normalizeAxis(handle, cmdOpts)
+    % Normalizes data from a given axis into the interval [0, 1]
+
+    % Warn about normalizeAxis being experimental
+    warning('cleanfigure:normalizeAxis', ...
+        'Normalization of axis data is experimental!');
+
+    for axis = cmdOpts.normalizeAxis(:)'
+        % Get the scale needed to set xyz-lim to [0, 1]
+        dateLimits = get(handle, [upper(axis), 'Lim']);
+        dateScale  = 1/diff(dateLimits);
+
+        % Set the TickLabelMode to manual to preserve the labels
+        set(handle, [upper(axis), 'TickLabelMode'], 'manual');
+
+        % Project the ticks
+        ticks = get(handle, [upper(axis), 'Tick']);
+        ticks = (ticks - dateLimits(1))*dateScale;
+
+        % Set the data
+        set(handle, [upper(axis), 'Tick'], ticks);
+        set(handle, [upper(axis), 'Lim'],  [0, 1]);
+
+        % Traverse the children
+        children = get(handle, 'Children');
+        for child = children(:)'
+            if isprop(child, [upper(axis), 'Data'])
+                % Get the data and transform it
+                data = get(child, [upper(axis), 'Data']);
+                data = (data - dateLimits(1))*dateScale;
+                % Set the data again
+                set(child, [upper(axis), 'Data'], data);
+            end
+        end
+    end
 end
 % =========================================================================

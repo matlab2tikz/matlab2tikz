@@ -99,6 +99,9 @@ function matlab2tikz(varargin)
     %   or before. In R2014b and later, please set the "TickLabelInterpreter"
     %   property of the relevant axis to get the same effect. (default: false)
     %
+    %   MATLAB2TIKZ('arrowHeadSize', FLOAT, ...) allows to resize the arrow heads
+    %   in quiver plots by rescaling the arrow heads by a positive scalar. (default: 10)
+    %
     %   MATLAB2TIKZ('tikzFileComment',CHAR,...) adds a custom comment to the header
     %   of the output file. (default: '')
     %
@@ -220,6 +223,7 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'dataPath', '', @ischar);
     ipp = ipp.addParamValue(ipp, 'relativeDataPath', '', @ischar);
     ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
+    ipp = ipp.addParamValue(ipp, 'arrowHeadSize', 10, @(x) x>0);
 
     % Maximum chunk length.
     % TeX parses files line by line with a buffer of size buf_size. If the
@@ -268,8 +272,6 @@ function matlab2tikz(varargin)
     warnAboutParameter(m2t, 'imagesAsPng', @(opt)(opt==false), ...
          ['It is highly recommended to use PNG data to store images.\n', ...
           'Make sure to set "imagesAsPng" to true.']);
-    warnAboutParameter(m2t, 'interpretTickLabelsAsTex', @(opt)(opt==true&&isHG2), ...
-         'Please use "set(gca,''TickLabelInterpreter'',''tex'')" instead.');
 
     %% Do some global initialization
     m2t.color = configureColors(m2t);
@@ -1198,7 +1200,7 @@ function m2t = getPlotyyReferences(m2t,axisHandle)
         if iscell(ancAxes)
             ancAxes = [ancAxes{:}];
         end
-        idx = ismember(ancAxes, axisHandle);
+        idx = ismember(double(ancAxes), axisHandle);
         m2t.axes{end}.LegendEntries = legendEntries(idx);
 
         % Recover referenced legend entries of the main axis
@@ -1436,7 +1438,7 @@ function m2t = handleColorbar(m2t, handle)
     end
 
     % Find the axes environment that this colorbar belongs to.
-    parentAxesHandle = get(handle,'axes');
+    parentAxesHandle = double(get(handle,'axes'));
     parentFound = false;
     for k = 1:length(m2t.axes)
         if m2t.axes{k}.handle == parentAxesHandle
@@ -1519,9 +1521,9 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     assertValidAxisSpecifier(axis);
 
     keywordTickMode = [upper(axis), 'TickMode'];
-    tickMode        = get(handle, keywordTickMode);
-    keywordTick     = [upper(axis), 'Tick'];
-    ticks           = get(handle, keywordTick);
+    tickMode = get(handle, keywordTickMode);
+    keywordTick = [upper(axis), 'Tick'];
+    ticks = get(handle, keywordTick);
 
     % hidden properties are not caught by hasProperties
     isDatetimeTicks = isAxisTicksDateTime(handle, axis);
@@ -1538,7 +1540,7 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     end
 
     keywordTickLabelMode = [upper(axis), 'TickLabelMode'];
-    tickLabelMode        = get(handle, keywordTickLabelMode);
+    tickLabelMode = get(handle, keywordTickLabelMode);
     if strcmpi(tickLabelMode, 'auto') && ~m2t.args.strict && ~isDatetimeTicks
         pgfTickLabels = [];
     else % strcmpi(tickLabelMode,'manual') || m2t.args.strict
@@ -1982,7 +1984,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
 end
 % ==============================================================================
 function [tikzMarkerSize, isDefault] = ...
-        translateMarkerSize(m2t, matlabMarker, matlabMarkerSize)
+    translateMarkerSize(m2t, matlabMarker, matlabMarkerSize)
     % The markersizes of Matlab and TikZ are related, but not equal. This
     % is because
     %
@@ -2047,7 +2049,7 @@ function [tikzMarkerSize, isDefault] = ...
 end
 % ==============================================================================
 function [tikzMarker, markOptions] = ...
-        translateMarker(m2t, matlabMarker, markOptions, faceColorToggle)
+    translateMarker(m2t, matlabMarker, markOptions, faceColorToggle)
     % Translates MATLAB markers to their Tikz equivalents
     % #COMPLEX: inherently large switch-case
     if ~ischar(matlabMarker)
@@ -2233,8 +2235,8 @@ function [m2t, str] = drawPatch(m2t, handle)
 end
 % ==============================================================================
 function [m2t, drawOptions, Vertices, Faces, verticesTableOptions, ptType, ...
-             columnNames] = setColorsOfPatches(m2t, handle, drawOptions, ...
-               Vertices, Faces, verticesTableOptions, ptType, columnNames, isFaceColorFlat, s)
+         columnNames] = setColorsOfPatches(m2t, handle, drawOptions, ...
+           Vertices, Faces, verticesTableOptions, ptType, columnNames, isFaceColorFlat, s)
     % this behemoth does the color setting for patches
 
     % TODO: this function can probably be split further, just look at all those
@@ -2883,7 +2885,10 @@ function cl = guessOctavePlotType(h)
         cl = 'specgraph.errorbarseries';
 
         % quiver plots
-        % TODO: maybe check for existence of `udata` and absence of `ldata`
+    elseif hasProperties(h, {'udata','vdata'}, {'ldata'})
+    	cl = 'specgraph.quivergroup';
+    	
+    	% bar plots
     elseif hasProperties(h, {'bargroup','barwidth', 'barlayout'}, {})
         cl = 'specgraph.barseries';
         % unknown plot type
@@ -3859,7 +3864,6 @@ function [m2t, str] = drawBarseries(m2t, h)
     tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
-
     % Add a baseline if appropriate
     [m2t, baseline] = drawBaseline(m2t,h,isHorizontal);
     str             = [str, baseline];
@@ -4189,19 +4193,49 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
         arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2)}';
     end
     plotOptions = opts_add(plotOptions, 'point meta', arrowLength);
+    plotOptions = opts_add(plotOptions, 'point meta min', '0');
 
     if showArrowHead
+        arrowHeadOptions = opts_new();
+
+        % In MATLAB (HG1), the arrow head is constructed to have an angle of
+        % approximately 18.263 degrees in 2D as can be derived from the
+        % |quiver| function.
+        % In 3D, the angle is no longer constant but it is approximately
+        % the same as for 2D quiver plots. So let's make our life easy.
+        % |test/examples/example_quivers.m| covers the calculations.
+        arrowHeadOptions = opts_add(arrowHeadOptions, 'angle''', '18.263');
+
         %TODO: scale the arrows more rigorously to match MATLAB behavior
-        %There is a "MaxHeadSize" property (at least in R2014b) that plays a
-        %role in determining the quiver size.
-        arrowHeadOpts = opts_new();
-        arrowHeadOpts = opts_add(arrowHeadOpts, 'scale length', ...
-                                 '{max(0.01,\pgfplotspointmetatransformed/1000)}');
-        arrowHeadOpts = opts_add(arrowHeadOpts, 'scale width', ...
-                                 '{0.5*max(0.01,\pgfplotspointmetatransformed/1000)}');
-        headStyle     = ['-{Straight Barb[' opts_print(arrowHeadOpts) ']}'];
+        % Currently, this is quite hard to do, since the size of the arrows
+        % is defined in pgfplots in absolute units (here we specify that those
+        % should be scaled up/down according to the data), while the data itself
+        % is in axis coordinates (or some scaled variant). I.e. we need the
+        % physical dimensions of the axis to compute the correct scaling!
+        %
+        % There is a "MaxHeadSize" property that plays a role.
+        % MaxHeadSize is said to be relative to the length of the quiver in the
+        % MATLAB documentation. However, in practice, there seems to be a SQRT
+        % involved somewhere (e.g. if u.^2 + v.^2 == 2, all MHS values >
+        % 1/sqrt(2) are capped to 1/sqrt(2)).
+        %
+        % NOTE: `set(h, 'MaxHeadSize')` is bugged in HG1 (not in HG2 or Octave)
+        % according to http://www.mathworks.com/matlabcentral/answers/96754
+
+        userInfo(m2t, ['Please change the "arrowHeadSize" option', ...
+            ' if the size of the arrows is incorrect.']);
+        arrowHeadSize = sprintf(m2t.ff, abs(m2t.args.arrowHeadSize));
+
+        % Write out the actual scaling for TikZ.
+        % `\pgfplotspointsmetatransformed` is in the range [0, 1000], so
+        % divide by this span (as is done in the pgfplots manual) to normalize
+        % the arrow head size. First divide to avoid overflows.
+        arrowHeadOptions = opts_add(arrowHeadOptions, 'scale', ...
+            ['{' arrowHeadSize '/1000*\pgfplotspointmetatransformed}']);
+
+        headStyle = ['-{Straight Barb[' opts_print(arrowHeadOptions) ']}'];
         quiverOptions = opts_add(quiverOptions, 'every arrow/.append style', ...
-                              ['{' headStyle '}']);
+                                 ['{' headStyle '}']);
     end
     plotOptions = opts_addSubOpts(plotOptions, 'quiver', quiverOptions);
 
@@ -4611,7 +4645,7 @@ function axisOptions = getColorbarOptions(m2t, handle)
 
         if ~isempty(cbarTemplate)
             userWarning(m2t, ...
-    -               'Pgfplots cannot deal with more than one colorbar option yet.');
+-               'Pgfplots cannot deal with more than one colorbar option yet.');
             %FIXME: can we get sampled horizontal color bars to work?
             %FIXME: sampled colorbars should be inferred, not by using strict!
         end
@@ -5051,7 +5085,7 @@ function [lStyle] = getLegendEntryAlignment(m2t, handle, lStyle)
 end
 % ==============================================================================
 function [pTicks, pTickLabels] = ...
-        matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isLogAxis, tickLabelMode)
+    matlabTicks2pgfplotsTicks(m2t, ticks, tickLabels, isLogAxis, tickLabelMode)
     % Converts MATLAB style ticks and tick labels to pgfplots style (if needed)
     if isempty(ticks)
         pTicks      = '\empty';
@@ -5131,7 +5165,7 @@ function bool = isTickLabelsNecessary(m2t, ticks, tickLabels, isLogAxis)
 end
 % ==============================================================================
 function pTickLabels = formatPgfTickLabels(m2t, plotLabelsNecessary, ...
-            tickLabels, isLogAxis, tickLabelMode)
+        tickLabels, isLogAxis, tickLabelMode)
     % formats the tick labels for pgfplots
     if plotLabelsNecessary
         % if the axis is logscaled, MATLAB does not store the labels,
@@ -5465,8 +5499,8 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
     % Iterate over all handles
     for i = 1:numel(axesHandles)
         axesHandle = axesHandles(i);
-        axesPos    = get(axesHandle, 'Position');
-        axesUnits  = get(axesHandle, 'Units');
+        axesPos = get(axesHandle, 'Position');
+        axesUnits = get(axesHandle, 'Units');
         if isequal(lower(axesUnits), 'normalized')
             % Position is already relative
             position(i,:) = axesPos;
@@ -5503,10 +5537,11 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                     errorUnknownEnvironment();
             end
 
+
             vertices = projection * [0, 1, 0, 0, 1, 1, 0, 1;
-                                     0, 0, 1, 0, 1, 0, 1, 1;
-                                     0, 0, 0, 1, 0, 1, 1, 1;
-                                     1, 1, 1, 1, 1, 1, 1, 1];
+                0, 0, 1, 0, 1, 0, 1, 1;
+                0, 0, 0, 1, 0, 1, 1, 1;
+                1, 1, 1, 1, 1, 1, 1, 1];
 
             % each of the columns of vertices represents a vertex of the 3D axes
             % but we only need their XY coordinates
@@ -5515,9 +5550,9 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             % the size of the projected plot box is limited by the long diagonals
             % The matrix A determines the connectivity, e.g. the first diagonal runs from vertices(:,3) -> vertices(:,4)
             A = [ 0,  0,  0, -1, +1,  0,  0,  0;
-                  0,  0, -1,  0,  0, +1,  0,  0;
-                  0, -1,  0,  0,  0,  0, +1,  0;
-                 -1,  0,  0,  0,  0,  0,  0, +1];
+                0,  0, -1,  0,  0, +1,  0,  0;
+                0, -1,  0,  0,  0,  0, +1,  0;
+                -1,  0,  0,  0,  0,  0,  0, +1];
             diagonals = verticesXY * A';
             % each of the columns of this matrix contains a the X and Y distance of a diagonal
             dimensions = max(abs(diagonals), [], 2);
@@ -5526,15 +5561,15 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
             aspectRatio = dimensions(2) * figWidth / (dimensions(1) * figHeight);
             axesAspectRatio = position(i,4) / position(i,3);
             if aspectRatio > axesAspectRatio
-                newWidth      = position(i,4) / aspectRatio;
+                newWidth = position(i,4) / aspectRatio;
                 % Center Axis
-                offset        = (position(i,3) - newWidth) / 2;
+                offset = (position(i,3) - newWidth) / 2;
                 position(i,1) = position(i,1) + offset;
                 % Store new width
                 position(i,3) = newWidth;
             else
-                newHeight     = position(i,3) * aspectRatio;
-                offset        = (position(i,4) - newHeight) / 2;
+                newHeight = position(i,3) * aspectRatio;
+                offset = (position(i,4) - newHeight) / 2;
                 position(i,2) = position(i,2) + offset;
                 % Store new height
                 position(i,4) = newHeight;
