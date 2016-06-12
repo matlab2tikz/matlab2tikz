@@ -51,9 +51,9 @@ pixelLegend : d41eabb2a0613a852f29a8eb8091d7ba
 plain_cos : 0e213c097845263bf5fb25292a558389
 plotyyLegends : 2ac0b39fa72bdc76e3376f655c9d75ae
 polarplot : 621d3d9332bc75ad246c1d20fad94346
-quiver3plot : 2f0aaf94fa30ba88f621229f79d943df
-quiveroverlap : f155bfcaeefb65642b74272ec88186aa
-quiverplot : 5e493dde90f0d8aee0e4ba21bb7648df
+quiver3plot : 604a683bdc9720913abf19650fd670e2
+quiveroverlap : 62827021da956a24ee9fea82415a3628
+quiverplot : 23848779d54eafc8c1850ee3d19c0ad7
 randomWithLines : 138d8fbc0f1e53c40ee34501e12a7f3f
 rectanglePlot : f63538597348033398ef9cc37dcf57cd
 removeOutsideMarker : 197c8beeaf4df16fccf4f39a028d3089
