@@ -207,6 +207,10 @@ ipp = ipp.addParamValue(ipp, 'showInfo', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
 ipp = ipp.addParamValue(ipp, 'checkForUpdates', true, @islogical);
 
+ipp = ipp.addParamValue(ipp, 'semanticalLineWidth', false, @islogical);
+ipp = ipp.addParamValue(ipp, 'semanticalValueList', [.1,.2,.4,.6,.8,1.2,1.6], @isnumeric);
+ipp = ipp.addParamValue(ipp, 'semanticalStringList', {'ultra thin', 'very thin', 'thin', 'semithick', 'thick', 'very thick', 'ultra thick'}, @isCellOrChar);
+
 ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
 ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
 ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
@@ -1591,7 +1595,23 @@ function lineOpts = getLineOptions(m2t, lineStyle, lineWidth)
     matlabDefaultLineWidth = 0.5;
     if m2t.cmdOpts.Results.strict ...
             || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
-        lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
+        if m2t.cmdOpts.Results.semanticalLineWidth
+            semStrID = find(lineWidth == m2t.cmdOpts.Results.semanticalValueList);
+            if isempty(semStrID)
+                lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
+            else
+                lineOpts = opts_add(lineOpts, m2t.cmdOpts.Results.semanticalStringList{semStrID}, []);
+            end
+        else
+            lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
+        end
+    else % lineWidth = matlabDefaultLineWidth
+        if m2t.cmdOpts.Results.semanticalLineWidth
+            % search for a semanticalStringList entry which match the
+            % default lineWidth
+            semStrID = find(lineWidth == m2t.cmdOpts.Results.semanticalValueList);
+            lineOpts = opts_add(lineOpts, m2t.cmdOpts.Results.semanticalStringList{semStrID}, []);
+        end
     end
 end
 % ==============================================================================
