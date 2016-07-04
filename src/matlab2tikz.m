@@ -433,6 +433,11 @@ function fid = fileOpenForWrite(m2t, filename)
     % Currently only MATLAB supports different encodings.
     fid = -1;
 
+    [filepath] = fileparts(filename);
+    if ~exist(filepath,'dir')
+        mkdir(filepath);
+    end
+    
     switch getEnvironment()
         case 'MATLAB'
             fid = fopen(filename, 'w', ...
