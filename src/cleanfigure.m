@@ -18,10 +18,19 @@ function cleanfigure(varargin)
 %   pixels, e.g. [9000, 5400].
 %   Use targetResolution = Inf or 0 to disable line simplification.
 %   (default: 600)
+%
 %   CLEANFIGURE('scalePrecision',alpha,...)
 %   Scale the precision the data is represented with. Setting it to 0
 %   or negative values disable this feature.
 %   (default: 1)
+%
+%   CLEANFIGURE('normalizeAxis','xyz',...)
+%   EXPERIMENTAL: Normalize the data of the dimensions specified by
+%   'normalizeAxis' to the interval [0, 1]. This might have side effects
+%   with hgtransform and friends. One can directly pass the axis handle to
+%   cleanfigure to ensure that only one axis gets normalized.
+%   Usage: Input 'xz' normalizes only x- and zData but not yData
+%   (default: '')
 %
 %   Example
 %      x = -pi:pi/1000:pi;
@@ -70,7 +79,11 @@ function cleanfigure(varargin)
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'scalePrecision', 1, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'normalizeAxis', '', @isValidAxis);
+
+  % Deprecated parameters
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
+
   % Finally parse all the elements.
   m2t.cmdOpts = m2t.cmdOpts.parse(m2t.cmdOpts, varargin{:});
 
@@ -107,6 +120,11 @@ function recursiveCleanup(meta, h, cmdOpts)
     % Update the current axes.
     if strcmp(type, 'axes')
         meta.gca = h;
+
+        if ~isempty(cmdOpts.normalizeAxis)
+            % If chosen transform the date axis
+            normalizeAxis(h, cmdOpts);
+        end
     end
 
     children = get(h, 'Children');
@@ -129,7 +147,9 @@ function recursiveCleanup(meta, h, cmdOpts)
             limitPrecision(meta, h, cmdOpts.scalePrecision);
         elseif strcmpi(type, 'stair')
             % Remove data points outside of the visible axes
-            pruneOutsideBox(meta, h);
+            pruneOutsideBox(meta, h);            
+            % Remove superfluous data points
+            simplifyStairs(meta, h);
             % Limit the precision of the output
             limitPrecision(meta, h, cmdOpts.scalePrecision);
         elseif strcmp(type, 'text') && cmdOpts.pruneText
@@ -446,6 +466,59 @@ function simplifyLine(meta, handle, targetResolution)
     end
 
     % Remove the data points
+    removeData(meta, handle, id_remove);
+end
+% =========================================================================
+function simplifyStairs(meta, handle)
+    % This function simplifies stair plots by removeing superflous data
+    % points
+
+	% Some data might not lead to a new step in the stair. This is the case
+	% if the difference in one dimension is zero, e.g
+	% [(x_1, y_1), (x_2, y_1), ... (x_k, y_1), (x_{k+1} y_2)].
+	% However, there is one exeption. If the monotonicity of the other
+	% dimension changes, e.g. the sequence  [0, 1], [0, -1], [0, 2]. This
+	% sequence cannot be simplified. Therefore, we check for monoticity too.
+    % As an example, we can remove the data points marked with x in the
+    % following stair
+    %       o--x--o
+    %       |     |
+    %       x     o --x--o
+    %       |          
+    % o--x--o         
+    %       |
+    %       o
+
+    % Extract the data
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+
+    % Do not do anything if the data is empty
+    if isempty(xData) || isempty(yData)
+        return;
+    end
+
+    % Check for nonchanging data points
+    xNoDiff      = [false, (diff(xData) == 0)];
+    yNoDiff      = [false, (diff(yData) == 0)];
+
+    % Never remove the last data point
+    xNoDiff(end) = false;
+    yNoDiff(end) = false;
+
+    % Check for monotonicity (it changes if diff(sign)~=0)
+    xIsMonotone  = [true, diff(sign(diff(xData)))==0, true];
+    yIsMonotone  = [true, diff(sign(diff(yData)))==0, true];
+
+    % Only remove points when there is no difference in one dimension and no
+    % change in monotonicity in the other
+    xRemove      = xNoDiff & yIsMonotone;
+    yRemove      = yNoDiff & xIsMonotone;
+
+    % Plot only points, that generate a new step
+    id_remove    = find(xRemove | yRemove);
+
+    % Remove the superfluous data
     removeData(meta, handle, id_remove);
 end
 % =========================================================================
@@ -1194,5 +1267,52 @@ end
 % =========================================================================
 function bool = isValidTargetResolution(val)
     bool = isnumeric(val) && ~any(isnan(val)) && (isscalar(val) || numel(val) == 2);
+end
+% =========================================================================
+function bool = isValidAxis(val)
+    bool = length(val) <= 3;
+    for i=1:length(val)
+        bool = bool && ...
+               (strcmpi(val(i), 'x') || ...
+                strcmpi(val(i), 'y') || ...
+                strcmpi(val(i), 'z'));
+    end
+end
+% ========================================================================
+function normalizeAxis(handle, cmdOpts)
+    % Normalizes data from a given axis into the interval [0, 1]
+
+    % Warn about normalizeAxis being experimental
+    warning('cleanfigure:normalizeAxis', ...
+        'Normalization of axis data is experimental!');
+
+    for axis = cmdOpts.normalizeAxis(:)'
+        % Get the scale needed to set xyz-lim to [0, 1]
+        dateLimits = get(handle, [upper(axis), 'Lim']);
+        dateScale  = 1/diff(dateLimits);
+
+        % Set the TickLabelMode to manual to preserve the labels
+        set(handle, [upper(axis), 'TickLabelMode'], 'manual');
+
+        % Project the ticks
+        ticks = get(handle, [upper(axis), 'Tick']);
+        ticks = (ticks - dateLimits(1))*dateScale;
+
+        % Set the data
+        set(handle, [upper(axis), 'Tick'], ticks);
+        set(handle, [upper(axis), 'Lim'],  [0, 1]);
+
+        % Traverse the children
+        children = get(handle, 'Children');
+        for child = children(:)'
+            if isprop(child, [upper(axis), 'Data'])
+                % Get the data and transform it
+                data = get(child, [upper(axis), 'Data']);
+                data = (data - dateLimits(1))*dateScale;
+                % Set the data again
+                set(child, [upper(axis), 'Data'], data);
+            end
+        end
+    end
 end
 % =========================================================================

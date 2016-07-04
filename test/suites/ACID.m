@@ -343,6 +343,7 @@ function [stat] = peaks_contour()
   stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
   % FIXME: see #604; contour() produces inconsistent output
 
+  subplot(121)
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
 
@@ -352,6 +353,11 @@ function [stat] = peaks_contour()
 
   colormap winter;
 
+  % Contour layers with predefined color
+  subplot(122)
+  contour(peaks(20), 10,'r', 'LineWidth', 5)
+  set(gca,'YTickLabel',[]);
+  set(gca,'YTick',[]);
 end
 % =========================================================================
 function [stat] = contourPenny()
@@ -716,13 +722,16 @@ end
 function [stat] = stairsplot()
   stat.description = 'A simple stairs plot.' ;
 
-  x = linspace(-2*pi,2*pi,40)';
-  h = stairs([sin(x), 0.2*cos(x)]);
+  X      = linspace(-2*pi,2*pi,40)';
+  Yconst = [zeros(10,1); 0.5*ones(20,1);-0.5*ones(10,1)];
+  Y      = [sin(X), 0.2*cos(X), Yconst];
+  h = stairs(Y);
   legend(h(2),'second entry')
 end
 % =========================================================================
 function [stat] = quiverplot()
   stat.description = 'A combined quiver/contour plot of $x\exp(-x^2-y^2)$.' ;
+  stat.extraOptions = {'arrowHeadSize', 2};
 
   [X,Y] = meshgrid(-2:.2:2);
   Z = X.*exp(-X.^2 - Y.^2);
@@ -765,13 +774,19 @@ function [stat] = quiveroverlap ()
   % perfect. As such, in MATLAB the arrow heads may appear extremely tiny.
   % In Octave, they look fine though. Once the scaling has been done decently,
   % this reminder can be removed.
+  if isOctave
+    stat.extraOptions = {'arrowHeadSize', 20};
+  end
 
   x = [0 1];
   y = [0 0];
   u = [1 -1];
   v = [1 1];
 
-  quiver(x,y,u,v);
+  hold all;
+  qvr1 = quiver(x,y,u,v);
+  qvr2 = quiver(x,y,2*u,2*v);
+  set(qvr2, 'MaxHeadSize', get(qvr1, 'MaxHeadSize')/2);
 end
 % =========================================================================
 function [stat] = polarplot ()
