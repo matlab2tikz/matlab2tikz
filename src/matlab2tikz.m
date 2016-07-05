@@ -3733,7 +3733,7 @@ end
 function [env, data, metaOptions, columns] = organizeScatterData(m2t, dataInfo)
     % reorganizes the {X,Y,Z,S} data into a single matrix
     metaOptions = opts_new();
-    columns     = {'x','y'};
+
     
     xData = dataInfo.X;
     yData = dataInfo.Y;
@@ -3743,12 +3743,13 @@ function [env, data, metaOptions, columns] = organizeScatterData(m2t, dataInfo)
     
     % add the actual data
     if ~m2t.axes{end}.is3D
-        env = 'addplot';
-        data = [xData(:), yData(:)];
+        env     = 'addplot';
+        columns = {'x','y'};
+        data    = [xData(:), yData(:)];
     else
-        env = 'addplot3';
-        columns = [columns, {'z'}];
-        data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
+        env     = 'addplot3';
+        columns = {'x','y','z'};
+        data    = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
     
     % add marker sizes
