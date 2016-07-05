@@ -3601,13 +3601,13 @@ function [m2t, str] = drawScatterPlot(m2t, h)
                                        markerInfo.options);
             drawOptions = opts_add(drawOptions, 'mark size', ...
                 sprintf('%.4fpt', dataInfo.Size)); % FIXME: investigate whether to use `m2t.ff`
-        if hasEdgeColor
+            if hasEdgeColor
                 drawOptions = opts_add(drawOptions, 'draw', ecolor);
             else
-            drawOptions = opts_add(drawOptions, 'color', xcolor); %TODO: why do we even need this one?
-        end
-        if hasFaceColor
-            drawOptions = opts_add(drawOptions, 'fill', xcolor);
+                drawOptions = opts_add(drawOptions, 'color', xcolor); %TODO: why do we even need this one?
+            end
+            if hasFaceColor
+                drawOptions = opts_add(drawOptions, 'fill', xcolor);
             end
         else % if changing marker size but same color on all marks
             markerOptions = opts_new();
@@ -3665,7 +3665,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
         drawOptions = opts_addSubOpts(drawOptions, 'scatter/use mapped color', ...
                                    markerOptions);
         % Add color map.
-    m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.current.colormap), []);
+        m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.current.colormap), []);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
