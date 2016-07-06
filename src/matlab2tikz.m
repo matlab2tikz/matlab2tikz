@@ -5167,7 +5167,7 @@ function pTickLabels = formatPgfTickLabels(m2t, plotLabelsNecessary, ...
             % cells containing strings
             if isnumeric(tickLabels{k})
                 tickLabels(k) = num2str(tickLabels{k});
-            else
+            elseif iscell(tickLabels{k})
                 tickLabels(k) = tickLabels{k};
             end
             % If the axis is logscaled, MATLAB does not store the labels,
