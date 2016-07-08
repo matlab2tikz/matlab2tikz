@@ -434,7 +434,7 @@ function fid = fileOpenForWrite(m2t, filename)
     fid = -1;
 
     [filepath] = fileparts(filename);
-    if ~exist(filepath,'dir')
+    if ~exist(filepath,'dir') && ~isempty(filepath)
         mkdir(filepath);
     end
     
