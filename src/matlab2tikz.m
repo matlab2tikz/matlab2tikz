@@ -922,6 +922,14 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
     m2t = drawGridOfAxes(m2t, handle);
     m2t = drawLegendOptionsOfAxes(m2t);
+    
+    % If the axis ruler is non-visible draw no axes line
+    for axis = 'xyz'
+        if strcmp(get(get(handle, [axis 'Axis']), 'Visible'), 'off')
+        m2t.axes{end}.options = opts_append_userdefined(m2t.axes{end}.options, ...
+            ['axis ' axis ' line=none']);
+        end
+    end
 
     m2t.axes{end}.options = opts_append_userdefined(m2t.axes{end}.options, ...
                                                   m2t.args.extraAxisOptions);
