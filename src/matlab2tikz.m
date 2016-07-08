@@ -116,6 +116,22 @@ function matlab2tikz(varargin)
     %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
     %   check for updates of matlab2tikz. (default: true (if not using git))
     %
+    %   MATLAB2TIKZ('semanticLineWidth',BOOL,...) if true, it enables the export 
+    %   of lineWidths as semantic strings (default=false). 
+    %   The lineWidth value is replaced with an corresponding sematic string.
+    %   The mapping between value and string is as follows (pgfplot-defaults): 
+    %   'ultra thin'=0.1pt, 'very thin'=0.2pt, 'thin'=0.4pt, 'semithick'=0.6pt, 
+    %   'thick'=0.8pt, 'very thick'=1.2pt and 'ultra thick'=1.6pt 
+    % 
+    %   MATLAB2TIKZ('semanticLineWidthDefinition',CELLMATRIX,...) With this option you 
+    %   are able to specify a customized list of semantic lineWidth representations. 
+    %   The default coresponds to pgfplot-defaults (cf. semanticLineWidth option). 
+    %   This feature is only applied if the boolean option of semanticLineWidth is set to TRUE.
+    %   The list needs to be specified as a Nx2 matrix with the following
+    %   scheme:
+    %   Each column needs to be a set of one string and one numerical value!
+    %   For example: {'ultra thin',0.1; 'very thin', 0.2; ...} 
+    % 
     %   Example
     %      x = -pi:pi/10:pi;
     %      y = tan(sin(x)) - sin(tan(x));
