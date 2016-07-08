@@ -229,7 +229,7 @@ function matlab2tikz(varargin)
         'thick',        0.8;...
         'very thick',	1.2;...
         'ultra thick',	1.6...
-        }, @iscell);
+        }, @isValidSemanticLineWidthDefinition);
     
     ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
     ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
@@ -453,6 +453,15 @@ function bool = isColorDefinitions(colors)
     isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
 
     bool = iscell(colors) && all(cellfun(isValidEntry, colors));
+end
+% ==============================================================================
+function bool = isValidSemanticLineWidthDefinition(defMat)
+    % Returns true when the input is a cell array of schape Nx2 and
+    % contents in each column a set of string and numerical value as needed
+    % for the semanticLineWidth option.
+    bool = iscell(defMat) && size(defMat, 2) == 2; % Nx2 cell array
+    bool = bool && all(cellfun(@ischar   , defMat(:,1))); % first column: names
+    bool = bool && all(cellfun(@isnumeric, defMat(:,2))); % second column: line width in points
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
