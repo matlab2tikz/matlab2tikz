@@ -204,9 +204,16 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
     ipp = ipp.addParamValue(ipp, 'checkForUpdates', isempty(VCID), @islogical);
 
-    ipp = ipp.addParamValue(ipp, 'semanticalLineWidth', false, @islogical);
-    ipp = ipp.addParamValue(ipp, 'semanticalValueList', [.1,.2,.4,.6,.8,1.2,1.6], @isnumeric);
-    ipp = ipp.addParamValue(ipp, 'semanticalStringList', {'ultra thin', 'very thin', 'thin', 'semithick', 'thick', 'very thick', 'ultra thick'}, @isCellOrChar);
+    ipp = ipp.addParamValue(ipp, 'semanticLineWidth', false, @islogical);
+    ipp = ipp.addParamValue(ipp, 'semanticLineWidthDefinition', {...
+        'ultra thin',	0.1;...
+        'very thin',	0.2;...
+        'thin',         0.4;...
+        'semithick',	0.6;...
+        'thick',        0.8;...
+        'very thick',	1.2;...
+        'ultra thick',	1.6...
+        }, @iscell);
     
     ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
     ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
@@ -1915,22 +1922,19 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     matlabDefaultLineWidth = 0.5;
     if m2t.args.strict ...
             || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
-        if m2t.args.semanticalLineWidth
-            semStrID = find(lineWidth == m2t.args.semanticalValueList);
-            if isempty(semStrID)
-                lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
-            else
-                lineOpts = opts_add(lineOpts, m2t.args.semanticalStringList{semStrID}, []);
-            end
+        if m2t.args.semanticLineWidth ...
+                && ismember(lineWidth, [m2t.args.semanticLineWidthDefinition{:,2}])
+            semStrID = lineWidth == [m2t.args.semanticLineWidthDefinition{:,2}];
+            lineOpts = opts_add(lineOpts, m2t.args.semanticLineWidthDefinition{semStrID,1}, []);
         else
             lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
         end
     else % lineWidth = matlabDefaultLineWidth
-        if m2t.args.semanticalLineWidth
-            % search for a semanticalStringList entry which match the
-            % default lineWidth
-            semStrID = find(lineWidth == m2t.args.semanticalValueList);
-            lineOpts = opts_add(lineOpts, m2t.args.semanticalStringList{semStrID}, []);
+        if m2t.args.semanticLineWidth
+            % search for a semanticLineWidthDefinition entry matching the
+            % default lineWidth 'matlabDefaultLineWidth = 0.5'
+            semStrID = lineWidth == [m2t.args.semanticLineWidthDefinition{:,2}];
+            lineOpts = opts_add(lineOpts, m2t.args.semanticLineWidthDefinition{semStrID,1}, []);
         end
     end
 end
