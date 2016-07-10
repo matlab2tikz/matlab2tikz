@@ -1945,22 +1945,17 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     % Also apply the line width if no actual line is there; the markers make use
     % of this, too.
     matlabDefaultLineWidth = 0.5;
-    if m2t.args.strict ...
-            || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
-        if m2t.args.semanticLineWidth ...
-                && ismember(lineWidth, [m2t.args.semanticLineWidthDefinition{:,2}])
+    if m2t.args.semanticLineWidth
+        if ismember(lineWidth, [m2t.args.semanticLineWidthDefinition{:,2}])
             semStrID = lineWidth == [m2t.args.semanticLineWidthDefinition{:,2}];
             lineOpts = opts_add(lineOpts, m2t.args.semanticLineWidthDefinition{semStrID,1}, []);
         else
+            warning('matlab2tikz:semanticLineWidth', 'No semantic correspondance for lineWidth of ''%f'' found. Falling back to explicit export in points.', lineWidth);
             lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
         end
-    else % lineWidth = matlabDefaultLineWidth
-        if m2t.args.semanticLineWidth
-            % search for a semanticLineWidthDefinition entry matching the
-            % default lineWidth 'matlabDefaultLineWidth = 0.5'
-            semStrID = lineWidth == [m2t.args.semanticLineWidthDefinition{:,2}];
-            lineOpts = opts_add(lineOpts, m2t.args.semanticLineWidthDefinition{semStrID,1}, []);
-        end
+    elseif m2t.args.strict ...
+            || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
+        lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
     end
 end
 % ==============================================================================
