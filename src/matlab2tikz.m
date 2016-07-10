@@ -1950,7 +1950,9 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
             semStrID = lineWidth == [m2t.args.semanticLineWidthDefinition{:,2}];
             lineOpts = opts_add(lineOpts, m2t.args.semanticLineWidthDefinition{semStrID,1});
         else
-            warning('matlab2tikz:semanticLineWidth', 'No semantic correspondance for lineWidth of ''%f'' found.\nFalling back to explicit export in points.', lineWidth);
+            warning('matlab2tikz:semanticLineWidth',...
+                ['No semantic correspondance for lineWidth of ''%f'' found'...
+                'Falling back to explicit export in points.'], lineWidth);
             lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
         end
     elseif m2t.args.strict ...
