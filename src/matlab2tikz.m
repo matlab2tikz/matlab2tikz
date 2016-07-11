@@ -931,7 +931,6 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
     m2t = drawGridOfAxes(m2t, handle);
     m2t = drawLegendOptionsOfAxes(m2t);
-    
     m2t.axes{end}.options = opts_append_userdefined(m2t.axes{end}.options, ...
                                                   m2t.args.extraAxisOptions);
 end
