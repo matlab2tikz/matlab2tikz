@@ -4825,8 +4825,17 @@ function [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, cbarSt
             cbarStyleOptions = opts_add(cbarStyleOptions,...
                 'xticklabel pos', 'upper');
         case 'southoutside'
-
             cbarTemplate = 'horizontal';
+        case 'manual'
+            cbarTemplate = 'right';
+            origUnits = handle.Units;
+            handle.Units = 'centimeters';
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
+                sprintf('{(%fcm,%fcm)}',handle.Position(1),...
+                handle.Position(2)+handle.Position(4)));
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'height',...
+                sprintf('%fcm',handle.Position(4)));
+            handle.Units = origUnits;
         otherwise
             error('matlab2tikz:getColorOptions:unknownLocation',...
                 'getColorbarOptions: Unknown ''Location'' %s.', loc)
