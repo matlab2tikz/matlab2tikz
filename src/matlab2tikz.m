@@ -5162,18 +5162,18 @@ function pTickLabels = formatPgfTickLabels(m2t, plotLabelsNecessary, ...
         tickLabels, isLogAxis, tickLabelMode)
     % formats the tick labels for pgfplots
     if plotLabelsNecessary
-        % if the axis is logscaled, MATLAB does not store the labels,
-        % but the exponents to 10
-        if isLogAxis
-            for k = 1:length(tickLabels)
-                if isnumeric(tickLabels{k})
-                    str = num2str(tickLabels{k});
-                else
-                    str = tickLabels{k};
-                end
-                if strcmpi(tickLabelMode,'auto')
-                    tickLabels{k} = sprintf('$10^{%s}$', str);
-                end
+        for k = 1:length(tickLabels)
+            % Turn tickLabels from cells containing a cell into 
+            % cells containing strings
+            if isnumeric(tickLabels{k})
+                tickLabels(k) = num2str(tickLabels{k});
+            elseif iscell(tickLabels{k})
+                tickLabels(k) = tickLabels{k};
+            end
+            % If the axis is logscaled, MATLAB does not store the labels,
+            % but the exponents to 10
+            if isLogAxis && strcmpi(tickLabelMode,'auto')
+                tickLabels{k} = sprintf('$10^{%s}$', str);
             end
         end
         tickLabels = cellfun(@(l)(sprintf('{%s}',l)), tickLabels, ...
