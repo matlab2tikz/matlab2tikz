@@ -115,7 +115,21 @@ function matlab2tikz(varargin)
     %
     %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
     %   check for updates of matlab2tikz. (default: true (if not using git))
-    %
+    % 
+    %   MATLAB2TIKZ('semanticLineWidths',CELLMATRIX,...) allows you to customize
+    %   the mapping of semantic "line width" values.
+    %   A valid entry is an Nx2 cell array:
+    %     - the first column contains the semantic names,
+    %     - the second column contains the corresponding line widths in points.
+    %   The entries you provide are used in addition to the pgf defaults:
+    %     {'ultra thin', 0.1; 'very thin' , 0.2; 'thin', 0.4; 'semithick', 0.6;
+    %      'thick'     , 0.8; 'very thick', 1.2; 'ultra thick', 1.6}
+    %   or a single "NaN" can be provided to turn off this feature alltogether.
+    %   If you specify the default names, their mapping will be overwritten.
+    %   Inside your LaTeX document, you are responsible to make sure these TikZ
+    %   styles are properly defined.
+    %   (Default: NaN)
+    % 
     %   Example
     %      x = -pi:pi/10:pi;
     %      y = tan(sin(x)) - sin(tan(x));
@@ -204,6 +218,8 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
     ipp = ipp.addParamValue(ipp, 'checkForUpdates', isempty(VCID), @islogical);
 
+    ipp = ipp.addParamValue(ipp, 'semanticLineWidths', NaN, @isValidSemanticLineWidthDefinition);
+    
     ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
     ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
@@ -274,7 +290,8 @@ function matlab2tikz(varargin)
           'Make sure to set "imagesAsPng" to true.']);
 
     %% Do some global initialization
-    m2t.color = configureColors(m2t);
+    m2t.color = configureColors(m2t.args.extraColors);
+    m2t.semantic.LineWidth = configureSemanticLineWidths(m2t.args.semanticLineWidths);
 
     % define global counter variables
     m2t.count.pngFile     = 0; % number of PNG files
@@ -357,7 +374,7 @@ function [m2t, counterValue] = incrementGlobalCounter(m2t, counterName)
     counterValue = m2t.count.(counterName);
 end
 % ==============================================================================
-function colorConfig = configureColors(m2t)
+function colorConfig = configureColors(extraColors)
     % Sets the global color options for matlab2tikz
     colorConfig = struct();
 
@@ -371,7 +388,7 @@ function colorConfig = configureColors(m2t)
     %   - 'extraNames' contains their designated names,
     %   - 'extraSpecs' their RGB specifications.
     [colorConfig.extraNames, colorConfig.extraSpecs] = ...
-        dealColorDefinitions(m2t.args.extraColors);
+        dealColorDefinitions(extraColors);
 end
 % ==============================================================================
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
@@ -426,6 +443,18 @@ function bool = isColorDefinitions(colors)
     isValidEntry = @(e)( iscell(e) && ischar(e{1}) && isRGBTuple(e{2}) );
 
     bool = iscell(colors) && all(cellfun(isValidEntry, colors));
+end
+% ==============================================================================
+function bool = isValidSemanticLineWidthDefinition(defMat)
+    % Returns true when the input is a cell array of shape Nx2 and
+    % contents in each column a set of string and numerical value as needed
+    % for the semanticLineWidth option.
+    bool = iscell(defMat) && size(defMat, 2) == 2; % Nx2 cell array
+    bool = bool && all(cellfun(@ischar   , defMat(:,1))); % first column: names
+    bool = bool && all(cellfun(@isnumeric, defMat(:,2))); % second column: line width in points
+
+    % alternatively: just 1 NaN to remove the defaults
+    bool = bool || (numel(defMat)==1 && isnan(defMat));
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
@@ -1914,9 +1943,48 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     % Also apply the line width if no actual line is there; the markers make use
     % of this, too.
     matlabDefaultLineWidth = 0.5;
-    if m2t.args.strict ...
-            || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
+    if ~isempty(m2t.semantic.LineWidth)
+        if ismember(lineWidth, [m2t.semantic.LineWidth{:,2}])
+            semStrID = lineWidth == [m2t.semantic.LineWidth{:,2}];
+            lineOpts = opts_add(lineOpts, m2t.semantic.LineWidth{semStrID,1});
+        else
+            warning('matlab2tikz:semanticLineWidthNotFound',...
+                ['No semantic correspondance for lineWidth of ''%f'' found.'...
+                'Falling back to explicit export in points.'], lineWidth);
+            lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
+        end
+    elseif m2t.args.strict || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
         lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
+    end
+end
+% ==============================================================================
+function list = configureSemanticLineWidths(semanticLineWidths)
+    % Defines the default semantic options of pgfplots and updates it when applicable
+
+    if isnan(semanticLineWidths) 
+        % Remove the list
+        list = {};
+        return;
+    end
+
+    % Pgf/TikZ defaults (see pgfmanual 3.0.1a section 15.3.1 / page 166)
+    list = {'ultra thin',  0.1;
+            'very thin',   0.2;
+            'thin',        0.4;
+            'semithick',   0.6;
+            'thick',       0.8;
+            'very thick',  1.2;
+            'ultra thick', 1.6 };
+
+    % Update defaults or append the user provided setting
+    for ii = 1:size(semanticLineWidths, 1)
+        % Check for redefinitions of defaults
+        [isOverride, idx] = ismember(semanticLineWidths{ii, 1}, list{:, 1})
+        if isOverride
+            list{idx, 2} = semanticLineWidths{ii, 2};
+        else
+            list{end+1} = semanticLineWidths{ii, :};
+        end
     end
 end
 % ==============================================================================
