@@ -116,11 +116,11 @@ function matlab2tikz(varargin)
     %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
     %   check for updates of matlab2tikz. (default: true (if not using git))
     % 
-    %   MATLAB2TIKZ('semanticLineWidths',CELLMATRIX,...) allows you to custize
+    %   MATLAB2TIKZ('semanticLineWidths',CELLMATRIX,...) allows you to customize
     %   the mapping of semantic "line width" values.
     %   A valid entry is an Nx2 cell array:
     %     - the first column contains the semantic names,
-    %     - the second column contains the corresponding line widths in points,
+    %     - the second column contains the corresponding line widths in points.
     %   The entries you provide are used in addition to the pgf defaults:
     %     {'ultra thin', 0.1; 'very thin' , 0.2; 'thin', 0.4; 'semithick', 0.6;
     %      'thick'     , 0.8; 'very thick', 1.2; 'ultra thick', 1.6}
@@ -290,8 +290,8 @@ function matlab2tikz(varargin)
           'Make sure to set "imagesAsPng" to true.']);
 
     %% Do some global initialization
-    m2t.color = configureColors(m2t);
-    m2t.args.semanticLineWidths = configureSemanticLineWidths(m2t);
+    m2t.color = configureColors(m2t.args.extraColors);
+    m2t.semantic.LineWidth = configureSemanticLineWidths(m2t.args.semanticLineWidths);
 
     % define global counter variables
     m2t.count.pngFile     = 0; % number of PNG files
@@ -374,7 +374,7 @@ function [m2t, counterValue] = incrementGlobalCounter(m2t, counterName)
     counterValue = m2t.count.(counterName);
 end
 % ==============================================================================
-function colorConfig = configureColors(m2t)
+function colorConfig = configureColors(extraColors)
     % Sets the global color options for matlab2tikz
     colorConfig = struct();
 
@@ -388,7 +388,7 @@ function colorConfig = configureColors(m2t)
     %   - 'extraNames' contains their designated names,
     %   - 'extraSpecs' their RGB specifications.
     [colorConfig.extraNames, colorConfig.extraSpecs] = ...
-        dealColorDefinitions(m2t.args.extraColors);
+        dealColorDefinitions(extraColors);
 end
 % ==============================================================================
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
@@ -1938,10 +1938,10 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     % Also apply the line width if no actual line is there; the markers make use
     % of this, too.
     matlabDefaultLineWidth = 0.5;
-    if ~isempty(m2t.args.semanticLineWidths)
-        if ismember(lineWidth, [m2t.args.semanticLineWidths{:,2}])
-            semStrID = lineWidth == [m2t.args.semanticLineWidths{:,2}];
-            lineOpts = opts_add(lineOpts, m2t.args.semanticLineWidths{semStrID,1});
+    if ~isempty(m2t.semantic.LineWidth)
+        if ismember(lineWidth, [m2t.semantic.LineWidth{:,2}])
+            semStrID = lineWidth == [m2t.semantic.LineWidth{:,2}];
+            lineOpts = opts_add(lineOpts, m2t.semantic.LineWidth{semStrID,1});
         else
             warning('matlab2tikz:semanticLineWidthNotFound',...
                 ['No semantic correspondance for lineWidth of ''%f'' found.'...
@@ -1953,10 +1953,10 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     end
 end
 % ==============================================================================
-function list = configureSemanticLineWidths(m2t)
+function list = configureSemanticLineWidths(semanticLineWidths)
     % Defines the default semantic options of pgfplots and updates it when applicable
 
-    if isnan(m2t.args.semanticLineWidths) 
+    if isnan(semanticLineWidths) 
         % Remove the list
         list = {};
         return;
@@ -1972,13 +1972,13 @@ function list = configureSemanticLineWidths(m2t)
             'ultra thick', 1.6 };
 
     % Update defaults or append the user provided setting
-    for ii = 1:size(m2t.args.semanticLineWidths, 1)
+    for ii = 1:size(semanticLineWidths, 1)
         % Check for redefinitions of defaults
-        [isOverride, idx] = ismember(m2t.args.semanticLineWidths{ii, 1}, list{:, 1})
+        [isOverride, idx] = ismember(semanticLineWidths{ii, 1}, list{:, 1})
         if isOverride
-            list{idx, 2} = m2t.args.semanticLineWidths{ii, 2};
+            list{idx, 2} = semanticLineWidths{ii, 2};
         else
-            list{end+1} = m2t.args.semanticLineWidths{ii, :};
+            list{end+1} = semanticLineWidths{ii, :};
         end
     end
 end
