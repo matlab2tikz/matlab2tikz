@@ -115,22 +115,20 @@ function matlab2tikz(varargin)
     %
     %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
     %   check for updates of matlab2tikz. (default: true (if not using git))
-    %
-    %   MATLAB2TIKZ('semanticLineWidth',BOOL,...) if true, it enables the export 
-    %   of lineWidths as semantic strings (default=false). 
-    %   The lineWidth value is replaced with an corresponding sematic string.
-    %   The mapping between value and string is as follows (pgfplot-defaults): 
-    %   'ultra thin'=0.1pt, 'very thin'=0.2pt, 'thin'=0.4pt, 'semithick'=0.6pt, 
-    %   'thick'=0.8pt, 'very thick'=1.2pt and 'ultra thick'=1.6pt 
     % 
-    %   MATLAB2TIKZ('semanticLineWidthDefinition',CELLMATRIX,...) With this option you 
-    %   are able to specify a customized list of semantic lineWidth representations. 
-    %   The default coresponds to pgfplot-defaults (cf. semanticLineWidth option). 
-    %   This feature is only applied if the boolean option of semanticLineWidth is set to TRUE.
-    %   The list needs to be specified as a Nx2 matrix with the following
-    %   scheme:
-    %   Each column needs to be a set of one string and one numerical value!
-    %   For example: {'ultra thin',0.1; 'very thin', 0.2; ...} 
+    %   MATLAB2TIKZ('semanticLineWidths',CELLMATRIX,...) allows you to custize
+    %   the mapping of semantic "line width" values.
+    %   A valid entry is an Nx2 cell array:
+    %     - the first column contains the semantic names,
+    %     - the second column contains the corresponding line widths in points,
+    %   The entries you provide are used in addition to the pgf defaults:
+    %     {'ultra thin', 0.1; 'very thin' , 0.2; 'thin', 0.4; 'semithick', 0.6;
+    %      'thick'     , 0.8; 'very thick', 1.2; 'ultra thick', 1.6}
+    %   or a single "NaN" can be provided to turn off this feature alltogether.
+    %   If you specify the default names, their mapping will be overwritten.
+    %   Inside your LaTeX document, you are responsible to make sure these TikZ
+    %   styles are properly defined.
+    %   (Default: NaN)
     % 
     %   Example
     %      x = -pi:pi/10:pi;
@@ -220,16 +218,7 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
     ipp = ipp.addParamValue(ipp, 'checkForUpdates', isempty(VCID), @islogical);
 
-    ipp = ipp.addParamValue(ipp, 'semanticLineWidth', false, @islogical);
-    ipp = ipp.addParamValue(ipp, 'semanticLineWidthDefinition', {...
-        'ultra thin',   0.1;...
-        'very thin',    0.2;...
-        'thin',         0.4;...
-        'semithick',    0.6;...
-        'thick',        0.8;...
-        'very thick',   1.2;...
-        'ultra thick',  1.6...
-        }, @isValidSemanticLineWidthDefinition);
+    ipp = ipp.addParamValue(ipp, 'semanticLineWidths', NaN, @isValidSemanticLineWidthDefinition);
     
     ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
     ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
@@ -302,6 +291,7 @@ function matlab2tikz(varargin)
 
     %% Do some global initialization
     m2t.color = configureColors(m2t);
+    m2t.args.semanticLineWidths = configureSemanticLineWidths(m2t);
 
     % define global counter variables
     m2t.count.pngFile     = 0; % number of PNG files
@@ -456,12 +446,15 @@ function bool = isColorDefinitions(colors)
 end
 % ==============================================================================
 function bool = isValidSemanticLineWidthDefinition(defMat)
-    % Returns true when the input is a cell array of schape Nx2 and
+    % Returns true when the input is a cell array of shape Nx2 and
     % contents in each column a set of string and numerical value as needed
     % for the semanticLineWidth option.
     bool = iscell(defMat) && size(defMat, 2) == 2; % Nx2 cell array
     bool = bool && all(cellfun(@ischar   , defMat(:,1))); % first column: names
     bool = bool && all(cellfun(@isnumeric, defMat(:,2))); % second column: line width in points
+
+    % alternatively: just 1 NaN to remove the defaults
+    bool = bool || (numel(defMat)==1 && isnan(defMat));
 end
 % ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
@@ -1945,19 +1938,48 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     % Also apply the line width if no actual line is there; the markers make use
     % of this, too.
     matlabDefaultLineWidth = 0.5;
-    if m2t.args.semanticLineWidth
-        if ismember(lineWidth, [m2t.args.semanticLineWidthDefinition{:,2}])
-            semStrID = lineWidth == [m2t.args.semanticLineWidthDefinition{:,2}];
-            lineOpts = opts_add(lineOpts, m2t.args.semanticLineWidthDefinition{semStrID,1});
+    if ~isempty(m2t.args.semanticLineWidths)
+        if ismember(lineWidth, [m2t.args.semanticLineWidths{:,2}])
+            semStrID = lineWidth == [m2t.args.semanticLineWidths{:,2}];
+            lineOpts = opts_add(lineOpts, m2t.args.semanticLineWidths{semStrID,1});
         else
-            warning('matlab2tikz:semanticLineWidth',...
+            warning('matlab2tikz:semanticLineWidthNotFound',...
                 ['No semantic correspondance for lineWidth of ''%f'' found.'...
                 'Falling back to explicit export in points.'], lineWidth);
             lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
         end
-    elseif m2t.args.strict ...
-            || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
+    elseif m2t.args.strict || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
         lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
+    end
+end
+% ==============================================================================
+function list = configureSemanticLineWidths(m2t)
+    % Defines the default semantic options of pgfplots and updates it when applicable
+
+    if isnan(m2t.args.semanticLineWidths) 
+        % Remove the list
+        list = {};
+        return;
+    end
+
+    % Pgf/TikZ defaults (see pgfmanual 3.0.1a section 15.3.1 / page 166)
+    list = {'ultra thin',  0.1;
+            'very thin',   0.2;
+            'thin',        0.4;
+            'semithick',   0.6;
+            'thick',       0.8;
+            'very thick',  1.2;
+            'ultra thick', 1.6 };
+
+    % Update defaults or append the user provided setting
+    for ii = 1:size(m2t.args.semanticLineWidths, 1)
+        % Check for redefinitions of defaults
+        [isOverride, idx] = ismember(m2t.args.semanticLineWidths{ii, 1}, list{:, 1})
+        if isOverride
+            list{idx, 2} = m2t.args.semanticLineWidths{ii, 2};
+        else
+            list{end+1} = m2t.args.semanticLineWidths{ii, :};
+        end
     end
 end
 % ==============================================================================
