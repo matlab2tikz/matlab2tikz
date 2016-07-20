@@ -4339,7 +4339,7 @@ function [m2t, str] = drawQuiverGroup(m2t, h)
     plotOptions = opts_addSubOpts(plotOptions, 'quiver', quiverOptions);
 
     % Check whether there is a legend and add a legend image option without scaling
-    if ~isempty(m2t.legendHandles)
+    if m2t.currentHandleHasLegend
         plotOptions = opts_add(plotOptions, 'legend image post style=-Straight Barb');
     end
 

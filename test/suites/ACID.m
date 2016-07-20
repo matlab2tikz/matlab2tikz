@@ -787,6 +787,7 @@ function [stat] = quiveroverlap ()
   qvr1 = quiver(x,y,u,v);
   qvr2 = quiver(x,y,2*u,2*v);
   set(qvr2, 'MaxHeadSize', get(qvr1, 'MaxHeadSize')/2);
+  legend({'Normal Headsize', 'Half Headsize'});
 end
 % =========================================================================
 function [stat] = polarplot ()
