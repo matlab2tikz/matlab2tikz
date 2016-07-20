@@ -30,7 +30,7 @@ legendplot : b8191bc73ca10f53eb5448a2b8876826
 legendplotBoxoff : 023f2dea1ca65c046268b347c9159a10
 legendsubplots : c14afaefa01a625c005b8eb2dda664c7
 linesWithOutliers : 9a46777e4e84dda5d27919564adfff3f
-logbaseline : 340928cdea286b2c2b067487e35e81d6
+logbaseline : c48a1a55f2eb569ec2ab470d61b514aa
 logicalImage : 82e9e5ed998aa1ecd78b514d801dc914
 logplot : 39ef189a1f9a5e7b7fddc43238821a6b
 manualAlignment : 43b5487b026f540057cf11bf16ae7c7f
@@ -58,9 +58,9 @@ randomWithLines : caf8d08edb95f8d521b649e45f3dd069
 rectanglePlot : f63538597348033398ef9cc37dcf57cd
 removeOutsideMarker : 3399a410d1198c0dd86ef91a4776303f
 roseplot : 023494fdcd2434a054367a60f0a74392
-scatter3Plot : 0c19c5a12382487f7df241c2f09e90ea
-scatterPlotMarkers : b4ccd01ed24bcaf035fce9efb767e2cf
-scatterPlotRandom : 1960bbcdea3a71cce5a0b4da34b17c08
+scatter3Plot : 5890b47442f30dbc9bad1d643cf0d51e
+scatterPlotMarkers : a47280545ce586c1743ef72703a422ca
+scatterPlotRandom : 9883c1ee158a6f1d4415e2ddf3ad7971
 sine_with_annotation : faf346798d4e519f57a57db401b58515
 sine_with_markers : 560cd44d7acad2ae4f49afa68472f901
 spherePlot : f0a3a98c1be86aeefe14a85e59324bab

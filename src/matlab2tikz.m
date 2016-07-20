@@ -3773,7 +3773,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     % Print
     drawOpts = opts_print(drawOptions);
     tabOpts  = opts_print(tableOptions);
-    str      = sprintf('\\%s[%s] plot table[%s]{%s};\n',...
+    str      = sprintf('\\%s[%s] table[%s]{%s};\n',...
                        env, drawOpts, tabOpts, table);
 end
 % ==============================================================================
@@ -3911,7 +3911,7 @@ function [m2t, str] = drawHistogram(m2t, h)
     % Print out
     drawOpts = opts_print(drawOptions);
     tabOpts  = opts_print(tableOptions);
-    str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+    str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
 end
 % ==============================================================================
@@ -3965,7 +3965,7 @@ function [m2t, str] = drawBarseries(m2t, h)
     % Print out
     drawOpts = opts_print(drawOptions);
     tabOpts  = opts_print(tableOptions);
-    str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+    str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
                        drawOpts, tabOpts, table);
     % Add a baseline if appropriate
     [m2t, baseline] = drawBaseline(m2t,h,isHorizontal);
@@ -4171,7 +4171,7 @@ function [m2t, str] = drawAreaSeries(m2t, h)
     % Print out
     drawOpts = opts_print(drawOptions);
     tabOpts  = opts_print(tableOptions);
-    str      = sprintf('\\addplot[%s] plot table[%s]{%s}\n\\closedcycle;\n',...
+    str      = sprintf('\\addplot[%s] table[%s]{%s}\n\\closedcycle;\n',...
                        drawOpts, tabOpts, table);
     %TODO: shouldn't this be "\addplot[] table[] {}" instead?
 end
@@ -4229,7 +4229,7 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
         [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
         % Print out
         tabOpts  = opts_print(tableOptions);
-        str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+        str = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
                          drawOpts, tabOpts, table);
     end
 
