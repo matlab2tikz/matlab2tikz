@@ -115,7 +115,21 @@ function matlab2tikz(varargin)
     %
     %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
     %   check for updates of matlab2tikz. (default: true (if not using git))
-    %
+    % 
+    %   MATLAB2TIKZ('semanticLineWidths',CELLMATRIX,...) allows you to customize
+    %   the mapping of semantic "line width" values.
+    %   A valid entry is an Nx2 cell array:
+    %     - the first column contains the semantic names,
+    %     - the second column contains the corresponding line widths in points.
+    %   The entries you provide are used in addition to the pgf defaults:
+    %     {'ultra thin', 0.1; 'very thin' , 0.2; 'thin', 0.4; 'semithick', 0.6;
+    %      'thick'     , 0.8; 'very thick', 1.2; 'ultra thick', 1.6}
+    %   or a single "NaN" can be provided to turn off this feature alltogether.
+    %   If you specify the default names, their mapping will be overwritten.
+    %   Inside your LaTeX document, you are responsible to make sure these TikZ
+    %   styles are properly defined.
+    %   (Default: NaN)
+    % 
     %   Example
     %      x = -pi:pi/10:pi;
     %      y = tan(sin(x)) - sin(tan(x));
@@ -204,6 +218,8 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'showWarnings', true, @islogical);
     ipp = ipp.addParamValue(ipp, 'checkForUpdates', isempty(VCID), @islogical);
 
+    ipp = ipp.addParamValue(ipp, 'semanticLineWidths', NaN, @isValidSemanticLineWidthDefinition);
+    
     ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
     ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
@@ -274,7 +290,8 @@ function matlab2tikz(varargin)
           'Make sure to set "imagesAsPng" to true.']);
 
     %% Do some global initialization
-    m2t.color = configureColors(m2t);
+    m2t.color = configureColors(m2t.args.extraColors);
+    m2t.semantic.LineWidth = configureSemanticLineWidths(m2t.args.semanticLineWidths);
 
     % define global counter variables
     m2t.count.pngFile     = 0; % number of PNG files
@@ -357,7 +374,7 @@ function [m2t, counterValue] = incrementGlobalCounter(m2t, counterName)
     counterValue = m2t.count.(counterName);
 end
 % ==============================================================================
-function colorConfig = configureColors(m2t)
+function colorConfig = configureColors(extraColors)
     % Sets the global color options for matlab2tikz
     colorConfig = struct();
 
@@ -371,7 +388,7 @@ function colorConfig = configureColors(m2t)
     %   - 'extraNames' contains their designated names,
     %   - 'extraSpecs' their RGB specifications.
     [colorConfig.extraNames, colorConfig.extraSpecs] = ...
-        dealColorDefinitions(m2t.args.extraColors);
+        dealColorDefinitions(extraColors);
 end
 % ==============================================================================
 function [m2t, fid, fileWasOpen] = openFileForOutput(m2t)
@@ -428,11 +445,28 @@ function bool = isColorDefinitions(colors)
     bool = iscell(colors) && all(cellfun(isValidEntry, colors));
 end
 % ==============================================================================
+function bool = isValidSemanticLineWidthDefinition(defMat)
+    % Returns true when the input is a cell array of shape Nx2 and
+    % contents in each column a set of string and numerical value as needed
+    % for the semanticLineWidth option.
+    bool = iscell(defMat) && size(defMat, 2) == 2; % Nx2 cell array
+    bool = bool && all(cellfun(@ischar   , defMat(:,1))); % first column: names
+    bool = bool && all(cellfun(@isnumeric, defMat(:,2))); % second column: line width in points
+
+    % alternatively: just 1 NaN to remove the defaults
+    bool = bool || (numel(defMat)==1 && isnan(defMat));
+end
+% ==============================================================================
 function fid = fileOpenForWrite(m2t, filename)
     % Set the encoding of the output file.
     % Currently only MATLAB supports different encodings.
     fid = -1;
 
+    [filepath] = fileparts(filename);
+    if ~exist(filepath,'dir') && ~isempty(filepath)
+        mkdir(filepath);
+    end
+    
     switch getEnvironment()
         case 'MATLAB'
             fid = fopen(filename, 'w', ...
@@ -1917,14 +1951,53 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     % Also apply the line width if no actual line is there; the markers make use
     % of this, too.
     matlabDefaultLineWidth = 0.5;
-    if m2t.args.strict ...
-            || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
+    if ~isempty(m2t.semantic.LineWidth)
+        if ismember(lineWidth, [m2t.semantic.LineWidth{:,2}])
+            semStrID = lineWidth == [m2t.semantic.LineWidth{:,2}];
+            lineOpts = opts_add(lineOpts, m2t.semantic.LineWidth{semStrID,1});
+        else
+            warning('matlab2tikz:semanticLineWidthNotFound',...
+                ['No semantic correspondance for lineWidth of ''%f'' found.'...
+                'Falling back to explicit export in points.'], lineWidth);
+            lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
+        end
+    elseif m2t.args.strict || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
         lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
     end
 
     % print no lines
     if isNone(lineStyle) || lineWidth==0
         lineOpts = opts_add(lineOpts, 'draw', 'none');
+    end
+end
+% ==============================================================================
+function list = configureSemanticLineWidths(semanticLineWidths)
+    % Defines the default semantic options of pgfplots and updates it when applicable
+
+    if isnan(semanticLineWidths) 
+        % Remove the list
+        list = {};
+        return;
+    end
+
+    % Pgf/TikZ defaults (see pgfmanual 3.0.1a section 15.3.1 / page 166)
+    list = {'ultra thin',  0.1;
+            'very thin',   0.2;
+            'thin',        0.4;
+            'semithick',   0.6;
+            'thick',       0.8;
+            'very thick',  1.2;
+            'ultra thick', 1.6 };
+
+    % Update defaults or append the user provided setting
+    for ii = 1:size(semanticLineWidths, 1)
+        % Check for redefinitions of defaults
+        [isOverride, idx] = ismember(semanticLineWidths{ii, 1}, list{:, 1})
+        if isOverride
+            list{idx, 2} = semanticLineWidths{ii, 2};
+        else
+            list{end+1} = semanticLineWidths{ii, :};
+        end
     end
 end
 % ==============================================================================
@@ -3557,60 +3630,144 @@ function url = clickableUrl(url, title)
 end
 % ==============================================================================
 function [m2t, str] = drawScatterPlot(m2t, h)
+    % DRAWSCATTERPLOT Draws a scatter plot
+    %
+    % A scatter plot is a plot containing only markers and where the
+    % size and/or color of each marker can be changed independently.
+    %
+    % References for TikZ code:
+    %  - http://tex.stackexchange.com/questions/197270/how-to-plot-scatter-points-using-pgfplots-with-color-defined-from-table-rgb-valu
+    %  - http://tex.stackexchange.com/questions/98646/multiple-different-meta-for-marker-color-and-marker-size
+    %
+    % See also: scatter
     str = '';
     if ~isVisible(h)
         return; % there is nothing to plot
     end
-
-    xData = get(h, 'XData');
-    yData = get(h, 'YData');
-    zData = get(h, 'ZData');
-    cData = get(h, 'CData');
-    sData = get(h, 'SizeData');
-
-    if isempty(cData) && strcmpi(getEnvironment(), 'Octave')
-        cData = get(h, 'MarkerEdgeColor');
+    
+    dataInfo   = getDataInfo(h, 'X','Y','Z','C','Size');
+    markerInfo = getMarkerInfo(m2t, h);
+    
+    if isempty(dataInfo.C) && strcmpi(getEnvironment(), 'Octave')
+        dataInfo.C = get(h, 'MarkerEdgeColor');
     end
 
-    markerInfo = getMarkerInfo(m2t, h);
     %TODO: check against getMarkerOptions() for duplicated code
 
-    constMarkerkSize = length(sData) == 1; % constant marker size
+    dataInfo.Size = tryToMakeScalar(dataInfo.Size, m2t.tol);
 
     % Rescale marker size (not definitive, follow discussion in #316)
     % Prescale marker size for octave
     if strcmpi(getEnvironment(), 'Octave')
-        sData = sData.^2/2;
+        dataInfo.Size = dataInfo.Size.^2/2;
     end
-    sData = translateMarkerSize(m2t, markerInfo.style, sqrt(sData)/2);
+    dataInfo.Size = translateMarkerSize(m2t, markerInfo.style, sqrt(dataInfo.Size)/2);
 
     drawOptions = opts_new();
-    if length(cData) == 3
-        [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
-                                                markerInfo, cData, sData, ...
-                                                constMarkerkSize);
-    elseif size(cData,2) == 3
-        drawOptions = getScatterOptsRGB(m2t, drawOptions);
+    
+    %% Determine if we are drawing an actual scatter plot
+    hasDifferentSizes  = numel(dataInfo.Size) ~= 1;
+    hasDifferentColors = numel(dataInfo.C)    ~= 3;
+    isaScatter         = hasDifferentSizes || hasDifferentColors;
+    if isaScatter
+        drawOptions = opts_add(drawOptions, 'scatter');
+    end
+    %TODO: we need to set the scatter source
+    drawOptions = opts_add(drawOptions, 'only marks');
+    drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
+
+    if length(dataInfo.C) == 3
+        % gets options specific to scatter plots with a single color
+        % No special treatment for the colors or markers are needed.
+        % All markers have the same color.
+        [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', dataInfo.C);
+        [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', dataInfo.C);
+
+        if length(dataInfo.Size) == 1;
+            drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
+                                       markerInfo.options);
+            drawOptions = opts_add(drawOptions, 'mark size', ...
+                sprintf('%.4fpt', dataInfo.Size)); % FIXME: investigate whether to use `m2t.ff`
+            if hasEdgeColor
+                drawOptions = opts_add(drawOptions, 'draw', ecolor);
+            else
+                drawOptions = opts_add(drawOptions, 'color', xcolor); %TODO: why do we even need this one?
+            end
+            if hasFaceColor
+                drawOptions = opts_add(drawOptions, 'fill', xcolor);
+            end
+        else % if changing marker size but same color on all marks
+            markerOptions = opts_new();
+            markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
+                                         markerInfo.options);
+            if hasEdgeColor
+                markerOptions = opts_add(markerOptions, 'draw', ecolor);
+            else
+                markerOptions = opts_add(markerOptions, 'draw', xcolor);
+            end
+            if hasFaceColor
+                markerOptions = opts_add(markerOptions, 'fill', xcolor);
+            end
+            % for changing marker size, the 'scatter' option has to be added
+            drawOptions = opts_add(drawOptions, 'color', xcolor);
+            drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
+                                       markerInfo.options);
+
+            if ~hasFaceColor
+                drawOptions = opts_add(drawOptions, ...
+                    'scatter/use mapped color', xcolor);
+            else
+                drawOptions = opts_addSubOpts(drawOptions, ...
+                    'scatter/use mapped color', markerOptions);
+            end
+        end
+    elseif size(dataInfo.C,2) == 3
+        % scatter plots with each marker a different RGB color (not yet supported!)
+        userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
+        % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
+        % See e.g. http://tex.stackexchange.com/questions/197270 and #433
     else
-        [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, markerInfo);
+        % scatter plot where the colors are set using a color map
+        markerOptions = opts_new();
+        markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
+                                     markerInfo.options);
+        if markerInfo.hasEdgeColor && markerInfo.hasFaceColor
+            [m2t, ecolor] = getColor(m2t, h, markerInfo.EdgeColor, 'patch');
+            markerOptions = opts_add(markerOptions, 'draw', ecolor);
+        else
+            markerOptions = opts_add(markerOptions, 'draw', 'mapped color');
+        end
+        if markerInfo.hasFaceColor
+            markerOptions = opts_add(markerOptions, 'fill', 'mapped color');
+        end
+
+        if numel(dataInfo.Size) == 1
+            drawOptions = opts_add(drawOptions, 'mark size', ...
+                sprintf('%.4fpt', dataInfo.Size)); % FIXME: investigate whether to use `m2t.ff` 
+        else
+            %TODO: warn the user about this. It is not currently supported.
+        end
+
+        drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
+        drawOptions = opts_addSubOpts(drawOptions, 'scatter/use mapped color', ...
+                                   markerOptions);
+        % Add color map.
+        m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.current.colormap), []);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Plot the thing.
-    [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData);
+    [env, data, metaPart, columns] = organizeScatterData(m2t, dataInfo);
 
-    if ~constMarkerkSize %
-        drawOptions = opts_add(drawOptions, 'visualization depends on', ...
-            ['{\thisrowno{', num2str(sColumn), '} \as \perpointmarksize}']);
+    if hasDifferentSizes
+        drawOptions = opts_append(drawOptions, 'visualization depends on', ...
+            '{\thisrow{size} \as \perpointmarksize}');
         drawOptions = opts_add(drawOptions, ...
             'scatter/@pre marker code/.append style', ...
             '{/tikz/mark size=\perpointmarksize}');
     end
 
-    [data, metaPart] = addCDataToScatterData(data, cData);
-
     % The actual printing.
-    nColumns = size(data, 2);
-    [m2t, table, tableOptions] = makeTable(m2t, repmat({''},1,nColumns), data);
+    [m2t, table, tableOptions] = makeTable(m2t, columns, data);
     tableOptions = opts_merge(tableOptions, metaPart);
 
     % Print
@@ -3618,6 +3775,31 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     tabOpts  = opts_print(tableOptions);
     str      = sprintf('\\%s[%s] plot table[%s]{%s};\n',...
                        env, drawOpts, tabOpts, table);
+end
+% ==============================================================================
+function dataInfo = getDataInfo(h, varargin)
+    % retrieves the "*Data  fields from a HG object
+    % When no names are specified, it assumes 'X','Y','Z' is requested
+    if nargin == 1
+        fields = {'X','Y','Z'};
+    else
+        fields = varargin;
+    end
+    dataInfo = struct();
+    for iField = 1:numel(fields)
+        name            = fields{iField};
+        dataInfo.(name) = get(h, [name 'Data']);
+    end
+end
+% ==============================================================================
+function value = tryToMakeScalar(value, tolerance)
+    % make a vector into a scalar when all its components are equal
+    if ~exist('tolerance','var')
+        tolerance = 0; % do everything perfectly
+    end
+    if all(abs(value - value(1)) <= tolerance)
+        value = value(1);
+    end
 end
 % ==============================================================================
 function marker = getMarkerInfo(m2t, h, markOptions)
@@ -3635,116 +3817,35 @@ function marker = getMarkerInfo(m2t, h, markOptions)
                                             markOptions, marker.hasFaceColor);
 end
 % ==============================================================================
-function [m2t, drawOptions] = getScatterOptsOneColor(m2t, h, drawOptions, ...
-                            markerInfo, cData, sData, constMarkerkSize)
-    % gets options specific to scatter plots with a single color
-    % No special treatment for the colors or markers are needed.
-    % All markers have the same color.
-    [m2t, xcolor, hasFaceColor] = getColorOfMarkers(m2t, h, 'MarkerFaceColor', cData);
-    [m2t, ecolor, hasEdgeColor] = getColorOfMarkers(m2t, h, 'MarkerEdgeColor', cData);
-
-    if constMarkerkSize
-        drawOptions = opts_add(drawOptions, 'only marks');
-        drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
-        drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
-                                   markerInfo.options);
-        drawOptions = opts_add(drawOptions, 'mark size', ...
-            sprintf('%.4fpt', sData)); % FIXME: investigate whether to use `m2t.ff`
-        if hasEdgeColor
-            drawOptions = opts_add(drawOptions, 'draw', ecolor);
-        else
-            drawOptions = opts_add(drawOptions, 'color', xcolor); %TODO: why do we even need this one?
-        end
-        if hasFaceColor
-            drawOptions = opts_add(drawOptions, 'fill', xcolor);
-        end
-    else % if changing marker size but same color on all marks
-        markerOptions = opts_new();
-        markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
-        markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
-                                     markerInfo.options);
-        if hasEdgeColor
-            markerOptions = opts_add(markerOptions, 'draw', ecolor);
-        else
-            markerOptions = opts_add(markerOptions, 'draw', xcolor);
-        end
-        if hasFaceColor
-            markerOptions = opts_add(markerOptions, 'fill', xcolor);
-        end
-        % for changing marker size, the 'scatter' option has to be added
-        drawOptions = opts_add(drawOptions, 'scatter');
-        drawOptions = opts_add(drawOptions, 'only marks');
-        drawOptions = opts_add(drawOptions, 'color', xcolor);
-        drawOptions = opts_add(drawOptions, 'mark', markerInfo.tikz);
-        drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
-                                   markerInfo.options);
-
-        if ~hasFaceColor
-            drawOptions = opts_add(drawOptions, ...
-                'scatter/use mapped color', xcolor);
-        else
-            drawOptions = opts_addSubOpts(drawOptions, ...
-                'scatter/use mapped color', markerOptions);
-        end
-    end
-end
-function drawOptions = getScatterOptsRGB(m2t, drawOptions)
-    % scatter plots with each marker a different RGB color (not yet supported!)
-    drawOptions = opts_add(drawOptions, 'only marks');
-    userWarning(m2t, 'Pgfplots cannot handle RGB scatter plots yet.');
-    % TODO Get this in order as soon as Pgfplots can do "scatter rgb".
-    % See e.g. http://tex.stackexchange.com/questions/197270 and #433
-end
-function [m2t, drawOptions] = getScatterOptsColormap(m2t, h, drawOptions, markerInfo)
-    % scatter plot where the colors are set using a color map
-    markerOptions = opts_new();
-    markerOptions = opts_add(markerOptions, 'mark', markerInfo.tikz);
-    markerOptions = opts_addSubOpts(markerOptions, 'mark options', ...
-                                 markerInfo.options);
-
-    if markerInfo.hasEdgeColor && markerInfo.hasFaceColor
-        [m2t, ecolor] = getColor(m2t, h, markerInfo.EdgeColor, 'patch');
-        markerOptions = opts_add(markerOptions, 'draw', ecolor);
-    else
-        markerOptions = opts_add(markerOptions, 'draw', 'mapped color');
-    end
-    if markerInfo.hasFaceColor
-        markerOptions = opts_add(markerOptions, 'fill', 'mapped color');
-    end
-    drawOptions = opts_add(drawOptions, 'scatter');
-    drawOptions = opts_add(drawOptions, 'only marks');
-    drawOptions = opts_add(drawOptions, 'scatter src', 'explicit');
-    drawOptions = opts_addSubOpts(drawOptions, 'scatter/use mapped color', ...
-                               markerOptions);
-    % Add color map.
-    m2t = m2t_addAxisOption(m2t, matlab2pgfplotsColormap(m2t, m2t.current.colormap), []);
-end
-% ==============================================================================
-function [env, data, sColumn] = organizeScatterData(m2t, xData, yData, zData, sData)
+function [env, data, metaOptions, columns] = organizeScatterData(m2t, dataInfo)
     % reorganizes the {X,Y,Z,S} data into a single matrix
-    sColumn = [];
-    if ~m2t.axes{end}.is3D
-        env = 'addplot';
-        if length(sData) == 1
-            data = [xData(:), yData(:)];
-        else
-            sColumn = 2;
-            data = [xData(:), yData(:), sData(:)];
-        end
-    else
-        env = 'addplot3';
-        if length(sData) == 1
-            data = applyHgTransform(m2t, [xData(:),yData(:),zData(:)]);
-        else
-            sColumn = 3;
-            data = applyHgTransform(m2t, [xData(:),yData(:),zData(:),sData(:)]);
-        end
-    end
-end
-% ==============================================================================
-function [data, metaOptions] = addCDataToScatterData(data, cData)
-    % adds the cData vector to the data table of a scatter plot
     metaOptions = opts_new();
+
+    
+    xData = dataInfo.X;
+    yData = dataInfo.Y;
+    zData = dataInfo.Z;
+    cData = dataInfo.C;
+    sData = dataInfo.Size;
+    
+    % add the actual data
+    if ~m2t.axes{end}.is3D
+        env     = 'addplot';
+        columns = {'x','y'};
+        data    = [xData(:), yData(:)];
+    else
+        env     = 'addplot3';
+        columns = {'x','y','z'};
+        data    = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
+    end
+    
+    % add marker sizes
+    if length(sData) ~= 1
+        columns = [columns, {'size'}];
+        data    = [data, sData(:)];
+    end
+    
+    % add color data
     if length(cData) == 3
         % If size(cData,1)==1, then all the colors are the same and have
         % already been accounted for above.
@@ -3753,9 +3854,11 @@ function [data, metaOptions] = addCDataToScatterData(data, cData)
         %TODO Hm, can't deal with this?
         %[m2t, col] = rgb2colorliteral(m2t, cData(k,:));
         %str = strcat(str, sprintf(' [%s]\n', col));
+        columns = [columns, {'R','G','B'}];
+        data    = [data, cData(:,1), cData(:,2), cData(:,3)];
     else
-        metaOptions = opts_add(metaOptions, ...
-                               'meta index', sprintf('%d', size(data,2)));
+        columns = [columns, {'color'}];
+        metaOptions = opts_add(metaOptions, 'meta', 'color');
         data = [data, cData(:)];
     end
 end
@@ -5168,18 +5271,18 @@ function pTickLabels = formatPgfTickLabels(m2t, plotLabelsNecessary, ...
         tickLabels, isLogAxis, tickLabelMode)
     % formats the tick labels for pgfplots
     if plotLabelsNecessary
-        % if the axis is logscaled, MATLAB does not store the labels,
-        % but the exponents to 10
-        if isLogAxis
-            for k = 1:length(tickLabels)
-                if isnumeric(tickLabels{k})
-                    str = num2str(tickLabels{k});
-                else
-                    str = tickLabels{k};
-                end
-                if strcmpi(tickLabelMode,'auto')
-                    tickLabels{k} = sprintf('$10^{%s}$', str);
-                end
+        for k = 1:length(tickLabels)
+            % Turn tickLabels from cells containing a cell into 
+            % cells containing strings
+            if isnumeric(tickLabels{k})
+                tickLabels(k) = num2str(tickLabels{k});
+            elseif iscell(tickLabels{k})
+                tickLabels(k) = tickLabels{k};
+            end
+            % If the axis is logscaled, MATLAB does not store the labels,
+            % but the exponents to 10
+            if isLogAxis && strcmpi(tickLabelMode,'auto')
+                tickLabels{k} = sprintf('$10^{%s}$', str);
             end
         end
         tickLabels = cellfun(@(l)(sprintf('{%s}',l)), tickLabels, ...
