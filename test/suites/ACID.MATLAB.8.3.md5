@@ -4,7 +4,7 @@ annotationAll : 379d8d9a149d9d95ac1f9181df2a252f
 annotationSubplots : 4c9e089fe5d45cfc30a24178c3884894
 annotationText : 125f06b52ffc03b0cf2e268ecb3176b1
 annotationTextUnits : 5cdaa2a7b79da4e92a8bd4e826f3ad4f
-areaPlot : 9664b59c57207ec4e1dc067a69855441
+areaPlot : de324f6433b059954b2454078bb6a990
 axesColors : b5692b30776154d2c44efa028f29b663
 axesLocation : 25480478a34e8a14192fffd0e5ce8784
 bars : 5072df90749c21587a3131d507260059
@@ -16,7 +16,7 @@ colorbarLogplot : 5794944abaa9c8546b78527def8789df
 compassplot : 4d38212af52ab9f8a3d9870a892922c2
 contourPenny : 760cfaa17d0a8604b3c84be28dfff8ce
 croppedImage : 867842d55fb671733aa5b8fb4ac3edd7
-customLegend : 4e1545caaff43bea98e94a7f0e0b14c2
+customLegend : de25d32cdf639bf7d842fa12f42f09d9
 decayingharmonic : d50b6517936f39419d09969fab0234b5
 double_axes : de2a510c85cb0b0e58ee71bc2566f225
 double_axes2 : 92ac530acb0568cf0e74417eedeadbcf
@@ -25,7 +25,7 @@ errorBars : 2560d1bf40145a605e7221995c0e3c6b
 errorBars2 : 4a227101a8d12b5f35efbb0fa5347a74
 fill3plot : bc429a021ccffbd43c38f17a88a2e70e
 freqResponsePlot : af24cc1d0c36d6dc93f753583f57ec15
-herrorbarPlot : 6c62e31cf5fef575088d5d45a172189a
+herrorbarPlot : a0c26ce490dcd79a474317a8405d6696
 hgTransformPlot : 7f12c6d3cfc6216a3dbc14389e180bcd
 hist3d : 82368445bed40d4cdead5bcaea313cab
 imageOrientation_PNG : 87a0bfbb4e7d59fbe9751b8ad49ec83a
@@ -35,8 +35,8 @@ imagescplot2 : d28be55adbd132e3dcc21994aac45cab
 latexInterpreter : 09fc09e1b6c527f356d7e1017ed477fd
 latexmath2 : 082e5416e213056d6ebe4a1bccd4286d
 legendplot : 0a5562a800a2bb573205243b739bf2d1
-legendplotBoxoff : 25a240059e7fb19c9582ccdd935c445f
-legendsubplots : f1201e253a5acfe2c84c07fe25de8a7a
+legendplotBoxoff : 1e5152c3fdb900a5db3508c5b2f9e33b
+legendsubplots : 3b289bdeae864def5f4c9edcecbcc0e7
 linesWithOutliers : 2a48f3d94e03aa93c9bbf8fe4afd5c5c
 logbaseline : e40751f3b723312ccceb2b471779afbc
 logicalImage : 58e923d0f28ae2c4dadd728583bc24e9
@@ -57,10 +57,10 @@ pColorPlot : e37ecb9acd70d67f384b3b1412ceaef6
 parameterCurve3d : 79b6bfee183a996894c7964a023e312f
 parameterSurf : 285f0071af9feae53d98657f52a6ad12
 peaks_contour : 196cab59e410e855f25a72a156c6572e
-peaks_contourf : 0d564f6c98ebcfdc782a466a01d98020
-pixelLegend : 0402746bcd819482e431d2364113c35a
+peaks_contourf : 999d27a1b935c03dc8d648d171256c04
+pixelLegend : 81a63df8ca709900bcd5433a5eb1642b
 plain_cos : fca425e9eabf53283beb24f5de0ae676
-plotyyLegends : e38a5e2eedb99c0f57ecdfe1ceeb6849
+plotyyLegends : 4e5eb78cea391501d9ccb9a4dc72292b
 polarplot : 004a728d0a46f674e89e867c2cb56060
 quiver3plot : ef185cd9c6722d70ef3787e2cf1015c5
 quiveroverlap : 9ad9032b8f7e1f56e72055924bbf49cf
@@ -79,9 +79,9 @@ sine_with_markers : 092d46e9d0c877abac0cec1cf0483b7a
 spectro : f685838f49f5f6eb123531508c740fdf
 spherePlot : 9c1d11694c19b9628703743bed6d91f8
 stackedBarsWithOther : e6bb604857e6aca900b76cc2705efa6d
-stairsplot : 71b78ffd846b05bcbc76363030619745
-stemplot : 5297f0899fa340ddcce7bb72b438d281
-stemplot2 : 6084d1bef43c86702ba58168d8dd72f6
+stairsplot : 435cd5e3e390c6aa9b71df7024bcbb2a
+stemplot : 08bcde6a48e35239bfd20f176c5159f0
+stemplot2 : 45a731c5a8c986444ef637932a3d85e3
 subplot2x2b : c0770835856531708afab46193569557
 subplotCustom : c4f1e8899cc5751c64e965f23e057f0a
 superkohle : 2de586d043d7a6d2d32a095d51eb4c96
@@ -92,8 +92,8 @@ texcolor : 7a8b8c01525fc11ac4f1186c803748a9
 texrandom : 4cc05e583bb3cfbc9884ed5f03f10e5a
 textAlignment : 6956ec26321f378e54256262cb5d8ca4
 textext : 29517a27977625063068079e186d343f
-xAxisReversed : 8a85ffed683eb22a97adebe66fc4ca94
+xAxisReversed : 77dc42c7424f57534b231e0be16de443
 ylabels : b3a908961f31aa3cdda915942254a18c
-zoom : bff869e34a06d53276879b8c61ffcb87
+zoom : 7dfc1650d55885e46a60043aa4da6a94
 zplanePlot1 : 77f5deca270c3e8d2c29d0893a11dd60
 zplanePlot2 : 4e74a3cd77d4b9628741966301fd5bf4

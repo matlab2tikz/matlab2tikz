@@ -792,7 +792,7 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
         % Label the plot to later reference it. Only legend entries on the main
         % plotyy axis will have a label
         [m2t, labelNum] = incrementGlobalCounter(m2t, 'plotyylabel');
-        label = sprintf('\\label{%s};\n\n', plotyyLabelName(labelNum));
+        label = sprintf('\\label{%s}\n\n', plotyyLabelName(labelNum));
 
     elseif m2t.currentHandleHasLegend && ~isempty(m2t.axes{end}.PlotyyReferences)
         % We are on the secondary axis.
@@ -812,7 +812,7 @@ function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
         for iRef = 1:nReferences
             ref            = m2t.axes{end}.PlotyyReferences(iRef);
             lString        = getLegendString(m2t,ref);
-            labelRef{iRef} = sprintf('\\addlegendimage{/pgfplots/refstyle=%s}\\addlegendentry{%s};\n',...
+            labelRef{iRef} = sprintf('\\addlegendimage{/pgfplots/refstyle=%s}\n\\addlegendentry{%s}\n',...
                                   plotyyLabelName(labelRange(iRef)), lString);
         end
         labelRef = join(m2t, labelRef, '');
@@ -841,7 +841,7 @@ function legendInfo = addLegendInformation(m2t, h)
 
     % We also need a legend alignment option to make multiline
     % legend entries work. This is added by default in getLegendOpts().
-    legendInfo = sprintf('\\addlegendentry{%s};\n\n', legendString);
+    legendInfo = sprintf('\\addlegendentry{%s}\n\n', legendString);
 end
 % ==============================================================================
 function data = applyHgTransform(m2t, data)
