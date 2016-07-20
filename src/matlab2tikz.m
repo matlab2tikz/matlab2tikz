@@ -1898,7 +1898,7 @@ function [m2t,str] = plotLine2d(m2t, opts, data)
     end
 
     % Print out
-    tabOpts = opts_print(tableOptions, ', '); %TODO: standardize comma
+    tabOpts = opts_print(tableOptions);
     str     = sprintf('\\addplot [%s]\n %s table[%s]{%s};\n',...
                       opts, errorBar, tabOpts, table);
 end
@@ -2302,7 +2302,7 @@ function [m2t, str] = drawPatch(m2t, handle)
 
     % Print out
     drawOpts = opts_print(drawOptions);
-    tabOpts  = opts_print(tableOptions, ', '); %TODO: standardize comma
+    tabOpts  = opts_print(tableOptions);
     str = sprintf('\n\\%s[%s]\ntable[%s] {%s}%s;\n',...
                   plotCmd, drawOpts, tabOpts, verticesTable, cycle);
 end
@@ -2741,7 +2741,7 @@ function [m2t, str] = drawContourHG2(m2t, h)
         [m2t, table, tableOptions] = makeTable(m2t, {'',''}, contours);
 
         % Print out
-        plotOpts = opts_print(plotOptions,  ', '); %TODO: standardize comma
+        plotOpts = opts_print(plotOptions);
         tabOpts  = opts_print(tableOptions);
         str      = sprintf('\\addplot[%s] table[%s] {%%\n%s};\n', ...
                            plotOpts, tabOpts, table);
@@ -3165,7 +3165,7 @@ function [m2t,str] = drawSurface(m2t, h)
     % Print the data
     [m2t, table, tabOptsExtra] = makeTable(m2t, columnNames, data);
     tableOptions = opts_merge(tabOptsExtra, tableOptions);
-    tabOpts = opts_print(tableOptions, ', '); %TODO: standardize comma
+    tabOpts = opts_print(tableOptions);
 
     % Here is where everything is put together
     str = sprintf('%s\ntable[%s] {%%\n%s};\n', ...
@@ -3282,7 +3282,7 @@ function [m2t, str] = drawText(m2t, handle)
     % plot the thing
     [m2t, posString] = getPositionOfText(m2t, handle);
 
-    styleOpts = opts_print(style, ', '); %TODO: standardize comma
+    styleOpts = opts_print(style);
     str       = sprintf('\\node[%s]\nat %s {%s};\n', ...
                         styleOpts, posString, content);
 end
@@ -3426,7 +3426,7 @@ function [m2t, str] = drawRectangle(m2t, h)
     pos = pos2dims(get(h, 'Position'));
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % plot the thing
-    lineOpts = opts_print(lineOptions, ', '); %TODO: standardize comma
+    lineOpts = opts_print(lineOptions);
     str = sprintf(['\\draw[%s] (axis cs:',m2t.ff,',',m2t.ff, ')', ...
                    ' rectangle (axis cs:',m2t.ff,',',m2t.ff,');\n'], ...
                    lineOpts, pos.left, pos.bottom, pos.right, pos.top);
@@ -5953,7 +5953,7 @@ function printAll(m2t, env, fid)
         fprintf(fid, '\\begin{%s}\n', env.name);
     else
         fprintf(fid, '\\begin{%s}[%%\n%s\n]\n', env.name, ...
-                opts_print(env.options, sprintf(',\n'))); %TODO: standardize comma
+                opts_print(env.options, sprintf(',\n')));
     end
 
     for item = env.content
@@ -6628,7 +6628,7 @@ end
 function str = opts_print(opts, sep)
     % pretty print an options array
     if ~exist('sep','var') || ~ischar(sep)
-        sep = ','; %TODO: perhaps change this to ', ' (beware of the hashes!)
+        sep = ', ';
     end
     nOpts = size(opts,1);
     c = cell(1,nOpts);
