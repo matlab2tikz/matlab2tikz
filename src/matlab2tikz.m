@@ -922,8 +922,9 @@ function m2t = drawAxes(m2t, handle)
 
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
-        % in MATLAB, they may still be visible. Well.
-        m2t = m2t_addAxisOption(m2t, 'hide axis');
+        % in MATLAB, they may still be visible. Instead use the following.
+        m2t = m2t_addAxisOption(m2t, 'axis line style', '{draw=none}');
+        m2t = m2t_addAxisOption(m2t, 'ticks', 'none');
         %    % An invisible axes container *can* have visible children, so don't
         %    % immediately bail out here.
         %    children = allchild(handle);
@@ -1413,7 +1414,7 @@ function [m2t, opts] = getTitleOrLabel_(m2t, handle, opts, labelKind, tikzKeywor
     if ~isempty(str)
         interpreter = get(object, 'Interpreter');
         str = prettyPrint(m2t, str, interpreter);
-        style = getFontStyle(m2t, object);
+        [m2t, style] = getFontStyle(m2t, object);
         if length(str) > 1 %multiline
             style = opts_add(style, 'align', 'center');
         end
@@ -1509,14 +1510,21 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
             % axis styles (e.g., colors).
             options = opts_add(options, 'separate axis lines');
         end
+        % set color of axis lines
         options = ...
             opts_add(options, ...
             ['every outer ', axis, ' axis line/.append style'], ...
             ['{', col, '}']);
+        % set color of tick labels
         options = ...
             opts_add(options, ...
             ['every ',axis,' tick label/.append style'], ...
             ['{font=\color{',col,'}}']);
+        % set color of ticks
+        options = ...
+            opts_add(options, ...
+            ['every ',axis,' tick/.append style'], ...
+            ['{',col,'}']);
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % handle the orientation
@@ -1956,6 +1964,11 @@ function [m2t, lineOpts] = getLineOptions(m2t, h)
     elseif m2t.args.strict || ~abs(lineWidth-matlabDefaultLineWidth) <= m2t.tol
         lineOpts = opts_add(lineOpts, 'line width', sprintf('%.1fpt', lineWidth));
     end
+
+    % print no lines
+    if isNone(lineStyle) || lineWidth==0
+        lineOpts = opts_add(lineOpts, 'draw', 'none');
+    end
 end
 % ==============================================================================
 function list = configureSemanticLineWidths(semanticLineWidths)
@@ -2017,18 +2030,20 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
             markOptions = opts_add(markOptions, 'solid');
         end
 
-        % print no lines
-        if isNone(lineStyle) || lineWidth==0
-            drawOptions = opts_add(drawOptions, 'only marks');
-        end
-
         % get the marker color right
         markerInfo = getMarkerInfo(m2t, h, markOptions);
 
         [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'fill', markerInfo.FaceColor);
 
         if ~strcmpi(markerInfo.EdgeColor,'auto')
-            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'draw', markerInfo.EdgeColor);
+            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, '', markerInfo.EdgeColor);
+        else
+            if isprop(h,'EdgeColor')
+                color = get(h, 'EdgeColor');
+            else
+                color = get(h, 'Color');
+            end
+            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, '', color);
         end
 
         % add it all to drawOptions
@@ -2368,12 +2383,19 @@ function [m2t, options] = setColor(m2t, handle, options, property, color, noneVa
     % that is set when the color == 'none' (if it is omitted, the property will not
     % be set).
     % TODO: probably this should be integrated with getAndCheckDefault etc.
+    if opts_has(options,property) && isNone(opts_get(options,property))
+        return
+    end
     if ~isNone(color)
         [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
         if ~isempty(xcolor)
             % this may happen when color == 'flat' and CData is Nx3, e.g. in
             % scatter plot or in patches
-            options = opts_add(options, property, xcolor);
+            if isempty(property)
+                options = opts_add(options, xcolor);
+            else
+                options = opts_add(options, property, xcolor);
+            end
         end
     else
         if exist('noneValue','var')
@@ -2937,7 +2959,7 @@ function cl = guessOctavePlotType(h)
 
         % quiver plots
     elseif hasProperties(h, {'udata','vdata'}, {'ldata'})
-    	cl = ' specgraph.quivergroup';
+    	cl = 'specgraph.quivergroup';
     	
     	% bar plots
     elseif hasProperties(h, {'bargroup','barwidth', 'barlayout'}, {})
@@ -3250,11 +3272,8 @@ function [m2t, str] = drawText(m2t, handle)
 
     style = getRotationOfText(m2t, handle, style);
 
-    style = opts_merge(style, getFontStyle(m2t, handle));
-
-    color  = get(handle, 'Color');
-    [m2t, tcolor] = getColor(m2t, handle, color, 'patch');
-    style = opts_add(style, 'text', tcolor);
+    [m2t, fontStyle] = getFontStyle(m2t, handle);
+    style = opts_merge(style, fontStyle);
 
     EdgeColor = get(handle, 'EdgeColor');
     [m2t, style] = setColor(m2t, handle, style, 'draw', EdgeColor);
@@ -4159,7 +4178,11 @@ end
 % ==============================================================================
 function [m2t, str] = drawStemSeries(m2t, h)
     [m2t, str] = drawStemOrStairSeries_(m2t, h, 'ycomb');
-
+    
+    % TODO: handle baseplane with stem3()
+    if m2t.axes{end}.is3D
+      return
+    end
     [m2t, baseline] = drawBaseline(m2t,h);
     str             = [str, baseline];
 end
@@ -4189,16 +4212,27 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     % Toggle legend entry
     drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
 
+    drawOpts = opts_print(drawOptions);
+    
     % Generate the tikz table
     xData = get(h, 'XData');
     yData = get(h, 'YData');
-    [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
+    if m2t.axes{end}.is3D
+        % TODO: account for hgtransform
+        zData = get(h, 'ZData');
+        [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData, '', zData);
+        % Print out
+        tabOpts  = opts_print(tableOptions);
+        str = sprintf('\\addplot3 [%s]\n table[%s] {%s};\n ', ...
+                         drawOpts, tabOpts, table);
+    else
+        [m2t, table, tableOptions] = makeTable(m2t, '', xData, '', yData);
+        % Print out
+        tabOpts  = opts_print(tableOptions);
+        str = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
+                         drawOpts, tabOpts, table);
+    end
 
-    % Print out
-    drawOpts = opts_print(drawOptions);
-    tabOpts  = opts_print(tableOptions);
-    str      = sprintf('\\addplot[%s] plot table[%s] {%s};\n', ...
-                       drawOpts, tabOpts, table);
 end
 % ==============================================================================
 function [m2t, str] = drawQuiverGroup(m2t, h)
@@ -4628,13 +4662,18 @@ function pgfplotsColormap = matlab2pgfplotsColormap(m2t, matlabColormap, name)
     pgfplotsColormap = sprintf('colormap={%s}{[1%s] %s}',name, unit, join(m2t, colSpecs, '; '));
 end
 % ==============================================================================
-function fontStyle = getFontStyle(m2t, handle)
+function [m2t, fontStyle] = getFontStyle(m2t, handle)
     fontStyle = '';
     if strcmpi(get(handle, 'FontWeight'),'Bold')
         fontStyle = sprintf('%s\\bfseries',fontStyle);
     end
     if strcmpi(get(handle, 'FontAngle'), 'Italic')
         fontStyle = sprintf('%s\\itshape',fontStyle);
+    end
+    if ~all(get(handle, 'Color')==0)
+        color = get(handle, 'Color');
+        [m2t, col] = getColor(m2t, handle, color, 'patch');
+        fontStyle = sprintf('%s\\color{%s}', fontStyle, col);
     end
     if m2t.args.strictFontSize
         fontSize  = get(handle,'FontSize');
@@ -4938,7 +4977,9 @@ function [m2t, colorindex] = cdata2colorindex(m2t, cdata, imagehandle)
             idx3 = ~idx1 & ~idx2;
             colorindex(idx1) = 1;
             colorindex(idx2) = m;
-            colorindex(idx3) = fix((cdata(idx3)-clim(1)) / (clim(2)-clim(1)) *m) ...
+            % cdata may be of type uint8. Convert to double to avoid
+            % getting binary indices
+            colorindex(idx3) = fix(double(cdata(idx3)-clim(1)) / (clim(2)-clim(1)) *m) ...
                 + 1;
         case 'direct'
             % direct index
