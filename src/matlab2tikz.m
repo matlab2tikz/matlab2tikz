@@ -4827,15 +4827,46 @@ function [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, cbarSt
         case 'southoutside'
             cbarTemplate = 'horizontal';
         case 'manual'
-            cbarTemplate = 'right';
             origUnits = handle.Units;
-            handle.Units = 'centimeters';
-            cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
-                sprintf('{(%fcm,%fcm)}',handle.Position(1),...
-                handle.Position(2)+handle.Position(4)));
-            cbarStyleOptions = opts_add(cbarStyleOptions, 'height',...
-                sprintf('%fcm',handle.Position(4)));
+            origAxesUnits = handle.Axes.Units;
+            handle.Units = 'centimeters';        % We need absolute
+            handle.Axes.Units = 'centimeters';   % positions for tikz
+            cbarPos = handle.Position;
+            cbarAxesPos = handle.Axes.Position;
             handle.Units = origUnits;
+            handle.Axes.Units = origAxesUnits;
+
+            % Cases of colorbar axis locations (in or out) depending on position
+            % of colorbar relative to it's associated axes.
+            % According to matlab manual (R2016a) colorbars with Location 'manual'
+            % can only be vertical.
+            if cbarPos(1) + 0.5*cbarPos(3) < cbarAxesPos(1) + 0.5*cbarAxesPos(3) 
+                if strcmp(handle.AxisLocation,'in')
+                    cbarTemplate = 'right';
+                    cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
+                        'south east');
+                else
+                    cbarTemplate = 'left';
+                    cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
+                        'south west');
+                end
+            else
+                if strcmp(handle.AxisLocation,'in')
+                    cbarTemplate = 'left';
+                    cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
+                        'south west');
+                else
+                    cbarTemplate = 'right';
+                    cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
+                        'south east');
+                end
+            end
+            
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
+                sprintf('{(%fcm,%fcm)}',cbarPos(1),cbarPos(2)));
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'height',...
+                sprintf('%fcm',cbarPos(4)));
+
         otherwise
             error('matlab2tikz:getColorOptions:unknownLocation',...
                 'getColorbarOptions: Unknown ''Location'' %s.', loc)
