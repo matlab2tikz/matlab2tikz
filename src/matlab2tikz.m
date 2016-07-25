@@ -4830,48 +4830,50 @@ function [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, cbarSt
             origUnits = get(handle,'Units');
             assocAxes = get(handle,'Axes');
             origAxesUnits = get(assocAxes,'Units');
-            set(handle,'Units','centimeters');        % We need absolute
-            set(assocAxes,'Units','centimeters');     % positions for tikz
-            cbarPos = get(handle,'Position');
-            cbarAxesPos = get(assocAxes,'Position');
+            set(handle,'Units','centimeters');        % Make sure we have
+            set(assocAxes,'Units','centimeters');     % same units
+            cbarDim = pos2dims(get(handle,'Position'));
+            cbarAxesDim = pos2dims(get(assocAxes,'Position'));
             set(handle,'Units',origUnits);            % Restore original
             set(assocAxes,'Units',origAxesUnits);     % units
 
-            % Cases of colorbar axis locations (in or out) depending on position
-            % of colorbar relative to it's associated axes.
+            center = @(dims) (dims.left + dims.right)/2;
+            centerCbar = center(cbarDim);
+            centerAxes = center(cbarAxesDim);
+
+            % Cases of colorbar axis locations (in or out) depending on center
+            % of colorbar relative to the center it's associated axes.
             % According to matlab manual (R2016a) colorbars with Location 'manual'
             % can only be vertical.
-            center = @(dims) (dims.left + dims.right)/2;
-            centerCbar = center(pos2dims(cbarPos));
-            centerAxes = center(pos2dims(cbarAxesPos));
             axisLoc = get(handle,'AxisLocation');
             if centerCbar < centerAxes
                 if strcmp(axisLoc,'in')
                     cbarTemplate = 'right';
-                    cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
-                        'south east');
                 else
                     cbarTemplate = 'left';
-                    cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
-                        'south west');
                 end
             else
                 if strcmp(axisLoc,'in')
                     cbarTemplate = 'left';
-                    cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
-                        'south west');
                 else
                     cbarTemplate = 'right';
-                    cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
-                        'south east');
                 end
             end
+
+            % Using positions relative to associated axes
+            calcRelPos = @(pos1,pos2,ext2) (pos1-pos2)/ext2; 
+            cbarRelPosX = calcRelPos(cbarDim.left,cbarAxesDim.left,cbarAxesDim.width);
+            cbarRelPosY = calcRelPos(cbarDim.bottom,cbarAxesDim.bottom,cbarAxesDim.height);
+            cbarRelHeight = cbarDim.height/cbarAxesDim.height;
             
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
+                'south west');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
-                ['{(' formatDim(cbarPos(1), 'cm') ','...
-                      formatDim(cbarPos(2), 'cm') ')}']);
+                ['{(' formatDim(cbarRelPosX) ','...
+                      formatDim(cbarRelPosY) ')}']);
             cbarStyleOptions = opts_add(cbarStyleOptions, 'height',...
-                ['{(' formatDim(cbarPos(4), 'cm') ')}']);
+                [formatDim(cbarRelHeight),...
+                '*\pgfkeysvalueof{/pgfplots/parent axis height}']);
 
         otherwise
             error('matlab2tikz:getColorOptions:unknownLocation',...
