@@ -134,7 +134,8 @@ function [status] = ACID(k)
                            @overlappingPlots    , ...
                            @histogramPlot       , ...
                            @alphaTest           , ...
-                           @removeOutsideMarker
+                           @removeOutsideMarker , ...
+                           @colorbars
                          };
 
 
@@ -2740,5 +2741,23 @@ function [stat] = removeOutsideMarker()
   
   % Change the limits back to check result
   xlim([-1, 2]);
+end
+% =========================================================================
+function [stat] = colorbars()
+  stat.description = 'Manual positioning of colorbars';
+  stat.issues      = [933 937];
+
+  shift = [0.2 0.8 0.2 0.8];
+  axLoc = {'in','out','out','in'};
+
+  for iAx = 1:4
+    hAx(iAx) = subplot(2,2,iAx);
+    axPos    = get(hAx(iAx), 'Position');
+    cbPos    = [axPos(1)+shift(iAx)*axPos(3), axPos(2), 0.02, 0.2]; 
+
+    hCb(iAx) = colorbar('Position', cbPos, 'AxisLocation', axLoc{iAx});
+    title(sprintf('AxisLocation = %s', axLoc{iAx}));
+    grid('on');
+  end
 end
 % =========================================================================
