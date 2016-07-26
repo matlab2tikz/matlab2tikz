@@ -135,7 +135,11 @@ function [status] = ACID(k)
                            @histogramPlot       , ...
                            @alphaTest           , ...
                            @removeOutsideMarker , ...
-                           @colorbars
+                           @colorbars           , ...
+                           @colorbarManualLocationRightOut , ...
+                           @colorbarManualLocationRightIn  , ...
+                           @colorbarManualLocationLeftOut  , ...
+                           @colorbarManualLocationLeftIn
                          };
 
 
@@ -2759,5 +2763,93 @@ function [stat] = colorbars()
     title(sprintf('AxisLocation = %s', axLoc{iAx}));
     grid('on');
   end
+end
+% =========================================================================
+function [stat] = colorbarManualLocationRightOut()
+  stat.description = 'Manual positioning of colorbars';
+  stat.issues      = [933 937];
+
+  axLoc = 'out'; 
+
+  figure('Units','centimeters','Position',[1,1,11,10]);
+  axPos(1,:) = [1,1,8,3];
+  axPos(2,:) = [1,5,8,3];
+  cbPos      = [9.5,1,0.5,7]; 
+
+  hAx(1) = axes('Units','centimeters','Position',axPos(1,:));
+  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+
+  hAx(2) = axes('Units','centimeters','Position',axPos(2,:));
+  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+
+  hCb = colorbar('Units','centimeters','Position', cbPos,...
+                 'AxisLocation', axLoc);
+  hCb.Label.String = (sprintf('AxisLocation = %s', axLoc));
+end
+% =========================================================================
+function [stat] = colorbarManualLocationRightIn()
+  stat.description = 'Manual positioning of colorbars';
+  stat.issues      = [933 937];
+
+  axLoc = 'in'; 
+
+  figure('Units','centimeters','Position',[1,1,11,10]);
+  axPos(1,:) = [1,1,8,3];
+  axPos(2,:) = [1,5,8,3];
+  cbPos      = [10.5,1,0.5,7]; 
+
+  hAx(1) = axes('Units','centimeters','Position',axPos(1,:));
+  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+
+  hAx(2) = axes('Units','centimeters','Position',axPos(2,:));
+  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+
+  hCb = colorbar('Units','centimeters','Position', cbPos,...
+                 'AxisLocation', axLoc);
+  hCb.Label.String = (sprintf('AxisLocation = %s', axLoc));
+end
+% =========================================================================
+function [stat] = colorbarManualLocationLeftOut()
+  stat.description = 'Manual positioning of colorbars';
+  stat.issues      = [933 937];
+
+  axLoc = 'out'; 
+
+  figure('Units','centimeters','Position',[1,1,11,10]);
+  axPos(1,:) = [2.5,1,8,3];
+  axPos(2,:) = [2.5,5,8,3];
+  cbPos      = [1.5,1,0.5,7]; 
+
+  hAx(1) = axes('Units','centimeters','Position',axPos(1,:));
+  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+
+  hAx(2) = axes('Units','centimeters','Position',axPos(2,:));
+  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+
+  hCb = colorbar('Units','centimeters','Position', cbPos,...
+                 'AxisLocation', axLoc);
+  hCb.Label.String = (sprintf('AxisLocation = %s', axLoc));
+end
+% =========================================================================
+function [stat] = colorbarManualLocationLeftIn()
+  stat.description = 'Manual positioning of colorbars';
+  stat.issues      = [933 937];
+
+  axLoc = 'in'; 
+
+  figure('Units','centimeters','Position',[1,1,11,10]);
+  axPos(1,:) = [2.5,1,8,3];
+  axPos(2,:) = [2.5,5,8,3];
+  cbPos      = [0.5,1,0.5,7]; 
+
+  hAx(1) = axes('Units','centimeters','Position',axPos(1,:));
+  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+
+  hAx(2) = axes('Units','centimeters','Position',axPos(2,:));
+  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+
+  hCb = colorbar('Units','centimeters','Position', cbPos,...
+                 'AxisLocation', axLoc);
+  hCb.Label.String = (sprintf('AxisLocation = %s', axLoc));
 end
 % =========================================================================
