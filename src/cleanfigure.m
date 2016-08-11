@@ -625,7 +625,7 @@ function pruneOutsideText(meta, handle)
     if ~all(bPosInsideLim) && ~isTitle
         % Warn about to be deprecated text removal
         warning('cleanfigure:textRemoval', ...
-                'Text removal by cleanfigure is planed to be deprecated');
+                'Text removal by cleanfigure is planned to be deprecated');
         % Artificially disable visibility. m2t will check and skip.
         set(handle, 'Visible', 'off');
     end
