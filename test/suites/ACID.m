@@ -2750,6 +2750,7 @@ end
 function [stat] = colorbars()
   stat.description = 'Manual positioning of colorbars';
   stat.issues      = [933 937];
+  stat.unreliable  = isOctave(); %FIXME: positions differ between Octave 3.2 and 4.0.
 
   shift = [0.2 0.8 0.2 0.8];
   axLoc = {'in','out','out','in'};
