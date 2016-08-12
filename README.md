@@ -11,7 +11,10 @@ For plots constructed with third-party packages, however, your mileage may vary.
 Installation
 ============
 
-Place the `matlab2tikz` functions (contents of `src/` folder) somewhere where MATLAB(R) can find them: either your working directory or add `src/` to the path using `addpath`.
+1. Extract the ZIP file (or clone the git repository) somewhere you can easily reach it. 
+2. Add the `src/` folder to your path in MATLAB/Octave: e.g. 
+    - using the "Set Path" dialog in MATLAB, or 
+    - by running the `addpath` function from your command window or `startup` script.
 
 Make sure that your LaTeX installation is up-to-date and includes:
 
