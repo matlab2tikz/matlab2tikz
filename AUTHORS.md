@@ -20,6 +20,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Michael Glasser (The MathWorks)
   * [David Haberthür](https://github.com/habi)
   * [Patrick Häcker](https://github.com/MagicMuscleMan)
+  * [Ulrich Herter](https://github.com/ulijh)
   * [David Horsley](https://github.com/widdma)
   * Kári Hreinsson
   * [Lucas Jeub](https://github.com/LJeub)
