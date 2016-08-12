@@ -45,6 +45,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * [Nico Schlömer](https://github.com/nschloe)
   * Johannes Schmitz
   * Michael Schoeberl
+  * [Jan Taro Svejda](https://github.com/JTSvejda)
   * [José Vallet](https://github.com/josombio)
   * [Thomas Wagner](https://github.com/Aikhjarto)
   * Donghua Wang
