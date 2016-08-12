@@ -13,6 +13,11 @@ bodeplots : e58a307dacc26ad38259cff98c141352
 clownImage : 50cf1ed3d5954ea574ee1dcf850d2291
 colorbarLabelTitle : bb5e997230a6b1330c749d737b73f03b
 colorbarLogplot : 4cb17bffe972526eac63da33a9222f6d
+colorbarManualLocationLeftIn : 34c149317117365e93c2d4bc87342a36
+colorbarManualLocationLeftOut : 61df87739df57ce09e1ff941cede9b11
+colorbarManualLocationRightIn : 43929d243b1ce12aecfda3d130edf359
+colorbarManualLocationRightOut : ec8ed1290c5a3f45d4cb3795a66c0f1f
+colorbars : 271fdd43648c30b49861e5ac492bfe37
 compassplot : 746fe6816c8f5e91bc30b748937ddf5f
 contourPenny : bd9fe77201617c2aeec42680cf3db0cb
 croppedImage : a7df6401799a09cb2868babe95ce4c77

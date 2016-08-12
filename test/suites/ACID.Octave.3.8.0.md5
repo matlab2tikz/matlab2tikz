@@ -11,6 +11,11 @@ bars : 15a269e905602896394eabd367040ce1
 besselImage : 0ffc3e10adb87029b44cbeb4bc435e07
 colorbarLabelTitle : 272a4d2f645b296e43c01f4ab2ae25a4
 colorbarLogplot : cb326bbb54e486a40d387acfe82f1b72
+colorbarManualLocationLeftIn : d2d90ddaa56b9f13d009a595c21e9601
+colorbarManualLocationLeftOut : dea8de2bdf0d866dc3f4f2b8327ea494
+colorbarManualLocationRightIn : c8866d76fee1a0876cf3f46aa5bb5761
+colorbarManualLocationRightOut : 81b67065a6281c3de6c1a9181d4dfcbc
+colorbars : 13b6b31da1f9aef218ef68a6a2c4bbc5
 compassplot : 94efa27f5503d3a56e6b40a0ca0f75d1
 contourPenny : 3dab076bb0f089b4c30f321a8b732331
 customLegend : 7b0d1d80a2f72bc920d869151ffe96c1

@@ -4845,7 +4845,7 @@ function [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, cbarSt
             % of colorbar relative to the center it's associated axes.
             % According to matlab manual (R2016a) colorbars with Location 'manual'
             % can only be vertical.
-            axisLoc = get(handle,'AxisLocation');
+            axisLoc = getOrDefault(handle, 'AxisLocation', 'out');
             if centerCbar < centerAxes
                 if strcmp(axisLoc,'in')
                     cbarTemplate = 'right';

@@ -12,6 +12,11 @@ besselImage : c5a0696550fda36e7d2eba7d91643716
 bodeplots : a2d8208c81d7f449b51107907c43e053
 clownImage : 50cf1ed3d5954ea574ee1dcf850d2291
 colorbarLabelTitle : 3ff06d0ee178a052429194d184ee0182
+colorbarManualLocationLeftIn : fce39178f29dcdab800d6c99edc70bed
+colorbarManualLocationLeftOut : 0b35797bac696ec978b1dcac2c5baa20
+colorbarManualLocationRightIn : 776fbc67733cbd2104384d76de954eda
+colorbarManualLocationRightOut : fd1a74e61c95b0c185ac26d1cffee4a3
+colorbars : 0795ee171bf5954ff7e36d3ddc3867d5
 compassplot : bfdceefee37557845bbc0b4c7609ff50
 contourPenny : 11b3f1178d9585112b4d40f47a334de0
 croppedImage : c3a4a5e6ac11450d797c259a867dfd72

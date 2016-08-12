@@ -2759,97 +2759,86 @@ function [stat] = colorbars()
     axPos    = get(hAx(iAx), 'Position');
     cbPos    = [axPos(1)+shift(iAx)*axPos(3), axPos(2), 0.02, 0.2]; 
 
-    hCb(iAx) = colorbar('Position', cbPos, 'AxisLocation', axLoc{iAx});
-    title(sprintf('AxisLocation = %s', axLoc{iAx}));
+    hCb(iAx) = colorbar('Position', cbPos);
+    try
+        % only in HG2
+        set(hCb(iAx), 'AxisLocation', axLoc{iAx});
+    end
+    title(['AxisLocation = ' axLoc{iAx}]);
     grid('on');
   end
 end
 % =========================================================================
 function [stat] = colorbarManualLocationRightOut()
-  stat.description = 'Manual positioning of colorbars';
+  stat.description = 'Manual positioning of colorbars - Right Out';
   stat.issues      = [933 937];
 
-  axLoc = 'out'; 
+  axLoc      = 'out';
+  figPos     = [1  , 1, 11  ,10];
+  axPos(1,:) = [1  , 1,  8  , 3];
+  axPos(2,:) = [1  , 5,  8  , 3];
+  cbPos      = [9.5, 1,  0.5, 7]; 
 
-  figure('Units','centimeters','Position',[1,1,11,10]);
-  axPos(1,:) = [1,1,8,3];
-  axPos(2,:) = [1,5,8,3];
-  cbPos      = [9.5,1,0.5,7]; 
-
-  hAx(1) = axes('Units','centimeters','Position',axPos(1,:));
-  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
-
-  hAx(2) = axes('Units','centimeters','Position',axPos(2,:));
-  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
-
-  hCb = colorbar('Units','centimeters','Position', cbPos,...
-                 'AxisLocation', axLoc);
-  hCb.Label.String = (sprintf('AxisLocation = %s', axLoc));
+  colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc);
 end
-% =========================================================================
 function [stat] = colorbarManualLocationRightIn()
-  stat.description = 'Manual positioning of colorbars';
+  stat.description = 'Manual positioning of colorbars - Right In';
   stat.issues      = [933 937];
 
-  axLoc = 'in'; 
+  axLoc      = 'in';
+  figPos     = [ 1  , 1, 11  ,10]; 
+  axPos(1,:) = [ 1  , 1,  8  , 3];
+  axPos(2,:) = [ 1  , 5,  8  , 3];
+  cbPos      = [10.5, 1,  0.5, 7]; 
 
-  figure('Units','centimeters','Position',[1,1,11,10]);
-  axPos(1,:) = [1,1,8,3];
-  axPos(2,:) = [1,5,8,3];
-  cbPos      = [10.5,1,0.5,7]; 
-
-  hAx(1) = axes('Units','centimeters','Position',axPos(1,:));
-  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
-
-  hAx(2) = axes('Units','centimeters','Position',axPos(2,:));
-  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
-
-  hCb = colorbar('Units','centimeters','Position', cbPos,...
-                 'AxisLocation', axLoc);
-  hCb.Label.String = (sprintf('AxisLocation = %s', axLoc));
+  colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc);
 end
-% =========================================================================
 function [stat] = colorbarManualLocationLeftOut()
-  stat.description = 'Manual positioning of colorbars';
+  stat.description = 'Manual positioning of colorbars - Left Out';
   stat.issues      = [933 937];
 
-  axLoc = 'out'; 
+  axLoc      = 'out'; 
+  figPos     = [1  , 1, 11  , 10];
+  axPos(1,:) = [2.5, 1,  8  ,  3];
+  axPos(2,:) = [2.5, 5,  8  ,  3];
+  cbPos      = [1.5, 1,  0.5,  7]; 
 
-  figure('Units','centimeters','Position',[1,1,11,10]);
-  axPos(1,:) = [2.5,1,8,3];
-  axPos(2,:) = [2.5,5,8,3];
-  cbPos      = [1.5,1,0.5,7]; 
-
-  hAx(1) = axes('Units','centimeters','Position',axPos(1,:));
-  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
-
-  hAx(2) = axes('Units','centimeters','Position',axPos(2,:));
-  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
-
-  hCb = colorbar('Units','centimeters','Position', cbPos,...
-                 'AxisLocation', axLoc);
-  hCb.Label.String = (sprintf('AxisLocation = %s', axLoc));
+  colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc);
 end
-% =========================================================================
 function [stat] = colorbarManualLocationLeftIn()
-  stat.description = 'Manual positioning of colorbars';
+  stat.description = 'Manual positioning of colorbars - Left In';
   stat.issues      = [933 937];
 
-  axLoc = 'in'; 
+  axLoc      = 'in'; 
+  figPos     = [1  , 1, 11  , 10];
+  axPos(1,:) = [2.5, 1,  8  ,  3];
+  axPos(2,:) = [2.5, 5,  8  ,  3];
+  cbPos      = [0.5, 1,  0.5,  7]; 
 
-  figure('Units','centimeters','Position',[1,1,11,10]);
-  axPos(1,:) = [2.5,1,8,3];
-  axPos(2,:) = [2.5,5,8,3];
-  cbPos      = [0.5,1,0.5,7]; 
+  colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc);
+end
+function colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc)
+  % this is a helper function, not a test case
+  set(gcf, 'Units','centimeters','Position', figPos);
 
-  hAx(1) = axes('Units','centimeters','Position',axPos(1,:));
-  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+  hAx(1) = axes('Units', 'centimeters', 'Position', axPos(1,:));
+  imagesc([1,2,3], [4,5,6], magic(3)/9, [0,1]);
 
-  hAx(2) = axes('Units','centimeters','Position',axPos(2,:));
-  imagesc([1,2,3],[4,5,6],rand(3),[0,1]);
+  hAx(2) = axes('Units', 'centimeters', 'Position', axPos(2,:));
+  imagesc([1,2,3], [4,5,6], magic(3)/9, [0,1]);
 
-  hCb = colorbar('Units','centimeters','Position', cbPos,...
-                 'AxisLocation', axLoc);
-  hCb.Label.String = (sprintf('AxisLocation = %s', axLoc));
+  hCb = colorbar('Units', 'centimeters', 'Position', cbPos);
+  try
+      % only in HG2
+      %TODO: check if there are HG1 / Octave counterparts for this property
+      set(hCb, 'AxisLocation', axLoc);
+  end
+  
+  labelProperty = {'Label', 'YLabel'}; %YLabel as fallback for
+  idxLabel      = find(cellfun(@(p) isprop(hCb, p), labelProperty), 1);
+  if ~isempty(idxLabel)
+      hLabel = get(hCb, labelProperty{idxLabel});
+      set(hLabel, 'String', ['AxisLocation = ' axLoc]);
+  end
 end
 % =========================================================================
