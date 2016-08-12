@@ -48,6 +48,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * [José Vallet](https://github.com/josombio)
   * [Thomas Wagner](https://github.com/Aikhjarto)
   * Donghua Wang
+  * [Patrick Wang](https://github.com/patrickkwang)
   * Robert Whittlesey
   * Pooya Ziraksaz
   * Bastiaan Zuurendonk (The MathWorks)
