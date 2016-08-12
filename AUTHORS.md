@@ -13,6 +13,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Eike Blechschmidt
   * [Klaus Broelemann](https://github.com/Broele)
   * [Katherine Elkington](https://github.com/kelkington)
+  * [Thomas Emmert](https://github.com/murmlgrmpf)
   * Andreas Gäb
   * [Egon Geerardyn](https://github.com/egeerardyn)
   * Roman Gesenhues
