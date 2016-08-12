@@ -16,7 +16,7 @@ Place the `matlab2tikz` functions (contents of `src/` folder) somewhere where MA
 Make sure that your LaTeX installation is up-to-date and includes:
 
 * [TikZ/PGF](http://www.ctan.org/pkg/pgf) version 3.0 or higher
-* [Pgfplots](http://www.ctan.org/pkg/pgfplots) version 1.12.1 or higher
+* [Pgfplots](http://www.ctan.org/pkg/pgfplots) version 1.13 or higher
 * [Amsmath](https://www.ctan.org/pkg/amsmath) version 2.14 or higher
 * [Standalone](http://www.ctan.org/pkg/standalone) (optional)
 
@@ -48,10 +48,13 @@ Make sure that the required packages (such as `pgfplots`) are loaded in the prea
 
   \usepackage{pgfplots}
   \pgfplotsset{compat=newest}
-  %% the following commands are sometimes needed
+  %% the following commands are needed for some matlab2tikz features
   \usetikzlibrary{plotmarks}
+  \usetikzlibrary{arrows.meta}
+  \usepgfplotslibrary{patchplots}
   \usepackage{grffile}
   \usepackage{amsmath}
+
   %% you may also want the following commands
   %\pgfplotsset{plot coordinates/math parser=false}
   %\newlength\figureheight
