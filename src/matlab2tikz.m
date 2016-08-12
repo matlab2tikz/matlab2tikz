@@ -148,7 +148,7 @@ function matlab2tikz(varargin)
     m2t.transform       = []; % For hgtransform groups
     m2t.pgfplotsVersion = [1,3];
     m2t.about.name      = 'matlab2tikz';
-    m2t.about.version   = '1.0.0';
+    m2t.about.version   = '1.1.0';
     m2t.about.years     = '2008--2016';
     m2t.about.website   = 'http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz';
     m2t.about.github    = 'https://github.com/matlab2tikz/matlab2tikz';
