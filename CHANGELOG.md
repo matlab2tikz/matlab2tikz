@@ -16,6 +16,7 @@
       - `contourf`/`contour` plots with matrix arguments and nonstandard line widths (#592, #721, #722, #871)
       - Colored ticks and axes (#880, #908)
       - Scatter plots with different marker colors and sizes (#859, #861)
+      - `colorbar` positioning and tick placement (#933, #937, #941)
       - The self-updater has been improved
  * New parameters:
       - `arrowHeadSizeFactor` for tweaking the size of arrowheads
