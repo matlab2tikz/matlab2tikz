@@ -4825,8 +4825,56 @@ function [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, cbarSt
             cbarStyleOptions = opts_add(cbarStyleOptions,...
                 'xticklabel pos', 'upper');
         case 'southoutside'
-
             cbarTemplate = 'horizontal';
+        case 'manual'
+            origUnits = get(handle,'Units');
+            assocAxes = get(handle,'Axes');
+            origAxesUnits = get(assocAxes,'Units');
+            set(handle,'Units','centimeters');        % Make sure we have
+            set(assocAxes,'Units','centimeters');     % same units
+            cbarDim = pos2dims(get(handle,'Position'));
+            cbarAxesDim = pos2dims(get(assocAxes,'Position'));
+            set(handle,'Units',origUnits);            % Restore original
+            set(assocAxes,'Units',origAxesUnits);     % units
+
+            center = @(dims) (dims.left + dims.right)/2;
+            centerCbar = center(cbarDim);
+            centerAxes = center(cbarAxesDim);
+
+            % Cases of colorbar axis locations (in or out) depending on center
+            % of colorbar relative to the center it's associated axes.
+            % According to matlab manual (R2016a) colorbars with Location 'manual'
+            % can only be vertical.
+            axisLoc = getOrDefault(handle, 'AxisLocation', 'out');
+            if centerCbar < centerAxes
+                if strcmp(axisLoc,'in')
+                    cbarTemplate = 'right';
+                else
+                    cbarTemplate = 'left';
+                end
+            else
+                if strcmp(axisLoc,'in')
+                    cbarTemplate = 'left';
+                else
+                    cbarTemplate = 'right';
+                end
+            end
+
+            % Using positions relative to associated axes
+            calcRelPos = @(pos1,pos2,ext2) (pos1-pos2)/ext2; 
+            cbarRelPosX = calcRelPos(cbarDim.left,cbarAxesDim.left,cbarAxesDim.width);
+            cbarRelPosY = calcRelPos(cbarDim.bottom,cbarAxesDim.bottom,cbarAxesDim.height);
+            cbarRelHeight = cbarDim.height/cbarAxesDim.height;
+            
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
+                'south west');
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
+                ['{(' formatDim(cbarRelPosX) ','...
+                      formatDim(cbarRelPosY) ')}']);
+            cbarStyleOptions = opts_add(cbarStyleOptions, 'height',...
+                [formatDim(cbarRelHeight),...
+                '*\pgfkeysvalueof{/pgfplots/parent axis height}']);
+
         otherwise
             error('matlab2tikz:getColorOptions:unknownLocation',...
                 'getColorbarOptions: Unknown ''Location'' %s.', loc)
