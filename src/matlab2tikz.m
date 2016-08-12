@@ -115,7 +115,7 @@ function matlab2tikz(varargin)
     %
     %   MATLAB2TIKZ('checkForUpdates',BOOL,...) determines whether to automatically
     %   check for updates of matlab2tikz. (default: true (if not using git))
-    % 
+    %
     %   MATLAB2TIKZ('semanticLineWidths',CELLMATRIX,...) allows you to customize
     %   the mapping of semantic "line width" values.
     %   A valid entry is an Nx2 cell array:
@@ -129,7 +129,7 @@ function matlab2tikz(varargin)
     %   Inside your LaTeX document, you are responsible to make sure these TikZ
     %   styles are properly defined.
     %   (Default: NaN)
-    % 
+    %
     %   Example
     %      x = -pi:pi/10:pi;
     %      y = tan(sin(x)) - sin(tan(x));
@@ -191,7 +191,7 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'checkForUpdates', isempty(VCID), @islogical);
 
     ipp = ipp.addParamValue(ipp, 'semanticLineWidths', NaN, @isValidSemanticLineWidthDefinition);
-    
+
     ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
     ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
@@ -438,7 +438,7 @@ function fid = fileOpenForWrite(m2t, filename)
     if ~exist(filepath,'dir') && ~isempty(filepath)
         mkdir(filepath);
     end
-    
+
     switch getEnvironment()
         case 'MATLAB'
             fid = fopen(filename, 'w', ...
@@ -1946,7 +1946,7 @@ end
 function list = configureSemanticLineWidths(semanticLineWidths)
     % Defines the default semantic options of pgfplots and updates it when applicable
 
-    if isnan(semanticLineWidths) 
+    if isnan(semanticLineWidths)
         % Remove the list
         list = {};
         return;
@@ -2219,7 +2219,7 @@ function [m2t, str] = drawPatch(m2t, handle)
     % If the line is not visible, set edgeColor to none. Otherwise pgfplots
     % draws it by default
     if ~isLineVisible(handle)
-       s.edgeColor = 'none';
+        s.edgeColor = 'none';
     end
 
     % No patch: if one patch and single face/edge color
@@ -2931,9 +2931,9 @@ function cl = guessOctavePlotType(h)
 
         % quiver plots
     elseif hasProperties(h, {'udata','vdata'}, {'ldata'})
-    	cl = 'specgraph.quivergroup';
-    	
-    	% bar plots
+        cl = 'specgraph.quivergroup';
+
+        % bar plots
     elseif hasProperties(h, {'bargroup','barwidth', 'barlayout'}, {})
         cl = 'specgraph.barseries';
         % unknown plot type
@@ -3616,10 +3616,10 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     if ~isVisible(h)
         return; % there is nothing to plot
     end
-    
+
     dataInfo   = getDataInfo(h, 'X','Y','Z','C','Size');
     markerInfo = getMarkerInfo(m2t, h);
-    
+
     if isempty(dataInfo.C) && strcmpi(getEnvironment(), 'Octave')
         dataInfo.C = get(h, 'MarkerEdgeColor');
     end
@@ -3636,7 +3636,7 @@ function [m2t, str] = drawScatterPlot(m2t, h)
     dataInfo.Size = translateMarkerSize(m2t, markerInfo.style, sqrt(dataInfo.Size)/2);
 
     drawOptions = opts_new();
-    
+
     %% Determine if we are drawing an actual scatter plot
     hasDifferentSizes  = numel(dataInfo.Size) ~= 1;
     hasDifferentColors = numel(dataInfo.C)    ~= 3;
@@ -3793,13 +3793,13 @@ function [env, data, metaOptions, columns] = organizeScatterData(m2t, dataInfo)
     % reorganizes the {X,Y,Z,S} data into a single matrix
     metaOptions = opts_new();
 
-    
+
     xData = dataInfo.X;
     yData = dataInfo.Y;
     zData = dataInfo.Z;
     cData = dataInfo.C;
     sData = dataInfo.Size;
-    
+
     % add the actual data
     if ~m2t.axes{end}.is3D
         env     = 'addplot';
@@ -3810,13 +3810,13 @@ function [env, data, metaOptions, columns] = organizeScatterData(m2t, dataInfo)
         columns = {'x','y','z'};
         data    = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
-    
+
     % add marker sizes
     if length(sData) ~= 1
         columns = [columns, {'size'}];
         data    = [data, sData(:)];
     end
-    
+
     % add color data
     if length(cData) == 3
         % If size(cData,1)==1, then all the colors are the same and have
@@ -4046,7 +4046,7 @@ function [numBarSeries, barSeriesId] = getNumBarAndId(h)
     else
         % In Octave, the bargroup is a replicated cell array. Pick first
         if iscell(bargroup)
-          bargroup = bargroup{1};
+            bargroup = bargroup{1};
         end
     end
 
@@ -4150,10 +4150,10 @@ end
 % ==============================================================================
 function [m2t, str] = drawStemSeries(m2t, h)
     [m2t, str] = drawStemOrStairSeries_(m2t, h, 'ycomb');
-    
+
     % TODO: handle baseplane with stem3()
     if m2t.axes{end}.is3D
-      return
+        return
     end
     [m2t, baseline] = drawBaseline(m2t,h);
     str             = [str, baseline];
@@ -4185,7 +4185,7 @@ function [m2t, str] = drawStemOrStairSeries_(m2t, h, plotType)
     drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
 
     drawOpts = opts_print(drawOptions);
-    
+
     % Generate the tikz table
     xData = get(h, 'XData');
     yData = get(h, 'YData');
@@ -5292,7 +5292,7 @@ function pTickLabels = formatPgfTickLabels(m2t, plotLabelsNecessary, ...
     % formats the tick labels for pgfplots
     if plotLabelsNecessary
         for k = 1:length(tickLabels)
-            % Turn tickLabels from cells containing a cell into 
+            % Turn tickLabels from cells containing a cell into
             % cells containing strings
             if isnumeric(tickLabels{k})
                 tickLabels(k) = num2str(tickLabels{k});
@@ -6667,7 +6667,7 @@ function m2t = m2t_addAxisOption(m2t, key, value)
     if ~exist('value','var')
         value = '';
     end
-	m2t.axes{end}.options = opts_add(m2t.axes{end}.options, key, value);
+    m2t.axes{end}.options = opts_add(m2t.axes{end}.options, key, value);
 end
 % ==============================================================================
 function bool = isHG2()
