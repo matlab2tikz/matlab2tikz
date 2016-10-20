@@ -14,12 +14,15 @@ For plots constructed with third-party packages, however, your mileage may vary.
 Installation
 ============
 
-Place the `matlab2tikz` functions (contents of `src/` folder) somewhere where MATLAB(R) can find them: either your working directory or add `src/` to the path using `addpath`.
+1. Extract the ZIP file (or clone the git repository) somewhere you can easily reach it. 
+2. Add the `src/` folder to your path in MATLAB/Octave: e.g. 
+    - using the "Set Path" dialog in MATLAB, or 
+    - by running the `addpath` function from your command window or `startup` script.
 
 Make sure that your LaTeX installation is up-to-date and includes:
 
 * [TikZ/PGF](http://www.ctan.org/pkg/pgf) version 3.0 or higher
-* [Pgfplots](http://www.ctan.org/pkg/pgfplots) version 1.12.1 or higher
+* [Pgfplots](http://www.ctan.org/pkg/pgfplots) version 1.13 or higher
 * [Amsmath](https://www.ctan.org/pkg/amsmath) version 2.14 or higher
 * [Standalone](http://www.ctan.org/pkg/standalone) (optional)
 
@@ -51,10 +54,13 @@ Make sure that the required packages (such as `pgfplots`) are loaded in the prea
 
   \usepackage{pgfplots}
   \pgfplotsset{compat=newest}
-  %% the following commands are sometimes needed
+  %% the following commands are needed for some matlab2tikz features
   \usetikzlibrary{plotmarks}
+  \usetikzlibrary{arrows.meta}
+  \usepgfplotslibrary{patchplots}
   \usepackage{grffile}
   \usepackage{amsmath}
+
   %% you may also want the following commands
   %\pgfplotsset{plot coordinates/math parser=false}
   %\newlength\figureheight

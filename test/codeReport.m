@@ -15,14 +15,21 @@ function [ report ] = codeReport( varargin )
 %   CODEREPORT('complexityThreshold', integer ) to set above which complexity, a
 %   function is added to the report (default: 10)
 %
-% See also: checkcode, mlint,
+%   CODEREPORT('stream', stream) to set to which stream/file to output the report
+%   (default: 1, i.e. stdout). The stream is used only when no output argument
+%   for `codeReport` is specified!.
+%
+% See also: checkcode, mlint
 
-
+    SM = StreamMaker();
     %% input options
     ipp = m2tInputParser();
     ipp = ipp.addParamValue(ipp, 'function', 'matlab2tikz', @ischar);
     ipp = ipp.addParamValue(ipp, 'complexityThreshold', 10, @isnumeric);
+    ipp = ipp.addParamValue(ipp, 'stream', 1, SM.isStream);
     ipp = ipp.parse(ipp, varargin{:});
+
+    stream = SM.make(ipp.Results.stream, 'w');
 
     %% generate report data
     data = checkcode(ipp.Results.function,'-cyc','-struct');
@@ -59,7 +66,11 @@ function [ report ] = codeReport( varargin )
 
     %% command line usage
     if nargout == 0
-        disp(codelinks(report, ipp.Results.function));
+        if ismember(stream.name, {'stdout','stderr'})
+            stream.print('%s\n', codelinks(report, ipp.Results.function));
+        else
+            stream.print('%s\n', report);
+        end
 
         figure('name',sprintf('Complexity statistics of %s', ipp.Results.function));
         h = statisticsPlot(complexityStats, 'Complexity', 'Number of functions');
@@ -174,6 +185,7 @@ function str = makeTable(data, fields, header)
     if nData == 0
         return; % empty input
     end
+    %TODO: use gfmTable from makeTravisReport instead to do the formatting
 
     % determine column sizes
     nFields = numel(fields);

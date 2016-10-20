@@ -1,7 +1,7 @@
 # ./Makefile
 
 ECHOCMD:=/bin/echo -e
-LATEX:=lualatex --shell-escape -interaction=batchmode
+LATEX:=pdflatex --shell-escape -interaction=batchmode
 
 TEST_SRCS:=$(wildcard test*-converted.tex)
 TEST_PDFS:=$(TEST_SRCS:.tex=.pdf)

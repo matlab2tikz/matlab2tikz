@@ -1,0 +1,49 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],
+    "build_systems":
+     [
+        {
+            "name": "CI tests (Octave)",
+            "selector": "source.matlab",
+            "working_dir": "${project_path}",
+            "cmd":  ["./runtests.sh", "octave"]
+        },
+        {
+            "name": "CI tests (MATLAB)",
+            "selector": "source.matlab",
+            "working_dir": "${project_path}",
+            "cmd":  ["./runtests.sh", "matlab"]
+        },
+        {
+            "name": "CI tests (MATLAB HG1)",
+            "selector": "source.matlab",
+            "working_dir": "${project_path}",
+            "cmd":  ["./runtests.sh", "matlab-hg1"]
+        },
+        {
+            "name": "CI tests (MATLAB HG2)",
+            "selector": "source.matlab",
+            "working_dir": "${project_path}",
+            "cmd":  ["./runtests.sh", "matlab-hg2"]
+        },
+        {
+            "name": "ACID: make",
+            "working_dir": "${project_path}/test/tex",
+            "cmd":  ["make","-j8"]
+        },
+        {
+            "name": "ACID: distclean",
+            "working_dir": "${project_path}/test/tex",
+            "cmd":  ["make","distclean"]
+        }
+    ],
+    "settings":
+    {
+        "FuzzyFilePath":{}
+    }
+}

@@ -1,42 +1,63 @@
-Nico Schlömer designed and implemented the intial version and is the current maintainer.
+# Maintainer
+  * [Egon Geerardyn](https://github.com/egeerardyn) is the current maintainer (2015 - now).
+  * [Nico Schlömer](https://github.com/nschloe) designed and implemented the intial version and was the first maintainer (2008 - 2015).
 
+# Contributors
 Thanks for patches, suggestions, and other contributions go to:
 
+  * [Ben Abbott](https://github.com/bpabbott)
   * Martijn Aben (The MathWorks)
-  * Ben Abbott
+  * [Nicolas Alt](https://github.com/nalt)
+  * [Eshwar Andhavarapu](https://github.com/gontadu)
+  * Matt Bauman
   * Eike Blechschmidt
-  * Klaus Broelemann
-  * Katherine Elkington
+  * [Klaus Broelemann](https://github.com/Broele)
+  * [Katherine Elkington](https://github.com/kelkington)
+  * [Thomas Emmert](https://github.com/murmlgrmpf)
   * Andreas Gäb
-  * Egon Geerardyn
+  * [Egon Geerardyn](https://github.com/egeerardyn)
   * Roman Gesenhues
   * Michael Glasser (The MathWorks)
-  * David Haberthür
-  * Patrick Häcker
-  * David Horsley
-  * Burkart Lingner
-  * Oleg Komarov
+  * [David Haberthür](https://github.com/habi)
+  * [Patrick Häcker](https://github.com/MagicMuscleMan)
+  * [Ulrich Herter](https://github.com/ulijh)
+  * [David Horsley](https://github.com/widdma)
+  * Kári Hreinsson
+  * [Lucas Jeub](https://github.com/LJeub)
+  * Martin Kiefel
+  * [Andreas Kloeckner](https://github.com/akloeckner)
   * Mykel Kochenderfer
+  * [Oleg Komarov](https://github.com/okomarov)
   * Henk Kortier
+  * [Tom Lankhorst](https://github.com/tomlankhorst)
+  * [Burkart Lingner](https://github.com/burkart)
   * Theo Markettos
-  * Dragan Mitrevski
+  * [Dragan Mitrevski](https://github.com/nidrosianDeath)
+  * [Jason Monschke](https://github.com/jam4375)
   * Francesco Montorsi
-  * Peter Pablo
   * Ricardo Santiago Mozos
   * Johannes Mueller-Roemer
+  * [Ali Ozdagli](https://github.com/aliirmak)
+  * [Richard Peschke](https://github.com/RPeschke)
+  * [Peter Ploß](https://github.com/PeterPablo)
   * Julien Ridoux
-  * Christoph Rüdiger
+  * [Christoph Rüdiger](https://github.com/mredd)
   * Carlos Russo
+  * [Manuel Schiller](https://github.com/dachziegel)
+  * [Nico Schlömer](https://github.com/nschloe)
   * Johannes Schmitz
   * Michael Schoeberl
+  * [Jan Taro Svejda](https://github.com/JTSvejda)
+  * [José Vallet](https://github.com/josombio)
+  * [Thomas Wagner](https://github.com/Aikhjarto)
   * Donghua Wang
+  * [Patrick Wang](https://github.com/patrickkwang)
   * Robert Whittlesey
   * Pooya Ziraksaz
   * Bastiaan Zuurendonk (The MathWorks)
-  * _and many more!_
+  * GitHub users: [andreas12345](https://github.com/andreas12345), [theswitch](https://github.com/theswitch)
 
-Matlab2tikz has once greatly profited from its ancestor:
+# Acknowledgements
+Matlab2tikz has once greatly profited from its ancestor: [Matfig2PGF](http://www.mathworks.com/matlabcentral/fileexchange/12962) written by Paul Wagenaars.
 
-  * [Matfig2PGF](http://www.mathworks.com/matlabcentral/fileexchange/12962) written by Paul Wagenaars.
-
-Also, the authors would like to thank Christian Feuersänger for the [Pgfplots](http://pgfplots.sourceforge.net) package which forms the basis for the matlab2tikz output on the LaTeX side.
+Also, the authors would like to thank [Christian Feuersänger](https://github.com/cfeuersaenger) for the [Pgfplots](http://pgfplots.sourceforge.net) package which forms the basis for the matlab2tikz output on the LaTeX side.

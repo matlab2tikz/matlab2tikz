@@ -1,3 +1,59 @@
+# 2016-08-15 Version 1.1.0 [Egon Geerardyn](egon.geerardyn@gmail.com)
+
+ * Added or improved support for:
+      - Octave 4.0 (#759)
+      - `scatter`, `quiver` and `errorbar` support in Octave (#669)
+      - `cleanfigure` has been improved:
+          * New and superior (Opheim) simplification algorithm
+          * Simplification for `plot3` (3D plots) (#790)
+          * Vectorized implementations (#756, #737)
+          * Overall clean-up of the code (#797, #787, #776, #744)
+          * Optional limitation of data precision (#791)
+          * Textbox removal is being phased out (#817)
+      - Quiver plots now translate to native pgfplots quivers (#679, #690)
+      - Legends, especially with `plotyy`, now use `\label` (#140, #760, #773)
+      - Tick labels with `datetime` (#383, #803)
+      - `contourf`/`contour` plots with matrix arguments and nonstandard line widths (#592, #721, #722, #871)
+      - Colored ticks and axes (#880, #908)
+      - Scatter plots with different marker colors and sizes (#859, #861)
+      - `colorbar` positioning and tick placement (#933, #937, #941)
+      - The self-updater has been improved
+ * New parameters:
+      - `arrowHeadSizeFactor` for tweaking the size of arrowheads
+      - `semanticLineWidths` for tweaking semantic line width conversion (e.g. `thick` instead of `0.8pt`)
+ * Extra requirements:
+      - Quiver plots require `\usetikzlibrary{arrows.meta}`
+ * Bug fixes:
+      - Errorbars without lines & markers (#813)
+      - `light`/`camera` objects are now ignored (#684)
+      - Draw baseline in bar/stem plots (#798)
+      - Multiple annotation containers (#728, #730)
+      - Legends of bode plots (#700, #702)
+      - Titles of bode plots (#715, #716, #753)
+      - Patch without fill/edge color (#682, #701, #740)
+      - Warn about usage of faceted interp shader (#699)
+      - Tick labels are properly escaped now (#711)
+      - Swapped image dimensions (#714)
+      - Width of bar plots was incorrect (#727, #696)
+      - Stacking and placement of bar plots (#851, #845, #840, #785, #903)
+      - Handling of tick labels when `parseStrings=false` (#86, #871)
+      - Properly escape tick labels for LaTeX (#710, #711, #820, #821)
+      - Respect edge color in `scatter` plots (#900)
+      - Output directory is created automatically (#889, #929)
+      - TikZ output format has been improved slightly (#936, #921, #801)
+ * For developers:
+      - Please check out the (guidelines)[CONTRIBUTING.md]
+      - We now use `allchild` and `findall` (#718)
+      - SublimeText project files
+      - Test hashes can be saved selectively (#720)
+      - Continuous testing for MATLAB and Octave 3.8 with Jenkins
+      - Test suite timing is tracked (#738)
+      - The testing reports have been improved for GitHub (#708)
+      - Testing can output to different directories (#818)
+      - A new tool to help track regressions (#814)
+      - A new tool to consistently format the code (#808, #809)
+      - `figure2dot` updated for HG2
+
 # 2015-06-15 Version 1.0.0 [Egon Geerardyn](egon.geerardyn@gmail.com)
 
  * Added support for:
