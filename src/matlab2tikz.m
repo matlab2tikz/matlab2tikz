@@ -1876,7 +1876,7 @@ function [m2t,str] = plotLine2d(m2t, opts, errorBarOpts, data)
     errorBar = '';
     if errorbarMode
         m2t      = needsPgfplotsVersion(m2t, [1,9]);
-        errorBar = sprintf('plot [error bars/.cd, y dir = both, y explicit,\n%s\n]',...
+        errorBar = sprintf('plot [error bars/.cd, y dir = both, y explicit, %s]\n',...
             errorBarOpts);
     end
 
@@ -2046,24 +2046,27 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
     end
 
     type = getOrDefault(h, 'Type', 'none');
-    %If the current line is of type errorbar
     if strcmp(type, 'errorbar')
-        %Get the 'capSize' size of the errorbar marker and the line width of the
-        %errorbar line.
+        %'capSize' -> errorbar marker size
         capSize = get(h, 'CapSize');
         lineWidth = get(h, 'LineWidth');
-        %Append the 'error bar style' parameter, which determines the style
-        %of the vertical error bar line, to drawOptions
-        drawOptions = opts_add(drawOptions, ...
-            'error bar style', ...
-            sprintf('{line width=%.1fpt}', lineWidth));
 
-        %Append the 'error mark options' parameter, which determines the
-        %style of the error bar 'marker', to drawOptions
-        drawOptions = opts_add(drawOptions, ...
-            'error mark options', ...
-            sprintf('{\nrotate=90,\nmark size=%.1fpt,\nline width=%.1fpt\n}',...
-                capSize, lineWidth));
+        errStyleOptions = opts_new();
+        errStyleOptions = opts_add(errStyleOptions, 'line width',...
+            sprintf('%.1fpt', lineWidth));
+
+        drawOptions = opts_addSubOpts(drawOptions, ...
+            'error bar style', errStyleOptions);
+
+        errMarkOptions = opts_new();
+        errMarkOptions = opts_add(errMarkOptions, 'line width',...
+             sprintf('%.1fpt', lineWidth));
+        errMarkOptions = opts_add(errMarkOptions, 'mark size',...
+             sprintf('%.1fpt', capSize));
+        errMarkOptions = opts_add(errMarkOptions, 'rotate', '90');
+
+        drawOptions = opts_addSubOpts(drawOptions, ...
+            'error mark options', errMarkOptions);
     end
 end
 % ==============================================================================
