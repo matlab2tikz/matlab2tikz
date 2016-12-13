@@ -3490,7 +3490,7 @@ function [m2t, opts, s] = shaderOptsSurfPatch(m2t, handle, opts, s)
         opts = opts_add(opts,'draw opacity',sprintf(m2t.ff,s.edgeAlpha));
     end
 
-    if isNone(s.edgeColor) % Edge 'none'
+    if isNone(s.edgeColor) || isNone(get(handle,'LineStyle')) % Edge 'none'
         [m2t, opts, s] = shaderOptsSurfPatchEdgeNone(m2t, handle, opts, s);
 
     elseif strcmpi(s.edgeColor, 'interp') % Edge 'interp'
@@ -3509,7 +3509,7 @@ function [m2t, opts, s] = shaderOptsSurfPatchEdgeNone(m2t, handle, opts, s)
     s.hasOneEdgeColor = true; % consider void as true
     if strcmpi(s.faceColor, 'flat')
         opts = opts_add(opts,'shader','flat');
-    elseif strcmpi(s.faceColor, 'interp');
+    elseif strcmpi(s.faceColor, 'interp')
         opts = opts_add(opts,'shader','interp');
     else
         s.hasOneFaceColor = true;
