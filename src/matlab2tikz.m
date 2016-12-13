@@ -1796,10 +1796,13 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
             %drawOptions
             if (opts_has(drawOptions,'error bar style'))
                 tmpOptions = opts_new();
+                tmpOptions = opts_add(tmpOptions,'error bars/.cd','');
+                tmpOptions = opts_add(tmpOptions,'y dir','both');
+                tmpOptions = opts_add(tmpOptions,'y explicit','');
                 tmpOptions = opts_copy(drawOptions, 'error bar style', tmpOptions);
                 tmpOptions = opts_copy(drawOptions, 'error mark options', tmpOptions);
 
-                errorBarOpts = opts_print(tmpOptions, sprintf(',\n'));
+                errorBarOpts = opts_print(tmpOptions);
 
                 drawOptions = opts_remove(drawOptions, 'error bar style', ...
                     'error mark options');
@@ -1876,8 +1879,7 @@ function [m2t,str] = plotLine2d(m2t, opts, errorBarOpts, data)
     errorBar = '';
     if errorbarMode
         m2t      = needsPgfplotsVersion(m2t, [1,9]);
-        errorBar = sprintf('plot [error bars/.cd, y dir = both, y explicit, %s]\n',...
-            errorBarOpts);
+        errorBar = sprintf('plot [%s]\n', errorBarOpts);
     end
 
     % Convert to string array then cell to call sprintf once (and no loops).
@@ -2048,7 +2050,7 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
     type = getOrDefault(h, 'Type', 'none');
     if strcmp(type, 'errorbar')
         %'capSize' -> errorbar marker size
-        capSize = get(h, 'CapSize');
+        capSize = getOrDefault(h, 'CapSize',get(h,'MarkerSize'));
         lineWidth = get(h, 'LineWidth');
 
         errStyleOptions = opts_new();
