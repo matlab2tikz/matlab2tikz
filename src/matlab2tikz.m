@@ -1791,6 +1791,26 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
         % plot them
         strPart = cell(1, length(dataCell));
         for k = 1:length(dataCell)
+            %If drawOptions has error bar style options, then print these
+            %options on the variable errorBarOpts and remove them from
+            %drawOptions
+            if (opts_has(drawOptions,'error bar style'))
+                tmpOptions = opts_new();
+                tmpOptions = opts_add(tmpOptions,'error bars/.cd','');
+                tmpOptions = opts_add(tmpOptions,'y dir','both');
+                tmpOptions = opts_add(tmpOptions,'y explicit','');
+                tmpOptions = opts_copy(drawOptions, 'error bar style', tmpOptions);
+                tmpOptions = opts_copy(drawOptions, 'error mark options', tmpOptions);
+
+                errorBarOpts = opts_print(tmpOptions);
+
+                drawOptions = opts_remove(drawOptions, 'error bar style', ...
+                    'error mark options');
+
+            else
+                errorBarOpts = '';
+            end
+
             % If the line has a legend string, make sure to only include a legend
             % entry for the *last* occurrence of the plot series.
             % Hence the condition k<length(xDataCell).
@@ -1803,7 +1823,7 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
                 opts = opts_print(drawOptions);
             end
 
-            [m2t, Part] = plotLine2d(m2t, opts, dataCell{k});
+            [m2t, Part] = plotLine2d(m2t, opts, errorBarOpts, dataCell{k});
             strPart{k} = Part;
         end
         strPart = join(m2t, strPart, '');
@@ -1853,13 +1873,13 @@ function [m2t, labelCode] = addLabel(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t,str] = plotLine2d(m2t, opts, data)
+function [m2t,str] = plotLine2d(m2t, opts, errorBarOpts, data)
     errorbarMode = (size(data,2) == 4); % is (optional) yDeviation given?
 
     errorBar = '';
     if errorbarMode
         m2t      = needsPgfplotsVersion(m2t, [1,9]);
-        errorBar = sprintf('plot [error bars/.cd, y dir = both, y explicit]\n');
+        errorBar = sprintf('plot [%s]\n', errorBarOpts);
     end
 
     % Convert to string array then cell to call sprintf once (and no loops).
@@ -2025,6 +2045,30 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
             drawOptions = opts_addSubOpts(drawOptions, 'mark options', ...
                                        markerInfo.options);
         end
+    end
+
+    type = getOrDefault(h, 'Type', 'none');
+    if strcmp(type, 'errorbar')
+        %'capSize' -> errorbar marker size
+        capSize = getOrDefault(h, 'CapSize',get(h,'MarkerSize'));
+        lineWidth = get(h, 'LineWidth');
+
+        errStyleOptions = opts_new();
+        errStyleOptions = opts_add(errStyleOptions, 'line width',...
+            sprintf('%.1fpt', lineWidth));
+
+        drawOptions = opts_addSubOpts(drawOptions, ...
+            'error bar style', errStyleOptions);
+
+        errMarkOptions = opts_new();
+        errMarkOptions = opts_add(errMarkOptions, 'line width',...
+             sprintf('%.1fpt', lineWidth));
+        errMarkOptions = opts_add(errMarkOptions, 'mark size',...
+             sprintf('%.1fpt', capSize));
+        errMarkOptions = opts_add(errMarkOptions, 'rotate', '90');
+
+        drawOptions = opts_addSubOpts(drawOptions, ...
+            'error mark options', errMarkOptions);
     end
 end
 % ==============================================================================
