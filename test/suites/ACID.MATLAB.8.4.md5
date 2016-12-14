@@ -25,11 +25,11 @@ decayingharmonic : 2d9be9791b36efc6e1d052769dba3369
 double_axes : af07a7caf0effe5eb70fd23f21137ebb
 double_axes2 : 6cd1b9ea3b7ae29801738674446e5f64
 double_colorbar : 47eaadfd2b100239e63c3175382c0598
-errorBars : c8876a76613b4588e4fb3883039d4d1f
-errorBars2 : c0750114ad1821a37a833e378217ef5b
+errorBars : 9a959889b00bdc80a18aae4cef6fff24
+errorBars2 : ee08727841633566b12ee1553f587b98
 fill3plot : 801300e07b52eb484e67abe761b6a0a4
 freqResponsePlot : f307eac45a335d76278beb4209b7f335
-herrorbarPlot : 62d64cf001ac8050493a95fc2090305c
+herrorbarPlot : 9f7e3880d3d77af312f5af20ab45d427
 hgTransformPlot : 8c0a136c4bb0ec5ff02a344bc9ef9bf0
 hist3d : 867f35c157a81cf207d63e558cf167e5
 histogramPlot : a96b7898c7c426edc4d8ba680dd4b4c2
