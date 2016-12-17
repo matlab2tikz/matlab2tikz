@@ -1844,6 +1844,12 @@ function [data] = getXYZDataFromLine(m2t, h)
         xData = get(h, 'X');
         yData = get(h, 'Y');
     end
+    if isa(xData,'datetime')
+        xData = double(xData);
+    end
+    if isa(yData,'datetime')
+        yData = double(yData);
+    end
     is3D  = m2t.axes{end}.is3D;
     if ~is3D
         data = [xData(:), yData(:)];
