@@ -1533,6 +1533,9 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
 
     % hidden properties are not caught by hasProperties
     isDatetimeTicks = isAxisTicksDateTime(handle, axis);
+    if isDatetimeTicks
+        ticks = datenum(ticks);
+    end
 
     if isempty(ticks)
         % If no ticks are present, we need to enforce this in any case.
@@ -1600,13 +1603,18 @@ end
 function isDatetimeTicks = isAxisTicksDateTime(handle, axis)
     % returns true when the axis has DateTime ticks
     try
-        % Get hidden properties of the datetime axes manager
-        dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
-        oldState   = warning('off','MATLAB:structOnObject');
-        dtsManager = struct(dtsManager);
-        warning(oldState);
-
-        isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
+        % If R2016b or above
+        if isa(get(handle, [upper(axis), 'Tick']),'datetime')
+            isDatetimeTicks = true;
+        else
+            % Get hidden properties of the datetime axes manager
+            dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
+            oldState   = warning('off','MATLAB:structOnObject');
+            dtsManager = struct(dtsManager);
+            warning(oldState);
+            
+            isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
+        end
     catch
         isDatetimeTicks = false;
     end
@@ -1669,6 +1677,9 @@ end
 function options = setAxisLimits(m2t, handle, axis, options)
     % set the upper/lower limit of an axis
     limits = get(handle, [upper(axis),'Lim']);
+    if isa(limits,'datetime')
+        limits = datenum(limits);
+    end
     if isfinite(limits(1))
         options = opts_add(options, [axis,'min'], sprintf(m2t.ff, limits(1)));
     end
@@ -1845,10 +1856,10 @@ function [data] = getXYZDataFromLine(m2t, h)
         yData = get(h, 'Y');
     end
     if isa(xData,'datetime')
-        xData = double(xData);
+        xData = datenum(xData);
     end
     if isa(yData,'datetime')
-        yData = double(yData);
+        yData = datenum(yData);
     end
     is3D  = m2t.axes{end}.is3D;
     if ~is3D
