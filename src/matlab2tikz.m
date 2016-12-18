@@ -1602,21 +1602,22 @@ end
 % ==============================================================================
 function isDatetimeTicks = isAxisTicksDateTime(handle, axis)
     % returns true when the axis has DateTime ticks
-    try
-        % If R2016b or above
-        if isa(get(handle, [upper(axis), 'Tick']),'datetime')
-            isDatetimeTicks = true;
-        else
+
+    % If R2016b or above
+    if isa(get(handle, [upper(axis), 'Tick']),'datetime')
+        isDatetimeTicks = true;
+    else
+        try
             % Get hidden properties of the datetime axes manager
             dtsManager = get(handle, 'DatetimeDurationPlotAxesListenersManager');
             oldState   = warning('off','MATLAB:structOnObject');
             dtsManager = struct(dtsManager);
             warning(oldState);
-            
+
             isDatetimeTicks = dtsManager.([upper(axis) 'DateTicks']) == 1;
+        catch
+            isDatetimeTicks = false;
         end
-    catch
-        isDatetimeTicks = false;
     end
 end
 % ==============================================================================
