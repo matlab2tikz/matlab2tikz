@@ -1470,6 +1470,10 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
 
     options = opts_new();
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % Axis font style
+    [m2t, fontStyle] = getAxisFontStyle(m2t, handle, axis);
+    options = opts_addSubOpts(options, [axis,'ticklabel style'], fontStyle);
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % axis colors
     [color, isDfltColor] = getAndCheckDefault('Axes', handle, ...
                                               [upper(axis),'Color'], [ 0 0 0 ]);
@@ -1487,11 +1491,6 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
             opts_add(options, ...
             ['every outer ', axis, ' axis line/.append style'], ...
             ['{', col, '}']);
-        % set color of tick labels
-        options = ...
-            opts_add(options, ...
-            ['every ',axis,' tick label/.append style'], ...
-            ['{font=\color{',col,'}}']);
         % set color of ticks
         options = ...
             opts_add(options, ...
@@ -1507,7 +1506,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     axisScale = getOrDefault(handle, [upper(axis) 'Scale'], 'lin');
-    if strcmpi(axisScale, 'log');
+    if strcmpi(axisScale, 'log')
         options = opts_add(options, [axis,'mode'], 'log');
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1519,6 +1518,39 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis label
     [m2t, options] = getAxisLabel(m2t, handle, axis, options);
+end
+% ==============================================================================
+function [m2t, fontStyle] = getAxisFontStyle(m2t, handle, axis)
+    [color, isDfltColor] = getAndCheckDefault('Axes', handle, ...
+                                              [upper(axis),'Color'], [ 0 0 0 ]);
+    fontStyle = '';
+    if ~isDfltColor || m2t.args.strict
+        [m2t, color] = getColor(m2t, handle, color, 'patch');
+        fontStyle = sprintf('%s\\color{%s}',fontStyle,color);
+    end
+    if strcmpi(get(handle, 'FontWeight'),'Bold')
+        fontStyle = sprintf('%s\\bfseries',fontStyle);
+    end
+    if strcmpi(get(handle, 'FontAngle'), 'Italic')
+        fontStyle = sprintf('%s\\itshape',fontStyle);
+    end
+    if m2t.args.strictFontSize
+        fontSize  = get(handle,'FontSize');
+        fontUnits = matlab2texUnits(get(handle,'FontUnits'), 'pt');
+        fontStyle = sprintf('%s\\fontsize{%d%s}{\\baselineskip}',fontStyle,fontSize,fontUnits);
+    else
+        % don't try to be smart and "translate" MATLAB font sizes to proper LaTeX
+        % ones: it cannot be done. LaTeX uses semantic sizes (e.g. \small)
+        % whose actual dimensions depend on the document style, context, ...
+    end
+
+    fontStyle = [fontStyle, '\selectfont'];
+
+    if ~isempty(fontStyle)
+        fontStyle = opts_add(opts_new(), 'font', fontStyle);
+    else
+        fontStyle = opts_new();
+    end
 end
 % ==============================================================================
 function [options] = getAxisTicks(m2t, handle, axis, options)
