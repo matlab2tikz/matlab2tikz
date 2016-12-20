@@ -1604,7 +1604,7 @@ function isDatetimeTicks = isAxisTicksDateTime(handle, axis)
     % returns true when the axis has DateTime ticks
 
     % If R2016b or above
-    if isa(get(handle, [upper(axis), 'Tick']),'datetime')
+    if isa(get(handle, [upper(axis), 'Tick']), 'datetime')
         isDatetimeTicks = true;
     else
         try
