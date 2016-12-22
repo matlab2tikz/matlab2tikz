@@ -2866,9 +2866,11 @@ function [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows)
     % Replace same level contours with hole, i.e. one level down
     Levels     = contours(istart,1);
     LevelList  = get(h,'LevelList');
-    ireplace   = [false; diff(Levels) == 0];
+    ireplace   = find([false; diff(Levels) == 0]);
     [idx, pos] = ismember(Levels(ireplace), LevelList);
-    cellcont{ireplace}(1) = LevelList(pos-1);
+    for ii = 1:numel(pos)
+        cellcont{ireplace(ii)}(1) = LevelList(pos(ii)-1);
+    end
 
     % Add "contourless" backdrop
     xdata     = get(h,'XData');
