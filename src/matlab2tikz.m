@@ -1472,7 +1472,9 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Axis font style
     [m2t, fontStyle] = getAxisFontStyle(m2t, handle, axis);
-    options = opts_addSubOpts(options, [axis,'ticklabel style'], fontStyle);
+    if ~isempty(fontStyle)
+        options = opts_addSubOpts(options, [axis,'ticklabel style'], fontStyle);
+    end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % axis colors
     [color, isDfltColor] = getAndCheckDefault('Axes', handle, ...
