@@ -1522,7 +1522,7 @@ end
 % ==============================================================================
 function [m2t, fontStyle] = getAxisFontStyle(m2t, handle, axis)
     [color, isDfltColor] = getAndCheckDefault('Axes', handle, ...
-                                              [upper(axis),'Color'], [ 0 0 0 ]);
+                                              [upper(axis),'Color'], [ 0.15 0.15 0.15 ]);
     fontStyle = '';
     if ~isDfltColor || m2t.args.strict
         [m2t, color] = getColor(m2t, handle, color, 'patch');
@@ -1544,10 +1544,8 @@ function [m2t, fontStyle] = getAxisFontStyle(m2t, handle, axis)
         % whose actual dimensions depend on the document style, context, ...
     end
 
-    fontStyle = [fontStyle, '\selectfont'];
-
     if ~isempty(fontStyle)
-        fontStyle = opts_add(opts_new(), 'font', fontStyle);
+        fontStyle = opts_add(opts_new(), 'font', [fontStyle, '\selectfont']);
     else
         fontStyle = opts_new();
     end
