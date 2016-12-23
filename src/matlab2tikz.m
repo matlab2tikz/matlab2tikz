@@ -1538,7 +1538,7 @@ function [options] = getAxisTicks(m2t, handle, axis, options)
     % hidden properties are not caught by hasProperties
     isDatetimeTicks = isAxisTicksDateTime(handle, axis);
     if isDatetimeTicks
-        ticks = datenum(ticks);
+        ticks = date2num(ticks, axis, options);
     end
 
     if isempty(ticks)
