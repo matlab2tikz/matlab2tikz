@@ -1890,10 +1890,10 @@ function [data] = getXYZDataFromLine(m2t, h)
         yData = get(h, 'Y');
     end
     if isa(xData,'datetime')
-        xData = datenum(xData);
+        xData = date2num(xData, 'x', m2t.axes{end}.options);
     end
     if isa(yData,'datetime')
-        yData = datenum(yData);
+        yData = date2num(yData, 'y', m2t.axes{end}.options);
     end
     is3D  = m2t.axes{end}.is3D;
     if ~is3D
@@ -1901,7 +1901,7 @@ function [data] = getXYZDataFromLine(m2t, h)
     else
         zData = get(h, 'ZData');
         if isa(zData,'datetime')
-            zData = datenum(zData);
+            zData = date2num(zData, 'z', m2t.axes{end}.options);
         end
         data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
