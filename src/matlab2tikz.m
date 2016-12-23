@@ -876,11 +876,7 @@ function m2t = drawAxes(m2t, handle)
         m2t = m2t_addAxisOption(m2t, 'point meta max', sprintf(m2t.ff, clim(2)));
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % Recurse into the children of this environment.
-    [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
-    m2t.axes{end} = addChildren(m2t.axes{end}, childrenEnvs);
-    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    % The rest of this is handling axes options.
+    % Handle axes options.
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % Get other axis options (ticks, axis color, label,...).
     % This is set here such that the axis orientation indicator in m2t is set
@@ -891,7 +887,15 @@ function m2t = drawAxes(m2t, handle)
     m2t.axes{end}.options = opts_merge(m2t.axes{end}.options, xopts, yopts);
 
     m2t = add3DOptionsOfAxes(m2t, handle);
-
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % Recurse into the children of this environment.
+    [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
+    m2t.axes{end} = addChildren(m2t.axes{end}, childrenEnvs);
+    
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    % Some more axes options handling.
+    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
     if ~isVisible(handle)
         % Setting hide{x,y} axis also hides the axis labels in Pgfplots whereas
         % in MATLAB, they may still be visible. Instead use the following.
