@@ -1634,12 +1634,13 @@ function num = date2num(date, axis, options)
     % input line [linNumber]." This warning is issued because the numbers
     % returned by datenum() are relatively large compared to the
     % differences in the data vector, e.g. compare:
-    % > data = datenum(datetime + seconds(0:1));
-    % > min(data), range(data)
+    % >> data = datenum(datetime + seconds(0:1));
+    % >> min(data), range(data)
+    % Note that the resulting order difference is about 10^10.
     % 
-    % pgfplots has trouble plotting the small data range relative to the
-    % large data values and issues the warning and alters the plot range,
-    % which messus up the result.
+    % pgfplots may have trouble plotting the small data range relative to
+    % the large data values and issues the warning and alters the plot
+    % range, which messes up the result.
     % 
     % Fix this by subtracting the lowest value from the axis limits,
     % determined in setAxisLimits(), so that it becomes (nearly) zero and
