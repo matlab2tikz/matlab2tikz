@@ -1708,6 +1708,10 @@ function options = setAxisLimits(m2t, handle, axis, options)
     limits = get(handle, [upper(axis),'Lim']);
     if isa(limits,'datetime')
         limits = datenum(limits);
+        % Convert here already to conserve precision
+        limitShift = num2str(min(limits));  
+        limits = limits - str2double(limitShift);
+        options = opts_add(options, [axis, 'shift'], limitShift);
     end
     if isfinite(limits(1))
         options = opts_add(options, [axis,'min'], sprintf(m2t.ff, limits(1)));
