@@ -1777,7 +1777,7 @@ function [m2t, str] = drawLine(m2t, h)
     end
 
     % build the data matrix
-    data       = getXYZDataFromLine(m2t, h);
+    [m2t, data]       = getXYZDataFromLine(m2t, h);
     yDeviation = getYDeviations(h);
     if ~isempty(yDeviation)
         data = [data, yDeviation];
@@ -1876,11 +1876,12 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
     end
 end
 % ==============================================================================
-function [data] = getXYZDataFromLine(m2t, h)
+function [m2t, data] = getXYZDataFromLine(m2t, h)
     % Retrieves the X, Y and Z (if appropriate) data from a Line object
     %
     % First put them all together in one multiarray.
     % This also implicitly makes sure that the lengths match.
+    options = m2t.axes{end}.options;
     try
         xData = get(h, 'XData');
         yData = get(h, 'YData');
@@ -1890,10 +1891,12 @@ function [data] = getXYZDataFromLine(m2t, h)
         yData = get(h, 'Y');
     end
     if isa(xData,'datetime')
-        xData = date2num(xData, 'x', m2t.axes{end}.options);
+        xData = date2num(xData, 'x', options);
+        options = opts_remove(options, 'xshift');
     end
     if isa(yData,'datetime')
-        yData = date2num(yData, 'y', m2t.axes{end}.options);
+        yData = date2num(yData, 'y', options);
+        options = opts_remove(options, 'yshift');
     end
     is3D  = m2t.axes{end}.is3D;
     if ~is3D
@@ -1901,10 +1904,12 @@ function [data] = getXYZDataFromLine(m2t, h)
     else
         zData = get(h, 'ZData');
         if isa(zData,'datetime')
-            zData = date2num(zData, 'z', m2t.axes{end}.options);
+            zData = date2num(zData, 'z', options);
+            options = opts_remove(options, 'zshift');
         end
         data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
+    m2t.axes{end}.options = options;
 end
 % ==============================================================================
 function [m2t, labelCode] = addLabel(m2t, h)
