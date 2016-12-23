@@ -1631,7 +1631,7 @@ function num = date2num(date, axis, options)
     % Shift the range of date numbers, because pgfplots may otherwise issue
     % a warning: "Package pgfplots Warning: Axis range for axis [x | y | z]
     % is approximately empty; enlarging it (it is [[newMin]:[newMax]]) on
-    % input line [linNumber]." This warning is issued because the numbers
+    % input line [lineNumber]." This warning is issued because the numbers
     % returned by datenum() are relatively large compared to the
     % differences in the data vector, e.g. compare:
     % >> data = datenum(datetime + seconds(0:1));
