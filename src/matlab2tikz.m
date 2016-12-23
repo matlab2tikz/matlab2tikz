@@ -1867,6 +1867,9 @@ function [data] = getXYZDataFromLine(m2t, h)
         data = [xData(:), yData(:)];
     else
         zData = get(h, 'ZData');
+        if isa(zData,'datetime')
+            zData = datenum(zData);
+        end
         data = applyHgTransform(m2t, [xData(:), yData(:), zData(:)]);
     end
 end
