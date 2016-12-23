@@ -1625,6 +1625,30 @@ function isDatetimeTicks = isAxisTicksDateTime(handle, axis)
     end
 end
 % ==============================================================================
+function num = date2num(date, axis, options)
+    % Return a double from a datetime, adjusted for limit shift
+    
+    % Shift the range of date numbers, because pgfplots may otherwise issue
+    % a warning: "Package pgfplots Warning: Axis range for axis [x | y | z]
+    % is approximately empty; enlarging it (it is [[newMin]:[newMax]]) on
+    % input line [linNumber]." This warning is issued because the numbers
+    % returned by datenum() are relatively large compared to the
+    % differences in the data vector, e.g. compare:
+    % > data = datenum(datetime + seconds(0:1));
+    % > min(data), range(data)
+    % 
+    % pgfplots has trouble plotting the small data range relative to the
+    % large data values and issues the warning and alters the plot range,
+    % which messus up the result.
+    % 
+    % Fix this by subtracting the lowest value from the axis limits,
+    % determined in setAxisLimits(), so that it becomes (nearly) zero and
+    % all other values are shifted appropriately.
+    
+    shift = str2double(opts_get(options, [axis, 'shift']));
+    num = datenum(date) - shift;
+end
+% ==============================================================================
 function options = setAxisTicks(m2t, options, axis, ticks, tickLabels,hasMinorTicks, tickDir,isDatetimeTicks)
     % set ticks options
 
