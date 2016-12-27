@@ -40,7 +40,9 @@ function status = makeGraphical(commit, suite, testIndices, outdir)
 
     status = testGraphical('testFunctionIndices', testIndices, 'testsuite', suite,...
         'output', outdir);
-
+    
+    makeLatexReport(status, outdir);
+    
     % Make pdf
     fprintf(['Making the .pdf for commit ', commit, '.\n'])
     if ispc
