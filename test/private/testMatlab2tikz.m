@@ -1,4 +1,4 @@
-function status = testMatlab2tikz(varargin)
+function [status, parameters] = testMatlab2tikz(varargin)
 %TESTMATLAB2TIKZ    unit test driver for matlab2tikz
 %
 % This function should NOT be called directly by the user (or even developer).
@@ -25,33 +25,11 @@ function status = testMatlab2tikz(varargin)
 %     when >=1 and <=N: runs the appropriate test function
 %     when >N: throws an error
 %
+% TESTMATLAB2TIKZ('output', DIRECTORY, ...)
+%   Sets the output directory where the output files are places.
+%   The default directory is $M2TROOT/test/output/current
+%
 % See also matlab2tikz, ACID
-
-% Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
-% All rights reserved.
-%
-% Redistribution and use in source and binary forms, with or without
-% modification, are permitted provided that the following conditions are met:
-%
-%    * Redistributions of source code must retain the above copyright
-%      notice, this list of conditions and the following disclaimer.
-%    * Redistributions in binary form must reproduce the above copyright
-%      notice, this list of conditions and the following disclaimer in
-%      the documentation and/or other materials provided with the distribution
-%
-% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-% AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-% IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-% ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-% LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-% CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-% SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-% INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-% CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-% ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-% POSSIBILITY OF SUCH DAMAGE.
-%
-% =========================================================================
 
   % In which environment are we?
   env = getEnvironment();
@@ -64,10 +42,12 @@ function status = testMatlab2tikz(varargin)
   ipp = ipp.addParamValue(ipp, 'figureVisible', false, @islogical);
   ipp = ipp.addParamValue(ipp, 'actionsToExecute', @(varargin) varargin{1}, @isFunction);
   ipp = ipp.addParamValue(ipp, 'testsuite', @ACID, @isFunction );
+  ipp = ipp.addParamValue(ipp, 'output', m2troot('test','output','current'), @ischar);
 
   ipp = ipp.parse(ipp, varargin{:});
 
   ipp = sanitizeInputs(ipp);
+  parameters = ipp.Results;
 
   % -----------------------------------------------------------------------
   if strcmpi(env, 'Octave')
@@ -83,6 +63,13 @@ function status = testMatlab2tikz(varargin)
           setenv ('PRINTF_EXPONENT_DIGITS', '2')
       end
   end
+  
+  % copy output template into output directory
+  if ~exist(ipp.Results.output,'dir')
+      mkdir(ipp.Results.output);
+  end
+  template = m2troot('test','template');
+  copyfile(fullfile(template,'*'), ipp.Results.output);
 
   % start overall timing
   elapsedTimeOverall = tic;

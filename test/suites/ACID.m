@@ -4,33 +4,6 @@
 % *** MATLAB2TikZ ACID test functions
 % ***
 % =========================================================================
-% ***
-% *** Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
-% *** All rights reserved.
-% ***
-% *** Redistribution and use in source and binary forms, with or without
-% *** modification, are permitted provided that the following conditions are
-% *** met:
-% ***
-% ***    * Redistributions of source code must retain the above copyright
-% ***      notice, this list of conditions and the following disclaimer.
-% ***    * Redistributions in binary form must reproduce the above copyright
-% ***      notice, this list of conditions and the following disclaimer in
-% ***      the documentation and/or other materials provided with the distribution
-% ***
-% *** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-% *** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-% *** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-% *** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-% *** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-% *** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-% *** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-% *** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-% *** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-% *** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-% *** POSSIBILITY OF SUCH DAMAGE.
-% ***
-% =========================================================================
 function [status] = ACID(k)
 
   % assign the functions to test
@@ -133,7 +106,13 @@ function [status] = ACID(k)
                            @textAlignment       , ...
                            @overlappingPlots    , ...
                            @histogramPlot       , ...
-                           @alphaTest
+                           @alphaTest           , ...
+                           @removeOutsideMarker , ...
+                           @colorbars           , ...
+                           @colorbarManualLocationRightOut , ...
+                           @colorbarManualLocationRightIn  , ...
+                           @colorbarManualLocationLeftOut  , ...
+                           @colorbarManualLocationLeftIn
                          };
 
 
@@ -342,6 +321,7 @@ function [stat] = peaks_contour()
   stat.unreliable = isMATLAB('<', [8,4]) || isOctave; %R2014a and older
   % FIXME: see #604; contour() produces inconsistent output
 
+  subplot(121)
   [C, h] = contour(peaks(20),10);
   clabel(C, h);
 
@@ -351,6 +331,11 @@ function [stat] = peaks_contour()
 
   colormap winter;
 
+  % Contour layers with predefined color
+  subplot(122)
+  contour(peaks(20), 10,'r', 'LineWidth', 5)
+  set(gca,'YTickLabel',[]);
+  set(gca,'YTick',[]);
 end
 % =========================================================================
 function [stat] = contourPenny()
@@ -539,6 +524,12 @@ function [stat] = logplot()
 
   ylim([1 1e45]);
   grid on;
+  if isprop(gca,'GridColor')
+      set(gca, 'GridColor', 'red');
+      set(gca, 'MinorGridColor', 'blue');
+  else
+    %TODO equivalent HG1 settings (if those exist)
+  end
 end
 % =========================================================================
 function [stat] = colorbarLogplot()
@@ -709,13 +700,16 @@ end
 function [stat] = stairsplot()
   stat.description = 'A simple stairs plot.' ;
 
-  x = linspace(-2*pi,2*pi,40)';
-  h = stairs([sin(x), 0.2*cos(x)]);
+  X      = linspace(-2*pi,2*pi,40)';
+  Yconst = [zeros(10,1); 0.5*ones(20,1);-0.5*ones(10,1)];
+  Y      = [sin(X), 0.2*cos(X), Yconst];
+  h = stairs(Y);
   legend(h(2),'second entry')
 end
 % =========================================================================
 function [stat] = quiverplot()
   stat.description = 'A combined quiver/contour plot of $x\exp(-x^2-y^2)$.' ;
+  stat.extraOptions = {'arrowHeadSize', 2};
 
   [X,Y] = meshgrid(-2:.2:2);
   Z = X.*exp(-X.^2 - Y.^2);
@@ -758,13 +752,19 @@ function [stat] = quiveroverlap ()
   % perfect. As such, in MATLAB the arrow heads may appear extremely tiny.
   % In Octave, they look fine though. Once the scaling has been done decently,
   % this reminder can be removed.
+  if isOctave
+    stat.extraOptions = {'arrowHeadSize', 20};
+  end
 
   x = [0 1];
   y = [0 0];
   u = [1 -1];
   v = [1 1];
 
-  quiver(x,y,u,v);
+  hold all;
+  qvr1 = quiver(x,y,u,v);
+  qvr2 = quiver(x,y,2*u,2*v);
+  set(qvr2, 'MaxHeadSize', get(qvr1, 'MaxHeadSize')/2);
 end
 % =========================================================================
 function [stat] = polarplot ()
@@ -2693,5 +2693,126 @@ function [stat] = alphaTest()
   set(h, 'MarkerSize', 14);
   set(h, 'MarkerEdgeColor', [1 1 0]);
   set(h, 'MarkerFaceColor', [1 0 0]);
+end
+% =========================================================================
+function [stat] = removeOutsideMarker()
+  stat.description = 'remove markers outside of the box';
+  stat.issues      = 788;
+
+  % Create the data and plot it
+  xdata          = -1 : 0.5 : 1.5;
+  ydata_marker   = 1.5 * ones(size(xdata));
+  ydata_line     = 1   * ones(size(xdata));  
+  ydata_combined = 0.5 * ones(size(xdata));
+  plot(xdata, ydata_marker, '*', ...
+       xdata, ydata_line, '-', ...
+       xdata, ydata_combined, '*-');
+  title('Markers at -1 and 0.5 should be removed, the line shortened'); 
+
+  % Change the limits, so one marker is outside the box
+  ylim([0, 2]);
+  xlim([0, 2]);
+  
+  % Remove it
+  cleanfigure;
+  
+  % Change the limits back to check result
+  xlim([-1, 2]);
+end
+% =========================================================================
+function [stat] = colorbars()
+  stat.description = 'Manual positioning of colorbars';
+  stat.issues      = [933 937];
+  stat.unreliable  = isOctave(); %FIXME: positions differ between Octave 3.2 and 4.0.
+
+  shift = [0.2 0.8 0.2 0.8];
+  axLoc = {'in','out','out','in'};
+
+  for iAx = 1:4
+    hAx(iAx) = subplot(2,2,iAx);
+    axPos    = get(hAx(iAx), 'Position');
+    cbPos    = [axPos(1)+shift(iAx)*axPos(3), axPos(2), 0.02, 0.2]; 
+
+    hCb(iAx) = colorbar('Position', cbPos);
+    try
+        % only in HG2
+        set(hCb(iAx), 'AxisLocation', axLoc{iAx});
+    end
+    title(['AxisLocation = ' axLoc{iAx}]);
+    grid('on');
+  end
+end
+% =========================================================================
+function [stat] = colorbarManualLocationRightOut()
+  stat.description = 'Manual positioning of colorbars - Right Out';
+  stat.issues      = [933 937];
+
+  axLoc      = 'out';
+  figPos     = [1  , 1, 11  ,10];
+  axPos(1,:) = [1  , 1,  8  , 3];
+  axPos(2,:) = [1  , 5,  8  , 3];
+  cbPos      = [9.5, 1,  0.5, 7]; 
+
+  colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc);
+end
+function [stat] = colorbarManualLocationRightIn()
+  stat.description = 'Manual positioning of colorbars - Right In';
+  stat.issues      = [933 937];
+
+  axLoc      = 'in';
+  figPos     = [ 1  , 1, 11  ,10]; 
+  axPos(1,:) = [ 1  , 1,  8  , 3];
+  axPos(2,:) = [ 1  , 5,  8  , 3];
+  cbPos      = [10.5, 1,  0.5, 7]; 
+
+  colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc);
+end
+function [stat] = colorbarManualLocationLeftOut()
+  stat.description = 'Manual positioning of colorbars - Left Out';
+  stat.issues      = [933 937];
+
+  axLoc      = 'out'; 
+  figPos     = [1  , 1, 11  , 10];
+  axPos(1,:) = [2.5, 1,  8  ,  3];
+  axPos(2,:) = [2.5, 5,  8  ,  3];
+  cbPos      = [1.5, 1,  0.5,  7]; 
+
+  colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc);
+end
+function [stat] = colorbarManualLocationLeftIn()
+  stat.description = 'Manual positioning of colorbars - Left In';
+  stat.issues      = [933 937];
+
+  axLoc      = 'in'; 
+  figPos     = [1  , 1, 11  , 10];
+  axPos(1,:) = [2.5, 1,  8  ,  3];
+  axPos(2,:) = [2.5, 5,  8  ,  3];
+  cbPos      = [0.5, 1,  0.5,  7]; 
+
+  colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc);
+end
+function colorbarManualLocationHelper_(figPos, axPos, cbPos, axLoc)
+  % this is a helper function, not a test case
+  set(gcf, 'Units','centimeters','Position', figPos);
+
+  hAx(1) = axes('Units', 'centimeters', 'Position', axPos(1,:));
+  imagesc([1,2,3], [4,5,6], magic(3)/9, [0,1]);
+
+  hAx(2) = axes('Units', 'centimeters', 'Position', axPos(2,:));
+  imagesc([1,2,3], [4,5,6], magic(3)/9, [0,1]);
+
+  hCb = colorbar('Units', 'centimeters', 'Position', cbPos);
+  try
+      % only in HG2
+      %TODO: check if there are HG1 / Octave counterparts for this property
+      set(hCb, 'AxisLocation', axLoc);
+  end
+  
+  labelProperty = {'Label', 'YLabel'}; %YLabel as fallback for
+  idxLabel      = find(cellfun(@(p) isprop(hCb, p), labelProperty), 1);
+  if ~isempty(idxLabel)
+      hLabel = get(hCb, labelProperty{idxLabel});
+      set(hLabel, 'String', ['AxisLocation = ' axLoc]);
+  end
 end
 % =========================================================================

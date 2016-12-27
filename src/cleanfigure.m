@@ -6,6 +6,9 @@ function cleanfigure(varargin)
 %   CLEANFIGURE('handle',HANDLE,...) explicitly specifies the
 %   handle of the figure that is to be stored. (default: gcf)
 %
+%   CLEANFIGURE('pruneText',BOOL,...) explicitly specifies whether text
+%   should be pruned. (default: true)
+%
 %   CLEANFIGURE('targetResolution',PPI,...)
 %   CLEANFIGURE('targetResolution',[W,H],...)
 %   Reduce the number of data points in line objects by applying
@@ -16,37 +19,26 @@ function cleanfigure(varargin)
 %   Use targetResolution = Inf or 0 to disable line simplification.
 %   (default: 600)
 %
+%   CLEANFIGURE('scalePrecision',alpha,...)
+%   Scale the precision the data is represented with. Setting it to 0
+%   or negative values disable this feature.
+%   (default: 1)
+%
+%   CLEANFIGURE('normalizeAxis','xyz',...)
+%   EXPERIMENTAL: Normalize the data of the dimensions specified by
+%   'normalizeAxis' to the interval [0, 1]. This might have side effects
+%   with hgtransform and friends. One can directly pass the axis handle to
+%   cleanfigure to ensure that only one axis gets normalized.
+%   Usage: Input 'xz' normalizes only x- and zData but not yData
+%   (default: '')
+%
 %   Example
 %      x = -pi:pi/1000:pi;
 %      y = tan(sin(x)) - sin(tan(x));
 %      plot(x,y,'--rs');
 %      cleanfigure();
 %
-
-%   Copyright (c) 2013--2014, Nico Schlömer <nico.schloemer@gmail.com>
-%   All rights reserved.
-%
-%   Redistribution and use in source and binary forms, with or without
-%   modification, are permitted provided that the following conditions are
-%   met:
-%
-%      * Redistributions of source code must retain the above copyright
-%        notice, this list of conditions and the following disclaimer.
-%      * Redistributions in binary form must reproduce the above copyright
-%        notice, this list of conditions and the following disclaimer in
-%        the documentation and/or other materials provided with the distribution
-%
-%   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-%   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-%   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-%   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-%   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-%   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-%   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-%   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-%   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-%   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-%   POSSIBILITY OF SUCH DAMAGE.
+%   See also: matlab2tikz
 
   % Treat hidden handles, too.
   shh = get(0, 'ShowHiddenHandles');
@@ -59,8 +51,13 @@ function cleanfigure(varargin)
   m2t.cmdOpts = m2tInputParser;
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'handle', gcf, @ishandle);
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'targetResolution', 600, @isValidTargetResolution);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'pruneText', true, @islogical);
 
   m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'minimumPointsDistance', 1.0e-10, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'scalePrecision', 1, @isnumeric);
+  m2t.cmdOpts = m2t.cmdOpts.addParamValue(m2t.cmdOpts, 'normalizeAxis', '', @isValidAxis);
+
+  % Deprecated parameters
   m2t.cmdOpts = m2t.cmdOpts.deprecateParam(m2t.cmdOpts, 'minimumPointsDistance', 'targetResolution');
 
   % Finally parse all the elements.
@@ -68,7 +65,7 @@ function cleanfigure(varargin)
 
   % Recurse down the tree of plot objects and clean up the leaves.
   for h = m2t.cmdOpts.Results.handle(:)'
-    recursiveCleanup(meta, h, m2t.cmdOpts.Results.targetResolution, 0);
+    recursiveCleanup(meta, h, m2t.cmdOpts.Results);
   end
 
   % Reset to initial state.
@@ -77,8 +74,10 @@ function cleanfigure(varargin)
   return;
 end
 % =========================================================================
-function indent = recursiveCleanup(meta, h, targetResolution, indent)
+function recursiveCleanup(meta, h, cmdOpts)
+    % Recursive function, that cleans up the individual childs of a figure
 
+    % Get the type of the current figure handle
     type = get(h, 'Type');
 
     %display(sprintf([repmat(' ',1,indent), type, '->']))
@@ -89,35 +88,29 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
     %     isa(handle(h), 'specgraph.quivergroup').
     % The handle() function isn't supported by Octave, though, so let's stick
     % with strcmp().
-    if strcmp(get(h, 'Type'), 'specgraph.quivergroup')
+    if strcmp(type, 'specgraph.quivergroup')
         %if strcmp(class(handle(h)), 'specgraph.quivergroup')
         return;
     end
 
     % Update the current axes.
-    if strcmp(get(h, 'Type'), 'axes')
+    if strcmp(type, 'axes')
         meta.gca = h;
+
+        if ~isempty(cmdOpts.normalizeAxis)
+            % If chosen transform the date axis
+            normalizeAxis(h, cmdOpts);
+        end
     end
 
     children = get(h, 'Children');
     if ~isempty(children)
         for child = children(:)'
-            indent = indent + 4;
-            indent = recursiveCleanup(meta, child, targetResolution, indent);
-            indent = indent - 4;
+            recursiveCleanup(meta, child, cmdOpts);
         end
     else
-        % We're in a leaf, so apply all the fancy simplications.
-
-        % Skip invisible objects.
-        %if ~strcmp(get(h, 'Visible'), 'on')
-        %    display(sprintf([repmat(' ',1,indent), '  invisible']))
-        %    return;
-        %end
-
-        %display(sprintf([repmat(' ',1,indent), '  handle this']))
-
         if strcmp(type, 'line')
+            % Remove data points outside of the axes
             % NOTE: Always remove invisible points before simplifying the
             % line. Otherwise it will generate additional line segments
             pruneOutsideBox(meta, h);
@@ -125,58 +118,19 @@ function indent = recursiveCleanup(meta, h, targetResolution, indent)
             % errors. This may involve inserting extra points.
             movePointsCloser(meta, h);
             % Simplify the lines by removing superflous points
-            simplifyLine(meta, h, targetResolution);
+            simplifyLine(meta, h, cmdOpts.targetResolution);
+            % Limit the precision of the output
+            limitPrecision(meta, h, cmdOpts.scalePrecision);
         elseif strcmpi(type, 'stair')
-            pruneOutsideBox(meta, h);
-        elseif strcmp(type, 'text')
-            % Ensure units of type 'data' (default) and restore the setting later
-            units_original = get(h, 'Units');
-            set(h, 'Units', 'data');
-
-            % Check if text is inside bounds by checking if the position is inside
-            % the x, y and z limits. This works for both 2D and 3D plots.
-            x_lim = get(meta.gca, 'XLim');
-            y_lim = get(meta.gca, 'YLim');
-            z_lim = get(meta.gca, 'ZLim');
-            axLim = [x_lim; y_lim; z_lim];
-
-            pos = get(h, 'Position');
-            % If the axis is 2D, ignore the z component for the checks
-            if ~isAxis3D(meta.gca)
-                pos(3) = 0;
-            end
-            bPosInsideLim = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
-
-            % In 2D plots the 'extent' of the textbox is available and also
-            % considered to keep the textbox, if it is partially inside the axis
-            % limits.
-            extent = get(h, 'Extent');
-
-            % Restore original units (after reading all dimensions)
-            set(h, 'Units', units_original);
-
-            % This check makes sure the extent is only considered if it contains
-            % valid values. The 3D case returns a vector of NaNs.
-            if all(~isnan(extent))
-                % Extend the actual axis limits by the extent of the textbox so that
-                % the textbox is not discarded, if it overlaps the axis.
-                x_lim(1) = x_lim(1) - extent(3);    % x-limit is extended by width
-                y_lim(1) = y_lim(1) - extent(4);    % y-limit is extended by height
-                axLim = [x_lim; y_lim; z_lim];
-
-                bPosInsideLimExt = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
-                bPosInsideLim = bPosInsideLim | bPosInsideLimExt;
-            end
-
-            % Check if it is the title
-            isTitle = (h== get(meta.gca, 'title'));
-
-            % Disable visibility if it is outside the limits and it is not
-            % the title
-            if ~all(bPosInsideLim) && ~isTitle
-                % Artificially disable visibility. m2t will check and skip.
-                set(h, 'Visible', 'off');
-            end
+            % Remove data points outside of the visible axes
+            pruneOutsideBox(meta, h);            
+            % Remove superfluous data points
+            simplifyStairs(meta, h);
+            % Limit the precision of the output
+            limitPrecision(meta, h, cmdOpts.scalePrecision);
+        elseif strcmp(type, 'text') && cmdOpts.pruneText
+            % Prune text that is outside of the axes
+            pruneOutsideText(meta, h);
         end
     end
 
@@ -198,32 +152,28 @@ function pruneOutsideBox(meta, handle)
         return;
     end
 
-    %hasLines = ~strcmp(lineStyle,'none') && lineWidth>0.0;
-    %hasMarkers = ~strcmp(marker,'none');
-    hasLines = true;
-    hasMarkers = true;
+    % Check if the plot has lines
+    hasLines    = ~strcmp(get(handle, 'LineStyle'),'none')...
+                && get(handle, 'LineWidth') > 0.0;
 
     % Extract the visual limits from the current line handle.
-    [xLim, yLim]   = getVisualLimits(meta);
+    [xLim, yLim]= getVisualLimits(meta);
 
     tol = 1.0e-10;
     relaxedXLim = xLim + [-tol, tol];
     relaxedYLim = yLim + [-tol, tol];
 
-    numPoints = size(data, 1);
-
     % Get which points are inside a (slightly larger) box.
     dataIsInBox = isInBox(data, relaxedXLim, relaxedYLim);
 
-    % By default, don't plot any points.
-    shouldPlot = false(numPoints, 1);
-    if hasMarkers
-        shouldPlot = shouldPlot | dataIsInBox;
-    end
+    % Plot all the points inside the box
+    shouldPlot = dataIsInBox;
+    
     if hasLines
-        % Check if the connecting line is in the box.
+        % Check if the connecting line between two data points is visible.
         segvis = segmentVisible(data, dataIsInBox, xLim, yLim);
-        % Plot points which are next to an edge which is in the box.
+        
+        % Plot points which part of an visible line segment.
         shouldPlot = shouldPlot | [false; segvis] | [segvis; false];
     end
 
@@ -231,11 +181,8 @@ function pruneOutsideBox(meta, handle)
     id_replace = [];
     id_remove  = [];
     if ~all(shouldPlot)
-        % There are two options here:
-        %      data = data(shouldPlot, :);
-        % i.e., simply removing the data that isn't supposed to be plotted.
-        % For line plots, this has the disadvantage that the line between two
-        % 'loose' ends may now appear in the figure.
+        % For line plots, simply removing the data has the disadvantage 
+        % that the line between two 'loose' ends may now appear in the figure.
         % To avoid this, add a row of NaNs wherever a block of actual data is
         % removed.
 
@@ -452,11 +399,12 @@ function simplifyLine(meta, handle, targetResolution)
 
     % If the path has markers, perform pixelation instead of simplification
     hasMarkers = ~strcmpi(get(handle,'Marker'),'none');
-    if hasMarkers
+    hasLines   = ~strcmpi(get(handle,'LineStyle'),'none');
+    if hasMarkers && ~hasLines
         % Pixelate data at the zoom multiplier
         mask      = pixelate(xData, yData, xToPix, yToPix);
         id_remove = find(mask==0);
-    else
+    elseif hasLines && ~hasMarkers
         % Get the width of a pixel
         xPixelWidth = 1/xToPix;
         yPixelWidth = 1/yToPix;
@@ -494,7 +442,169 @@ function simplifyLine(meta, handle, targetResolution)
     end
 
     % Remove the data points
-    removeData(meta, handle, id_remove)
+    removeData(meta, handle, id_remove);
+end
+% =========================================================================
+function simplifyStairs(meta, handle)
+    % This function simplifies stair plots by removeing superflous data
+    % points
+
+	% Some data might not lead to a new step in the stair. This is the case
+	% if the difference in one dimension is zero, e.g
+	% [(x_1, y_1), (x_2, y_1), ... (x_k, y_1), (x_{k+1} y_2)].
+	% However, there is one exeption. If the monotonicity of the other
+	% dimension changes, e.g. the sequence  [0, 1], [0, -1], [0, 2]. This
+	% sequence cannot be simplified. Therefore, we check for monoticity too.
+    % As an example, we can remove the data points marked with x in the
+    % following stair
+    %       o--x--o
+    %       |     |
+    %       x     o --x--o
+    %       |          
+    % o--x--o         
+    %       |
+    %       o
+
+    % Extract the data
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+
+    % Do not do anything if the data is empty
+    if isempty(xData) || isempty(yData)
+        return;
+    end
+
+    % Check for nonchanging data points
+    xNoDiff      = [false, (diff(xData) == 0)];
+    yNoDiff      = [false, (diff(yData) == 0)];
+
+    % Never remove the last data point
+    xNoDiff(end) = false;
+    yNoDiff(end) = false;
+
+    % Check for monotonicity (it changes if diff(sign)~=0)
+    xIsMonotone  = [true, diff(sign(diff(xData)))==0, true];
+    yIsMonotone  = [true, diff(sign(diff(yData)))==0, true];
+
+    % Only remove points when there is no difference in one dimension and no
+    % change in monotonicity in the other
+    xRemove      = xNoDiff & yIsMonotone;
+    yRemove      = yNoDiff & xIsMonotone;
+
+    % Plot only points, that generate a new step
+    id_remove    = find(xRemove | yRemove);
+
+    % Remove the superfluous data
+    removeData(meta, handle, id_remove);
+end
+% =========================================================================
+function limitPrecision(meta, handle, alpha)
+    % Limit the precision of the given data
+
+    % If alpha is 0 or negative do nothing
+    if alpha<=0
+        return
+    end
+
+    % Extract the data from the current line handle.
+    xData = get(handle, 'XData');
+    yData = get(handle, 'YData');
+    if isAxis3D(meta.gca)
+        zData = get(handle, 'ZData');
+    end
+
+    % Check for log scaling
+    isXlog = strcmp(get(meta.gca, 'XScale'), 'log');
+    isYlog = strcmp(get(meta.gca, 'YScale'), 'log');
+    isZlog = strcmp(get(meta.gca, 'ZScale'), 'log');
+
+    % Put the data into a matrix and log bits into vector
+    if isAxis3D(meta.gca)
+        data  = [xData(:), yData(:), zData(:)];
+        isLog = [isXlog, isYlog, isZlog];
+    else
+        data  = [xData(:), yData(:)];
+        isLog = [isXlog, isYlog];
+    end
+
+    % Only do something if the data is not empty
+    if isempty(data) || all(isinf(data(:)))
+        return
+    end
+
+    % Scale to visual coordinates
+    data(:, isLog) = log10(data(:, isLog));
+
+    % Get the maximal value of the data, only considering finite values
+    maxValue = max(abs(data(isfinite(data))));
+
+    % The least significant bit is proportional to the numerical precision
+    % of the largest number. Scale it with a user defined value alpha
+    leastSignificantBit = eps(maxValue) * alpha;
+
+    % Round to precision and scale back
+    data  = round(data / leastSignificantBit) * leastSignificantBit;
+
+    % Scale back in case of log scaling
+    data(:, isLog) = 10.^data(:, isLog);
+
+    % Set the new data.
+    set(handle, 'XData', data(:, 1));
+    set(handle, 'YData', data(:, 2));
+    if isAxis3D(meta.gca)
+        set(handle, 'zData', data(:, 3));
+    end
+end
+% =========================================================================
+function pruneOutsideText(meta, handle)
+    % Function to prune text outside of axis handles.
+
+    % Ensure units of type 'data' (default) and restore the setting later
+    units_original = get(handle, 'Units');
+    set(handle, 'Units', 'data');
+
+    % Check if text is inside bounds by checking if the position is inside
+    % the x, y and z limits. This works for both 2D and 3D plots.
+    xLim = get(meta.gca, 'XLim');
+    yLim = get(meta.gca, 'YLim');
+    zLim = get(meta.gca, 'ZLim');
+    axLim = [xLim; yLim; zLim];
+
+    pos = get(handle, 'Position');
+    % If the axis is 2D, ignore the z component and consider the extend of
+    % the textbox
+    if ~isAxis3D(meta.gca)
+        pos(3) = 0;
+
+        % In 2D plots the 'extent' of the textbox is available and also
+        % considered to keep the textbox, if it is partially inside the axis
+        % limits.
+        extent = get(handle, 'Extent');
+
+        % Extend the actual axis limits by the extent of the textbox so that
+        % the textbox is not discarded, if it overlaps the axis.
+        axLim(1, 1) = axLim(1, 1) - extent(3);    % x-limit is extended by width
+        axLim(2, 1) = axLim(2, 1) - extent(4);    % y-limit is extended by height
+    end
+
+    % Check if the (extended) textbox is inside the axis limits
+    bPosInsideLim = ( pos' >= axLim(:,1) ) & ( pos' <= axLim(:,2) );
+
+    % Restore original units (after reading all dimensions)
+    set(handle, 'Units', units_original);
+
+    % Check if it is the title
+    isTitle = (handle == get(meta.gca, 'title'));
+
+    % Disable visibility if it is outside the limits and it is not
+    % the title
+    if ~all(bPosInsideLim) && ~isTitle
+        % Warn about to be deprecated text removal
+        warning('cleanfigure:textRemoval', ...
+                'Text removal by cleanfigure is planned to be deprecated');
+        % Artificially disable visibility. m2t will check and skip.
+        set(handle, 'Visible', 'off');
+    end
 end
 % =========================================================================
 function mask = isInBox(data, xLim, yLim)
@@ -554,18 +664,28 @@ function mask = pixelate(x, y, xToPix, yToPix)
     % The resolution is lost only beyond the multiplier magnification
     mult = 2;
 
-    % Convert data to pixel units, magnify and mark only the first
-    % point that occupies a given position
-    mask = [true; diff(round(x * xToPix * mult))~=0];
-    mask = [true; diff(round(y * yToPix * mult))~=0] | mask;
+    % Convert data to pixel units and magnify
+    dataPixel = round([x * xToPix * mult, ...
+                       y * yToPix * mult]);
 
-    % Keep end points or it might truncate whole pixels
+    % Sort the pixels
+    [dataPixelSorted, id_orig] = sortrows(dataPixel);
+
+    % Find the duplicate pixels
+    mask_sorted = [true; diff(dataPixelSorted(:,1))~=0 | ...
+                         diff(dataPixelSorted(:,2))~=0];
+
+    % Unwind the sorting
+    mask            = false(size(x));
+    mask(id_orig)   = mask_sorted;
+
+    % Set the first, last, as well as unique pixels to true
+    mask(1)         = true;
+    mask(end)       = true;
+
+    % Set NaNs to true
     inan         = isnan(x) | isnan(y);
-    df           = diff([false; inan; false]);
-    istart       = df == 1;
-    pend         = find(df == -1)-1;
-    mask(istart) = true;
-    mask(pend)   = true;
+    mask(inan)   = true;
 end
 % =========================================================================
 function mask = opheimSimplify(x,y,tol)
@@ -1087,7 +1207,8 @@ function P = getProjectionMatrix(meta)
                   0        -cos(el)   sin(el)   0
                   0         0        0          1];
 
-    % Get the data aspect ration
+    % Get the data aspect ratio. This is necessary, as the axes usually do
+    % not have the same scale (xRange~=yRange)
     aspectRatio = get(meta.gca, 'DataAspectRatio');
     scaleMatrix = diag([1./aspectRatio, 1]);
 
@@ -1122,5 +1243,52 @@ end
 % =========================================================================
 function bool = isValidTargetResolution(val)
     bool = isnumeric(val) && ~any(isnan(val)) && (isscalar(val) || numel(val) == 2);
+end
+% =========================================================================
+function bool = isValidAxis(val)
+    bool = length(val) <= 3;
+    for i=1:length(val)
+        bool = bool && ...
+               (strcmpi(val(i), 'x') || ...
+                strcmpi(val(i), 'y') || ...
+                strcmpi(val(i), 'z'));
+    end
+end
+% ========================================================================
+function normalizeAxis(handle, cmdOpts)
+    % Normalizes data from a given axis into the interval [0, 1]
+
+    % Warn about normalizeAxis being experimental
+    warning('cleanfigure:normalizeAxis', ...
+        'Normalization of axis data is experimental!');
+
+    for axis = cmdOpts.normalizeAxis(:)'
+        % Get the scale needed to set xyz-lim to [0, 1]
+        dateLimits = get(handle, [upper(axis), 'Lim']);
+        dateScale  = 1/diff(dateLimits);
+
+        % Set the TickLabelMode to manual to preserve the labels
+        set(handle, [upper(axis), 'TickLabelMode'], 'manual');
+
+        % Project the ticks
+        ticks = get(handle, [upper(axis), 'Tick']);
+        ticks = (ticks - dateLimits(1))*dateScale;
+
+        % Set the data
+        set(handle, [upper(axis), 'Tick'], ticks);
+        set(handle, [upper(axis), 'Lim'],  [0, 1]);
+
+        % Traverse the children
+        children = get(handle, 'Children');
+        for child = children(:)'
+            if isprop(child, [upper(axis), 'Data'])
+                % Get the data and transform it
+                data = get(child, [upper(axis), 'Data']);
+                data = (data - dateLimits(1))*dateScale;
+                % Set the data again
+                set(child, [upper(axis), 'Data'], data);
+            end
+        end
+    end
 end
 % =========================================================================
