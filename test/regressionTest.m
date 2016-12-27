@@ -44,7 +44,7 @@ end
 function branchName = getBranchName()
     % Get branch name
     [status,cmdout] = system('git branch');
-    branchName      = regexp(cmdout, '(?<=^* )[^\n\r]+','match','once');
+    branchName      = regexp(cmdout, '(?<=* )[^\n\r]+','match','once');
     % Deal with detached commit
     if strcmp(branchName(1),'(')
         branchName = regexp(branchName,'\w+(?=\))','match','once');
