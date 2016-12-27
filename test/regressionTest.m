@@ -6,42 +6,45 @@ function regressionTest(commitBase, commitOther)
     if ~isempty(cmdout)
         error('regressionTest:treeNotClean','Working tree is not clean.')
     end
-    
+
     % Save current state
     branchName = getBranchName();
     state = initializeGlobalState();
     finally_restore_state = onCleanup(@() restoreStateAndGit(state, branchName));
-    
+
     % Toggle-off paging in Octave
     if strcmpi(getEnvironment(), 'Octave')
         more off
     end
-    
+
     % Set path
     addpath(fullfile(pwd,'..','src'));
     addpath(fullfile(pwd,'suites'));
-    
+
     suite       = @ACID;
     testIndices = 1:10;
-%     testIndices = 1:numel(suite(0));
+    %     testIndices = 1:numel(suite(0));
 
-    makeGraphical(commitBase , suite, testIndices, m2troot('test','output','current'));
-    makeGraphical(commitOther, suite, testIndices, m2troot('test','output','other'));
+    currentDir = m2troot('test','output','current');
+    currentStatus = makeGraphical(commitBase , suite, testIndices, currentDir);
+    otherDir      = m2troot('test','output','other');
+    otherStatus   = makeGraphical(commitOther, suite, testIndices, otherDir);
+    
+    makeLatexReportRegression(currentStatus, currentDir, otherStatus, otherDir);
 end
 
-function makeGraphical(commit, suite, testIndices, outdir)
+function status = makeGraphical(commit, suite, testIndices, outdir)
     system(['git checkout ', commit]);
 
-    testGraphical('testFunctionIndices', testIndices, 'testsuite', suite,...
+    status = testGraphical('testFunctionIndices', testIndices, 'testsuite', suite,...
         'output', outdir);
 
     % Make pdf
     fprintf(['Making the .pdf for commit ', commit, '.\n'])
-    targetdir = ['"' fullfile(outdir,'converted') '"'];
     if ispc
-        [status,cmdout] = system(['mingw32-make -j -C' targetdir]);
+        [systatus,cmdout] = system(['mingw32-make -j -C' outdir]);
     else
-        [status,cmdout] = system(['make -j -C' targetdir]);
+        [systatus,cmdout] = system(['make -j -C' outdir]);
     end
 end
 
