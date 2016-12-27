@@ -37,10 +37,11 @@ function makeGraphical(commit, suite, testIndices, outdir)
 
     % Make pdf
     fprintf(['Making the .pdf for commit ', commit, '.\n'])
+    targetdir = ['"' fullfile(outdir,'converted') '"'];
     try
-        [status,cmdout] = system('make -j -C tex');
+        [status,cmdout] = system(['make -j -C' targetdir]);
     catch
-        [status,cmdout] = system('mingw32-make -j -C tex');
+        [status,cmdout] = system(['mingw32-make -j -C' targetdir]);
     end
 
     % Rename
