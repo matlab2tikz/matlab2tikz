@@ -1,20 +1,20 @@
-function makeLatexReportRegression(currentStatus, currentDir, otherStatus)
+function makeLatexReportRegression(currentStatus, output, otherStatus)
 % generate a LaTeX report
 %
 % 
     if ~exist('output','var')
-        currentDir = m2troot('test','output','current');
+        output = m2troot('test','output','current');
     end
     % first, initialize the tex output
     SM = StreamMaker();
-    stream = SM.make(fullfile(currentDir, 'regression.tex'), 'w');
+    stream = SM.make(fullfile(output, 'regression.tex'), 'w');
 
     texfile_init(stream);
 
     printFigures(stream, currentStatus, otherStatus);
-    printSummaryTable(stream, status);
-    printErrorMessages(stream, status);
-    printEnvironmentInfo(stream, status);
+    printSummaryTable(stream, currentStatus);
+    printErrorMessages(stream, currentStatus);
+    printEnvironmentInfo(stream, currentStatus);
 
     texfile_finish(stream);
 end
