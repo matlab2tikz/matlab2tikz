@@ -32,7 +32,7 @@ function regressionTest(commitBase, commitOther)
     
     delete(finally_restore_state)
     
-    makeLatexReportRegression(currentStatus, currentDir, otherStatus, otherDir);
+    makeLatexReportRegression(currentStatus, currentDir, otherStatus);
 end
 
 function status = makeGraphical(commit, suite, testIndices, outdir)
