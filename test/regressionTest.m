@@ -30,6 +30,8 @@ function regressionTest(commitBase, commitOther)
     otherDir      = m2troot('test','output','other');
     otherStatus   = makeGraphical(commitOther, suite, testIndices, otherDir);
     
+    delete(finally_restore_state)
+    
     makeLatexReportRegression(currentStatus, currentDir, otherStatus, otherDir);
 end
 
