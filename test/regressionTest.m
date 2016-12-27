@@ -9,8 +9,8 @@ function regressionTest(commitBase, commitOther)
     
     % Save current state
     branchName = getBranchName();
-    [state,cwd] = initializeGlobalState();
-    finally_restore_state = onCleanup(@() restoreStateAndGit(state,cwd, branchName));
+    state = initializeGlobalState();
+    finally_restore_state = onCleanup(@() restoreStateAndGit(state, branchName));
     
     % Toggle-off paging in Octave
     if strcmpi(getEnvironment(), 'Octave')
@@ -51,7 +51,7 @@ function branchName = getBranchName()
     end
 end
 
-function restoreStateAndGit(state,cwd, branchName)
-    restoreGlobalState(state,cwd);
+function restoreStateAndGit(state,branchName)
+    restoreGlobalState(state);
     system(['git checkout ', branchName]);
 end
