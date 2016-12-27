@@ -1,5 +1,5 @@
-function regressionTest(commitBase, commitOther)
-    % Produce graphical output for two commits
+function regressionTest(commitBase, commitOther, testIndices)
+    % Produce graphical output of the ACID for two commits
 
     % Work only with a clean working tree
     [status, cmdout] = system('git status --porcelain');
@@ -8,9 +8,9 @@ function regressionTest(commitBase, commitOther)
     end
 
     % Save current state
-    branchName = getBranchName();
-    state = initializeGlobalState();
-    finally_restore_state = onCleanup(@() restoreStateAndGit(state, branchName));
+    branchName    = getBranchName();
+    state         = initializeGlobalState();
+    restore_state = onCleanup(@() restoreStateAndGit(state, branchName));
 
     % Toggle-off paging in Octave
     if strcmpi(getEnvironment(), 'Octave')
@@ -21,17 +21,18 @@ function regressionTest(commitBase, commitOther)
     addpath(fullfile(pwd,'..','src'));
     addpath(fullfile(pwd,'suites'));
 
-    suite       = @ACID;
-    testIndices = 1:10;
-    %     testIndices = 1:numel(suite(0));
+    suite = @ACID;
+    if nargin < 3
+        testIndices = 1:numel(suite(0));
+    end
 
-    currentDir = m2troot('test','output','current');
+    currentDir    = m2troot('test','output','current');
     currentStatus = makeGraphical(commitBase , suite, testIndices, currentDir);
     otherDir      = m2troot('test','output','other');
     otherStatus   = makeGraphical(commitOther, suite, testIndices, otherDir);
-    
-    delete(finally_restore_state)
-    
+
+    delete(restore_state)
+
     makeLatexReportRegression(currentStatus, currentDir, otherStatus);
 end
 
@@ -40,10 +41,10 @@ function status = makeGraphical(commit, suite, testIndices, outdir)
 
     status = testGraphical('testFunctionIndices', testIndices, 'testsuite', suite,...
         'output', outdir);
-    
+
     makeLatexReport(status, outdir);
-    
-    % Make pdf
+
+    % Make pdfs
     fprintf(['Making the .pdf for commit ', commit, '.\n'])
     if ispc
         [systatus,cmdout] = system(['mingw32-make -j -C' outdir]);
