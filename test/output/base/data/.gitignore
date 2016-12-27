@@ -1,8 +1,0 @@
-# just ignore all generated files
-*.log
-*.aux
-*.pdf
-*.eps
-*.png
-*.tex
-*.tsv
