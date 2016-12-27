@@ -1,4 +1,4 @@
-function makeLatexReportRegression(currentStatus, currentDir, otherStatus, otherDir)
+function makeLatexReportRegression(currentStatus, currentDir, otherStatus)
 % generate a LaTeX report
 %
 % 
@@ -7,11 +7,11 @@ function makeLatexReportRegression(currentStatus, currentDir, otherStatus, other
     end
     % first, initialize the tex output
     SM = StreamMaker();
-    stream = SM.make(fullfile(currentDir, 'acid.tex'), 'w');
+    stream = SM.make(fullfile(currentDir, 'regression.tex'), 'w');
 
     texfile_init(stream);
 
-    printFigures(stream, currentStatus, otherStatus, otherDir);
+    printFigures(stream, currentStatus, otherStatus);
     printSummaryTable(stream, status);
     printErrorMessages(stream, status);
     printEnvironmentInfo(stream, status);
@@ -42,9 +42,9 @@ function texfile_finish(stream)
     stream.print('\\end{document}');
 end
 % =========================================================================
-function  printFigures(stream, currentStatus, otherStatus, otherDir)
+function  printFigures(stream, currentStatus, otherStatus)
     for k = 1:length(currentStatus)
-        texfile_addtest(stream, currentStatus{k}, otherStatus{k}, otherDir);
+        texfile_addtest(stream, currentStatus{k}, otherStatus{k});
     end
 end
 % =========================================================================
@@ -130,7 +130,7 @@ function print_verbatim_information(stream, title, contents)
     end
 end
 % =========================================================================
-function texfile_addtest(stream, currentStatus, otherStatus, otherDir)
+function texfile_addtest(stream, currentStatus, otherStatus)
 % Actually add the piece of LaTeX code that'll later be used to display
 % the given test.
     if ~currentStatus.skip
@@ -144,8 +144,8 @@ function texfile_addtest(stream, currentStatus, otherStatus, otherDir)
         ref_error_o = otherStatus.plotStage.error;
         gen_error_o = otherStatus.tikzStage.error;
 
-        ref_file_o  = otherStatus.saveStage.texReference;
-        gen_file_o  = otherStatus.tikzStage.pdfFile;
+        ref_file_o  = ['../other/' otherStatus.saveStage.texReference];
+        gen_file_o  = ['../other/' otherStatus.tikzStage.pdfFile];
         
         stream.print(...
                 ['\\begin{figure}\n'                                          , ...
