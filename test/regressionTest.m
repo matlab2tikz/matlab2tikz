@@ -22,7 +22,8 @@ function regressionTest(commitBase, commitOther)
     addpath(fullfile(pwd,'suites'));
     
     suite       = @ACID;
-    testIndices = setdiff(1:numel(suite(0)),78);
+    testIndices = 1:10;
+%     testIndices = 1:numel(suite(0));
 
     makeGraphical(commitBase , suite, testIndices, m2troot('test','output','current'));
     makeGraphical(commitOther, suite, testIndices, m2troot('test','output','other'));
