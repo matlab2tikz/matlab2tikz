@@ -43,12 +43,6 @@ function makeGraphical(commit, suite, testIndices, outdir)
     catch
         [status,cmdout] = system(['mingw32-make -j -C' targetdir]);
     end
-
-    % Rename
-    texPath = fullfile(fileparts(which('testGraphical.m')),'tex');
-    oldName = fullfile(texPath,'acid.pdf');
-    newName = fullfile(texPath,['acid_before_' commit '.pdf']);
-    movefile(oldName, newName);
 end
 
 function branchName = getBranchName()
