@@ -16,7 +16,11 @@ function regressionTest(commitBase, commitOther)
     if strcmpi(getEnvironment(), 'Octave')
         more off
     end
-
+    
+    % Set path
+    addpath(fullfile(pwd,'..','src'));
+    addpath(fullfile(pwd,'suites'));
+    
     suite       = @ACID;
     testIndices = 1:numel(suite(0));
 
