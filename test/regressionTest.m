@@ -1,4 +1,4 @@
-function regressionTest(commitBase,commitOther)
+function regressionTest(commitBase, commitOther)
     % Produce graphical output for two commits
 
     % Work only with a clean working tree
@@ -6,17 +6,12 @@ function regressionTest(commitBase,commitOther)
     if ~isempty(cmdout)
         error('regressionTest:treeNotClean','Working tree is not clean.')
     end
-
+    
+    % Save current state
     branchName = getBranchName();
-
-    system(['git checkout ', commitBase]);
-    statusBase = runMatlab2TikzTests();
-
-    % Initialize state and prepare cleanup
     [state,cwd] = initializeGlobalState();
-
     finally_restore_state = onCleanup(@() restoreStateAndGit(state,cwd, branchName));
-
+    
     % Toggle-off paging in Octave
     if strcmpi(getEnvironment(), 'Octave')
         more off
@@ -25,15 +20,15 @@ function regressionTest(commitBase,commitOther)
     suite       = @ACID;
     testIndices = 1:numel(suite(0));
 
-    makeGraphical(commitBase , suite, testIndices);
-    makeGraphical(commitOther, suite, testIndices);
+    makeGraphical(commitBase , suite, testIndices, m2troot('test','output','current'));
+    makeGraphical(commitOther, suite, testIndices, m2troot('test','output','other'));
 end
 
-function makeGraphical(commit, suite, testIndices)
+function makeGraphical(commit, suite, testIndices, outdir)
     system(['git checkout ', commit]);
 
-    testGraphical('testFunctionIndices', testIndices,...
-        'testsuite',           suite);
+    testGraphical('testFunctionIndices', testIndices, 'testsuite', suite,...
+        'output', outdir);
 
     % Make pdf
     fprintf(['Making the .pdf for commit ', commit, '.\n'])
