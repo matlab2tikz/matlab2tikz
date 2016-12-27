@@ -38,9 +38,9 @@ function status = actionsToExecute(status, ipp)
     %standalone mode!
     status = execute_type_stage(status, ipp);
 
-    if ~status.closeall && ~isempty(status.plotStage.fig_handle)
+    try
         close(status.plotStage.fig_handle);
-    else
+    catch
         close all;
     end
 end
