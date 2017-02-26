@@ -3034,6 +3034,10 @@ function m2t = drawAnnotationsHelper(m2t,h)
             % Text box
         case {'scribe.textbox','matlab.graphics.shape.TextBox'}
             [m2t, str] = drawText(m2t, h);
+            
+            % Arrow
+        case {'matlab.graphics.shape.Arrow'}
+            [m2t, str] = drawArrow(m2t, h);
 
             % Tetx arrow
         case {'scribe.textarrow'}%,'matlab.graphics.shape.TextArrow'}
