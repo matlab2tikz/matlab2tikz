@@ -3034,6 +3034,10 @@ function m2t = drawAnnotationsHelper(m2t,h)
             % Text box
         case {'scribe.textbox','matlab.graphics.shape.TextBox'}
             [m2t, str] = drawText(m2t, h);
+            
+            % Arrow
+        case {'matlab.graphics.shape.Arrow'}
+            [m2t, str] = drawArrow(m2t, h);
 
             % Tetx arrow
         case {'scribe.textarrow'}%,'matlab.graphics.shape.TextArrow'}
@@ -3054,6 +3058,47 @@ function m2t = drawAnnotationsHelper(m2t,h)
 
     % Add annotation to scribe overlay
     m2t.axes{end} = addChildren(m2t.axes{end}, str);
+end
+% ==============================================================================
+function [m2t, str] = drawArrow(m2t, handle)
+    str = '';
+    if ~isLineVisible(handle)
+        return; % there is nothing to plot
+    end
+    
+    % Color
+    color         = get(handle, 'Color');
+    [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
+    
+    % Line options
+    [m2t, lineOptions]   = getLineOptions(m2t, handle);
+    
+    drawOptions = opts_new();
+    drawOptions = opts_add(drawOptions, 'color', xcolor);
+    drawOptions = opts_merge(drawOptions, lineOptions);
+
+    [m2t, pos1, pos2] = getPositionOfArrow(m2t, handle);
+
+    styleOpts = opts_print(drawOptions);
+    str       = sprintf('\\draw[-{Stealth}, %s] %s -- %s;\n', ...
+                        styleOpts, pos1, pos2);
+end
+% ==============================================================================
+function [m2t, pos1, pos2] = getPositionOfArrow(m2t, h)
+    % makes the tikz position string of an arrow
+    posX   = get(h, 'X');
+    posY   = get(h, 'Y');
+    
+    type    = 'axis cs:';
+    fmtUnit = '';
+    
+    pos1{1} = formatDim(posX(1), fmtUnit);
+    pos1{2} = formatDim(posY(1), fmtUnit);
+    pos2{1} = formatDim(posX(2), fmtUnit);
+    pos2{2} = formatDim(posY(2), fmtUnit);
+
+    pos1 = sprintf('(%s%s)',type,join(m2t,pos1,','));
+    pos2 = sprintf('(%s%s)',type,join(m2t,pos2,','));
 end
 % ==============================================================================
 function [m2t,str] = drawSurface(m2t, h)
