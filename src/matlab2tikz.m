@@ -3098,10 +3098,10 @@ function m2t = drawAnnotationsHelper(m2t,h)
             [m2t, str] = drawText(m2t, h);
             
             % Arrow
-        case {'matlab.graphics.shape.Arrow'}
+        case {'matlab.graphics.shape.Arrow','matlab.graphics.shape.DoubleEndArrow'}
             [m2t, str] = drawArrow(m2t, h);
 
-            % Tetx arrow
+            % Text arrow
         case {'scribe.textarrow'}%,'matlab.graphics.shape.TextArrow'}
             % TODO: rewrite drawTextarrow. Handle all info info directly
             %       without using handleAllChildren() since HG2 does not
@@ -3142,8 +3142,13 @@ function [m2t, str] = drawArrow(m2t, handle)
     [m2t, pos1, pos2] = getPositionOfArrow(m2t, handle);
 
     styleOpts = opts_print(drawOptions);
-    str       = sprintf('\\draw[-{Stealth}, %s] %s -- %s;\n', ...
-                        styleOpts, pos1, pos2);
+    if isa(handle,'matlab.graphics.shape.DoubleEndArrow')
+        str = sprintf('\\draw[{Stealth}-{Stealth}, %s] %s -- %s;\n', ...
+            styleOpts, pos1, pos2);
+    else
+        str = sprintf('\\draw[-{Stealth}, %s] %s -- %s;\n', ...
+            styleOpts, pos1, pos2);
+    end
 end
 % ==============================================================================
 function [m2t, pos1, pos2] = getPositionOfArrow(m2t, h)
