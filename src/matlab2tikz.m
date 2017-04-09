@@ -3128,6 +3128,13 @@ function [m2t, str] = drawArrow(m2t, handle)
         return; % there is nothing to plot
     end
     
+    % Arrow Style
+    if isa(handle,'matlab.graphics.shape.DoubleEndArrow')
+        arrowSpec = '{Stealth}-{Stealth}';
+    else
+        arrowSpec = '-{Stealth}';
+    end
+    
     % Color
     color         = get(handle, 'Color');
     [m2t, xcolor] = getColor(m2t, handle, color, 'patch');
@@ -3136,19 +3143,15 @@ function [m2t, str] = drawArrow(m2t, handle)
     [m2t, lineOptions]   = getLineOptions(m2t, handle);
     
     drawOptions = opts_new();
+    drawOptions = opts_add(drawOptions, arrowSpec);
     drawOptions = opts_add(drawOptions, 'color', xcolor);
     drawOptions = opts_merge(drawOptions, lineOptions);
 
     [m2t, pos1, pos2] = getPositionOfArrow(m2t, handle);
 
     styleOpts = opts_print(drawOptions);
-    if isa(handle,'matlab.graphics.shape.DoubleEndArrow')
-        str = sprintf('\\draw[{Stealth}-{Stealth}, %s] %s -- %s;\n', ...
-            styleOpts, pos1, pos2);
-    else
-        str = sprintf('\\draw[-{Stealth}, %s] %s -- %s;\n', ...
-            styleOpts, pos1, pos2);
-    end
+    str = sprintf('\\draw[%s] %s -- %s;\n', ...
+        arrowSpec, styleOpts, pos1, pos2);
 end
 % ==============================================================================
 function [m2t, pos1, pos2] = getPositionOfArrow(m2t, h)
