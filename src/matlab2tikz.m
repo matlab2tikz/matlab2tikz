@@ -3151,7 +3151,7 @@ function [m2t, str] = drawArrow(m2t, handle)
 
     styleOpts = opts_print(drawOptions);
     str = sprintf('\\draw[%s] %s -- %s;\n', ...
-        arrowSpec, styleOpts, pos1, pos2);
+        styleOpts, pos1, pos2);
 end
 % ==============================================================================
 function [m2t, pos1, pos2] = getPositionOfArrow(m2t, h)
