@@ -3185,6 +3185,7 @@ function [m2t, str] = drawArrow(m2t, handle, custom)
         return; % there is nothing to plot
     end
     
+    m2t = signalDependency(m2t, 'tikzlibrary', 'arrows.meta');
     % Arrow Style
     if isa(handle,'matlab.graphics.shape.DoubleEndArrow')
         arrowSpec = '{Stealth}-{Stealth}';
@@ -6113,7 +6114,7 @@ function userWarning(m2t, message, varargin)
     end
 end
 % ==============================================================================
-function signalDependency(m2t, dependencyType, name)
+function m2t = signalDependency(m2t, dependencyType, name)
     % Signals an (optional) dependency to the user
     switch lower(dependencyType)
         case 'tikzlibrary'
