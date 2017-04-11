@@ -1733,6 +1733,13 @@ function [m2t, str] = drawLine(m2t, h, custom)
     [m2t, lineOptions]   = getLineOptions(m2t, h);
     [m2t, markerOptions] = getMarkerOptions(m2t, h);
 
+    % Only marks for legend consistency
+    hasNoLine = opts_has(lineOptions, 'draw') && isNone(opts_get(lineOptions, 'draw'));
+    if ~isempty(markerOptions) && hasNoLine
+        lineOptions = opts_remove(lineOptions, 'draw');
+        lineOptions = opts_add(lineOptions, 'only marks', []);
+    end
+
     drawOptions = opts_new();
     drawOptions = opts_add(drawOptions, 'color', xcolor);
     drawOptions = opts_merge(drawOptions, lineOptions, markerOptions);
