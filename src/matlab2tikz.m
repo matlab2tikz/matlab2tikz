@@ -2874,17 +2874,24 @@ function [m2t, str] = drawFilledContours(m2t, h, contours, istart, nrows, custom
     % Reorder the contours
     cellcont(order,1) = cellcont;
 
-    % Add zero level fill
-    xdata = get(h,'XData');
-    ydata = get(h,'YData');
-    %FIXME: determine the contour at the zero level not just its bounding box
-    % See also: #721
-    zerolevel = [0,          4;
+    % Replace same level contours with hole, i.e. one level down
+    Levels     = contours(istart,1);
+    LevelList  = get(h,'LevelList');
+    ireplace   = find([false; diff(Levels) == 0]);
+    [idx, pos] = ismember(Levels(ireplace), LevelList);
+    for ii = 1:numel(pos)
+        cellcont{ireplace(ii)}(1) = LevelList(pos(ii)-1);
+    end
+
+    % Add "contourless" backdrop
+    xdata     = get(h,'XData');
+    ydata     = get(h,'YData');
+    backdrop = [setdiff(LevelList, Levels), 4;
         min(xdata(:)), min(ydata(:));
         min(xdata(:)), max(ydata(:));
         max(xdata(:)), max(ydata(:));
         max(xdata(:)), min(ydata(:))];
-    cellcont = [zerolevel; cellcont];
+    cellcont = [backdrop; cellcont];
 
     % Plot
     columnNames = {'x','y'};
