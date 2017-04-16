@@ -20,8 +20,8 @@ function [status] = execute_save_stage(status, ipp)
 
             case 'Octave'
                 % In Octave, figures are properly cropped when using  print().
-                print(reference_pdf, '-dpdf', '-S415,311', '-r150');
-                pause(1.0)
+                print(reference_eps, '-depsc');
+
             otherwise
                 error('matlab2tikz:UnknownEnvironment', ...
                      'Unknown environment. Need MATLAB(R) or GNU Octave.')
