@@ -3930,7 +3930,9 @@ function [m2t, str] = drawScatterPlot(m2t, h, custom)
             'scatter/@pre marker code/.append style', ...
             '{/tikz/mark size=\perpointmarksize}');
     end
-
+    % Add forget plot
+    drawOptions = maybeShowInLegend(m2t.currentHandleHasLegend, drawOptions);
+    
     % The actual printing.
     [m2t, table, tableOptions] = makeTable(m2t, columns, data);
     tableOptions = opts_merge(tableOptions, metaPart);
