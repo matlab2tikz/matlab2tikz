@@ -4445,33 +4445,6 @@ function [m2t, str] = drawQuiverGroup(m2t, h, custom)
 
     plotOptions = opts_new();
     if showArrowHead
-        plotOptions = opts_add(plotOptions, '-Straight Barb');
-        signalDependency(m2t, 'tikzlibrary', 'arrows.meta');
-    else
-        plotOptions = opts_add(plotOptions, '-');
-    end
-
-    % Append the arrow style to the TikZ options themselves.
-    color = get(h, 'Color');
-    [m2t, lineOptions] = getLineOptions(m2t, h);
-    [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
-    plotOptions = opts_add(plotOptions, 'color', arrowcolor);
-    plotOptions = opts_merge(plotOptions, lineOptions);
-
-    % Define the quiver settings
-    quiverOptions = opts_new();
-    quiverOptions = opts_add(quiverOptions, 'u', '\thisrow{u}');
-    quiverOptions = opts_add(quiverOptions, 'v', '\thisrow{v}');
-    if is3D
-        quiverOptions = opts_add(quiverOptions, 'w', '\thisrow{w}');
-        arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2+(\thisrow{w})^2)}';
-    else
-        arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2)}';
-    end
-    plotOptions = opts_add(plotOptions, 'point meta', arrowLength);
-    plotOptions = opts_add(plotOptions, 'point meta min', '0');
-
-    if showArrowHead
         arrowHeadOptions = opts_new();
 
         % In MATLAB (HG1), the arrow head is constructed to have an angle of
@@ -4500,7 +4473,14 @@ function [m2t, str] = drawQuiverGroup(m2t, h, custom)
 
         userInfo(m2t, ['Please change the "arrowHeadSize" option', ...
             ' if the size of the arrows is incorrect.']);
-        arrowHeadSize = sprintf(m2t.ff, abs(m2t.args.arrowHeadSize));
+        arrowHeadSize = abs(m2t.args.arrowHeadSize);
+
+        % Rescale the head size if MaxHeadSize is changed
+        [headSize, isDefault] = getAndCheckDefault('quiver', h, 'MaxHeadSize', 0.2);
+        if ~isDefault
+             arrowHeadSize = arrowHeadSize * headSize / 0.2;
+        end
+        arrowHeadSize = sprintf(m2t.ff, arrowHeadSize);
 
         % Write out the actual scaling for TikZ.
         % `\pgfplotspointsmetatransformed` is in the range [0, 1000], so
@@ -4510,11 +4490,40 @@ function [m2t, str] = drawQuiverGroup(m2t, h, custom)
             ['{' arrowHeadSize '/1000*\pgfplotspointmetatransformed}']);
 
         headStyle = ['-{Straight Barb[' opts_print(arrowHeadOptions) ']}'];
-        quiverOptions = opts_add(quiverOptions, 'every arrow/.append style', ...
-                                 ['{' headStyle '}']);
+        plotOptions = opts_add(plotOptions, headStyle);
+        signalDependency(m2t, 'tikzlibrary', 'arrows.meta');
+    else
+        plotOptions = opts_add(plotOptions, '-');
     end
+
+    % Append the arrow style to the TikZ options themselves.
+    color = get(h, 'Color');
+    [m2t, lineOptions] = getLineOptions(m2t, h);
+    [m2t, arrowcolor] = getColor(m2t, h, color, 'patch');
+    plotOptions = opts_add(plotOptions, 'color', arrowcolor);
+    plotOptions = opts_merge(plotOptions, lineOptions);
+
+    % Define the quiver settings
+    quiverOptions = opts_new();
+    quiverOptions = opts_add(quiverOptions, 'u', '\thisrow{u}');
+    quiverOptions = opts_add(quiverOptions, 'v', '\thisrow{v}');
+
+    if is3D
+        quiverOptions = opts_add(quiverOptions, 'w', '\thisrow{w}');
+        arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2+(\thisrow{w})^2)}';
+    else
+        arrowLength = '{sqrt((\thisrow{u})^2+(\thisrow{v})^2)}';
+    end
+    plotOptions = opts_add(plotOptions, 'point meta', arrowLength);
+    plotOptions = opts_add(plotOptions, 'point meta min', '0');
+
     plotOptions = opts_addSubOpts(plotOptions, 'quiver', quiverOptions);
     plotOptions = opts_append_userdefined(plotOptions, custom.extraOptions);
+
+    % Check whether there is a legend and add a legend image option without scaling
+    if m2t.currentHandleHasLegend
+        plotOptions = opts_add(plotOptions, 'legend image post style=-Straight Barb');
+    end
 
     [m2t, table, tableOptions] = makeTable(m2t, variables, data);
 
