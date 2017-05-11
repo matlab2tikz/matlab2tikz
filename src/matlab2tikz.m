@@ -1835,7 +1835,7 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
             % entry for the *last* occurrence of the plot series.
             % Hence the condition k<length(xDataCell).
             %if ~isempty(m2t.legendHandles) && (~m2t.currentHandleHasLegend || k < length(dataCell))
-            if ~m2t.currentHandleHasLegend || k < length(dataCell)
+            if ~m2t.currentHandleHasLegend && k < length(dataCell)
                 % No legend entry found. Don't include plot in legend.
                 hiddenDrawOptions = maybeShowInLegend(false, drawOptions);
                 opts = opts_print(hiddenDrawOptions);
