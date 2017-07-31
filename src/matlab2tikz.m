@@ -684,7 +684,9 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                 [m2t, str] = drawPatch(m2t, child);
 
             case 'image'
-                [m2t, str] = drawImage(m2t, child);
+                if ~isempty(get(child,'CData'))
+                  [m2t, str] = drawImage(m2t, child);
+                end
 
             case {'hggroup', 'matlab.graphics.primitive.Group', ...
                   'scatter', 'bar', 'stair', 'stem' ,'errorbar', 'area', ...
