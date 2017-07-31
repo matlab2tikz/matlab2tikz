@@ -2517,6 +2517,10 @@ function [m2t, str] = drawImage(m2t, handle, custom)
     yData = get(handle, 'YData');
     cData = get(handle, 'CData');
 
+    if isempty(cData)
+      return
+    end
+
     if (m2t.args.imagesAsPng)
         [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData, custom);
     else
