@@ -1403,9 +1403,16 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
     isBoxOn       = isOn(get(h, 'box'));
     xLoc          = get(h, 'XAxisLocation');
     yLoc          = get(h, 'YAxisLocation');
-    isXaxisBottom = strcmpi(xLoc,'bottom');
-    isYaxisLeft   = strcmpi(yLoc,'left');
+    isXaxisBottom = strcmpi(xLoc, 'bottom');
+    isYaxisLeft   = strcmpi(yLoc, 'left');
 
+    if strcmpi(xLoc, 'origin')
+        xLoc = 'middle';
+    end
+    if strcmpi(yLoc, 'origin')
+        yLoc = 'middle';
+    end
+    
     % Only flip the labels to the other side if not at the default
     % left/bottom positions
     if isBoxOn
