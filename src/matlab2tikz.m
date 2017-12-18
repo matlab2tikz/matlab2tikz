@@ -1811,15 +1811,23 @@ function [m2t, str] = drawLine(m2t, h, custom)
 
     % build the data matrix
     data       = getXYZDataFromLine(m2t, h);
+    xDeviation = getXDeviations(h);
     yDeviation = getYDeviations(h);
+    
+    errDir = '';
+    if ~isempty(xDeviation)
+        data = [data, xDeviation];
+        errDir = [errDir, 'x'];
+    end
     if ~isempty(yDeviation)
         data = [data, yDeviation];
+        errDir = [errDir, 'y'];
     end
 
     % Check if any value is infinite/NaN. In that case, add appropriate option.
     m2t = jumpAtUnboundCoords(m2t, data);
 
-    [m2t, dataString]  = writePlotData(m2t, data, drawOptions);
+    [m2t, dataString]  = writePlotData(m2t, data, drawOptions, errDir);
     [m2t, labelString] = addLabel(m2t, h);
 
     str = [dataString, labelString];
@@ -1848,7 +1856,7 @@ function bool = isLineVisible(h)
     bool = isVisible(h) && (hasLines || hasMarkers || hasDeviations);
 end
 % ==============================================================================
-function [m2t, str] = writePlotData(m2t, data, drawOptions)
+function [m2t, str] = writePlotData(m2t, data, drawOptions, errDir)
     % actually writes the plot data to file
     str = '';
 
@@ -1875,8 +1883,16 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
             if (opts_has(drawOptions,'error bar style'))
                 tmpOptions = opts_new();
                 tmpOptions = opts_add(tmpOptions,'error bars/.cd','');
-                tmpOptions = opts_add(tmpOptions,'y dir','both');
-                tmpOptions = opts_add(tmpOptions,'y explicit','');
+                % add x direction error bar style if necessary
+                if contains(errDir, 'x')
+                    tmpOptions = opts_add(tmpOptions,'x dir','both');
+                    tmpOptions = opts_add(tmpOptions,'x explicit','');
+                end
+                % add y direction error bar style if necessary
+                if contains(errDir, 'y')
+                    tmpOptions = opts_add(tmpOptions,'y dir','both');
+                    tmpOptions = opts_add(tmpOptions,'y explicit','');
+                end
                 tmpOptions = opts_copy(drawOptions, 'error bar style', tmpOptions);
                 tmpOptions = opts_copy(drawOptions, 'error mark options', tmpOptions);
 
@@ -1901,7 +1917,7 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
                 opts = opts_print(drawOptions);
             end
 
-            [m2t, Part] = plotLine2d(m2t, opts, errorBarOpts, dataCell{k});
+            [m2t, Part] = plotLine2d(m2t, opts, errorBarOpts, dataCell{k}, errDir);
             strPart{k} = Part;
         end
         strPart = join(m2t, strPart, '');
@@ -1957,20 +1973,32 @@ function [m2t, labelCode] = addLabel(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t,str] = plotLine2d(m2t, opts, errorBarOpts, data)
-    errorbarMode = (size(data,2) == 4); % is (optional) yDeviation given?
+function [m2t,str] = plotLine2d(m2t, opts, errorBarOpts, data, errDir)
+    errorbarModeX = strcmp(errDir, 'x'); % is (optional) xDeviation given?
+    errorbarModeY = strcmp(errDir, 'y'); % is (optional) yDeviation given?
+    errorbarModeXY = strcmp(errDir, 'xy'); % are (optional) both xDeviation and yDeviation given?
 
     errorBar = '';
-    if errorbarMode
+    if errorbarModeX || errorbarModeY || errorbarModeXY
         m2t      = needsPgfplotsVersion(m2t, [1,9]);
         errorBar = sprintf('plot [%s]\n', errorBarOpts);
     end
 
     % Convert to string array then cell to call sprintf once (and no loops).
     [m2t, table, tableOptions] = makeTable(m2t, repmat({''}, size(data,2)), data);
-    if errorbarMode
+    if errorbarModeX
+        tableOptions = opts_add(tableOptions, 'x error plus index', '2');
+        tableOptions = opts_add(tableOptions, 'x error minus index', '3');
+    end
+    if errorbarModeY
         tableOptions = opts_add(tableOptions, 'y error plus index', '2');
         tableOptions = opts_add(tableOptions, 'y error minus index', '3');
+    end
+    if errorbarModeXY
+        tableOptions = opts_add(tableOptions, 'x error plus index', '2');
+        tableOptions = opts_add(tableOptions, 'x error minus index', '3');
+        tableOptions = opts_add(tableOptions, 'y error plus index', '4');
+        tableOptions = opts_add(tableOptions, 'y error minus index', '5');
     end
 
     % Print out
@@ -4685,11 +4713,25 @@ function [m2t, str] = drawErrorBars(m2t, h, custom)
     % such that the code is easier to read where it is called.
 end
 % ==============================================================================
+function [xDeviations] = getXDeviations(h)
+    % Retrieves left/right uncertainty data
+
+    rightDev = getOrDefault(h, 'XPositiveDelta', []);
+    leftDev = getOrDefault(h, 'XNegativeDelta', []);
+
+    xDeviations = [rightDev(:), leftDev(:)];
+end
+% ==============================================================================
 function [yDeviations] = getYDeviations(h)
     % Retrieves upper/lower uncertainty data
 
-    upDev = getOrDefault(h, 'UData', []);
-    loDev = getOrDefault(h, 'LData', []);
+    upDev = getOrDefault(h, 'YPositiveDelta', []);
+    loDev = getOrDefault(h, 'YNegativeDelta', []);
+
+    if isempty(upDev)
+      upDev = getOrDefault(h, 'UData', []);
+      loDev = getOrDefault(h, 'LData', []);
+    end
 
     yDeviations = [upDev(:), loDev(:)];
 end
