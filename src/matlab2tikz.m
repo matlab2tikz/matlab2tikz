@@ -1519,7 +1519,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis limits
-    options = setAxisLimits(m2t, handle, axis, options);
+    [m2t, options] = setAxisLimits(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get ticks along with the labels
     [options] = getAxisTicks(m2t, handle, axis, options);
@@ -1682,17 +1682,29 @@ function assertRegularAxes(handle)
     end
 end
 % ==============================================================================
-function options = setAxisLimits(m2t, handle, axis, options)
-    % set the upper/lower limit of an axis
+function [m2t, options] = setAxisLimits(m2t, handle, axis, options)
+    % set the upper/lower limit of an axis (but not for categorical values)
     limits = get(handle, [upper(axis),'Lim']);
     if isa(limits,'datetime')
         limits = datenum(limits);
     end
-    if isfinite(limits(1))
+    if ~iscategorical(limits(1)) && isfinite(limits(1))
         options = opts_add(options, [axis,'min'], sprintf(m2t.ff, limits(1)));
     end
-    if isfinite(limits(2))
+    if ~iscategorical(limits(2)) && isfinite(limits(2))
         options = opts_add(options, [axis,'max'], sprintf(m2t.ff, limits(2)));
+    end
+
+    % Take care of categorical variables
+    if iscategorical(limits(1))
+
+        % Categorical variables do not need to specify limits, but symbolic values
+        categories = get(get(handle, [upper(axis),'Axis']), 'Categories');
+        symb_coords = sprintf('{%s}', join(m2t, cellstr(string(categories)), ','));
+        m2t = m2t_addAxisOption(m2t, ['symbolic ',axis,' coords'], symb_coords);
+
+        % Some space is needed around the bar plot
+        options = opts_add(options, ['enlarge ',axis,' limits'], '0.1');
     end
 end
 % ==============================================================================
@@ -4132,7 +4144,7 @@ function [m2t, str] = drawBarseries(m2t, h, custom)
         %TODO: wait for pgfplots to implement other base values (see #438)
     end
 
-    % Generate the tikz table
+    % Prepare data
     xData = get(h, 'XData');
     yData = get(h, 'YData');
     if isHorizontal
@@ -4140,24 +4152,39 @@ function [m2t, str] = drawBarseries(m2t, h, custom)
     else
         [xDataPlot, yDataPlot] = deal(xData, yData);
     end
-    [m2t, table, tableOptions] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
 
-    drawOptions = opts_append_userdefined(drawOptions, custom.extraOptions);
-    % Print out
-    drawOpts = opts_print(drawOptions);
-    tabOpts  = opts_print(tableOptions);
-    str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
-                       drawOpts, tabOpts, table);
-    % Add a baseline if appropriate
-    [m2t, baseline] = drawBaseline(m2t,h,isHorizontal);
-    str             = [str, baseline];
+    % Use coordinates for categorical values, or a table otherwise
+    if iscategorical(xDataPlot)
+
+        % Generate coordinate data
+        [m2t, coords] = makeCoordinates(m2t, '', xDataPlot, '', yDataPlot);
+
+        % Print out
+        drawOpts = opts_print(drawOptions);
+        str = sprintf('\\addplot[%s] coordinates {%s};\n', ...
+                      drawOpts, coords);
+    else
+        % Generate the tikz table
+        [m2t, table, tableOptions] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
+
+        % Print out
+        drawOptions = opts_append_userdefined(drawOptions, custom.extraOptions);
+        drawOpts = opts_print(drawOptions);
+        tabOpts  = opts_print(tableOptions);
+        str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
+                        drawOpts, tabOpts, table);
+
+        % Add a baseline if appropriate
+        [m2t, baseline] = drawBaseline(m2t,h,isHorizontal);
+        str             = [str, baseline];
+    end
 end
 % ==============================================================================
 function BarWidth = getBarWidthInAbsolutUnits(h)
     % determines the width of a bar in a bar plot
     XData = get(h,'XData');
     BarWidth = get(h, 'BarWidth');
-    if length(XData) > 1
+    if length(XData) > 1 && ~iscategorical(XData)
         BarWidth = min(diff(XData)) * BarWidth;
     end
 end
@@ -4208,7 +4235,10 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             drawOptions = opts_add(drawOptions, barType);
 
             % Bar width
-            drawOptions = opts_add(drawOptions, 'bar width', formatDim(barWidth, ''));
+            % Relative width does not work with categorical data
+            if ~iscategorical(get(h, 'XData'))
+                drawOptions = opts_add(drawOptions, 'bar width', formatDim(barWidth, ''));
+            end
 
             % The bar shift auto feature was introduced in pgfplots 1.13
             m2t = needsPgfplotsVersion(m2t, [1,13]);
@@ -5557,6 +5587,66 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
         otherwise
             error('matlab2tikz:translateLineStyle:UnknownLineStyle',...
                 'Unknown matlabLineStyle ''%s''.', matlabLineStyle);
+    end
+end
+% ==============================================================================
+function [m2t, coords] = makeCoordinates(m2t, varargin)
+    %   [m2t,coords] = makeCoordinates(m2t, 'name1', data1, 'name2', data2, ...)
+    %   [m2t,coords] = makeCoordinates(m2t, {'name1','name2',...}, {data1, data2, ...})
+    %   [m2t,coords] = makeCoordinates(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
+    %
+    %  Returns m2t structure and formatted coordinate data.
+
+    [variables, data] = parseInputsForTable_(varargin{:});
+
+    COLSEP = sprintf(',');
+    ROWSEP = sprintf('\n');
+
+    nColumns = numel(data);
+    nRows    = cellfun(@numel, data);
+    if ~all(nRows==nRows(1))
+        error('matlab2tikz:makeTableDifferentNumberOfRows',...
+            'Different data lengths [%s].', num2str(nRows));
+    end
+    nRows = nRows(1);
+
+    FORMAT = repmat({m2t.ff}, 1, nColumns);
+    FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
+    FORMAT(cellfun(@iscategorical, data)) = {'%s'};
+    FORMAT = ['(', join(m2t, FORMAT, COLSEP), ')'];
+
+    for iRow = 1:nRows
+        thisData = cell(1,nColumns);
+        for jCol = 1:nColumns
+            if iscategorical(data{jCol}(iRow))
+                % do not make categorical values lowercase
+                thisData{1,jCol} = data{jCol}(iRow);
+            else
+                % convert NaN and Inf to lower case for TikZ
+                thisData{1,jCol} = lower(data{jCol}(iRow));
+            end
+        end
+        coords{iRow} = sprintf(FORMAT, thisData{:});
+    end
+    coords = [join(m2t, coords, ROWSEP) ROWSEP];
+
+    if m2t.args.externalData
+        % output data to external file
+        [m2t, fileNum] = incrementGlobalCounter(m2t, 'tsvFile');
+        [filename, latexFilename] = externalFilename(m2t, fileNum, '.tsv');
+
+        % write the coordinate data to an external file
+        fid = fileOpenForWrite(m2t, filename);
+        finally_fclose_fid = onCleanup(@() fclose(fid));
+
+        fprintf(fid, '%s', coords);
+
+        % put the filename in the TikZ output
+        coords = latexFilename;
+    else
+        % output data with "%newline" prepended for formatting consistency
+        % do NOT prepend another newline in the output: LaTeX will crash.
+        coords = sprintf('%%\n%s', coords);
     end
 end
 % ==============================================================================
