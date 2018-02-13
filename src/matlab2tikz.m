@@ -1703,8 +1703,11 @@ function [m2t, options] = setAxisLimits(m2t, handle, axis, options)
         symb_coords = sprintf('{%s}', join(m2t, cellstr(string(categories)), ','));
         m2t = m2t_addAxisOption(m2t, ['symbolic ',axis,' coords'], symb_coords);
 
-        % Some space is needed around the bar plot
-        options = opts_add(options, ['enlarge ',axis,' limits'], '0.1');
+        % Some extra space is needed, otherwise the bars will touch the boundary
+        options = opts_add(options, ['enlarge ',axis,' limits'], '0.2');
+
+        % Ticks only for data values, prevents randomly repeated labels
+        options = opts_add(options, [axis,'tick'], 'data');
     end
 end
 % ==============================================================================
@@ -4144,7 +4147,7 @@ function [m2t, str] = drawBarseries(m2t, h, custom)
         %TODO: wait for pgfplots to implement other base values (see #438)
     end
 
-    % Prepare data
+    % Generate the tikz table
     xData = get(h, 'XData');
     yData = get(h, 'YData');
     if isHorizontal
@@ -4152,32 +4155,17 @@ function [m2t, str] = drawBarseries(m2t, h, custom)
     else
         [xDataPlot, yDataPlot] = deal(xData, yData);
     end
+    [m2t, table, tableOptions] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
 
-    % Use coordinates for categorical values, or a table otherwise
-    if isCategoricalType(xDataPlot)
-
-        % Generate coordinate data
-        [m2t, coords] = makeCoordinates(m2t, '', xDataPlot, '', yDataPlot);
-
-        % Print out
-        drawOpts = opts_print(drawOptions);
-        str = sprintf('\\addplot[%s] coordinates {%s};\n', ...
-                      drawOpts, coords);
-    else
-        % Generate the tikz table
-        [m2t, table, tableOptions] = makeTable(m2t, '', xDataPlot, '', yDataPlot);
-
-        % Print out
-        drawOptions = opts_append_userdefined(drawOptions, custom.extraOptions);
-        drawOpts = opts_print(drawOptions);
-        tabOpts  = opts_print(tableOptions);
-        str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
-                        drawOpts, tabOpts, table);
-
-        % Add a baseline if appropriate
-        [m2t, baseline] = drawBaseline(m2t,h,isHorizontal);
-        str             = [str, baseline];
-    end
+    drawOptions = opts_append_userdefined(drawOptions, custom.extraOptions);
+    % Print out
+    drawOpts = opts_print(drawOptions);
+    tabOpts  = opts_print(tableOptions);
+    str      = sprintf('\\addplot[%s] table[%s] {%s};\n', ...
+                       drawOpts, tabOpts, table);
+    % Add a baseline if appropriate
+    [m2t, baseline] = drawBaseline(m2t,h,isHorizontal);
+    str             = [str, baseline];
 end
 % ==============================================================================
 function BarWidth = getBarWidthInAbsolutUnits(h)
@@ -5590,66 +5578,6 @@ function tikzLineStyle = translateLineStyle(matlabLineStyle)
     end
 end
 % ==============================================================================
-function [m2t, coords] = makeCoordinates(m2t, varargin)
-    %   [m2t,coords] = makeCoordinates(m2t, 'name1', data1, 'name2', data2, ...)
-    %   [m2t,coords] = makeCoordinates(m2t, {'name1','name2',...}, {data1, data2, ...})
-    %   [m2t,coords] = makeCoordinates(m2t, {'name1','name2',...}, [data1(:), data2(:), ...])
-    %
-    %  Returns m2t structure and formatted coordinate data.
-
-    [variables, data] = parseInputsForTable_(varargin{:});
-
-    COLSEP = sprintf(',');
-    ROWSEP = sprintf('\n');
-
-    nColumns = numel(data);
-    nRows    = cellfun(@numel, data);
-    if ~all(nRows==nRows(1))
-        error('matlab2tikz:makeTableDifferentNumberOfRows',...
-            'Different data lengths [%s].', num2str(nRows));
-    end
-    nRows = nRows(1);
-
-    FORMAT = repmat({m2t.ff}, 1, nColumns);
-    FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
-    FORMAT(cellfun(@isCategoricalType, data)) = {'%s'};
-    FORMAT = ['(', join(m2t, FORMAT, COLSEP), ')'];
-
-    for iRow = 1:nRows
-        thisData = cell(1,nColumns);
-        for jCol = 1:nColumns
-            if isCategoricalType(data{jCol}(iRow))
-                % do not make categorical values lowercase
-                thisData{1,jCol} = data{jCol}(iRow);
-            else
-                % convert NaN and Inf to lower case for TikZ
-                thisData{1,jCol} = lower(data{jCol}(iRow));
-            end
-        end
-        coords{iRow} = sprintf(FORMAT, thisData{:});
-    end
-    coords = [join(m2t, coords, ROWSEP) ROWSEP];
-
-    if m2t.args.externalData
-        % output data to external file
-        [m2t, fileNum] = incrementGlobalCounter(m2t, 'tsvFile');
-        [filename, latexFilename] = externalFilename(m2t, fileNum, '.tsv');
-
-        % write the coordinate data to an external file
-        fid = fileOpenForWrite(m2t, filename);
-        finally_fclose_fid = onCleanup(@() fclose(fid));
-
-        fprintf(fid, '%s', coords);
-
-        % put the filename in the TikZ output
-        coords = latexFilename;
-    else
-        % output data with "%newline" prepended for formatting consistency
-        % do NOT prepend another newline in the output: LaTeX will crash.
-        coords = sprintf('%%\n%s', coords);
-    end
-end
-% ==============================================================================
 function [m2t, table, opts] = makeTable(m2t, varargin)
     %   [m2t,table,opts] = makeTable(m2t, 'name1', data1, 'name2', data2, ...)
     %   [m2t,table,opts] = makeTable(m2t, {'name1','name2',...}, {data1, data2, ...})
@@ -5678,6 +5606,7 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
     FORMAT = repmat({m2t.ff}, 1, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
+    FORMAT(cellfun(@isCategoricalType, data)) = {'%s'};
     FORMAT = join(m2t, FORMAT, COLSEP);
     if all(cellfun(@isempty, variables))
         header = {};
@@ -5693,7 +5622,9 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
         end
         table{iRow} = sprintf(FORMAT, thisData{:});
     end
-    table = lower(table); % convert NaN and Inf to lower case for TikZ
+    % convert NaN and Inf to lower case for TikZ
+    table = regexprep(table, '\<NaN\>', 'nan');
+    table = regexprep(table, '\<Inf\>', 'inf');
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
 
     if m2t.args.externalData
