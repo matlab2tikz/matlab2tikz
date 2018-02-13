@@ -1519,7 +1519,7 @@ function [m2t, options] = getAxisOptions(m2t, handle, axis)
     end
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get axis limits
-    options = setAxisLimits(m2t, handle, axis, options);
+    [m2t, options] = setAxisLimits(m2t, handle, axis, options);
     % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     % get ticks along with the labels
     [options] = getAxisTicks(m2t, handle, axis, options);
@@ -1682,17 +1682,32 @@ function assertRegularAxes(handle)
     end
 end
 % ==============================================================================
-function options = setAxisLimits(m2t, handle, axis, options)
-    % set the upper/lower limit of an axis
+function [m2t, options] = setAxisLimits(m2t, handle, axis, options)
+    % set the upper/lower limit of an axis (but not for categorical values)
     limits = get(handle, [upper(axis),'Lim']);
     if isa(limits,'datetime')
         limits = datenum(limits);
     end
-    if isfinite(limits(1))
+    if ~isCategoricalType(limits(1)) && isfinite(limits(1))
         options = opts_add(options, [axis,'min'], sprintf(m2t.ff, limits(1)));
     end
-    if isfinite(limits(2))
+    if ~isCategoricalType(limits(2)) && isfinite(limits(2))
         options = opts_add(options, [axis,'max'], sprintf(m2t.ff, limits(2)));
+    end
+
+    % Take care of categorical variables
+    if isCategoricalType(limits(1))
+
+        % Categorical variables do not need to specify limits, but symbolic values
+        categories = get(get(handle, [upper(axis),'Axis']), 'Categories');
+        symb_coords = sprintf('{%s}', join(m2t, cellstr(string(categories)), ','));
+        m2t = m2t_addAxisOption(m2t, ['symbolic ',axis,' coords'], symb_coords);
+
+        % Some extra space is needed, otherwise the bars will touch the boundary
+        options = opts_add(options, ['enlarge ',axis,' limits'], '0.2');
+
+        % Ticks only for data values, prevents randomly repeated labels
+        options = opts_add(options, [axis,'tick'], 'data');
     end
 end
 % ==============================================================================
@@ -4157,7 +4172,7 @@ function BarWidth = getBarWidthInAbsolutUnits(h)
     % determines the width of a bar in a bar plot
     XData = get(h,'XData');
     BarWidth = get(h, 'BarWidth');
-    if length(XData) > 1
+    if length(XData) > 1 && ~isCategoricalType(XData)
         BarWidth = min(diff(XData)) * BarWidth;
     end
 end
@@ -4208,7 +4223,10 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             drawOptions = opts_add(drawOptions, barType);
 
             % Bar width
-            drawOptions = opts_add(drawOptions, 'bar width', formatDim(barWidth, ''));
+            % Relative width does not work with categorical data
+            if ~isCategoricalType(get(h, 'XData'))
+                drawOptions = opts_add(drawOptions, 'bar width', formatDim(barWidth, ''));
+            end
 
             % The bar shift auto feature was introduced in pgfplots 1.13
             m2t = needsPgfplotsVersion(m2t, [1,13]);
@@ -5588,6 +5606,7 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
 
     FORMAT = repmat({m2t.ff}, 1, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
+    FORMAT(cellfun(@isCategoricalType, data)) = {'%s'};
     FORMAT = join(m2t, FORMAT, COLSEP);
     if all(cellfun(@isempty, variables))
         header = {};
@@ -5603,7 +5622,9 @@ function [m2t, table, opts] = makeTable(m2t, varargin)
         end
         table{iRow} = sprintf(FORMAT, thisData{:});
     end
-    table = lower(table); % convert NaN and Inf to lower case for TikZ
+    % convert NaN and Inf to lower case for TikZ
+    table = regexprep(table, '\<NaN\>', 'nan');
+    table = regexprep(table, '\<Inf\>', 'inf');
     table = [join(m2t, [header;table], ROWSEP) ROWSEP];
 
     if m2t.args.externalData
@@ -7013,6 +7034,19 @@ function [formatted,treeish] = VersionControlIdentifier()
     end
     if ~isempty(treeish)
         formatted = sprintf('(commit %s)',treeish);
+    end
+end
+% ==============================================================================
+function bool = isCategoricalType(data)
+    % This is a wrapper function for iscategorical(), which (as February 2018) 
+    % is not available on GNU Octave.
+    switch getEnvironment()
+        case 'MATLAB'
+            bool = iscategorical(data);
+        case 'Octave'
+            bool = false;
+        otherwise
+            errorUnknownEnvironment();
     end
 end
 % ==============================================================================
