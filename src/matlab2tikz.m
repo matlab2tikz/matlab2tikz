@@ -1688,15 +1688,15 @@ function [m2t, options] = setAxisLimits(m2t, handle, axis, options)
     if isa(limits,'datetime')
         limits = datenum(limits);
     end
-    if ~iscategorical(limits(1)) && isfinite(limits(1))
+    if ~isCategoricalType(limits(1)) && isfinite(limits(1))
         options = opts_add(options, [axis,'min'], sprintf(m2t.ff, limits(1)));
     end
-    if ~iscategorical(limits(2)) && isfinite(limits(2))
+    if ~isCategoricalType(limits(2)) && isfinite(limits(2))
         options = opts_add(options, [axis,'max'], sprintf(m2t.ff, limits(2)));
     end
 
     % Take care of categorical variables
-    if iscategorical(limits(1))
+    if isCategoricalType(limits(1))
 
         % Categorical variables do not need to specify limits, but symbolic values
         categories = get(get(handle, [upper(axis),'Axis']), 'Categories');
@@ -4154,7 +4154,7 @@ function [m2t, str] = drawBarseries(m2t, h, custom)
     end
 
     % Use coordinates for categorical values, or a table otherwise
-    if iscategorical(xDataPlot)
+    if isCategoricalType(xDataPlot)
 
         % Generate coordinate data
         [m2t, coords] = makeCoordinates(m2t, '', xDataPlot, '', yDataPlot);
@@ -4184,7 +4184,7 @@ function BarWidth = getBarWidthInAbsolutUnits(h)
     % determines the width of a bar in a bar plot
     XData = get(h,'XData');
     BarWidth = get(h, 'BarWidth');
-    if length(XData) > 1 && ~iscategorical(XData)
+    if length(XData) > 1 && ~isCategoricalType(XData)
         BarWidth = min(diff(XData)) * BarWidth;
     end
 end
@@ -4236,7 +4236,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
 
             % Bar width
             % Relative width does not work with categorical data
-            if ~iscategorical(get(h, 'XData'))
+            if ~isCategoricalType(get(h, 'XData'))
                 drawOptions = opts_add(drawOptions, 'bar width', formatDim(barWidth, ''));
             end
 
@@ -5612,13 +5612,13 @@ function [m2t, coords] = makeCoordinates(m2t, varargin)
 
     FORMAT = repmat({m2t.ff}, 1, nColumns);
     FORMAT(cellfun(@isCellOrChar, data)) = {'%s'};
-    FORMAT(cellfun(@iscategorical, data)) = {'%s'};
+    FORMAT(cellfun(@isCategoricalType, data)) = {'%s'};
     FORMAT = ['(', join(m2t, FORMAT, COLSEP), ')'];
 
     for iRow = 1:nRows
         thisData = cell(1,nColumns);
         for jCol = 1:nColumns
-            if iscategorical(data{jCol}(iRow))
+            if isCategoricalType(data{jCol}(iRow))
                 % do not make categorical values lowercase
                 thisData{1,jCol} = data{jCol}(iRow);
             else
@@ -7103,6 +7103,19 @@ function [formatted,treeish] = VersionControlIdentifier()
     end
     if ~isempty(treeish)
         formatted = sprintf('(commit %s)',treeish);
+    end
+end
+% ==============================================================================
+function bool = isCategoricalType(data)
+    % This is a wrapper function for iscategorical(), which (as February 2018) 
+    % is not available on GNU Octave.
+    switch getEnvironment()
+        case 'MATLAB'
+            bool = iscategorical(data);
+        case 'Octave'
+            bool = false;
+        otherwise
+            errorUnknownEnvironment();
     end
 end
 % ==============================================================================
