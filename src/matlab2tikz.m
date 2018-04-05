@@ -1229,7 +1229,12 @@ function bool = isAxisMain(h)
             bool       = find(plotyyAxes == h) == 1;
 
         case 'MATLAB'
-            bool = ~isempty(getappdata(h, 'LegendPeerHandle'));
+            % LegendPeerHandle was renamed to LayoutPeers in 9.1 (R2016b)
+            if verLessThan('matlab', '9.1')
+                bool = ~isempty(getappdata(h, 'LegendPeerHandle'));
+            else
+                bool = ~isempty(getappdata(h, 'LayoutPeers'));
+            end
     end
 end
 % ==============================================================================
