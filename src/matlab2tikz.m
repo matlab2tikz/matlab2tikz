@@ -1053,9 +1053,9 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
         case 'Octave'
             % Make sure that m2t.legendHandles is a row vector.
             for lhandle = m2t.legendHandles(:)'
-                ud = get(lhandle, 'UserData');
+                ud = get(lhandle, '__appdata__');
                 % Empty if no legend and multiple handles if plotyy
-                if ~isempty(ud) && any(axisHandle == ud.handle)
+                if ~isempty(ud) && any(axisHandle == ud.__axes_handle__)
                     legendhandle = lhandle;
                     break
                 end
