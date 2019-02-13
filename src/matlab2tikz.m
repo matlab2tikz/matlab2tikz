@@ -1066,7 +1066,6 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
                     legendhandle = lhandle;
                     break
                 end
-                clear lhandleProp
             end
         case 'MATLAB'
             legendhandle = legend(axisHandle);
