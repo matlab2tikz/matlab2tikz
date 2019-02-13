@@ -1048,21 +1048,14 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
     % Get legend handle associated with current axis
 
     legendhandle = [];
-    [env, envVersion] = getEnvironment();
+    env = getEnvironment();
     switch env
         case 'Octave'
             % Make sure that m2t.legendHandles is a row vector.
             for lhandle = m2t.legendHandles(:)'
-                if isVersionBelow(envVersion, [4,2,2]) % Octave commit 5865d2fef424
-                  lhandleProp{1}='UserData';
-                  lhandleProp{2}='handle';
-                else
-                  lhandleProp{1}='__appdata__';
-                  lhandleProp{2}='__axes_handle__';
-                end
-                ud = get(lhandle, lhandleProp{1});
+                ud = get(lhandle, 'UserData');
                 % Empty if no legend and multiple handles if plotyy
-                if ~isempty(ud) && any(axisHandle == ud.(lhandleProp{2}))
+                if ~isempty(ud) && any(axisHandle == ud.handle)
                     legendhandle = lhandle;
                     break
                 end
