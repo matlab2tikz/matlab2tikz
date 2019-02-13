@@ -1053,7 +1053,7 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
         case 'Octave'
             % Make sure that m2t.legendHandles is a row vector.
             for lhandle = m2t.legendHandles(:)'
-                if isVersionBelow(envVersion, [4,2,2]) % 5865d2fef424
+                if isVersionBelow(envVersion, [4,2,2]) % Octave commit 5865d2fef424
                   lhandleProp{1}='UserData';
                   lhandleProp{2}='handle';
                 else
