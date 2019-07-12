@@ -5660,8 +5660,11 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                     % Unfortunately, Octave does not have the full `view`
                     % interface implemented, but the projection matrices are
                     % available: http://octave.1599824.n4.nabble.com/Implementing-view-td3032041.html
-
-                    projection = get(axesHandle, 'x_viewtransform');
+                    if str2num(cell2mat(strsplit(version(), '.'))) > 422
+                        projection = octaveXViewtransform(axesHandle);
+                    else
+                        projection = get(axesHandle, 'x_viewtransform');
+                    end
 
                 otherwise
                     errorUnknownEnvironment();
