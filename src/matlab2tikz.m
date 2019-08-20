@@ -3522,6 +3522,8 @@ function [style] = getXYAlignmentOfText(handle, style)
 
     % Set 'align' option that is needed for multiline text
     style = opts_add(style, 'align', HorizontalAlignment);
+    
+    style = opts_add(style, 'inner sep', '0');
 end
 % ==============================================================================
 function [style] = getRotationOfText(m2t, handle, style)
