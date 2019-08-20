@@ -3512,6 +3512,10 @@ function [style] = getXYAlignmentOfText(handle, style)
             horizontal = 'left';
     end
     alignment = strtrim(sprintf('%s %s', vertical, horizontal));
+    if strcmp(VerticalAlignment, 'middle') && strcmp(HorizontalAlignment, 'center')
+        alignment = 'centered';
+    end
+    
     if ~isempty(alignment)
         style = opts_add(style, alignment);
     end
