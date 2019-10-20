@@ -6006,6 +6006,12 @@ function dstValue = convertUnits(srcValue, srcUnit, dstUnit)
         return % conversion to the same unit => factor = 1
     end
 
+    if strcmp(srcUnit, 'normalized')
+        srcUnit = 'px';
+        monitorSize = get(0, 'MonitorPositions');
+        srcValue = srcValue .* monitorSize(1, 3:4);
+    end
+
     units  = {srcUnit, dstUnit};
     factor = ones(1,2);
     for ii = 1:numel(factor) % Same code for srcUnit and dstUnit
