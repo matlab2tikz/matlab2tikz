@@ -1068,7 +1068,7 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
                 end
             end
         case 'MATLAB'
-            legendhandle = legend(axisHandle);
+            legendhandle = axisHandle.Legend;
     end
 
     % NOTE: there is a BUG in HG1 and Octave. Setting the box off sets the
