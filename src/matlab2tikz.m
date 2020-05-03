@@ -727,10 +727,10 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                 % labels). Carrying on as if nothing happened
 
             otherwise
-                error('matlab2tikz:handleAllChildren',                 ...
-                    'I don''t know how to handle this object: %s\n', ...
-                    get(child, 'Type'));
-
+                userWarning(m2t, 'matlab2tikz does not know how to handle object with type "%s"', get(child,'Type'));
+                % just try with the drawNothing handler (which does nothing)
+                % that at least allows a user to attach a custom handler from outside
+                [m2t, str] = handleObject(m2t, child, @drawNothing);
         end
 
         % A composite object might nest handleAllChildren calls that can
