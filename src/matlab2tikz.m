@@ -3360,7 +3360,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
     end
     posString = cell(1,npos);
     for ii = 1:npos
-        posString{ii} = formatDim(pos(ii), fmtUnit);
+        posString{ii} = formatDim(pos(ii), fmtUnit, true);
     end
 
     posString = sprintf('(%s%s)',type,join(m2t,posString,','));
@@ -6691,7 +6691,10 @@ function str = formatAspectRatio(m2t, values)
     str = join(m2t, strs, ' ');
 end
 % ==============================================================================
-function str = formatDim(value, unit)
+function str = formatDim(value, unit, exp_notation)
+    if nargin < 3
+      exp_notation = false;
+    end
     % format the value for use as a TeX dimension
     if ~exist('unit','var') || isempty(unit)
         unit = '';
@@ -6703,7 +6706,11 @@ function str = formatDim(value, unit)
         % but such accuracy is overkill for positioning. We clip to three
         % decimals to overcome numerical rounding issues that tend to be very
         % platform and version dependent. See also #604.
-        str = sprintf('%.3e', value);
+        if exp_notation
+          str = sprintf('%.3e', value);
+        else
+          str = sprintf('%.3f', value);
+        end
         str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
         str = regexprep(str, '\.$', ''); % remove trailing period
         str = [str unit];
