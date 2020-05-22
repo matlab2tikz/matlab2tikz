@@ -1,7 +1,10 @@
 function matlab2tikz(varargin)
     %MATLAB2TIKZ    Save figure in native LaTeX (TikZ/Pgfplots).
     %   MATLAB2TIKZ() saves the current figure as LaTeX file.
-    %   MATLAB2TIKZ comes with several options that can be combined at will.
+    %   MATLAB2TIKZ comes with several options that can be combined at will. For
+    %   example:
+    %
+    %       MATLAB2TIKZ('showInfo', false, 'strict', true, "figure.tex")
     %
     %   MATLAB2TIKZ(FILENAME,...) or MATLAB2TIKZ('filename',FILENAME,...)
     %   stores the LaTeX code in FILENAME.
