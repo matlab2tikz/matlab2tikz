@@ -1071,7 +1071,14 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
                 end
             end
         case 'MATLAB'
-            legendhandle = legend(axisHandle);
+            if isprop(axisHandle, 'Legend') % R2017b behavior
+                legendhandle = axisHandle.Legend;
+	        else
+		        legendhandle = legend(axisHandle);
+		        % this is the proper way for old versions of MATLAB
+		        % in newer versions (see #1006), calling `legend` may
+		        % create a legend in the figure where none existed before
+            end
     end
 
     % NOTE: there is a BUG in HG1 and Octave. Setting the box off sets the
@@ -2018,14 +2025,14 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'fill', markerInfo.FaceColor);
 
         if ~strcmpi(markerInfo.EdgeColor,'auto')
-            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, '', markerInfo.EdgeColor);
+            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'draw', markerInfo.EdgeColor);
         else
             if isprop(h,'EdgeColor')
                 color = get(h, 'EdgeColor');
             else
                 color = get(h, 'Color');
             end
-            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, '', color);
+            [m2t, markerInfo.options] = setColor(m2t, h, markerInfo.options, 'draw', color);
         end
 
         % add it all to drawOptions
