@@ -76,6 +76,9 @@ function matlab2tikz(varargin)
     %   MATLAB2TIKZ('extraTikzpictureOptions',CHAR or CELLCHAR,...)
     %   explicitly adds extra options to the tikzpicture environment. (default: [])
     %
+    %   MATLAB2TIKZ('markerSize', CHAR, ...)
+    %   explicitly specify a speicific 'mark size' to 'mark options={}'. (default: '')
+    %
     %   MATLAB2TIKZ('encoding',CHAR,...) sets the encoding of the output file.
     %
     %   MATLAB2TIKZ('floatFormat',CHAR,...) sets the format used for float values.
@@ -203,6 +206,7 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'extraCodeAtEnd', {}, @isCellOrChar);
     ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
     ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
+    ipp = ipp.addParamValue(ipp, 'markerSize', {}, @ischar);
     ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
     ipp = ipp.addParamValue(ipp, 'automaticLabels', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'addLabels', false, @islogical);
@@ -2003,6 +2007,8 @@ function [m2t, drawOptions] = getMarkerOptions(m2t, h)
         if m2t.args.strict || ~isDefault
             drawOptions = opts_add(drawOptions, 'mark size', ...
                                    sprintf('%.1fpt', tikzMarkerSize));
+        elseif ~isNone(m2t.args.markerSize)
+            drawOptions = opts_add(drawOptions, 'mark size', m2t.args.markerSize);
         end
 
         markOptions = opts_new();
