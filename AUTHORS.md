@@ -9,7 +9,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Martijn Aben (The MathWorks)
   * [Nicolas Alt](https://github.com/nalt)
   * [Eshwar Andhavarapu](https://github.com/gontadu)
-  * Matt Bauman
+  * [Matt Bauman](https://github.com/mbauman)
   * Eike Blechschmidt
   * [Klaus Broelemann](https://github.com/Broele)
   * [Katherine Elkington](https://github.com/kelkington)
@@ -24,7 +24,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * [David Horsley](https://github.com/widdma)
   * Kári Hreinsson
   * [Lucas Jeub](https://github.com/LJeub)
-  * Martin Kiefel
+  * [Martin Kiefel](https://github.com/mkiefel)
   * [Andreas Kloeckner](https://github.com/akloeckner)
   * Mykel Kochenderfer
   * [Oleg Komarov](https://github.com/okomarov)
@@ -43,6 +43,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Julien Ridoux
   * [Christoph Rüdiger](https://github.com/mredd)
   * Carlos Russo
+  * [Michael Schellenberger Costa](https://github.com/miscco)
   * [Manuel Schiller](https://github.com/dachziegel)
   * [Nico Schlömer](https://github.com/nschloe)
   * Johannes Schmitz
@@ -55,7 +56,7 @@ Thanks for patches, suggestions, and other contributions go to:
   * Robert Whittlesey
   * Pooya Ziraksaz
   * Bastiaan Zuurendonk (The MathWorks)
-  * GitHub users: [andreas12345](https://github.com/andreas12345), [theswitch](https://github.com/theswitch)
+  * GitHub users: [andreas12345](https://github.com/andreas12345), [karih](https://github.com/karih), [theswitch](https://github.com/theswitch)
 
 # Acknowledgements
 Matlab2tikz has once greatly profited from its ancestor: [Matfig2PGF](http://www.mathworks.com/matlabcentral/fileexchange/12962) written by Paul Wagenaars.
