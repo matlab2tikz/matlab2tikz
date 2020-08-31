@@ -3596,7 +3596,7 @@ function [m2t,posString] = getPositionOfText(m2t, h)
     end
     posString = cell(1,npos);
     for ii = 1:npos
-        posString{ii} = formatDim(pos(ii), fmtUnit);
+        posString{ii} = formatDim(pos(ii), fmtUnit, true);
     end
 
     posString = sprintf('(%s%s)',type,join(m2t,posString,','));
@@ -3957,7 +3957,7 @@ function [m2t, str] = drawScatterPlot(m2t, h, custom)
 
         if numel(dataInfo.Size) == 1
             drawOptions = opts_add(drawOptions, 'mark size', ...
-                sprintf('%.4fpt', dataInfo.Size)); % FIXME: investigate whether to use `m2t.ff` 
+                sprintf('%.4fpt', dataInfo.Size)); % FIXME: investigate whether to use `m2t.ff`
         else
             %TODO: warn the user about this. It is not currently supported.
         end
@@ -5087,11 +5087,11 @@ function [cbarTemplate, cbarStyleOptions] = getColorbarPosOptions(handle, cbarSt
             end
 
             % Using positions relative to associated axes
-            calcRelPos = @(pos1,pos2,ext2) (pos1-pos2)/ext2; 
+            calcRelPos = @(pos1,pos2,ext2) (pos1-pos2)/ext2;
             cbarRelPosX = calcRelPos(cbarDim.left,cbarAxesDim.left,cbarAxesDim.width);
             cbarRelPosY = calcRelPos(cbarDim.bottom,cbarAxesDim.bottom,cbarAxesDim.height);
             cbarRelHeight = cbarDim.height/cbarAxesDim.height;
-            
+
             cbarStyleOptions = opts_add(cbarStyleOptions, 'anchor',...
                 'south west');
             cbarStyleOptions = opts_add(cbarStyleOptions, 'at',...
@@ -6941,13 +6941,14 @@ function str = formatAspectRatio(m2t, values)
     str = join(m2t, strs, ' ');
 end
 % ==============================================================================
-function str = formatDim(value, unit)
+function str = formatDim(value, unit, exp_notation)
+    if nargin < 3
+      exp_notation = false;
+    end
     % format the value for use as a TeX dimension
     if ~exist('unit','var') || isempty(unit)
         unit = '';
     end
-    tolerance = 1e-7;
-    value  = round(value/tolerance)*tolerance;
     if value == 1 && ~isempty(unit) && unit(1) == '\'
         str = unit; % just use the unit
     else
@@ -6955,7 +6956,11 @@ function str = formatDim(value, unit)
         % but such accuracy is overkill for positioning. We clip to three
         % decimals to overcome numerical rounding issues that tend to be very
         % platform and version dependent. See also #604.
-        str = sprintf('%.3f', value);
+        if exp_notation
+          str = sprintf('%.3e', value);
+        else
+          str = sprintf('%.3f', value);
+        end
         str = regexprep(str, '(\d*\.\d*?)0+$', '$1'); % remove trailing zeros
         str = regexprep(str, '\.$', ''); % remove trailing period
         str = [str unit];
