@@ -1,3 +1,5 @@
+clear
+clc
 function cleanfigure(varargin)
 %   CLEANFIGURE() removes the unnecessary objects from your MATLAB plot
 %   to give you a better experience with matlab2tikz.
