@@ -580,7 +580,7 @@ function str = generateColorDefinitions(colorConfig)
         colorDef = cell(1, length(names));
         for k = 1:length(names)
             % Append with '%' to avoid spacing woes in LaTeX
-            FORMAT      = ['\\definecolor{%s}{rgb}{' ff ',' ff ',' ff '}%%\n'];
+            FORMAT      = ['\\providecolor{%s}{rgb}{' ff ',' ff ',' ff '}%%\n'];
             colorDef{k} = sprintf(FORMAT, names{k}, specs{k});
         end
         str = m2tstrjoin([colorDef, sprintf('%%\n')], '');
