@@ -1132,9 +1132,14 @@ function entries = getLegendEntries(m2t)
 
     switch getEnvironment()
         case 'Octave'
-            % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m
-            delfun  = get(legendHandle,'deletefcn');
-            entries = delfun{6};
+            if isappdata(legendHandle,'__peer_objects__')
+                % Octave version 6.x or newer with refactored legend
+                entries = getappdata(legendHandle,'__peer_objects__')
+            else
+                % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m
+                delfun  = get(legendHandle,'deletefcn');
+                entries = delfun{6};
+            end
 
             % Bubble-up legend entry properties from child to hggroup root
             % for guessable objects
