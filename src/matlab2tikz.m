@@ -1410,6 +1410,9 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
     isBoxOn       = isOn(get(h, 'box'));
     xLoc          = get(h, 'XAxisLocation');
     yLoc          = get(h, 'YAxisLocation');
+    if strcmp(xLoc, 'origin')
+        xLoc = 'center';
+    end
     if strcmp(yLoc, 'origin')
         yLoc = 'center';
     end
