@@ -1410,6 +1410,9 @@ function m2t = drawBoxAndLineLocationsOfAxes(m2t, h)
     isBoxOn       = isOn(get(h, 'box'));
     xLoc          = get(h, 'XAxisLocation');
     yLoc          = get(h, 'YAxisLocation');
+    if strcmp(yLoc, 'origin')
+        yLoc = 'center';
+    end
     isXaxisBottom = strcmpi(xLoc,'bottom');
     isYaxisLeft   = strcmpi(yLoc,'left');
 
@@ -4006,7 +4009,7 @@ function [m2t, drawOptions] = setBarLayoutOfBarSeries(m2t, h, barType, drawOptio
             drawOptions = opts_add(drawOptions, barType);
 
             % Bar width
-            drawOptions = opts_add(drawOptions, 'bar width', formatDim(barWidth, ''));
+            % drawOptions = opts_add(drawOptions, 'bar width', formatDim(barWidth, ''));
 
             % The bar shift auto feature was introduced in pgfplots 1.13
             m2t = needsPgfplotsVersion(m2t, [1,13]);
