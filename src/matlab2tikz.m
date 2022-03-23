@@ -490,6 +490,12 @@ function m2t = saveToFile(m2t, fid, fileWasOpen)
         m2t = handleColorbar(m2t, cbar);
     end
 
+    % Add user code
+    for i = 1 : length(m2t.axes)
+        m2t.axes{i}.options = opts_append_userdefined(m2t.axes{i}.options, ...
+                                                      m2t.args.extraAxisOptions);
+    end
+
     % Draw annotations
     m2t = drawAnnotations(m2t);
 
@@ -927,9 +933,6 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
     m2t = drawGridOfAxes(m2t, handle);
     m2t = drawLegendOptionsOfAxes(m2t);
-
-    m2t.axes{end}.options = opts_append_userdefined(m2t.axes{end}.options, ...
-                                                  m2t.args.extraAxisOptions);
 end
 % ==============================================================================
 function m2t = drawGridOfAxes(m2t, handle)
