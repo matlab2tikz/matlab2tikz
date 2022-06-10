@@ -681,6 +681,9 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'line'
                 [m2t, str] = handleObject(m2t, child, @drawLine);
+                
+            case 'constantline'
+                [m2t, str] = handleObject(m2t, child, @drawConstantLine);
 
             case 'patch'
                 [m2t, str] = handleObject(m2t, child, @drawPatch);
@@ -2283,6 +2286,43 @@ function [tikzMarker, markOptions] = ...
                 tikzMarker = [tikzMarker '*'];
             end
     end
+end
+% ==============================================================================
+function [m2t, str] = drawConstantLine(m2t, h, custom)
+    % Draws a 'constantline' object such as those produced by 'yline()'
+    
+    str = '';
+    if ~isLineVisible(h)
+        return; % there is nothing to plot
+    end    
+    
+    interceptaxis = get(h, 'InterceptAxis');
+    value = get(h, 'Value');
+    xLim = get(h.Parent, 'XLim');
+    yLim = get(h.Parent, 'Ylim');
+    
+    % create line from object properties
+    switch interceptaxis
+        case 'x'
+            data = [ [value;value] , yLim(:)];
+        case 'y'
+            data = [ xLim(:) , [value;value]];
+        otherwise
+            warning('ConstantLine: invalid InterceptAxis. Ignoring...')
+            return
+    end
+    
+    % Pass on color and line options
+    color         = get(h, 'Color');
+    [m2t, xcolor] = getColor(m2t, h, color, 'patch');
+    [m2t, lineOptions]   = getLineOptions(m2t, h);
+    
+    drawOptions = opts_new();
+    drawOptions = opts_add(drawOptions, 'color', xcolor);
+    drawOptions = opts_merge(drawOptions, lineOptions);
+    drawOptions = opts_append_userdefined(drawOptions, custom.extraOptions);
+    
+    [m2t, str] = writePlotData(m2t, data, drawOptions);
 end
 % ==============================================================================
 function [m2t, str] = drawPatch(m2t, handle, custom)
