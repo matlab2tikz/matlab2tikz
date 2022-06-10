@@ -2291,11 +2291,6 @@ end
 function [m2t, str] = drawConstantLine(m2t, h, custom)
     % Draws a 'constantline' object such as those produced by 'yline()'
     
-    str = '';
-    if ~isLineVisible(h)
-        return; % there is nothing to plot
-    end    
-    
     interceptaxis = get(h, 'InterceptAxis');
     value = get(h, 'Value');
     xLim = get(h.Parent, 'XLim');
@@ -2304,25 +2299,23 @@ function [m2t, str] = drawConstantLine(m2t, h, custom)
     % create line from object properties
     switch interceptaxis
         case 'x'
-            data = [ [value;value] , yLim(:)];
+            xdata = [value value];
+            ydata = yLim;
         case 'y'
-            data = [ xLim(:) , [value;value]];
+            xdata = xLim;
+            ydata = [value value];
         otherwise
             warning('ConstantLine: invalid InterceptAxis. Ignoring...')
             return
     end
+    l = line(xdata, ydata);
     
     % Pass on color and line options
-    color         = get(h, 'Color');
-    [m2t, xcolor] = getColor(m2t, h, color, 'patch');
-    [m2t, lineOptions]   = getLineOptions(m2t, h);
+    l.Color = h.Color;
+    l.LineStyle = h.LineStyle;
+    l.LineWidth = h.LineWidth;
     
-    drawOptions = opts_new();
-    drawOptions = opts_add(drawOptions, 'color', xcolor);
-    drawOptions = opts_merge(drawOptions, lineOptions);
-    drawOptions = opts_append_userdefined(drawOptions, custom.extraOptions);
-    
-    [m2t, str] = writePlotData(m2t, data, drawOptions);
+    [m2t, str] = drawLine(m2t, l, custom);
 end
 % ==============================================================================
 function [m2t, str] = drawPatch(m2t, handle, custom)
