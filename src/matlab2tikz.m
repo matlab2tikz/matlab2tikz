@@ -681,6 +681,9 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'line'
                 [m2t, str] = handleObject(m2t, child, @drawLine);
+                
+            case 'constantline'
+                [m2t, str] = handleObject(m2t, child, @drawConstantLine);
 
             case 'patch'
                 [m2t, str] = handleObject(m2t, child, @drawPatch);
@@ -2283,6 +2286,36 @@ function [tikzMarker, markOptions] = ...
                 tikzMarker = [tikzMarker '*'];
             end
     end
+end
+% ==============================================================================
+function [m2t, str] = drawConstantLine(m2t, h, custom)
+    % Draws a 'constantline' object such as those produced by 'yline()'
+    
+    interceptaxis = get(h, 'InterceptAxis');
+    value = get(h, 'Value');
+    xLim = get(h.Parent, 'XLim');
+    yLim = get(h.Parent, 'Ylim');
+    
+    % create line from object properties
+    switch interceptaxis
+        case 'x'
+            xdata = [value value];
+            ydata = yLim;
+        case 'y'
+            xdata = xLim;
+            ydata = [value value];
+        otherwise
+            warning('ConstantLine: invalid InterceptAxis. Ignoring...')
+            return
+    end
+    l = line(xdata, ydata);
+    
+    % Pass on color and line options
+    l.Color = h.Color;
+    l.LineStyle = h.LineStyle;
+    l.LineWidth = h.LineWidth;
+    
+    [m2t, str] = drawLine(m2t, l, custom);
 end
 % ==============================================================================
 function [m2t, str] = drawPatch(m2t, handle, custom)
