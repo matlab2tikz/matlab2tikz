@@ -192,24 +192,24 @@ function matlab2tikz(varargin)
 
     ipp = ipp.addParamValue(ipp, 'semanticLineWidths', NaN, @isValidSemanticLineWidthDefinition);
 
-    ipp = ipp.addParamValue(ipp, 'encoding' , '', @ischar);
+    ipp = ipp.addParamValue(ipp, 'encoding' , '', @isStringOrChar);
     ipp = ipp.addParamValue(ipp, 'standalone', false, @islogical);
-    ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @ischar);
+    ipp = ipp.addParamValue(ipp, 'tikzFileComment', '', @isStringOrChar);
     ipp = ipp.addParamValue(ipp, 'extraColors', {}, @isColorDefinitions);
-    ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrChar);
-    ipp = ipp.addParamValue(ipp, 'extraCodeAtEnd', {}, @isCellOrChar);
-    ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrChar);
-    ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrChar);
-    ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @ischar);
+    ipp = ipp.addParamValue(ipp, 'extraCode', {}, @isCellOrCharOrString);
+    ipp = ipp.addParamValue(ipp, 'extraCodeAtEnd', {}, @isCellOrCharOrString);
+    ipp = ipp.addParamValue(ipp, 'extraAxisOptions', {}, @isCellOrCharOrString);
+    ipp = ipp.addParamValue(ipp, 'extraTikzpictureOptions', {}, @isCellOrCharOrString);
+    ipp = ipp.addParamValue(ipp, 'floatFormat', '%.15g', @isStringOrChar);
     ipp = ipp.addParamValue(ipp, 'automaticLabels', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'addLabels', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'showHiddenStrings', false, @islogical);
-    ipp = ipp.addParamValue(ipp, 'height', '', @ischar);
-    ipp = ipp.addParamValue(ipp, 'width' , '', @ischar);
+    ipp = ipp.addParamValue(ipp, 'height', '', @isStringOrChar);
+    ipp = ipp.addParamValue(ipp, 'width' , '', @isStringOrChar);
     ipp = ipp.addParamValue(ipp, 'imagesAsPng', true, @islogical);
     ipp = ipp.addParamValue(ipp, 'externalData', false, @islogical);
-    ipp = ipp.addParamValue(ipp, 'dataPath', '', @ischar);
-    ipp = ipp.addParamValue(ipp, 'relativeDataPath', '', @ischar);
+    ipp = ipp.addParamValue(ipp, 'dataPath', '', @isStringOrChar);
+    ipp = ipp.addParamValue(ipp, 'relativeDataPath', '', @isStringOrChar);
     ipp = ipp.addParamValue(ipp, 'noSize', false, @islogical);
     ipp = ipp.addParamValue(ipp, 'arrowHeadSize', 10, @(x) x>0);
 
@@ -243,9 +243,12 @@ function matlab2tikz(varargin)
     ipp = ipp.addParamValue(ipp, 'interpretTickLabelsAsTex', false, @islogical);
 
     %% deprecated parameters (will auto-generate warnings upon parse)
-    ipp = ipp.addParamValue(ipp, 'relativePngPath', '', @ischar);
+    ipp = ipp.addParamValue(ipp, 'relativePngPath', '', @isStringOrChar);
     ipp = ipp.deprecateParam(ipp, 'relativePngPath', 'relativeDataPath');
     ipp = ipp.deprecateParam(ipp, 'automaticLabels', 'addLabels');
+
+    %% Converts Matlab Strings to chars to make it compatible with Strings
+    varargin = convertArguments2Char(varargin{:});
 
     %% Finally parse all the arguments
     ipp = ipp.parse(ipp, varargin{:});
@@ -397,6 +400,30 @@ function l = filehandleValidation(x)
     % is the filehandle the handle to an opened file?
     l = isnumeric(x) && any(x==fopen('all'));
 end
+% ==============================================================================
+function bool = isStringOrChar(x)
+%checks if input is a char. If we are working in a
+%Matlab environment also if it is a string.
+
+    bool = ischar(x);
+
+    if strcmp(getEnvironment(),'MATLAB')
+                bool = bool || isstring(x);
+    end
+
+end
+% ==============================================================================
+function bool = isCellOrCharOrString(x)
+%checks if input is either a cell or a char. And if we are working in a
+%Matlab environment also if it is a string.
+    bool = iscell(x) || ischar(x);
+    
+     if strcmp(getEnvironment(),'MATLAB')
+                bool = bool || isstring(x);
+     end
+
+end
+
 % ==============================================================================
 function bool = isCellOrChar(x)
     bool = iscell(x) || ischar(x);
@@ -7063,3 +7090,27 @@ function bool = isCategoricalType(data)
     end
 end
 % ==============================================================================
+function varargin = convertArguments2Char(varargin)
+    % This function converts the Arguments to char if any strings were
+    % handed over to be able to handle Matlab strings while staying
+    % compatible to GNU Octave
+
+    if strcmp(getEnvironment(),'MATLAB')
+
+        for k = 1: length(varargin)
+
+            if iscell(varargin{k})
+                %converts cells of strings,'UniformOutput'==false to return
+                %the results ass cellarray
+                varargin{k} = cellfun(@convertStringsToChars,varargin{k},'UniformOutput',false);
+            else
+                %converts Strings, arrays of strings...
+                varargin{k} = convertStringsToChars(varargin{k});
+            end
+
+        end
+    end  
+end
+
+
+

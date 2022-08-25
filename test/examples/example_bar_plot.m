@@ -39,7 +39,7 @@ end
 hold on
 plot(x,y,'r');
 
-matlab2tikz('figurehandle',figure1,'filename','example_v_bar_plot.tex' ,'standalone', true);
+matlab2tikz("figurehandle",figure1,'filename','example_v_bar_plot.tex' ,'standalone', true);
 
 
     function BarWidth=test_getBarWidthInAbsolutUnits(h)
