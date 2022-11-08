@@ -943,7 +943,16 @@ function m2t = drawAxes(m2t, handle)
         %    [m2t, childrenEnvs] = handleAllChildren(m2t, handle);
         %    m2t.axes{end} = addChildren(m2t.axes{end}, childrenEnvs);
         %    return
+    else
+        % If the axis is visible but the ruler is non-visible draw no axes line
+        for axis = 'xyz'
+            if strcmp(get(get(handle, [axis 'Axis']), 'Visible'), 'off')
+                m2t.axes{end}.options = opts_append_userdefined(m2t.axes{end}.options, ...
+                    ['axis ' axis ' line=none']);
+            end
+        end
     end
+    
     m2t.axes{end}.name = 'axis';
 
     m2t = drawBackgroundOfAxes(m2t, handle);
@@ -951,7 +960,6 @@ function m2t = drawAxes(m2t, handle)
     m2t = drawBoxAndLineLocationsOfAxes(m2t, handle);
     m2t = drawGridOfAxes(m2t, handle);
     m2t = drawLegendOptionsOfAxes(m2t);
-
     m2t.axes{end}.options = opts_append_userdefined(m2t.axes{end}.options, ...
                                                   m2t.args.extraAxisOptions);
 end
