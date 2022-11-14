@@ -3270,6 +3270,10 @@ function m2t = drawAnnotationsHelper(m2t,h)
             % Rectangle
         case {'scribe.scriberect', 'matlab.graphics.shape.Rectangle'}
             [m2t, str] = handleObject(m2t, h, @drawRectangle);
+            
+        case guitypes()
+            % don't do anything for GUI objects and their children
+            [m2t, str] = handleObject(m2t, h, @drawNothing);                
 
         otherwise
             userWarning(m2t, 'Don''t know annotation ''%s''.', cl);
