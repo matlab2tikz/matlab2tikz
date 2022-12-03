@@ -715,6 +715,12 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'rectangle'
                 [m2t, str] = handleObject(m2t, child, @drawRectangle);
+		
+	    case 'doubleendarrowshape'
+                [m2t, str] = handleObject(m2t, child, @drawArrow);
+	
+	    case 'arrowshape'
+                [m2t, str] = handleObject(m2t, child, @drawArrow);
 
             case 'histogram'
                 [m2t, str] = handleObject(m2t, child, @drawHistogram);
