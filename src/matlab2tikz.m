@@ -1075,14 +1075,21 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
     % Get legend handle associated with current axis
 
     legendhandle = [];
-    env = getEnvironment();
+    [env, envVersion] = getEnvironment();
     switch env
         case 'Octave'
             % Make sure that m2t.legendHandles is a row vector.
             for lhandle = m2t.legendHandles(:)'
-                ud = get(lhandle, 'UserData');
+                if isVersionBelow(envVersion, [4,2,2]) % Octave commit 5865d2fef424
+                  lhandleProp{1}='UserData';
+                  lhandleProp{2}='handle';
+                else
+                  lhandleProp{1}='__appdata__';
+                  lhandleProp{2}='__axes_handle__';
+                end
+                ud = get(lhandle, lhandleProp{1});
                 % Empty if no legend and multiple handles if plotyy
-                if ~isempty(ud) && any(axisHandle == ud.handle)
+                if ~isempty(ud) && any(axisHandle == ud.(lhandleProp{2}))
                     legendhandle = lhandle;
                     break
                 end
@@ -5927,8 +5934,11 @@ function [position] = getRelativeAxesPosition(m2t, axesHandles, axesBoundingBox)
                     % Unfortunately, Octave does not have the full `view`
                     % interface implemented, but the projection matrices are
                     % available: http://octave.1599824.n4.nabble.com/Implementing-view-td3032041.html
-
-                    projection = get(axesHandle, 'x_viewtransform');
+                    if str2num(cell2mat(strsplit(version(), '.'))) > 422
+                        projection = octaveXViewtransform(axesHandle);
+                    else
+                        projection = get(axesHandle, 'x_viewtransform');
+                    end
 
                 otherwise
                     errorUnknownEnvironment();
