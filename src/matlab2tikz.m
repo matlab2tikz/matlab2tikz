@@ -2648,7 +2648,7 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData, custom)
         alphaOpts = {};
         hasAlpha = false;
     else
-        alphaOpts = {'Alpha', alphaData};
+        alphaOpts = {'Alpha', double(alphaData)};
     end
     if (ndims(colorData) == 2) %#ok don't use ismatrix (cfr. #143)
         if size(m2t.current.colormap, 1) <= 256 && ~hasAlpha
