@@ -3570,12 +3570,18 @@ function [style] = getXYAlignmentOfText(handle, style)
             horizontal = 'left';
     end
     alignment = strtrim(sprintf('%s %s', vertical, horizontal));
+    if strcmp(VerticalAlignment, 'middle') && strcmp(HorizontalAlignment, 'center')
+        alignment = 'centered';
+    end
+    
     if ~isempty(alignment)
         style = opts_add(style, alignment);
     end
 
     % Set 'align' option that is needed for multiline text
     style = opts_add(style, 'align', HorizontalAlignment);
+    
+    style = opts_add(style, 'inner sep', '0');
 end
 % ==============================================================================
 function [style] = getRotationOfText(m2t, handle, style)
