@@ -1974,31 +1974,27 @@ function [m2t, labelCode] = addLabel(m2t, h)
 end
 % ==============================================================================
 function [m2t,str] = plotLine2d(m2t, opts, errorBarOpts, data, errDir)
-    errorbarModeX = strcmp(errDir, 'x'); % is (optional) xDeviation given?
-    errorbarModeY = strcmp(errDir, 'y'); % is (optional) yDeviation given?
-    errorbarModeXY = strcmp(errDir, 'xy'); % are (optional) both xDeviation and yDeviation given?
 
     errorBar = '';
-    if errorbarModeX || errorbarModeY || errorbarModeXY
+    if ~isempty(errDir)
         m2t      = needsPgfplotsVersion(m2t, [1,9]);
         errorBar = sprintf('plot [%s]\n', errorBarOpts);
     end
 
     % Convert to string array then cell to call sprintf once (and no loops).
     [m2t, table, tableOptions] = makeTable(m2t, repmat({''}, size(data,2)), data);
-    if errorbarModeX
-        tableOptions = opts_add(tableOptions, 'x error plus index', '2');
-        tableOptions = opts_add(tableOptions, 'x error minus index', '3');
-    end
-    if errorbarModeY
-        tableOptions = opts_add(tableOptions, 'y error plus index', '2');
-        tableOptions = opts_add(tableOptions, 'y error minus index', '3');
-    end
-    if errorbarModeXY
-        tableOptions = opts_add(tableOptions, 'x error plus index', '2');
-        tableOptions = opts_add(tableOptions, 'x error minus index', '3');
-        tableOptions = opts_add(tableOptions, 'y error plus index', '4');
-        tableOptions = opts_add(tableOptions, 'y error minus index', '5');
+    switch errDir
+        case 'x'
+            tableOptions = opts_add(tableOptions, 'x error plus index', '2');
+            tableOptions = opts_add(tableOptions, 'x error minus index', '3');
+        case 'y'
+            tableOptions = opts_add(tableOptions, 'y error plus index', '2');
+            tableOptions = opts_add(tableOptions, 'y error minus index', '3');
+        case 'xy'
+            tableOptions = opts_add(tableOptions, 'x error plus index', '2');
+            tableOptions = opts_add(tableOptions, 'x error minus index', '3');
+            tableOptions = opts_add(tableOptions, 'y error plus index', '4');
+            tableOptions = opts_add(tableOptions, 'y error minus index', '5');
     end
 
     % Print out
