@@ -1256,7 +1256,11 @@ function bool = isValidAxis(val)
 end
 % ========================================================================
 function normalizeAxis(handle, cmdOpts)
-    % Normalizes data from a given axis into the interval [0, 1]
+    % Normalizes data from a given axis
+    % The data will be scaled by the spanwidth of the datasets.
+    % It takes the current view of 2d plots into account
+    % The axis limits and tick labels will be set automatically due to the
+    % adjusted scaled plot
 
     % Warn about normalizeAxis being experimental
     warning('cleanfigure:normalizeAxis', ...
@@ -1265,28 +1269,52 @@ function normalizeAxis(handle, cmdOpts)
     for axis = cmdOpts.normalizeAxis(:)'
         % Get the scale needed to set xyz-lim to [0, 1]
         dateLimits = get(handle, [upper(axis), 'Lim']);
-        dateScale  = 1/diff(dateLimits);
-
-        % Set the TickLabelMode to manual to preserve the labels
-        set(handle, [upper(axis), 'TickLabelMode'], 'manual');
-
-        % Project the ticks
-        ticks = get(handle, [upper(axis), 'Tick']);
-        ticks = (ticks - dateLimits(1))*dateScale;
-
-        % Set the data
-        set(handle, [upper(axis), 'Tick'], ticks);
-        set(handle, [upper(axis), 'Lim'],  [0, 1]);
-
+        
+        % Check if limits are set to 'autoscale' via 'inf' in axis() command
+        % Make sure to limit the datasets to the current view of the
+        % figure!
+        if(any(~isfinite(dateLimits)))
+            % Find Min and Max of axes due to datasets in children of respective 
+            % axes. 
+            hLines=findobj(handle,'Type','line');
+            switch upper(axis)
+                case 'X'
+                    dateLimits=[min([hLines.XData]),max([hLines.XData])];
+                case {'Y','Z'}
+                    % In case of y or z axis search for min and max in each
+                    % dataset based on view of the x-axis. This is still
+                    % experimental, since behaviour for 3d plots is
+                    % undefined.
+                    % If multiple datasets are present, they can also be
+                    % sampled at different times, so index vector must also
+                    % bei identified first.
+                    dateLimitsTemp=zeros(length(hLines),2);
+                    for k=1:length(hLines)
+                        if(isprop(hLines(k), [upper(axis), 'Data']))
+                            dataX = hLines(k).XData;
+                            indvec=find(dataX>=handle.XLim(1) & dataX<=handle.XLim(2));
+                            data = get(hLines(k), [upper(axis), 'Data']);
+                            dateLimitsTemp(k,:)=[min(data(indvec)),max(data(indvec))];
+                        else
+                            warning('cleanfigure:normalizeAxis', ...
+                                'Dataset due to missing data discarded!');
+                        end
+                    end
+                    dateLimits(1)=min(dateLimitsTemp(:,1));
+                    dateLimits(2)=max(dateLimitsTemp(:,2));
+            end
+        end
+        % DateScale 1/diff(...) is span of axes. Limit values to [-1,+1]
+        dateScale  = 2/diff(dateLimits);
         % Traverse the children
         children = get(handle, 'Children');
         for child = children(:)'
             if isprop(child, [upper(axis), 'Data'])
                 % Get the data and transform it
                 data = get(child, [upper(axis), 'Data']);
-                data = (data - dateLimits(1))*dateScale;
+                %data = (data - dateLimits(1))*dateScale;
                 % Set the data again
-                set(child, [upper(axis), 'Data'], data);
+                set(child, [upper(axis), 'Data'], dateScale*data);
             end
         end
     end
