@@ -5470,10 +5470,10 @@ function [lStyle] = getLegendPosition(m2t, handle, lStyle)
         case 'southwestoutside'
             position = [-dist, 0];
             anchor = 'south east';
-        case 'none'
+        case {'none', 'layout'}
             legendPos = get(handle, 'Position');
             unit = get(handle, 'Units');
-            if isequal(unit, 'normalized')
+            if isequal(unit, 'normalized') && ~isequal(lower(loc), 'layout')
                 position = legendPos(1:2);
             else
                 % Calculate where the legend is located w.r.t. the axes.
