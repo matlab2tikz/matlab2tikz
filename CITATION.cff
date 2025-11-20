@@ -1,0 +1,54 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "matlab2tikz: Convert MATLAB figures to TikZ/Pgfplots"
+abstract: "A MATLAB/Octave script to convert native MATLAB figures to TikZ/Pgfplots figures for seamless integration into LaTeX documents. Supports 2D and 3D plots including line plots, scatter plots, bar charts, contour plots, surface plots, and more."
+authors:
+  - family-names: "Schlömer"
+    given-names: "Nico"
+  - family-names: "Schluessler"
+    given-names: "Raimund"
+  - name: "The matlab2tikz contributors"
+repository-code: "https://github.com/matlab2tikz/matlab2tikz"
+url: "https://github.com/matlab2tikz/matlab2tikz"
+license: BSD-2-Clause
+version: "1.1.0"
+date-released: "2016-08-15"
+keywords:
+  - MATLAB
+  - Octave
+  - LaTeX
+  - TikZ
+  - PGFPlots
+  - figure conversion
+  - scientific visualization
+  - publication-quality figures
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.18605"
+    description: "Zenodo DOI for all versions"
+preferred-citation:
+  type: software
+  title: "matlab2tikz: Convert MATLAB figures to TikZ/Pgfplots"
+  authors:
+    - family-names: "Schlömer"
+      given-names: "Nico"
+    - family-names: "Schluessler"
+      given-names: "Raimund"
+    - name: "The matlab2tikz contributors"
+  year: 2016
+  url: "https://github.com/matlab2tikz/matlab2tikz"
+  doi: "10.5281/zenodo.18605"
+references:
+  - type: software
+    title: "PGFPlots - A LaTeX package to create plots"
+    authors:
+      - family-names: "Feuersänger"
+        given-names: "Christian"
+    url: "https://pgfplots.sourceforge.net/"
+  - type: software
+    title: "TikZ and PGF"
+    authors:
+      - family-names: "Tantau"
+        given-names: "Till"
+    url: "https://github.com/pgf-tikz/pgf"

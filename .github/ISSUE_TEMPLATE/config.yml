@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or Help
+    url: https://github.com/matlab2tikz/matlab2tikz/discussions
+    about: Ask questions or get help with using matlab2tikz
+  - name: Common Problems Wiki
+    url: https://github.com/matlab2tikz/matlab2tikz/wiki/Common-problems
+    about: Check our wiki for solutions to common problems
+  - name: Pgfplots Bug Tracker
+    url: https://sourceforge.net/p/pgfplots/bugs/
+    about: Report issues with Pgfplots/TikZ itself

@@ -1,0 +1,70 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for matlab2tikz
+title: "[Feature]: "
+labels: ["feature request", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm you have completed these steps
+      options:
+        - label: I have checked that this feature doesn't already exist in the latest version
+          required: true
+        - label: I have searched existing feature requests and this is not a duplicate
+          required: true
+        - label: I have verified that Pgfplots/TikZ supports this feature (if graphical)
+          required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What are you trying to do?
+      placeholder: Describe the use case and why this feature would be helpful
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How do you envision this feature working?
+      placeholder: Describe your ideal solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Are there any workarounds or alternative solutions you've considered?
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example Use Case
+      description: Provide a concrete example of how this feature would be used
+      placeholder: |
+        % Example MATLAB code showing desired usage:
+        figure;
+        % ... your example
+        matlab2tikz('output.tex', 'newFeature', true);
+
+  - type: textarea
+    id: pgfplots-reference
+    attributes:
+      label: Pgfplots/TikZ Reference
+      description: If this is a graphical feature, please reference the relevant section in the Pgfplots/TikZ documentation
+      placeholder: "e.g., Pgfplots manual section 4.5.2"
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, mockups, or examples about the feature request
