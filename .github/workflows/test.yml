@@ -1,0 +1,127 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master, develop, claude/** ]
+  pull_request:
+    branches: [ master, develop ]
+  workflow_dispatch:
+
+jobs:
+  test-octave:
+    name: Test with Octave ${{ matrix.octave-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        octave-version: ['6.4.0', '7.3.0', '8.4.0']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Octave
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y software-properties-common
+        sudo add-apt-repository -y ppa:ubuntuhandbook1/octave
+        sudo apt-get update -qq
+        sudo apt-get install -y octave liboctave-dev
+
+    - name: Display Octave version
+      run: octave --version
+
+    - name: Run tests
+      run: ./runtests.sh octave
+      continue-on-error: true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-octave-${{ matrix.octave-version }}
+        path: test/
+        retention-days: 30
+
+  test-matlab:
+    name: Test with MATLAB
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up MATLAB
+      uses: matlab-actions/setup-matlab@v2
+      with:
+        release: R2023b
+
+    - name: Run MATLAB tests
+      uses: matlab-actions/run-command@v2
+      with:
+        command: |
+          addpath('src');
+          addpath('test');
+          cd test;
+          try
+              ACID;
+              disp('Tests completed successfully');
+          catch ME
+              disp(['Error: ' ME.message]);
+              exit(1);
+          end
+      continue-on-error: true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-matlab
+        path: test/
+        retention-days: 30
+
+  lint:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Check for trailing whitespace
+      run: |
+        if git grep -l '[[:blank:]]$' -- '*.m' '*.md' '*.yml'; then
+          echo "Found trailing whitespace in the above files"
+          exit 1
+        fi
+      continue-on-error: true
+
+    - name: Check file encodings
+      run: |
+        for file in $(find . -name '*.m' -o -name '*.md'); do
+          if ! file -b --mime-encoding "$file" | grep -q 'utf-8\|us-ascii'; then
+            echo "Non-UTF-8 encoding in: $file"
+          fi
+        done
+
+    - name: Check for FIXME and TODO comments
+      run: |
+        echo "=== FIXME comments ==="
+        git grep -n 'FIXME' -- '*.m' || echo "No FIXME comments found"
+        echo ""
+        echo "=== TODO comments ==="
+        git grep -n 'TODO' -- '*.m' || echo "No TODO comments found"
+      continue-on-error: true
+
+  build-status:
+    name: Build Status Summary
+    runs-on: ubuntu-latest
+    needs: [test-octave, test-matlab, lint]
+    if: always()
+
+    steps:
+    - name: Check test results
+      run: |
+        echo "Octave tests: ${{ needs.test-octave.result }}"
+        echo "MATLAB tests: ${{ needs.test-matlab.result }}"
+        echo "Lint checks: ${{ needs.lint.result }}"

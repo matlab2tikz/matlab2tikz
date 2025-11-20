@@ -1,7 +1,7 @@
 **The updater in matlab2tikz 0.6.0 (and older) no longer works.**
 **Please [update manually](http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz?download=true) if you are not using matlab2tikz 1.0.0 or newer!**
 
-[![Build Status](https://travis-ci.org/matlab2tikz/matlab2tikz.svg?branch=master)](https://travis-ci.org/matlab2tikz/matlab2tikz) [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18605.svg)](http://dx.doi.org/10.5281/zenodo.18605)
+[![Tests](https://github.com/matlab2tikz/matlab2tikz/actions/workflows/test.yml/badge.svg)](https://github.com/matlab2tikz/matlab2tikz/actions/workflows/test.yml) [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18605.svg)](http://dx.doi.org/10.5281/zenodo.18605) [![License](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](LICENSE.md)
 ![matlab2tikz](https://raw.githubusercontent.com/wiki/matlab2tikz/matlab2tikz/matlab2tikz.png)
 
 `matlab2tikz` is a MATLAB(R) script to convert native MATLAB(R) figures to TikZ/Pgfplots figures that integrate seamlessly in LaTeX documents.
@@ -14,20 +14,27 @@ For plots constructed with third-party packages, however, your mileage may vary.
 Installation
 ============
 
-1. Extract the ZIP file (or clone the git repository) somewhere you can easily reach it. 
-2. Add the `src/` folder to your path in MATLAB/Octave: e.g. 
-    - using the "Set Path" dialog in MATLAB, or 
+1. Extract the ZIP file (or clone the git repository) somewhere you can easily reach it.
+2. Add the `src/` folder to your path in MATLAB/Octave: e.g.
+    - using the "Set Path" dialog in MATLAB, or
     - by running the `addpath` function from your command window or `startup` script.
 
+Requirements
+------------
+
+### MATLAB/Octave
+* **MATLAB**: R2014a (8.3) or newer (both HG1 and HG2 graphics are supported)
+* **Octave**: 4.0 or newer (recommended: 6.0+)
+
+### LaTeX Packages
 Make sure that your LaTeX installation is up-to-date and includes:
 
-* [TikZ/PGF](http://www.ctan.org/pkg/pgf) version 3.0 or higher
-* [Pgfplots](http://www.ctan.org/pkg/pgfplots) version 1.13 or higher
+* [TikZ/PGF](http://www.ctan.org/pkg/pgf) version 3.0 or higher (recommended: 3.1+)
+* [Pgfplots](http://www.ctan.org/pkg/pgfplots) version 1.13 or higher (recommended: 1.16+)
 * [Amsmath](https://www.ctan.org/pkg/amsmath) version 2.14 or higher
 * [Standalone](http://www.ctan.org/pkg/standalone) (optional)
 
-It is recommended to use the latest stable version of these packages.
-Older versions may work depending on the actual MATLAB(R) figure you are converting.
+**Note:** It is strongly recommended to use the latest stable version of these packages. Older versions may work depending on the actual MATLAB(R) figure you are converting, but newer versions provide better compatibility and more features.
 
 Usage
 =====
@@ -92,4 +99,33 @@ More information
 
 * For more information about `matlab2tikz`, have a look at our [GitHub repository](https://github.com/matlab2tikz/matlab2tikz). If you are a good MATLAB(R) programmer or LaTeX writer, you are always welcome to help improving `matlab2tikz`!
 * Some common problems and pit-falls are documented in our [wiki](https://github.com/matlab2tikz/matlab2tikz/wiki/Common-problems).
-* If you experience (other) bugs or would like to request a feature, please visit our [issue tracker](https://github.com/matlab2tikz/matlab2tikz/issues). 
+* If you experience (other) bugs or would like to request a feature, please visit our [issue tracker](https://github.com/matlab2tikz/matlab2tikz/issues).
+
+Contributing
+============
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on how to:
+
+* Report bugs
+* Request features
+* Submit pull requests
+* Run the test suite
+
+Please also read our [Code of Conduct](CODE_OF_CONDUCT.md) before participating.
+
+Citing matlab2tikz
+==================
+
+If you use matlab2tikz in your research, please cite it! Citation information is available in our [CITATION.cff](CITATION.cff) file and can be exported to BibTeX or other formats via GitHub.
+
+**DOI:** [10.5281/zenodo.18605](http://dx.doi.org/10.5281/zenodo.18605)
+
+Security
+========
+
+For information about reporting security vulnerabilities, please see our [Security Policy](SECURITY.md).
+
+License
+=======
+
+matlab2tikz is licensed under the [BSD 2-Clause License](LICENSE.md). 

@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Extract version from tag
+      id: get_version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="dev-$(date +%Y%m%d)"
+        else
+          VERSION=${GITHUB_REF#refs/tags/v}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Create release archive
+      run: |
+        mkdir -p release-package
+        cp -r src release-package/
+        cp README.md CHANGELOG.md LICENSE.md AUTHORS.md CONTRIBUTING.md release-package/
+        cd release-package
+        zip -r ../matlab2tikz-${{ steps.get_version.outputs.version }}.zip .
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        if [ -f CHANGELOG.md ]; then
+          # Extract the latest version's changelog
+          awk '/^## \[.*\]/{if(p)exit;p=1;next} p' CHANGELOG.md > release_notes.txt
+        else
+          echo "Release ${{ steps.get_version.outputs.version }}" > release_notes.txt
+        fi
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          matlab2tikz-${{ steps.get_version.outputs.version }}.zip
+        body_path: release_notes.txt
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-package
+        path: matlab2tikz-${{ steps.get_version.outputs.version }}.zip
+        retention-days: 90

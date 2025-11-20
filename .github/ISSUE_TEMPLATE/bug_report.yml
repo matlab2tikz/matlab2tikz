@@ -1,0 +1,108 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in matlab2tikz
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this bug! Please fill out the information below to help us diagnose and fix the issue.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm you have completed these steps before submitting the issue
+      options:
+        - label: I am using the latest release or development version of matlab2tikz
+          required: true
+        - label: I am using recent versions of required LaTeX packages (TikZ/PGF 3.0+, Pgfplots 1.13+)
+          required: true
+        - label: I have searched existing issues and this is not a duplicate
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: Tell us what went wrong
+    validations:
+      required: true
+
+  - type: textarea
+    id: minimal-example
+    attributes:
+      label: Minimal MATLAB Code Example
+      description: Please provide a minimal code snippet that reproduces the issue
+      placeholder: |
+        % Example:
+        figure;
+        plot(1:10, rand(1,10));
+        matlab2tikz('output.tex');
+      render: matlab
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include error messages if applicable
+    validations:
+      required: true
+
+  - type: input
+    id: matlab-version
+    attributes:
+      label: MATLAB/Octave Version
+      description: e.g., MATLAB R2023b or Octave 8.4.0
+      placeholder: "R2023b"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: e.g., Windows 11, macOS 14, Ubuntu 22.04
+      placeholder: "Ubuntu 22.04"
+    validations:
+      required: true
+
+  - type: input
+    id: matlab2tikz-version
+    attributes:
+      label: matlab2tikz Version
+      description: Run `help matlab2tikz` and check the version number
+      placeholder: "1.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: pgfplots-version
+    attributes:
+      label: Pgfplots Version
+      description: Check your LaTeX distribution (e.g., from pgfplots manual)
+      placeholder: "1.18"
+
+  - type: input
+    id: latex-compiler
+    attributes:
+      label: LaTeX Compiler
+      description: e.g., pdflatex, xelatex, lualatex
+      placeholder: "pdflatex"
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or files about the problem here
