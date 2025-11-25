@@ -669,11 +669,7 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
     % and the order of plotting the colored patches.
     for child = children(end:-1:1)'
 
-        % Check if object has legend. Some composite objects need to determine
-        % their status at the root level. For detailed explanations check
-        % getLegendEntries().
-        % TODO: could move this check into drawHggroup. Need to verify how
-        % hgtransform behaves though. (priority - LOW)
+        % Check if object has legend.
         m2t = hasLegendEntry(m2t,child);
 
         switch char(get(child, 'Type'))
@@ -702,62 +698,38 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
                 %   Transformation matrix applied to hgtransform object and its
                 %   children. The hgtransform object applies the transformation
                 %   matrix to all its children.
-                % More information at http://www.mathworks.de/de/help/matlab/creating_plots/group-objects.html.
+                
+                % 1. Save old transform state
+                oldTransform = m2t.transform;
+                
+                % 2. Set new transform
                 m2t.transform = get(child, 'Matrix');
-                [m2t, str] = handleAllChildren(m2t, child);
-                m2t.transform = [];
-
-            case 'surface'
-                [m2t, str] = handleObject(m2t, child, @drawSurface);
-
-            case 'text'
-                [m2t, str] = handleObject(m2t, child, @drawVisibleText);
-
-            case 'rectangle'
-                [m2t, str] = handleObject(m2t, child, @drawRectangle);
-		
-	    case 'doubleendarrowshape'
-                [m2t, str] = handleObject(m2t, child, @drawArrow);
-	
-	    case 'arrowshape'
-                [m2t, str] = handleObject(m2t, child, @drawArrow);
-
-            case 'histogram'
-                [m2t, str] = handleObject(m2t, child, @drawHistogram);
-
-            case guitypes()
-                % don't do anything for GUI objects and their children
-                [m2t, str] = handleObject(m2t, child, @drawNothing);
-
-            case 'light'
-                % These objects are not supported and should not/cannot be
-                % supported by matlab2tikz or pgfplots.
-                [m2t, str] = handleObject(m2t, child, @drawNothing);
-
-            case ''
-                % No children found for handle. (It has only a title and/or
-                % labels). Carrying on as if nothing happened
-
+                
+                % 3. Recursively handle children (The Fixed Line)
+                [m2t, childEnvs] = handleAllChildren(m2t, child);
+                
+                % 4. Combine results
+                if ~isempty(childEnvs)
+                    str = [childEnvs{:}];
+                else
+                    str = '';
+                end
+                
+                % 5. Restore old transform state
+                m2t.transform = oldTransform;
+            
             otherwise
-                userWarning(m2t, 'matlab2tikz does not know how to handle object with type "%s"', get(child,'Type'));
-                % just try with the drawNothing handler (which does nothing)
-                % that at least allows a user to attach a custom handler from outside
-                [m2t, str] = handleObject(m2t, child, @drawNothing);
+                str = '';
         end
-
-        % A composite object might nest handleAllChildren calls that can
-        % modify the m2t.currentHandleHasLegend value. Re-instate the
-        % legend status. For detailed explanations check getLegendEntries().
-        m2t                          = hasLegendEntry(m2t,child);
-        [m2t, legendLabel, labelRef] = addPlotyyReference(m2t, child);
-        legendInfo                   = addLegendInformation(m2t, child);
-        % Add labelRef BEFORE next plot to preserve color order
-        str = join(m2t, {labelRef, str, legendLabel, legendInfo}, '');
-
-        % append the environment
-        pgfEnvironments{envCounter} = str;
-        envCounter = envCounter +1;
+        
+        if ~isempty(str)
+            pgfEnvironments{envCounter} = str;
+            envCounter = envCounter + 1;
+        end
     end
+    
+    % Remove empty cells
+    pgfEnvironments = pgfEnvironments(1:envCounter-1);
 end
 % ==============================================================================
 function [m2t, label, labelRef] = addPlotyyReference(m2t, h)
