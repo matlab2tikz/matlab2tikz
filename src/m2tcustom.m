@@ -127,18 +127,21 @@ function [value] = m2tcustom(handle, varargin)
     ipp = ipp.addRequired(ipp, 'handle', @isHgObject);
     
     %% Declaration of the custom data structure
-    ipp = ipp.addParamValue(ipp, 'codeBefore',      '', @isCellstrOrChar);
-    ipp = ipp.addParamValue(ipp, 'codeAfter',       '', @isCellstrOrChar);
+    ipp = ipp.addParamValue(ipp, 'codeBefore',      '', @isCellstrOrCharOrString);
+    ipp = ipp.addParamValue(ipp, 'codeAfter',       '', @isCellstrOrCharOrString);
     
-    ipp = ipp.addParamValue(ipp, 'commentsBefore',  '', @isCellstrOrChar);
-    ipp = ipp.addParamValue(ipp, 'commentsAfter',   '', @isCellstrOrChar);
+    ipp = ipp.addParamValue(ipp, 'commentsBefore',  '', @isCellstrOrCharOrString);
+    ipp = ipp.addParamValue(ipp, 'commentsAfter',   '', @isCellstrOrCharOrString);
     
-    ipp = ipp.addParamValue(ipp, 'codeInsideFirst', '', @isCellstrOrChar);
-    ipp = ipp.addParamValue(ipp, 'codeInsideLast',  '', @isCellstrOrChar);
+    ipp = ipp.addParamValue(ipp, 'codeInsideFirst', '', @isCellstrOrCharOrString);
+    ipp = ipp.addParamValue(ipp, 'codeInsideLast',  '', @isCellstrOrCharOrString);
     
-    ipp = ipp.addParamValue(ipp, 'extraOptions',    '', @isCellstrOrChar);
+    ipp = ipp.addParamValue(ipp, 'extraOptions',    '', @isCellstrOrCharOrString);
     ipp = ipp.addParamValue(ipp, 'customHandler',   '', @isHandler);
     
+
+     %% Converts Matlab Strings to chars to make it compatible with Strings
+    varargin = convertArguments2Char(varargin{:});
     %% Parse the arguments
     ipp = ipp.parse(ipp, handle, varargin{:});
     
@@ -193,6 +196,16 @@ function bool = isCellstrOrChar(value)
     % true for cellstr or char
     bool = ischar(value) || iscellstr(value);
 end
+function bool = isCellstrOrCharOrString(x)
+%checks if input is either a cellstr or a char. And if we are working in a
+%Matlab environment also if it is a string.
+bool = iscellstr(x) || ischar(x);
+
+if strcmp(getEnvironment(),'MATLAB')
+    bool = bool || isstring(x);
+end
+
+end
 function bool = isHandler(value)
     % true for char or function handle of the form [m2t, str] = f(m2t, h, opts)
     bool = isempty(value) || ischar(value) || ...
@@ -213,4 +226,25 @@ function value = cellstr2char(value)
         value = m2tstrjoin(value, EOL);
     end
 end
-% ==============================================================================
+% ==Make programm compatible with Matlab Strings=================================
+function varargin = convertArguments2Char(varargin)
+% This function converts the Arguments to char if any strings were
+% handed over to be able to handle Matlab strings while staying
+% compatible to GNU Octave
+
+if strcmp(getEnvironment(),'MATLAB')
+
+    for k = 1: length(varargin)
+
+        if iscell(varargin{k})
+            %converts cells of strings,'UniformOutput'==false to return
+            %the results ass cellarray
+            varargin{k} = cellfun(@convertStringsToChars,varargin{k},'UniformOutput',false);
+        else
+            %converts Strings, arrays of strings...
+            varargin{k} = convertStringsToChars(varargin{k});
+        end
+
+    end
+end
+end
