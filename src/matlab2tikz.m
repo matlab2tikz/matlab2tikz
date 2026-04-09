@@ -742,12 +742,12 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'rectangle'
                 [m2t, str] = handleObject(m2t, child, @drawRectangle);
-		
-	    case 'doubleendarrowshape'
-                [m2t, str] = handleObject(m2t, child, @drawArrow);
-	
-	    case 'arrowshape'
-                [m2t, str] = handleObject(m2t, child, @drawArrow);
+        
+            case 'doubleendarrowshape'
+                    [m2t, str] = handleObject(m2t, child, @drawArrow);
+        
+            case 'arrowshape'
+                    [m2t, str] = handleObject(m2t, child, @drawArrow);
 
             case 'histogram'
                 [m2t, str] = handleObject(m2t, child, @drawHistogram);
@@ -1107,13 +1107,13 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
                 end
             end
         case 'MATLAB'
-	    if isprop(axisHandle, 'Legend') % R2017b behavior
+        if isprop(axisHandle, 'Legend') % R2017b behavior
                 legendhandle = axisHandle.Legend;
-	    else
-		legendhandle = legend(axisHandle);
-		% this is the proper way for old versions of MATLAB
-		% in newer versions (see #1006), calling `legend` may
-		% create a legend in the figure where none existed before
+        else
+            legendhandle = legend(axisHandle);
+            % this is the proper way for old versions of MATLAB
+            % in newer versions (see #1006), calling `legend` may
+            % create a legend in the figure where none existed before
             end
     end
 
