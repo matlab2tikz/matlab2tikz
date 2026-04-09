@@ -1,7 +1,10 @@
 function matlab2tikz(varargin)
     %MATLAB2TIKZ    Save figure in native LaTeX (TikZ/Pgfplots).
     %   MATLAB2TIKZ() saves the current figure as LaTeX file.
-    %   MATLAB2TIKZ comes with several options that can be combined at will.
+    %   MATLAB2TIKZ comes with several options that can be combined at will. For
+    %   example:
+    %
+    %       MATLAB2TIKZ('showInfo', false, 'strict', true, "figure.tex")
     %
     %   MATLAB2TIKZ(FILENAME,...) or MATLAB2TIKZ('filename',FILENAME,...)
     %   stores the LaTeX code in FILENAME.
@@ -705,6 +708,9 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'line'
                 [m2t, str] = handleObject(m2t, child, @drawLine);
+                
+            case 'constantline'
+                [m2t, str] = handleObject(m2t, child, @drawConstantLine);
 
             case 'patch'
                 [m2t, str] = handleObject(m2t, child, @drawPatch);
@@ -736,6 +742,12 @@ function [m2t, pgfEnvironments] = handleAllChildren(m2t, h)
 
             case 'rectangle'
                 [m2t, str] = handleObject(m2t, child, @drawRectangle);
+		
+	    case 'doubleendarrowshape'
+                [m2t, str] = handleObject(m2t, child, @drawArrow);
+	
+	    case 'arrowshape'
+                [m2t, str] = handleObject(m2t, child, @drawArrow);
 
             case 'histogram'
                 [m2t, str] = handleObject(m2t, child, @drawHistogram);
@@ -1075,14 +1087,21 @@ function legendhandle = getAssociatedLegend(m2t, axisHandle)
     % Get legend handle associated with current axis
 
     legendhandle = [];
-    env = getEnvironment();
+    [env, envVersion] = getEnvironment();
     switch env
         case 'Octave'
             % Make sure that m2t.legendHandles is a row vector.
             for lhandle = m2t.legendHandles(:)'
-                ud = get(lhandle, 'UserData');
+                if isVersionBelow(envVersion, [4,2,2]) % Octave commit 5865d2fef424
+                  lhandleProp{1}='UserData';
+                  lhandleProp{2}='handle';
+                else
+                  lhandleProp{1}='__appdata__';
+                  lhandleProp{2}='__axes_handle__';
+                end
+                ud = get(lhandle, lhandleProp{1});
                 % Empty if no legend and multiple handles if plotyy
-                if ~isempty(ud) && any(axisHandle == ud.handle)
+                if ~isempty(ud) && any(axisHandle == ud.(lhandleProp{2}))
                     legendhandle = lhandle;
                     break
                 end
@@ -1149,9 +1168,14 @@ function entries = getLegendEntries(m2t)
 
     switch getEnvironment()
         case 'Octave'
-            % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m
-            delfun  = get(legendHandle,'deletefcn');
-            entries = delfun{6};
+            if isappdata(legendHandle,'__peer_objects__')
+                % Octave version 6.x or newer with refactored legend
+                entries = getappdata(legendHandle,'__peer_objects__')
+            else
+                % See set(hlegend, "deletefcn", {@deletelegend2, ca, [], [], t1, hplots}); in legend.m
+                delfun  = get(legendHandle,'deletefcn');
+                entries = delfun{6};
+            end
 
             % Bubble-up legend entry properties from child to hggroup root
             % for guessable objects
@@ -1814,15 +1838,23 @@ function [m2t, str] = drawLine(m2t, h, custom)
 
     % build the data matrix
     data       = getXYZDataFromLine(m2t, h);
+    xDeviation = getXDeviations(h);
     yDeviation = getYDeviations(h);
+    
+    errDir = '';
+    if ~isempty(xDeviation)
+        data = [data, xDeviation];
+        errDir = [errDir, 'x'];
+    end
     if ~isempty(yDeviation)
         data = [data, yDeviation];
+        errDir = [errDir, 'y'];
     end
 
     % Check if any value is infinite/NaN. In that case, add appropriate option.
     m2t = jumpAtUnboundCoords(m2t, data);
 
-    [m2t, dataString]  = writePlotData(m2t, data, drawOptions);
+    [m2t, dataString]  = writePlotData(m2t, data, drawOptions, errDir);
     [m2t, labelString] = addLabel(m2t, h);
 
     str = [dataString, labelString];
@@ -1851,7 +1883,7 @@ function bool = isLineVisible(h)
     bool = isVisible(h) && (hasLines || hasMarkers || hasDeviations);
 end
 % ==============================================================================
-function [m2t, str] = writePlotData(m2t, data, drawOptions)
+function [m2t, str] = writePlotData(m2t, data, drawOptions, errDir)
     % actually writes the plot data to file
     str = '';
 
@@ -1878,8 +1910,16 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
             if (opts_has(drawOptions,'error bar style'))
                 tmpOptions = opts_new();
                 tmpOptions = opts_add(tmpOptions,'error bars/.cd','');
-                tmpOptions = opts_add(tmpOptions,'y dir','both');
-                tmpOptions = opts_add(tmpOptions,'y explicit','');
+                % add x direction error bar style if necessary
+                if contains(errDir, 'x')
+                    tmpOptions = opts_add(tmpOptions,'x dir','both');
+                    tmpOptions = opts_add(tmpOptions,'x explicit','');
+                end
+                % add y direction error bar style if necessary
+                if contains(errDir, 'y')
+                    tmpOptions = opts_add(tmpOptions,'y dir','both');
+                    tmpOptions = opts_add(tmpOptions,'y explicit','');
+                end
                 tmpOptions = opts_copy(drawOptions, 'error bar style', tmpOptions);
                 tmpOptions = opts_copy(drawOptions, 'error mark options', tmpOptions);
 
@@ -1904,7 +1944,7 @@ function [m2t, str] = writePlotData(m2t, data, drawOptions)
                 opts = opts_print(drawOptions);
             end
 
-            [m2t, Part] = plotLine2d(m2t, opts, errorBarOpts, dataCell{k});
+            [m2t, Part] = plotLine2d(m2t, opts, errorBarOpts, dataCell{k}, errDir);
             strPart{k} = Part;
         end
         strPart = join(m2t, strPart, '');
@@ -1960,20 +2000,28 @@ function [m2t, labelCode] = addLabel(m2t, h)
     end
 end
 % ==============================================================================
-function [m2t,str] = plotLine2d(m2t, opts, errorBarOpts, data)
-    errorbarMode = (size(data,2) == 4); % is (optional) yDeviation given?
+function [m2t,str] = plotLine2d(m2t, opts, errorBarOpts, data, errDir)
 
     errorBar = '';
-    if errorbarMode
+    if ~isempty(errDir)
         m2t      = needsPgfplotsVersion(m2t, [1,9]);
         errorBar = sprintf('plot [%s]\n', errorBarOpts);
     end
 
     % Convert to string array then cell to call sprintf once (and no loops).
     [m2t, table, tableOptions] = makeTable(m2t, repmat({''}, size(data,2)), data);
-    if errorbarMode
-        tableOptions = opts_add(tableOptions, 'y error plus index', '2');
-        tableOptions = opts_add(tableOptions, 'y error minus index', '3');
+    switch errDir
+        case 'x'
+            tableOptions = opts_add(tableOptions, 'x error plus index', '2');
+            tableOptions = opts_add(tableOptions, 'x error minus index', '3');
+        case 'y'
+            tableOptions = opts_add(tableOptions, 'y error plus index', '2');
+            tableOptions = opts_add(tableOptions, 'y error minus index', '3');
+        case 'xy'
+            tableOptions = opts_add(tableOptions, 'x error plus index', '2');
+            tableOptions = opts_add(tableOptions, 'x error minus index', '3');
+            tableOptions = opts_add(tableOptions, 'y error plus index', '4');
+            tableOptions = opts_add(tableOptions, 'y error minus index', '5');
     end
 
     % Print out
@@ -2295,6 +2343,36 @@ function [tikzMarker, markOptions] = ...
                 tikzMarker = [tikzMarker '*'];
             end
     end
+end
+% ==============================================================================
+function [m2t, str] = drawConstantLine(m2t, h, custom)
+    % Draws a 'constantline' object such as those produced by 'yline()'
+    
+    interceptaxis = get(h, 'InterceptAxis');
+    value = get(h, 'Value');
+    xLim = get(h.Parent, 'XLim');
+    yLim = get(h.Parent, 'Ylim');
+    
+    % create line from object properties
+    switch interceptaxis
+        case 'x'
+            xdata = [value value];
+            ydata = yLim;
+        case 'y'
+            xdata = xLim;
+            ydata = [value value];
+        otherwise
+            warning('ConstantLine: invalid InterceptAxis. Ignoring...')
+            return
+    end
+    l = line(xdata, ydata);
+    
+    % Pass on color and line options
+    l.Color = h.Color;
+    l.LineStyle = h.LineStyle;
+    l.LineWidth = h.LineWidth;
+    
+    [m2t, str] = drawLine(m2t, l, custom);
 end
 % ==============================================================================
 function [m2t, str] = drawPatch(m2t, handle, custom)
@@ -2621,7 +2699,7 @@ function [m2t, str] = imageAsPNG(m2t, handle, xData, yData, cData, custom)
         alphaOpts = {};
         hasAlpha = false;
     else
-        alphaOpts = {'Alpha', alphaData};
+        alphaOpts = {'Alpha', double(alphaData)};
     end
     if (ndims(colorData) == 2) %#ok don't use ismatrix (cfr. #143)
         if size(m2t.current.colormap, 1) <= 256 && ~hasAlpha
@@ -3249,6 +3327,10 @@ function m2t = drawAnnotationsHelper(m2t,h)
             % Rectangle
         case {'scribe.scriberect', 'matlab.graphics.shape.Rectangle'}
             [m2t, str] = handleObject(m2t, h, @drawRectangle);
+            
+        case guitypes()
+            % don't do anything for GUI objects and their children
+            [m2t, str] = handleObject(m2t, h, @drawNothing);                
 
         otherwise
             userWarning(m2t, 'Don''t know annotation ''%s''.', cl);
@@ -3539,12 +3621,18 @@ function [style] = getXYAlignmentOfText(handle, style)
             horizontal = 'left';
     end
     alignment = strtrim(sprintf('%s %s', vertical, horizontal));
+    if strcmp(VerticalAlignment, 'middle') && strcmp(HorizontalAlignment, 'center')
+        alignment = 'centered';
+    end
+    
     if ~isempty(alignment)
         style = opts_add(style, alignment);
     end
 
     % Set 'align' option that is needed for multiline text
     style = opts_add(style, 'align', HorizontalAlignment);
+    
+    style = opts_add(style, 'inner sep', '0');
 end
 % ==============================================================================
 function [style] = getRotationOfText(m2t, handle, style)
@@ -4648,11 +4736,25 @@ function [m2t, str] = drawErrorBars(m2t, h, custom)
     % such that the code is easier to read where it is called.
 end
 % ==============================================================================
+function [xDeviations] = getXDeviations(h)
+    % Retrieves left/right uncertainty data
+
+    rightDev = getOrDefault(h, 'XPositiveDelta', []);
+    leftDev = getOrDefault(h, 'XNegativeDelta', []);
+
+    xDeviations = [rightDev(:), leftDev(:)];
+end
+% ==============================================================================
 function [yDeviations] = getYDeviations(h)
     % Retrieves upper/lower uncertainty data
 
-    upDev = getOrDefault(h, 'UData', []);
-    loDev = getOrDefault(h, 'LData', []);
+    upDev = getOrDefault(h, 'YPositiveDelta', []);
+    loDev = getOrDefault(h, 'YNegativeDelta', []);
+
+    if isempty(upDev)
+      upDev = getOrDefault(h, 'UData', []);
+      loDev = getOrDefault(h, 'LData', []);
+    end
 
     yDeviations = [upDev(:), loDev(:)];
 end
