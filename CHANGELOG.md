@@ -42,7 +42,7 @@
       - Output directory is created automatically (#889, #929)
       - TikZ output format has been improved slightly (#936, #921, #801)
  * For developers:
-      - Please check out the (guidelines)[CONTRIBUTING.md]
+      - Please check out the [guidelines](CONTRIBUTING.md)
       - We now use `allchild` and `findall` (#718)
       - SublimeText project files
       - Test hashes can be saved selectively (#720)
