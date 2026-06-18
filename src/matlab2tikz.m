@@ -4997,9 +4997,18 @@ function axisOptions = getColorbarOptions(m2t, handle)
         end
     end
 
-    % Merge them together in axisOptions.
+   % Merge them together in axisOptions.
     axisOptions = opts_add(axisOptions, strtrim(['colorbar ', cbarTemplate]));
 
+   
+    %color map ticks
+    [m2t, options] = getAxisOptions(m2t, handle, 'y');
+    options = opts_remove(options,'separate axis lines','every outer y axis line/.append style','every y tick label/.append style');
+    
+    cbarStyleOptions = opts_merge(cbarStyleOptions,options);
+   
+   
+    
     if ~isempty(cbarStyleOptions)
         axisOptions = opts_addSubOpts(axisOptions, ...
                                    'colorbar style', cbarStyleOptions);
@@ -6878,6 +6887,16 @@ function opts = opts_append(opts, key, value)
     end
     value = char(value);
     if ~(opts_has(opts, key) && isequal(opts_get(opts, key), value))
+        opts = cat(1, opts, {key, value});
+    end
+end
+function opts = opts_append_unique(opts, key, value)
+    % append a key-value pair to an options array (duplicate keys allowed)
+    if ~exist('value','var')
+        value = '';
+    end
+    value = char(value);
+    if ~opts_has(opts, key)
         opts = cat(1, opts, {key, value});
     end
 end
